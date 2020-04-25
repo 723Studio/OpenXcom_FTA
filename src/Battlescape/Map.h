@@ -87,6 +87,7 @@ private:
 	int _cacheHasLOS; // -1 = unknown, 0 = no LOS, 1 = has LOS
 	int _animFrame;
 	Projectile *_projectile;
+	bool _followProjectile;
 	bool _projectileInFOV;
 	std::list<Explosion *> _explosions;
 	std::vector<std::vector<Particle>> _vaporParticles;
@@ -148,6 +149,12 @@ public:
 	void setProjectile(Projectile *projectile);
 	/// Gets projectile.
 	Projectile *getProjectile() const;
+	/// Sets follow projectile flag.
+	void setFollowProjectile(bool followProjectile) { _followProjectile = followProjectile; }
+	/// Gets follow projectile flag.
+	bool getFollowProjectile() const { return _followProjectile; }
+	/// Gets alt pressed flag.
+	bool isAltPressed() const { return _isAltPressed; }
 	/// Add new vapor particle.
 	void addVaporParticle(const Tile* tile, Particle particle);
 	/// Get all vapor for tile.

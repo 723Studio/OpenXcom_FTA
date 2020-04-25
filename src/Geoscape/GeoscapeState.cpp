@@ -2589,6 +2589,31 @@ void GeoscapeState::time1Day()
 	std::for_each(saveGame->getAlienBases()->begin(), saveGame->getAlienBases()->end(),
 			  GenerateSupplyMission(*_game, *_globe));
 
+	// Handle alien base detection (by xcom base facilities).
+	for (auto alienBase : *_game->getSavedGame()->getAlienBases())
+	{
+		if (alienBase->isDiscovered()) continue;
+		for (auto xcomBase : *_game->getSavedGame()->getBases())
+		{
+			int distance = XcomDistance(xcomBase->getDistance(alienBase));
+			for (auto facility : *xcomBase->getFacilities())
+			{
+				if (facility->getBuildTime() == 0 && facility->getRules()->getSightRange() > distance)
+				{
+					int chanceToDetect = facility->getRules()->getSightChance(); // static % defined by the modder
+					if (chanceToDetect == 0)
+					{
+						chanceToDetect = 50 - (distance * 50 / facility->getRules()->getSightRange()); // dynamic 0-50% based on relative distance
+					}
+					if (RNG::percent(chanceToDetect))
+					{
+						alienBase->setDiscovered(true);
+					}
+				}
+			}
+		}
+	}
+
 	// Autosave 3 times a month
 	int day = saveGame->getTime()->getDay();
 	if (day == 10 || day == 20)

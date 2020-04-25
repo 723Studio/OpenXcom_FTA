@@ -485,13 +485,13 @@ void Ufo::setDamage(int damage, const Mod *mod)
 	}
 	else if (_damage >= _stats.damageMax / 2)
 	{
-		_status = CRASHED;
-
-		// kamikaze never crash lands
-		if (_huntBehavior == 1)
+		if (_huntBehavior == 1 || _rules->isUnmanned())
 		{
-			_damage = _stats.damageMax;
-			_status = DESTROYED;
+			// kamikaze never crash lands; unmanned ditto
+		}
+		else
+		{
+			_status = CRASHED;
 		}
 	}
 	if (_status == CRASHED || _status == DESTROYED)

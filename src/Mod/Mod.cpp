@@ -238,6 +238,7 @@ class ModScriptGlobal : public ScriptGlobal
 {
 	size_t _modCurr = 0;
 	std::vector<std::pair<std::string, int>> _modNames;
+	ScriptValues<Mod> _scriptValues;
 
 	void loadRuleList(int &value, const YAML::Node &node) const
 	{
@@ -315,6 +316,9 @@ public:
 		updateConst("RuleList." + ModNameCurrent, (int)i);
 		_modCurr = i;
 	}
+
+	/// Get script values
+	ScriptValues<Mod>& getScriptValues() { return _scriptValues; }
 };
 
 /**
@@ -350,7 +354,8 @@ Mod::Mod() :
 	_defeatScore(0), _defeatFunds(0), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
 	_baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
 	_facilityListOrder(0), _craftListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
-	_researchListOrder(0),  _manufactureListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0), _modCurrent(0), _statePalette(0)
+	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
+	_modCurrent(0), _statePalette(0)
 {
 	_muteMusic = new Music();
 	_muteSound = new Sound();
@@ -1417,6 +1422,23 @@ void Mod::loadAll()
 	afterLoadHelper("commendations", this, _commendations, &RuleCommendations::afterLoad);
 	afterLoadHelper("skills", this, _skills, &RuleSkill::afterLoad);
 
+	// check unique listOrder
+	{
+		std::vector<int> tmp;
+		tmp.reserve(_soldierBonus.size());
+		for (auto i : _soldierBonus)
+		{
+			tmp.push_back(i.second->getListOrder());
+		}
+		std::sort(tmp.begin(), tmp.end());
+		auto it = std::unique(tmp.begin(), tmp.end());
+		bool wasUnique = (it == tmp.end());
+		if (!wasUnique)
+		{
+			throw Exception("List order for soldier bonus types must be unique!");
+		}
+	}
+
 	// auto-create alternative manufacture rules
 	for (auto shortcutPair : _manufactureShortcut)
 	{
@@ -1641,6 +1663,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	if (const YAML::Node &extended = doc["extended"])
 	{
 		_scriptGlobal->load(extended);
+		_scriptGlobal->getScriptValues().load(extended, parsers.getShared(), "globals");
 	}
 	for (YAML::const_iterator i = doc["countries"].begin(); i != doc["countries"].end(); ++i)
 	{
@@ -1836,7 +1859,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		RuleSoldierBonus *rule = loadRule(*i, &_soldierBonus, &_soldierBonusIndex, "name");
 		if (rule != 0)
 		{
-			rule->load(*i, parsers);
+			_soldierBonusListOrder += 100;
+			rule->load(*i, parsers, _soldierBonusListOrder);
 		}
 	}
 	for (YAML::const_iterator i = doc["soldierTransformation"].begin(); i != doc["soldierTransformation"].end(); ++i)
@@ -5146,6 +5170,8 @@ void Mod::ScriptRegister(ScriptParserBase *parser)
 	mod.add<&Mod::getInventoryBackpack>("getRuleInventoryBackpack");
 	mod.add<&Mod::getInventoryBelt>("getRuleInventoryBelt");
 	mod.add<&Mod::getInventoryGround>("getRuleInventoryGround");
+
+	mod.addScriptValue<&Mod::_scriptGlobal, &ModScriptGlobal::getScriptValues>();
 }
 
 }

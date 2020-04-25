@@ -45,6 +45,7 @@ private:
 	std::string _name;
 	int _visibilityAtDark;
 	UnitStats _stats;
+	int _listOrder;
 	RuleStatBonus _timeRecovery, _energyRecovery, _moraleRecovery, _healthRecovery, _stunRecovery, _manaRecovery;
 	ScriptValues<RuleSoldierBonus> _scriptValues;
 	ModScript::SoldierBonusScripts::Container _soldierBonusScripts;
@@ -55,13 +56,15 @@ public:
 	/// Cleans up the soldier bonus ruleset.
 	~RuleSoldierBonus() = default;
 	/// Loads the soldier bonus definition from YAML.
-	void load(const YAML::Node &node, const ModScript &parsers);
+	void load(const YAML::Node &node, const ModScript &parsers, int listOrder);
 	/// Gets the soldier bonus unique name/type.
 	const std::string &getName() const { return _name; }
 	/// Gets the bonus to night vision (in tiles).
 	int getVisibilityAtDark() const { return _visibilityAtDark; }
 	/// Gets the bonus stats.
 	const UnitStats *getStats() const { return &_stats; }
+	/// Gets the list order for display purposes.
+	int getListOrder() const { return _listOrder; }
 
 	/// Gets the bonus TU recovery.
 	int getTimeRecovery(const BattleUnit *unit) const;

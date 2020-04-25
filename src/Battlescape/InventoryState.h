@@ -115,8 +115,11 @@ public:
 	void btnRankClick(Action *action);
 	/// Handler for clicking on the Create Template button.
 	void btnCreateTemplateClick(Action *action);
+	void btnCreatePersonalTemplateClick(Action *action);
 	/// Handler for clicking the Apply Template button.
 	void btnApplyTemplateClick(Action *action);
+	void btnApplyPersonalTemplateClick(Action *action);
+	void btnShowPersonalTemplateClick(Action *action);
 	/// Handler for hitting the Clear Inventory hotkey.
 	void onClearInventory(Action *action);
 	/// Handler for hitting the Auto-equip hotkey.
