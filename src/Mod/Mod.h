@@ -92,6 +92,7 @@ class MapScript;
 class ModInfo;
 class RuleVideo;
 class RuleMusic;
+class RuleDiplomacyFaction;
 class RuleArcScript;
 class RuleEventScript;
 class RuleEvent;
@@ -160,6 +161,7 @@ private:
 	std::map<std::string, ArticleDefinition*> _ufopaediaArticles;
 	std::map<std::string, RuleInventory*> _invs;
 	bool _inventoryOverlapsPaperdoll;
+	bool _ftaGame;
 	std::map<std::string, RuleResearch *> _research;
 	std::map<std::string, RuleManufacture *> _manufacture;
 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
@@ -173,6 +175,7 @@ private:
 	std::map<std::string, MCDPatch *> _MCDPatches;
 	std::map<std::string, std::vector<MapScript *> > _mapScripts;
 	std::map<std::string, RuleCommendations *> _commendations;
+	std::map<std::string, RuleDiplomacyFaction*> _diplomacyFactions;
 	std::map<std::string, RuleArcScript*> _arcScripts;
 	std::map<std::string, RuleEventScript*> _eventScripts;
 	std::map<std::string, RuleEvent*> _events;
@@ -258,6 +261,7 @@ private:
 	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
+	std::vector<std::string> _diplomacyFactionIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<SDL_Color> _transparencies;
 	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder;
@@ -602,6 +606,8 @@ public:
 	int getBughuntLowMorale() const { return _bughuntLowMorale; }
 	/// Gets the bug hunt mode time units % parameter (default = 60).
 	int getBughuntTimeUnitsLeft() const { return _bughuntTimeUnitsLeft; }
+	/// Gets if we are playing FTA scenario
+	bool getIsFTAGame() const { return _ftaGame; }
 
 	/// Is the mana feature enabled (default false)?
 	bool isManaFeatureEnabled() const { return _manaEnabled; }
@@ -784,6 +790,9 @@ public:
 	/// Gets a video for intro/outro etc.
 	RuleVideo *getVideo(const std::string &id, bool error = false) const;
 	const std::map<std::string, RuleMusic *> *getMusic() const;
+	/// Gets diplomacy Faction rules for FTA game
+	RuleDiplomacyFaction* getDiplomacyFaction(const std::string& name, bool error = false) const;
+	const std::vector<std::string>* getDiplomacyFactionList() const;
 	const std::vector<std::string>* getArcScriptList() const;
 	RuleArcScript* getArcScript(const std::string& name, bool error = false) const;
 	const std::vector<std::string>* getEventScriptList() const;

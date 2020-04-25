@@ -70,6 +70,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly) : _infoOnl
 
 	std::string mission = battleSave->getMissionType();
 	AlienDeployment *deployment = _game->getMod()->getDeployment(mission);
+	if (_game->getMod()->getIsFTAGame() && base && !_game->getSavedGame()->isResearched("STR_HELLO") && !battleSave->getAlienCustomDeploy().empty()) { deployment = _game->getMod()->getDeployment(battleSave->getAlienCustomDeploy()); } //TODO dirty hack
 	Ufo * ufo = 0;
 	if (!deployment && craft)
 	{

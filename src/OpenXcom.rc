@@ -32,12 +32,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "CompanyName", "OpenXcom Developers"
-            VALUE "FileDescription", "OpenXcom Extended"
+            VALUE "FileDescription", "OpenXcom Extended/FTA"
             VALUE "FileVersion", OPENXCOM_VERSION_LONG
             VALUE "InternalName", "OpenXcomEx.exe"
             VALUE "LegalCopyright", "Copyright 2010-2019 OpenXcom Developers"
-            VALUE "OriginalFilename", "OpenXcomEx.exe"
-            VALUE "ProductName", "OpenXcom Extended"
+            VALUE "OriginalFilename", "OpenXcomFTA.exe"
+            VALUE "ProductName", "OpenXcom Extended/FTA"
             VALUE "ProductVersion", OPENXCOM_VERSION_LONG
         END
     END
@@ -53,7 +53,7 @@ END
 //
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "../res/windows/openxcomex.ico"
+IDI_ICON1               ICON                    "../res/windows/openxcomfta.ico"
 
 #ifdef EMBED_ASSETS
 

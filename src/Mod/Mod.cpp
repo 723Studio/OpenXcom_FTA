@@ -79,6 +79,7 @@
 #include "RuleManufactureShortcut.h"
 #include "ExtraStrings.h"
 #include "RuleInterface.h"
+#include "RuleDiplomacyFaction.h"
 #include "RuleArcScript.h"
 #include "RuleEventScript.h"
 #include "RuleEvent.h"
@@ -338,6 +339,7 @@ Mod::Mod() :
 	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8),
 	_noLOSAccuracyPenaltyGlobal(-1),
 	_surrenderMode(0),
+	_ftaGame(false),
 	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
 	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
 	_loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"),
@@ -677,6 +679,10 @@ Mod::~Mod()
 		delete i->second;
 	}
 	for (std::map<std::string, RuleMusic *>::const_iterator i = _musicDefs.begin(); i != _musicDefs.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RuleDiplomacyFaction*>::const_iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
 	{
 		delete i->second;
 	}
@@ -2010,6 +2016,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_bughuntRank = doc["bughuntRank"].as<int>(_bughuntRank);
 	_bughuntLowMorale = doc["bughuntLowMorale"].as<int>(_bughuntLowMorale);
 	_bughuntTimeUnitsLeft = doc["bughuntTimeUnitsLeft"].as<int>(_bughuntTimeUnitsLeft);
+	_ftaGame = doc["ftaGame"].as<bool>(_ftaGame);
 
 
 	if (const YAML::Node &nodeMana = doc["mana"])
@@ -2228,6 +2235,15 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 			ExtraStrings *extraStrings = new ExtraStrings();
 			extraStrings->load(*i);
 			_extraStrings[type] = extraStrings;
+		}
+	}
+
+	for (YAML::const_iterator i = doc["diplomacyFactions"].begin(); i != doc["diplomacyFactions"].end(); ++i)
+	{
+		RuleDiplomacyFaction* rule = loadRule(*i, &_diplomacyFactions, &_diplomacyFactionIndex, "name");
+		if (rule != 0)
+		{
+			rule->load(*i);
 		}
 	}
 
@@ -3784,6 +3800,16 @@ RuleVideo *Mod::getVideo(const std::string &id, bool error) const
 const std::map<std::string, RuleMusic *> *Mod::getMusic() const
 {
 	return &_musicDefs;
+}
+
+RuleDiplomacyFaction* Mod::getDiplomacyFaction(const std::string& name, bool error) const
+{
+	return getRule(name, "Diplomacy Faction", _diplomacyFactions, error);
+}
+
+const std::vector<std::string>* Mod::getDiplomacyFactionList() const
+{
+	return &_diplomacyFactionIndex;
 }
 
 const std::vector<std::string>* Mod::getArcScriptList() const

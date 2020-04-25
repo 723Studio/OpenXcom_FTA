@@ -28,6 +28,17 @@
 #include "../Geoscape/BuildNewBaseState.h"
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
+//new includes
+#include "../Menu/NewBattleState.h"
+#include "../Savegame/SavedBattleGame.h"
+#include "../Savegame/Base.h"
+#include "../Battlescape/BattlescapeGenerator.h"
+#include "../Battlescape/BriefingState.h"
+#include "../Geoscape/BaseNameState.h"
+#include "../Savegame/AlienBase.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Mod/RuleDiplomacyFaction.h"
+#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -165,11 +176,68 @@ void NewGameState::btnOkClick(Action *)
 	save->setDifficulty(diff);
 	save->setIronman(_btnIronman->getPressed());
 	_game->setSavedGame(save);
+	const Mod* mod = _game->getMod();
 
-	GeoscapeState *gs = new GeoscapeState;
+	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
-	gs->init();
-	_game->pushState(new BuildNewBaseState(_game->getSavedGame()->getBases()->back(), gs->getGlobe(), true));
+
+	//choose the game scenario
+	if (_game->getMod()->getIsFTAGame())
+	{
+		//XCOM Base init
+		Base* base = save->getBases()->at(0);
+		double lon, lat;
+		lon = 0.21; //TODO random array here
+		lat = -0.85; //TODO random array here
+		base->setLongitude(lon);
+		base->setLatitude(lat);
+		base->setName(tr("STR_LAST_STAND")); //TODO random array here
+		for (std::vector<Craft*>::iterator i = base->getCrafts()->begin(); i != base->getCrafts()->end(); ++i)
+		{
+			(*i)->setLongitude(lon);
+			(*i)->setLatitude(lat);
+		}
+		//spawn ragional ADVENT center
+		AlienDeployment* aBaseDeployment = mod->getDeployment("STR_INITIAL_REGIONAL_HQ");
+		AlienBase* aBase = new AlienBase(aBaseDeployment, 0);
+		aBase->setAlienRace("STR_ADVENT_START");
+		aBase->setId(save->getId(aBaseDeployment->getMarkerName()));
+		aBase->setLongitude(lon + 0.23); //TODO random array here
+		aBase->setLatitude(lat - 0.05); //TODO random array here
+		aBase->setDiscovered(true);
+		save->getAlienBases()->push_back(aBase);
+		//init the Game
+		gs->init();
+		//init Factions
+		for (std::vector<std::string>::const_iterator i = mod->getDiplomacyFactionList()->begin(); i != mod->getDiplomacyFactionList()->end(); ++i)
+		{
+			RuleDiplomacyFaction* factionRules = mod->getDiplomacyFaction(*i);
+			DiplomacyFaction* faction = new DiplomacyFaction(*factionRules);
+			if (factionRules->getDiscoverResearch().empty() || save->isResearched(mod->getResearch(factionRules->getDiscoverResearch())))
+			{
+				faction->setDiscovered(true);
+			}
+			faction->setReputation(factionRules->getStartingReputation());
+			save->getDiplomacyFactions().push_back(faction);
+		}
+		//start base defense mission
+		SavedBattleGame* bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
+		_game->getSavedGame()->setBattleGame(bgame);
+		bgame->setMissionType("STR_BASE_DEFENSE");
+		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+		bgen.setBase(base);
+		bgen.setAlienCustomDeploy(_game->getMod()->getDeployment("STR_INITIAL_BASE_DEFENSE"));
+		//bgen.setAlienRace("STR_INITIAL_BASE_DEFENSE_RACE");
+		bgen.setWorldShade(0);
+		bgen.run();
+		_game->pushState(new BriefingState(0, base));
+	}
+	else //vanilla
+	{
+		gs->init();
+		_game->pushState(new BuildNewBaseState(_game->getSavedGame()->getBases()->back(), gs->getGlobe(), true));
+	}
+	
 }
 
 /**
