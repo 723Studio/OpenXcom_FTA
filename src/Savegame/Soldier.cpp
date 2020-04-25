@@ -19,6 +19,7 @@
 #include <cmath>
 #include <algorithm>
 #include "Soldier.h"
+#include "../Engine/Collections.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Language.h"
 #include "../Engine/Options.h"
@@ -104,6 +105,7 @@ Soldier::~Soldier()
 	{
 		delete *i;
 	}
+	Collections::deleteAll(_personalEquipmentLayout);
 	delete _death;
 	delete _diary;
 }
@@ -180,6 +182,21 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 			}
 		}
 	}
+	if (const YAML::Node &layout = node["personalEquipmentLayout"])
+	{
+		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+		{
+			EquipmentLayoutItem *layoutItem = new EquipmentLayoutItem(*i);
+			if (mod->getInventory(layoutItem->getSlot()))
+			{
+				_personalEquipmentLayout.push_back(layoutItem);
+			}
+			else
+			{
+				delete layoutItem;
+			}
+		}
+	}
 	if (node["death"])
 	{
 		_death = new SoldierDeath();
@@ -247,6 +264,11 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	{
 		for (std::vector<EquipmentLayoutItem*>::const_iterator i = _equipmentLayout.begin(); i != _equipmentLayout.end(); ++i)
 			node["equipmentLayout"].push_back((*i)->save());
+	}
+	if (!_personalEquipmentLayout.empty())
+	{
+		for (std::vector<EquipmentLayoutItem*>::const_iterator i = _personalEquipmentLayout.begin(); i != _personalEquipmentLayout.end(); ++i)
+			node["personalEquipmentLayout"].push_back((*i)->save());
 	}
 	if (_death != 0)
 	{
@@ -1259,6 +1281,7 @@ void Soldier::die(SoldierDeath *death)
 	_healthMissing = 0;
 	_recovery = 0.0f;
 	clearEquipmentLayout();
+	Collections::deleteAll(_personalEquipmentLayout);
 }
 
 /**
@@ -1732,7 +1755,7 @@ const std::vector<const RuleSoldierBonus*> *Soldier::getBonuses(const Mod *mod)
 				return;
 			}
 
-			auto sort = [](const RuleSoldierBonus* l, const RuleSoldierBonus* r){ return l->getName() < r->getName(); };
+			auto sort = [](const RuleSoldierBonus* l, const RuleSoldierBonus* r){ return l->getListOrder() < r->getListOrder(); };
 
 			auto p = std::lower_bound(_bonusCache.begin(), _bonusCache.end(), b, sort);
 			if (p == _bonusCache.end() || *p != b)
