@@ -58,7 +58,7 @@ private:
 	Ufo *_ufo;
 	bool _ufoIsAttacking, _disableDisengage, _disableCautious, _craftIsDefenseless, _selfDestructPressed;
 	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax];
-	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];
+	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _hunterKillerBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];
 	bool _minimized, _endDogfight, _animatingHit, _waitForPoly, _waitForAltitude;
 	std::vector<CraftWeaponProjectile*> _projectiles;
 	static const int _ufoBlobs[8][13][13];

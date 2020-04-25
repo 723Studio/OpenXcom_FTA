@@ -1702,9 +1702,9 @@ protected:
 	/// Get value.
 	int getBase(size_t t) const;
 	/// Load values from yaml file.
-	void loadBase(const YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName);
+	void loadBase(const YAML::Node &node, const ScriptGlobal* shared, ArgEnum type);
 	/// Save values to yaml file.
-	void saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName) const;
+	void saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type) const;
 };
 
 /**
@@ -1718,14 +1718,14 @@ public:
 	using Parent = T;
 
 	/// Load values from yaml file.
-	void load(const YAML::Node &node, const ScriptGlobal* shared, const std::string& nodeName = "tags")
+	void load(const YAML::Node &node, const ScriptGlobal* shared)
 	{
-		loadBase(node, shared, Tag::type(), nodeName);
+		loadBase(node, shared, Tag::type());
 	}
 	/// Save values to yaml file.
-	void save(YAML::Node &node, const ScriptGlobal* shared, const std::string& nodeName = "tags") const
+	void save(YAML::Node &node, const ScriptGlobal* shared) const
 	{
-		saveBase(node, shared, Tag::type(), nodeName);
+		saveBase(node, shared, Tag::type());
 	}
 
 	/// Get value.

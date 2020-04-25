@@ -88,7 +88,6 @@ set ( battlescape_src
   Battlescape/InfoboxState.cpp
   Battlescape/Inventory.cpp
   Battlescape/InventoryLoadState.cpp
-  Battlescape/InventoryPersonalState.cpp
   Battlescape/InventorySaveState.cpp
   Battlescape/InventoryState.cpp
   Battlescape/ItemSprite.cpp

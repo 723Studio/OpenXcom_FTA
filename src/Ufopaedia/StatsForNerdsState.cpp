@@ -1742,7 +1742,6 @@ void StatsForNerdsState::initItemList()
 	addHeading("confAimed");
 	{
 		addInteger(ss, itemRule->getConfigAimed()->shots, "shots", 1);
-		addBoolean(ss, itemRule->getConfigAimed()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigAimed()->name, "name", "STR_AIMED_SHOT");
 		addInteger(ss, itemRule->getConfigAimed()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigAimed()->arcing, "arcing");
@@ -1752,7 +1751,6 @@ void StatsForNerdsState::initItemList()
 	addHeading("confAuto");
 	{
 		addInteger(ss, itemRule->getConfigAuto()->shots, "shots", 3);
-		addBoolean(ss, itemRule->getConfigAuto()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigAuto()->name, "name", "STR_AUTO_SHOT");
 		addInteger(ss, itemRule->getConfigAuto()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigAuto()->arcing, "arcing");
@@ -1762,7 +1760,6 @@ void StatsForNerdsState::initItemList()
 	addHeading("confSnap");
 	{
 		addInteger(ss, itemRule->getConfigSnap()->shots, "shots", 1);
-		addBoolean(ss, itemRule->getConfigSnap()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigSnap()->name, "name", "STR_SNAP_SHOT");
 		addInteger(ss, itemRule->getConfigSnap()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigSnap()->arcing, "arcing");
@@ -1772,7 +1769,6 @@ void StatsForNerdsState::initItemList()
 	addHeading("confMelee");
 	{
 		addInteger(ss, itemRule->getConfigMelee()->shots, "shots", 1);
-		addBoolean(ss, itemRule->getConfigMelee()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigMelee()->name, "name");
 		int ammoSlotCurrent = itemRule->getConfigMelee()->ammoSlot;
 		int ammoSlotDefault = itemBattleType == BT_MELEE ? 0 : RuleItem::AmmoSlotSelfUse;
@@ -2667,8 +2663,6 @@ void StatsForNerdsState::initFacilityList()
 	addInteger(ss, facilityRule->getPsiLaboratories(), "psiLabs");
 	addInteger(ss, facilityRule->getTrainingFacilities(), "trainingRooms");
 
-	addIntegerNauticalMiles(ss, facilityRule->getSightRange(), "sightRange");
-	addIntegerPercent(ss, facilityRule->getSightChance(), "sightChance");
 	addIntegerNauticalMiles(ss, facilityRule->getRadarRange(), "radarRange");
 	addIntegerPercent(ss, facilityRule->getRadarChance(), "radarChance");
 	addInteger(ss, facilityRule->getDefenseValue(), "defense");
@@ -3096,7 +3090,6 @@ void StatsForNerdsState::initUfoList()
 
 		addSection("{Exotic}", "", _white);
 		addInteger(ss, ufoRule->getMissilePower(), "missilePower");
-		addBoolean(ss, ufoRule->isUnmanned(), "unmanned");
 		addInteger(ss, ufoRule->getSplashdownSurvivalChance(), "splashdownSurvivalChance", 100);
 		addInteger(ss, ufoRule->getFakeWaterLandingChance(), "fakeWaterLandingChance", 0);
 

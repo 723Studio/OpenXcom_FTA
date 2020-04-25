@@ -55,7 +55,6 @@ private:
 	int _size, _buildCost, _refundValue, _buildTime, _monthlyCost;
 	std::map<std::string, std::pair<int, int> > _buildCostItems;
 	int _storage, _personnel, _aliens, _crafts, _labs, _workshops, _psiLabs;
-	int _sightRange, _sightChance;
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound;
 	std::string _mapName;
 	int _listOrder, _trainingRooms;
@@ -142,10 +141,6 @@ public:
 	int getWorkshops() const;
 	/// Gets the facility's psi-training capacity.
 	int getPsiLaboratories() const;
-	/// Gets the facility's sight range.
-	int getSightRange() const { return _sightRange; }
-	/// Gets the facility's alien base detection chance.
-	int getSightChance() const { return _sightChance; }
 	/// Gets the facility's radar range.
 	int getRadarRange() const;
 	/// Gets the facility's detection chance.

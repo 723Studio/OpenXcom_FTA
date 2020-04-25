@@ -2906,9 +2906,9 @@ int ScriptValuesBase::getBase(size_t t) const
 /**
  * Load values from yaml file.
  */
-void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName)
+void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shared, ArgEnum type)
 {
-	if (const YAML::Node& tags = node[nodeName])
+	if (const YAML::Node& tags = node["tags"])
 	{
 		if (tags.IsMap())
 		{
@@ -2934,7 +2934,7 @@ void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shar
 /**
  * Save values to yaml file.
  */
-void ScriptValuesBase::saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName) const
+void ScriptValuesBase::saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type) const
 {
 	YAML::Node tags;
 	for (size_t i = 1; i <= values.size(); ++i)
@@ -2947,7 +2947,7 @@ void ScriptValuesBase::saveBase(YAML::Node &node, const ScriptGlobal* shared, Ar
 			tags[data.name.substr(data.name.find('.') + 1u).toString()] = temp;
 		}
 	}
-	node[nodeName] = tags;
+	node["tags"] = tags;
 }
 
 ////////////////////////////////////////////////////////////

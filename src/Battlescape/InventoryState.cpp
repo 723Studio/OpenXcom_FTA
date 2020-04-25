@@ -19,7 +19,6 @@
 #include "InventoryState.h"
 #include "InventoryLoadState.h"
 #include "InventorySaveState.h"
-#include "InventoryPersonalState.h"
 #include <algorithm>
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
@@ -184,9 +183,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnArmorClickRight, Options::keyInventoryAvatar);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnInventoryLoadClick, Options::keyInventoryLoad);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnInventorySaveClick, Options::keyInventorySave);
-	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnCreatePersonalTemplateClick, Options::keyInvSavePersonalEquipment);
-	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnApplyPersonalTemplateClick, Options::keyInvLoadPersonalEquipment);
-	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnShowPersonalTemplateClick, Options::keyInvShowPersonalEquipment);
 	_btnOk->setTooltip("STR_OK");
 	_btnOk->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnOk->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
@@ -661,15 +657,9 @@ void InventoryState::saveEquipmentLayout()
  */
 void InventoryState::btnArmorClick(Action *action)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	// only allowed during base equipment
 	if (_base == 0)
 	{
+		// equipment just before mission or during the mission
 		return;
 	}
 
@@ -699,15 +689,9 @@ void InventoryState::btnArmorClick(Action *action)
  */
 void InventoryState::btnArmorClickRight(Action *action)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	// only allowed during base equipment
 	if (_base == 0)
 	{
+		// equipment just before mission or during the mission
 		return;
 	}
 
@@ -736,12 +720,6 @@ void InventoryState::btnArmorClickRight(Action *action)
 */
 void InventoryState::btnArmorClickMiddle(Action *action)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
 	BattleUnit *unit = _inv->getSelectedUnit();
 	if (unit != 0)
 	{
@@ -864,9 +842,9 @@ bool InventoryState::loadGlobalLayoutArmor(int index)
 */
 void InventoryState::btnGlobalEquipmentLayoutClick(Action *action)
 {
-	// cannot use this feature during the mission!
 	if (_tu)
 	{
+		// cannot use this feature during the mission!
 		return;
 	}
 
@@ -909,15 +887,9 @@ void InventoryState::btnGlobalEquipmentLayoutClick(Action *action)
 */
 void InventoryState::btnInventoryLoadClick(Action *)
 {
-	// cannot use this feature during the mission!
 	if (_tu)
 	{
-		return;
-	}
-
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
+		// cannot use this feature during the mission!
 		return;
 	}
 
@@ -930,12 +902,6 @@ void InventoryState::btnInventoryLoadClick(Action *)
 */
 void InventoryState::btnInventorySaveClick(Action *)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
 	_game->pushState(new InventorySaveState(this));
 }
 
@@ -945,12 +911,6 @@ void InventoryState::btnInventorySaveClick(Action *)
  */
 void InventoryState::btnUfopaediaClick(Action *)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
 	Ufopaedia::open(_game);
 }
 
@@ -1089,12 +1049,6 @@ void InventoryState::btnGroundClick(Action *action)
  */
 void InventoryState::btnRankClick(Action *)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
 	_game->pushState(new UnitInfoState(_battleGame->getSelectedUnit(), _parent, true, false));
 }
 
@@ -1133,40 +1087,6 @@ void InventoryState::btnCreateTemplateClick(Action *)
 	// give audio feedback
 	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
 	refreshMouse();
-}
-
-void InventoryState::btnCreatePersonalTemplateClick(Action *)
-{
-	// cannot use this feature during the mission!
-	if (_tu)
-	{
-		return;
-	}
-
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	auto unit = _battleGame->getSelectedUnit();
-	if (unit && unit->getGeoscapeSoldier())
-	{
-		auto& personalTemplate = *unit->getGeoscapeSoldier()->getPersonalEquipmentLayout();
-
-		// clear current personal template
-		_clearInventoryTemplate(personalTemplate);
-
-		// create new personal template
-		_createInventoryTemplate(personalTemplate);
-
-		// give visual feedback
-		_inv->showWarning(tr("STR_PERSONAL_EQUIPMENT_SAVED"));
-
-		// give audio feedback
-		_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
-		refreshMouse();
-	}
 }
 
 void InventoryState::_applyInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
@@ -1335,52 +1255,6 @@ void InventoryState::btnApplyTemplateClick(Action *)
 
 	// give audio feedback
 	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
-}
-
-void InventoryState::btnApplyPersonalTemplateClick(Action *)
-{
-	// cannot use this feature during the mission!
-	if (_tu)
-	{
-		return;
-	}
-
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	auto unit = _battleGame->getSelectedUnit();
-	if (unit && unit->getGeoscapeSoldier())
-	{
-		auto& personalTemplate = *unit->getGeoscapeSoldier()->getPersonalEquipmentLayout();
-
-		_applyInventoryTemplate(personalTemplate);
-
-		// refresh ui
-		_inv->arrangeGround();
-		updateStats();
-		refreshMouse();
-
-		// give audio feedback
-		_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
-	}
-}
-
-void InventoryState::btnShowPersonalTemplateClick(Action *)
-{
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	auto unit = _battleGame->getSelectedUnit();
-	if (unit && unit->getGeoscapeSoldier())
-	{
-		_game->pushState(new InventoryPersonalState(unit->getGeoscapeSoldier()));
-	}
 }
 
 void InventoryState::refreshMouse()

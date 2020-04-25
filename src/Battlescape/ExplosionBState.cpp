@@ -328,10 +328,7 @@ void ExplosionBState::init()
 			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi)); // Don't burn the tile
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
-		if (_parent->getMap()->getFollowProjectile())
-		{
-			_parent->getMap()->getCamera()->setViewLevel(_center.z / 24);
-		}
+		_parent->getMap()->getCamera()->setViewLevel(_center.z / 24);
 
 		if (_targetPsiOrHit && _parent->getSave()->getSide() == FACTION_HOSTILE && _targetPsiOrHit->getFaction() == FACTION_PLAYER)
 		{

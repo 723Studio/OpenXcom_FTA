@@ -244,7 +244,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_state(state), _craft(craft), _ufo(ufo),
 	_ufoIsAttacking(ufoIsAttacking), _disableDisengage(false), _disableCautious(false), _craftIsDefenseless(false), _selfDestructPressed(false),
 	_timeout(50), _currentDist(640), _targetDist(560),
-	_end(false), _endUfoHandled(false), _endCraftHandled(false), _ufoBreakingOff(false), _destroyUfo(false), _destroyCraft(false),
+	_end(false), _endUfoHandled(false), _endCraftHandled(false), _ufoBreakingOff(false), _hunterKillerBreakingOff(false), _destroyUfo(false), _destroyCraft(false),
 	_minimized(false), _endDogfight(false), _animatingHit(false), _waitForPoly(false), _waitForAltitude(false), _ufoSize(0), _craftHeight(0), _currentCraftDamageColor(0),
 	_interceptionNumber(0), _interceptionsCount(0), _x(0), _y(0), _minimizedIconX(0), _minimizedIconY(0), _firedAtLeastOnce(false), _experienceAwarded(false),
 	_delayedRecolorDone(false)
@@ -295,23 +295,6 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 		if (_weaponNum == 0)
 		{
 			_disableCautious = true;
-		}
-		// make sure the HK attacks its primary target first!
-		{
-			Craft* target = dynamic_cast<Craft*>(_ufo->getDestination());
-			if (target)
-			{
-				if (_craft != target)
-				{
-					// push secondary targets a tiny bit away from the HK
-					_currentDist += 16;
-				}
-				else
-				{
-					// approach primary target at maximum approach speed
-					_pilotApproachSpeedModifier = 4;
-				}
-			}
 		}
 	}
 
@@ -962,9 +945,10 @@ void DogfightState::update()
 				if (escapeCounter == 0)
 				{
 					_ufo->setSpeed(_ufo->getCraftStats().speedMax);
-					if (_ufoIsAttacking && _ufo->isHunterKiller())
+					if (_ufoIsAttacking && !_hunterKillerBreakingOff)
 					{
 						// stop being a hunter-killer and run away!
+						_hunterKillerBreakingOff = true;
 						_ufo->resetOriginalDestination(_craft);
 						_ufo->setHunterKiller(false);
 					}
@@ -980,7 +964,7 @@ void DogfightState::update()
 	int speedMinusTractors = std::max(0, _ufo->getSpeed() - _ufo->getTractorBeamSlowdown());
 	if (speedMinusTractors > _craft->getCraftStats().speedMax)
 	{
-		if (!_ufoIsAttacking || !_ufo->isHunterKiller())
+		if (!_ufoIsAttacking || _hunterKillerBreakingOff)
 		{
 			_ufoBreakingOff = true;
 			finalRun = true;
@@ -1606,10 +1590,6 @@ void DogfightState::update()
 				{
 					survived = false; // destroyed on fake water
 				}
-			}
-			if (_ufo->getRules()->isUnmanned())
-			{
-				survived = false; // unmanned UFOs (drones, missiles, etc.) can't be forced to land
 			}
 			if (!survived) // Brought it down over water (and didn't survive splashdown)
 			{

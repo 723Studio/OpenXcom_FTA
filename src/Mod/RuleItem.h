@@ -193,7 +193,6 @@ struct RuleItemAction
 	int accuracy = 0;
 	int range = 0;
 	int shots = 1;
-	bool followProjectiles = true;
 	int ammoSlot = 0;
 	RuleItemUseCost cost;
 	RuleItemUseCost flat;
