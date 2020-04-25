@@ -41,7 +41,7 @@ Sound *Window::soundPopup[3];
  * @param popup Popup animation.
  */
 Window::Window(State *state, int width, int height, int x, int y, WindowPopup popup) : Surface(width, height, x, y),
-	_dx(-x), _dy(-y), _bg(0), _color(0), _popup(popup), _popupStep(0.0), _state(state), _contrast(false), _screen(false), _thinBorder(false), _innerColor(0)
+	_dx(-x), _dy(-y), _bg(0), _color(0), _popup(popup), _popupStep(0.0), _state(state), _contrast(false), _screen(false), _thinBorder(false), _innerColor(0), _vThinBorder(false)
 {
 	_timer = new Timer(10);
 	_timer->onTimer((SurfaceHandler)&Window::popup);
@@ -228,6 +228,32 @@ void Window::draw()
 			}
 		}
 	}
+	else if (_vThinBorder)
+	{
+		for (int i = 0; i < 3; ++i)
+		{
+			drawRect(&square, color);
+			if (i < 2)
+				color -= 1 * mul;
+			else
+				color += 1 * mul;
+			square.x++;
+			square.y++;
+			if (square.w >= 2)
+				square.w -= 2;
+			else
+				square.w = 1;
+
+			if (square.h >= 2)
+				square.h -= 2;
+			else
+				square.h = 1;
+		}
+		if (_innerColor != 0)
+		{
+			drawRect(&square, _innerColor);
+		}
+	}
 	else
 	{
 		for (int i = 0; i < 5; ++i)
@@ -292,6 +318,17 @@ void Window::setDY(int dy)
 void Window::setThinBorder()
 {
 	_thinBorder = true;
+}
+/**
+ * Changes the window to have a oe pixel wide border.
+ */
+void Window::setVeryThinBorder()
+{
+	_vThinBorder = true;
+	if (_thinBorder)
+	{
+		_thinBorder = false;
+	}
 }
 
 /**

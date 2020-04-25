@@ -36,6 +36,9 @@
 #include "../Battlescape/BriefingState.h"
 #include "../Geoscape/BaseNameState.h"
 #include "../Savegame/AlienBase.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Mod/RuleDiplomacyFaction.h"
+#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -177,6 +180,7 @@ void NewGameState::btnOkClick(Action *)
 
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
+
 	//choose the game scenario
 	if (_game->getMod()->getIsFTAGame())
 	{
@@ -204,6 +208,18 @@ void NewGameState::btnOkClick(Action *)
 		save->getAlienBases()->push_back(aBase);
 		//init the Game
 		gs->init();
+		//init Factions
+		for (std::vector<std::string>::const_iterator i = mod->getDiplomacyFactionList()->begin(); i != mod->getDiplomacyFactionList()->end(); ++i)
+		{
+			RuleDiplomacyFaction* factionRules = mod->getDiplomacyFaction(*i);
+			DiplomacyFaction* faction = new DiplomacyFaction(*factionRules);
+			if (factionRules->getDiscoverResearch().empty() || save->isResearched(mod->getResearch(factionRules->getDiscoverResearch())))
+			{
+				faction->setDiscovered(true);
+			}
+			faction->setReputation(factionRules->getStartingReputation());
+			save->getDiplomacyFactions().push_back(faction);
+		}
 		//start base defense mission
 		SavedBattleGame* bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
 		_game->getSavedGame()->setBattleGame(bgame);

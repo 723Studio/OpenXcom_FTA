@@ -1107,6 +1107,21 @@
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="FTA\DiplomacyStartState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacySellState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacyPurchaseState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RuleDiplomacyFaction.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\DiplomacyFaction.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2272,6 +2287,21 @@
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h">
       <Filter>Mod</Filter>
     </ClInclude>
+    <ClInclude Include="FTA\DiplomacyStartState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacySellState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacyPurchaseState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleDiplomacyFaction.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\DiplomacyFaction.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Geoscape">
@@ -2306,6 +2336,9 @@
     </Filter>
     <Filter Include="Mod">
       <UniqueIdentifier>{ea5b1e9f-9ff1-457d-9a15-5af8773ccb50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FTA">
+      <UniqueIdentifier>{9a188ad3-ed60-4de5-9646-633cddf63dee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

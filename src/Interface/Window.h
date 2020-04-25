@@ -48,7 +48,7 @@ private:
 	double _popupStep;
 	Timer *_timer;
 	State *_state;
-	bool _contrast, _screen, _thinBorder;
+	bool _contrast, _screen, _thinBorder, _vThinBorder;
 	Uint8 _innerColor;
 public:
 	static Sound *soundPopup[3];
@@ -76,6 +76,8 @@ public:
 	void setDY(int dy);
 	/// Give this window a thin border.
 	void setThinBorder();
+	/// Give this window a one pisxel border.
+	void setVeryThinBorder();
 	/// Give this window a custom inner color.
 	void setInnerColor(Uint8 innerColor);
 };
