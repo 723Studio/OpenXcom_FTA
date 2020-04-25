@@ -372,12 +372,6 @@ void ProjectileFlyBState::init()
 
 	if (createNewProjectile())
 	{
-		auto conf = weapon->getActionConf(_action.type);
-		if (_parent->getMap()->isAltPressed() || (conf && !conf->followProjectiles))
-		{
-			// temporarily turn off camera following projectiles to prevent annoying flashing effects (e.g. on minigun-like weapons)
-			_parent->getMap()->setFollowProjectile(false);
-		}
 		if (_range == 0) _action.spendTU();
 		_parent->getMap()->setCursorType(CT_NONE);
 		_parent->getMap()->getCamera()->stopMouseScrolling();
@@ -593,7 +587,6 @@ void ProjectileFlyBState::think()
 		}
 		else
 		{
-			_parent->getMap()->setFollowProjectile(true); // turn back on when done shooting
 			if (_action.cameraPosition.z != -1 && _action.waypoints.size() <= 1)
 			{
 				_parent->getMap()->getCamera()->setMapOffset(_action.cameraPosition);

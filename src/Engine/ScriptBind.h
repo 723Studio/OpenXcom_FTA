@@ -1221,15 +1221,15 @@ struct Bind : BindBase
 			parser->addParser<helper::FuncGroup<helper::BindEq<Tag>>>("test_eq", BindBase::functionInvisible);
 		}
 	}
-	template<auto MemPtr0, auto... MemPtrR>
+	template<auto X>
 	void addScriptValue(bool canEdit = true)
 	{
-		using TagValues = helper::BindMemberFinalType<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>;
+		using TagValues = helper::BindMemberFinalType<T, MACRO_CLANG_AUTO_HACK(X)>;
 		addScriptTag<TagValues>();
-		addCustomFunc<helper::BindPropCustomGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName("getTag"), "Get tag of " + prefix);
+		addCustomFunc<helper::BindPropCustomGet<T, MACRO_CLANG_AUTO_HACK(X)>>(getName("getTag"), "Get tag of " + prefix);
 		if (canEdit)
 		{
-			addCustomFunc<helper::BindPropCustomSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName("setTag"), "Set tag of " + prefix);
+			addCustomFunc<helper::BindPropCustomSet<T, MACRO_CLANG_AUTO_HACK(X)>>(getName("setTag"), "Set tag of " + prefix);
 		}
 	}
 	template<std::string (*X)(const T*)>

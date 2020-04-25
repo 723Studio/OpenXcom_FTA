@@ -1107,8 +1107,6 @@
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
-    <ClCompile Include="Battlescape\InventoryPersonalState.cpp">
-      <Filter>Battlescape</Filter>
     <ClCompile Include="FTA\DiplomacyStartState.cpp">
       <Filter>FTA</Filter>
     </ClCompile>
@@ -2289,8 +2287,6 @@
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h">
       <Filter>Mod</Filter>
     </ClInclude>
-    <ClInclude Include="Battlescape\InventoryPersonalState.h">
-      <Filter>Battlescape</Filter>
     <ClInclude Include="FTA\DiplomacyStartState.h">
       <Filter>FTA</Filter>
     </ClInclude>
