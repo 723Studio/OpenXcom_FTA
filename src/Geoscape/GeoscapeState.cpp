@@ -51,7 +51,6 @@
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleMissionScript.h"
-#include "../Savegame/DiplomacyFaction.h"
 #include "../Savegame/Waypoint.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/Soldier.h"
@@ -70,7 +69,6 @@
 #include "../Menu/ErrorMessageState.h"
 #include "GraphsState.h"
 #include "FundingState.h"
-#include "../FTA/DiplomacyStartState.h"
 #include "MonthlyReportState.h"
 #include "ProductionCompleteState.h"
 #include "UfoDetectedState.h"
@@ -2527,9 +2525,6 @@ void GeoscapeState::time1Day()
 		}
 	}
 
-	//handle daily Faction logic
-	for (auto faction : saveGame->getDiplomacyFactions()) { bool answer = faction->think(*_game,TIMESTEP_DAILY); if (answer){ bool success = processCommand(mod->getMissionScript(faction->getCommandType())); } }
-
 	// check and interrupt alien missions if necessary (based on discovered research)
 	for (auto am : saveGame->getAlienMissions())
 	{
@@ -2910,7 +2905,7 @@ void GeoscapeState::btnFundingClick(Action *)
 	{
 		return;
 	}
-	else if (_game->getMod()->getIsFTAGame()) {_game->pushState(new DiplomacyStartState(0, true));} else {_game->pushState(new FundingState);}	
+	_game->pushState(new FundingState);
 }
 
 /**
