@@ -651,7 +651,7 @@ void CovertOperationEquipmentState::moveRight()
 /**
 * Moves the given number of items (selected) to the craft.
 * @param change Item difference.
-* @param suppressErrors Suppress error messages?
+* @param suppressErrors Suppress error messages? (usually used to handle right-click)
 */
 void CovertOperationEquipmentState::moveRightByValue(int change, bool suppressErrors)
 {
@@ -662,11 +662,13 @@ void CovertOperationEquipmentState::moveRightByValue(int change, bool suppressEr
 	double sumAdd = _totalItems + item->getSize() * change;
 	if (_rule->getItemSpaceLimit() >= 0 && sumAdd > _rule->getItemSpaceLimit())
 	{
+		// get free space and divide into item size
 		change = (_rule->getItemSpaceLimit() - _totalItems) / item->getSize();
+		// check double right-click
 		if (!suppressErrors || (suppressErrors && baseItemsCount>0 && change == 0))
 		{
 			_timerRight->stop();
-			LocalizedText msg(tr("STR_NO_MORE_EQUIPMENT_ALLOWED", _rule->getItemSpaceLimit()));
+			LocalizedText msg (tr("STR_NO_MORE_EQUIPMENT_ALLOWED", _rule->getItemSpaceLimit()));
 			_game->pushState
 			(
 				new ErrorMessageState
