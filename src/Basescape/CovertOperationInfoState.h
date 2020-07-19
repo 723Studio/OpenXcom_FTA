@@ -40,7 +40,7 @@ namespace OpenXcom
 	class CovertOperationInfoState : public State
 	{
 	private:
-		TextButton* _btnOk, * _btnTerminate;
+		TextButton* _btnOk;
 		Window* _window;
 		Text* _txtTitle, * _txtScientists, * _txtEngineers, * _txtDungeonLevel, * _txtProgress, * _txtSoldiers, * _txtAditionalInfo;
 		TextList* _lstSoldiers, * _lstAditionalInfo;
@@ -61,25 +61,4 @@ namespace OpenXcom
 		void fillSoldiersList();
 		void fillAditionalInfoList();
 	};
-
-	class CovertOperationConfirmTerminateState : public State
-	{
-	private:
-		TextButton* _btnOk, * _btnCancel;
-		Window* _window;
-		Text* _txtText;
-		CovertOperation* _operation;
-	public:
-		/// Creates the Tech Tree Viewer state.
-		CovertOperationConfirmTerminateState(CovertOperation* operation);
-		/// Cleans up the Tech Tree Viewer state.
-		~CovertOperationConfirmTerminateState();
-		/// Handler for clicking the OK button.
-		void btnOkClick(Action* action);
-		/// Handler for clicking the New button.
-		void btnCancelClick(Action* action);
-	};
-
-
-
 }
