@@ -55,6 +55,7 @@ namespace OpenXcom
 		void btnOkClick(Action* action);
 		/// Handler for clicking the New button.
 		void btnTerminateClick(Action* action);
+		void lstSoldiersClick(Action* action);
 		// init class
 		void init() override;
 

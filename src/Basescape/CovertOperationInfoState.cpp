@@ -30,6 +30,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/Base.h"
+#include "SoldierInfoState.h"
 #include <algorithm>
 #include <unordered_set>
 
@@ -50,8 +51,8 @@ namespace OpenXcom
 		_txtProgress = new Text(150, 9, 164, 30);
 		_txtSoldiers = new Text(150, 9, 8, 40);
 		_txtAditionalInfo = new Text(150, 9, 164, 40);
-		_lstSoldiers = new TextList(148, 112, 8, 50);
-		_lstAditionalInfo = new TextList(148, 112, 164, 50);
+		_lstSoldiers = new TextList(148, 120, 8, 50);
+		_lstAditionalInfo = new TextList(148, 112, 120, 50);
 		_btnOk = new TextButton(304, 16, 8, 176);
 
 		// Set palette
@@ -90,6 +91,7 @@ namespace OpenXcom
 		_lstSoldiers->setBackground(_window);
 		_lstSoldiers->setMargin(2);
 		_lstSoldiers->setWordWrap(true);
+		_lstSoldiers->onMouseClick((ActionHandler)&CovertOperationInfoState::lstSoldiersClick);
 		fillSoldiersList();
 
 		_txtAditionalInfo->setText(tr("STR_ADITIONALINFO"));
@@ -125,6 +127,21 @@ namespace OpenXcom
 	void CovertOperationInfoState::btnOkClick(Action*)
 	{
 		_game->popState();
+	}
+
+	/**
+ * Shows the selected soldier's info.
+ * @param action Pointer to an action.
+ */
+	void CovertOperationInfoState::lstSoldiersClick(Action* action)
+	{
+		double mx = action->getAbsoluteXMouse();
+		if (mx >= _lstSoldiers->getArrowsLeftEdge() && mx < _lstSoldiers->getArrowsRightEdge())
+		{
+			return;
+		}
+
+		_game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow()));
 	}
 
 	void CovertOperationInfoState::fillSoldiersList()
