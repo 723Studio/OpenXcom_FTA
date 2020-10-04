@@ -2253,26 +2253,38 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 	std::vector<BattleUnit*>::iterator unit = _save->getUnits()->begin();
 	while (unit != _save->getUnits()->end())
 	{
-		if (!(*unit)->isSummonedPlayerUnit())
+		bool vip = false;
+		if ((*unit)->getUnitRules() != 0)
 		{
-			++unit;
+			vip = (*unit)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+		}
+		if (!vip)
+		{
+			if (!(*unit)->isSummonedPlayerUnit() && !vip)
+			{
+				++unit;
+			}
+			else
+			{
+				if ((*unit)->getStatus() != STATUS_DEAD && (*unit)->getUnitRules())
+				{
+					if (!(*unit)->getUnitRules()->getCivilianRecoveryType().empty())
+					{
+						resummonAsCivilians.push_back((*unit)->getUnitRules());
+					}
+				}
+
+				if ((*unit)->getStatus() == STATUS_UNCONSCIOUS || (*unit)->getStatus() == STATUS_DEAD)
+					_save->removeUnconsciousBodyItem((*unit));
+
+				(*unit)->setTile(nullptr, _save);
+				delete (*unit);
+				unit = _save->getUnits()->erase(unit);
+			}
 		}
 		else
 		{
-			if ((*unit)->getStatus() != STATUS_DEAD && (*unit)->getUnitRules())
-			{
-				if (!(*unit)->getUnitRules()->getCivilianRecoveryType().empty())
-				{
-					resummonAsCivilians.push_back((*unit)->getUnitRules());
-				}
-			}
-
-			if ((*unit)->getStatus() == STATUS_UNCONSCIOUS || (*unit)->getStatus() == STATUS_DEAD)
-				_save->removeUnconsciousBodyItem((*unit));
-
-			(*unit)->setTile(nullptr, _save);
-			delete (*unit);
-			unit = _save->getUnits()->erase(unit);
+			++unit;
 		}
 	}
 
@@ -2743,6 +2755,11 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 		//TODO: add handling of stunned units for display purposes in AbortMissionState
 		if (!(*j)->isOut() && !(*j)->isOutThresholdExceed())
 		{
+			bool vip = false;
+			if ((*j)->getGeoscapeSoldier() == 0)
+			{
+				vip = (*j)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+			}
 			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
 			{
 				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER)
@@ -2758,9 +2775,9 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 					tally.liveAliens++;
 				}
 			}
-			else if ((*j)->getOriginalFaction() == FACTION_PLAYER)
+			else if ((*j)->getOriginalFaction() == FACTION_PLAYER || vip)
 			{
-				if ((*j)->isSummonedPlayerUnit())
+				if ((*j)->isSummonedPlayerUnit() && !vip)
 					continue;
 
 				if ((*j)->isInExitArea(START_POINT))

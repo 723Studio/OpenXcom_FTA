@@ -55,6 +55,7 @@
 #include "../Mod/RuleInterface.h"
 #include "../Mod/Mod.h"
 #include "../Engine/Logger.h"
+#include "../FTA/MasterMind.h"
 
 namespace OpenXcom
 {
@@ -1405,6 +1406,7 @@ void DogfightState::update()
 
 	if (!_end)
 	{
+		int score = _ufo->getRules()->getScore();
 		if (_endCraftHandled)
 		{
 			finalRun = true;
@@ -1482,16 +1484,16 @@ void DogfightState::update()
 					}
 				}
 			}
-
 			if (_ufo->isDestroyed())
 			{
 				if (_ufo->getShotDownByCraftId() == _craft->getUniqueId())
 				{
+					_game->getMasterMind()->updateLoyalty(score * 2, XCOM_DOGFIGHT);
 					for (std::vector<Country*>::iterator country = _game->getSavedGame()->getCountries()->begin(); country != _game->getSavedGame()->getCountries()->end(); ++country)
 					{
 						if ((*country)->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))
 						{
-							(*country)->addActivityXcom(_ufo->getRules()->getScore()*2);
+							(*country)->addActivityXcom(score * 2);
 							break;
 						}
 					}
@@ -1499,7 +1501,7 @@ void DogfightState::update()
 					{
 						if ((*region)->getRules()->insideRegion(_ufo->getLongitude(), _ufo->getLatitude()))
 						{
-							(*region)->addActivityXcom(_ufo->getRules()->getScore()*2);
+							(*region)->addActivityXcom(score * 2);
 							break;
 						}
 					}
@@ -1514,11 +1516,12 @@ void DogfightState::update()
 				{
 					setStatus("STR_UFO_CRASH_LANDS");
 					_game->getMod()->getSound("GEO.CAT", Mod::UFO_CRASH)->play(); //10
+					_game->getMasterMind()->updateLoyalty(score, XCOM_DOGFIGHT);
 					for (std::vector<Country*>::iterator country = _game->getSavedGame()->getCountries()->begin(); country != _game->getSavedGame()->getCountries()->end(); ++country)
 					{
 						if ((*country)->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))
 						{
-							(*country)->addActivityXcom(_ufo->getRules()->getScore());
+							(*country)->addActivityXcom(score);
 							break;
 						}
 					}
@@ -1526,7 +1529,7 @@ void DogfightState::update()
 					{
 						if ((*region)->getRules()->insideRegion(_ufo->getLongitude(), _ufo->getLatitude()))
 						{
-							(*region)->addActivityXcom(_ufo->getRules()->getScore());
+							(*region)->addActivityXcom(score);
 							break;
 						}
 					}
@@ -1615,6 +1618,7 @@ void DogfightState::update()
 				_ufo->setSpeed(0);
 				_ufo->setStatus(Ufo::DESTROYED);
 				_destroyUfo = true;
+				_game->getMasterMind()->updateLoyalty(score, XCOM_DOGFIGHT);
 				for (std::vector<Country*>::iterator country = _game->getSavedGame()->getCountries()->begin(); country != _game->getSavedGame()->getCountries()->end(); ++country)
 				{
 					if ((*country)->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))

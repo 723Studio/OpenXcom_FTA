@@ -29,7 +29,7 @@ namespace OpenXcom
  */
 RuleArcScript::RuleArcScript(const std::string& type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _executionOdds(100), _maxArcs(-1), _minDifficulty(0), _maxDifficulty(4),
-	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX)
+	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX)
 {
 }
 
@@ -64,6 +64,8 @@ void RuleArcScript::load(const YAML::Node& node)
 	_maxDifficulty = node["maxDifficulty"].as<int>(_maxDifficulty);
 	_minScore = node["minScore"].as<int>(_minScore);
 	_maxScore = node["maxScore"].as<int>(_maxScore);
+	_minLoyalty = node["minLoyalty"].as<int>(_minLoyalty);
+	_maxLoyalty = node["maxLoyalty"].as<int>(_maxLoyalty);
 	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
 	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
 	_researchTriggers = node["researchTriggers"].as<std::map<std::string, bool> >(_researchTriggers);

@@ -25,6 +25,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/ScriptBind.h"
 #include "Craft.h"
+#include "../Savegame/CovertOperation.h"
 #include "EquipmentLayoutItem.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
@@ -50,7 +51,7 @@ namespace OpenXcom
  */
 Soldier::Soldier(RuleSoldier *rules, Armor *armor, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0),
 	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0),
 	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
@@ -245,6 +246,10 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	if (_craft != 0)
 	{
 		node["craft"] = _craft->saveId();
+	}
+	if (_covertOperation != 0)
+	{
+		node["covertOperation"] = _covertOperation->getOperationName();
 	}
 	node["gender"] = (int)_gender;
 	node["look"] = (int)_look;
@@ -466,9 +471,13 @@ std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& 
 		}
 		s = ss.str();
 	}
-	else if (_craft == 0)
+	else if (_craft == 0 && _covertOperation == 0)
 	{
 		s = lang->getString("STR_NONE_UC");
+	}
+	else if (_craft == 0)
+	{
+		s = lang->getString("STR_COVERT_OPERATION_UC");
 	}
 	else
 	{
@@ -1288,6 +1297,7 @@ void Soldier::die(SoldierDeath *death)
 
 	// Clean up associations
 	_craft = 0;
+	_covertOperation = 0;
 	_psiTraining = false;
 	_training = false;
 	_returnToTrainingWhenHealed = false;

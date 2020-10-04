@@ -79,6 +79,8 @@
 #include "RuleManufactureShortcut.h"
 #include "ExtraStrings.h"
 #include "RuleInterface.h"
+#include "RuleDiplomacyFaction.h"
+#include "RuleCovertOperation.h"
 #include "RuleArcScript.h"
 #include "RuleEventScript.h"
 #include "RuleEvent.h"
@@ -335,6 +337,8 @@ Mod::Mod() :
 	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8),
 	_noLOSAccuracyPenaltyGlobal(-1),
 	_surrenderMode(0),
+	_ftaGame(false), _researchTreeDisabled(false),
+	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100),
 	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
 	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
 	_loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"),
@@ -350,7 +354,7 @@ Mod::Mod() :
 	_tuRecoveryWakeUpNewTurn(100), _shortRadarRange(0), _buildTimeReductionScaling(100),
 	_defeatScore(0), _defeatFunds(0), _difficultyDemigod(false), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
 	_baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
-	_facilityListOrder(0), _craftListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
+	_facilityListOrder(0), _craftListOrder(0), _covertOperationListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
 	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
 	_modCurrent(0), _statePalette(0)
 {
@@ -675,6 +679,14 @@ Mod::~Mod()
 		delete i->second;
 	}
 	for (std::map<std::string, RuleMusic *>::const_iterator i = _musicDefs.begin(); i != _musicDefs.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RuleDiplomacyFaction*>::const_iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RuleCovertOperation*>::const_iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
 	{
 		delete i->second;
 	}
@@ -2353,7 +2365,9 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_alienFuel = doc["alienFuel"].as<std::pair<std::string, int> >(_alienFuel);
 	_fontName = doc["fontName"].as<std::string>(_fontName);
 	_psiUnlockResearch = doc["psiUnlockResearch"].as<std::string>(_psiUnlockResearch);
+	_ufopaediaUnlockResearch = doc["ufopaediaUnlockResearch"].as<std::string>(_ufopaediaUnlockResearch);
 	_fakeUnderwaterBaseUnlockResearch = doc["fakeUnderwaterBaseUnlockResearch"].as<std::string>(_fakeUnderwaterBaseUnlockResearch);
+	_baseConstructionUnlockResearch = doc["baseConstructionUnlockResearch"].as<std::string>(_baseConstructionUnlockResearch);
 	_destroyedFacility = doc["destroyedFacility"].as<std::string>(_destroyedFacility);
 
 	_aiUseDelayGrenade = doc["turnAIUseGrenade"].as<int>(_aiUseDelayGrenade);
@@ -2396,6 +2410,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_bughuntRank = doc["bughuntRank"].as<int>(_bughuntRank);
 	_bughuntLowMorale = doc["bughuntLowMorale"].as<int>(_bughuntLowMorale);
 	_bughuntTimeUnitsLeft = doc["bughuntTimeUnitsLeft"].as<int>(_bughuntTimeUnitsLeft);
+	_ftaGame = doc["ftaGame"].as<bool>(_ftaGame);
+	_researchTreeDisabled = doc["researchTreeDisabled"].as<bool>(_researchTreeDisabled);
 
 
 	if (const YAML::Node &nodeMana = doc["mana"])
@@ -2415,6 +2431,16 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		_healthReplenishAfterMission = nodeHealth["replenishAfterMission"].as<bool>(_healthReplenishAfterMission);
 	}
 
+	if (const YAML::Node& nodeLoyalty = doc["loyaltySettings"])
+	{
+		_coefBattlescape = nodeLoyalty["coefBattlescape"].as<int>(_coefBattlescape);
+		_coefGeoscape = nodeLoyalty["coefGeoscape"].as<int>(_coefGeoscape);
+		_coefDogfight = nodeLoyalty["coefDogfight"].as<int>(_coefDogfight);
+		_coefResearch = nodeLoyalty["coefResearch"].as<int>(_coefResearch);
+		_coefAlienMission = nodeLoyalty["coefAlienMission"].as<int>(_coefAlienMission);
+		_coefUfo = nodeLoyalty["coefUfo"].as<int>(_coefUfo);
+		_coefAlienBase = nodeLoyalty["coefAlienBase"].as<int>(_coefAlienBase);
+	}
 
 	if (const YAML::Node &nodeGameOver = doc["gameOver"])
 	{
@@ -2608,6 +2634,25 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 			ExtraStrings *extraStrings = new ExtraStrings();
 			extraStrings->load(*i);
 			_extraStrings[type] = extraStrings;
+		}
+	}
+
+	for (YAML::const_iterator i = doc["diplomacyFactions"].begin(); i != doc["diplomacyFactions"].end(); ++i)
+	{
+		RuleDiplomacyFaction* rule = loadRule(*i, &_diplomacyFactions, &_diplomacyFactionIndex, "name");
+		if (rule != 0)
+		{
+			rule->load(*i);
+		}
+	}
+
+	for (YAML::const_iterator i = doc["covertOperations"].begin(); i != doc["covertOperations"].end(); ++i)
+	{
+		RuleCovertOperation* rule = loadRule(*i, &_covertOperations, &_covertOperationIndex, "name");
+		if (rule != 0)
+		{
+			_covertOperationListOrder += 100;
+			rule->load(*i, this, _covertOperationListOrder);
 		}
 	}
 
@@ -4195,6 +4240,26 @@ RuleVideo *Mod::getVideo(const std::string &id, bool error) const
 const std::map<std::string, RuleMusic *> *Mod::getMusic() const
 {
 	return &_musicDefs;
+}
+
+RuleDiplomacyFaction* Mod::getDiplomacyFaction(const std::string& name, bool error) const
+{
+	return getRule(name, "Diplomacy Faction", _diplomacyFactions, error);
+}
+
+const std::vector<std::string>* Mod::getDiplomacyFactionList() const
+{
+	return &_diplomacyFactionIndex;
+}
+
+RuleCovertOperation* Mod::getCovertOperation(const std::string& name, bool error) const
+{
+	return getRule(name, "Covert Operation", _covertOperations, error);
+}
+
+const std::vector<std::string>* Mod::getCovertOperationList() const
+{
+	return &_covertOperationIndex;
 }
 
 const std::vector<std::string>* Mod::getArcScriptList() const

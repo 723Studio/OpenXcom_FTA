@@ -273,7 +273,7 @@ void ManageAlienContainmentState::resetListAndTotals()
 	// update buttons
 	{
 		bool overCrowded = false;
-		if (availableContainment == 0 || Options::storageLimitsEnforced)
+		if (availableContainment == 0 || Options::containmentLimitsEnforced)
 		{
 			overCrowded = (freeContainment < 0);
 		}
@@ -490,7 +490,14 @@ void ManageAlienContainmentState::lstItemsMousePress(Action *action)
 		if (selectedTopic != 0)
 		{
 			_doNotReset = true;
-			_game->pushState(new TechTreeViewerState(selectedTopic, 0));
+			if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+			{
+				return;
+			}
+			else
+			{
+				_game->pushState(new TechTreeViewerState(selectedTopic, 0));
+			}
 		}
 	}
 }
@@ -569,7 +576,7 @@ void ManageAlienContainmentState::updateStrings()
 	int aliens = _base->getUsedContainment(_prisonType) - _aliensSold;
 	int availableContainment = _base->getAvailableContainment(_prisonType);
 	int spaces = availableContainment - aliens;
-	if (availableContainment == 0 || Options::storageLimitsEnforced)
+	if (availableContainment == 0 || Options::containmentLimitsEnforced)
 	{
 		_btnOk->setVisible(spaces >= 0);
 		_btnSell->setVisible(spaces >= 0 && _threeButtons);

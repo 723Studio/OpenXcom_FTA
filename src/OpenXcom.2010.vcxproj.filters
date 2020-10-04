@@ -1107,11 +1107,59 @@
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="FTA\DiplomacyStartState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacySellState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacyPurchaseState.cpp">
+      <Filter>FTA</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RuleDiplomacyFaction.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\DiplomacyFaction.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
     <ClCompile Include="Battlescape\InventoryPersonalState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
     <ClCompile Include="Geoscape\DogfightExperienceState.cpp">
       <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RuleCovertOperation.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\CovertOperation.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationStartState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationEquipmentState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationSoldiersState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationArmorState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\FinishedCoverOperationState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\FinishedCoverOperationDetailsState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationInfoState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\MasterMind.cpp">
+      <Filter>FTA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2278,6 +2326,21 @@
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h">
       <Filter>Mod</Filter>
     </ClInclude>
+    <ClInclude Include="FTA\DiplomacyStartState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacySellState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacyPurchaseState.h">
+      <Filter>FTA</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleDiplomacyFaction.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\DiplomacyFaction.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
     <ClInclude Include="Battlescape\InventoryPersonalState.h">
       <Filter>Battlescape</Filter>
     </ClInclude>
@@ -2286,6 +2349,39 @@
     </ClInclude>
     <ClInclude Include="Engine\Functions.h">
       <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleCovertOperation.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\CovertOperation.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationStartState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationEquipmentState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationSoldiersState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationArmorState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\FinishedCoverOperationState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\FinishedCoverOperationDetailsState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationInfoState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\MasterMind.h">
+      <Filter>FTA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2321,6 +2417,9 @@
     </Filter>
     <Filter Include="Mod">
       <UniqueIdentifier>{ea5b1e9f-9ff1-457d-9a15-5af8773ccb50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FTA">
+      <UniqueIdentifier>{9a188ad3-ed60-4de5-9646-633cddf63dee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

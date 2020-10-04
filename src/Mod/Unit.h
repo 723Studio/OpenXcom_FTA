@@ -339,7 +339,7 @@ private:
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
-	UnitStats _stats;
+	UnitStats _stats, _statsRandom;
 	std::string _armorName;
 	const Armor* _armor;
 	int _standHeight, _kneelHeight, _floatHeight;
@@ -350,6 +350,7 @@ private:
 	SpecialAbility _specab;
 	const Unit *_spawnUnit = nullptr;
 	std::string _spawnUnitName;
+	std::string _specialObjectiveType;
 	bool _livingWeapon;
 	std::string _meleeWeapon, _psiWeapon;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
@@ -376,6 +377,8 @@ public:
 	std::string getCivilianRecoveryType() const;
 	/// Gets the unit's stats.
 	UnitStats *getStats();
+	/// Gets the unit's random part of stats.
+	UnitStats* getRandomStats();
 	/// Gets the unit's height when standing.
 	int getStandHeight() const;
 	/// Gets the unit's height when kneeling.
@@ -436,6 +439,8 @@ public:
 	bool getCapturable() const;
 	/// Checks if this unit can surrender.
 	bool canSurrender() const;
+	/// Gets special objective type of a unit.
+	const std::string& getSpecialObjectiveType() const { return _specialObjectiveType; };
 	/// Checks if this unit surrenders automatically, if all other units surrendered too.
 	bool autoSurrender() const;
 	bool isLeeroyJenkins() const { return _isLeeroyJenkins; };

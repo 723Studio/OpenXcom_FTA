@@ -93,6 +93,8 @@ class MapScript;
 class ModInfo;
 class RuleVideo;
 class RuleMusic;
+class RuleDiplomacyFaction;
+class RuleCovertOperation;
 class RuleArcScript;
 class RuleEventScript;
 class RuleEvent;
@@ -185,6 +187,8 @@ private:
 	std::map<std::string, MCDPatch *> _MCDPatches;
 	std::map<std::string, std::vector<MapScript *> > _mapScripts;
 	std::map<std::string, RuleCommendations *> _commendations;
+	std::map<std::string, RuleDiplomacyFaction*> _diplomacyFactions;
+	std::map<std::string, RuleCovertOperation*> _covertOperations;
 	std::map<std::string, RuleArcScript*> _arcScripts;
 	std::map<std::string, RuleEventScript*> _eventScripts;
 	std::map<std::string, RuleEvent*> _events;
@@ -214,6 +218,7 @@ private:
 	bool _lessAliensDuringBaseDefense;
 	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry;
 	bool _allowAlienBasesOnWrongTextures;
+	bool _ftaGame, _researchTreeDisabled;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal;
 	int _noLOSAccuracyPenaltyGlobal;
@@ -225,6 +230,8 @@ private:
 	bool _manaEnabled, _manaBattleUI, _manaTrainingPrimary, _manaTrainingSecondary, _manaReplenishAfterMission;
 	bool _healthReplenishAfterMission = true;
 	std::string _manaUnlockResearch;
+
+	int _coefBattlescape, _coefGeoscape, _coefDogfight, _coefResearch, _coefAlienMission, _coefUfo, _coefAlienBase;
 
 	std::string _loseMoney, _loseRating, _loseDefeat;
 	int _ufoGlancingHitThreshold, _ufoBeamWidthParameter;
@@ -246,7 +253,8 @@ private:
 	int _defeatScore, _defeatFunds;
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
-	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch;
+	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _baseConstructionUnlockResearch;
+	std::string _ufopaediaUnlockResearch;
 
 	std::string _destroyedFacility;
 	YAML::Node _startingBaseDefault, _startingBaseBeginner, _startingBaseExperienced, _startingBaseVeteran, _startingBaseGenius, _startingBaseSuperhuman;
@@ -272,9 +280,11 @@ private:
 	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
+	std::vector<std::string> _diplomacyFactionIndex;
+	std::vector<std::string> _covertOperationIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<SDL_Color> _transparencies;
-	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder;
+	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder;
 	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder;
 	std::vector<ModData> _modData;
 	ModData* _modCurrent;
@@ -727,6 +737,10 @@ public:
 	int getBughuntLowMorale() const { return _bughuntLowMorale; }
 	/// Gets the bug hunt mode time units % parameter (default = 60).
 	int getBughuntTimeUnitsLeft() const { return _bughuntTimeUnitsLeft; }
+	/// Gets if we are playing FTA scenario.
+	bool getIsFTAGame() const { return _ftaGame; }
+	/// Gets if research tree was disabled.
+	bool getIsResearchTreeDisabled() const { return _researchTreeDisabled; }
 
 	/// Is the mana feature enabled (default false)?
 	bool isManaFeatureEnabled() const { return _manaEnabled; }
@@ -756,8 +770,12 @@ public:
 	/// Gets the cutscene ID that should be played when the player loses the last base.
 	const std::string &getLoseDefeatCutscene() const { return _loseDefeat; }
 
+	/// Gets the research topic required for building XCOM bases after game starts.
+	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; }
 	/// Gets the research topic required for building XCOM bases on fakeUnderwater globe textures.
 	const std::string &getFakeUnderwaterBaseUnlockResearch() const { return _fakeUnderwaterBaseUnlockResearch; }
+	/// Gets the research topic required for using Ufopaedia.
+	const std::string& getUfopaediaUnlockResearch() const { return _ufopaediaUnlockResearch; }
 
 	/// Gets the threshold for defining a glancing hit on a ufo during interception
 	int getUfoGlancingHitThreshold() const { return _ufoGlancingHitThreshold; }
@@ -911,6 +929,12 @@ public:
 	/// Gets a video for intro/outro etc.
 	RuleVideo *getVideo(const std::string &id, bool error = false) const;
 	const std::map<std::string, RuleMusic *> *getMusic() const;
+	/// Gets diplomacy Faction rules for FTA game
+	RuleDiplomacyFaction* getDiplomacyFaction(const std::string& name, bool error = false) const;
+	/// Gets covert Operation rules for FTA game
+	RuleCovertOperation* getCovertOperation(const std::string& name, bool error = false) const;
+	const std::vector<std::string>* getDiplomacyFactionList() const;
+	const std::vector<std::string>* getCovertOperationList() const;
 	const std::vector<std::string>* getArcScriptList() const;
 	RuleArcScript* getArcScript(const std::string& name, bool error = false) const;
 	const std::vector<std::string>* getEventScriptList() const;
@@ -919,6 +943,14 @@ public:
 	RuleEvent* getEvent(const std::string& name, bool error = false) const;
 	const std::vector<std::string> *getMissionScriptList() const;
 	RuleMissionScript *getMissionScript(const std::string &name, bool error = false) const;
+	/// Get settings for loyalty
+	int getCoefBattlescape() const { return _coefBattlescape; };
+	int getCoefGeoscape() const { return _coefGeoscape; };
+	int getCoefDogfight() const { return _coefDogfight; };
+	int getCoefResearch() const { return _coefResearch; };
+	int getCoefAlienMission() const { return _coefAlienMission; };
+	int getCoefUfo() const { return _coefUfo; };
+	int getCoefAlienBase() const { return _coefAlienBase; };
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;
 	RuleResearch *getFinalResearch() const;

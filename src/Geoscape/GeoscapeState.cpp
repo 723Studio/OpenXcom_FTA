@@ -51,6 +51,8 @@
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleMissionScript.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Savegame/CovertOperation.h"
 #include "../Savegame/Waypoint.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/Soldier.h"
@@ -69,6 +71,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "GraphsState.h"
 #include "FundingState.h"
+#include "../FTA/DiplomacyStartState.h"
 #include "MonthlyReportState.h"
 #include "ProductionCompleteState.h"
 #include "UfoDetectedState.h"
@@ -124,6 +127,7 @@
 #include "../Engine/Exception.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleInterface.h"
+#include "../FTA/MasterMind.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
 
@@ -1068,11 +1072,13 @@ void GeoscapeState::time5Seconds()
 		{
 			if ((*j)->isDestroyed())
 			{
+				int score = (*j)->getRules()->getScore();
+				_game->getMasterMind()->updateLoyalty(-score);
 				for (std::vector<Country*>::iterator country = _game->getSavedGame()->getCountries()->begin(); country != _game->getSavedGame()->getCountries()->end(); ++country)
 				{
 					if ((*country)->getRules()->insideCountry((*j)->getLongitude(), (*j)->getLatitude()))
 					{
-						(*country)->addActivityXcom(-(*j)->getRules()->getScore());
+						(*country)->addActivityXcom(-score);
 						break;
 					}
 				}
@@ -1080,7 +1086,7 @@ void GeoscapeState::time5Seconds()
 				{
 					if ((*region)->getRules()->insideRegion((*j)->getLongitude(), (*j)->getLatitude()))
 					{
-						(*region)->addActivityXcom(-(*j)->getRules()->getScore());
+						(*region)->addActivityXcom(-score);
 						break;
 					}
 				}
@@ -1486,7 +1492,7 @@ void GeoscapeState::time10Minutes()
 					{
 						if ((*j)->getDistance(*b) <= range)
 						{
-							if (RNG::percent(50-((*j)->getDistance(*b) / range) * 50) && !(*b)->isDiscovered())
+							if (RNG::percent(50-((*j)->getDistance(*b) / range) * 50) && (!(*b)->isDiscovered() && !(*b)->getDeployment()->isHidden()))
 							{
 								(*b)->setDiscovered(true);
 							}
@@ -1730,6 +1736,11 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
 
 	int score = removeSite ? site->getDeployment()->getDespawnPenalty() : site->getDeployment()->getPoints();
 
+	if (score)
+	{
+		_game->getMasterMind()->updateLoyalty(score, ALIEN_MISSION_DESPAWN);
+	}
+
 	Region *region = _game->getSavedGame()->locateRegion(*site);
 	if (region)
 	{
@@ -1959,6 +1970,10 @@ void GeoscapeState::time30Minutes()
 						}
 					}
 				}
+			}
+			if (ufo->getDetected())
+			{
+				_game->getMasterMind()->updateLoyalty(points, ALIEN_UFO_ACTIVITY);
 			}
 
 			break;
@@ -2342,9 +2357,12 @@ void GeoscapeState::time1Day()
 					}
 					bonus = possibilities.at(pick);
 					saveGame->addFinishedResearch(bonus, mod, base);
+					_game->getMasterMind()->updateLoyalty(bonus->getPoints(), XCOM_RESEARCH);
 					if (!bonus->getLookup().empty())
 					{
-						saveGame->addFinishedResearch(mod->getResearch(bonus->getLookup(), true), mod, base);
+						auto lookup = mod->getResearch(bonus->getLookup(), true);
+						saveGame->addFinishedResearch(lookup, mod, base);
+						_game->getMasterMind()->updateLoyalty(lookup->getPoints(), XCOM_RESEARCH);
 					}
 				}
 			}
@@ -2358,9 +2376,12 @@ void GeoscapeState::time1Day()
 			}
 			// 3e. handle core research (topic+lookup)
 			saveGame->addFinishedResearch(research, mod, base);
+			_game->getMasterMind()->updateLoyalty(research->getPoints(), XCOM_RESEARCH);
 			if (!research->getLookup().empty())
 			{
-				saveGame->addFinishedResearch(mod->getResearch(research->getLookup(), true), mod, base);
+				auto lookup = mod->getResearch(research->getLookup(), true);
+				saveGame->addFinishedResearch(lookup, mod, base);
+				_game->getMasterMind()->updateLoyalty(lookup->getPoints(), XCOM_RESEARCH);
 			}
 			// 3e. handle cutscene
 			if (!research->getCutscene().empty())
@@ -2527,6 +2548,34 @@ void GeoscapeState::time1Day()
 		}
 	}
 
+	//handle daily Faction logic
+	for (auto faction : saveGame->getDiplomacyFactions())
+	{
+		bool answer = faction->think(*_game,TIMESTEP_DAILY);
+		if (answer)
+		{
+			bool success = processCommand(mod->getMissionScript(faction->getCommandType()));
+		}
+	}
+	//handle daily covert operations logic
+	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	{
+		for (auto operation : (*i)->getCovertOperations())
+		{
+			bool process = operation->think(*_game, *_globe);
+			if (process)
+				timerReset();
+			// Remove finished operation 
+			Collections::deleteIf(
+				_game->getSavedGame()->getGeoscapeEvents(),
+				[](GeoscapeEvent* ge)
+				{
+					return ge->isOver();
+				}
+			);
+		}
+	}
+
 	// check and interrupt alien missions if necessary (based on discovered research)
 	for (auto am : saveGame->getAlienMissions())
 	{
@@ -2569,11 +2618,12 @@ void GeoscapeState::time1Day()
 	// handle regional and country points for alien bases
 	for (std::vector<AlienBase*>::const_iterator b = saveGame->getAlienBases()->begin(); b != saveGame->getAlienBases()->end(); ++b)
 	{
+		int points = (*b)->getDeployment()->getPoints();
 		for (std::vector<Region*>::iterator k = saveGame->getRegions()->begin(); k != saveGame->getRegions()->end(); ++k)
 		{
 			if ((*k)->getRules()->insideRegion((*b)->getLongitude(), (*b)->getLatitude()))
 			{
-				(*k)->addActivityAlien((*b)->getDeployment()->getPoints());
+				(*k)->addActivityAlien(points);
 				break;
 			}
 		}
@@ -2581,9 +2631,13 @@ void GeoscapeState::time1Day()
 		{
 			if ((*k)->getRules()->insideCountry((*b)->getLongitude(), (*b)->getLatitude()))
 			{
-				(*k)->addActivityAlien((*b)->getDeployment()->getPoints());
+				(*k)->addActivityAlien(points);
 				break;
 			}
+		}
+		if ((*b)->isDiscovered())
+		{
+			_game->getMasterMind()->updateLoyalty(points, ALIEN_BASE);
 		}
 	}
 
@@ -2594,7 +2648,7 @@ void GeoscapeState::time1Day()
 	// Handle alien base detection (by xcom base facilities).
 	for (auto alienBase : *_game->getSavedGame()->getAlienBases())
 	{
-		if (alienBase->isDiscovered()) continue;
+		if (alienBase->isDiscovered() || alienBase->getDeployment()->isHidden()) continue;
 		for (auto xcomBase : *_game->getSavedGame()->getBases())
 		{
 			int distance = XcomDistance(xcomBase->getDistance(alienBase));
@@ -2701,14 +2755,14 @@ void GeoscapeState::time1Month()
 	// Handle funding
 	timerReset();
 	_game->getSavedGame()->monthlyFunding();
-	popup(new MonthlyReportState(_globe));
+	if (_game->getMod()->getIsFTAGame()) { 	popup(new AlphaGameVersionEnds());	} else { popup(new MonthlyReportState(_globe)); } //temp for alpha FTA release
 
 	// Handle Xcom Operatives discovering bases
 	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20))
 	{
 		for (std::vector<AlienBase*>::const_iterator b = _game->getSavedGame()->getAlienBases()->begin(); b != _game->getSavedGame()->getAlienBases()->end(); ++b)
 		{
-			if (!(*b)->isDiscovered())
+			if (!(*b)->isDiscovered()|| !(*b)->getDeployment()->isHidden())
 			{
 				(*b)->setDiscovered(true);
 				popup(new AlienBaseState(*b, this));
@@ -2816,6 +2870,10 @@ void GeoscapeState::btnUfoTrackerClick(Action *)
 */
 void GeoscapeState::btnTechTreeViewerClick(Action *)
 {
+	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	{
+		return;
+	}
 	_game->pushState(new TechTreeViewerState());
 }
 
@@ -2895,7 +2953,12 @@ void GeoscapeState::btnGraphsClick(Action *)
  */
 void GeoscapeState::btnUfopaediaClick(Action *)
 {
-	if (buttonsDisabled())
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+	if (buttonsDisabled() || !ftaUnlocked)
 	{
 		return;
 	}
@@ -2925,7 +2988,7 @@ void GeoscapeState::btnFundingClick(Action *)
 	{
 		return;
 	}
-	_game->pushState(new FundingState);
+	else if (_game->getMod()->getIsFTAGame()) {_game->pushState(new DiplomacyStartState(0, true));} else {_game->pushState(new FundingState);}	
 }
 
 /**
@@ -3285,6 +3348,7 @@ void GeoscapeState::determineAlienMissions()
 	SavedGame *save = _game->getSavedGame();
 	AlienStrategy &strategy = save->getAlienStrategy();
 	Mod *mod = _game->getMod();
+	int loyalty = save->getLoyalty();
 	int month = _game->getSavedGame()->getMonthsPassed();
 	int currentScore = save->getCurrentScore(month); // _monthsPassed was already increased by 1
 	int performanceBonus = currentScore * mod->getPerformanceBonusFactor();
@@ -3312,6 +3376,8 @@ void GeoscapeState::determineAlienMissions()
 				// and make sure we satisfy the difficulty restrictions
 				(month < 1 || arcScript->getMinScore() <= currentScore) &&
 				(month < 1 || arcScript->getMaxScore() >= currentScore) &&
+				(month < 1 || arcScript->getMinLoyalty() <= loyalty) &&
+				(month < 1 || arcScript->getMaxLoyalty() >= loyalty) &&
 				(month < 1 || arcScript->getMinFunds() <= currentFunds) &&
 				(month < 1 || arcScript->getMaxFunds() >= currentFunds) &&
 				arcScript->getMinDifficulty() <= save->getDifficulty() &&
@@ -3438,9 +3504,12 @@ void GeoscapeState::determineAlienMissions()
 			// and make sure we satisfy the difficulty restrictions
 			(month < 1 || command->getMinScore() <= currentScore) &&
 			(month < 1 || command->getMaxScore() >= currentScore) &&
+			(month < 1 || command->getMinLoyalty() <= loyalty) &&
+			(month < 1 || command->getMaxLoyalty() >= loyalty) &&
 			(month < 1 || command->getMinFunds() <= currentFunds) &&
 			(month < 1 || command->getMaxFunds() >= currentFunds) &&
-			command->getMinDifficulty() <= save->getDifficulty())
+			command->getMinDifficulty() <= save->getDifficulty() &&
+			(command->getAllowedProcessor() == 0 || command->getAllowedProcessor() == 1))
 		{
 			// level two condition check: make sure we meet any research requirements, if any.
 			bool triggerHappy = true;
@@ -3536,10 +3605,13 @@ void GeoscapeState::determineAlienMissions()
 				// and make sure we satisfy the difficulty restrictions
 				(month < 1 || eventScript->getMinScore() <= currentScore) &&
 				(month < 1 || eventScript->getMaxScore() >= currentScore) &&
+				(month < 1 || eventScript->getMinLoyalty() <= loyalty) &&
+				(month < 1 || eventScript->getMaxLoyalty() >= loyalty) &&
 				(month < 1 || eventScript->getMinFunds() <= currentFunds) &&
 				(month < 1 || eventScript->getMaxFunds() >= currentFunds) &&
 				eventScript->getMinDifficulty() <= save->getDifficulty() &&
-				eventScript->getMaxDifficulty() >= save->getDifficulty())
+				eventScript->getMaxDifficulty() >= save->getDifficulty() &&
+				(eventScript->getAllowedProcessor() == 0 || eventScript->getAllowedProcessor() == 1))
 			{
 				// level two condition check: make sure we meet any research requirements, if any.
 				bool triggerHappy = true;
@@ -3626,14 +3698,7 @@ void GeoscapeState::determineAlienMissions()
 			// 4. generate
 			for (auto eventRules : toBeGenerated)
 			{
-				GeoscapeEvent *newEvent = new GeoscapeEvent(*eventRules);
-				int minutes = (eventRules->getTimer() + (RNG::generate(0, eventRules->getTimerRandom()))) / 30 * 30;
-				if (minutes < 60) minutes = 60; // just in case
-				newEvent->setSpawnCountdown(minutes);
-				_game->getSavedGame()->getGeoscapeEvents().push_back(newEvent);
-
-				// remember that it has been generated
-				save->addGeneratedEvent(eventRules);
+				_game->getMasterMind()->spawnEvent(eventRules->getName());
 			}
 		}
 	}

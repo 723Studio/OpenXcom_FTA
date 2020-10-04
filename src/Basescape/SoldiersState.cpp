@@ -35,6 +35,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/CovertOperation.h"
 #include "SoldierInfoState.h"
 #include "SoldierMemorialState.h"
 #include "SoldierTransformationState.h"
@@ -363,7 +364,7 @@ void SoldiersState::initList(size_t scrl)
 		{
 			for (auto& soldier : *_base->getSoldiers())
 			{
-				if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+				if ((soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT") || soldier->getCovertOperation() != 0)
 				{
 					// soldiers outside of the base are not eligible
 					continue;
@@ -415,6 +416,10 @@ void SoldiersState::initList(size_t scrl)
 		if ((*i)->getCraft() == 0)
 		{
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+		}
+		if ((*i)->getCovertOperation() != 0)
+		{
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
 		if ((*i)->getDeath())
 		{

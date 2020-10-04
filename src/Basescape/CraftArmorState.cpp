@@ -432,7 +432,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 	}
 
 	Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
-	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT"))
+	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0)
 	{
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 		{

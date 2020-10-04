@@ -156,6 +156,10 @@ void NewResearchListState::onOpenTechTreeViewer(Action *)
 {
 	_lstScroll = _lstResearch->getScroll();
 	const RuleResearch *selectedTopic = _projects[_lstResearch->getSelectedRow()];
+	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	{
+		return;
+	}
 	_game->pushState(new TechTreeViewerState(selectedTopic, 0));
 }
 

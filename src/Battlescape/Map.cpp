@@ -95,7 +95,7 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _arrow(0), _anyIndicator(false), _isAltPressed(false),
+	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _anyIndicator(false), _isAltPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
@@ -184,6 +184,8 @@ Map::~Map()
 	delete _fadeTimer;
 	delete _obstacleTimer;
 	delete _arrow;
+	delete _missionPointer;
+	delete _sensorPointer;
 	delete _message;
 	delete _camera;
 	delete _txtAccuracy;
@@ -195,25 +197,71 @@ Map::~Map()
 void Map::init()
 {
 	// load the tiny arrow into a surface
-	int f = Palette::blockOffset(1); // yellow
-	int b = 15; // black
-	int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   b, b, b, f, f, f, b, b, b,
-					   b, f, f, f, f, f, f, f, b,
-					   0, b, f, f, f, f, f, b, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   0, 0, 0, b, f, b, 0, 0, 0,
-					   0, 0, 0, 0, b, 0, 0, 0, 0 };
+	{
+		int f = Palette::blockOffset(1); // yellow
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
 
-	_arrow = new Surface(9, 9);
-	_arrow->setPalette(this->getPalette());
-	_arrow->lock();
-	for (int y = 0; y < 9;++y)
-		for (int x = 0; x < 9; ++x)
-			_arrow->setPixel(x, y, pixels[x+(y*9)]);
-	_arrow->unlock();
+		_arrow = new Surface(9, 9);
+		_arrow->setPalette(this->getPalette());
+		_arrow->lock();
+		for (int y = 0; y < 9;++y)
+			for (int x = 0; x < 9; ++x)
+				_arrow->setPixel(x, y, pixels[x+(y*9)]);
+		_arrow->unlock();
+	}
+	// load mission objective pointer into a surface
+	{
+		int f = Palette::blockOffset(3); // green
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+					       0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_missionPointer = new Surface(9, 9);
+		_missionPointer->setPalette(this->getPalette());
+		_missionPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_missionPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_missionPointer->unlock();
+	}
+	// load motion scanner pointer into a surface
+	{
+		int f = Palette::blockOffset(1); // yellow
+		int b = 15; // black
+		int pixels[81] = { 0, 0, 0, b, b, b, 0, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, b, f, f, f, f, f, b, 0,
+						   b, f, f, f, f, f, f, f, b,
+						   b, f, f, f, f, f, f, f, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, b, b, 0, 0, 0 };
+
+		_sensorPointer = new Surface(9, 9);
+		_sensorPointer->setPalette(this->getPalette());
+		_sensorPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_sensorPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_sensorPointer->unlock();
+	}
 
 	_projectile = 0;
 	if (_save->getDepth() == 0)
@@ -1578,9 +1626,35 @@ void Map::drawTerrain(Surface *surface)
 				}
 				if (this->getCursorType() != CT_NONE)
 				{
-					_arrow->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2), screenPosition.y + offset.y - _arrow->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					_sensorPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_sensorPointer->getWidth() / 2), screenPosition.y + offset.y - _sensorPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
 				}
 			}
+		}
+	}
+
+	//Draw arrows on items that are mission objective
+	for (auto item : *_save->getItems())
+	{
+		if (item->getRules()->isMissionObjective() && item->getOwner() == 0)
+		{
+			Tile* tile = item->getTile();
+			if (!tile)
+			{
+				continue; //for good
+			}
+			Position pos = tile->getPosition();
+			if (pos.z <= _camera->getViewLevel() && tile->getUnit() == 0 && tile->isDiscovered(O_FLOOR))
+			{
+				_camera->convertMapToScreen(pos, &screenPosition);
+				screenPosition += _camera->getMapOffset();
+				Position offset;
+				offset.y += 5;//(getTerrainLevel(pos, 10) - 4);
+				if (this->getCursorType() != CT_NONE)
+				{
+					_missionPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_missionPointer->getWidth() / 2), screenPosition.y + offset.y - _missionPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+				}
+			}
+
 		}
 	}
 	delete _numWaypid;

@@ -68,6 +68,7 @@ private:
 	std::vector<Node*> _nodes;
 	std::vector<BattleUnit*> _units;
 	std::vector<BattleItem*> _items, _deleted;
+	int _itemObjectivesNumber;
 	Pathfinding *_pathfinding;
 	TileEngine *_tileEngine;
 	std::string _missionType, _strTarget, _strCraftOrBase, _alienCustomDeploy, _alienCustomMission;
@@ -132,6 +133,8 @@ public:
 	void setMissionTarget(const std::string& missionTarget) { _strTarget = missionTarget; }
 	/// Gets the mission target.
 	const std::string& getMissionTarget() const { return _strTarget; }
+	/// Gets objectives number
+	int getItemObjectivesNumber() const { return _itemObjectivesNumber; }
 	/// Sets the mission craft/base.
 	void setMissionCraftOrBase(const std::string& missionCraftOrBase) { _strCraftOrBase = missionCraftOrBase; }
 	/// Gets the mission craft/base.

@@ -162,6 +162,9 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_startingCondition = node["startingCondition"].as<std::string>(_startingCondition);
 	_unlockedResearch = node["unlockedResearch"].as<std::string>(_unlockedResearch);
 	_missionBountyItem = node["missionBountyItem"].as<std::string>(_missionBountyItem);
+	_alternativeDeployment = node["alternativeDeployment"].as<std::string>(_alternativeDeployment);
+	_alternativeDeploymentResearch = node["alternativeDeploymentResearch"].as<std::string>(_alternativeDeploymentResearch);
+	_extendedObjectiveType = node["extendedObjectiveType"].as<std::string>(_extendedObjectiveType);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_data = node["data"].as< std::vector<DeploymentData> >(_data);
 	_width = node["width"].as<int>(_width);

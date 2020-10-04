@@ -61,7 +61,7 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang) :
 	_battleState(0), _rule(rule), _mapsize_x(0), _mapsize_y(0), _mapsize_z(0), _selectedUnit(0),
 	_lastSelectedUnit(0), _pathfinding(0), _tileEngine(0), _enviroEffects(nullptr), _ecEnabledFriendly(false), _ecEnabledHostile(false), _ecEnabledNeutral(false),
 	_globalShade(0), _side(FACTION_PLAYER), _turn(0), _bughuntMinTurn(20), _animFrame(0), _nameDisplay(false),
-	_debugMode(false), _bughuntMode(false), _aborted(false), _itemId(0), _objectiveType(-1), _objectivesDestroyed(0), _objectivesNeeded(0), _unitsFalling(false),
+	_debugMode(false), _bughuntMode(false), _aborted(false), _itemId(0), _objectiveType(-1), _objectivesDestroyed(0), _objectivesNeeded(0), _itemObjectivesNumber(0), _unitsFalling(false),
 	_cheating(false), _tuReserved(BA_NONE), _kneelReserved(false), _depth(0),
 	_ambience(-1), _ambientVolume(0.5), _minAmbienceRandomDelay(20), _maxAmbienceRandomDelay(60), _currentAmbienceDelay(0),
 	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _beforeGame(true)
@@ -152,6 +152,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_turn = node["turn"].as<int>(_turn);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_bughuntMode = node["bughuntMode"].as<bool>(_bughuntMode);
+	_itemObjectivesNumber = node["itemObjectivesNumber"].as<int>(_itemObjectivesNumber);
 	_depth = node["depth"].as<int>(_depth);
 	_animFrame = node["animFrame"].as<int>(_animFrame);
 	int selectedUnit = node["selectedUnit"].as<int>();
@@ -543,7 +544,8 @@ YAML::Node SavedBattleGame::save() const
 	node["music"] = _music;
 	node["baseItems"] = _baseItems->save();
 	node["turnLimit"] = _turnLimit;
-	node["chronoTrigger"] = int(_chronoTrigger);
+	node["chronoTrigger"] = int(_chronoTrigger); 
+	node["itemObjectivesNumber"] = int(_itemObjectivesNumber);
 	node["cheatTurn"] = _cheatTurn;
 	_scriptValues.save(node, _rule->getScriptGlobal());
 
@@ -1544,6 +1546,10 @@ BattleItem *SavedBattleGame::createItemForUnit(const RuleItem *rule, BattleUnit 
 	{
 		_items.push_back(item);
 		initItem(item, unit);
+		if (item->getRules()->isMissionObjective())
+		{
+			++_itemObjectivesNumber;
+		}
 	}
 	return item;
 }
@@ -1576,6 +1582,10 @@ BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile)
 	{
 		RuleInventory *ground = _rule->getInventoryGround();
 		tile->addItem(item, ground);
+	}
+	if (item->getRules()->isMissionObjective())
+	{
+		++_itemObjectivesNumber;
 	}
 	_items.push_back(item);
 	initItem(item);

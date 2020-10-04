@@ -35,6 +35,8 @@ private:
 	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
 	int _firstMonth, _lastMonth, _executionOdds, _minDifficulty, _maxDifficulty;
 	int _minScore, _maxScore;
+	int _minLoyalty, _maxLoyalty;
+	int _allowedProcessor;
 	int64_t _minFunds, _maxFunds;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
@@ -67,10 +69,16 @@ public:
 	int getMinScore() const { return _minScore; }
 	/// Gets the maximum score (from last month) for this command to run.
 	int getMaxScore() const { return _maxScore; }
+	/// Gets the minimum loyalty for this command to run.
+	int getMinLoyalty() const { return _minLoyalty; }
+	/// Gets the maximum loyalty for this command to run.
+	int getMaxLoyalty() const { return _maxLoyalty; }
 	/// Gets the minimum funds (from current month) for this command to run.
 	int64_t getMinFunds() const { return _minFunds; }
 	/// Gets the maximum funds (from current month) for this command to run.
 	int64_t getMaxFunds() const { return _maxFunds; }
+	/// Get allowed procesor (monthly/factional) that is allowed to process this command.
+	int getAllowedProcessor() const { return _allowedProcessor; }
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const { return _researchTriggers; }
 	/// Gets the item triggers that may apply to this command.

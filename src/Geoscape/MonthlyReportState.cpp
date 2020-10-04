@@ -43,6 +43,7 @@
 #include "../Menu/SaveGameState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
+#include "../Menu/StatisticsState.h"
 
 namespace OpenXcom
 {
@@ -488,6 +489,67 @@ std::string MonthlyReportState::countryList(const std::vector<std::string> &coun
 		}
 	}
 	return ss.str();
+}
+
+
+/**
+ * Initializes all the elements in the Monthly Report screen.
+ * @param game Pointer to the core game.
+ * @param psi Show psi training afterwards?
+ * @param globe Pointer to the globe.
+ */
+AlphaGameVersionEnds::AlphaGameVersionEnds() : _gameOver(0)
+{
+	
+	// Create objects
+	_window = new Window(this, 320, 200, 0, 0);
+	_btnOk = new TextButton(50, 12, 135, 180);
+	_txtTitle = new Text(300, 34, 16, 8);
+	_txtDesc = new Text(280, 130, 16, 46);
+
+	// Set palette
+	setInterface("monthlyReport");
+
+	add(_window, "window", "monthlyReport");
+	add(_btnOk, "button", "monthlyReport");
+	add(_txtTitle, "text1", "monthlyReport");
+	add(_txtDesc, "text2", "monthlyReport");
+
+	centerAllSurfaces();
+
+	// Set up objects
+	setWindowBackground(_window, "monthlyReport");
+
+	_btnOk->setText(tr("STR_OK"));
+	_btnOk->onMouseClick((ActionHandler)&AlphaGameVersionEnds::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&AlphaGameVersionEnds::btnOkClick, Options::keyOk);
+	_btnOk->onKeyboardPress((ActionHandler)&AlphaGameVersionEnds::btnOkClick, Options::keyCancel);
+
+
+	_txtTitle->setBig();
+	_txtTitle->setText(tr("STR_FTA_ALPHA_END"));
+	_txtTitle->setAlign(ALIGN_CENTER);
+	_txtTitle->setWordWrap(true);
+	_txtDesc->setText(tr("STR_FTA_ALPHA_END_DESC"));
+	_txtDesc->setWordWrap(true);
+}
+
+/**
+ *
+ */
+AlphaGameVersionEnds::~AlphaGameVersionEnds()
+{
+}
+
+/**
+ * Returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void AlphaGameVersionEnds::btnOkClick(Action*)
+{
+	_game->getSavedGame()->setEnding(END_WIN);
+	_game->pushState(new StatisticsState());
+	_game->getMod()->playMusic("GMLOSE");
 }
 
 }

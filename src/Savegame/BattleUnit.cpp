@@ -416,6 +416,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_rank = unit->getRank();
 	_race = unit->getRace();
 	_stats = *unit->getStats();
+	_statsRandom = *unit->getRandomStats();
 	_standHeight = _armor->getStandHeight() == -1 ? unit->getStandHeight() : _armor->getStandHeight();
 	_kneelHeight = _armor->getKneelHeight() == -1 ? unit->getKneelHeight() : _armor->getKneelHeight();
 	_floatHeight = _armor->getFloatHeight() == -1 ? unit->getFloatHeight() : _armor->getFloatHeight();
@@ -464,6 +465,21 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 		}
 	}
 
+	UnitStats* addRandomStat = new UnitStats();
+	addRandomStat->tu = RNG::generate(-_statsRandom.tu, _statsRandom.tu);
+	addRandomStat->stamina = RNG::generate(-_statsRandom.stamina, _statsRandom.stamina);
+	addRandomStat->health = RNG::generate(-_statsRandom.health, _statsRandom.health);
+	addRandomStat->bravery = (RNG::generate(-_statsRandom.bravery / 10, _statsRandom.bravery / 10) * 10);
+	addRandomStat->reactions = RNG::generate(-_statsRandom.reactions, _statsRandom.reactions);
+	addRandomStat->firing = RNG::generate(-_statsRandom.firing, _statsRandom.firing);
+	addRandomStat->throwing = RNG::generate(-_statsRandom.throwing, _statsRandom.throwing);
+	addRandomStat->melee = RNG::generate(-_statsRandom.melee, _statsRandom.melee);
+	addRandomStat->strength = RNG::generate(-_statsRandom.strength, _statsRandom.strength);
+	addRandomStat->mana = RNG::generate(-_statsRandom.mana, _statsRandom.mana);
+	addRandomStat->psiSkill = RNG::generate(-_statsRandom.psiSkill, _statsRandom.psiSkill);
+	addRandomStat->psiStrength = RNG::generate(-_statsRandom.psiStrength, _statsRandom.psiStrength);
+
+	_stats += *addRandomStat;
 	_stats += *_armor->getStats();	// armors may modify effective stats
 	_stats = UnitStats::obeyFixedMinimum(_stats); // don't allow to go into minus!
 	_maxViewDistanceAtDark = _armor->getVisibilityAtDark() ? _armor->getVisibilityAtDark() : faction==FACTION_HOSTILE ? mod->getMaxViewDistance() : 9;
@@ -1227,6 +1243,21 @@ UnitFaction BattleUnit::getFaction() const
 {
 	return _faction;
 }
+
+/**
+ * Sets geoscape soldier in case we create one for this unit in debreafing.
+ * @param soldier Soldier.
+ */
+void BattleUnit::setGeoscapeSoldied(Soldier* soldier)
+{
+	_geoscapeSoldier = soldier;
+	// Set basic parameters as we would not need much of it stats.
+	_name = soldier->getName(true);
+	_id = soldier->getId();
+	_type = "SOLDIER";
+
+}
+
 
 /**
  * Gets values used for recoloring sprites.
@@ -3449,6 +3480,13 @@ void BattleUnit::updateGeoscapeStats(Soldier *soldier) const
 bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, SavedBattleGame *battle, StatAdjustment &statsDiff)
 {
 	Soldier *s = geoscape->getSoldier(_id);
+	if (this->getUnitRules() != 0)
+	{
+		if (this->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP")
+		{
+			s = this->getGeoscapeSoldier();
+		}
+	}
 	if (s == 0)
 	{
 		return false;

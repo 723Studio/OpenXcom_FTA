@@ -155,6 +155,7 @@ private:
 	std::list<BattleState*> _states, _deleted;
 	bool _playerPanicHandled;
 	int _AIActionCounter;
+	int _itemObjectivesNumber;
 	BattleAction _currentAction;
 	bool _AISecondMove, _playedAggroSound;
 	bool _endTurnRequested;

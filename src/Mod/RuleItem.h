@@ -348,7 +348,7 @@ private:
 	int _armor;
 	int _turretType;
 	int _aiUseDelay, _aiMeleeHitCount;
-	bool _recover, _recoverCorpse, _ignoreInBaseDefense, _ignoreInCraftEquip, _liveAlien;
+	bool _recover, _recoverCorpse, _ignoreInBaseDefense, _ignoreInCraftEquip, _liveAlien, _missionObjective, _alienArtifact;
 	int _liveAlienPrisonType;
 	int _attraction;
 	RuleItemUseCost _flatUse, _flatThrow, _flatPrime, _flatUnprime;
@@ -745,6 +745,10 @@ public:
 	bool isAlien() const;
 	/// Returns to which type of prison does the live alien belong.
 	int getPrisonType() const;
+	/// Checks if this item is a mission objective.
+	bool isMissionObjective() const { return _missionObjective; } 
+	/// Checks if this item is an alien artifact.
+	bool isAlienArtifact() const { return _alienArtifact; }
 
 	/// Should this weapon arc?
 	bool getArcingShot() const;

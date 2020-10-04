@@ -24,6 +24,7 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "Craft.h"
 #include "CraftWeapon.h"
+#include "CovertOperation.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/RuleCraftWeapon.h"
 #include "../Mod/Mod.h"
@@ -75,6 +76,10 @@ Base::~Base()
 	for (std::vector<Craft*>::iterator i = _crafts.begin(); i != _crafts.end(); ++i)
 	{
 		delete *i;
+	}
+	for (std::vector<CovertOperation*>::iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
+	{
+		delete* i;
 	}
 	for (std::vector<Transfer*>::iterator i = _transfers.begin(); i != _transfers.end(); ++i)
 	{
@@ -136,6 +141,21 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
+	for (YAML::const_iterator i = node["covertOperations"].begin(); i != node["covertOperations"].end(); ++i)
+	{
+		std::string name = (*i)["name"].as<std::string>();
+		if (_mod->getCovertOperation(name))
+		{
+			CovertOperation* c = new CovertOperation(_mod->getCovertOperation(name), this, 0);
+			c->load(*i);
+			_covertOperations.push_back(c);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load covertOperation " << name;
+		}
+	}
+
 	for (YAML::const_iterator i = node["soldiers"].begin(); i != node["soldiers"].end(); ++i)
 	{
 		std::string type = (*i)["type"].as<std::string>(_mod->getSoldiersList().front());
@@ -152,6 +172,18 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 					if ((*j)->getUniqueId() == craftId)
 					{
 						s->setCraft(*j);
+						break;
+					}
+				}
+			}
+			if (const YAML::Node& op = (*i)["covertOperation"])
+			{
+				std::string covertOperation = op.as<std::string>();
+				for (std::vector<CovertOperation*>::iterator j = _covertOperations.begin(); j != _covertOperations.end(); ++j)
+				{
+					if ((*j)->getOperationName() == covertOperation)
+					{
+						s->setCovertOperation((*j));
 						break;
 					}
 				}
@@ -334,6 +366,10 @@ YAML::Node Base::save() const
 	{
 		node["crafts"].push_back((*i)->save());
 	}
+	for (std::vector<CovertOperation*>::const_iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
+	{
+		node["covertOperations"].push_back((*i)->save());
+	}
 	node["items"] = _items->save();
 	node["scientists"] = _scientists;
 	node["engineers"] = _engineers;
@@ -417,6 +453,33 @@ void Base::prepareSoldierStatsWithBonuses()
 	{
 		soldier->prepareStatsWithBonuses(_mod);
 	}
+}
+
+/**
+ * Adds operation to base's covert operations list.
+ * @param operation pointer to the CovertOPeration.
+ */
+void Base::addCovertOperation(CovertOperation* operation)
+{
+	this->getCovertOperations().push_back(operation);
+}
+
+/**
+ * Finds and erase operation from base's covert operations list.
+ * @param operation pointer to the CovertOperation.
+ */
+void Base::removeCovertOperation(CovertOperation* operation)
+{
+	bool erased = false;
+	auto iter = std::find(std::begin(_covertOperations), std::end(_covertOperations), operation);
+	for (int k = 0; k < _covertOperations.size(); k++) {
+		if (_covertOperations[k] == operation)
+		{
+			_covertOperations.erase(_covertOperations.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { 	Log(LOG_ERROR) << "Covert Operation named " << operation->getOperationName() << " was not deleted from base " << this->getName() << " !"; }
 }
 
 /**
@@ -553,14 +616,21 @@ int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) c
 	int total = 0;
 	for (std::vector<Soldier*>::const_iterator i = _soldiers.begin(); i != _soldiers.end(); ++i)
 	{
-		if (!checkCombatReadiness && (*i)->getCraft() == 0)
+		if ((*i)->getCovertOperation() != 0)
 		{
-			total++;
+			//we do not want to count soldiers that are on covert operation
 		}
-		else if (checkCombatReadiness && (((*i)->getCraft() != 0 && (*i)->getCraft()->getStatus() != "STR_OUT") ||
-			((*i)->getCraft() == 0 && ((*i)->hasFullHealth() || (includeWounded && (*i)->canDefendBase())))))
+		else
 		{
-			total++;
+			if (!checkCombatReadiness && (*i)->getCraft() == 0)
+			{
+				total++;
+			}
+			else if (checkCombatReadiness && (((*i)->getCraft() != 0 && (*i)->getCraft()->getStatus() != "STR_OUT") ||
+				((*i)->getCraft() == 0 && ((*i)->hasFullHealth() || (includeWounded && (*i)->canDefendBase())))))
+			{
+				total++;
+			}
 		}
 	}
 	return total;
@@ -756,6 +826,11 @@ int Base::getUsedQuarters() const
 			// reserve one living space for each production project (even if it's on hold)
 			total += 1;
 		}
+	}
+	//reserve space for engeneers and scientists used in covert operations
+	for (std::vector<CovertOperation*>::const_iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
+	{
+		total += (*i)->getAssignedScientists() + (*i)->getAssignedEngineers();
 	}
 	return total;
 }
@@ -2241,7 +2316,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 		if (replacement)
 		{
 			// same as like with storage, only when limits are not enforced you can upgrade full prison
-			if (!Options::storageLimitsEnforced)
+			if (!Options::containmentLimitsEnforced)
 			{
 				sumAvailablePrisons(replacement);
 			}

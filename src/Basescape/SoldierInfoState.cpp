@@ -33,6 +33,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/CovertOperation.h"
 #include "../Savegame/Soldier.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
@@ -91,6 +92,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_txtKills = new Text(100, 9, 200, 48);
 	_txtCraft = new Text(130, 9, 0, 56);
 	_txtRecovery = new Text(180, 9, 130, 56);
+	_txtOperation = new Text(180, 9, 0, 64);
 	_txtPsionic = new Text(150, 9, 0, 66);
 	_txtDead = new Text(150, 9, 130, 33);
 
@@ -182,6 +184,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	add(_txtMissions, "text1", "soldierInfo");
 	add(_txtKills, "text1", "soldierInfo");
 	add(_txtCraft, "text1", "soldierInfo");
+	add(_txtOperation, "text1", "soldierInfo");
 	add(_txtRecovery, "text1", "soldierInfo");
 	add(_txtPsionic, "text2", "soldierInfo");
 	add(_txtDead, "text2", "soldierInfo");
@@ -490,7 +493,7 @@ void SoldierInfoState::init()
 
 	_btnArmor->setText(wsArmor);
 
-	_btnSack->setVisible(_game->getSavedGame()->getMonthsPassed() > -1 && !(_soldier->getCraft() && _soldier->getCraft()->getStatus() == "STR_OUT"));
+	_btnSack->setVisible(_game->getSavedGame()->getMonthsPassed() > -1 && !(_soldier->getCraft() && _soldier->getCraft()->getStatus() == "STR_OUT") && _soldier->getCovertOperation() != 0);
 
 	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString())));
 
@@ -508,6 +511,16 @@ void SoldierInfoState::init()
 		craft = _soldier->getCraft()->getName(_game->getLanguage());
 	}
 	_txtCraft->setText(tr("STR_CRAFT_").arg(craft));
+
+	if (_soldier->getCovertOperation() != 0)
+	{
+		_txtOperation->setVisible(true);
+		_txtOperation->setText(tr("STR_OPERATION_").arg(tr(_soldier->getCovertOperation()->getOperationName())));
+	}
+	else
+	{
+		_txtOperation->setVisible(false);
+	}
 
 	auto recovery = _base ? _base->getSumRecoveryPerDay() : BaseSumDailyRecovery();
 	auto getDaysOrInfinity = [&](int days)
@@ -703,7 +716,14 @@ void SoldierInfoState::btnArmorClick(Action *)
 {
 	if (!_soldier->getCraft() || (_soldier->getCraft() && _soldier->getCraft()->getStatus() != "STR_OUT"))
 	{
-		_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));
+		if (_soldier->getCovertOperation() != 0)
+		{
+			return;
+		}
+		else
+		{
+			_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));
+		}
 	}
 }
 
@@ -722,7 +742,14 @@ void SoldierInfoState::btnBonusesClick(Action *)
  */
 void SoldierInfoState::btnSackClick(Action *)
 {
-	_game->pushState(new SackSoldierState(_base, _soldierId));
+	if (_soldier->getCovertOperation() != 0)
+	{
+		return;
+	}
+	else
+	{
+		_game->pushState(new SackSoldierState(_base, _soldierId));
+	}
 }
 
 /**
