@@ -100,17 +100,17 @@ void RuleCraftWeapon::afterLoad(const Mod* mod)
 
 	if (_launcher == nullptr)
 	{
-		throw Exception("Launcher item is required for craft weapon");
+		throw Exception("Launcher item is required for a craft weapon");
 	}
 	if (_ammoMax)
 	{
 		if (_rearmRate <= 0)
 		{
-			throw Exception("Value rearmRate should be positive when craft weapon have ammoMax set");
+			throw Exception("Attribute 'rearmRate' must be positive when 'ammoMax' is set");
 		}
 		if (_clip && _clip->getClipSize() > _rearmRate)
 		{
-			throw Exception("Ammo item clipSize is too big for rearmRate");
+			throw Exception("Attribute 'clipSize' of the clip item is too big for the given 'rearmRate'");
 		}
 	}
 }

@@ -359,6 +359,7 @@ ko:
   hitRatio: "명중률"
   maxAllowedPerBase: "기지에 지을 수 있는 개수"
   manaRecoveryPerDay: "매일 사용 가능한 마나"
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: "의무실 절대회복량 보너스"
   sickBayRelativeBonus: "의무실 상대회복량 보너스"
   prisonType: "수용실 종류"

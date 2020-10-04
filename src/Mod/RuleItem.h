@@ -631,11 +631,11 @@ public:
 	int getTULoad(int slot) const;
 	/// Gets the item's unload TU cost.
 	int getTUUnload(int slot) const;
-	/// Gets ammo for vehicle.
+	/// Gets the ammo type for a vehicle.
 	const RuleItem* getVehicleClipAmmo() const;
-	/// Gets number of shots.
+	/// Gets the maximum number of rounds for a vehicle. E.g. a vehicle that can load 6 clips with 10 rounds each, returns 60.
 	int getVehicleClipSize() const;
-	/// Gets number of ammo clips that fit vehicle weapon.
+	/// Gets the number of clips needed to fully load a vehicle. E.g. a vehicle that holds max 60 rounds and clip size is 10, returns 6.
 	int getVehicleClipsLoaded() const;
 	/// Gets list of compatible ammo.
 	const std::vector<const RuleItem*> *getPrimaryCompatibleAmmo() const;

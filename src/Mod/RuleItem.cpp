@@ -745,7 +745,7 @@ void RuleItem::afterLoad(const Mod* mod)
 	{
 		if (_compatibleAmmo[0].size() > 1)
 		{
-			throw Exception("Vehicle weapon support only one ammo type");
+			throw Exception("Vehicle weapons support only one ammo type");
 		}
 		if (_compatibleAmmo[0].size() == 1)
 		{
@@ -754,7 +754,7 @@ void RuleItem::afterLoad(const Mod* mod)
 			{
 				if (getClipSize() % ammo->getClipSize())
 				{
-					throw Exception("Vehicle weapon clip size is not multiply of '" + ammo->getType() +  "' clip size");
+					throw Exception("Vehicle weapon clip size is not a multiple of '" + ammo->getType() +  "' clip size");
 				}
 			}
 		}
@@ -1462,7 +1462,7 @@ int RuleItem::getTUUnload(int slot) const
 }
 
 /**
- * Gets ammo for vehicle.
+ * Gets the ammo type for a vehicle.
  */
 const RuleItem* RuleItem::getVehicleClipAmmo() const
 {
@@ -1470,7 +1470,7 @@ const RuleItem* RuleItem::getVehicleClipAmmo() const
 }
 
 /**
- * Gets number of shots.
+ * Gets the maximum number of rounds for a vehicle. E.g. a vehicle that can load 6 clips with 10 rounds each, returns 60.
  */
 int RuleItem::getVehicleClipSize() const
 {
@@ -1493,7 +1493,7 @@ int RuleItem::getVehicleClipSize() const
 }
 
 /**
- * Gets number of ammo clips that fit vehicle weapon.
+ * Gets the number of clips needed to fully load a vehicle. E.g. a vehicle that holds max 60 rounds and clip size is 10, returns 6.
  */
 int RuleItem::getVehicleClipsLoaded() const
 {
@@ -2601,6 +2601,73 @@ void isSingleTargetScript(const RuleItem* r, int &ret)
 	}
 }
 
+void hasCategoryScript(const RuleItem* ri, int& val, const std::string& cat)
+{
+	if (ri)
+	{
+		auto it = std::find(ri->getCategories().begin(), ri->getCategories().end(), cat);
+		if (it != ri->getCategories().end())
+		{
+			val = 1;
+			return;
+		}
+	}
+	val = 0;
+}
+
+void getResistTypeScript(const RuleDamageType* rdt, int &ret)
+{
+	ret = rdt ? rdt->ResistType : 0;
+}
+
+void getAoeScript(const RuleDamageType* rdt, int &ret)
+{
+	ret = rdt ? !rdt->isDirect() : 0;
+}
+
+void getRandomTypeScript(const RuleDamageType* rdt, int &ret)
+{
+	ret = rdt ? rdt->RandomType : 0;
+}
+
+template<float RuleDamageType::* Ptr>
+void getDamageToScript(const RuleDamageType* rdt, int &ret, int value)
+{
+	ret = rdt ? (rdt->* Ptr) * value : 0;
+}
+
+void getRandomDamageScript(const RuleDamageType* rdt, int &ret, int value, RNG::RandomState* rng)
+{
+	ret = 0;
+	if (rdt && rng)
+	{
+		auto func = [&](int min, int max)
+		{
+			return rng->generate(min, max);
+		};
+		ret = rdt->getRandomDamage(value, &func);
+	}
+}
+
+std::string debugDisplayScript(const RuleDamageType* rdt)
+{
+	if (rdt)
+	{
+		std::string s;
+		s += "RuleDamageType";
+		s += "(resist: ";
+		s += std::to_string((int)rdt->ResistType);
+		s += " random: ";
+		s += std::to_string((int)rdt->RandomType);
+		s += ")";
+		return s;
+	}
+	else
+	{
+		return "null";
+	}
+}
+
 std::string debugDisplayScript(const RuleItem* ri)
 {
 	if (ri)
@@ -2627,6 +2694,34 @@ std::string debugDisplayScript(const RuleItem* ri)
  */
 void RuleItem::ScriptRegister(ScriptParserBase* parser)
 {
+	{
+		const auto name = std::string{ "RuleDamageType" };
+		parser->registerRawPointerType<RuleDamageType>(name);
+		Bind<RuleDamageType> rs = { parser, name };
+
+		rs.add<&RuleDamageType::isDirect>("isDirect", "if this damage type affects only one target");
+		rs.add<&getAoeScript>("isAreaOfEffect", "if this damage type can affect multiple targets");
+
+		rs.add<&getResistTypeScript>("getResistType", "which damage resistance type is used for damage reduction");
+		rs.add<&getRandomTypeScript>("getRandomType", "how to calculate randomized weapon damage from the weapon's power");
+
+		rs.add<&getDamageToScript<&RuleDamageType::ToArmorPre>>("getDamageToArmorPre", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToArmor>>("getDamageToArmor", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToEnergy>>("getDamageToEnergy", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToHealth>>("getDamageToHealth", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToItem>>("getDamageToItem", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToMana>>("getDamageToMana", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToMorale>>("getDamageToMorale", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToStun>>("getDamageToStun", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToTile>>("getDamageToTile", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToTime>>("getDamageToTime", "calculated damage value multiplied by the corresponding modifier");
+		rs.add<&getDamageToScript<&RuleDamageType::ToWound>>("getDamageToWound", "calculated damage value multiplied by the corresponding modifier");
+
+		rs.add<&getRandomDamageScript>("getRandomDamage", "calculated damage value (based on weapon's power)");
+
+		rs.addDebugDisplay<&debugDisplayScript>();
+	}
+
 	parser->registerPointerType<Mod>();
 
 	Bind<RuleItem> ri = { parser };
@@ -2655,8 +2750,10 @@ void RuleItem::ScriptRegister(ScriptParserBase* parser)
 	ri.add<&RuleItem::getAccuracyThrow>("getAccuracyThrow");
 	ri.add<&RuleItem::getAccuracyUse>("getAccuracyUse");
 
-	ri.add<&RuleItem::getPower>("getPower", "base power before applying unit bonuses, random rolls or other modiffers");
-	ri.add<&RuleItem::getMeleePower>("getMeleePower", "base melee power for normal weapons before applying unit bonuses, random rolls or other modiffers");
+	ri.add<&RuleItem::getPower>("getPower", "primary power, before applying unit bonuses, random rolls or other modifiers");
+	ri.add<&RuleItem::getDamageType>("getDamageType", "primary damage type");
+	ri.add<&RuleItem::getMeleePower>("getMeleePower", "secondary power (gunbutt), before applying unit bonuses, random rolls or other modifiers");
+	ri.add<&RuleItem::getMeleeType>("getMeleeDamageType", "secondary damage type (gunbutt)");
 
 	ri.add<&RuleItem::getArmor>("getArmorValue");
 	ri.add<&RuleItem::getWeight>("getWeight");
@@ -2666,6 +2763,7 @@ void RuleItem::ScriptRegister(ScriptParserBase* parser)
 	ri.add<&RuleItem::isTwoHanded>("isTwoHanded");
 	ri.add<&RuleItem::isBlockingBothHands>("isBlockingBothHands");
 	ri.add<&isSingleTargetScript>("isSingleTarget");
+	ri.add<&hasCategoryScript>("hasCategory");
 
 	ri.addScriptValue<BindBase::OnlyGet, &RuleItem::_scriptValues>();
 	ri.addDebugDisplay<&debugDisplayScript>();

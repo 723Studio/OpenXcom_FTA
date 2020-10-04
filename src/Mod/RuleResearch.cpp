@@ -73,6 +73,11 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, int listOrder)
  */
 void RuleResearch::afterLoad(const Mod* mod)
 {
+	if (_lookup == _name)
+	{
+		_lookup = "";
+	}
+
 	_dependencies = mod->getResearch(_dependenciesName);
 	_unlocks = mod->getResearch(_unlocksName);
 	_disables = mod->getResearch(_disablesName);

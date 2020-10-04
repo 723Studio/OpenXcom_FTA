@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <yaml-cpp/yaml.h>
+#include "../Engine/Functions.h"
 
 namespace OpenXcom
 {
@@ -119,7 +120,11 @@ struct RuleDamageType
 	/// Default constructor.
 	RuleDamageType();
 	/// Calculate random value of damage.
-	int getRandomDamage(int power, int mode = 0) const;
+	int getRandomDamage(int power) const;
+	/// Calculate random value of damage.
+	int getRandomDamage(int power, int mode) const;
+	/// Calculate random value of damage using given random func.
+	int getRandomDamage(int power, FuncRef<int(int, int)> randFunc) const;
 	/// Calculate random value of damage for tile attack.
 	int getRandomDamageForTile(int power, int damage) const;
 	/// Do this damage type affect only one target

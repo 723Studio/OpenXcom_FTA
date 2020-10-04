@@ -9,6 +9,8 @@ ko:
   STR_AVATAR_NAME_8: "#08 안젤리나 졸리"
   STR_PSI_SHORT: "M.C.>{ALT}{0}/{1}"
   STR_EVASIVE_MANEUVERS: "회피 기동"
+  STR_UFO_DESTROYED_BY_SPLASHDOWN: "외계인잠수함 파괴됨!"
+  STR_UFO_SURVIVED_SPLASHDOWN: "외계인잠수함 가라앉음!"
   STR_UFO_HAS_LANDED: "USO가 아래 지점에 착륙{NEWLINE}{0}"
   GMGEO1: "Geoscape Track #1"
   GMGEO2: "Geoscape Track #2"

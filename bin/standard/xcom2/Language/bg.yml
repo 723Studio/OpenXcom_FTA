@@ -415,8 +415,6 @@ bg:
   STR_TIME_UNITS_SHORT: "ТД>{ALT}{0}"
   STR_WEIGHT: "Тегло>{ALT}{0}/{1}"
   STR_REACTIONS_SHORT: "Реакц>{ALT}{0}"
-  STR_PSIONIC_SKILL_SHORT: "П.умен>{ALT}{0}"
-  STR_PSIONIC_STRENGTH_SHORT: "П.сил>{ALT}{0}"
   STR_AMMO_ROUNDS_LEFT: "МУНИЦИИ:{NEWLINE}ОСТАВАТ={ALT}{0}"
   STR_MEDI_KIT_QUANTITIES_LEFT: "Аналг>{ALT}{0}{ALT}{NEWLINE}Стим>{ALT}{1}{ALT}{NEWLINE}Превр>{ALT}{2}"
   STR_THROW: "Хвърляне"

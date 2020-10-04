@@ -26,6 +26,7 @@ class Base;
 class Window;
 class Text;
 class TextButton;
+class TextList;
 
 /**
  * Screen that allows the player
@@ -37,6 +38,7 @@ private:
 	Window *_window;
 	Text *_txtMessage;
 	TextButton *_btnOk;
+	TextList *_lstDestroyedFacilities;
 	Base *_base;
 	bool _missiles, _partialDestruction;
 public:

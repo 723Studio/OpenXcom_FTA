@@ -129,9 +129,9 @@ public:
 	/// Gets the craft's vehicles.
 	std::vector<Vehicle*> *getVehicles();
 
-	/// Gets total storage size of all items and vehicles in craft.
+	/// Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
 	double getTotalItemStorageSize(const Mod* mod) const;
-	/// Gets total number of selected item type.
+	/// Gets the total number of items of a given type in the craft. Including vehicles+ammo and craft weapons+ammo.
 	int getTotalItemCount(const RuleItem* item) const;
 
 	/// Update the craft's stats.

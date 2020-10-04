@@ -2347,6 +2347,9 @@
     <ClInclude Include="Geoscape\DogfightExperienceState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Functions.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
     <ClInclude Include="Mod\RuleCovertOperation.h">
       <Filter>Mod</Filter>
     </ClInclude>

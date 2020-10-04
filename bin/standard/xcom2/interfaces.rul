@@ -1330,12 +1330,13 @@ interfaces: #done
         color: 1   # blue
         color2: 244  # white
       - id: list
-        color: 3
-        color2: 239
-        border: 1
+        color: 3     # purple -> grey
+        color2: 239  # pink   -> light blue
+        border: 1    # blue   -> white
       - id: listExtended
-        color: 244
-        color2: 146
+        color: 244   # white  -> light green
+        color2: 146  # gold   -> gold
+        border: 8    # grey   -> bright red
       - id: button
         color: 1   # purple
   - type: techTreeSelect

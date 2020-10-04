@@ -82,6 +82,7 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 	_blue = _game->getMod()->getInterface("techTreeViewer")->getElement("list")->border;
 	_white = _game->getMod()->getInterface("techTreeViewer")->getElement("listExtended")->color;
 	_gold = _game->getMod()->getInterface("techTreeViewer")->getElement("listExtended")->color2;
+	_grey = _game->getMod()->getInterface("techTreeViewer")->getElement("listExtended")->border;
 
 	add(_window, "window", "techTreeViewer");
 	add(_txtTitle, "text", "techTreeViewer");
@@ -139,8 +140,7 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 			auto rr = _game->getMod()->getResearch(info.first, false);
 			if (rr)
 			{
-				_alreadyAvailableResearch.insert(rr->getName());
-				discoveredSum += rr->getCost(); // intentionally count disabled as discovered
+				_disabledResearch.insert(rr->getName());
 			}
 		}
 	}
@@ -443,10 +443,7 @@ void TechTreeViewerState::initLists()
 			std::string itemName = tr(_selectedTopic);
 			itemName.insert(0, "  ");
 			_lstLeft->addRow(1, itemName.c_str());
-			if (!isDiscoveredResearch(_selectedTopic))
-			{
-				_lstLeft->setRowColor(row, _pink);
-			}
+			_lstLeft->setRowColor(row, getResearchColor(_selectedTopic));
 			_leftTopics.push_back("-");
 			_leftFlags.push_back(TTV_NONE);
 			++row;
@@ -487,10 +484,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -515,10 +509,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -538,10 +529,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor((*i)));
 				_leftTopics.push_back((*i));
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -561,10 +549,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor((*i)));
 				_leftTopics.push_back((*i));
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -584,10 +569,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor((*i)));
 				_leftTopics.push_back((*i));
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -607,10 +589,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor((*i)));
 				_leftTopics.push_back((*i));
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -631,10 +610,7 @@ void TechTreeViewerState::initLists()
 			std::string name = tr(rule->getLookup());
 			name.insert(0, "  ");
 			_lstRight->addRow(1, name.c_str());
-			if (!isDiscoveredResearch(rule->getLookup()))
-			{
-				_lstRight->setRowColor(row, _pink);
-			}
+			_lstRight->setRowColor(row, getResearchColor(rule->getLookup()));
 			_rightTopics.push_back(rule->getLookup());
 			_rightFlags.push_back(TTV_RESEARCH);
 			++row;
@@ -676,10 +652,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstRight->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstRight->setRowColor(row, _pink);
-				}
+				_lstRight->setRowColor(row, getResearchColor((*i)));
 				_rightTopics.push_back((*i));
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -762,10 +735,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstRight->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstRight->setRowColor(row, _pink);
-				}
+				_lstRight->setRowColor(row, getResearchColor((*i)));
 				_rightTopics.push_back((*i));
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -785,10 +755,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstRight->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstRight->setRowColor(row, _pink);
-				}
+				_lstRight->setRowColor(row, getResearchColor(i->getName()));
 				_rightTopics.push_back(i->getName());
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -808,10 +775,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstRight->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstRight->setRowColor(row, _pink);
-				}
+				_lstRight->setRowColor(row, getResearchColor(i->getName()));
 				_rightTopics.push_back(i->getName());
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -825,7 +789,7 @@ void TechTreeViewerState::initLists()
 			int total = 0;
 			for (auto& i : free)
 			{
-				if (!isDiscoveredResearch(i->getName()))
+				if (getResearchColor(i->getName()) == _pink)
 				{
 					++remaining;
 				}
@@ -835,7 +799,7 @@ void TechTreeViewerState::initLists()
 			{
 				for (auto& i : itMap.second)
 				{
-					if (!isDiscoveredResearch(i->getName()))
+					if (getResearchColor(i->getName()) == _pink)
 					{
 						++remaining;
 					}
@@ -862,10 +826,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstRight->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstRight->setRowColor(row, _pink);
-				}
+				_lstRight->setRowColor(row, getResearchColor(i->getName()));
 				_rightTopics.push_back(i->getName());
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -876,14 +837,7 @@ void TechTreeViewerState::initLists()
 				name2.insert(0, " ");
 				name2.append(":");
 				_lstRight->addRow(1, name2.c_str());
-				if (isDiscoveredResearch(itMap.first->getName()))
-				{
-					_lstRight->setRowColor(row, _white);
-				}
-				else
-				{
-					_lstRight->setRowColor(row, _gold);
-				}
+				_lstRight->setRowColor(row, getAltResearchColor(itMap.first->getName()));
 				_rightTopics.push_back(itMap.first->getName());
 				_rightFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -892,10 +846,7 @@ void TechTreeViewerState::initLists()
 					std::string name = tr(i->getName());
 					name.insert(0, "  ");
 					_lstRight->addRow(1, name.c_str());
-					if (!isDiscoveredResearch(i->getName()))
-					{
-						_lstRight->setRowColor(row, _pink);
-					}
+					_lstRight->setRowColor(row, getResearchColor(i->getName()));
 					_rightTopics.push_back(i->getName());
 					_rightFlags.push_back(TTV_RESEARCH);
 					++row;
@@ -1051,10 +1002,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1239,10 +1187,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr((*i));
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch((*i)))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor((*i)));
 				_leftTopics.push_back((*i));
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1338,10 +1283,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1362,10 +1304,7 @@ void TechTreeViewerState::initLists()
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
 				_lstLeft->addRow(1, name.c_str());
-				if (!isDiscoveredResearch(i->getName()))
-				{
-					_lstLeft->setRowColor(row, _pink);
-				}
+				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1432,6 +1371,38 @@ void TechTreeViewerState::setSelectedTopic(const std::string &selectedTopic, TTV
 {
 	_selectedTopic = selectedTopic;
 	_selectedFlag = topicType;
+}
+
+/**
+ * Gets the color coding for the given research topic.
+ */
+Uint8 TechTreeViewerState::getResearchColor(const std::string &topic) const
+{
+	if (_disabledResearch.find(topic) != _disabledResearch.end())
+	{
+		return _grey; // disabled
+	}
+	if (_alreadyAvailableResearch.find(topic) == _alreadyAvailableResearch.end())
+	{
+		return _pink; // not discovered
+	}
+	return _purple; // discovered
+}
+
+/**
+ * Gets the alternative color coding for the given research topic.
+ */
+Uint8 TechTreeViewerState::getAltResearchColor(const std::string &topic) const
+{
+	if (_disabledResearch.find(topic) != _disabledResearch.end())
+	{
+		return _grey; // disabled
+	}
+	if (_alreadyAvailableResearch.find(topic) == _alreadyAvailableResearch.end())
+	{
+		return _gold; // not discovered
+	}
+	return _white; // discovered
 }
 
 /**

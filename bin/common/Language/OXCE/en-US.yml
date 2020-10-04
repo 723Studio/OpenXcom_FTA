@@ -343,7 +343,7 @@ en-US:
 #TrainingFinishedState.cpp
   STR_TRAINING_FINISHED: "Training Finished{NEWLINE}at {0}"
 #UfoDetectedState.cpp
-  STR_CANCEL_AND_IGNORE_UC: "CANCEL & IGNORE"
+  STR_IGNORE_UC: "IGNORE"
 #UfoTrackerState.cpp
   STR_UFO_TRACKER: "UFO Tracker"
 #=================== Menu ===================
@@ -357,12 +357,12 @@ en-US:
 #OptionsFoldersState.cpp
   STR_DATA_FOLDER: "Data Folder (original resources)"
   STR_USER_FOLDER: "User Folder (mods, openxcom.log)"
-  STR_SAVE_FOLDER: "Save Folder (saved games)"
+  STR_SAVE_FOLDER: "Save Folder (saved games, screenshots)"
   STR_CONFIG_FOLDER: "Config Folder (options.cfg)"
   STR_DATA_FOLDER_DESC: "This is where OpenXcom looks for the original game resources (UFO and/or TFTD) and also where the OpenXcom built-in mods are stored."
   STR_USER_FOLDER_DESC: "The log file ('openxcom.log') is stored here. All custom mods belong here too (in the 'mods' sub-folder)."
   STR_SAVE_FOLDER_DESC: "Your saved games are located here. Also, the mission generator settings ('battle.cfg') can be found here."
-  STR_CONFIG_FOLDER_DESC: "This is where OpenXcom settings ('option.cfg') are stored. Normally the same as the User Folder."
+  STR_CONFIG_FOLDER_DESC: "This is where OpenXcom settings ('options.cfg') are stored. Normally the same as the User Folder."
 #OptionsInformExtendedState.cpp
   STR_VERSION_REQUIRED_QUESTION: "This mod requires OXCE v{0} to run correctly. Enable this mod?"
 #OptionsVideoState.cpp

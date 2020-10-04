@@ -97,7 +97,7 @@ void UnitTurnBState::init()
  */
 void UnitTurnBState::think()
 {
-	const int tu = _chargeTUs ? 1 : 0;
+	const int tu = _chargeTUs ? (_turret ? 1 :_unit->getTurnCost()) : 0;
 
 	if (_chargeTUs && _unit->getFaction() == _parent->getSave()->getSide() && _parent->getPanicHandled() && !_action.targeting && !_parent->checkReservedTU(_unit, tu, 0))
 	{

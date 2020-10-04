@@ -39,6 +39,18 @@ RuleDamageType::RuleDamageType() :
 {
 
 }
+
+
+/**
+ * Function converting power to damage.
+ * @param power Input power.
+ * @return Random damage based on power.
+ */
+int RuleDamageType::getRandomDamage(int power) const
+{
+	return getRandomDamage(power, +[](int min, int max){ return RNG::generate(min, max); });
+}
+
 /**
  * Function converting power to damage.
  * @param power Input power.
@@ -47,40 +59,42 @@ RuleDamageType::RuleDamageType() :
  */
 int RuleDamageType::getRandomDamage(int power, int mode) const
 {
+	if (mode == 0)
+	{
+		return getRandomDamage(power);
+	}
+	else if (mode == 1)
+	{
+		return getRandomDamage(power, +[](int min, int max){ return min; });
+	}
+	else
+	{
+		return getRandomDamage(power, +[](int min, int max){ return max; });
+	}
+}
+
+/**
+ * Function converting power to damage.
+ * @param power Input power.
+ * @param randFunc Function to get random value
+ * @return Random damage based on power.
+ */
+int RuleDamageType::getRandomDamage(int power, FuncRef<int(int, int)> randFunc) const
+{
 	ItemDamageRandomType randType = RandomType;
 	if (randType == DRT_UFO_WITH_TWO_DICE)
 	{
-		if (mode == 0)
-		{
-			int firstThrow = RNG::generate(0, power);
-			int secondThrow = RNG::generate(0, power);
-			return firstThrow + secondThrow;
-		}
-		else if (mode == 1)
-		{
-			return 0;
-		}
-		else
-		{
-			return power * 2;
-		}
+		int firstThrow = randFunc(0, power);
+		int secondThrow = randFunc(0, power);
+
+		return firstThrow + secondThrow;
 	}
 	else if (randType == DRT_EASY)
 	{
 		int min = power / 2; // 50%
 		int max = power * 2; // 200%
-		if (mode == 0)
-		{
-			return RNG::generate(min, max);
-		}
-		else if (mode == 1)
-		{
-			return min;
-		}
-		else
-		{
-			return max;
-		}
+
+		return randFunc(min, max);
 	}
 
 	const bool def = randType == DRT_DEFAULT;
@@ -103,36 +117,16 @@ int RuleDamageType::getRandomDamage(int power, int mode) const
 	case DRT_TFTD: dmgRng = (def ? Mod::EXPLOSIVE_DAMAGE_RANGE : 50); break;
 	case DRT_FLAT: dmgRng = 0; break;
 	case DRT_FIRE:
-		if (mode == 0)
-		{
-			return RNG::generate(Mod::FIRE_DAMAGE_RANGE[0], Mod::FIRE_DAMAGE_RANGE[1]);
-		}
-		else if (mode == 1)
-		{
-			return Mod::FIRE_DAMAGE_RANGE[0];
-		}
-		else
-		{
-			return Mod::FIRE_DAMAGE_RANGE[1];
-		}
+		return randFunc(Mod::FIRE_DAMAGE_RANGE[0], Mod::FIRE_DAMAGE_RANGE[1]);
+
 	case DRT_NONE: return 0;
 	default: return 0;
 	}
 
 	int min = power * (100 - dmgRng) / 100;
 	int max = power * (100 + dmgRng) / 100;
-	if (mode == 0)
-	{
-		return RNG::generate(min, max);
-	}
-	else if (mode == 1)
-	{
-		return min;
-	}
-	else
-	{
-		return max;
-	}
+
+	return randFunc(min, max);
 }
 
 /**

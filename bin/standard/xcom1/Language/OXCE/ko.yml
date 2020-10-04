@@ -9,6 +9,8 @@ ko:
   STR_AVATAR_NAME_8: "#08 여자, 아프리카인"
   STR_PSI_SHORT: "PSI>{ALT}{0}/{1}"
   STR_EVASIVE_MANEUVERS: "회피 기동"
+  STR_UFO_DESTROYED_BY_SPLASHDOWN: "UFO 는 착수시 파괴됨!"
+  STR_UFO_SURVIVED_SPLASHDOWN: "UFO가 착수하며 생존함!"
   STR_UFO_HAS_LANDED: "UFO 가 아래 지점에 착륙{NEWLINE}{0}"
   GMGEO1: "Geoscape Track #1"
   GMGEO2: "Geoscape Track #2"

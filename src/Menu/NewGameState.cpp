@@ -26,9 +26,10 @@
 #include "../Interface/Text.h"
 #include "../Geoscape/GeoscapeState.h"
 #include "../Geoscape/BuildNewBaseState.h"
+#include "../Geoscape/BaseNameState.h"
+#include "../Basescape/PlaceLiftState.h"
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
-//new includes
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Base.h"
 #include "../Battlescape/BattlescapeGenerator.h"
@@ -179,7 +180,7 @@ void NewGameState::btnOkClick(Action *)
 
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
-
+  
 	//choose the game scenario
 	if (_game->getMod()->getIsFTAGame())
 	{
@@ -236,9 +237,26 @@ void NewGameState::btnOkClick(Action *)
 	else //vanilla
 	{
 		gs->init();
-		_game->pushState(new BuildNewBaseState(_game->getSavedGame()->getBases()->back(), gs->getGlobe(), true));
+    auto base = _game->getSavedGame()->getBases()->back();
+    if (base->getMarker() != -1)
+    {
+      if (base->getName().empty())
+      {
+        // fixed location, custom name
+        _game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
+      }
+      else if (Options::customInitialBase)
+      {
+        // fixed location, fixed name
+        _game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
+      }
+    }
+    else
+    {
+      // custom location, custom name
+      _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
+    }
 	}
-	
 }
 
 /**

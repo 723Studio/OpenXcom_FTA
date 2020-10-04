@@ -609,7 +609,7 @@ std::vector<Vehicle*> *Craft::getVehicles()
 }
 
 /**
- * Gets total storage size of all items and vehicles in craft.
+ * Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
  */
 double Craft::getTotalItemStorageSize(const Mod* mod) const
 {
@@ -644,7 +644,7 @@ double Craft::getTotalItemStorageSize(const Mod* mod) const
 }
 
 /**
- * Gets total number of selected item type.
+ * Gets the total number of items of a given type in the craft. Including vehicles+ammo and craft weapons+ammo.
  */
 int Craft::getTotalItemCount(const RuleItem* item) const
 {
@@ -656,12 +656,9 @@ int Craft::getTotalItemCount(const RuleItem* item) const
 		{
 			qty += 1;
 		}
-		else if (!v->getRules()->getVehicleClipAmmo())
+		else if (v->getRules()->getVehicleClipAmmo() == item)
 		{
-			if (v->getRules()->getVehicleClipAmmo() == item)
-			{
-				qty += v->getRules()->getVehicleClipsLoaded();
-			}
+			qty += v->getRules()->getVehicleClipsLoaded();
 		}
 	}
 

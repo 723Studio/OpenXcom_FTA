@@ -908,6 +908,22 @@ bool Pathfinding::previewPath(bool bRemove)
 	int energy = _unit->getEnergy();
 	int size = _unit->getArmor()->getSize() - 1;
 	int total = _unit->isKneeled() ? 8 : 0;
+	if (_unit->getArmor()->getTurnBeforeFirstStep())
+	{
+		int dir = getStartDirection();
+		if (dir != -1 && dir != _unit->getDirection())
+		{
+			int turnCost = std::abs(_unit->getDirection() - dir);
+			if (turnCost > 4)
+			{
+				turnCost = 8 - turnCost;
+			}
+			turnCost = turnCost * _unit->getTurnCost();
+
+			tus -= turnCost;
+			total += turnCost;
+		}
+	}
 	bool switchBack = false;
 	if (_save->getBattleGame()->getReservedAction() == BA_NONE)
 	{

@@ -519,8 +519,6 @@ uk:
   STR_TIME_UNITS_SHORT: "ОЧ>{ALT}{0}"
   STR_WEIGHT: "Вага>{ALT}{0}/{1}"
   STR_REACTIONS_SHORT: "Реакц>{ALT}{0}"
-  STR_PSIONIC_SKILL_SHORT: "П.Вмінн>{ALT}{0}"
-  STR_PSIONIC_STRENGTH_SHORT: "Ф.Сил>{ALT}{0}"
   STR_AMMO_ROUNDS_LEFT: "БОЄПРИПАСИ:{NEWLINE}ЗАРЯДІВ{NEWLINE}ЗАЛИШИЛОСЬ={ALT}{0}"
   STR_MEDI_KIT_QUANTITIES_LEFT: "Знеб>{ALT}{0}{ALT}{NEWLINE}Стим>{ALT}{1}{ALT}{NEWLINE}Ліку>{ALT}{2}"
   STR_THROW: "Кинути"

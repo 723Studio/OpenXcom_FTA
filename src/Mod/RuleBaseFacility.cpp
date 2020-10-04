@@ -21,6 +21,7 @@
 #include "Mod.h"
 #include "MapScript.h"
 #include "../Battlescape/Position.h"
+#include "../Battlescape/TileEngine.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Collections.h"
 #include "../Savegame/Base.h"
@@ -204,6 +205,30 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 	{
 		throw Exception("Battlescape map name is missing.");
 	}
+	if (_storageTiles.size() > 0)
+	{
+		if (_storageTiles.size() != 1 || _storageTiles[0] != TileEngine::invalid)
+		{
+			const auto size = 10 * _size;
+			for (const auto& p : _storageTiles)
+			{
+				if (p.x < 0 || p.x > size ||
+					p.y < 0 || p.y > size ||
+					p.z < 0 || p.z > 8) // accurate max z will be check during map creation when we know map heigth, now we only check for very bad values.
+				{
+					if (p == TileEngine::invalid)
+					{
+						throw Exception("Invalid tile position (-1, -1, -1) can be only one in storage position list.");
+					}
+					else
+					{
+						throw Exception("Tile position (" + std::to_string(p.x) + ", " + std::to_string(p.y)+ ", " + std::to_string(p.z) + ") is outside the facility area.");
+					}
+				}
+			}
+		}
+	}
+
 	Collections::removeAll(_leavesBehindOnSellNames);
 }
 

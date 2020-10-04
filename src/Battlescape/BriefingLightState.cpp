@@ -81,7 +81,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	_txtBriefing->setText(tr(desc));
 
 	_txtArmors->setWordWrap(true);
-	_txtArmors->setHidden(true);
+	_txtArmors->setVisible(false);
 
 	std::string message = checkStartingCondition(deployment);
 	if (!message.empty())
@@ -90,7 +90,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	}
 	else
 	{
-		_btnArmors->setHidden(true);
+		_btnArmors->setVisible(false);
 	}
 }
 
@@ -165,8 +165,8 @@ void BriefingLightState::btnOkClick(Action *)
  */
 void BriefingLightState::btnArmorsClick(Action *)
 {
-	_txtArmors->setHidden(!_btnArmors->getPressed());
-	_txtBriefing->setHidden(_btnArmors->getPressed());
+	_txtArmors->setVisible(_btnArmors->getPressed());
+	_txtBriefing->setVisible(!_btnArmors->getPressed());
 }
 
 }

@@ -109,7 +109,7 @@ void ConfirmNewBaseState::btnOkClick(Action *)
 	{
 		_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _cost);
 		_game->getSavedGame()->getBases()->push_back(_base);
-		_game->pushState(new BaseNameState(_base, _globe, false));
+		_game->pushState(new BaseNameState(_base, _globe, false, false));
 	}
 	else
 	{

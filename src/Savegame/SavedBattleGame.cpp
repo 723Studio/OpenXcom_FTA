@@ -1079,15 +1079,20 @@ int SavedBattleGame::getBughuntMinTurn() const
  */
 void SavedBattleGame::startFirstTurn()
 {
+	// this should be first tile with all items, even if unit is in reality on other tile.
+	Tile *inventoryTile = getSelectedUnit()->getTile();
+
+	randomizeItemLocations(inventoryTile);
+
 	resetUnitTiles();
 
-	Tile *inventoryTile = getSelectedUnit()->getTile();
-	randomizeItemLocations(inventoryTile);
+	// check what unit is still on this tile after reset.
 	if (inventoryTile->getUnit())
 	{
 		// make sure we select the unit closest to the ramp.
 		setSelectedUnit(inventoryTile->getUnit());
 	}
+
 
 	// initialize xcom units for battle
 	for (auto u : *getUnits())

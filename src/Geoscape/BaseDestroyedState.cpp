@@ -23,13 +23,18 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/TextList.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/Ufo.h"
+#include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleRegion.h"
 #include "../Engine/Options.h"
+#include "../Basescape/SellState.h"
+#include "../Menu/ErrorMessageState.h"
+#include "../Mod/RuleInterface.h"
 
 namespace OpenXcom
 {
@@ -41,7 +46,8 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20);
 	_btnOk = new TextButton(100, 20, 110, 142);
-	_txtMessage = new Text(224, 48, 48, 76);
+	_txtMessage = new Text(224, 48, 48, _partialDestruction ? 42 : 76);
+	_lstDestroyedFacilities = new TextList(208, 40, 48, 92);
 
 	// Set palette
 	setInterface("baseDestroyed");
@@ -49,6 +55,7 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 	add(_window, "window", "baseDestroyed");
 	add(_btnOk, "button", "baseDestroyed");
 	add(_txtMessage, "text", "baseDestroyed");
+	add(_lstDestroyedFacilities, "text", "baseDestroyed");
 
 	centerAllSurfaces();
 
@@ -75,6 +82,23 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 		{
 			_txtMessage->setText(tr("STR_ALIEN_MISSILES_HAVE_DESTROYED_OUR_BASE").arg(_base->getName()));
 		}
+	}
+
+	_lstDestroyedFacilities->setColumns(2, 162, 14);
+	_lstDestroyedFacilities->setBackground(_window);
+	_lstDestroyedFacilities->setSelectable(true);
+	_lstDestroyedFacilities->setMargin(8);
+	_lstDestroyedFacilities->setVisible(false);
+
+	if (_missiles && _partialDestruction)
+	{
+		for (auto each : *_base->getDestroyedFacilitiesCache())
+		{
+			std::ostringstream ss;
+			ss << each.second;
+			_lstDestroyedFacilities->addRow(2, tr(each.first->getType()).c_str(), ss.str().c_str());
+		}
+		_lstDestroyedFacilities->setVisible(true);
 	}
 
 	if (_partialDestruction)
@@ -132,8 +156,15 @@ BaseDestroyedState::~BaseDestroyedState()
 void BaseDestroyedState::btnOkClick(Action *)
 {
 	_game->popState();
+
 	if (_partialDestruction)
 	{
+		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && _base != 0 && _base->storesOverfull())
+		{
+			_game->pushState(new SellState(_base, 0, OPT_BATTLESCAPE));
+			_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+		}
+
 		// the base was damaged, but survived
 		return;
 	}

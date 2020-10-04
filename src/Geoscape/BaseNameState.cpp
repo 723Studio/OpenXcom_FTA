@@ -39,8 +39,9 @@ namespace OpenXcom
  * @param base Pointer to the base to name.
  * @param globe Pointer to the Geoscape globe.
  * @param first Is this the first base in the game?
+ * @param fixedLocation Is this the first base in the game on a fixed location?
  */
-BaseNameState::BaseNameState(Base *base, Globe *globe, bool first) : _base(base), _globe(globe), _first(first)
+BaseNameState::BaseNameState(Base *base, Globe *globe, bool first, bool fixedLocation) : _base(base), _globe(globe), _first(first), _fixedLocation(fixedLocation)
 {
 	_globe->onMouseOver(0);
 
@@ -139,14 +140,19 @@ void BaseNameState::btnOkClick(Action *)
 	if (!_edtName->getText().empty())
 	{
 		_base->setName(_edtName->getText());
-		_game->popState();
-		_game->popState();
-		if (!_first || Options::customInitialBase)
+		_game->popState(); // pop BaseNameState
+
+		if (!_fixedLocation)
 		{
+			_game->popState(); // pop ConfirmNewBaseState or BuildNewBaseState
 			if (!_first)
 			{
-				_game->popState();
+				_game->popState(); // pop BuildNewBaseState
 			}
+		}
+
+		if (!_first || Options::customInitialBase)
+		{
 			_game->pushState(new PlaceLiftState(_base, _globe, _first));
 		}
 	}

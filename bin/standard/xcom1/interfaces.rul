@@ -1313,6 +1313,7 @@ interfaces:
       - id: listExtended
         color: 208   # white
         color2: 213  # gold
+        border: 70   # grey
       - id: button
         color: 246   # purple
   - type: techTreeSelect

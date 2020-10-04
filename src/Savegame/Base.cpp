@@ -897,7 +897,7 @@ bool Base::storesOverfull(double offset) const
 }
 
 /**
- * Checks if the base's stores are soo full that even crafts cargo can't fit.
+ * Checks if the base's stores are so full that even crafts cargo can't fit.
  */
 bool Base::storesOverfullCritical() const
 {
@@ -1738,6 +1738,8 @@ std::vector<Vehicle*> *Base::getVehicles()
  */
 void Base::damageFacilities(Ufo *ufo)
 {
+	_destroyedFacilitiesCache.clear();
+
 	for (int i = 0; i < ufo->getRules()->getMissilePower();)
 	{
 		WeightedOptions options;
@@ -2100,6 +2102,8 @@ void Base::destroyFacility(std::vector<BaseFacility*>::iterator facility)
 			);
 		}
 	}
+
+	_destroyedFacilitiesCache[(*facility)->getRules()] += 1;
 	delete *facility;
 	_facilities.erase(facility);
 }
@@ -2189,7 +2193,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 			if (rule->getAliens() > 0)
 			{
 				auto type = rule->getPrisonType();
-				if (std::find(prisonBegin, prisonCurr, type) != prisonCurr)
+				if (std::find(prisonBegin, prisonCurr, type) == prisonCurr)
 				{
 					//too many prison types, give up
 					if (prisonCurr == prisonEnd)

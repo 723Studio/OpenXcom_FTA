@@ -165,4 +165,6 @@ facilities:
     buildTime: 25
     monthlyCost: 25000
     crafts: 1
+    storage: 5 #OXCE bonus because of change in handling craft storage
+    storageTiles: [[-1, -1, -1]]
     mapName: XBASE_16

@@ -123,7 +123,7 @@ UfoDetectedState::UfoDetectedState(Ufo *ufo, GeoscapeState *state, bool detected
 
 	if (SDL_GetModState() & KMOD_CTRL)
 	{
-		_btnCancel->setText(tr("STR_CANCEL_AND_IGNORE_UC"));
+		_btnCancel->setText(tr("STR_IGNORE_UC"));
 	}
 	else
 	{
@@ -266,7 +266,7 @@ void UfoDetectedState::toggleCancel(Action *)
 {
 	if (SDL_GetModState() & KMOD_CTRL)
 	{
-		_btnCancel->setText(tr("STR_CANCEL_AND_IGNORE_UC"));
+		_btnCancel->setText(tr("STR_IGNORE_UC"));
 	}
 	else
 	{

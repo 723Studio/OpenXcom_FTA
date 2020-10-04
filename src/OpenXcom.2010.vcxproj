@@ -767,6 +767,7 @@
     <ClInclude Include="Engine\FileMap.h" />
     <ClInclude Include="Engine\FlcPlayer.h" />
     <ClInclude Include="Engine\Font.h" />
+    <ClInclude Include="Engine\Functions.h" />
     <ClInclude Include="Engine\Game.h" />
     <ClInclude Include="Engine\GMCat.h" />
     <ClInclude Include="Engine\GraphSubset.h" />

@@ -45,9 +45,10 @@ private:
 	TextEdit *_edtName;
 	TextButton *_btnOk;
 	bool _first;
+	bool _fixedLocation;
 public:
 	/// Creates the Base Name state.
-	BaseNameState(Base *base, Globe *globe, bool first);
+	BaseNameState(Base *base, Globe *globe, bool first, bool fixedLocation);
 	/// Cleans up the Base Name state.
 	~BaseNameState();
 	/// Handler for clicking the OK button.

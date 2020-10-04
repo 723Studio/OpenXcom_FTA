@@ -114,6 +114,7 @@ void UnitPanicBState::think()
 					{
 						turnCost = 8-turnCost;
 					}
+					turnCost = turnCost * _unit->getTurnCost();
 
 					_unit->spendTimeUnits(turnCost);
 					_parent->statePushFront(new UnitTurnBState(_parent, ba, false));

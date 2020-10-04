@@ -359,6 +359,7 @@ ro:
   hitRatio: ""
   maxAllowedPerBase: ""
   manaRecoveryPerDay: ""
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: ""
   sickBayRelativeBonus: ""
   prisonType: ""

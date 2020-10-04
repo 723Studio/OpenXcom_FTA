@@ -209,10 +209,7 @@ void TechTreeSelectState::initLists()
 		{
 			_availableTopics.push_back(tmp);
 			_lstTopics->addRow(1, tr(tmp).c_str());
-			if (!_parent->isDiscoveredResearch(tmp))
-			{
-				_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
-			}
+			_lstTopics->setRowColor(row, _parent->getResearchColor(tmp));
 			++row;
 		}
 		_firstManufacturingTopicIndex = row;
@@ -240,10 +237,7 @@ void TechTreeSelectState::initLists()
 
 		_availableTopics.push_back(*i);
 		_lstTopics->addRow(1, tr((*i)).c_str());
-		if (!_parent->isDiscoveredResearch(*i))
-		{
-			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
-		}
+		_lstTopics->setRowColor(row, _parent->getResearchColor(*i));
 		++row;
 	}
 

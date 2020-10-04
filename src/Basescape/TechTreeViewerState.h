@@ -46,11 +46,12 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtSelectedTopic, *_txtProgress, *_txtCostIndicator;
 	TextList *_lstLeft, *_lstRight;
-	Uint8 _purple, _pink, _blue, _white, _gold;
+	Uint8 _purple, _pink, _blue, _white, _gold, _grey;
 	std::string _selectedTopic;
 	TTVMode _selectedFlag;
 	std::vector<std::string> _leftTopics, _rightTopics;
 	std::vector<TTVMode> _leftFlags, _rightFlags;
+	std::unordered_set<std::string> _disabledResearch;
 	std::unordered_set<std::string> _alreadyAvailableResearch, _alreadyAvailableManufacture, _alreadyAvailableFacilities;
 	std::unordered_set<std::string> _protectedItems, _alreadyAvailableItems;
 	void initLists();
@@ -69,6 +70,9 @@ public:
 	void btnNewClick(Action *action);
 	/// Sets the selected topic.
 	void setSelectedTopic(const std::string &selectedTopic, TTVMode topicType);
+	/// Gets the color coding for the given research topic.
+	Uint8 getResearchColor(const std::string &topic) const;
+	Uint8 getAltResearchColor(const std::string &topic) const;
 	/// Is given research topic discovered/available?
 	bool isDiscoveredResearch(const std::string &topic) const;
 	/// Is given manufacture topic discovered/available?

@@ -9,6 +9,8 @@ ja:
   STR_AVATAR_NAME_8: "#08 アンジェリーナ"
   STR_PSI_SHORT: "M.C.>{ALT}{0}/{1}"
   STR_EVASIVE_MANEUVERS: "回避行動"
+  STR_UFO_DESTROYED_BY_SPLASHDOWN: "USOは破壊された！"
+  STR_UFO_SURVIVED_SPLASHDOWN: "USOが轟沈！"
   STR_UFO_HAS_LANDED: "USOが着艦>{NEWLINE}{0}"
   GMGEO1: "ジオスケープの記録 #1"
   GMGEO2: "ジオスケープの記録 #2"

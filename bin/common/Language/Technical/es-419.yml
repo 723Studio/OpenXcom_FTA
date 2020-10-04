@@ -359,6 +359,7 @@ es-419:
   hitRatio: ""
   maxAllowedPerBase: ""
   manaRecoveryPerDay: ""
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: ""
   sickBayRelativeBonus: ""
   prisonType: ""

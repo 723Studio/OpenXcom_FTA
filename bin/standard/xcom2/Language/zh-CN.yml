@@ -300,8 +300,6 @@ zh-CN:
   STR_RIGHT_LEG: "右腿"
   STR_LEFT_LEG: "左腿"
   STR_PAIN_KILLER: "止痛药"
-  STR_PSIONIC_SKILL_SHORT: "灵能技巧>{ALT}{0}"
-  STR_PSIONIC_STRENGTH_SHORT: "灵能力量>{ALT}{0}"
   STR_THROW: "丢弃"
   STR_AUTO_SHOT: "全自动射击"
   STR_SNAP_SHOT: "速射"

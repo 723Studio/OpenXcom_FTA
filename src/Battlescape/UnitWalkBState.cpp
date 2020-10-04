@@ -410,7 +410,14 @@ void UnitWalkBState::think()
 		// except before the first step.
 		if (_beforeFirstStep)
 		{
-			_preMovementCost++;
+			if (_unit->getArmor()->getTurnBeforeFirstStep())
+			{
+				_unit->spendTimeUnits(_unit->getTurnCost());
+			}
+			else
+			{
+				_preMovementCost++;
+			}
 		}
 
 		_unit->turn();
@@ -424,6 +431,7 @@ void UnitWalkBState::think()
 		{
 			if (_beforeFirstStep)
 			{
+				_preMovementCost = _preMovementCost * _unit->getTurnCost();
 				_unit->spendTimeUnits(_preMovementCost);
 			}
 			if (Options::traceAI) { Log(LOG_INFO) << "Egads! A turn reveals new units! I must pause!"; }

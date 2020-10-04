@@ -1385,6 +1385,7 @@ bool BattlescapeGenerator::canPlaceXCOMUnit(Tile *tile)
 	if (tile &&
 		tile->getFloorSpecialTileType() == START_POINT &&
 		!tile->getMapData(O_OBJECT) &&
+		tile->getMapData(O_FLOOR) && // for clarity this is checked again, first time was in `getFloorSpecialTileType`
 		tile->getMapData(O_FLOOR)->getTUCost(MT_WALK) < 255)
 	{
 		if (_craftInventoryTile == 0)
@@ -2902,9 +2903,15 @@ void BattlescapeGenerator::generateBaseMap()
 			{
 				int x = (*i)->getX();
 				int y = (*i)->getY();
-
+				bool validPos = false;
 				for (std::vector<Position>::const_iterator j = (*i)->getRules()->getStorageTiles().begin(); j != (*i)->getRules()->getStorageTiles().end(); ++j)
 				{
+					if (*j == TileEngine::invalid)
+					{
+						validPos = true;
+						break;
+					}
+
 					if (j->x < 0 || j->x / 10 > (*i)->getRules()->getSize()
 						|| j->y < 0 || j->y / 10 > (*i)->getRules()->getSize()
 						|| j->z < 0 || j->z > _mapsize_z)
@@ -2920,6 +2927,7 @@ void BattlescapeGenerator::generateBaseMap()
 						continue;
 					}
 
+					validPos = true;
 					_save->getStorageSpace().push_back(tilePos);
 
 					if (!_craftInventoryTile) // just to be safe, make sure we have a craft inventory tile
@@ -2929,7 +2937,7 @@ void BattlescapeGenerator::generateBaseMap()
 				}
 
 				// Crash gracefully with some information before we spawn a map where no items could be placed.
-				if (_save->getStorageSpace().size() == 0)
+				if (!validPos)
 				{
 					throw Exception("Could not place items on given tiles in storage facility " + (*i)->getRules()->getType());
 				}

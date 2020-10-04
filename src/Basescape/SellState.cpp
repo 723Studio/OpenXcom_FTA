@@ -221,7 +221,7 @@ SellState::SellState(Base *base, DebriefingState *debriefingState, OptionsOrigin
 		else
 		{
 			qty = _base->getStorageItems()->getItem(rule);
-			if (Options::storageLimitsEnforced && _origin == OPT_BATTLESCAPE)
+			if (Options::storageLimitsEnforced && (_origin == OPT_BATTLESCAPE || overfullCritical))
 			{
 				for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end(); ++j)
 				{
@@ -536,7 +536,7 @@ void SellState::btnOkClick(Action *)
 	auto cleanUpContainer = [&](ItemContainer* container, const RuleItem* rule, int toRemove) -> int
 	{
 		auto curr = container->getItem(rule);
-		if (curr > toRemove)
+		if (curr >= toRemove)
 		{
 			container->removeItem(rule, toRemove);
 			return 0;
@@ -658,15 +658,6 @@ void SellState::btnOkClick(Action *)
 				break;
 			case TRANSFER_ITEM:
 				RuleItem *item = (RuleItem*)i->rule;
-				if (_debriefingState != 0)
-				{
-					// remember the decreased amount for next sell/transfer
-					_debriefingState->decreaseRecoveredItemCount(item, i->amount);
-
-					// set autosell status if we sold all of the item
-					_game->getSavedGame()->setAutosell(item, (i->qtySrc == i->amount));
-				}
-				else
 				{
 					// remove all of said items from base
 					int toRemove = cleanUpContainer(_base->getStorageItems(), item, i->amount);
@@ -675,6 +666,10 @@ void SellState::btnOkClick(Action *)
 					for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end() && toRemove; ++j)
 					{
 						toRemove = cleanUpContainer((*j)->getItems(), item, toRemove);
+						if (toRemove > 0)
+						{
+							toRemove = cleanUpCraft((*j), item, toRemove);
+						}
 					}
 
 					// if there are STILL any left to remove, take them from the transfers, and if necessary, delete it.
@@ -699,16 +694,24 @@ void SellState::btnOkClick(Action *)
 							if ((*j)->getCraft())
 							{
 								toRemove = cleanUpContainer((*j)->getCraft()->getItems(), item, toRemove);
+								if (toRemove > 0)
+								{
+									toRemove = cleanUpCraft((*j)->getCraft(), item, toRemove);
+								}
 							}
 							++j;
 						}
 					}
+				}
 
-					// clean reast of craft weapons and vehicles
-					for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end() && toRemove; ++j)
-					{
-						toRemove = cleanUpCraft((*j), item, toRemove);
-					}
+				// Note: this only updates a helper map, it doesn't affect real item recovery (that has already happened and all items are already in the base)
+				if (_debriefingState != 0)
+				{
+					// remember the decreased amount for next sell/transfer
+					_debriefingState->decreaseRecoveredItemCount(item, i->amount);
+
+					// set autosell status if we sold all of the item
+					_game->getSavedGame()->setAutosell(item, (i->qtySrc == i->amount));
 				}
 
 				break;
@@ -973,10 +976,8 @@ void SellState::changeByValue(int change, int dir)
 	_total += dir * getRow().cost * change;
 
 	// Calculate the change in storage space.
-	Craft *craft;
 	Soldier *soldier;
-	const RuleItem *item, *weapon, *ammo;
-	double total = 0.0;
+	const RuleItem *item;
 	switch (getRow().type)
 	{
 	case TRANSFER_SOLDIER:
@@ -987,19 +988,7 @@ void SellState::changeByValue(int change, int dir)
 		}
 		break;
 	case TRANSFER_CRAFT:
-		craft = (Craft*)getRow().rule;
-		for (std::vector<CraftWeapon*>::iterator w = craft->getWeapons()->begin(); w != craft->getWeapons()->end(); ++w)
-		{
-			if (*w)
-			{
-				weapon = (*w)->getRules()->getLauncherItem();
-				total += weapon->getSize();
-				ammo = (*w)->getRules()->getClipItem();
-				if (ammo)
-					total += ammo->getSize() * (*w)->getClipsLoaded();
-			}
-		}
-		_spaceChange += dir * total;
+		// Note: in OXCE, there is no storage space change, everything on the craft is already included in the base storage space calculations
 		break;
 	case TRANSFER_ITEM:
 		item = (const RuleItem*)getRow().rule;

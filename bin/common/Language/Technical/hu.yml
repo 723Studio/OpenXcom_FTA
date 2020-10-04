@@ -359,6 +359,7 @@ hu:
   hitRatio: "Találati esély"
   maxAllowedPerBase: "Bázisonkénti megengedett maximum"
   manaRecoveryPerDay: "Mana naponta"
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: "Gyengélkedő absz. bónusz"
   sickBayRelativeBonus: "Gyengélkedő rel. bónusz"
   prisonType: "Böntöntípus"

@@ -1836,6 +1836,8 @@ void Mod::loadAll()
 	// recommended user options
 	if (!_recommendedUserOptions.empty() && !Options::oxceRecommendedOptionsWereSet)
 	{
+		_recommendedUserOptions.erase("maximizeInfoScreens"); // FIXME: make proper categorisations in the next release
+
 		const std::vector<OptionInfo> &options = Options::getOptionInfo();
 		for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)
 		{
@@ -1853,6 +1855,7 @@ void Mod::loadAll()
 	if (!_fixedUserOptions.empty())
 	{
 		_fixedUserOptions.erase("oxceUpdateCheck");
+		_fixedUserOptions.erase("maximizeInfoScreens"); // FIXME: make proper categorisations in the next release
 
 		const std::vector<OptionInfo> &options = Options::getOptionInfo();
 		for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)

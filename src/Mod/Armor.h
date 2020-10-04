@@ -74,6 +74,8 @@ private:
 	int _frontArmor, _sideArmor, _leftArmorDiff, _rearArmor, _underArmor, _drawingRoutine;
 	bool _drawBubbles;
 	MovementType _movementType;
+	bool _turnBeforeFirstStep;
+	int _turnCost;
 	int _moveSound;
 	std::vector<int> _deathSoundMale, _deathSoundFemale;
 	std::vector<int> _selectUnitSoundMale, _selectUnitSoundFemale;
@@ -158,6 +160,12 @@ public:
 	bool drawBubbles() const;
 	/// DO NOT USE THIS FUNCTION OUTSIDE THE BATTLEUNIT CONSTRUCTOR OR I WILL HUNT YOU DOWN.
 	MovementType getMovementType() const;
+
+	/// Should turning before first step cost TU or not?
+	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
+	/// Gets the turn cost.
+	int getTurnCost() const { return _turnCost; }
+
 	/// Gets the move sound id. Overrides default/unit's move sound. To be used in BattleUnit constructors only too!
 	int getMoveSound() const;
 	/// Gets the male death sounds.

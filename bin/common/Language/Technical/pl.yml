@@ -359,6 +359,7 @@ pl:
   hitRatio: "Szansa trafienia"
   maxAllowedPerBase: "Maksymalna liczba w bazie"
   manaRecoveryPerDay: "Mana dziennie"
+  healthRecoveryPerDay: "Zdrowie dziennie"
   sickBayAbsoluteBonus: "Abs. premia do leczenia"
   sickBayRelativeBonus: "Wzgl. premia do leczenia"
   prisonType: "Typ więzienia"

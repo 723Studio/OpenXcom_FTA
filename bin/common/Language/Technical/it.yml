@@ -359,6 +359,7 @@ it:
   hitRatio: "% di colpire"
   maxAllowedPerBase: "Massimo per base"
   manaRecoveryPerDay: "Mana al giorno"
+  healthRecoveryPerDay: "Salute al giorno"
   sickBayAbsoluteBonus: "Bonus abs. Sickbay"
   sickBayRelativeBonus: "Bonus rel. Sickbay"
   prisonType: "Tipo prigione"

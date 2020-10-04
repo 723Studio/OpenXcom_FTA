@@ -1424,7 +1424,7 @@ void DebriefingState::prepareDebriefing()
 		}
 	}
 
-	// transforam all zombie like units to spawned ones
+	// transform all zombie-like units to spawned ones
 	std::vector<BattleUnit*> waitingTransformations;
 	for (auto* u : *battle->getUnits())
 	{

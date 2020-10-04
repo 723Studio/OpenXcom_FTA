@@ -359,6 +359,7 @@ de:
   hitRatio: "Trefferchance"
   maxAllowedPerBase: "Maximal erlaubte pro Basis"
   manaRecoveryPerDay: "Mana pro Tag"
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: "Gesamter Bonus der Krankenstation"
   sickBayRelativeBonus: ""
   prisonType: "Gefängnistyp"

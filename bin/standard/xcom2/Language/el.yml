@@ -428,8 +428,6 @@ el:
   STR_TIME_UNITS_SHORT: "ΧΜ>{ALT}{0}"
   STR_WEIGHT: "Βάρος>{ALT}{0}/{1}"
   STR_REACTIONS_SHORT: "Αντιδρ.>{ALT}{0}"
-  STR_PSIONIC_SKILL_SHORT: "Ψι.Ικαν>{ALT}{0}"
-  STR_PSIONIC_STRENGTH_SHORT: "Ψι.Δυν>{ALT}{0}"
   STR_MEDI_KIT_QUANTITIES_LEFT: "ΠΟΝΟΣ>{ALT}{0}{ALT}{NEWLINE}ΕΝΕΣΗ>{ALT}{1}{ALT}{NEWLINE}ΙΑΣΗ>{ALT}{2}"
   STR_THROW: "Ρήξε"
   STR_AUTO_SHOT: "Αυτόματη Βολή"

@@ -359,6 +359,7 @@ cs:
   hitRatio: "Šance na zásah"
   maxAllowedPerBase: "Maximum na základnu"
   manaRecoveryPerDay: "Many za den"
+  healthRecoveryPerDay: ""
   sickBayAbsoluteBonus: ""
   sickBayRelativeBonus: ""
   prisonType: "Druh vězení"

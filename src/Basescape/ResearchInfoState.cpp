@@ -44,8 +44,16 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param rule A RuleResearch which will be used to create a new ResearchProject
  */
-ResearchInfoState::ResearchInfoState(Base *base, RuleResearch *rule) : _base(base), _project(new ResearchProject(rule, int(rule->getCost() * OpenXcom::RNG::generate(50, 150)/100))), _rule(rule)
+ResearchInfoState::ResearchInfoState(Base *base, RuleResearch *rule) : _base(base), _project(nullptr), _rule(rule)
 {
+	int rng = RNG::generate(50, 150);
+	int randomizedCost = rule->getCost() * rng / 100;
+	if (rule->getCost() > 0)
+	{
+		randomizedCost = std::max(1, randomizedCost);
+	}
+	_project = new ResearchProject(rule, randomizedCost);
+
 	buildUi();
 }
 
