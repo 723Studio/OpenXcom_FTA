@@ -314,6 +314,8 @@ void Inventory::drawItems()
 	if (_selUnit != 0)
 	{
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
+		Surface stackLayer(getWidth(), getHeight(), 0, 0);
+		stackLayer.setPalette(getPalette());
 		// Soldier items
 		for (std::vector<BattleItem*>::iterator i = _selUnit->getInventory()->begin(); i != _selUnit->getInventory()->end(); ++i)
 		{
@@ -361,9 +363,9 @@ void Inventory::drawItems()
 			{
 				primers(x, y, (*i)->isFuseEnabled());
 			}
+			drawStackNumber(*i, color, stackLayer);
 		}
-		Surface stackLayer(getWidth(), getHeight(), 0, 0);
-		stackLayer.setPalette(getPalette());
+
 		// Ground items
 		int fatalWounds = 0;
 		auto& occupiedSlots = *clearOccupiedSlotsCache();
@@ -441,25 +443,40 @@ void Inventory::drawItems()
 				_stackNumber->blit(stackLayer.getSurface());
 			}
 
-			// item stacking
-			if (_stackLevel[(*i)->getSlotX()][(*i)->getSlotY()] > 1)
-			{
-				_stackNumber->setX(((*i)->getSlot()->getX() + (((*i)->getSlotX() + (*i)->getRules()->getInventoryWidth()) - _groundOffset) * RuleInventory::SLOT_W)-4);
-				if (_stackLevel[(*i)->getSlotX()][(*i)->getSlotY()] > 9)
-				{
-					_stackNumber->setX(_stackNumber->getX()-4);
-				}
-				_stackNumber->setY(((*i)->getSlot()->getY() + ((*i)->getSlotY() + (*i)->getRules()->getInventoryHeight()) * RuleInventory::SLOT_H)-6);
-				_stackNumber->setValue(_stackLevel[(*i)->getSlotX()][(*i)->getSlotY()]);
-				_stackNumber->draw();
-				_stackNumber->setColor(color);
-				_stackNumber->blit(stackLayer.getSurface());
-			}
+			// draw item stack number
+			drawStackNumber(*i, color, stackLayer);
 		}
 
 		stackLayer.blitNShade(_items, 0, 0);
 	}
 }
+
+/**
+ * Draws stack number on given item
+ */
+ void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &stackLayer)
+ {
+	int slotX = battleItem->getSlotX();
+	int slotY = battleItem->getSlotY();
+	int invX = battleItem->getSlot()->getX();
+	int invY = battleItem->getSlot()->getY();
+	int invWidth = battleItem->getRules()->getInventoryWidth();
+	int invHeight = battleItem->getRules()->getInventoryHeight();
+	if (_stackLevel[slotX][slotY] > 1)
+	{
+		int stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
+		if (_stackLevel[slotX][slotY] > 9)
+		{
+			stackX -= 4;
+		}
+		_stackNumber->setX(stackX);
+		_stackNumber->setY((invY + (slotY + invHeight) * RuleInventory::SLOT_H)-6);
+		_stackNumber->setValue(_stackLevel[slotX][slotY]);
+		_stackNumber->draw();
+		_stackNumber->setColor(color);
+		_stackNumber->blit(stackLayer.getSurface());
+	}
+ }
 
 /**
  * Draws the selected item.

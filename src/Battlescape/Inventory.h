@@ -68,6 +68,8 @@ private:
 	void moveItem(BattleItem *item, RuleInventory *slot, int x, int y);
 	/// Gets the slot in the specified position.
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
+	/// Draws the number in item stack.
+	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
 public:
 	/// Creates a new inventory view at the specified position and size.
 	Inventory(Game *game, int width, int height, int x = 0, int y = 0, bool base = false);
