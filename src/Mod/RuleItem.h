@@ -297,6 +297,7 @@ private:
 	Unit* _vehicleUnit;
 	double _size;
 	int _costBuy, _costSell, _transferTime, _weight;
+	int _stackSize;
 	int _bigSprite;
 	int _floorSprite;
 	int _handSprite, _bulletSprite;
@@ -749,7 +750,8 @@ public:
 	bool isMissionObjective() const { return _missionObjective; } 
 	/// Checks if this item is an alien artifact.
 	bool isAlienArtifact() const { return _alienArtifact; }
-
+	/// Get max size of item stack in soldier inventory.
+	int getStackSize() const { return _stackSize; }
 	/// Should this weapon arc?
 	bool getArcingShot() const;
 	/// Which experience training mode to use for this weapon?
