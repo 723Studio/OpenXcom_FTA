@@ -349,10 +349,11 @@ private:
 	int _intelligence, _aggression, _spotter, _sniper, _energyRecovery;
 	SpecialAbility _specab;
 	const Unit *_spawnUnit = nullptr;
+	const Unit* _altUnit = nullptr;
 	std::string _spawnUnitName;
 	std::string _specialObjectiveType;
 	bool _livingWeapon;
-	std::string _meleeWeapon, _psiWeapon;
+	std::string _meleeWeapon, _psiWeapon, _altRecoveredUnit;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
 	std::vector<std::vector<const RuleItem*> > _builtInWeapons;
 	bool _capturable;
@@ -443,6 +444,9 @@ public:
 	bool canSurrender() const;
 	/// Gets special objective type of a unit.
 	const std::string& getSpecialObjectiveType() const { return _specialObjectiveType; };
+	/// Gets alternative unit for recovery.
+	const Unit* getAltUnit() const { return _altUnit; };
+	//const std::string& getAltRecoveredUnit() const { return _altUnit->getType(); }; //_altRecoveredUnit
 	/// Checks if this unit surrenders automatically, if all other units surrendered too.
 	bool autoSurrender() const;
 	bool isLeeroyJenkins() const { return _isLeeroyJenkins; };

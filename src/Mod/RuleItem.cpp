@@ -726,7 +726,10 @@ void RuleItem::afterLoad(const Mod* mod)
 		}
 		else
 		{
-			throw Exception("Sorry modders, cannot recover live aliens from random inorganic junk '" + pair.first + "'!");
+			if (!mod->getIsFTAGame())
+			{
+				throw Exception("Sorry modders, cannot recover live aliens from random inorganic junk '" + pair.first + "'!");
+			}
 		}
 	}
 

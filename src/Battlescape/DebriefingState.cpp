@@ -2570,8 +2570,18 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base)
  */
 void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 {
+	RuleItem* liveAlienItemRule;
+	auto altUnit = from->getUnitRules()->getAltUnit();
+	if (altUnit != nullptr)
+	{
+		liveAlienItemRule = _game->getMod()->getItem(altUnit->getType());
+	}
+	else
+	{
+		liveAlienItemRule = _game->getMod()->getItem(from->getType());
+	}
+	
 	// Transform a live alien into one or more recovered items?
-	RuleItem* liveAlienItemRule = _game->getMod()->getItem(from->getType());
 	if (liveAlienItemRule && !liveAlienItemRule->getRecoveryTransformations().empty())
 	{
 		addItemsToBaseStores(liveAlienItemRule, base, 1, true);
@@ -2581,15 +2591,13 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		return;
 	}
 
-	std::string type = from->getType();
-	RuleItem *ruleLiveAlienItem = _game->getMod()->getItem(type);
-	bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
+	bool killPrisonersAutomatically = base->getAvailableContainment(liveAlienItemRule->getPrisonType()) == 0;
 	if (killPrisonersAutomatically)
 	{
 		// check also other bases, maybe we can transfer/redirect prisoners there
 		for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 		{
-			if ((*i)->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) > 0)
+			if ((*i)->getAvailableContainment(liveAlienItemRule->getPrisonType()) > 0)
 			{
 				killPrisonersAutomatically = false;
 				break;
@@ -2598,7 +2606,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 	}
 	if (killPrisonersAutomatically)
 	{
-		_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 1; // 1 = not available in any base
+		_containmentStateInfo[liveAlienItemRule->getPrisonType()] = 1; // 1 = not available in any base
 
 		if (!from->getArmor()->getCorpseBattlescape().empty())
 		{
@@ -2616,7 +2624,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 	}
 	else
 	{
-		RuleResearch *research = _game->getMod()->getResearch(type);
+		RuleResearch *research = _game->getMod()->getResearch(liveAlienItemRule->getType());
 		bool surrendered = (!from->isOut() || from->getStatus() == STATUS_IGNORE_ME)
 			&& (from->isSurrendering() || _game->getSavedGame()->getSavedBattle()->getChronoTrigger() == FORCE_WIN_SURRENDER);
 		if (research != 0 && !_game->getSavedGame()->isResearched(research))
@@ -2634,14 +2642,14 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, 10);
 		}
 
-		addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);
-		int availableContainment = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType());
-		int usedContainment = base->getUsedContainment(ruleLiveAlienItem->getPrisonType());
+		addItemsToBaseStores(liveAlienItemRule, base, 1, false);
+		int availableContainment = base->getAvailableContainment(liveAlienItemRule->getPrisonType());
+		int usedContainment = base->getUsedContainment(liveAlienItemRule->getPrisonType());
 		int freeContainment = availableContainment - (usedContainment * _limitsEnforced);
 		// no capacity, or not enough capacity
 		if (availableContainment == 0 || freeContainment < 0)
 		{
-			_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 2; // 2 = overfull
+			_containmentStateInfo[liveAlienItemRule->getPrisonType()] = 2; // 2 = overfull
 		}
 	}
 }

@@ -91,7 +91,8 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<int>(_pickUpWeaponsMoreActively);
 	_meleeWeapon = node["meleeWeapon"].as<std::string>(_meleeWeapon);
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
-	_capturable = node["capturable"].as<bool>(_capturable); 
+	_capturable = node["capturable"].as<bool>(_capturable);
+	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
 	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType);
 	_builtInWeaponsNames = node["builtInWeaponSets"].as<std::vector<std::vector<std::string> > >(_builtInWeaponsNames);
 	if (node["builtInWeapons"])
@@ -121,6 +122,13 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
+	mod->linkRule(_altUnit, _altRecoveredUnit);
+
+	/*if (!_altRecoveredUnit.empty() && !mod->getUnit(_altRecoveredUnit))
+	{
+		throw Exception("Unit type: '" + this->getType() + "' has broken link in altRecoveredUnit: '" + _altRecoveredUnit +"'!");
+	}*/
+	
 }
 
 /**
