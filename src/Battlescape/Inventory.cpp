@@ -46,6 +46,7 @@
 #include <unordered_map>
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Engine/Logger.h"
 #include "TileEngine.h"
 
 namespace OpenXcom
@@ -454,29 +455,30 @@ void Inventory::drawItems()
 /**
  * Draws stack number on given item
  */
- void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &stackLayer)
- {
+void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &stackLayer)
+{
 	int slotX = battleItem->getSlotX();
 	int slotY = battleItem->getSlotY();
 	int invX = battleItem->getSlot()->getX();
 	int invY = battleItem->getSlot()->getY();
 	int invWidth = battleItem->getRules()->getInventoryWidth();
 	int invHeight = battleItem->getRules()->getInventoryHeight();
-	if (_stackLevel[slotX][slotY] > 1)
+	const std::string &inventoryId = battleItem->getSlot()->getId();
+	if (_stackLevel[inventoryId][slotX][slotY] > -1000)
 	{
 		int stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
-		if (_stackLevel[slotX][slotY] > 9)
+		if (_stackLevel[inventoryId][slotX][slotY] > 9)
 		{
 			stackX -= 4;
 		}
 		_stackNumber->setX(stackX);
 		_stackNumber->setY((invY + (slotY + invHeight) * RuleInventory::SLOT_H)-6);
-		_stackNumber->setValue(_stackLevel[slotX][slotY]);
+		_stackNumber->setValue(_stackLevel[inventoryId][slotX][slotY]);
 		_stackNumber->draw();
 		_stackNumber->setColor(color);
 		_stackNumber->blit(stackLayer.getSurface());
 	}
- }
+}
 
 /**
  * Draws the selected item.
@@ -589,9 +591,12 @@ void Inventory::setSelectedItem(BattleItem *item)
 	_selItem = (item && !item->getRules()->isFixed()) ? item : 0;
 	if (_selItem)
 	{
-		if (_selItem->getSlot()->getType() == INV_GROUND)
+		if (
+			_selItem->getSlot()->getType() == INV_GROUND
+			|| isItemStackable(_selItem)
+		   )
 		{
-			_stackLevel[_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
+			_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
 		}
 	}
 	else
@@ -787,7 +792,8 @@ void Inventory::mouseClick(Action *action, State *state)
 
 						if (newSlot->getType() != INV_GROUND)
 						{
-							_stackLevel[item->getSlotX()][item->getSlotY()] -= 1;
+							// FIXME: which slot to choose
+							_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] -= 1;
 
 							placed = fitItem(newSlot, item, warning);
 
@@ -805,7 +811,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							}
 							if (!placed)
 							{
-								_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] += 1;
 							}
 						}
 						else
@@ -853,7 +859,7 @@ void Inventory::mouseClick(Action *action, State *state)
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 
-				bool canStack = slot->getType() == INV_GROUND && canBeStacked(item, _selItem);
+				bool canStack = (slot->getType() == INV_GROUND || isItemStackable(_selItem)) && canBeStacked(item, _selItem);
 
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
@@ -868,9 +874,9 @@ void Inventory::mouseClick(Action *action, State *state)
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
 							moveItem(_selItem, slot, x, y);
-							if (slot->getType() == INV_GROUND)
+							if (slot->getType() == INV_GROUND || isItemStackable(_selItem))
 							{
-								_stackLevel[x][y] += 1;
+								_stackLevel[slot->getId()][x][y] += 1;
 							}
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
@@ -885,7 +891,7 @@ void Inventory::mouseClick(Action *action, State *state)
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
 							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+							_stackLevel[slot->getId()][item->getSlotX()][item->getSlotY()] += 1;
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 						}
@@ -1009,7 +1015,7 @@ void Inventory::mouseClick(Action *action, State *state)
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
 							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+							_stackLevel[slot->getId()][item->getSlotX()][item->getSlotY()] += 1;
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 						}
@@ -1077,9 +1083,9 @@ void Inventory::mouseClick(Action *action, State *state)
 		}
 		else
 		{
-			if (_selItem->getSlot()->getType() == INV_GROUND)
+			if (_selItem->getSlot()->getType() == INV_GROUND || isItemStackable(_selItem))
 			{
-				_stackLevel[_selItem->getSlotX()][_selItem->getSlotY()] += 1;
+				_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] += 1;
 			}
 			// Return item to original position
 			setSelectedItem(0);
@@ -1517,7 +1523,7 @@ void Inventory::arrangeGround(int alterOffset)
 						{
 							j->setSlotX(x);
 							j->setSlotY(y);
-							_stackLevel[x][y] += 1;
+							_stackLevel[j->getSlot()->getId()][x][y] += 1;
 						}
 						donePlacing = true;
 					}
@@ -1617,6 +1623,14 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 		}
 	}
 	return placed;
+}
+
+/**
+ * Check if item can be placed in stacks 
+ */
+bool Inventory::isItemStackable(BattleItem *item)
+{
+	return item && (item->getRules()->getStackSize() > 1);
 }
 
 /**
