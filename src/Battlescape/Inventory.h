@@ -49,7 +49,7 @@ private:
 	bool _tu, _base;
 	BattleItem *_mouseOverItem;
 	int _groundOffset, _animFrame;
-	std::map<int, std::map<int, int> > _stackLevel;
+	std::map<std::string, std::map<int, std::map<int, int> > > _stackLevel;
 	std::vector<std::vector<char>> _occupiedSlotsCache;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	NumberText *_stackNumber;
@@ -70,6 +70,8 @@ private:
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
 	/// Draws the number in item stack.
 	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
+	/// Checks if item can be placed in stacks
+	bool isItemStackable(BattleItem *item);
 public:
 	/// Creates a new inventory view at the specified position and size.
 	Inventory(Game *game, int width, int height, int x = 0, int y = 0, bool base = false);
