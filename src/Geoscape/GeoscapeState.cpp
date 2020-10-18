@@ -2318,17 +2318,10 @@ void GeoscapeState::time1Day()
 				t->setItems(research->getSpawnedItem());
 				base->getTransfers()->push_back(t);
 			}
-			RuleEvent* spawnedEventRule = _game->getMod()->getEvent(research->getSpawnedEvent());
-			if (spawnedEventRule)
+			auto researchEvent = research->getSpawnedEvent();
+			if (!researchEvent.empty())
 			{
-				GeoscapeEvent* newEvent = new GeoscapeEvent(*spawnedEventRule);
-				int minutes = (spawnedEventRule->getTimer() + (RNG::generate(0, spawnedEventRule->getTimerRandom()))) / 30 * 30;
-				if (minutes < 60) minutes = 60; // just in case
-				newEvent->setSpawnCountdown(minutes);
-				saveGame->getGeoscapeEvents().push_back(newEvent);
-
-				// remember that it has been generated
-				saveGame->addGeneratedEvent(spawnedEventRule);
+				_game->getMasterMind()->spawnEvent(researchEvent);
 			}
 			// 3c. handle getonefrees (topic+lookup)
 			if (!research->getGetOneFree().empty() || !research->getGetOneFreeProtected().empty())

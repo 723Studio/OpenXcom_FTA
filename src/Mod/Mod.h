@@ -257,7 +257,7 @@ private:
 	int _defeatScore, _defeatFunds;
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
-	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _newBaseUnlockResearch;
+	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _baseConstructionUnlockResearch, _newBaseUnlockResearch;
 	std::string _ufopaediaUnlockResearch;
 
 	std::string _destroyedFacility;
@@ -779,7 +779,8 @@ public:
 	/// Gets the research topic required for building XCOM bases on fakeUnderwater globe textures.
 	const std::string &getFakeUnderwaterBaseUnlockResearch() const { return _fakeUnderwaterBaseUnlockResearch; }
 	/// Gets the research topic required for building XCOM bases.
-	const std::string &getNewBaseUnlockResearch() const { return _newBaseUnlockResearch; }
+	const std::string &getNewBaseUnlockResearch() const { return _newBaseUnlockResearch; } //OXCE version
+	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; } //FtA version
 	/// Gets the research topic required for using Ufopaedia.
 	const std::string& getUfopaediaUnlockResearch() const { return _ufopaediaUnlockResearch; }
 
