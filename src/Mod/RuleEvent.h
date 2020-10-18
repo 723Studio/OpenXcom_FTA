@@ -25,6 +25,24 @@
 
 namespace OpenXcom
 {
+/**
+* Definition of one custom player answer to Geoscape Event.
+*/
+struct CustomAnswer
+{
+	std::string title;
+	std::vector<std::string> spawnEvent;
+	std::string description;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node& node)
+	{
+		title = node["title"].as<std::string>(title);
+		spawnEvent = node["spawnEvent"].as<std::vector<std::string>>(spawnEvent);
+		description = node["description"].as<std::string>(description);
+	}
+
+};
 
 /**
  * Represents a custom Geoscape event.
@@ -40,12 +58,13 @@ private:
 	int _spawnedPersons;
 	std::string _spawnedPersonType, _spawnedPersonName;
 	YAML::Node _spawnedSoldier;
-	std::map<std::string, int> _everyMultiItemList;
+	std::map<std::string, int> _everyMultiItemList, _reputationScore;
 	std::vector<std::string> _everyItemList, _randomItemList;
 	WeightedOptions _weightedItemList;
 	std::vector<std::string> _researchList;
 	std::string _interruptResearch;
 	int _timer, _timerRandom;
+	std::map<int, CustomAnswer> _answers;
 public:
 	/// Creates a blank RuleEvent.
 	RuleEvent(const std::string &name);
@@ -78,7 +97,8 @@ public:
 	const std::string& getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
 	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
-
+	/// Gets a list reputation score to update.
+	const std::map<std::string, int>& getReputationScore() const { return _reputationScore; }
 	/// Gets a list of items; they are all transferred to HQ stores when this event pops up.
 	const std::map<std::string, int> &getEveryMultiItemList() const { return _everyMultiItemList; }
 	/// Gets a list of items; they are all transferred to HQ stores when this event pops up.
@@ -95,6 +115,8 @@ public:
 	int getTimer() const { return _timer; }
 	/// Gets value for calculation of random part of delay for this event.
 	int getTimerRandom() const { return _timerRandom; }
+	/// Gets custom player answers for this event.
+	const std::map<int, CustomAnswer>&getCustomAnswers() const { return _answers; }
 };
 
 }

@@ -147,6 +147,10 @@ void GlobalResearchState::onOpenTechTreeViewer(Action *)
 
 	if (selectedTopic)
 	{
+		if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+		{
+			return;
+		}
 		_game->pushState(new TechTreeViewerState(selectedTopic, 0));
 	}
 }

@@ -68,6 +68,7 @@ private:
 	std::string _customUfo;
 	std::string _enviroEffects, _startingCondition;
 	std::string _unlockedResearch, _missionBountyItem;
+	std::string _alternativeDeployment, _alternativeDeploymentResearch;
 	int _bughuntMinTurn;
 	std::vector<DeploymentData> _data;
 	int _width, _length, _height, _civilians;
@@ -75,7 +76,7 @@ private:
 	std::map<std::string, int> _civiliansByType;
 	std::vector<std::string> _terrains, _music;
 	int _shade, _minShade, _maxShade;
-	std::string _nextStage, _race, _script;
+	std::string _nextStage, _race, _script, _battleScript, _extendedObjectiveType;
 	std::vector<std::string> _randomRaces;
 	bool _finalDestination, _isAlienBase, _isHidden;
 	int _fakeUnderwaterSpawnChance;
@@ -113,6 +114,10 @@ public:
 	std::string getUnlockedResearch() const;
 	/// Gets the item to be recovered/given after a successful mission.
 	std::string getMissionBountyItem() const;
+	/// Gets the Alien Deployment's alternative deployment to show the player.
+	const std::string& getAlternativeDeploymentName() const { return _alternativeDeployment; };
+	/// Gets the Alien Deployment's research, that would update alien deployment to alternative.
+	const std::string& getAlternativeDeploymentResearchName() const { return _alternativeDeploymentResearch; };
 	/// Gets the bug hunt mode minimum turn requirement (default = 0 = not used).
 	int getBughuntMinTurn() const;
 	/// Gets a pointer to the data.
@@ -139,8 +144,12 @@ public:
 	std::string getNextStage() const;
 	/// Gets the race to use in the next stage.
 	std::string getRace() const;
-	/// Gets the script to use for this deployment.
+	/// Gets the map script to use for this deployment.
 	std::string getScript() const;
+	/// Gets the battle script to use for this deployment.
+	std::string getBattleScript() const { return _battleScript; };
+	/// Gets the extendedObjective for this deployment.
+	std::string getExtendedObjectiveType() const { return _extendedObjectiveType; };
 	/// Checks if this is the destination for the final mission (mars stage 1, t'leth stage 1).
 	bool isFinalDestination() const;
 	/// Gets the cutscene to play when this mission is won.

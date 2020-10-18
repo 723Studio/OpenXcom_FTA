@@ -27,6 +27,7 @@
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
 #include "../Savegame/Base.h"
+#include "../FTA/DiplomacyStartState.h"
 #include "../Basescape/ManufactureState.h"
 #include "../Basescape/PurchaseState.h"
 
@@ -135,7 +136,14 @@ void CannotReequipState::btnManufactureClick(Action *)
  */
 void CannotReequipState::btnPurchaseClick(Action *)
 {
-	_game->pushState(new PurchaseState(_base));
+	if (_game->getMod()->getIsFTAGame())
+	{
+		_game->pushState(new DiplomacyStartState(_base, false));
+	}
+	else
+	{
+		_game->pushState(new PurchaseState(_base));
+	}
 }
 
 }

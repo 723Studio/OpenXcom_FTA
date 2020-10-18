@@ -31,8 +31,8 @@ namespace OpenXcom
 RuleMissionScript::RuleMissionScript(const std::string &type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _label(0), _executionOdds(100),
 	_targetBaseOdds(0), _minDifficulty(0), _maxRuns(-1), _avoidRepeats(0), _delay(0), _randomDelay(0),
-	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
-	_useTable(true), _siteType(false)
+	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
+	_useTable(true), _siteType(false), _allowedProcessor(0)
 {
 }
 
@@ -78,9 +78,12 @@ void RuleMissionScript::load(const YAML::Node& node)
 	_randomDelay = node["randomDelay"].as<int>(_randomDelay);
 	_minScore = node["minScore"].as<int>(_minScore);
 	_maxScore = node["maxScore"].as<int>(_maxScore);
+	_minLoyalty = node["minLoyalty"].as<int>(_minLoyalty);
+	_maxLoyalty = node["maxLoyalty"].as<int>(_maxLoyalty);
 	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
 	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
 	_conditionals = node["conditionals"].as<std::vector<int> >(_conditionals);
+	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor);
 	if (const YAML::Node &weights = node["missionWeights"])
 	{
 		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)

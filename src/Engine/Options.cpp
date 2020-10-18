@@ -183,6 +183,7 @@ void create()
 	_info.push_back(OptionInfo("allowBuildingQueue", &allowBuildingQueue, false, "STR_ALLOWBUILDINGQUEUE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("craftLaunchAlways", &craftLaunchAlways, false, "STR_CRAFTLAUNCHALWAYS", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("storageLimitsEnforced", &storageLimitsEnforced, false, "STR_STORAGELIMITSENFORCED", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo("containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("canSellLiveAliens", &canSellLiveAliens, false, "STR_CANSELLLIVEALIENS", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("anytimePsiTraining", &anytimePsiTraining, false, "STR_ANYTIMEPSITRAINING", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("globeSeasons", &globeSeasons, false, "STR_GLOBESEASONS", "STR_GEOSCAPE"));
@@ -516,7 +517,7 @@ static void loadArgs()
 static bool showHelp()
 {
 	std::ostringstream help;
-	help << "OpenXcom v" << OPENXCOM_VERSION_SHORT << std::endl;
+	help << "OpenXcom v" << OPENXCOM_FTA_VERSION_SHORT << std::endl;
 	help << "Usage: openxcom [OPTION]..." << std::endl << std::endl;
 	help << "-data PATH" << std::endl;
 	help << "        use PATH as the default Data Folder instead of auto-detecting" << std::endl << std::endl;
@@ -602,7 +603,7 @@ bool init()
 	// this enables writes to the log file and filters already emitted messages
 	CrossPlatform::setLogFileName(getUserFolder() + "openxcom.log");
 
-	Log(LOG_INFO) << "OpenXcom Version: " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	Log(LOG_INFO) << "OpenXcom Version: " << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT;
 #ifdef _WIN64
 	Log(LOG_INFO) << "Platform: Windows 64 bit";
 #elif _WIN32

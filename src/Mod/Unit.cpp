@@ -62,6 +62,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_showFullNameInAlienInventory = node["showFullNameInAlienInventory"].as<int>(_showFullNameInAlienInventory);
 	_rank = node["rank"].as<std::string>(_rank);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
+	_statsRandom.merge(node["statsRandom"].as<UnitStats>(_statsRandom));
 	_armorName = node["armor"].as<std::string>(_armorName);
 	_standHeight = node["standHeight"].as<int>(_standHeight);
 	_kneelHeight = node["kneelHeight"].as<int>(_kneelHeight);
@@ -91,6 +92,8 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_meleeWeapon = node["meleeWeapon"].as<std::string>(_meleeWeapon);
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
 	_capturable = node["capturable"].as<bool>(_capturable);
+	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
+	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType);
 	_builtInWeaponsNames = node["builtInWeaponSets"].as<std::vector<std::vector<std::string> > >(_builtInWeaponsNames);
 	if (node["builtInWeapons"])
 	{
@@ -106,6 +109,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	mod->loadSoundOffset(_type, _startMovingSound, node["startMovingSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _selectWeaponSound, node["selectWeaponSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _annoyedSound, node["annoyedSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _spawnedUnitSound, node["spawnedUnitSound"], "BATTLE.CAT");
 
 	mod->loadSoundOffset(_type, _moveSound, node["moveSound"], "BATTLE.CAT");
 }
@@ -118,6 +122,13 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
+	mod->linkRule(_altUnit, _altRecoveredUnit);
+
+	/*if (!_altRecoveredUnit.empty() && !mod->getUnit(_altRecoveredUnit))
+	{
+		throw Exception("Unit type: '" + this->getType() + "' has broken link in altRecoveredUnit: '" + _altRecoveredUnit +"'!");
+	}*/
+	
 }
 
 /**
@@ -146,6 +157,15 @@ std::string Unit::getCivilianRecoveryType() const
 UnitStats *Unit::getStats()
 {
 	return &_stats;
+}
+
+/**
+ * Returns the unit's random stats data object.
+ * @return The unit's random stats.
+ */
+UnitStats* Unit::getRandomStats()
+{
+	return &_statsRandom;
 }
 
 /**

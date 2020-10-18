@@ -33,6 +33,7 @@
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../FTA/MasterMind.h"
 #include "Action.h"
 #include "Exception.h"
 #include "Options.h"
@@ -53,7 +54,7 @@ const double Game::VOLUME_GRADIENT = 10.0;
  * creates the display screen and sets up the cursor.
  * @param title Title of the game window.
  */
-Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0), _mod(0), _quit(false), _init(false), _update(false),  _mouseActive(true), _timeUntilNextFrame(0)
+Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0), _mod(0), _mind(0), _quit(false), _init(false), _update(false),  _mouseActive(true), _timeUntilNextFrame(0)
 {
 	Options::reload = false;
 	Options::mute = false;
@@ -101,6 +102,8 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 	_lang = new Language();
 
 	_timeOfLastFrame = 0;
+
+	_mind = new MasterMind(this);
 }
 
 /**
@@ -121,6 +124,7 @@ Game::~Game()
 	delete _cursor;
 	delete _lang;
 	delete _save;
+	delete _mind;
 	delete _mod;
 	delete _screen;
 	delete _fpsCounter;

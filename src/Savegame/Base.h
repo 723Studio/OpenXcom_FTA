@@ -30,6 +30,7 @@ namespace OpenXcom
 class RuleCraft;
 class Soldier;
 class Craft;
+class CovertOperation;
 class ItemContainer;
 class Transfer;
 class Language;
@@ -91,6 +92,7 @@ private:
 	std::vector<BaseFacility*> _facilities;
 	std::vector<Soldier*> _soldiers;
 	std::vector<Craft*> _crafts;
+	std::vector<CovertOperation*> _covertOperations;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
 	int _scientists, _engineers;
@@ -134,6 +136,14 @@ public:
 	std::vector<Craft*> *getCrafts() {	return &_crafts; }
 	/// Gets the base's crafts.
 	const std::vector<Craft*> *getCrafts() const { return &_crafts; }
+	/// Gets the base's covert operations.
+	std::vector<CovertOperation*> &getCovertOperations() {	return _covertOperations; }
+	/// Gets the base's covert operations.
+	const std::vector<CovertOperation*> &getCovertOperations() const { return _covertOperations; }
+	/// Adds new ongoing Covert Operation
+	void addCovertOperation(CovertOperation * operation);
+	/// Removes finished Covert Operation
+	void removeCovertOperation(CovertOperation* operation);
 	/// Gets the base's transfers.
 	std::vector<Transfer*> *getTransfers() { return &_transfers; }
 	/// Gets the base's transfers.

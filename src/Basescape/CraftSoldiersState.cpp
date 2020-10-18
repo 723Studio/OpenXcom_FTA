@@ -285,7 +285,7 @@ void CraftSoldiersState::initList(size_t scrl)
 		{
 			color = _lstSoldiers->getSecondaryColor();
 		}
-		else if ((*i)->getCraft() != 0)
+		else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0)
 		{
 			color = _otherCraftColor;
 		}
@@ -442,7 +442,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			s->setCraft(0);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 		}
-		else if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
+		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0)
 		{
 			color = _otherCraftColor;
 		}
@@ -513,18 +513,22 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	int row = 0;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		color = _lstSoldiers->getColor();
-		if ((*i)->getCraft() && (*i)->getCraft()->getStatus() != "STR_OUT")
+		if ((*i)->getCovertOperation() != 0)
+		{ }
+		else
 		{
-			(*i)->setCraft(0);
-			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
+			color = _lstSoldiers->getColor();
+			if ((*i)->getCraft() && (*i)->getCraft()->getStatus() != "STR_OUT")
+			{
+				(*i)->setCraft(0);
+				_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
+			}
+			else if ((*i)->getCraft() && (*i)->getCraft()->getStatus() == "STR_OUT")
+			{
+				color = _otherCraftColor;
+			}
+			_lstSoldiers->setRowColor(row, color);
 		}
-		else if ((*i)->getCraft() && (*i)->getCraft()->getStatus() == "STR_OUT")
-		{
-			color = _otherCraftColor;
-		}
-		_lstSoldiers->setRowColor(row, color);
-
 		row++;
 	}
 

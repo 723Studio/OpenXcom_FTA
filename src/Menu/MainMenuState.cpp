@@ -192,7 +192,7 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_txtTitle->setBig();
 	std::ostringstream title;
 	title << tr("STR_OPENXCOM") << Unicode::TOK_NL_SMALL;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	title << "OpenXcom " << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT;
 	_txtTitle->setText(title.str());
 }
 
@@ -283,7 +283,7 @@ void MainMenuState::btnUpdateClick(Action*)
 #else
 	const std::string relativeExeZipFileName = _debugInVisualStudio ? "Debug/exe.zip" : "exe.zip";
 #endif
-	const std::string relativeExeNewFileName = _debugInVisualStudio ? "Debug/OpenXcomEx.exe.new" : "OpenXcomEx.exe.new";
+	const std::string relativeExeNewFileName = _debugInVisualStudio ? "Debug/OpenXcomFTA.exe.new" : "OpenXcomFTA.exe.new";
 
 	const std::string commonDirFilename = Options::getDataFolder() + "common";
 	const std::string commonZipFilename = Options::getDataFolder() + "common.zip";
@@ -304,7 +304,7 @@ void MainMenuState::btnUpdateClick(Action*)
 #else
 	const std::string exeZipFilename = exePath + "exe.zip";
 #endif
-	const std::string exeNewFilename = exePath + "OpenXcomEx.exe.new";
+	const std::string exeNewFilename = exePath + "OpenXcomFTA.exe.new";
 #ifdef _WIN64
 	const std::string exeZipUrl = "https://openxcom.org/oxce/" + subdir + "exe64.zip";
 #else
@@ -394,7 +394,7 @@ void MainMenuState::btnUpdateClick(Action*)
 	// 10. extract exe zip
 	if (CrossPlatform::fileExists(exeZipFilename) && CrossPlatform::fileExists(relativeExeZipFileName))
 	{
-		const std::string file_to_extract = "OpenXcomEx.exe.new";
+		const std::string file_to_extract = "OpenXcomFTA.exe.new";
 		SDL_RWops *rwo_read = FileMap::zipGetFileByName(relativeExeZipFileName, file_to_extract);
 		if (!rwo_read) {
 			Log(LOG_ERROR) << "Step 10a: failed to unzip file.";
@@ -453,7 +453,7 @@ void MainMenuState::btnUpdateClick(Action*)
 			batch << "echo Removing the old version...\n";
 			batch << "del " << exeFilenameOnly << "\n";
 			batch << "echo Preparing the new version...\n";
-			batch << "ren OpenXcomEx.exe.new " << exeFilenameOnly << "\n";
+			batch << "ren OpenXcomFTA.exe.new " << exeFilenameOnly << "\n";
 			batch << "echo Starting the new version...\n";
 			batch << "timeout 2\n";
 			batch << "start " << exeFilenameOnly << "\n"; // asynchronous
