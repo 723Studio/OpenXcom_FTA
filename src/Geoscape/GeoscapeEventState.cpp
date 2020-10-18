@@ -32,11 +32,13 @@
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleRegion.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -209,6 +211,43 @@ void GeoscapeEventState::eventLogic()
 
 	// 2. give/take funds
 	save->setFunds(save->getFunds() + rule.getFunds());
+
+	// 3. spawn/transfer persons (soldiers, engineers, scientists, ...)
+	const std::string& spawnedPersonType = rule.getSpawnedPersonType();
+	if (rule.getSpawnedPersons() > 0 && !spawnedPersonType.empty())
+	{
+		if (spawnedPersonType == "STR_SCIENTIST")
+		{
+			Transfer* t = new Transfer(24);
+			t->setScientists(rule.getSpawnedPersons());
+			hq->getTransfers()->push_back(t);
+		}
+		else if (spawnedPersonType == "STR_ENGINEER")
+		{
+			Transfer* t = new Transfer(24);
+			t->setEngineers(rule.getSpawnedPersons());
+			hq->getTransfers()->push_back(t);
+		}
+		else
+		{
+			RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+			if (ruleSoldier)
+			{
+				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
+				{
+					Transfer* t = new Transfer(24);
+					Soldier* s = mod->genSoldier(save, ruleSoldier->getType());
+					if (!rule.getSpawnedPersonName().empty())
+					{
+						s->setName(tr(rule.getSpawnedPersonName()));
+					}
+					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
+					t->setSoldier(s);
+					hq->getTransfers()->push_back(t);
+				}
+			}
+		}
+	}
 
 	// 3. spawn/transfer item into the HQ
 	std::map<std::string, int> itemsToTransfer;

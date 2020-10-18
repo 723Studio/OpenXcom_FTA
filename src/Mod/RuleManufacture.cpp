@@ -67,6 +67,10 @@ void RuleManufacture::load(const YAML::Node &node, Mod* mod, int listOrder)
 	_randomProducedItemsNames = node["randomProducedItems"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_randomProducedItemsNames);
 	_spawnedPersonType = node["spawnedPersonType"].as<std::string>(_spawnedPersonType);
 	_spawnedPersonName = node["spawnedPersonName"].as<std::string>(_spawnedPersonName);
+	if (node["spawnedSoldier"])
+	{
+		_spawnedSoldier = node["spawnedSoldier"];
+	}
 	_listOrder = node["listOrder"].as<int>(_listOrder);
 	if (!_listOrder)
 	{
@@ -262,6 +266,17 @@ int RuleManufacture::getManufactureTime() const
 int RuleManufacture::getManufactureCost() const
 {
 	return _cost;
+}
+
+/**
+ * Checks if there's enough funds to manufacture one object.
+ * @param funds Current funds.
+ * @return True if manufacture is possible.
+ */
+bool RuleManufacture::haveEnoughMoneyForOneMoreUnit(int64_t funds) const
+{
+	// either we have enough money, or the production doesn't cost anything
+	return funds >= _cost || _cost <= 0;
 }
 
 /**

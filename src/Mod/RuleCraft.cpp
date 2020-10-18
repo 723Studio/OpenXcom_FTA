@@ -35,7 +35,7 @@ RuleCraft::RuleCraft(const std::string &type) :
 	_costBuy(0), _costRent(0), _costSell(0), _repairRate(1), _refuelRate(1),
 	_transferTime(24), _score(0), _battlescapeTerrainData(0),
 	_keepCraftAfterFailedMission(false), _allowLanding(true), _spacecraft(false), _notifyWhenRefueled(false), _autoPatrol(false),
-	_listOrder(0), _maxItems(0), _maxAltitude(-1), _stats(),
+	_listOrder(0), _maxItems(0), _maxAltitude(-1), _maxStorageSpace(0.0), _stats(),
 	_shieldRechargeAtBase(1000),
 	_mapVisible(true), _forceShowInMonthlyCosts(false)
 {
@@ -129,6 +129,7 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder)
 	}
 	_maxAltitude = node["maxAltitude"].as<int>(_maxAltitude);
 	_maxItems = node["maxItems"].as<int>(_maxItems);
+	_maxStorageSpace = node["maxStorageSpace"].as<double>(_maxStorageSpace);
 
 	if (const YAML::Node &types = node["weaponTypes"])
 	{
@@ -477,6 +478,15 @@ const std::vector<int> &RuleCraft::getCraftInventoryTile() const
 int RuleCraft::getMaxItems() const
 {
 	return _maxItems;
+}
+
+/**
+ * Gets the maximum storage space for items in this craft.
+ * @return storage space limit.
+ */
+double RuleCraft::getMaxStorageSpace() const
+{
+	return _maxStorageSpace;
 }
 
 /**

@@ -176,6 +176,16 @@ namespace OpenXcom
 			default: break;
 		}
 
+		// multi-page indicator
+		_txtArrows = new Text(32, 9, 277, 134);
+		add(_txtArrows);
+		_txtArrows->setColor(_arrowColor);
+		_txtArrows->setAlign(ALIGN_RIGHT);
+		std::ostringstream ss2;
+		if (_state->hasPrevArticlePage()) ss2 << "<<";
+		if (_state->hasNextArticlePage()) ss2 << " >>";
+		_txtArrows->setText(ss2.str());
+
 		centerAllSurfaces();
 	}
 

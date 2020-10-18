@@ -30,8 +30,8 @@
 #include "../Basescape/PlaceLiftState.h"
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
-#include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/SavedBattleGame.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../Geoscape/BaseNameState.h"
@@ -240,6 +240,9 @@ void NewGameState::btnOkClick(Action *)
     auto base = _game->getSavedGame()->getBases()->back();
     if (base->getMarker() != -1)
     {
+      // center and rotate 35 degrees down (to see the base location while typoing its name)
+		  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
+      
       if (base->getName().empty())
       {
         // fixed location, custom name

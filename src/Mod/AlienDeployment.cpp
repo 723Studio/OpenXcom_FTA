@@ -329,6 +329,21 @@ const std::vector<DeploymentData>* AlienDeployment::getDeploymentData() const
 }
 
 /**
+ * Gets the highest used alien rank.
+ * @return Highest used alien rank.
+ */
+int AlienDeployment::getMaxAlienRank() const
+{
+	int max = 0;
+	for (auto& dd : _data)
+	{
+		if (dd.alienRank > max)
+			max = dd.alienRank;
+	}
+	return max;
+}
+
+/**
  * Gets dimensions.
  * @param width Width.
  * @param length Length.

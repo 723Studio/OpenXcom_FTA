@@ -60,7 +60,7 @@ PlaceStartFacilityState::~PlaceStartFacilityState()
  */
 void PlaceStartFacilityState::viewClick(Action *)
 {
-	if (_view->getPlacementError(_rule))
+	if (_view->getPlacementError(_rule, nullptr, true))
 	{
 		_game->popState();
 		_game->pushState(new ErrorMessageState(tr("STR_CANNOT_BUILD_HERE"), _palette, _game->getMod()->getInterface("basescape")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));

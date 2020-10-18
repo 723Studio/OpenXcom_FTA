@@ -42,7 +42,7 @@ class Mod;
 class RuleResearch
 {
  private:
-	std::string _name, _lookup, _cutscene, _spawnedItem;
+	std::string _name, _lookup, _cutscene, _spawnedItem, _spawnedEvent;
 	int _cost, _points;
 	std::vector<std::string> _dependenciesName, _unlocksName, _disablesName, _getOneFreeName, _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
@@ -97,6 +97,8 @@ public:
 	const std::string & getCutscene() const;
 	/// Gets the item to spawn in the base stores when this topic is researched.
 	const std::string & getSpawnedItem() const;
+	/// Gets the geoscape event to spawn when this topic is researched.
+	const std::string& getSpawnedEvent() const { return _spawnedEvent; }
 };
 
 }

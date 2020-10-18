@@ -80,6 +80,7 @@ void ManufactureInfoState::buildUi()
 	_btnSell = new ToggleTextButton(60, 16, 244, 61);
 	_txtAvailableEngineer = new Text(160, 9, 16, 50);
 	_txtAvailableSpace = new Text(160, 9, 16, 60);
+	_txtHoursPerUnit = new Text(150, 9, 16, 70);
 	_txtMonthlyProfit = new Text(160, 9, 168, 50);
 	_txtAllocatedEngineer = new Text(112, 32, 16, 80);
 	_txtUnitToProduce = new Text(112, 48, 168, 64);
@@ -109,6 +110,7 @@ void ManufactureInfoState::buildUi()
 	add(_txtTitle, "text", "manufactureInfo");
 	add(_txtAvailableEngineer, "text", "manufactureInfo");
 	add(_txtAvailableSpace, "text", "manufactureInfo");
+	add(_txtHoursPerUnit, "text", "manufactureInfo");
 	add(_txtMonthlyProfit, "text", "manufactureInfo");
 	add(_txtAllocatedEngineer, "text", "manufactureInfo");
 	add(_txtAllocated, "text", "manufactureInfo");
@@ -205,6 +207,8 @@ void ManufactureInfoState::buildUi()
 	_btnSell->setVisible(_production->getRules()->canAutoSell());
 	initProfitInfo();
 	setAssignedEngineer();
+
+	_txtHoursPerUnit->setText(tr("STR_HOURS_PER_UNIT").arg(_production->getRules()->getManufactureTime()));
 
 	_timerMoreEngineer = new Timer(250);
 	_timerLessEngineer = new Timer(250);

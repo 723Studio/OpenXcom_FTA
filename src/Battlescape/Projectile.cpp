@@ -278,7 +278,7 @@ int Projectile::calculateThrow(double accuracy)
 	for (std::vector<Position>::iterator i = targets.begin(); i != targets.end(); ++i)
 	{
 		targetVoxel = *i;
-		if (_save->getTileEngine()->validateThrow(_action, originVoxel, targetVoxel, &curvature, &test, forced))
+		if (_save->getTileEngine()->validateThrow(_action, originVoxel, targetVoxel, _save->getDepth(), &curvature, &test, forced))
 		{
 			break;
 		}
@@ -304,6 +304,7 @@ int Projectile::calculateThrow(double accuracy)
 			applyAccuracy(originVoxel, &targetVoxel, accuracy, true, false); //arcing shot deviation
 			deltas = Position(0,0,0);
 		}
+		_trajectory.push_back(originVoxel);
 		test = _save->getTileEngine()->calculateParabolaVoxel(originVoxel, targetVoxel, true, &_trajectory, _action.actor, curvature, deltas);
 		if (forced) return O_OBJECT; //fake hit
 		Position endPoint = _trajectory.back().toTile();
@@ -475,6 +476,8 @@ Position Projectile::getPosition(int offset) const
 	int posOffset = (int)_position + offset;
 	if (posOffset >= 0 && posOffset < (int)_trajectory.size())
 		return _trajectory.at(posOffset);
+	else if (posOffset < 0)
+		return _trajectory.at(0);
 	else
 		return _trajectory.at(_position);
 }

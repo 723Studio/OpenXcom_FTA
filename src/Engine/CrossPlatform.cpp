@@ -712,6 +712,8 @@ std::string sanitizeFilename(const std::string &filename)
 		if ((*i) == '<' ||
 			(*i) == '>' ||
 			(*i) == ':' ||
+			(*i) == '*' ||
+			(*i) == '|' ||
 			(*i) == '"' ||
 			(*i) == '\'' ||
 			(*i) == '/' ||

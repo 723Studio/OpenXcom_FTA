@@ -31,6 +31,7 @@ class TextEdit;
 class TextList;
 class Base;
 class RuleResearch;
+class ComboBox;
 
 /**
  * Window which displays possible research projects.
@@ -41,6 +42,7 @@ private:
 	Base *_base;
 	bool _sortByCost;
 	TextButton *_btnOK;
+	ComboBox *_cbxSort;
 	ToggleTextButton *_btnShowOnlyNew;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
@@ -60,6 +62,8 @@ public:
 	/// Handlers for Quick Search.
 	void btnQuickSearchToggle(Action *action);
 	void btnQuickSearchApply(Action *action);
+	/// Handler for changing the sorting.
+	void cbxSortChange(Action *action);
 	/// Handler for clicking the [Show Only New] button.
 	void btnShowOnlyNewClick(Action *action);
 	/// Handler for clicking the [Mark All As Seen] button.

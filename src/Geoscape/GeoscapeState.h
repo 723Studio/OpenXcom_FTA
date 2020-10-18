@@ -161,6 +161,7 @@ public:
 	void zoomOutEffect();
 	/// Multi-dogfights logic handling.
 	void handleDogfights();
+	void handleDogfightMultiAction(int button);
 	/// Dogfight experience handling.
 	void handleDogfightExperience();
 	/// Gets the number of minimized dogfights.

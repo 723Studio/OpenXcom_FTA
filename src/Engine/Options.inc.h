@@ -70,9 +70,11 @@ OPT int oxceNightVisionColor;
 OPT bool oxceAutoSell;
 OPT int oxceAutoNightVisionThreshold;
 OPT bool oxceRememberDisabledCraftWeapons;
+OPT bool oxceEnableOffCentreShooting;
 
 // OXCE hidden, accessible only via options.cfg
 OPT bool oxceHighlightNewTopicsHidden;
+OPT int oxceInterceptGuiMaintenanceTimeHidden;
 OPT bool oxceEnableUnitResponseSounds;
 OPT bool oxceEnableSlackingIndicator;
 OPT bool oxceEnablePaletteFlickerFix;

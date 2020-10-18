@@ -58,19 +58,34 @@ InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _glob
 	_screen = false;
 
 	// Create objects
-	_window = new Window(this, 320, 140, 0, 30, POPUP_HORIZONTAL);
-	_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146);
-	_btnGotoBase = new TextButton(142, 16, 162, 146);
-	_txtTitle = new Text(300, 17, 10, 46);
-	int x = 14;
-	_txtCraft = new Text(WIDTH_CRAFT, 9, x, 70);
-	x += WIDTH_CRAFT;
-	_txtStatus = new Text(WIDTH_STATUS, 9, x, 70);
-	x += WIDTH_STATUS;
-	_txtBase = new Text(WIDTH_BASE, 9, x, 70);
-	x += WIDTH_BASE;
-	_txtWeapons = new Text(WIDTH_WEAPONS+4, 17, x-4, 62);
-	_lstCrafts = new TextList(290, 64, 12, 78);
+	if (Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
+	{
+		_window = new Window(this, 320, 140, 0, 30, POPUP_HORIZONTAL);
+		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146);
+		_btnGotoBase = new TextButton(142, 16, 162, 146);
+		_txtTitle = new Text(300, 17, 10, 46);
+		int x = 14;
+		_txtCraft = new Text(WIDTH_CRAFT, 9, x, 70);
+		x += WIDTH_CRAFT;
+		_txtStatus = new Text(WIDTH_STATUS, 9, x, 70);
+		x += WIDTH_STATUS;
+		_txtBase = new Text(WIDTH_BASE, 9, x, 70);
+		x += WIDTH_BASE;
+		_txtWeapons = new Text(WIDTH_WEAPONS+4, 17, x-4, 62);
+		_lstCrafts = new TextList(290, 64, 12, 78);
+	}
+	else
+	{
+		_window = new Window(this, 320, 140, 0, 30, POPUP_HORIZONTAL);
+		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146);
+		_btnGotoBase = new TextButton(142, 16, 162, 146);
+		_txtTitle = new Text(300, 17, 10, 46);
+		_txtCraft = new Text(86, 9, 14, 70);
+		_txtStatus = new Text(70, 9, 100, 70);
+		_txtBase = new Text(80, 9, 170, 70);
+		_txtWeapons = new Text(80, 17, 238, 62);
+		_lstCrafts = new TextList(288, 64, 8, 78);
+	}
 
 	// Set palette
 	setInterface("intercept");
@@ -109,14 +124,31 @@ InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _glob
 
 	_txtBase->setText(tr("STR_BASE"));
 
-	_txtWeapons->setAlign(ALIGN_RIGHT);
+	if (Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
+	{
+		_txtWeapons->setAlign(ALIGN_RIGHT);
+	}
 	_txtWeapons->setText(tr("STR_WEAPONS_CREW_HWPS"));
 
-	_lstCrafts->setColumns(4, WIDTH_CRAFT, WIDTH_STATUS, WIDTH_BASE, WIDTH_WEAPONS);
-	_lstCrafts->setAlign(ALIGN_RIGHT, 3);
+	if (Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
+	{
+		_lstCrafts->setColumns(4, WIDTH_CRAFT, WIDTH_STATUS, WIDTH_BASE, WIDTH_WEAPONS);
+		_lstCrafts->setAlign(ALIGN_RIGHT, 3);
+	}
+	else
+	{
+		_lstCrafts->setColumns(4, 86, 70, 80, 46);
+	}
 	_lstCrafts->setSelectable(true);
 	_lstCrafts->setBackground(_window);
-	_lstCrafts->setMargin(2);
+	if (Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
+	{
+		_lstCrafts->setMargin(2);
+	}
+	else
+	{
+		_lstCrafts->setMargin(6);
+	}
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsLeftClick);
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsRightClick, SDL_BUTTON_RIGHT);
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsMiddleClick, SDL_BUTTON_MIDDLE);
@@ -195,26 +227,42 @@ InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _glob
 			{
 				unsigned int maintenanceHours = 0;
 
-				maintenanceHours += (*j)->calcRepairTime();
-				maintenanceHours += (*j)->calcRefuelTime();
-				maintenanceHours += (*j)->calcRearmTime();
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REPAIRS")
+				{
+					maintenanceHours += (*j)->calcRepairTime();
+				}
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REFUELLING")
+				{
+					maintenanceHours += (*j)->calcRefuelTime();
+				}
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REARMING")
+				{
+					// Note: if the craft is already refueling, don't count any potential rearm time (can be > 0 if ammo is missing)
+					if ((*j)->getStatus() != "STR_REFUELLING")
+					{
+						maintenanceHours += (*j)->calcRearmTime();
+					}
+				}
 
 				int days = maintenanceHours / 24;
 				int hours = maintenanceHours % 24;
-				ssStatus << " (";
-				if (days > 0)
+				if (maintenanceHours > 0 && Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
 				{
-					ssStatus << tr("STR_DAY_SHORT").arg(days);
-				}
-				if (hours > 0)
-				{
+					ssStatus << " (";
 					if (days > 0)
 					{
-						ssStatus << "/";
+						ssStatus << tr("STR_DAY_SHORT").arg(days);
 					}
-					ssStatus << tr("STR_HOUR_SHORT").arg(hours);
+					if (hours > 0)
+					{
+						if (days > 0)
+						{
+							ssStatus << "/";
+						}
+						ssStatus << tr("STR_HOUR_SHORT").arg(hours);
+					}
+					ssStatus << ")";
 				}
-				ssStatus << ")";
 			}
 
 			std::ostringstream ss;

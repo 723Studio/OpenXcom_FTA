@@ -26,6 +26,7 @@ namespace OpenXcom
 
 class Base;
 class TextButton;
+class ToggleTextButton;
 class Window;
 class Text;
 class TextList;
@@ -41,14 +42,18 @@ private:
 	std::vector<std::string> _bonuses;
 
 	TextButton *_btnCancel;
+	ToggleTextButton *_btnSummary;
 	Window *_window;
 	Text *_txtTitle, *_txtType;
 	TextList *_lstBonuses;
+	TextList *_lstSummary;
 public:
 	/// Creates the SoldierBonus state.
 	SoldierBonusState(Base *base, size_t soldier);
 	/// Cleans up the SoldierBonus state.
 	~SoldierBonusState();
+	/// Handler for clicking the Summary button.
+	void btnSummaryClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Bonuses list.

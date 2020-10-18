@@ -17,10 +17,12 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BriefingLightState.h"
+#include <vector>
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Text.h"
+#include "../Interface/TextList.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Mod/Mod.h"
@@ -30,6 +32,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Engine/Options.h"
 #include "../Engine/Screen.h"
+#include "../Engine/Unicode.h"
 
 namespace OpenXcom
 {
@@ -47,7 +50,8 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	_btnArmors = new ToggleTextButton(140, 18, 16, 164);
 	_txtTitle = new Text(300, 32, 16, 24);
 	_txtBriefing = new Text(288, 104, 16, 56);
-	_txtArmors = new Text(288, 104, 16, 56);
+	_txtArmors = new Text(288, 25, 16, 56);
+	_lstArmors = new TextList(280, 80, 8, 81);
 
 	std::string title = deployment->getType();
 	std::string desc = deployment->getAlertDescription();
@@ -62,6 +66,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	add(_txtTitle, "text", "briefing");
 	add(_txtBriefing, "text", "briefing");
 	add(_txtArmors, "text", "briefing");
+	add(_lstArmors, "text", "briefing");
 
 	centerAllSurfaces();
 
@@ -73,6 +78,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 
 	_btnArmors->setText(tr("STR_WHAT_CAN_I_WEAR"));
 	_btnArmors->onMouseClick((ActionHandler)&BriefingLightState::btnArmorsClick);
+	_btnArmors->setVisible(false);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(title));
@@ -83,21 +89,19 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	_txtArmors->setWordWrap(true);
 	_txtArmors->setVisible(false);
 
-	std::string message = checkStartingCondition(deployment);
-	if (!message.empty())
-	{
-		_txtArmors->setText(message);
-	}
-	else
-	{
-		_btnArmors->setVisible(false);
-	}
+	_lstArmors->setColumns(2, 148, 116);
+	_lstArmors->setSelectable(true);
+	_lstArmors->setBackground(_window);
+	_lstArmors->setMargin(8);
+	_lstArmors->setVisible(false);
+
+	checkStartingCondition(deployment);
 }
 
 /**
 * Checks the starting condition.
 */
-std::string BriefingLightState::checkStartingCondition(AlienDeployment *deployment)
+void BriefingLightState::checkStartingCondition(AlienDeployment *deployment)
 {
 	const RuleStartingCondition *startingCondition = _game->getMod()->getStartingCondition(deployment->getStartingCondition());
 	if (startingCondition != 0)
@@ -109,36 +113,38 @@ std::string BriefingLightState::checkStartingCondition(AlienDeployment *deployme
 			list = startingCondition->getAllowedArmors();
 			messageCode = "STR_STARTING_CONDITION_ARMORS_ALLOWED";
 		}
-		if (list.empty())
+		if (!list.empty())
 		{
-			// everything is allowed
-			return "";
-		}
-		std::ostringstream ss;
-		int i = 0;
-		for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
-		{
-			ArticleDefinition *article = _game->getMod()->getUfopaediaArticle((*it), false);
-			if (article && _game->getSavedGame()->isResearched(article->requires))
+			_txtArmors->setText(tr(messageCode).arg("")); // passing empty argument, because it is obsolete since a list display was introduced
+			_btnArmors->setVisible(true);
+
+			std::vector<std::string> armorNameList;
+			for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
 			{
-				if (i > 0)
-					ss << ", ";
-				ss << tr(*it);
-				i++;
+				ArticleDefinition* article = _game->getMod()->getUfopaediaArticle((*it), false);
+				if (article && _game->getSavedGame()->isResearched(article->requires))
+				{
+					std::string translation = tr(*it);
+					armorNameList.push_back(translation);
+				}
+			}
+			if (armorNameList.empty())
+			{
+				// no suitable armor yet
+				std::string translation = tr("STR_UNKNOWN");
+				armorNameList.push_back(translation);
+			}
+			std::sort(armorNameList.begin(), armorNameList.end(), [&](std::string& a, std::string& b) { return Unicode::naturalCompare(a, b); });
+			if (armorNameList.size() % 2 != 0)
+			{
+				armorNameList.push_back(""); // just padding, we want an even number of items in the list
+			}
+			size_t halfSize = armorNameList.size() / 2;
+			for (size_t i = 0; i < halfSize; ++i)
+			{
+				_lstArmors->addRow(2, armorNameList[i].c_str(), armorNameList[i + halfSize].c_str());
 			}
 		}
-		std::string argument = ss.str();
-		if (argument.empty())
-		{
-			// no suitable armor yet
-			argument = tr("STR_UNKNOWN");
-		}
-		return tr(messageCode).arg(argument);
-	}
-	else
-	{
-		// everything is allowed
-		return "";
 	}
 }
 
@@ -166,6 +172,7 @@ void BriefingLightState::btnOkClick(Action *)
 void BriefingLightState::btnArmorsClick(Action *)
 {
 	_txtArmors->setVisible(_btnArmors->getPressed());
+	_lstArmors->setVisible(_btnArmors->getPressed());
 	_txtBriefing->setVisible(!_btnArmors->getPressed());
 }
 

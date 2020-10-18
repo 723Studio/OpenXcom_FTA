@@ -578,6 +578,7 @@ armors:
       - 0.0
     loftempsSet: [ 3 ]
   - type: ZOMBIE_ARMOR
+    painImmune: true   # no secondary stun damage
     spriteSheet: ZOMBIE.PCK
     allowInv: false
     corpseBattle:

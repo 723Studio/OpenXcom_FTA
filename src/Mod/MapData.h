@@ -38,7 +38,8 @@ enum SpecialTileType : int {TILE=0,
 					ALIEN_HABITAT,
 					DEAD_TILE,
 					END_POINT,
-					MUST_DESTROY};
+					MUST_DESTROY,
+					DEATH_TRAPS=200};
 
 enum MovementType : int { MT_WALK, MT_FLY, MT_SLIDE, MT_FLOAT, MT_SINK};
 enum VoxelType : int { V_EMPTY = -1, V_FLOOR, V_WESTWALL, V_NORTHWALL, V_OBJECT, V_UNIT, V_OUTOFBOUNDS };

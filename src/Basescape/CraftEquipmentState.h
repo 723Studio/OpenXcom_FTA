@@ -55,6 +55,7 @@ private:
 	Base *_base;
 	std::vector<std::string> _items;
 	int _totalItems;
+	double _totalItemStorageSize;
 	Uint8 _ammoColor;
 	bool _reload;
 	/// Updates quantities of item.

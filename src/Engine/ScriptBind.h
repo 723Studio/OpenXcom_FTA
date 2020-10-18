@@ -148,7 +148,7 @@ struct ParserWriter
 	ReservedCrossRefrenece<ScriptText, ScriptRef> refTexts;
 
 	/// index of used script registers.
-	Uint8 regIndexUsed;
+	size_t regIndexUsed;
 	/// negative index of used const values.
 	int constIndexUsed;
 
@@ -157,7 +157,7 @@ struct ParserWriter
 
 	/// Constructor.
 	ParserWriter(
-			Uint8 regUsed,
+			size_t regUsed,
 			ScriptContainerBase& c,
 			const ScriptParserBase& d);
 
@@ -1032,7 +1032,8 @@ struct BindDebugDisplay
 {
 	static RetEnum func(ScriptWorkerBase& swb, const T* t)
 	{
-		swb.log_buffer_add(X(t));
+		auto f = [&]{ return X(t); };
+		swb.log_buffer_add(&f);
 		return RetContinue;
 	}
 };

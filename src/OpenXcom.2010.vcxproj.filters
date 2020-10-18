@@ -1164,6 +1164,9 @@
     <ClCompile Include="Mod\BattleScript.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\SoldierTransformationListState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2388,6 +2391,9 @@
     </ClInclude>
     <ClInclude Include="Mod\BattleScript.h">
       <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\SoldierTransformationListState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

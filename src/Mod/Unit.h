@@ -71,6 +71,29 @@ struct UnitStats
 		}
 	}
 
+	static UnitStats templateMerge(const UnitStats& origStats, const UnitStats& fixedStats)
+	{
+		UnitStats r;
+		fieldLoop(
+			[&](Ptr p)
+			{
+				if ((fixedStats.*p) == -1)
+				{
+					(r.*p) = 0;
+				}
+				else if ((fixedStats.*p) != 0)
+				{
+					(r.*p) = (fixedStats.*p);
+				}
+				else
+				{
+					(r.*p) = (origStats.*p);
+				}
+			}
+		);
+		return r;
+	}
+
 	/*
 	 * Soft limit definition:
 	 * 1. if the statChange is zero or negative, keep statChange as it is (i.e. don't apply any limits)

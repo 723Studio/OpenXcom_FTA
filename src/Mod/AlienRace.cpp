@@ -106,6 +106,20 @@ const std::string &AlienRace::getMember(int id) const
 }
 
 /**
+ * Gets the total number of members of this alien race family.
+ * @return The number of members.
+ */
+int AlienRace::getMembers() const
+{
+	if (!_membersRandom.empty())
+	{
+		return _membersRandom.size();
+	}
+
+	return _members.size();
+}
+
+/**
  * Gets mission used for retaliation, can be empty. This is different than canRetaliate.
  * @return Mission ID or empty string.
  */

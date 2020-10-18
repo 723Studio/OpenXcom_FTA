@@ -101,7 +101,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	_btnCancel->onMouseClick((ActionHandler)&ManufactureStartState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&ManufactureStartState::btnCancelClick, Options::keyCancel);
 
-	bool productionPossible = _game->getSavedGame()->getFunds() > _item->getManufactureCost();
+	bool productionPossible = _item->haveEnoughMoneyForOneMoreUnit(_game->getSavedGame()->getFunds());
 	// check available workspace later
 	//int availableWorkSpace = _base->getFreeWorkshops();
 	//productionPossible &= (availableWorkSpace > 0);
