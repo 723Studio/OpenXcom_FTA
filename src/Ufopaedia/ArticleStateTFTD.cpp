@@ -73,6 +73,11 @@ namespace OpenXcom
 		_textColor2 = ruleInterface->getElement("text")->color2;
 		_listColor1 = ruleInterface->getElement("list")->color;
 		_listColor2 = ruleInterface->getElement("list")->color2;
+		_arrowColor = _listColor2;
+		if (ruleInterface->getElement("arrow"))
+		{
+			_arrowColor = ruleInterface->getElement("arrow")->color;
+		}
 		if (ruleInterface->getElement("ammoColor"))
 		{
 			_ammoColor = ruleInterface->getElement("ammoColor")->color;

@@ -204,7 +204,8 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		}
 	}
 
-	if (_game->getMod()->getUseCustomCategories())
+	_vanillaCategories = _cats.size();
+	if (_game->getMod()->getDisplayCustomCategories() > 0)
 	{
 		bool hasUnassigned = false;
 
@@ -229,9 +230,13 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			}
 		}
 		// then use them nicely in order
-		_cats.clear();
-		_cats.push_back("STR_ALL_ITEMS");
-		_cats.push_back("STR_ITEMS_AT_DESTINATION");
+		if (_game->getMod()->getDisplayCustomCategories() == 1)
+		{
+			_cats.clear();
+			_cats.push_back("STR_ALL_ITEMS");
+			_cats.push_back("STR_ITEMS_AT_DESTINATION");
+			_vanillaCategories = _cats.size();
+		}
 		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
 		for (std::vector<std::string>::const_iterator k = categories.begin(); k != categories.end(); ++k)
 		{
@@ -303,18 +308,18 @@ std::string TransferItemsState::getCategory(int sel) const
 		rule = (RuleItem*)_items[sel].rule;
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
+			if (rule->getVehicleUnit())
+				return "STR_PERSONNEL"; // OXCE: critters fighting for us
+			if (rule->isAlien())
+				return "STR_PRISONERS"; // OXCE: live aliens
 			return "STR_ALIENS";
 		}
 		if (rule->getBattleType() == BT_NONE)
 		{
 			if (_game->getMod()->isCraftWeaponStorageItem(rule))
-			{
 				return "STR_CRAFT_ARMAMENT";
-			}
 			if (_game->getMod()->isArmorStorageItem(rule))
-			{
-				return "STR_EQUIPMENT";
-			}
+				return "STR_ARMORS"; // OXCE: armors
 			return "STR_COMPONENTS";
 		}
 		return "STR_EQUIPMENT";
@@ -383,7 +388,8 @@ void TransferItemsState::updateList()
 	_lstItems->clearList();
 	_rows.clear();
 
-	std::string cat = _cats[_cbxCategory->getSelected()];
+	size_t selCategory = _cbxCategory->getSelected();
+	const std::string cat = _cats[selCategory];
 	bool allItems = (cat == "STR_ALL_ITEMS");
 	bool onlyItemsAtDestination = (cat == "STR_ITEMS_AT_DESTINATION");
 	bool categoryUnassigned = (cat == "STR_UNASSIGNED");
@@ -392,7 +398,7 @@ void TransferItemsState::updateList()
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
-		if (_game->getMod()->getUseCustomCategories())
+		if (selCategory >= _vanillaCategories)
 		{
 			if (categoryUnassigned && _items[i].type == TRANSFER_ITEM)
 			{

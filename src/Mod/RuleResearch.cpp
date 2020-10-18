@@ -44,6 +44,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, int listOrder)
 	_lookup = node["lookup"].as<std::string>(_lookup);
 	_cutscene = node["cutscene"].as<std::string>(_cutscene);
 	_spawnedItem = node["spawnedItem"].as<std::string>(_spawnedItem);
+	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
 	_cost = node["cost"].as<int>(_cost);
 	_points = node["points"].as<int>(_points);
 	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);

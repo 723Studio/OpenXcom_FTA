@@ -202,6 +202,7 @@ void BaseView::setSelectable(int size)
  * placed on the currently selected square.
  * @param rule Facility type.
  * @param facilityBeingMoved Selected facility.
+ * @param isStartFacility Is this a start facility?
  * @return 0 if placeable, otherwise error code for why we couldn't place it
  * 1: not connected to lift or on top of another facility (standard OXC behavior)
  * 2: trying to upgrade over existing facility, but it's in use
@@ -211,7 +212,7 @@ void BaseView::setSelectable(int size)
  * 6: trying to upgrade over existing facility, but ruleset disallows it
  * 7: trying to upgrade over existing facility, but all buildings next to it are under construction and build queue is off
  */
-BasePlacementErrors BaseView::getPlacementError(const RuleBaseFacility *rule, BaseFacility *facilityBeingMoved) const
+BasePlacementErrors BaseView::getPlacementError(const RuleBaseFacility *rule, BaseFacility *facilityBeingMoved, bool isStartFacility) const
 {
 	// We'll need to know for the final check if we're upgrading an existing facility
 	bool buildingOverExisting = false;
@@ -245,8 +246,12 @@ BasePlacementErrors BaseView::getPlacementError(const RuleBaseFacility *rule, Ba
 			auto facility = _facilities[x][y];
 			if (facility != 0)
 			{
+				if (isStartFacility)
+				{
+					return BPE_NotConnected;
+				}
 				// when moving an existing facility, it should not block itself
-				if (facilityBeingMoved == 0)
+				if (facilityBeingMoved == nullptr)
 				{
 					// Further check to see if the facility already there can be built over and we're not removing an important base function
 					auto canBuildOverError = rule->getCanBuildOverOtherFacility(facility->getRules());
@@ -287,28 +292,28 @@ BasePlacementErrors BaseView::getPlacementError(const RuleBaseFacility *rule, Ba
 		if (_gridX > 0 && _facilities[_gridX - 1][_gridY + i] != 0)
 		{
 			hasConnectingFacility = true;
-			if ((!buildingOverExisting && bq) || _facilities[_gridX - 1][_gridY + i]->getBuildTime() == 0)
+			if ((!buildingOverExisting && bq) || _facilities[_gridX - 1][_gridY + i]->isBuiltOrHadPreviousFacility())
 				return BPE_None;
 		}
 
 		if (_gridY > 0 && _facilities[_gridX + i][_gridY - 1] != 0)
 		{
 			hasConnectingFacility = true;
-			if ((!buildingOverExisting && bq) || _facilities[_gridX + i][_gridY - 1]->getBuildTime() == 0)
+			if ((!buildingOverExisting && bq) || _facilities[_gridX + i][_gridY - 1]->isBuiltOrHadPreviousFacility())
 				return BPE_None;
 		}
 
 		if (_gridX + rule->getSize() < BASE_SIZE && _facilities[_gridX + rule->getSize()][_gridY + i] != 0)
 		{
 			hasConnectingFacility = true;
-			if ((!buildingOverExisting && bq) || _facilities[_gridX + rule->getSize()][_gridY + i]->getBuildTime() == 0)
+			if ((!buildingOverExisting && bq) || _facilities[_gridX + rule->getSize()][_gridY + i]->isBuiltOrHadPreviousFacility())
 				return BPE_None;
 		}
 
 		if (_gridY + rule->getSize() < BASE_SIZE && _facilities[_gridX + i][_gridY + rule->getSize()] != 0)
 		{
 			hasConnectingFacility = true;
-			if ((!buildingOverExisting && bq) || _facilities[_gridX + i][_gridY + rule->getSize()]->getBuildTime() == 0)
+			if ((!buildingOverExisting && bq) || _facilities[_gridX + i][_gridY + rule->getSize()]->isBuiltOrHadPreviousFacility())
 				return BPE_None;
 		}
 	}
@@ -329,10 +334,10 @@ bool BaseView::isQueuedBuilding(const RuleBaseFacility *rule) const
 {
 	for (int i = 0; i < rule->getSize(); ++i)
 	{
-		if ((_gridX > 0 && _facilities[_gridX - 1][_gridY + i] != 0 && _facilities[_gridX - 1][_gridY + i]->getBuildTime() == 0) ||
-			(_gridY > 0 && _facilities[_gridX + i][_gridY - 1] != 0 && _facilities[_gridX + i][_gridY - 1]->getBuildTime() == 0) ||
-			(_gridX + rule->getSize() < BASE_SIZE && _facilities[_gridX + rule->getSize()][_gridY + i] != 0 && _facilities[_gridX + rule->getSize()][_gridY + i]->getBuildTime() == 0) ||
-			(_gridY + rule->getSize() < BASE_SIZE && _facilities[_gridX + i][_gridY + rule->getSize()] != 0 && _facilities[_gridX + i][_gridY + rule->getSize()]->getBuildTime() == 0))
+		if ((_gridX > 0 && _facilities[_gridX - 1][_gridY + i] != 0 && _facilities[_gridX - 1][_gridY + i]->isBuiltOrHadPreviousFacility()) ||
+			(_gridY > 0 && _facilities[_gridX + i][_gridY - 1] != 0 && _facilities[_gridX + i][_gridY - 1]->isBuiltOrHadPreviousFacility()) ||
+			(_gridX + rule->getSize() < BASE_SIZE && _facilities[_gridX + rule->getSize()][_gridY + i] != 0 && _facilities[_gridX + rule->getSize()][_gridY + i]->isBuiltOrHadPreviousFacility()) ||
+			(_gridY + rule->getSize() < BASE_SIZE && _facilities[_gridX + i][_gridY + rule->getSize()] != 0 && _facilities[_gridX + i][_gridY + rule->getSize()]->isBuiltOrHadPreviousFacility()))
 		{
 			return false;
 		}
@@ -348,10 +353,10 @@ void BaseView::reCalcQueuedBuildings()
 	setBase(_base);
 	std::vector<BaseFacility*> facilities;
 	for (std::vector<BaseFacility*>::iterator i = _base->getFacilities()->begin(); i != _base->getFacilities()->end(); ++i)
-		if ((*i)->getBuildTime() > 0)
+		if ((*i)->getAdjustedBuildTime() > 0)
 		{
 			// Set all queued buildings to infinite.
-			if ((*i)->getBuildTime() > (*i)->getRules()->getBuildTime()) (*i)->setBuildTime(INT_MAX);
+			if ((*i)->getAdjustedBuildTime() > (*i)->getRules()->getBuildTime()) (*i)->setBuildTime(INT_MAX);
 			facilities.push_back(*i);
 		}
 
@@ -360,7 +365,7 @@ void BaseView::reCalcQueuedBuildings()
 	{
 		std::vector<BaseFacility*>::iterator min = facilities.begin();
 		for (std::vector<BaseFacility*>::iterator i = facilities.begin(); i != facilities.end(); ++i)
-			if ((*i)->getBuildTime() < (*min)->getBuildTime()) min=i;
+			if ((*i)->getAdjustedBuildTime() < (*min)->getAdjustedBuildTime()) min=i;
 		BaseFacility* facility=(*min);
 		facilities.erase(min);
 		const RuleBaseFacility *rule=facility->getRules();
@@ -383,9 +388,9 @@ void BaseView::reCalcQueuedBuildings()
 void BaseView::updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacility* neighbor)
 {
 	if (facility != 0 && neighbor != 0
-	&& neighbor->getBuildTime() > neighbor->getRules()->getBuildTime()
-	&& facility->getBuildTime() + neighbor->getRules()->getBuildTime() < neighbor->getBuildTime())
-		neighbor->setBuildTime(facility->getBuildTime() + neighbor->getRules()->getBuildTime());
+	&& neighbor->getAdjustedBuildTime() > neighbor->getRules()->getBuildTime()
+	&& facility->getAdjustedBuildTime() + neighbor->getRules()->getBuildTime() < neighbor->getAdjustedBuildTime())
+		neighbor->setBuildTime(facility->getAdjustedBuildTime() + neighbor->getRules()->getBuildTime());
 }
 
 /**
@@ -480,7 +485,7 @@ void BaseView::draw()
 	for (std::vector<BaseFacility*>::iterator i = _base->getFacilities()->begin(); i != _base->getFacilities()->end(); ++i)
 	{
 		// Draw connectors
-		if ((*i)->getBuildTime() == 0 || (*i)->getIfHadPreviousFacility())
+		if ((*i)->isBuiltOrHadPreviousFacility())
 		{
 			// Facilities to the right
 			int x = (*i)->getX() + (*i)->getRules()->getSize();
@@ -488,7 +493,7 @@ void BaseView::draw()
 			{
 				for (int y = (*i)->getY(); y < (*i)->getY() + (*i)->getRules()->getSize(); ++y)
 				{
-					if (_facilities[x][y] != 0 && (_facilities[x][y]->getBuildTime() == 0 || _facilities[x][y]->getIfHadPreviousFacility()))
+					if (_facilities[x][y] != 0 && _facilities[x][y]->isBuiltOrHadPreviousFacility())
 					{
 						Surface *frame = _texture->getFrame(7);
 						auto fx = (x * GRID_SIZE - GRID_SIZE / 2);
@@ -504,7 +509,7 @@ void BaseView::draw()
 			{
 				for (int subX = (*i)->getX(); subX < (*i)->getX() + (*i)->getRules()->getSize(); ++subX)
 				{
-					if (_facilities[subX][y] != 0 && (_facilities[subX][y]->getBuildTime() == 0 || _facilities[subX][y]->getIfHadPreviousFacility()))
+					if (_facilities[subX][y] != 0 && _facilities[subX][y]->isBuiltOrHadPreviousFacility())
 					{
 						Surface *frame = _texture->getFrame(8);
 						auto fx = (subX * GRID_SIZE);

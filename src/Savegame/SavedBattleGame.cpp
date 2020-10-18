@@ -1235,6 +1235,10 @@ void SavedBattleGame::endTurn()
 			{
 				(*i)->setTurnsSinceSpotted(0);
 			}
+			if ((*i)->getAIModule())
+			{
+				(*i)->getAIModule()->reset(); // clean up AI state
+			}
 
 			if ((*i)->getTurnsLeftSpottedForSnipers() != 0)
 			{
@@ -1343,7 +1347,25 @@ BattlescapeState *SavedBattleGame::getBattleState()
  * Gets the BattlescapeState.
  * @return Pointer to the BattlescapeState.
  */
+const BattlescapeState *SavedBattleGame::getBattleState() const
+{
+	return _battleState;
+}
+
+/**
+ * Gets the BattlescapeState.
+ * @return Pointer to the BattlescapeState.
+ */
 BattlescapeGame *SavedBattleGame::getBattleGame()
+{
+	return _battleState->getBattleGame();
+}
+
+/**
+ * Gets the BattlescapeState.
+ * @return Pointer to the BattlescapeState.
+ */
+const BattlescapeGame *SavedBattleGame::getBattleGame() const
 {
 	return _battleState->getBattleGame();
 }

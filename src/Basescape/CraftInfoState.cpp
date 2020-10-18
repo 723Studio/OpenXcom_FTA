@@ -104,7 +104,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	{
 		const int x = i % 2 ? 184 : 121;
 		const int y = top + 16 + (i / 2) * top_row;
-		_weapon[i] = new Surface(15, 17, x, y);
+		_weapon[i] = new InteractiveSurface(15, 17, x, y);
 	}
 	_crew = new Surface(220, 18, 85, bottom - 1);
 	_equip = new Surface(220, 18, 85, bottom + bottom_row);
@@ -151,6 +151,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		const char num[] = { char('1' + i), 0 };
 		_btnW[i]->setText(num);
 		_btnW[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWClick);
+		_weapon[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWIconClick);
 	}
 
 	_btnCrew->setText(tr("STR_CREW"));
@@ -399,6 +400,36 @@ void CraftInfoState::btnWClick(Action * act)
 		{
 			_game->pushState(new CraftWeaponsState(_base, _craftId, i));
 			return;
+		}
+	}
+}
+
+/**
+ * Toggles the enabled/disabled status of the weapon.
+ * @param action Pointer to an action.
+ */
+void CraftInfoState::btnWIconClick(Action *action)
+{
+	for(int i = 0; i < _weaponNum; ++i)
+	{
+		if (action->getSender() == _weapon[i])
+		{
+			CraftWeapon *w1 = _craft->getWeapons()->at(i);
+			if (w1)
+			{
+				// Toggle the weapon status
+				w1->setDisabled(!w1->isDisabled());
+
+				// If we just enabled the weapon, we should begin rearming immediately.
+				if (!w1->isDisabled())
+				{
+					_craft->checkup();
+				}
+
+				// Update the onscreen info.
+				// Note: This method is overkill, since we only need to update a few things. But at least this ensures we haven't missed anything.
+				init();
+			}
 		}
 	}
 }

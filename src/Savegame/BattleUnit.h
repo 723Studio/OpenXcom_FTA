@@ -59,7 +59,7 @@ enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEM
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
 enum UnitStatus {STATUS_STANDING, STATUS_WALKING, STATUS_FLYING, STATUS_TURNING, STATUS_AIMING, STATUS_COLLAPSING, STATUS_DEAD, STATUS_UNCONSCIOUS, STATUS_PANICKING, STATUS_BERSERK, STATUS_IGNORE_ME};
 enum UnitFaction : int {FACTION_PLAYER, FACTION_HOSTILE, FACTION_NEUTRAL};
-enum UnitBodyPart {BODYPART_HEAD, BODYPART_TORSO, BODYPART_RIGHTARM, BODYPART_LEFTARM, BODYPART_RIGHTLEG, BODYPART_LEFTLEG, BODYPART_MAX};
+enum UnitBodyPart : int {BODYPART_HEAD, BODYPART_TORSO, BODYPART_RIGHTARM, BODYPART_LEFTARM, BODYPART_RIGHTLEG, BODYPART_LEFTLEG, BODYPART_MAX};
 enum UnitBodyPartEx {BODYPART_LEGS = BODYPART_MAX, BODYPART_COLLAPSING, BODYPART_ITEM_RIGHTHAND, BODYPART_ITEM_LEFTHAND, BODYPART_ITEM_FLOOR, BODYPART_ITEM_INVENTORY, BODYPART_LARGE_TORSO, BODYPART_LARGE_PROPULSION = BODYPART_LARGE_TORSO + 4, BODYPART_LARGE_TURRET = BODYPART_LARGE_PROPULSION + 4};
 
 /**
@@ -358,14 +358,6 @@ public:
 	static int getFiringAccuracy(BattleActionAttack::ReadOnly attack, Mod *mod);
 	/// Calculate accuracy modifier.
 	int getAccuracyModifier(const BattleItem *item = 0) const;
-	/// Set armor value.
-	void setArmor(int armor, UnitSide side);
-	/// Get armor value.
-	int getArmor(UnitSide side) const;
-	/// Get max armor value.
-	int getMaxArmor(UnitSide side) const;
-	/// Get total number of fatal wounds.
-	int getFatalWounds() const;
 	/// Get the current reaction score.
 	double getReactionScore() const;
 	/// Prepare for a new turn.
@@ -481,10 +473,22 @@ public:
 	void setTurretType(int turretType);
 	/// Get the turret type. -1 is no turret.
 	int getTurretType() const;
+
+	/// Set armor value.
+	void setArmor(int armor, UnitSide side);
+	/// Get armor value.
+	int getArmor(UnitSide side) const;
+	/// Get max armor value.
+	int getMaxArmor(UnitSide side) const;
+	/// Set fatal wound amount of a body part
+	void setFatalWound(int wound, UnitBodyPart part);
+	/// Get total number of fatal wounds.
+	int getFatalWounds() const;
 	/// Get fatal wound amount of a body part
-	int getFatalWound(int part) const;
+	int getFatalWound(UnitBodyPart part) const;
+
 	/// Heal one fatal wound
-	void heal(int part, int woundAmount, int healthAmount);
+	void heal(UnitBodyPart part, int woundAmount, int healthAmount);
 	/// Give pain killers to this unit
 	void painKillers(int moraleAmount, float painKillersStrength);
 	/// Give stimulant to this unit
@@ -598,7 +602,7 @@ public:
 	/// Reset how many turns passed since stunned last time.
 	void resetTurnsSinceStunned() { _turnsSinceStunned = 255; }
 	/// Increase how many turns passed since stunned last time.
-	void incTurnsSinceStunned() { _turnsSinceStunned = std::max(255, _turnsSinceStunned + 1); }
+	void incTurnsSinceStunned() { _turnsSinceStunned = std::min(255, _turnsSinceStunned + 1); }
 	/// Return how many turns passed since stunned last time.
 	int getTurnsSinceStunned() const { return _turnsSinceStunned; }
 

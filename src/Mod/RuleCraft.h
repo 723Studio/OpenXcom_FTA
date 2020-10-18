@@ -159,6 +159,7 @@ private:
 	RuleTerrain *_battlescapeTerrainData;
 	bool _keepCraftAfterFailedMission, _allowLanding, _spacecraft, _notifyWhenRefueled, _autoPatrol;
 	int _listOrder, _maxItems, _maxAltitude;
+	double _maxStorageSpace;
 	std::vector<std::vector <int> > _deployment;
 	std::vector<int> _craftInventoryTile;
 	RuleCraftStats _stats;
@@ -239,6 +240,8 @@ public:
 	const std::vector<int> &getCraftInventoryTile() const;
 	/// Gets the item limit for this craft.
 	int getMaxItems() const;
+	/// Gets the item storage space limit for this craft.
+	double getMaxStorageSpace() const;
 	/// Test for possibility of usage of weapon type in weapon slot.
 	bool isValidWeaponSlot(int slot, int weaponType) const;
 	int getWeaponTypesRaw(int slot, int subslot) const;

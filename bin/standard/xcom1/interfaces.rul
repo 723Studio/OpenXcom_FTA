@@ -2236,3 +2236,22 @@ interfaces:
         border: 218  # blue
       - id: button
         color: 218   # blue
+  - type: transformationList
+    backgroundImage: BACK02.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 2     # orange
+      - id: window
+        color: 241   # pink
+      - id: text1
+        color: 218   # blue
+      - id: text2
+        color: 241   # pink
+      - id: list
+        color: 246   # purple
+        border: 241  # pink
+      - id: button
+        color: 218   # blue
+      - id: button2
+        color: 241   # pink

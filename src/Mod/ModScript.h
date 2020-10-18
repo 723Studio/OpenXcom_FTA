@@ -97,7 +97,7 @@ class ModScript
 		SelectMoveSoundUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
 
-	struct ReactionUnitParser : ScriptParserEvents<Output, const BattleUnit*, const BattleUnit*, const BattleItem*, int, const BattleUnit*, int>
+	struct ReactionUnitParser : ScriptParserEvents<Output, const BattleUnit*, const BattleUnit*, const BattleItem*, int, const BattleItem*, const RuleSkill*, int, const BattleUnit*, int, int, const SavedBattleGame*>
 	{
 		ReactionUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
@@ -114,9 +114,13 @@ class ModScript
 	{
 		SkillUseUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
-	struct TryPsiAttackUnitParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, int, int, int>
+	struct TryPsiAttackUnitParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, const RuleSkill*, int, int, int, const SavedBattleGame*>
 	{
 		TryPsiAttackUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
+	};
+	struct TryMeleeAttackUnitParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, const RuleSkill*, int, int, int, const SavedBattleGame*>
+	{
+		TryMeleeAttackUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
 	struct DamageUnitParser : ScriptParserEvents<ScriptOutputArgs<int&, int&, int&, int&, int&, int&, int&, int&, int&>, BattleUnit*, BattleItem*, BattleItem*, BattleUnit*, SavedBattleGame*, const RuleSkill*, int, int, int, int, int, int>
 	{
@@ -165,9 +169,14 @@ class ModScript
 		SelectItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
 
-	struct TryPsiAttackItemParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, int, int, int, RNG::RandomState*, int, int>
+	struct TryPsiAttackItemParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, const RuleSkill*, int, int, int, RNG::RandomState*, int, int, const SavedBattleGame*>
 	{
 		TryPsiAttackItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
+	};
+
+	struct TryMeleeAttackItemParser : ScriptParserEvents<ScriptOutputArgs<int&>, const BattleItem*, const BattleUnit*, const BattleUnit*, const RuleSkill*, int, int, int, RNG::RandomState*, int, int, const SavedBattleGame*>
+	{
+		TryMeleeAttackItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod);
 	};
 
 	////////////////////////////////////////////////////////////
@@ -256,6 +265,7 @@ public:
 	using ReactionUnitReaction = MACRO_NAMED_SCRIPT("reactionUnitReaction", ReactionUnitParser);
 
 	using TryPsiAttackUnit = MACRO_NAMED_SCRIPT("tryPsiAttackUnit", TryPsiAttackUnitParser);
+	using TryMeleeAttackUnit = MACRO_NAMED_SCRIPT("tryMeleeAttackUnit", TryMeleeAttackUnitParser);
 	using HitUnit = MACRO_NAMED_SCRIPT("hitUnit", HitUnitParser);
 	using DamageUnit = MACRO_NAMED_SCRIPT("damageUnit", DamageUnitParser);
 	using HealUnit = MACRO_NAMED_SCRIPT("healUnit", HealUnitParser);
@@ -276,6 +286,7 @@ public:
 
 	using ReactionWeaponAction = MACRO_NAMED_SCRIPT("reactionWeaponAction", ReactionUnitParser);
 	using TryPsiAttackItem = MACRO_NAMED_SCRIPT("tryPsiAttackItem", TryPsiAttackItemParser);
+	using TryMeleeAttackItem = MACRO_NAMED_SCRIPT("tryMeleeAttackItem", TryMeleeAttackItemParser);
 
 	using CreateItem = MACRO_NAMED_SCRIPT("createItem", CreateItemParser);
 	using NewTurnItem = MACRO_NAMED_SCRIPT("newTurnItem", NewTurnItemParser);
@@ -340,6 +351,7 @@ public:
 		ReactionUnitReaction,
 
 		TryPsiAttackUnit,
+		TryMeleeAttackUnit,
 		HitUnit,
 		DamageUnit,
 		HealUnit,
@@ -358,6 +370,7 @@ public:
 
 		ReactionWeaponAction,
 		TryPsiAttackItem,
+		TryMeleeAttackItem,
 
 		CreateItem,
 		NewTurnItem

@@ -2324,3 +2324,21 @@ interfaces: #done
         border: 1
       - id: button
         color: 1
+  - type: transformationList
+    backgroundImage: BACK02.SCR
+    elements:
+      - id: palette
+        color: 2
+      - id: window
+        color: 1
+      - id: text1
+        color: 1
+      - id: text2
+        color: 1
+      - id: list
+        color: 239
+        border: 1
+      - id: button
+        color: 1
+      - id: button2
+        color: 1

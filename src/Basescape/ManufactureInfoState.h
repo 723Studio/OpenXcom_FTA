@@ -45,7 +45,8 @@ private:
 	Window * _window;
 	ArrowButton * _btnUnitUp, * _btnUnitDown, * _btnEngineerUp, * _btnEngineerDown;
 	TextButton * _btnStop, * _btnOk;
-	Text * _txtTitle, * _txtAvailableEngineer, * _txtAvailableSpace, * _txtMonthlyProfit, * _txtAllocatedEngineer, * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtEngineerUp, * _txtEngineerDown, * _txtAllocated, * _txtTodo;
+	Text * _txtTitle, * _txtAvailableEngineer, * _txtAvailableSpace, * _txtHoursPerUnit, * _txtMonthlyProfit;
+	Text * _txtAllocatedEngineer, * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtEngineerUp, * _txtEngineerDown, * _txtAllocated, * _txtTodo;
 	ToggleTextButton *_btnSell;
 	Timer * _timerMoreEngineer, * _timerMoreUnit, * _timerLessEngineer, * _timerLessUnit;
 	InteractiveSurface *_surfaceEngineers, *_surfaceUnits;

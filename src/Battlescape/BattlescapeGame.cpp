@@ -530,7 +530,7 @@ void BattlescapeGame::endTurn()
 				const RuleItem *rule = item->getRules();
 				const Tile *tile = item->getTile();
 				BattleUnit *unit = item->getOwner();
-				if (!tile && unit && rule->isExplodingInHands())
+				if (!tile && unit && rule->isExplodingInHands() && !_allEnemiesNeutralized)
 				{
 					tile = unit->getTile();
 				}
@@ -2805,7 +2805,7 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 	for (std::vector<BattleUnit*>::iterator j = _save->getUnits()->begin(); j != _save->getUnits()->end(); ++j)
 	{
 		//TODO: add handling of stunned units for display purposes in AbortMissionState
-		if (!(*j)->isOut() && !(*j)->isOutThresholdExceed())
+		if (!(*j)->isOut() && (!(*j)->isOutThresholdExceed() || ((*j)->getUnitRules() && (*j)->getUnitRules()->getSpawnUnit())))
 		{
 			bool vip = false;
 			if ((*j)->getGeoscapeSoldier() == 0)
@@ -2814,11 +2814,11 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 			}
 			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
 			{
-				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER)
+				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER && (*j)->getCapturable())
 				{
 					// don't count psi-captured units
 				}
-				else if (isSurrendering((*j)))
+				else if (isSurrendering((*j)) && (*j)->getCapturable())
 				{
 					// don't count surrendered units
 				}
@@ -2909,6 +2909,56 @@ bool BattlescapeGame::getKneelReserved() const
  */
 int BattlescapeGame::checkForProximityGrenades(BattleUnit *unit)
 {
+	// death trap?
+	Tile* deathTrapTile = nullptr;
+	for (int sx = 0; sx < unit->getArmor()->getSize(); sx++)
+	{
+		for (int sy = 0; sy < unit->getArmor()->getSize(); sy++)
+		{
+			Tile* t = _save->getTile(unit->getPosition() + Position(sx, sy, 0));
+			if (!deathTrapTile && t && t->getFloorSpecialTileType() >= DEATH_TRAPS)
+			{
+				deathTrapTile = t;
+			}
+		}
+	}
+	if (deathTrapTile)
+	{
+		std::ostringstream ss;
+		ss << "STR_DEATH_TRAP_" << deathTrapTile->getFloorSpecialTileType();
+		auto deathTrapRule = getMod()->getItem(ss.str());
+		if (deathTrapRule && (deathTrapRule->getBattleType() == BT_PROXIMITYGRENADE || deathTrapRule->getBattleType() == BT_MELEE))
+		{
+			BattleItem* deathTrapItem = nullptr;
+			for (auto item : *deathTrapTile->getInventory())
+			{
+				if (item->getRules() == deathTrapRule)
+				{
+					deathTrapItem = item;
+					break;
+				}
+			}
+			if (!deathTrapItem)
+			{
+				deathTrapItem = _save->createItemForTile(deathTrapRule, deathTrapTile);
+			}
+			if (deathTrapRule->getBattleType() == BT_PROXIMITYGRENADE)
+			{
+				deathTrapItem->setFuseTimer(0);
+				Position p = deathTrapTile->getPosition().toVoxel() + Position(8, 8, deathTrapTile->getTerrainLevel());
+				statePushNext(new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_NONE, nullptr, deathTrapItem)));
+				return 2;
+			}
+			else if (deathTrapRule->getBattleType() == BT_MELEE)
+			{
+				Position p = deathTrapTile->getPosition().toVoxel() + Position(8, 8, 12);
+				// EXPERIMENTAL: terrainMeleeTilePart = 4 (V_UNIT); no attacker
+				statePushNext(new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_HIT, nullptr, deathTrapItem), nullptr, false, 0, 0, 4));
+				return 2;
+			}
+		}
+	}
+
 	bool exploded = false;
 	bool glow = false;
 	int size = unit->getArmor()->getSize() + 1;

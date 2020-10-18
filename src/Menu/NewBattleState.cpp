@@ -51,6 +51,7 @@
 #include "../Basescape/CraftInfoState.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Mod/RuleAlienMission.h"
+#include "../Mod/AlienRace.h"
 #include "../Mod/RuleGlobe.h"
 
 namespace OpenXcom
@@ -211,20 +212,6 @@ NewBattleState::NewBattleState() : _craft(0)
 	difficulty.push_back(tr("STR_4_GENIUS"));
 	difficulty.push_back(tr("STR_5_SUPERHUMAN"));
 	_cbxDifficulty->setOptions(difficulty);
-
-	_alienRaces = _game->getMod()->getAlienRacesList();
-	for (std::vector<std::string>::iterator i = _alienRaces.begin(); i != _alienRaces.end();)
-	{
-		if ((*i).find("_UNDERWATER") != std::string::npos)
-		{
-			i = _alienRaces.erase(i);
-		}
-		else
-		{
-			++i;
-		}
-	}
-	_cbxAlienRace->setOptions(_alienRaces, true);
 
 	_slrAlienTech->setRange(0, _game->getMod()->getAlienItemLevels().size()-1);
 	if (_game->getMod()->getAlienItemLevels().size() <= 1)
@@ -410,6 +397,7 @@ void NewBattleState::initSave()
 	base->getCrafts()->push_back(_craft);
 
 	// Generate soldiers
+	bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(mod->getPsiRequirements()));
 	for (int i = 0; i < 30; ++i)
 	{
 		int randomType = RNG::generate(0, _game->getMod()->getSoldiersList().size() - 1);
@@ -439,7 +427,7 @@ void NewBattleState::initSave()
 		stats->bravery = (int)ceil(stats->bravery / 10.0) * 10; // keep it a multiple of 10
 
 		// update again, could have been changed since soldier creation
-		soldier->calcStatString(mod->getStatStrings(), (Options::psiStrengthEval && save->isResearched(mod->getPsiRequirements())));
+		soldier->calcStatString(mod->getStatStrings(), psiStrengthEval);
 
 		base->getSoldiers()->push_back(soldier);
 		if (i < _craft->getRules()->getSoldiers())
@@ -691,6 +679,32 @@ void NewBattleState::cbxTerrainChange(Action *)
 	_slrDepth->setVisible(minDepth != maxDepth);
 	_slrDepth->setRange(minDepth, maxDepth);
 	_slrDepth->setValue(minDepth);
+
+	// Get races "supported" by this mission
+	_alienRaces = _game->getMod()->getAlienRacesList();
+	int maxAlienRank = ruleDeploy->getMaxAlienRank();
+	for (std::vector<std::string>::iterator i = _alienRaces.begin(); i != _alienRaces.end();)
+	{
+		if ((*i).find("_UNDERWATER") != std::string::npos)
+		{
+			i = _alienRaces.erase(i);
+		}
+		else
+		{
+			std::string raceName = (minDepth != maxDepth) ? (*i) + "_UNDERWATER" : (*i);
+			auto raceRules = _game->getMod()->getAlienRace(raceName);
+			if (!raceRules || maxAlienRank >= raceRules->getMembers())
+			{
+				// not enough members or race doesn't exist
+				i = _alienRaces.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
+	_cbxAlienRace->setOptions(_alienRaces, true);
 }
 
 }

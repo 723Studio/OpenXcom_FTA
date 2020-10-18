@@ -1637,6 +1637,8 @@ void StatsForNerdsState::initItemList()
 	}
 
 	addInteger(ss, itemRule->getWeight(), "weight", 3);
+	addInteger(ss, itemRule->getThrowRange(), "throwRange");
+	addInteger(ss, itemRule->getUnderwaterThrowRange(), "underwaterThrowRange");
 
 	addRuleStatBonus(ss, *itemRule->getThrowMultiplierRaw(), "throwMultiplier");
 	addIntegerPercent(ss, itemRule->getAccuracyThrow(), "accuracyThrow", 100);
@@ -2356,6 +2358,7 @@ void StatsForNerdsState::initArmorList()
 
 	addIntegerPercent(ss, armorRule->getHeatVision(), "heatVision");
 	addInteger(ss, armorRule->getPsiVision(), "psiVision");
+	addInteger(ss, armorRule->getPsiCamouflage(), "psiCamouflage");
 
 	addInteger(ss, armorRule->getVisibilityAtDay(), "visibilityAtDay");
 	addInteger(ss, armorRule->getVisibilityAtDark(), "visibilityAtDark");
@@ -2759,6 +2762,7 @@ void StatsForNerdsState::initCraftList()
 	addInteger(ss, craftRule->getPilots(), "pilots");
 	addInteger(ss, craftRule->getVehicles(), "vehicles");
 	addInteger(ss, craftRule->getMaxItems(), "maxItems");
+	addDouble(ss, craftRule->getMaxStorageSpace(), "maxStorageSpace");
 
 	addInteger(ss, craftRule->getMaxAltitude(), "maxAltitude", -1);
 	addInteger(ss, craftRule->getWeapons(), "weapons");

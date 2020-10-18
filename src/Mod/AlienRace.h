@@ -55,6 +55,8 @@ public:
 	const std::string &getBaseCustomMission() const;
 	/// Gets a certain member of this alien race family.
 	const std::string &getMember(int id) const;
+	/// Gets the total number of members of this alien race family.
+	int getMembers() const;
 	/// Gets what mission is created after destroying ufo.
 	const std::string &getRetaliationMission() const;
 	/// Gets how aggressive alien are to spawn retaliation mission after destroying ufo.

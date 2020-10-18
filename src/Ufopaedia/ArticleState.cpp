@@ -53,8 +53,7 @@ namespace OpenXcom
 	 */
 	void ArticleCommonState::nextArticlePage()
 	{
-		auto curr = getCurrentArticle();
-		if (current_page >= curr->getNumberOfPages() - 1)
+		if (!hasNextArticlePage())
 		{
 			// goto to first page of next article
 			nextArticle();
@@ -64,6 +63,11 @@ namespace OpenXcom
 		{
 			current_page++;
 		}
+	}
+
+	bool ArticleCommonState::hasNextArticlePage()
+	{
+		return !(current_page >= getCurrentArticle()->getNumberOfPages() - 1);
 	}
 
 	/**
@@ -88,8 +92,7 @@ namespace OpenXcom
 	 */
 	void ArticleCommonState::prevArticlePage()
 	{
-		auto curr = getCurrentArticle();
-		if (current_page == 0 || current_page > curr->getNumberOfPages() - 1)
+		if (!hasPrevArticlePage())
 		{
 			// goto last page of previous article
 			prevArticle();
@@ -99,6 +102,11 @@ namespace OpenXcom
 		{
 			current_page--;
 		}
+	}
+
+	bool ArticleCommonState::hasPrevArticlePage()
+	{
+		return !(current_page == 0 || current_page > getCurrentArticle()->getNumberOfPages() - 1);
 	}
 
 	/**
@@ -214,6 +222,7 @@ namespace OpenXcom
 		_btnOk->onMouseClick((ActionHandler)&ArticleState::btnOkClick);
 		_btnOk->onKeyboardPress((ActionHandler)&ArticleState::btnOkClick,Options::keyOk);
 		_btnOk->onKeyboardPress((ActionHandler)&ArticleState::btnOkClick,Options::keyCancel);
+		_btnOk->onKeyboardPress((ActionHandler)&ArticleState::btnResetMusicClick, Options::keySelectMusicTrack);
 		_btnPrev->setText("<<");
 		_btnPrev->onMouseClick((ActionHandler)&ArticleState::btnPrevClick);
 		_btnPrev->onKeyboardPress((ActionHandler)&ArticleState::btnPrevClick, Options::keyGeoLeft);
@@ -233,6 +242,16 @@ namespace OpenXcom
 	void ArticleState::btnOkClick(Action *)
 	{
 		_game->popState();
+	}
+
+	/**
+	 * Resets the music to a random geoscape music.
+	 * @param action Pointer to an action.
+	 */
+	void ArticleState::btnResetMusicClick(Action *)
+	{
+		// reset that pesky interception music!
+		_game->getMod()->playMusic("GMGEO");
 	}
 
 	/**

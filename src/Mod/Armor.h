@@ -83,7 +83,7 @@ private:
 	std::vector<int> _selectWeaponSoundMale, _selectWeaponSoundFemale;
 	std::vector<int> _annoyedSoundMale, _annoyedSoundFemale;
 	int _size, _weight, _visibilityAtDark, _visibilityAtDay, _personalLight;
-	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision;
+	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision, _psiCamouflage;
 	float _damageModifier[DAMAGE_TYPES];
 	std::vector<int> _loftempsSet;
 	UnitStats _stats;
@@ -255,6 +255,8 @@ public:
 	int getHeatVision() const;
 	/// Gets info about psi vision.
 	int getPsiVision() const;
+	/// Gets info about psi camouflage.
+	int getPsiCamouflage() const;
 	/// Gets personal light radius;
 	int getPersonalLight() const;
 	/// Gets how armor react to fear.

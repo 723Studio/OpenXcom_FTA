@@ -43,31 +43,31 @@ public:
 	constexpr Position(const Position& pos) = default;
 
 	/// Assignment
-	Position& operator=(const Position& pos) = default;
+	constexpr Position& operator=(const Position& pos) = default;
 
-	Position operator+(const Position& pos) const { return Position(x + pos.x, y + pos.y, z + pos.z); }
-	Position& operator+=(const Position& pos) { x+=pos.x; y+=pos.y; z+=pos.z; return *this; }
+	constexpr Position operator+(const Position& pos) const { return Position(x + pos.x, y + pos.y, z + pos.z); }
+	constexpr Position& operator+=(const Position& pos) { x+=pos.x; y+=pos.y; z+=pos.z; return *this; }
 
-	Position operator-(const Position& pos) const { return Position(x - pos.x, y - pos.y, z - pos.z); }
-	Position& operator-=(const Position& pos) { x-=pos.x; y-=pos.y; z-=pos.z; return *this; }
+	constexpr Position operator-(const Position& pos) const { return Position(x - pos.x, y - pos.y, z - pos.z); }
+	constexpr Position& operator-=(const Position& pos) { x-=pos.x; y-=pos.y; z-=pos.z; return *this; }
 
-	Position operator*(const Position& pos) const { return Position(x * pos.x, y * pos.y, z * pos.z); }
-	Position& operator*=(const Position& pos) { x*=pos.x; y*=pos.y; z*=pos.z; return *this; }
-	Position operator*(const int v) const { return Position(x * v, y * v, z * v); }
-	Position& operator*=(const int v) { x*=v; y*=v; z*=v; return *this; }
+	constexpr Position operator*(const Position& pos) const { return Position(x * pos.x, y * pos.y, z * pos.z); }
+	constexpr Position& operator*=(const Position& pos) { x*=pos.x; y*=pos.y; z*=pos.z; return *this; }
+	constexpr Position operator*(const int v) const { return Position(x * v, y * v, z * v); }
+	constexpr Position& operator*=(const int v) { x*=v; y*=v; z*=v; return *this; }
 
-	Position operator/(const Position& pos) const { return Position(x / pos.x, y / pos.y, z / pos.z); }
-	Position& operator/=(const Position& pos) { x/=pos.x; y/=pos.y; z/=pos.z; return *this; }
+	constexpr Position operator/(const Position& pos) const { return Position(x / pos.x, y / pos.y, z / pos.z); }
+	constexpr Position& operator/=(const Position& pos) { x/=pos.x; y/=pos.y; z/=pos.z; return *this; }
 
-	Position operator/(const int v) const { return Position(x / v, y / v, z / v); }
+	constexpr Position operator/(const int v) const { return Position(x / v, y / v, z / v); }
 
 	/// == operator
-	bool operator== (const Position& pos) const
+	constexpr bool operator== (const Position& pos) const
 	{
 		return x == pos.x && y == pos.y && z == pos.z;
 	}
 	/// != operator
-	bool operator!= (const Position& pos) const
+	constexpr bool operator!= (const Position& pos) const
 	{
 		return x != pos.x || y != pos.y || z != pos.z;
 	}
@@ -95,7 +95,7 @@ public:
 	 * @param pos2 Position of second square.
 	 * @return Distance.
 	 */
-	static int distanceSq(Position pos1, Position pos2)
+	constexpr static int distanceSq(Position pos1, Position pos2)
 	{
 		int x = pos1.x - pos2.x;
 		int y = pos1.y - pos2.y;
@@ -120,7 +120,7 @@ public:
 	 * @param pos2 Position of second square.
 	 * @return Distance.
 	 */
-	static int distance2dSq(Position pos1, Position pos2)
+	constexpr static int distance2dSq(Position pos1, Position pos2)
 	{
 		int x = pos1.x - pos2.x;
 		int y = pos1.y - pos2.y;

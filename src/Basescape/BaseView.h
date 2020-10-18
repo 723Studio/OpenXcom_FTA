@@ -76,7 +76,7 @@ public:
 	/// Sets whether the base view is selectable.
 	void setSelectable(int size);
 	/// Checks if a facility can be placed. Returns 0 if it can, otherwise an int for why not.
-	BasePlacementErrors getPlacementError(const RuleBaseFacility *rule, BaseFacility *facilityBeingMoved = 0) const;
+	BasePlacementErrors getPlacementError(const RuleBaseFacility *rule, BaseFacility *facilityBeingMoved = nullptr, bool isStartFacility = false) const;
 	/// Checks if the placed facility is placed in queue or not.
 	bool isQueuedBuilding(const RuleBaseFacility *rule) const;
 	/// ReCalculates the remaining build-time of all queued buildings.

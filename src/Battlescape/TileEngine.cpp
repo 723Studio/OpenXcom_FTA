@@ -212,7 +212,7 @@ MapSubset mapAreaExpand(MapSubset gs, int radius)
 
 } // namespace
 
-const int TileEngine::heightFromCenter[11] = {0,-2,+2,-4,+4,-6,+6,-8,+8,-12,+12};
+constexpr int TileEngine::heightFromCenter[11];
 
 
 constexpr Position TileEngine::invalid;
@@ -1027,6 +1027,15 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 	bool fearImmune = tile->getUnit()->getArmor()->getFearImmune();
 	if (psiVisionDistance > 0 && !fearImmune)
 	{
+		int psiCamo = tile->getUnit()->getArmor()->getPsiCamouflage();
+		if (psiCamo > 0)
+		{
+			psiVisionDistance = std::min(psiVisionDistance, psiCamo);
+		}
+		else if (psiCamo < 0)
+		{
+			psiVisionDistance = std::max(0, psiVisionDistance + psiCamo);
+		}
 		if (currentDistanceSq <= (psiVisionDistance * psiVisionDistance))
 		{
 			return true; // we already sense the unit, no need to check obstacles or smoke
@@ -2033,10 +2042,11 @@ bool TileEngine::tryReaction(ReactionScore *reaction, BattleUnit *target, const 
 			int meleeReactionChance = Mod::EXTENDED_MELEE_REACTIONS > 0 ? 100 : 0;
 			int reactionChance = BA_HIT != originalAction.type ? 100 : meleeReactionChance;
 			int dist = Position::distance2d(unit->getPositionVexels(), target->getPositionVexels());
+			int arc = getArcDirection(getDirectionTo(unit->getPositionVexels(), target->getPositionVexels()), unit->getDirection());
 			auto *origTarg = _save->getTile(originalAction.target) ? _save->getTile(originalAction.target)->getUnit() : nullptr;
 
 			ModScript::ReactionCommon::Output arg{ reactionChance, dist };
-			ModScript::ReactionCommon::Worker worker{ target, unit, originalAction.weapon, originalAction.type, origTarg, moveType };
+			ModScript::ReactionCommon::Worker worker{ target, unit, action.weapon, action.type, originalAction.weapon, originalAction.skillRules, originalAction.type, origTarg, moveType, arc, _save };
 			if (originalAction.weapon)
 			{
 				worker.execute(originalAction.weapon->getRules()->getScript<ModScript::ReactionWeaponAction>(), arg);
@@ -2411,7 +2421,7 @@ bool TileEngine::hitUnit(BattleActionAttack attack, BattleUnit *target, const Po
  * @param unit The unit that caused the explosion.
  * @param clipOrWeapon clip or weapon causing the damage.
  */
-void TileEngine::hit(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, bool rangeAtack)
+void TileEngine::hit(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, bool rangeAtack, int terrainMeleeTilePart)
 {
 	bool terrainChanged = false; //did the hit destroy a tile thereby changing line of sight?
 	int effectGenerated = 0; //did the hit produce smoke (1), fire/light (2) or disabled a unit (3) ?
@@ -2423,13 +2433,13 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 	}
 
 	voxelCheckFlush();
-	const auto part = voxelCheck(center, attack.attacker);
+	const auto part = (terrainMeleeTilePart > 0) ? (VoxelType)terrainMeleeTilePart : voxelCheck(center, attack.attacker);
 	const auto damage = type->getRandomDamage(power);
 	const auto tileFinalDamage = type->getTileFinalDamage(type->getRandomDamageForTile(power, damage));
 	if (part >= V_FLOOR && part <= V_OBJECT)
 	{
 		bool nothing = true;
-		if (part == V_FLOOR || part == V_OBJECT)
+		if (terrainMeleeTilePart == 0 && (part == V_FLOOR || part == V_OBJECT))
 		{
 			for (std::vector<BattleItem*>::iterator i = tile->getInventory()->begin(); i != tile->getInventory()->end(); ++i)
 			{
@@ -3886,13 +3896,15 @@ int TileEngine::psiAttackCalculate(BattleActionAttack::ReadOnly attack, const Ba
 	psiAttackResult = ModScript::scriptFunc1<ModScript::TryPsiAttackItem>(
 		weapon->getRules(),
 		psiAttackResult,
-		weapon, attacker, victim, attackStrength, defenseStrength, type, &rng, (int)dis, (int)weapon->getRules()->getPsiAccuracyRangeReduction(dis)
+		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type, &rng, (int)dis, (int)weapon->getRules()->getPsiAccuracyRangeReduction(dis),
+		_save
 	);
 
 	psiAttackResult =  ModScript::scriptFunc1<ModScript::TryPsiAttackUnit>(
 		victim->getArmor(),
 		psiAttackResult,
-		weapon, attacker, victim, attackStrength, defenseStrength, type
+		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type,
+		_save
 	);
 
 	return psiAttackResult;
@@ -3975,13 +3987,56 @@ bool TileEngine::psiAttack(BattleActionAttack attack, BattleUnit *victim)
 }
 
 /**
+ * Calculate success rate of melee attack action.
+ */
+int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const BattleUnit *victim)
+{
+	if (!victim)
+		return 0;
+
+	int attackStrength = BattleUnit::getFiringAccuracy(attack, _save->getBattleGame()->getMod());
+	int defenseStrength = victim->getArmor()->getMeleeDodge(victim);
+	int arc = getArcDirection(getDirectionTo(victim->getPositionVexels(), attack.attacker->getPositionVexels()), victim->getDirection());
+	int defenseStrengthPenalty = Clamp((int)(defenseStrength * (arc * victim->getArmor()->getMeleeDodgeBackPenalty() / 4.0f)), 0, defenseStrength);
+
+	auto type = attack.type;
+	auto attacker = attack.attacker;
+	auto weapon = attack.weapon_item;
+
+	auto rng = RNG::globalRandomState().subSequence();
+
+	int meleeAttackResult = 0;
+
+	meleeAttackResult = ModScript::scriptFunc1<ModScript::TryMeleeAttackItem>(
+		weapon->getRules(),
+		meleeAttackResult,
+		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
+		_save
+	);
+
+	meleeAttackResult =  ModScript::scriptFunc1<ModScript::TryMeleeAttackUnit>(
+		victim->getArmor(),
+		meleeAttackResult,
+		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type,
+		_save
+	);
+
+
+	return meleeAttackResult;
+}
+
+/**
  *  Attempts a melee attack action.
  * @param action Pointer to an action.
  * @return Whether it failed or succeeded.
  */
-bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim)
+bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim, int terrainMeleeTilePart)
 {
-	int hitChance = BattleUnit::getFiringAccuracy(attack, _save->getBattleGame()->getMod());
+	if (terrainMeleeTilePart > 0)
+	{
+		// terrain melee doesn't miss
+		return true;
+	}
 	if (attack.type != BA_CQB)
 	{
 		// hit log - new melee attack
@@ -3994,20 +4049,7 @@ bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim)
 		}
 	}
 
-	if (victim)
-	{
-		int arc = _save->getTileEngine()->getArcDirection(_save->getTileEngine()->getDirectionTo(victim->getPositionVexels(), attack.attacker->getPositionVexels()), victim->getDirection());
-		float penalty = 1.0f - arc * victim->getArmor()->getMeleeDodgeBackPenalty() / 4.0f;
-		if (penalty > 0)
-		{
-			hitChance -= victim->getArmor()->getMeleeDodge(victim) * penalty;
-		}
-	}
-	if (!RNG::percent(hitChance))
-	{
-		return false;
-	}
-	return true;
+	return meleeAttackCalculate(attack, victim) > 0;
 }
 
 /**
@@ -4026,7 +4068,7 @@ void TileEngine::medikitRemoveIfEmpty(BattleAction *action)
 	}
 }
 
-bool TileEngine::medikitUse(BattleAction *action, BattleUnit *target, BattleMediKitAction originalMedikitAction, int bodyPart)
+bool TileEngine::medikitUse(BattleAction *action, BattleUnit *target, BattleMediKitAction originalMedikitAction, UnitBodyPart bodyPart)
 {
 	BattleActionAttack attack;
 	attack.type = action->type;
@@ -4055,7 +4097,7 @@ bool TileEngine::medikitUse(BattleAction *action, BattleUnit *target, BattleMedi
 	ModScript::HealUnit::Output args { };
 
 	std::get<medikitActionKey>(args.data) += originalMedikitAction;
-	std::get<bodyPartKey>(args.data) += bodyPart;
+	std::get<bodyPartKey>(args.data) += (int)bodyPart;
 	std::get<woundRecoveryKey>(args.data) += rule->getWoundRecovery();
 	std::get<healthRecoveryKey>(args.data) += rule->getHealthRecovery();
 	std::get<energyRecoveryKey>(args.data) += rule->getEnergyRecovery();
@@ -4528,6 +4570,125 @@ bool TileEngine::validMeleeRange(Position pos, int direction, BattleUnit *attack
 }
 
 /**
+ * Validates the terrain melee range.
+ */
+bool TileEngine::validTerrainMeleeRange(BattleAction* action)
+{
+	if (Mod::EXTENDED_TERRAIN_MELEE <= 0)
+	{
+		// turned off
+		return false;
+	}
+
+	action->terrainMeleeTilePart = 0;
+
+	if (action->weapon)
+	{
+		auto wRule = action->weapon->getRules();
+		if (wRule->getBattleType() == BT_MELEE)
+		{
+			// check primary damage type
+			if (wRule->getDamageType()->ToTile == 0.0) return false;
+		}
+		else
+		{
+			// check secondary damage type
+			if (wRule->getMeleeType()->ToTile == 0.0) return false;
+		}
+	}
+
+	Position pos = action->actor->getPosition();
+	int direction = action->actor->getDirection();
+	BattleUnit* attacker = action->actor;
+
+	if (direction < 0 || direction > 7)
+	{
+		return false;
+	}
+	if (direction % 2 != 0)
+	{
+		// diagonal directions are not supported
+		return false;
+	}
+	if (attacker->getArmor()->getSize() > 1)
+	{
+		// 2x2 units are not supported
+		return false;
+	}
+	Position p;
+	Pathfinding::directionToVector(direction, &p);
+
+	Tile* originTile = _save->getTile(pos);
+	if (originTile && originTile->getTerrainLevel() <= -16)
+	{
+		// if we are on the upper part of stairs, target one tile above
+		pos += Position(0, 0, 1);
+		originTile = _save->getTile(pos);
+	}
+	Tile* neighbouringTile = _save->getTile(pos + p);
+	if (originTile && neighbouringTile)
+	{
+		auto setTarget = [](Tile* tt, TilePart tp, BattleAction* aa) -> bool
+		{
+			MapData* obj = tt->getMapData(tp);
+			if (obj)
+			{
+				if (tp != O_OBJECT && !obj->isDoor() && !obj->isUFODoor() && tt->getTUCost(tp, MT_WALK) < 255)
+				{
+					// it is possible to walk through this (rubble) wall... no need to attack it
+					return false;
+				}
+				bool isHighEnough = false;
+				for (int i = Mod::EXTENDED_TERRAIN_MELEE; i < 12; ++i)
+				{
+					if (obj->getLoftID(i) > 0)
+					{
+						isHighEnough = true;
+						break;
+					}
+				}
+				if (isHighEnough)
+				{
+					aa->target = tt->getPosition();
+					aa->terrainMeleeTilePart = tp;
+					return true;
+				}
+			}
+			return false;
+		};
+
+		if (direction == 0 && setTarget(originTile, O_NORTHWALL, action))
+		{
+			// North: target the north wall of the same tile
+			return true;
+		}
+		else if (direction == 2 && setTarget(neighbouringTile, O_WESTWALL, action))
+		{
+			// East: target the west wall of the neighbouring tile
+			return true;
+		}
+		else if (direction == 4 && setTarget(neighbouringTile, O_NORTHWALL, action))
+		{
+			// South: target the north wall of the neighbouring tile
+			return true;
+		}
+		else if (direction == 6 && setTarget(originTile, O_WESTWALL, action))
+		{
+			// West: target the west wall of the same tile
+			return true;
+		}
+
+		if (setTarget(neighbouringTile, O_OBJECT, action))
+		{
+			// All directions: target the object on the neighbouring tile
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Gets the AI to look through a window.
  * @param position Current position.
  * @return Direction or -1 when no window found.
@@ -4554,11 +4715,12 @@ int TileEngine::faceWindow(Position position)
  * @param action The action to validate.
  * @param originVoxel The origin point of the action.
  * @param targetVoxel The target point of the action.
+ * @param depth Battlescape depth.
  * @param curve The curvature of the throw.
  * @param voxelType The type of voxel at which this parabola terminates.
  * @return Validity of action.
  */
-bool TileEngine::validateThrow(BattleAction &action, Position originVoxel, Position targetVoxel, double *curve, int *voxelType, bool forced)
+bool TileEngine::validateThrow(BattleAction &action, Position originVoxel, Position targetVoxel, int depth, double *curve, int *voxelType, bool forced)
 {
 	bool foundCurve = false;
 	double curvature = 0.5;
@@ -4587,7 +4749,7 @@ bool TileEngine::validateThrow(BattleAction &action, Position originVoxel, Posit
 		return false;
 	}
 	// out of range - can't throw here
-	if (ProjectileFlyBState::validThrowRange(&action, originVoxel, targetTile) == false)
+	if (ProjectileFlyBState::validThrowRange(&action, originVoxel, targetTile, depth) == false)
 	{
 		return false;
 	}
@@ -4760,8 +4922,27 @@ Position TileEngine::getOriginVoxel(BattleAction &action, Tile *tile)
 			}
 		}
 		int direction = getDirectionTo(origin, action.target);
-		originVoxel.x += dirXshift[direction]*action.actor->getArmor()->getSize();
-		originVoxel.y += dirYshift[direction]*action.actor->getArmor()->getSize();
+
+		// Offset for different relativeOrigin values
+		switch (action.relativeOrigin)
+		{
+		case BattleActionOrigin::CENTRE:
+			// Standard offset.
+			originVoxel.x += dirXshift[direction] * action.actor->getArmor()->getSize();
+			originVoxel.y += dirYshift[direction] * action.actor->getArmor()->getSize();
+			break;
+
+			// 2:1 Weighted average of the standard offset and a rotation, either left or right.
+		case BattleActionOrigin::LEFT:
+			originVoxel.x += ((2 * dirXshift[direction] + dirXshift[(direction - 1) % 8]) * action.actor->getArmor()->getSize() + 1) / 3;
+			originVoxel.y += ((2 * dirYshift[direction] + dirYshift[(direction - 1) % 8]) * action.actor->getArmor()->getSize() + 1) / 3;
+			break;
+
+		case BattleActionOrigin::RIGHT:
+			originVoxel.x += ((2 * dirXshift[direction] + dirXshift[(direction + 1) % 8]) * action.actor->getArmor()->getSize() + 1) / 3;
+			originVoxel.y += ((2 * dirYshift[direction] + dirYshift[(direction + 1) % 8]) * action.actor->getArmor()->getSize() + 1) / 3;
+			break;
+		};
 	}
 	else
 	{

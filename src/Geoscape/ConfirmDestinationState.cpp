@@ -20,8 +20,10 @@
 #include "CraftNotEnoughPilotsState.h"
 #include "ConfirmDestinationState.h"
 #include "../Engine/Game.h"
+#include "../Menu/ErrorMessageState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/AlienRace.h"
+#include "../Mod/RuleInterface.h"
 #include "../Mod/RuleStartingCondition.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/AlienDeployment.h"
@@ -38,6 +40,8 @@
 #include "../Savegame/Ufo.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
+#include "../Savegame/ItemContainer.h"
+#include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
 
 namespace OpenXcom
@@ -54,10 +58,17 @@ ConfirmDestinationState::ConfirmDestinationState(Craft *craft, Target *target) :
 	Waypoint *w = dynamic_cast<Waypoint*>(_target);
 	_screen = false;
 
+	Base *base = dynamic_cast<Base*>(_target);
+	bool transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _craft->getBase());
+
+	int btnOkX = transferAvailable ? 29 : 68;
+	int btnCancelX = transferAvailable ? 177 : 138;
+
 	// Create objects
 	_window = new Window(this, 244, 72, 6, 64);
-	_btnOk = new TextButton(50, 12, 68, 104);
-	_btnCancel = new TextButton(50, 12, 138, 104);
+	_btnOk = new TextButton(50, 12, btnOkX, 104);
+	_btnTransfer = new TextButton(82, 12, 87, 104);
+	_btnCancel = new TextButton(50, 12, btnCancelX, 104);
 	_txtTarget = new Text(232, 32, 12, 72);
 
 	// Set palette
@@ -66,6 +77,7 @@ ConfirmDestinationState::ConfirmDestinationState(Craft *craft, Target *target) :
 	add(_window, "window", "confirmDestination");
 	add(_btnOk, "button", "confirmDestination");
 	add(_btnCancel, "button", "confirmDestination");
+	add(_btnTransfer, "button", "confirmDestination");
 	add(_txtTarget, "text", "confirmDestination");
 
 	centerAllSurfaces();
@@ -76,6 +88,10 @@ ConfirmDestinationState::ConfirmDestinationState(Craft *craft, Target *target) :
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ConfirmDestinationState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ConfirmDestinationState::btnOkClick, Options::keyOk);
+
+	_btnTransfer->setText(tr("STR_TRANSFER_UC"));
+	_btnTransfer->onMouseClick((ActionHandler)&ConfirmDestinationState::btnTransferClick);
+	_btnTransfer->setVisible(transferAvailable);
 
 	_btnCancel->setText(tr("STR_CANCEL_UC"));
 	_btnCancel->onMouseClick((ActionHandler)&ConfirmDestinationState::btnCancelClick);
@@ -271,6 +287,76 @@ void ConfirmDestinationState::btnOkClick(Action *)
 	_craft->setStatus("STR_OUT");
 	_game->popState();
 	_game->popState();
+}
+
+/**
+ * Handles clicking the transfer button
+ * Performs a transfer of a craft to a targeted base if possible, otherwise pops an error message
+ * @param action Pointer to an action.
+ */
+void ConfirmDestinationState::btnTransferClick(Action *)
+{
+	std::string errorMessage;
+	
+	Base *targetBase = dynamic_cast<Base*>(_target);
+	if ((targetBase->getAvailableHangars() - targetBase->getUsedHangars()) <= 0) // don't know how you'd get less than 0 available hangars, but want to handle that just in case
+	{
+		errorMessage = tr("STR_NO_FREE_HANGARS_FOR_TRANSFER");
+	}
+	else if (_craft->getNumSoldiers() > targetBase->getAvailableQuarters() - targetBase->getUsedQuarters())
+	{
+		errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
+	}
+	else if (Options::storageLimitsEnforced && targetBase->storesOverfull(_craft->getTotalItemStorageSize(_game->getMod())))
+	{
+		errorMessage = tr("STR_NOT_ENOUGH_STORE_SPACE_FOR_CRAFT");
+	}
+	else if (_craft->getFuel() < _craft->getFuelLimit(targetBase))
+	{
+		errorMessage = tr("STR_NOT_ENOUGH_FUEL_TO_REACH_TARGET");
+	}
+
+	// clicking transfer will start the craft moving or make us need to pick a new destination
+	// either way, we need to get rid of this confirming the destination state
+	_game->popState();
+	if (errorMessage.empty())
+	{
+		// Transfer soldiers inside craft
+		Base *currentBase = _craft->getBase();
+		for (std::vector<Soldier*>::iterator s = currentBase->getSoldiers()->begin(); s != currentBase->getSoldiers()->end();)
+		{
+			if ((*s)->getCraft() == _craft)
+			{
+				(*s)->setPsiTraining(false);
+				(*s)->setTraining(false);
+				targetBase->getSoldiers()->push_back(*s);
+				s = currentBase->getSoldiers()->erase(s);
+			}
+			else
+			{
+				++s;
+			}
+		}
+
+		// Transfer craft
+		currentBase->removeCraft(_craft, false);
+		targetBase->getCrafts()->push_back(_craft);
+		_craft->setBase(targetBase, false);
+		_craft->setStatus("STR_OUT");
+		_craft->returnToBase();
+		if (_craft->getFuel() <= _craft->getFuelLimit(targetBase))
+		{
+			_craft->setLowFuel(true);
+		}
+
+		// pop the selecting the destination state
+		_game->popState();
+	}
+	else
+	{
+		RuleInterface *menuInterface = _game->getMod()->getInterface("errorMessages");
+		_game->pushState(new ErrorMessageState(errorMessage, _palette, menuInterface->getElement("geoscapeColor")->color, "BACK13.SCR", menuInterface->getElement("geoscapePalette")->color));
+	}
 }
 
 /**

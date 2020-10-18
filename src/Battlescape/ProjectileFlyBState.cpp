@@ -166,7 +166,7 @@ void ProjectileFlyBState::init()
 		}
 		break;
 	case BA_THROW:
-		if (!validThrowRange(&_action, _parent->getTileEngine()->getOriginVoxel(_action, 0), _parent->getSave()->getTile(_action.target)))
+		if (!validThrowRange(&_action, _parent->getTileEngine()->getOriginVoxel(_action, 0), _parent->getSave()->getTile(_action.target), _parent->getSave()->getDepth()))
 		{
 			// out of range
 			_action.result = "STR_OUT_OF_RANGE";
@@ -305,7 +305,7 @@ void ProjectileFlyBState::init()
 			}
 		}
 	}
-	else if (!_action.weapon->getRules()->getArcingShot())
+	else if (!_action.weapon->getArcingShot(_action.type))
 	{
 		// determine the target voxel.
 		// aim at the center of the unit, the object, the walls or the floor (in that priority)
@@ -324,8 +324,28 @@ void ProjectileFlyBState::init()
 			}
 			else
 			{
-				if (!_parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer))
+				bool foundLoF = _parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer);
+
+				if (!foundLoF && Options::oxceEnableOffCentreShooting)
 				{
+					// If we can't target from the standard shooting position, try a bit left and right from the centre.
+					for (auto& rel_pos : { BattleActionOrigin::LEFT, BattleActionOrigin::RIGHT })
+					{
+						_action.relativeOrigin = rel_pos;
+						originVoxel = _parent->getTileEngine()->getOriginVoxel(_action, _parent->getSave()->getTile(_origin));
+						foundLoF = _parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer);
+						if (foundLoF)
+						{
+							break;
+						}
+					}
+				}
+
+				if (!foundLoF)
+				{
+					// Failed to find LOF
+					_action.relativeOrigin = BattleActionOrigin::CENTRE; // reset to the normal origin
+
 					_targetVoxel = TileEngine::invalid.toVoxel(); // out of bounds, even after voxel to tile calculation.
 					if (isPlayer)
 					{
@@ -823,6 +843,15 @@ void ProjectileFlyBState::cancel()
 		if (!_parent->getMap()->getCamera()->isOnScreen(p, false, 0, false))
 			_parent->getMap()->getCamera()->centerOnPosition(p);
 	}
+	if (_parent->areAllEnemiesNeutralized())
+	{
+		// stop autoshots when battle auto-ends
+		_action.autoShotCounter = 1000;
+
+		// Rationale: if there are any fatally wounded soldiers
+		// the game still allows the player to resume playing the current turn (and heal them)
+		// but we don't want to resume auto-shooting (it just looks silly)
+	}
 }
 
 /**
@@ -830,22 +859,46 @@ void ProjectileFlyBState::cancel()
  * @param action Pointer to throw action.
  * @param origin Position to throw from.
  * @param target Tile to throw to.
+ * @param depth Battlescape depth.
  * @return True when the range is valid.
  */
-bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin, Tile *target)
+bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin, Tile *target, int depth)
 {
 	// note that all coordinates and thus also distances below are in number of tiles (not in voxels).
 	if (action->type != BA_THROW)
 	{
 		return true;
 	}
+	int xdiff = action->target.x - action->actor->getPosition().x;
+	int ydiff = action->target.y - action->actor->getPosition().y;
+	int realDistanceSq = (xdiff * xdiff) + (ydiff * ydiff);
+
+	if (depth > 0)
+	{
+		if (action->weapon->getRules()->getUnderwaterThrowRange() > 0)
+		{
+			return realDistanceSq <= action->weapon->getRules()->getUnderwaterThrowRangeSq();
+		}
+	}
+	else
+	{
+		if (action->weapon->getRules()->getThrowRange() > 0)
+		{
+			return realDistanceSq <= action->weapon->getRules()->getThrowRangeSq();
+		}
+	}
+
+	double realDistance = sqrt((double)realDistanceSq);
+
 	int offset = 2;
 	int zd = (origin.z)-((action->target.z * 24 + offset) - target->getTerrainLevel());
 	int weight = action->weapon->getTotalWeight();
 	double maxDistance = (getMaxThrowDistance(weight, action->actor->getBaseStats()->strength, zd) + 8) / 16.0;
-	int xdiff = action->target.x - action->actor->getPosition().x;
-	int ydiff = action->target.y - action->actor->getPosition().y;
-	double realDistance = sqrt((double)(xdiff*xdiff)+(double)(ydiff*ydiff));
+
+	if (depth > 0 && Mod::EXTENDED_UNDERWATER_THROW_FACTOR > 0)
+	{
+		maxDistance = maxDistance * (double)Mod::EXTENDED_UNDERWATER_THROW_FACTOR / 100.0;
+	}
 
 	return realDistance <= maxDistance;
 }

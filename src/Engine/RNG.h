@@ -18,9 +18,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <algorithm>
+#include <vector>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
-#include <random>
 
 namespace OpenXcom
 {
@@ -53,15 +53,6 @@ namespace RNG
 		{
 			return RandomState{ next() ^ 0x055e3ac3461280cful}; //random value to have different new seed but still deterministic values when game run again.
 		}
-
-		/// Needed by shuffle
-		using result_type = uint64_t;
-		/// Needed by shuffle
-		constexpr static uint64_t max() { return ~uint64_t{}; }
-		/// Needed by shuffle
-		constexpr static uint64_t min() { return uint64_t{}; }
-		/// Needed by shuffle
-		uint64_t operator()() { return next(); }
 	};
 
 	/// Gets the seed in use.
@@ -86,9 +77,12 @@ namespace RNG
 	 * @param list The container to randomize.
 	 */
 	template <typename T>
-	void shuffle(T &list)
+	void shuffle(std::vector<T> &list)
 	{
-		std::shuffle(list.begin(), list.end(), globalRandomState());
+		if (list.empty())
+			return;
+		for (size_t i = list.size() - 1; i > 0; --i)
+			std::swap(list[i], list[generate(0, i)]);
 	}
 }
 

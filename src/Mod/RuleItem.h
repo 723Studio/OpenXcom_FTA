@@ -54,6 +54,7 @@ enum ExperienceTrainingMode {
 };
 enum BattleActionType : Uint8 { BA_NONE, BA_TURN, BA_WALK, BA_KNEEL, BA_PRIME, BA_UNPRIME, BA_THROW, BA_AUTOSHOT, BA_SNAPSHOT, BA_AIMEDSHOT, BA_HIT, BA_USE, BA_LAUNCH, BA_MINDCONTROL, BA_PANIC, BA_RETHINK, BA_CQB };
 
+enum class BattleActionOrigin { CENTRE = 0, LEFT, RIGHT }; // Used for off-centre shooting.
 
 struct BattleActionCost;
 class BattleItem;
@@ -297,6 +298,7 @@ private:
 	Unit* _vehicleUnit;
 	double _size;
 	int _costBuy, _costSell, _transferTime, _weight;
+	int _throwRange, _underwaterThrowRange;
 	int _bigSprite;
 	int _floorSprite;
 	int _handSprite, _bulletSprite;
@@ -440,6 +442,12 @@ public:
 	int getTransferTime() const;
 	/// Gets the item's weight.
 	int getWeight() const;
+	/// Gets the item's maximum throw range.
+	int getThrowRange() const { return _throwRange; }
+	int getThrowRangeSq() const { return _throwRange * _throwRange; }
+	/// Gets the item's maximum underwater throw range.
+	int getUnderwaterThrowRange() const { return _underwaterThrowRange; }
+	int getUnderwaterThrowRangeSq() const { return _underwaterThrowRange * _underwaterThrowRange; }
 	/// Gets the item's reference in BIGOBS.PCK for use in inventory.
 	int getBigSprite() const;
 	/// Gets the item's reference in FLOOROB.PCK for use in battlescape.

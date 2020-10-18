@@ -50,7 +50,7 @@ public:
 	/// Runs state functionality every cycle.
 	void think() override;
 	/// Performs a melee attack
-	void performMeleeAttack();
+	void performMeleeAttack(int terrainMeleeTilePart = 0);
 
 };
 

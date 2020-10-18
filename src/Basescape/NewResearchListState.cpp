@@ -23,6 +23,7 @@
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
+#include "../Interface/ComboBox.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
@@ -55,6 +56,7 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
 	_btnOK = new TextButton(103, 16, 164, 146);
+	_cbxSort = new ComboBox(this, 103, 16, 53, 146);
 	_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
 	_txtTitle = new Text(214, 16, 53, 38);
 	_lstResearch = new TextList(198, 88, 53, 54);
@@ -65,6 +67,7 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_window, "window", "selectNewResearch");
 	add(_btnQuickSearch, "button", "selectNewResearch");
 	add(_btnOK, "button", "selectNewResearch");
+	add(_cbxSort, "button", "selectNewResearch");
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
@@ -82,8 +85,27 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	_btnOK->onKeyboardPress((ActionHandler)&NewResearchListState::btnOKClick, Options::keyCancel);
 	_btnOK->onKeyboardPress((ActionHandler)&NewResearchListState::btnMarkAllAsSeenClick, Options::keyMarkAllAsSeen);
 
-	_btnShowOnlyNew->setText(tr("STR_SHOW_ONLY_NEW"));
-	_btnShowOnlyNew->onMouseClick((ActionHandler)&NewResearchListState::btnShowOnlyNewClick);
+	if (_game->getMod()->getEnableNewResearchSorting())
+	{
+		_btnShowOnlyNew->setVisible(false);
+		std::vector<std::string> sortOptions;
+		sortOptions.push_back("STR_SORT_DEFAULT");
+		sortOptions.push_back("STR_SORT_BY_COST");
+		sortOptions.push_back("STR_SORT_BY_NAME");
+		sortOptions.push_back("STR_SHOW_ONLY_NEW"); // this is a filter, replacement for the hidden "Show Only New" toggle button
+		_cbxSort->setOptions(sortOptions, true);
+		if (_sortByCost)
+		{
+			_cbxSort->setSelected(1);
+		}
+		_cbxSort->onChange((ActionHandler)&NewResearchListState::cbxSortChange);
+	}
+	else
+	{
+		_cbxSort->setVisible(false);
+		_btnShowOnlyNew->setText(tr("STR_SHOW_ONLY_NEW"));
+		_btnShowOnlyNew->onMouseClick((ActionHandler)&NewResearchListState::btnShowOnlyNewClick);
+	}
 
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
@@ -201,6 +223,14 @@ void NewResearchListState::btnQuickSearchApply(Action *)
 }
 
 /**
+ * Updates the research list based on the selected option.
+ */
+void NewResearchListState::cbxSortChange(Action *)
+{
+	fillProjectList(false);
+}
+
+/**
 * Filter to display only new items.
 * @param action Pointer to an action.
 */
@@ -230,9 +260,14 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 	_lstResearch->clearList();
 	// Note: this is the *only* place where this method is called with considerDebugMode = true
 	_game->getSavedGame()->getAvailableResearchProjects(_projects, _game->getMod() , _base, true);
-	if (_sortByCost)
+	size_t selectedSort = _cbxSort->getSelected();
+	if (selectedSort == 1 || (selectedSort == 3 && _sortByCost))
 	{
 		std::sort(_projects.begin(), _projects.end(), [&](RuleResearch* a, RuleResearch* b) { return a->getCost() < b->getCost(); });
+	}
+	else if (selectedSort == 2)
+	{
+		std::sort(_projects.begin(), _projects.end(), [&](RuleResearch* a, RuleResearch* b) { return Unicode::naturalCompare(tr(a->getName()), tr(b->getName())); });
 	}
 	else
 	{
@@ -245,7 +280,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 	while (it != _projects.end())
 	{
 		// filter
-		if (_btnShowOnlyNew->getPressed())
+		if (_btnShowOnlyNew->getPressed() || selectedSort == 3)
 		{
 			if (!_game->getSavedGame()->isResearchRuleStatusNew((*it)->getName()))
 			{

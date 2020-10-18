@@ -127,6 +127,7 @@
 #include "../Engine/Exception.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleInterface.h"
+#include "../Mod/RuleVideo.h"
 #include "../FTA/MasterMind.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
@@ -2241,6 +2242,7 @@ void GeoscapeState::time1Day()
 {
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
+	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	for (Base *base : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2296,7 +2298,7 @@ void GeoscapeState::time1Day()
 			base->removeResearch(project);
 			project = nullptr;
 
-			// 3b. handle interrogation and spawned items
+			// 3b. handle interrogation and spawned items/events
 			if (Options::retainCorpses && research->destroyItem())
 			{
 				auto ruleUnit = mod->getUnit(research->getName(), false);
@@ -2315,6 +2317,18 @@ void GeoscapeState::time1Day()
 				Transfer *t = new Transfer(1);
 				t->setItems(research->getSpawnedItem());
 				base->getTransfers()->push_back(t);
+			}
+			RuleEvent* spawnedEventRule = _game->getMod()->getEvent(research->getSpawnedEvent());
+			if (spawnedEventRule)
+			{
+				GeoscapeEvent* newEvent = new GeoscapeEvent(*spawnedEventRule);
+				int minutes = (spawnedEventRule->getTimer() + (RNG::generate(0, spawnedEventRule->getTimerRandom()))) / 30 * 30;
+				if (minutes < 60) minutes = 60; // just in case
+				newEvent->setSpawnCountdown(minutes);
+				saveGame->getGeoscapeEvents().push_back(newEvent);
+
+				// remember that it has been generated
+				saveGame->addGeneratedEvent(spawnedEventRule);
 			}
 			// 3c. handle getonefrees (topic+lookup)
 			if (!research->getGetOneFree().empty() || !research->getGetOneFreeProtected().empty())
@@ -2387,10 +2401,22 @@ void GeoscapeState::time1Day()
 			if (!research->getCutscene().empty())
 			{
 				popup(new CutsceneState(research->getCutscene()));
+				if (saveGame->getEnding() == END_NONE)
+				{
+					const RuleVideo* videoRule = _game->getMod()->getVideo(research->getCutscene(), true);
+					if (videoRule->getWinGame()) saveGame->setEnding(END_WIN);
+					if (videoRule->getLoseGame()) saveGame->setEnding(END_LOSE);
+				}
 			}
 			if (bonus && !bonus->getCutscene().empty())
 			{
 				popup(new CutsceneState(bonus->getCutscene()));
+				if (saveGame->getEnding() == END_NONE)
+				{
+					const RuleVideo* videoRule = _game->getMod()->getVideo(bonus->getCutscene(), true);
+					if (videoRule->getWinGame()) saveGame->setEnding(END_WIN);
+					if (videoRule->getLoseGame()) saveGame->setEnding(END_LOSE);
+				}
 			}
 			// 3e. handle research complete popup + ufopedia article popups (topic+bonus)
 			popup(new ResearchCompleteState(newResearch, bonus, research));
@@ -2497,6 +2523,7 @@ void GeoscapeState::time1Day()
 			if ((*j)->isInTraining())
 			{
 				(*j)->trainPhys(_game->getMod()->getCustomTrainingFactor());
+				(*j)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
 				if ((*j)->isFullyTrained())
 				{
 					(*j)->setTraining(false);
@@ -2526,7 +2553,7 @@ void GeoscapeState::time1Day()
 			for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
 			{
 				(*s)->trainPsi1Day();
-				(*s)->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && saveGame->isResearched(_game->getMod()->getPsiRequirements())));
+				(*s)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
 			}
 		}
 	}
@@ -2692,6 +2719,10 @@ void GeoscapeState::time1Day()
 			popup(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette));
 		}
 	}
+	else if (saveGame->getEnding() != END_NONE && saveGame->isIronman())
+	{
+		_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_IRONMAN, _palette));
+	}
 
 	// pay attention to your maintenance player!
 	if (_game->getSavedGame()->getTime()->isLastDayOfMonth())
@@ -2736,6 +2767,7 @@ void GeoscapeState::time1Month()
 	// Handle Psi-Training and initiate a new retaliation mission, if applicable
 	if (!Options::anytimePsiTraining)
 	{
+		bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
 		for (std::vector<Base*>::const_iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
 		{
 			if ((*b)->getAvailablePsiLabs() > 0)
@@ -2745,7 +2777,7 @@ void GeoscapeState::time1Month()
 					if ((*s)->isInPsiTraining())
 					{
 						(*s)->trainPsi();
-						(*s)->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
+						(*s)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
 					}
 				}
 			}
@@ -3180,6 +3212,45 @@ void GeoscapeState::handleDogfights()
 	{
 		_dogfightTimer->stop();
 		_zoomOutEffectTimer->start();
+	}
+}
+
+/**
+ * Goes through all active dogfight instances and tries to perform the same action.
+ * @param button Action to perform.
+ */
+void GeoscapeState::handleDogfightMultiAction(int button)
+{
+	for (auto d : _dogfights)
+	{
+		if (d->isMinimized())
+			continue;
+
+		SDL_Event ev;
+		ev.type = SDL_MOUSEBUTTONDOWN;
+		ev.button.button = SDL_BUTTON_LEFT;
+		Action a = Action(&ev, 0.0, 0.0, 0, 0);
+
+		switch (button)
+		{
+		case 0:
+			d->btnStandoffSimulateLeftPress(&a);
+			break;
+		case 1:
+			d->btnCautiousSimulateLeftPress(&a);
+			break;
+		case 2:
+			d->btnStandardSimulateLeftPress(&a);
+			break;
+		case 3:
+			d->btnAggressiveSimulateLeftPress(&a);
+			break;
+		case 4:
+			d->btnDisengageSimulateLeftPress(&a);
+			break;
+		default:
+			break;
+		}
 	}
 }
 

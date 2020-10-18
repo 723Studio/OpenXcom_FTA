@@ -61,6 +61,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Menu/MainMenuState.h"
 #include "../Interface/Cursor.h"
+#include "../Engine/Exception.h"
 #include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "../Basescape/ManageAlienContainmentState.h"
@@ -989,7 +990,7 @@ void DebriefingState::prepareDebriefing()
 	for (std::vector<std::string>::const_iterator i = _game->getMod()->getItemsList().begin(); i != _game->getMod()->getItemsList().end(); ++i)
 	{
 		RuleItem *rule = _game->getMod()->getItem(*i);
-		if (rule->getSpecialType() > 1)
+		if (rule->getSpecialType() > 1 && rule->getSpecialType() < DEATH_TRAPS)
 		{
 			RecoveryItem *item = new RecoveryItem();
 			item->name = *i;
@@ -1451,6 +1452,7 @@ void DebriefingState::prepareDebriefing()
 	}
 
 	// time to care for units.
+	bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
 	for (std::vector<BattleUnit*>::iterator j = battle->getUnits()->begin(); j != battle->getUnits()->end(); ++j)
 	{
 		UnitStatus status = (*j)->getStatus();
@@ -1788,7 +1790,7 @@ void DebriefingState::prepareDebriefing()
 					if (battle->getTile(i)->getMapData(tp))
 					{
 						size_t specialType = battle->getTile(i)->getMapData(tp)->getSpecialType();
-						if (specialType != nonRecoverType && _recoveryStats.find(specialType) != _recoveryStats.end())
+						if (specialType != nonRecoverType && specialType < (size_t)DEATH_TRAPS && _recoveryStats.find(specialType) != _recoveryStats.end())
 						{
 							addStat(_recoveryStats[specialType]->name, 1, _recoveryStats[specialType]->value);
 						}
@@ -2591,7 +2593,24 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		return;
 	}
 
-	bool killPrisonersAutomatically = base->getAvailableContainment(liveAlienItemRule->getPrisonType()) == 0;
+
+	// This ain't good! Let's display at least some useful info before we crash...
+	if (!liveAlienItemRule)
+	{
+		std::ostringstream ss;
+		ss << "Live alien item definition is missing. Unit ID = " << from->getId();
+		ss << "; Type = " << from->getType();
+		ss << "; Status = " << from->getStatus();
+		ss << "; Faction = " << from->getFaction();
+		ss << "; Orig. faction = " << from->getOriginalFaction();
+		ss << "; Spawn unit = [" << from->getSpawnUnit()->getType() << "]";
+		ss << "; isSurrendering = " << from->isSurrendering();
+		throw Exception(ss.str());
+	}
+
+	std::string type = from->getType();
+	RuleItem *ruleLiveAlienItem = _game->getMod()->getItem(type);
+	bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
 	if (killPrisonersAutomatically)
 	{
 		// check also other bases, maybe we can transfer/redirect prisoners there
