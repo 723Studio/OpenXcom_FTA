@@ -61,4 +61,26 @@ public:
 	void calculateChanges();
 };
 
+/**
+ * State that concludes alpha_game
+ * changes in the player's performance and funding.
+ */
+class AlphaGameVersionEnds : public State
+{
+private:
+	TextButton* _btnOk;
+	Window* _window;
+	Text* _txtTitle;
+	Text* _txtDesc;
+	int _gameOver;
+public:
+	/// Creates the Monthly Report state.
+	AlphaGameVersionEnds();
+	/// Cleans up the Monthly Report state.
+	~AlphaGameVersionEnds();
+	/// Handler for clicking the OK button.
+	void btnOkClick(Action* action);
+	/// Calculate monthly scores.
+};
+
 }

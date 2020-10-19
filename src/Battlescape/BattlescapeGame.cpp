@@ -36,6 +36,7 @@
 #include "AIModule.h"
 #include "Pathfinding.h"
 #include "../Mod/AlienDeployment.h"
+#include "../Mod/BattleScript.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
 #include "../Engine/Sound.h"
@@ -46,6 +47,7 @@
 #include "../Savegame/Tile.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
+#include "../Savegame/Ufo.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
@@ -488,6 +490,8 @@ void BattlescapeGame::endTurn()
 	_parentState->showLaunchButton(false);
 	_currentAction.targeting = false;
 	_AISecondMove = false;
+	auto side = _save->getSide();
+	bool toDoScripts = scriptsToProcess();
 
 	if (_triggerProcessed.tryRun())
 	{
@@ -496,12 +500,30 @@ void BattlescapeGame::endTurn()
 			getMod()->getSoundByDepth(_save->getDepth(), Mod::SLIDING_DOOR_CLOSE)->play(); // ufo door closed
 		}
 
+		// Battle scripts processing
+		if (side == FACTION_PLAYER)
+		{
+			std::string deployBattleScript = _save->getAlienDeploymet()->getBattleScript();
+			if (!deployBattleScript.empty())
+			{
+				const std::vector<BattleScript*>* script = _parentState->getBattleGame()->getMod()->getBattleScript(deployBattleScript);
+				if (script == 0)
+				{
+					throw Exception("Battle script processor encountered an error: " + _save->getAlienDeploymet()->getBattleScript() + " script not defined!");
+				}
+				else
+				{
+					processBattleScripts(script);
+				}
+			}
+		}
+
 		// if all grenades explode we remove items that expire on that turn too.
 		std::vector<std::tuple<BattleItem*, ExplosionBState*>> forRemoval;
 		bool exploded = false;
 
 		// check for hot grenades on the ground
-		if (_save->getSide() != FACTION_NEUTRAL)
+		if (side != FACTION_NEUTRAL)
 		{
 			for (BattleItem *item : *_save->getItems())
 			{
@@ -562,7 +584,7 @@ void BattlescapeGame::endTurn()
 
 	if (_endTurnProcessed.tryRun())
 	{
-		if (_save->getSide() != FACTION_NEUTRAL)
+		if (side != FACTION_NEUTRAL)
 		{
 			for (BattleItem *item : *_save->getItems())
 			{
@@ -585,7 +607,7 @@ void BattlescapeGame::endTurn()
 	_triggerProcessed.reset();
 	_endTurnProcessed.reset();
 
-	if (_save->getSide() == FACTION_PLAYER)
+	if (side == FACTION_PLAYER)
 	{
 		setupCursor();
 	}
@@ -604,7 +626,7 @@ void BattlescapeGame::endTurn()
 	auto tally = _save->getBattleGame()->tallyUnits();
 
 	// if all units from either faction are killed - the mission is over.
-	if (_save->allObjectivesDestroyed() && _save->getObjectiveType() == MUST_DESTROY)
+	if (_save->allObjectivesDestroyed() && _save->getObjectiveType() == MUST_DESTROY && !toDoScripts)
 	{
 		_parentState->finishBattle(false, tally.liveSoldiers);
 		return;
@@ -629,8 +651,8 @@ void BattlescapeGame::endTurn()
 			return;
 		}
 	}
-
-	if (tally.liveAliens > 0 && tally.liveSoldiers > 0)
+	//this one should work with only tally, but without additions somehow case soldier selection bug, worth investing time to investigate 
+	if (tally.liveSoldiers > 0 && (tally.liveAliens > 0 || toDoScripts || _save->getObjectiveType() == MUST_DESTROY))
 	{
 		showInfoBoxQueue();
 
@@ -644,8 +666,15 @@ void BattlescapeGame::endTurn()
 	}
 
 	bool battleComplete = tally.liveAliens == 0 || tally.liveSoldiers == 0;
+	if (battleComplete)
+	{
+		if (toDoScripts)
+		{
+			battleComplete = false;
+		}
+	}
 
-	if ((_save->getSide() != FACTION_NEUTRAL || battleComplete)
+	if ((side != FACTION_NEUTRAL || battleComplete)
 		&& _endTurnRequested)
 	{
 		_parentState->getGame()->pushState(new NextTurnState(_save, _parentState));
@@ -924,6 +953,29 @@ void BattlescapeGame::showInfoBoxQueue()
 	}
 
 	_infoboxQueue.clear();
+}
+
+/**
+ * Checks if this Battle Game still has any Battle Scripts to be processed.
+ * @param true if there would be any scripts in future.
+ */
+bool BattlescapeGame::scriptsToProcess()
+{
+	std::string deployBattleScript = _save->getAlienDeploymet()->getBattleScript();
+	if (!deployBattleScript.empty())
+	{
+		BattlescapeGame* game = _parentState->getBattleGame();
+		auto script = game->getMod()->getBattleScript(deployBattleScript);
+		for (std::vector<BattleScript*>::const_iterator i = script->begin(); i != script->end(); ++i)
+		{
+			int endTurn = (*i)->getEndTurn();
+			if (endTurn == -1 || endTurn > game->getSave()->getTurn())
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 /**
@@ -2253,26 +2305,38 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 	std::vector<BattleUnit*>::iterator unit = _save->getUnits()->begin();
 	while (unit != _save->getUnits()->end())
 	{
-		if (!(*unit)->isSummonedPlayerUnit())
+		bool vip = false;
+		if ((*unit)->getUnitRules() != 0)
 		{
-			++unit;
+			vip = (*unit)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+		}
+		if (!vip)
+		{
+			if (!(*unit)->isSummonedPlayerUnit() && !vip)
+			{
+				++unit;
+			}
+			else
+			{
+				if ((*unit)->getStatus() != STATUS_DEAD && (*unit)->getUnitRules())
+				{
+					if (!(*unit)->getUnitRules()->getCivilianRecoveryType().empty())
+					{
+						resummonAsCivilians.push_back((*unit)->getUnitRules());
+					}
+				}
+
+				if ((*unit)->getStatus() == STATUS_UNCONSCIOUS || (*unit)->getStatus() == STATUS_DEAD)
+					_save->removeUnconsciousBodyItem((*unit));
+
+				(*unit)->setTile(nullptr, _save);
+				delete (*unit);
+				unit = _save->getUnits()->erase(unit);
+			}
 		}
 		else
 		{
-			if ((*unit)->getStatus() != STATUS_DEAD && (*unit)->getUnitRules())
-			{
-				if (!(*unit)->getUnitRules()->getCivilianRecoveryType().empty())
-				{
-					resummonAsCivilians.push_back((*unit)->getUnitRules());
-				}
-			}
-
-			if ((*unit)->getStatus() == STATUS_UNCONSCIOUS || (*unit)->getStatus() == STATUS_DEAD)
-				_save->removeUnconsciousBodyItem((*unit));
-
-			(*unit)->setTile(nullptr, _save);
-			delete (*unit);
-			unit = _save->getUnits()->erase(unit);
+			++unit;
 		}
 	}
 
@@ -2743,6 +2807,11 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 		//TODO: add handling of stunned units for display purposes in AbortMissionState
 		if (!(*j)->isOut() && (!(*j)->isOutThresholdExceed() || ((*j)->getUnitRules() && (*j)->getUnitRules()->getSpawnUnit())))
 		{
+			bool vip = false;
+			if ((*j)->getGeoscapeSoldier() == 0)
+			{
+				vip = (*j)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+			}
 			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
 			{
 				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER && (*j)->getCapturable())
@@ -2758,9 +2827,9 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 					tally.liveAliens++;
 				}
 			}
-			else if ((*j)->getOriginalFaction() == FACTION_PLAYER)
+			else if ((*j)->getOriginalFaction() == FACTION_PLAYER || vip)
 			{
-				if ((*j)->isSummonedPlayerUnit())
+				if ((*j)->isSummonedPlayerUnit() && !vip)
 					continue;
 
 				if ((*j)->isInExitArea(START_POINT))
@@ -3044,14 +3113,14 @@ std::list<BattleState*> BattlescapeGame::getStates()
  */
 void BattlescapeGame::autoEndBattle()
 {
-	if (Options::battleAutoEnd)
+	if (Options::battleAutoEnd) 
 	{
 		bool end = false;
 		bool askForConfirmation = false;
 		if (_save->getObjectiveType() == MUST_DESTROY)
 		{
 			end = _save->allObjectivesDestroyed();
-		}
+		} 
 		else
 		{
 			auto tally = tallyUnits();
@@ -3064,10 +3133,326 @@ void BattlescapeGame::autoEndBattle()
 		}
 		if (end)
 		{
-			_save->setSelectedUnit(0);
-			cancelCurrentAction(true);
-			requestEndTurn(askForConfirmation);
+			if (!scriptsToProcess())
+			{
+				_save->setSelectedUnit(0);
+				cancelCurrentAction(true);
+				requestEndTurn(askForConfirmation);
+			}
 		}
+	}
+}
+
+/**
+ * Processing all battleScripts, defined in the deployment.
+ * @par scrirt a vector of BattleScripts.
+ */
+void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* script)
+{
+	Log(LOG_INFO) << "And now battleScripts are processing!";
+	// create an array to track command success/failure
+	std::map<int, bool> conditionals;
+	int mapsize_x = _save->getMapSizeX();
+	int mapsize_y = _save->getMapSizeY();
+
+	for (std::vector<BattleScript*>::const_iterator i = script->begin(); i != script->end(); ++i)
+	{
+		BattleScript* command = *i;
+
+		int turn = _save->getTurn();
+		if (turn < command->getStartTurn())
+		{
+			continue;
+		}
+		if (command->getEndTurn() != -1 && turn > command->getEndTurn())
+		{
+			continue;
+		}
+		int dif = _save->getGeoscapeSave()->getDifficulty();
+		if (dif < command->getMinDifficulty())
+		{
+			continue;
+		}
+		if (dif > command->getMaxDifficulty())
+		{
+			continue;
+		}
+
+		if (command->getLabel() > 0 && conditionals.find(command->getLabel()) != conditionals.end())
+		{
+			throw Exception("Battle script processor encountered an error: multiple commands are sharing the same label.");
+		}
+		bool& success = conditionals[command->getLabel()] = false;
+
+		// if this command runs conditionally on the failures or successes of previous commands
+		if (!command->getConditionals()->empty())
+		{
+			bool execute = true;
+			// compare the corresponding entries in the success/failure vector
+			for (std::vector<int>::const_iterator condition = command->getConditionals()->begin(); condition != command->getConditionals()->end(); ++condition)
+			{
+				// positive numbers indicate conditional on success, negative means conditional on failure
+				// ie: [1, -2] means this command only runs if command 1 succeeded and command 2 failed.
+				if (conditionals.find(std::abs(*condition)) != conditionals.end())
+				{
+					if ((*condition > 0 && !conditionals[*condition]) || (*condition < 0 && conditionals[std::abs(*condition)]))
+					{
+						execute = false;
+						break;
+					}
+				}
+				else
+				{
+					throw Exception("Battle script processor encountered an error: conditional command expected a label that did not exist before this command.");
+				}
+			}
+			if (!execute)
+			{
+				continue;
+			}
+		}
+		// if there's a chance a command won't execute by design, take that into account here.
+		if (RNG::percent(command->getChancesOfExecution()))
+		{
+			auto blocks = _save->getMapDataSets();
+			// each command can be attempted multiple times, as randomization within the rects may occur
+			for (int j = 0; j < command->getExecutions(); ++j)
+			{
+				int x = 0, y = 0;
+				std::vector<SDL_Rect*> available;
+				std::vector<std::pair<int, int> > validBlocks;
+				switch (command->getType())
+				{
+				case BSC_SPAWN_ITEM:
+					Log(LOG_ERROR) << "Sorry, there is no support of processing spawnItem command yet! :] ";
+					break;
+				case BSC_SPAWN_UNIT:					
+					//finding a spot
+					SDL_Rect wholeMap;
+					wholeMap.x = 0;
+					wholeMap.y = 0;
+					wholeMap.w = (mapsize_x / 10);
+					wholeMap.h = (mapsize_y / 10);
+					if (command->getRects()->empty())
+					{
+						available.push_back(&wholeMap);
+					}
+					else
+					{
+						available = *command->getRects();
+					}
+
+					for (std::vector<SDL_Rect*>::const_iterator i = available.begin(); i != available.end(); ++i)
+					{
+						int x0 = (*i)->x;
+						int y0 = (*i)->y;
+						int w = (*i)->w;
+						int h = (*i)->h;
+						for (x = x0; x + 1 <= x0 + w && x + 1 <= wholeMap.w; ++x)
+						{
+							for (y = y0; y + 1 <= y0 + h && y + 1 <= wholeMap.h; ++y)
+							{
+								if (std::find(validBlocks.begin(), validBlocks.end(), std::make_pair(x, y)) == validBlocks.end())
+								{
+									validBlocks.push_back(std::make_pair(x, y));
+								}
+							}
+						}
+					}
+					if (validBlocks.empty())
+					{
+						Log(LOG_DEBUG) << "No valid location for the unit spawning with battlScript.";
+						continue;
+					}
+					scriptSpawnUnit(command, validBlocks);
+					break;
+				case BSC_SHOW_MESSAGE:
+					Log(LOG_ERROR) << "Sorry, there is no support of processing showMessage command yet! :] ";
+					break;
+				case BSC_ADDBLOCK:
+					Log(LOG_ERROR) << "Sorry, there is no support of processing addBlock command yet! :] ";
+					break;
+				default:
+					break;
+				}
+				
+			}
+		}
+	}
+}
+
+
+void OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock)
+{
+	auto units = command->getUnitSet();
+	if (units.empty())
+	{
+		throw Exception("BattleScript generator encountered an error: no units defined for: " + command->getType());
+	}
+	//int zMin = command->getLevels().first;
+	//int zMax = command->getLevels().second;
+	int zMin = command->getMinLevel();
+	int zMax = command->getMaxLevel();
+	int z = 0;
+	if (zMin == zMax)
+	{
+		z = zMin;
+	}
+	else if (zMin <= zMax)
+	{
+		z = RNG::generate(zMin, zMax);
+	}
+	else
+	{
+		throw Exception("BattleScript generator encountered an error: zMax set lower, than zMin: " + command->getType());
+	}
+	//choosing 10x10 block on the map
+	int tries = 100;
+	bool placed = false;
+	while (tries && !placed)
+	{
+		//chosing tile inside block
+		std::pair<int, int> selBlock = validBlock.at(RNG::generate(0, validBlock.size() - 1));
+		int currentPackSize = 0;
+		int packSize = command->getPackSize();
+		if (command->getRandomPackSize())
+		{
+			packSize = RNG::generate(1, command->getPackSize());
+		}
+		int iter = 100;
+		while (iter && !placed) // now we look for fine place inside mapblock
+		{
+			int unitPick = RNG::generate(0, units.size()-1);
+			auto unitRule = _save->getBattleGame()->getMod()->getUnit(units.at(unitPick));
+			int localX = RNG::generate(0, 10);
+			int localY = RNG::generate(0, 10);
+			//init unit
+			Position pos = Position(localX + (selBlock.first * 10), localY + (selBlock.second * 10), z);
+			// Check which faction the new unit will be
+			UnitFaction faction;
+			switch (command->getSide())
+			{
+			case 0:
+				faction = FACTION_PLAYER;
+				break;
+			case 1:
+				faction = FACTION_HOSTILE;
+				break;
+			case 2:
+				faction = FACTION_NEUTRAL;
+				break;
+			default:
+				faction = FACTION_HOSTILE;
+				break;
+			}
+
+			// Create the unit
+			BattleUnit* newUnit = new BattleUnit(getMod(),
+				unitRule,
+				faction,
+				_save->getUnits()->back()->getId() + 1,
+				faction != FACTION_PLAYER ? _save->getEnviroEffects() : nullptr,
+				unitRule->getArmor(),
+				faction == FACTION_HOSTILE ? getMod()->getStatAdjustment(_parentState->getGame()->getSavedGame()->getDifficulty()) : nullptr,
+				getDepth());
+
+			if (faction == FACTION_PLAYER)
+			{
+				newUnit->setSummonedPlayerUnit(true);
+			}
+			// Validate the position for the unit, checking if there's a surrounding tile if necessary
+			bool positionValid = getTileEngine()->isPositionValidForUnit(pos, newUnit, true, 0);
+			if (positionValid) // Place the unit and initialize it in the battlescape
+			{
+				int unitDirection = RNG::generate(0, 7);
+				// If this is a tank, arm it with its weapon
+				if (getMod()->getItem(newUnit->getType()) && getMod()->getItem(newUnit->getType())->isFixed())
+				{
+					const RuleItem* newUnitWeapon = getMod()->getItem(newUnit->getType());
+					_save->createItemForUnit(newUnitWeapon, newUnit, true);
+					if (newUnitWeapon->getVehicleClipAmmo())
+					{
+						const RuleItem* ammo = newUnitWeapon->getVehicleClipAmmo();
+						BattleItem* ammoItem = _save->createItemForUnit(ammo, newUnit);
+						if (ammoItem)
+						{
+							ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
+						}
+					}
+					newUnit->setTurretType(newUnitWeapon->getTurretType());
+				}
+
+				// Pick the item sets if the unit has builtInWeaponSets
+				auto monthsPassed = _parentState->getGame()->getSavedGame()->getMonthsPassed();
+				auto alienItemLevels = getMod()->getAlienItemLevels().size();
+				int month;
+				if (monthsPassed != -1)
+				{
+					if ((size_t)monthsPassed > alienItemLevels - 1)
+					{
+						month = alienItemLevels - 1;
+					}
+					else
+					{
+						month = monthsPassed;
+					}
+				}
+				else // For "New Battle" saves
+				{
+					// We don't have access to the BattlescapeGenerator or the alienItemLevel set on generation at this point, so pick a random one
+					month = RNG::generate(0, alienItemLevels - 1);
+				}
+				size_t itemLevel = (size_t)(getMod()->getAlienItemLevels().at(month).at(RNG::generate(0, 9)));
+
+				// Initialize the unit and its position
+				getSave()->initUnit(newUnit, itemLevel);
+				newUnit->setTile(_save->getTile(pos), _save);
+				newUnit->setPosition(pos);
+				newUnit->setDirection(unitDirection);
+				newUnit->clearTimeUnits();
+				getSave()->getUnits()->push_back(newUnit);
+				if (faction != FACTION_PLAYER)
+				{
+					newUnit->setAIModule(new AIModule(getSave(), newUnit, 0));
+				}
+				bool visible = faction == FACTION_PLAYER;
+				newUnit->setVisible(visible);
+
+				getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+				getTileEngine()->applyGravity(newUnit->getTile());
+				++currentPackSize;
+				if (currentPackSize == packSize)
+				{
+					placed = true;
+					//inform the player
+					_save->setSelectedUnit(newUnit);
+					_parentState->getMap()->setCursorType(CT_NONE);
+					// show a little infobox with message
+					Game* game = _parentState->getGame();
+					std::string messageText;
+					if (faction == FACTION_PLAYER)
+					{
+						messageText = "STR_INCOMING_ALLY_REINFORCEMENTS"; 
+					}
+					else if (faction == FACTION_NEUTRAL)
+					{
+						messageText = "STR_INCOMING_FRIENDLY_REINFORCEMENTS";
+					}
+					else
+					{
+						messageText = "STR_INCOMING_ENEMY_REINFORCEMENTS";
+					}
+					game->pushState(new InfoboxState(game->getLanguage()->getString(messageText), 4000));
+
+				}
+			}
+			else
+			{
+				delete newUnit;
+				--iter;
+			}
+		}
+		--tries;
 	}
 }
 

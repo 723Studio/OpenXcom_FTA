@@ -58,6 +58,7 @@
 #include "AlienStrategy.h"
 #include "AlienMission.h"
 #include "GeoscapeEvent.h"
+#include "DiplomacyFaction.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
@@ -144,7 +145,8 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
  */
 SavedGame::SavedGame() : _difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0),
 						 _globeLat(0.0), _globeZoom(0), _battleGame(0), _debug(false),
-						 _warned(false), _monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false)
+						 _warned(false), _monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false),
+						 _loyalty(0)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -203,6 +205,10 @@ SavedGame::~SavedGame()
 	for (std::vector<GeoscapeEvent*>::iterator i = _geoscapeEvents.begin(); i != _geoscapeEvents.end(); ++i)
 	{
 		delete *i;
+	}
+	for (std::vector<DiplomacyFaction*>::iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
+	{
+		delete* i;
 	}
 	for (std::vector<Soldier*>::iterator i = _deadSoldiers.begin(); i != _deadSoldiers.end(); ++i)
 	{
@@ -423,6 +429,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_graphRegionToggles = doc["graphRegionToggles"].as<std::string>(_graphRegionToggles);
 	_graphCountryToggles = doc["graphCountryToggles"].as<std::string>(_graphCountryToggles);
 	_graphFinanceToggles = doc["graphFinanceToggles"].as<std::string>(_graphFinanceToggles);
+	_loyalty = doc["loyalty"].as<int>(_loyalty);
 	_funds = doc["funds"].as< std::vector<int64_t> >(_funds);
 	_maintenance = doc["maintenance"].as< std::vector<int64_t> >(_maintenance);
 	_researchScores = doc["researchScores"].as< std::vector<int> >(_researchScores);
@@ -513,6 +520,23 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
+	const YAML::Node& diplomacyFactions = doc["diplomacyFactions"];
+	for (YAML::const_iterator it = diplomacyFactions.begin(); it != diplomacyFactions.end(); ++it)
+	{
+		std::string diplomacyFactionName = (*it)["name"].as<std::string>();
+		if (mod->getDiplomacyFaction(diplomacyFactionName))//(mod->getEvent(eventName))
+		{
+			const RuleDiplomacyFaction &diplomacyFactionRule = *mod->getDiplomacyFaction(diplomacyFactionName);//const RuleEvent& eventRule = *mod->getEvent(eventName);
+			DiplomacyFaction *diplomacyFaction = new DiplomacyFaction(diplomacyFactionRule);
+			diplomacyFaction->load(*it);
+			_diplomacyFactions.push_back(diplomacyFaction);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load diplomacy faction " << diplomacyFactionName;
+		}
+	}
+
 	const YAML::Node &geoEvents = doc["geoscapeEvents"];
 	for (YAML::const_iterator it = geoEvents.begin(); it != geoEvents.end(); ++it)
 	{
@@ -585,6 +609,19 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 	sortReserchVector(_discovered);
+
+	for (YAML::const_iterator it = doc["performedCovertOperations"].begin(); it != doc["performedCovertOperations"].end(); ++it)
+	{
+		std::string operation = it->as<std::string>();
+		if (mod->getCovertOperation(operation))
+		{
+			_performedOperations.push_back(operation);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load covert operation " << operation;
+		}
+	}
 
 	_generatedEvents = doc["generatedEvents"].as< std::map<std::string, int> >(_generatedEvents);
 	_ufopediaRuleStatus = doc["ufopediaRuleStatus"].as< std::map<std::string, int> >(_ufopediaRuleStatus);
@@ -789,8 +826,8 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	// Saves the brief game info used in the saves list
 	YAML::Node brief;
 	brief["name"] = _name;
-	brief["version"] = OPENXCOM_VERSION_SHORT;
-	std::string git_sha = OPENXCOM_VERSION_GIT;
+	brief["version"] = OPENXCOM_FTA_VERSION_SHORT;
+	std::string git_sha = OPENXCOM_FTA_VERSION_GIT;
 	if (!git_sha.empty() && git_sha[0] ==  '.')
 	{
 		git_sha.erase(0,1);
@@ -826,6 +863,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["graphCountryToggles"] = _graphCountryToggles;
 	node["graphFinanceToggles"] = _graphFinanceToggles;
 	node["rng"] = RNG::getSeed();
+	node["loyalty"] = _loyalty;
 	node["funds"] = _funds;
 	node["maintenance"] = _maintenance;
 	node["researchScores"] = _researchScores;
@@ -875,6 +913,10 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	{
 		node["geoscapeEvents"].push_back((*i)->save());
 	}
+	for (std::vector<DiplomacyFaction*>::const_iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
+	{
+		node["diplomacyFactions"].push_back((*i)->save());
+	}
 	for (std::vector<const RuleResearch *>::const_iterator i = _discovered.begin(); i != _discovered.end(); ++i)
 	{
 		node["discovered"].push_back((*i)->getName());
@@ -882,6 +924,10 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	for (std::vector<const RuleResearch *>::const_iterator i = _poppedResearch.begin(); i != _poppedResearch.end(); ++i)
 	{
 		node["poppedResearch"].push_back((*i)->getName());
+	}
+	for (std::vector<std::string>::const_iterator i = _performedOperations.begin(); i != _performedOperations.end(); ++i)
+	{
+		node["performedCovertOperations"].push_back((*i));
 	}
 	node["generatedEvents"] = _generatedEvents;
 	node["ufopediaRuleStatus"] = _ufopediaRuleStatus;
@@ -1411,6 +1457,20 @@ void SavedGame::setHiddenPurchaseItemsStatus(const std::string &itemName, bool h
 const std::map<std::string, bool> &SavedGame::getHiddenPurchaseItems()
 {
 	return _hiddenPurchaseItemsMap;
+}
+
+/*
+ * Checks for and removes a covert operation from the "performed operation" list
+ * @param operation is the operation we are checking for and removing, if necessary.
+ */
+void SavedGame::removePerformedCovertOperation(const std::string& operation)
+{
+	bool erased = false;
+	std::vector<std::string>::iterator r = std::find(_performedOperations.begin(), _performedOperations.end(), operation);
+	if (r != _performedOperations.end()) {
+		_performedOperations.erase(r);
+		erased = true; }
+	if (!erased) { Log(LOG_ERROR) << "Covert Operation named " << operation << " was not deleted from <performed operation> list!";	}
 }
 
 /*
@@ -3021,6 +3081,19 @@ void randomChanceScript(RNG::RandomState* rs, int& val)
 	}
 }
 
+void getLoyaltyScript(SavedGame* sg, int& val)
+{
+	if (sg)
+	{
+		val = sg->getLoyalty();
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
+
 void randomRangeScript(RNG::RandomState* rs, int& val, int min, int max)
 {
 	if (rs && max >= min)
@@ -3182,6 +3255,7 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 
 	sgg.add<&getTimeScript>("getTime", "Get global time that is Greenwich Mean Time");
 	sgg.add<&getRandomScript>("getRandomState");
+	sgg.add<&getLoyaltyScript>("getLoyalty");
 
 	sgg.addScriptValue<&SavedGame::_scriptValues>();
 

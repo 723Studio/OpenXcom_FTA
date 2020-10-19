@@ -33,7 +33,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param msg Message string.
  */
-InfoboxState::InfoboxState(const std::string &msg)
+InfoboxState::InfoboxState(const std::string &msg, int delay)
 {
 	_screen = false;
 
@@ -59,7 +59,7 @@ InfoboxState::InfoboxState(const std::string &msg)
 	_text->setText(msg);
 	_text->setHighContrast(true);
 
-	int delay = INFOBOX_DELAY;
+	
 	if (msg.empty())
 	{
 		delay = 500;

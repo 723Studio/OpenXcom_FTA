@@ -33,6 +33,8 @@ private:
 	std::string _type, _varName;
 	int _firstMonth, _lastMonth, _label, _executionOdds, _targetBaseOdds, _minDifficulty, _maxRuns, _avoidRepeats, _delay, _randomDelay;
 	int _minScore, _maxScore;
+	int _minLoyalty, _maxLoyalty;
+	int _allowedProcessor;
 	int64_t _minFunds, _maxFunds;
 	std::vector<int> _conditionals;
 	std::vector<std::pair<size_t, WeightedOptions*> > _regionWeights, _missionWeights, _raceWeights;
@@ -79,10 +81,16 @@ public:
 	int getMinScore() const { return _minScore; }
 	/// Gets the maximum score (from last month) for this command to run.
 	int getMaxScore() const { return _maxScore; }
+	/// Gets the minimum loyalty for this command to run.
+	int getMinLoyalty() const { return _minLoyalty; }
+	/// Gets the maximum loyalty for this command to run.
+	int getMaxLoyalty() const { return _maxLoyalty; }
 	/// Gets the minimum funds (from current month) for this command to run.
 	int64_t getMinFunds() const { return _minFunds; }
 	/// Gets the maximum funds (from current month) for this command to run.
 	int64_t getMaxFunds() const { return _maxFunds; }
+	/// Get allowed procesor (monthly/factional) that is allowed to process this command.
+	int getAllowedProcessor() const { return _allowedProcessor; }
 	/// Gets the list of conditions this command requires in order to run.
 	const std::vector<int> &getConditionals() const;
 	/// Does this command have raceWeights?

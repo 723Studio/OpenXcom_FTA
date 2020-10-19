@@ -28,6 +28,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
+#include "../Savegame/Transfer.h"
 
 namespace OpenXcom
 {
@@ -90,6 +91,17 @@ PromotionsState::PromotionsState()
 			if ((*j)->isPromoted())
 			{
 				_lstSoldiers->addRow(3, (*j)->getName().c_str(), tr((*j)->getRankString()).c_str(), (*i)->getName().c_str());
+			}
+		}
+		for (std::vector<Transfer*>::iterator k = (*i)->getTransfers()->begin(); k != (*i)->getTransfers()->end(); ++k) //special case for soldiers, recovered from VIPs
+		{
+			if ((*k)->getType() == TRANSFER_SOLDIER)
+			{
+				Soldier* sol = (*k)->getSoldier();
+				if (sol->isPromoted())
+				{
+					_lstSoldiers->addRow(3, sol->getName().c_str(), tr(sol->getRankString()).c_str(), (*i)->getName().c_str());
+				}
 			}
 		}
 	}

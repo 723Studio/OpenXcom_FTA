@@ -29,6 +29,7 @@ class Screen;
 class Cursor;
 class Language;
 class SavedGame;
+class MasterMind;
 class Mod;
 class ModInfo;
 class FpsCounter;
@@ -48,6 +49,7 @@ private:
 	Language *_lang;
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
+	MasterMind *_mind;
 	Mod *_mod;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
@@ -87,6 +89,8 @@ public:
 	SavedGame *getSavedGame() const { return _save; }
 	/// Sets a new saved game for the game.
 	void setSavedGame(SavedGame *save);
+	/// Gets MasterMind for this game.
+	MasterMind* getMasterMind() const { return _mind; }
 	/// Gets the currently loaded mod.
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.
