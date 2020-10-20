@@ -18,12 +18,12 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define OPENXCOM_VERSION_SHORT "Extended 6.6.4"
-#define OPENXCOM_VERSION_LONG "6.6.4.0"
-#define OPENXCOM_VERSION_NUMBER 6,6,4,0
+#define OPENXCOM_VERSION_SHORT "Extended 6.7"
+#define OPENXCOM_VERSION_LONG "6.7.0.0"
+#define OPENXCOM_VERSION_NUMBER 6,7,0,0
 
 #ifndef OPENXCOM_VERSION_GIT
-#define OPENXCOM_VERSION_GIT " (v2020-10-15)"
+#define OPENXCOM_VERSION_GIT " (v2020-10-18)"
 #define OPENXCOM_FTA_VERSION_GIT " (v2020-10-05)"
 
 #define OPENXCOM_FTA_VERSION_SHORT "FtA 0.1.2"

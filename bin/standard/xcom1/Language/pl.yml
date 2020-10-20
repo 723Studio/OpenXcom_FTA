@@ -84,8 +84,8 @@ pl:
   STR_DAY:
     one: "{N} dzień"
     few: "{N} dni"
-    many: "{N} dnia"
-    other: "{N} dnia"
+    many: "{N} dni"
+    other: "{N} dni"
   STR_HOUR:
     one: "{N} godzina"
     few: "{N} godziny"
@@ -638,9 +638,9 @@ pl:
   STR_MISSILE_DEFENSES_UFOPEDIA: "Obrona rakietowa stanowi jakąś ochronę przed wrogim statkiem, który próbuje lądować w pobliżu bazy."
   STR_GENERAL_STORES_UFOPEDIA: "Cały sprzęt, broń, amunicja, zdobyte materiały i ciężkie działa samobieżne, są przechowywane w magazynach. Dotyczy to także sprzętu przydzielonego samolotom w hangarach."
   STR_ALIEN_CONTAINMENT_UFOPEDIA: "Cele dla obcych posiadają specjalne środowisko utrzymujące ich procesy życiowe. Instalacja ta może utrzymywać przy życiu do 10 obcych form życia przebywających w oddzielnych celach."
-  STR_LASER_DEFENSES_UFOPEDIA: "Obrona laserowa, dzięki promieniowaniu laserowemu, jest dobrą ochroną przed wrogim statkiem."
+  STR_LASER_DEFENSES_UFOPEDIA: "Obrona laserowa zapewnia ochronę przed atakiem wrogich statków."
   STR_PLASMA_DEFENSES_UFOPEDIA: "Energia kinetyczna wiązek zjonizowanej plazmy zapewnia doskonałą ochronę przed atakiem wrogiego statku."
-  STR_FUSION_BALL_DEFENSES_UFOPEDIA: "Obrona fuzyjna zapewnia najskuteczniejszą ochronę przed atakiem obcych. Dzięki antymaterii pociski wytwarzają implozję, która niszczy wszystko w obrębie określonego promienia."
+  STR_FUSION_BALL_DEFENSES_UFOPEDIA: "Obrona fuzyjna zapewnia najbardziej skuteczną ochronę przed atakiem obcych. Dzięki antymaterii pociski wytwarzają implozję, która niszczy wszystko w określonym promieniu."
   STR_GRAV_SHIELD_UFOPEDIA: "Tarcza grawitacyjna odpycha statek obcych próbujący lądować w pobliżu bazy wystarczająco długo, by wszystkie systemy obronne mogły wystrzelić ponownie. W praktyce podwaja to skuteczność każdego systemu obronnego bazy."
   STR_MIND_SHIELD_UFOPEDIA: "Dopóki statki obcych polegają na odbiorze fal mózgowych do wykrywania obecności ludzi (a więc i baz), najefektywniejszym środkiem zaradczym przeciw wykryciu bazy jest tłumienie fal mózgowych emitowanych przez jej personel. Ta instalacja drastycznie redukuje szansę wykrycia bazy przez statek obcych."
   STR_PSIONIC_LABORATORY_UFOPEDIA: "Laboratorium psioniczne może oszacować potencjał psioniczny żołnierzy w bazie i zapewniać im niezbędne szkolenia zwiększające ich zdolności psioniczne. Każdy blok takiego laboratorium może szkolić do 10 żołnierzy na raz. Szkoleni żołnierze są wyznaczani na początku każdego miesiąca. Zdolności psioniczne używane w połączeniu z wzmacniaczem psionicznym mogą być stosowane do ataków psionicznych podczas walki przeciwko obcym."
@@ -1013,14 +1013,14 @@ pl:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING: "JC zarezerwowano na klęknięcie"
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "JC zarezerwowano na klęknięcie i ostrzał"
   STR_UNITS_IN_CRAFT:
-    one: "{N} jednostka w samolocie organizacji X-COM"
-    few: "{N} jednostek w samolocie organizacji X-COM"
-    many: "{N} jednostki w samolocie organizacji X-COM"
-    other: "{N} jednostki w samolocie organizacji X-Com"
+    one: "{N} jednostka w pojeździe X-Com"
+    few: "{N} jednostki w pojeździe X-Com"
+    many: "{N} jednostek w pojeździe X-Com"
+    other: "{N} jednostek w pojeździe X-Com"
   STR_UNITS_OUTSIDE:
     one: "{N} jednostka pozostawiona na zewnątrz"
-    few: "{N} jednostek pozostawionych na zewnątrz"
-    many: "{N} jednostki pozostawione na zewnątrz"
+    few: "{N} jednostki pozostawione na zewnątrz"
+    many: "{N} jednostek pozostawionych na zewnątrz"
     other: "{N} jednostki pozostawione na zewnątrz"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} jednostka stojąca w wejściu"

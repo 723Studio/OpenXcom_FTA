@@ -2593,7 +2593,6 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		return;
 	}
 
-
 	// This ain't good! Let's display at least some useful info before we crash...
 	if (!liveAlienItemRule)
 	{

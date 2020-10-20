@@ -1110,14 +1110,14 @@ pl:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "JC zarezerwowano na klęknięcie i ostrzał"
   STR_UNITS_IN_CRAFT:
     one: "{N} jednostka w łodzi org. X-COM"
-    few: "{N} jednostek w łodzi org. X-COM"
-    many: "{N} jednostki w łodzi org. X-COM"
-    other: "{N} jednostki w łodzi org. X-COM"
+    few: "{N} jednostki w łodzi X-Com"
+    many: "{N} jednostek w łodzi X-Com"
+    other: "{N} jednostek w łodzi X-Com"
   STR_UNITS_OUTSIDE:
-    one: "{N} jednostka zostawiona na zewnątrz"
-    few: "{N} jednostek zostawionych na zewnątrz"
+    one: "{N} jednostka pozostawiona na zewnątrz"
+    few: "{N} jednostki pozostawione na zewnątrz"
     many: "{N} jednostki zostawione na zewnątrz"
-    other: "{N} jednostki zostawione na zewnątrz"
+    other: "{N} jednostek pozostawionych na zewnątrz"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} jednostka stojąca we wejściu"
     few: "{N} jednostek stojących we wejściu"

@@ -97,6 +97,7 @@ public:
 	const std::string& getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
 	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+
 	/// Gets a list reputation score to update.
 	const std::map<std::string, int>& getReputationScore() const { return _reputationScore; }
 	/// Gets a list of items; they are all transferred to HQ stores when this event pops up.
