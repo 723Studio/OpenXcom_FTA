@@ -37,6 +37,7 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtMessage;
 	TextButton *_btnOk;
+	TextButton* _btnAnswerOne, * _btnAnswerTwo, * _btnAnswerThree, * _btnAnswerFour;
 
 	std::string _researchName;
 	const RuleEvent &_eventRule;
@@ -52,6 +53,23 @@ public:
 	void init() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerClick(Action* action);
+};
+
+class GeoscapeEventAnswerInfoState : public State
+{
+private:
+	Window* _window;
+	Text* _txtDescription;
+	TextButton* _btnOk;
+public:
+	/// Creates the GeoscapeEventState.
+	GeoscapeEventAnswerInfoState(RuleEvent rule, std::string descr);
+	/// Cleans up the GeoscapeEventState.
+	~GeoscapeEventAnswerInfoState();
+	/// Handler for clicking the OK button.
+	void btnOkClick(Action* action);
 };
 
 }

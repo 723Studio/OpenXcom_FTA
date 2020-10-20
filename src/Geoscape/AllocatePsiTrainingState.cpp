@@ -327,6 +327,11 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_YES").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		}
+		else if ((*s)->getCovertOperation() != 0)
+		{
+			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_UNAVAILABLE_TRAINING").c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+		}
 		else
 		{
 			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_NO").c_str());
@@ -458,17 +463,18 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 	}
 
 	_sel = _lstSoldiers->getSelectedRow();
+	Soldier* selected = _base->getSoldiers()->at(_sel);
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		if (!_base->getSoldiers()->at(_sel)->isInPsiTraining())
+		if (!selected->isInPsiTraining())
 		{
-			if (_base->getUsedPsiLabs() < _base->getAvailablePsiLabs())
+			if ((_base->getUsedPsiLabs() < _base->getAvailablePsiLabs()) && (selected->getCovertOperation() != 0))
 			{
 				_lstSoldiers->setCellText(_sel, 3, tr("STR_YES"));
 				_lstSoldiers->setRowColor(_sel, _lstSoldiers->getSecondaryColor());
 				_labSpace--;
 				_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
-				_base->getSoldiers()->at(_sel)->setPsiTraining(true);
+				selected->setPsiTraining(true);
 			}
 		}
 		else
@@ -477,7 +483,7 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 			_lstSoldiers->setRowColor(_sel, _lstSoldiers->getColor());
 			_labSpace++;
 			_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
-			_base->getSoldiers()->at(_sel)->setPsiTraining(false);
+			selected->setPsiTraining(false);
 		}
 	}
 }

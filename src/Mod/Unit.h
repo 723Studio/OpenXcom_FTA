@@ -362,19 +362,21 @@ private:
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
-	UnitStats _stats;
+	UnitStats _stats, _statsRandom;
 	std::string _armorName;
 	const Armor* _armor;
 	int _standHeight, _kneelHeight, _floatHeight;
 	std::vector<int> _deathSound, _panicSound, _berserkSound;
-	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound;
+	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound, _spawnedUnitSound;
 	int _value, _moraleLossWhenKilled, _aggroSound, _moveSound;
 	int _intelligence, _aggression, _spotter, _sniper, _energyRecovery;
 	SpecialAbility _specab;
 	const Unit *_spawnUnit = nullptr;
+	const Unit* _altUnit = nullptr;
 	std::string _spawnUnitName;
+	std::string _specialObjectiveType;
 	bool _livingWeapon;
-	std::string _meleeWeapon, _psiWeapon;
+	std::string _meleeWeapon, _psiWeapon, _altRecoveredUnit;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
 	std::vector<std::vector<const RuleItem*> > _builtInWeapons;
 	bool _capturable;
@@ -399,6 +401,8 @@ public:
 	std::string getCivilianRecoveryType() const;
 	/// Gets the unit's stats.
 	UnitStats *getStats();
+	/// Gets the unit's random part of stats.
+	UnitStats* getRandomStats();
 	/// Gets the unit's height when standing.
 	int getStandHeight() const;
 	/// Gets the unit's height when kneeling.
@@ -429,6 +433,8 @@ public:
 	const std::vector<int> &getSelectWeaponSounds() const { return _selectWeaponSound; }
 	/// Gets the unit's "annoyed" sounds.
 	const std::vector<int> &getAnnoyedSounds() const { return _annoyedSound; }
+	/// Gets the unit's "spawned unit" sounds.
+	const std::vector<int>& getSpawnedUnitSounds() const { return _spawnedUnitSound; }
 	/// Gets the move sound id.
 	int getMoveSound() const;
 	/// Gets the intelligence. This is the number of turns AI remembers your troop positions.
@@ -459,6 +465,11 @@ public:
 	bool getCapturable() const;
 	/// Checks if this unit can surrender.
 	bool canSurrender() const;
+	/// Gets special objective type of a unit.
+	const std::string& getSpecialObjectiveType() const { return _specialObjectiveType; };
+	/// Gets alternative unit for recovery.
+	const Unit* getAltUnit() const { return _altUnit; };
+	//const std::string& getAltRecoveredUnit() const { return _altUnit->getType(); }; //_altRecoveredUnit
 	/// Checks if this unit surrenders automatically, if all other units surrendered too.
 	bool autoSurrender() const;
 	bool isLeeroyJenkins() const { return _isLeeroyJenkins; };

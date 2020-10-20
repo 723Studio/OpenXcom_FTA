@@ -420,7 +420,9 @@ void NextTurnState::close()
 		_battleGame->getBattleGame()->resetAllEnemiesNeutralized();
 	}
 
-	if ((_battleGame->getObjectiveType() != MUST_DESTROY && tally.liveAliens == 0) || tally.liveSoldiers == 0)		// not the final mission and all aliens dead.
+	if (((_battleGame->getObjectiveType() != MUST_DESTROY && tally.liveAliens == 0) // not the final mission and all aliens dead.
+		|| tally.liveSoldiers == 0) //we failed
+		&& !_battleGame->getBattleGame()->scriptsToProcess()) //nothing to be processed	
 	{
 		_state->finishBattle(false, tally.liveSoldiers);
 	}

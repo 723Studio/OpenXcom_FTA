@@ -44,6 +44,7 @@ class Game;
 class Base;
 class MissionSite;
 class AlienBase;
+class CovertOperation;
 class BattleUnit;
 class Texture;
 class Position;
@@ -65,6 +66,7 @@ private:
 	MissionSite *_mission;
 	AlienBase *_alienBase;
 	RuleTerrain *_terrain, *_baseTerrain, *_globeTerrain, *_alternateTerrain;
+	CovertOperation *_covertOperation;
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	Texture *_missionTexture, *_globeTexture;
 	int _worldShade;
@@ -184,6 +186,8 @@ public:
 	void setAlienBase(AlienBase* base);
 	/// Sets the terrain.
 	void setTerrain(RuleTerrain *terrain);
+	/// Sets covert operation
+	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
 	/// Runs the generator.
 	void run();
 	/// Sets up the next stage (for Cydonia/TFTD missions).

@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RuleEvent.h"
+#include "../Engine/Exception.h"
 
 namespace OpenXcom
 {
@@ -50,6 +51,7 @@ void RuleEvent::load(const YAML::Node &node)
 	{
 		_spawnedSoldier = node["spawnedSoldier"];
 	}
+	_reputationScore = node["reputationScore"].as<std::map<std::string, int>>(_reputationScore);
 
 	{
 		// backwards-compatibility, FIXME: remove after 6 months
@@ -74,6 +76,23 @@ void RuleEvent::load(const YAML::Node &node)
 	_interruptResearch = node["interruptResearch"].as<std::string>(_interruptResearch);
 	_timer = node["timer"].as<int>(_timer);
 	_timerRandom = node["timerRandom"].as<int>(_timerRandom);
+
+	if (const YAML::Node& customAnswers = node["customAnswers"])
+	{
+		if (customAnswers.size() > 4)
+		{
+			throw Exception("Geoscape Event named: '" + this->getName() + "' has more than 4 custom answers, this is not allowed!");
+		}
+		if (customAnswers.size() < 2)
+		{
+			throw Exception("Geoscape Event named: '" + this->getName() + "' has less than 2 custom answers, this is not allowed!");
+		}
+		for (YAML::const_iterator i = customAnswers.begin(); i != customAnswers.end(); ++i)
+		{
+
+			_answers[i->first.as<int>()].load(i->second);
+		}
+	}
 }
 
 }

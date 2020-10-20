@@ -138,7 +138,7 @@ private:
 	std::string _rank;
 	std::string _race;
 	std::string _name;
-	UnitStats _stats;
+	UnitStats _stats, _statsRandom;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _lastReloadSound;
 	std::vector<int> _deathSound;
@@ -274,6 +274,8 @@ public:
 	bool isFloating() const;
 	/// Have unit floor below?
 	bool haveNoFloorBelow() const { return _haveNoFloorBelow; }
+	/// Sets soldier ID if it was created.
+	void setGeoscapeSoldied(Soldier* soldier);
 
 	/// Aim.
 	void aim(bool aiming);

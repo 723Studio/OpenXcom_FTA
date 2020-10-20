@@ -330,6 +330,7 @@ void AllocateTrainingState::initList(size_t scrl)
 		bool isWounded = (*s)->isWounded();
 		bool isQueued = isWounded && (*s)->getReturnToTrainingWhenHealed();
 		bool isTraining = (*s)->isInTraining();
+		bool isOut = (*s)->getCovertOperation() != 0;
 
 		std::string status;
 		if (isDone)
@@ -338,6 +339,8 @@ void AllocateTrainingState::initList(size_t scrl)
 			status = tr("STR_NO_QUEUED");
 		else if (isWounded)
 			status = tr("STR_NO_WOUNDED");
+		else if (isOut)
+			status = tr("STR_NO_OUT");
 		else if (isTraining)
 			status = tr("STR_YES");
 		else
@@ -485,6 +488,9 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 
 		// can't put fully trained soldiers back into training
 		if (soldier->isFullyTrained()) return;
+
+		// can't put soldier that is on covert operation
+		if (soldier->getCovertOperation() != 0) return;
 
 		// wounded soldiers can be queued/dequeued
 		if (soldier->isWounded())

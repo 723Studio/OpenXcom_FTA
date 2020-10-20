@@ -162,6 +162,9 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_startingCondition = node["startingCondition"].as<std::string>(_startingCondition);
 	_unlockedResearch = node["unlockedResearch"].as<std::string>(_unlockedResearch);
 	_missionBountyItem = node["missionBountyItem"].as<std::string>(_missionBountyItem);
+	_alternativeDeployment = node["alternativeDeployment"].as<std::string>(_alternativeDeployment);
+	_alternativeDeploymentResearch = node["alternativeDeploymentResearch"].as<std::string>(_alternativeDeploymentResearch);
+	_extendedObjectiveType = node["extendedObjectiveType"].as<std::string>(_extendedObjectiveType);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_data = node["data"].as< std::vector<DeploymentData> >(_data);
 	_width = node["width"].as<int>(_width);
@@ -182,6 +185,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_loseCutscene = node["loseCutscene"].as<std::string>(_loseCutscene);
 	_abortCutscene = node["abortCutscene"].as<std::string>(_abortCutscene);
 	_script = node["script"].as<std::string>(_script);
+	_battleScript = node["battleScript"].as<std::string>(_battleScript);
 	_alert = node["alert"].as<std::string>(_alert);
 	_alertBackground = node["alertBackground"].as<std::string>(_alertBackground);
 	_alertDescription = node["alertDescription"].as<std::string>(_alertDescription);

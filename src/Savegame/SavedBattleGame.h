@@ -42,6 +42,8 @@ class Mod;
 class State;
 class ItemContainer;
 class RuleItem;
+class AlienDeployment;
+class Ufo;
 class HitLog;
 enum HitLogEntryType : int;
 
@@ -68,6 +70,7 @@ private:
 	std::vector<Node*> _nodes;
 	std::vector<BattleUnit*> _units;
 	std::vector<BattleItem*> _items, _deleted;
+	int _itemObjectivesNumber;
 	Pathfinding *_pathfinding;
 	TileEngine *_tileEngine;
 	std::string _missionType, _strTarget, _strCraftOrBase, _alienCustomDeploy, _alienCustomMission;
@@ -132,10 +135,14 @@ public:
 	void setMissionTarget(const std::string& missionTarget) { _strTarget = missionTarget; }
 	/// Gets the mission target.
 	const std::string& getMissionTarget() const { return _strTarget; }
+	/// Gets objectives number
+	int getItemObjectivesNumber() const { return _itemObjectivesNumber; }
 	/// Sets the mission craft/base.
 	void setMissionCraftOrBase(const std::string& missionCraftOrBase) { _strCraftOrBase = missionCraftOrBase; }
 	/// Gets the mission craft/base.
 	const std::string& getMissionCraftOrBase() const { return _strCraftOrBase; }
+	/// Gets the deployment rules.
+	AlienDeployment* getAlienDeploymet();
 	/// Gets the base's items BEFORE the mission.
 	ItemContainer *getBaseStorageItems();
 	/// Applies the enviro effects.

@@ -10,6 +10,12 @@ set ( basescape_src
   Basescape/BaseView.cpp
   Basescape/BuildFacilitiesState.cpp
   Basescape/ChangeHeadquartersState.cpp
+  Basescape/CovertOperationArmorState.cpp
+  Basescape/CovertOperationEquipmentState.cpp
+  Basescape/CovertOperationInfoState.cpp
+  Basescape/CovertOperationSoldiersState.cpp
+  Basescape/CovertOperationStartState.cpp
+  Basescape/CovertOperationState.cpp
   Basescape/CraftArmorState.cpp
   Basescape/CraftEquipmentLoadState.cpp
   Basescape/CraftEquipmentSaveState.cpp
@@ -168,6 +174,13 @@ set ( engine_src
   Engine/Zoom.cpp
 )
 
+set ( fta_src
+  FTA/DiplomacyPurchaseState.cpp
+  FTA/DiplomacySellState.cpp
+  FTA/DiplomacyStartState.cpp
+  FTA/MasterMind.cpp
+)
+
 set ( geoscape_src
   Geoscape/AlienBaseState.cpp
   Geoscape/AllocatePsiTrainingState.cpp
@@ -186,6 +199,8 @@ set ( geoscape_src
   Geoscape/DogfightErrorState.cpp
   Geoscape/DogfightExperienceState.cpp
   Geoscape/DogfightState.cpp
+  Geoscape/FinishedCoverOperationDetailsState.cpp
+  Geoscape/FinishedCoverOperationState.cpp
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
   Geoscape/GeoscapeEventState.cpp
@@ -285,6 +300,7 @@ set ( mod_src
   Mod/ExtraSounds.cpp
   Mod/ExtraSprites.cpp
   Mod/ExtraStrings.cpp
+  Mod/BattleScript.cpp
   Mod/MapBlock.cpp
   Mod/MapData.cpp
   Mod/MapDataSet.cpp
@@ -299,9 +315,11 @@ set ( mod_src
   Mod/RuleCommendations.cpp
   Mod/RuleConverter.cpp
   Mod/RuleCountry.cpp
+  Mod/RuleCovertOperation.cpp
   Mod/RuleCraft.cpp
   Mod/RuleCraftWeapon.cpp
   Mod/RuleDamageType.cpp
+  Mod/RuleDiplomacyFaction.cpp
   Mod/RuleEnviroEffects.cpp
   Mod/RuleEvent.cpp
   Mod/RuleEventScript.cpp
@@ -343,9 +361,11 @@ set ( savegame_src
   Savegame/BattleItem.cpp
   Savegame/BattleUnit.cpp
   Savegame/Country.cpp
+  Savegame/CovertOperation.cpp
   Savegame/Craft.cpp
   Savegame/CraftWeapon.cpp
   Savegame/CraftWeaponProjectile.cpp
+  Savegame/DiplomacyFaction.cpp
   Savegame/EquipmentLayoutItem.cpp
   Savegame/GameTime.cpp
   Savegame/GeoscapeEvent.cpp
@@ -404,6 +424,7 @@ set ( cxx_src
     ${basescape_src}
     ${battlescape_src}
     ${engine_src}
+    ${fta_src}
     ${geoscape_src}
     ${interface_src}
     ${menu_src}
@@ -631,6 +652,7 @@ if ( MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode" )
   source_group ( "Basescape" FILES ${basescape_src} )
   source_group ( "Battlescape" FILES ${battlescape_src} )
   source_group ( "Engine" FILES ${engine_src} )
+  source_group ( "FTA" FILES ${fta_src} )
   source_group ( "Geoscape" FILES ${geoscape_src} )
   source_group ( "Interface" FILES ${interface_src} )
   source_group ( "Menu" FILES ${menu_src} )

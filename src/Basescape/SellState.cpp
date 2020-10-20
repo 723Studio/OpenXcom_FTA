@@ -182,7 +182,7 @@ void SellState::delayedInit()
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
 		if (_debriefingState) break;
-		if ((*i)->getCraft() == 0)
+		if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
 		{
 			TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), 0, 1, 0, 0 };
 			_items.push_back(row);
@@ -940,7 +940,7 @@ void SellState::lstItemsMousePress(Action *action)
 				std::string articleId = rule->getType();
 				const RuleResearch *selectedTopic = _game->getMod()->getResearch(articleId, false);
 				bool ctrlPressed = SDL_GetModState() & KMOD_CTRL;
-				if (selectedTopic && !ctrlPressed)
+				if (selectedTopic && ctrlPressed && _game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
 				{
 					_game->pushState(new TechTreeViewerState(selectedTopic, 0));
 				}

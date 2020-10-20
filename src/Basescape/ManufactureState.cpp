@@ -248,6 +248,10 @@ void ManufactureState::lstManufactureClickMiddle(Action *)
 {
 	const std::vector<Production*> productions(_base->getProductions());
 	const RuleManufacture *selectedTopic = productions[_lstManufacture->getSelectedRow()]->getRules();
+	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	{
+		return;
+	}
 	_game->pushState(new TechTreeViewerState(0, selectedTopic));
 }
 

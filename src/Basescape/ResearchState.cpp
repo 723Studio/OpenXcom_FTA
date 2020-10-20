@@ -28,6 +28,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/SavedGame.h"
 #include "NewResearchListState.h"
 #include "GlobalResearchState.h"
 #include "../Savegame/ResearchProject.h"
@@ -152,6 +153,10 @@ void ResearchState::onSelectProject(Action *)
 */
 void ResearchState::onOpenTechTreeViewer(Action *)
 {
+	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	{
+		return;
+	}
 	const std::vector<ResearchProject *> & baseProjects(_base->getResearch());
 	const RuleResearch *selectedTopic = baseProjects[_lstResearch->getSelectedRow()]->getRules();
 	_game->pushState(new TechTreeViewerState(selectedTopic, 0));

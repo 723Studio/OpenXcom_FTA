@@ -55,6 +55,8 @@ class AlienBase;
 class AlienStrategy;
 class AlienMission;
 class GeoscapeEvent;
+class DiplomacyFaction;
+class CovertOperation;
 class Target;
 class Soldier;
 class Craft;
@@ -145,6 +147,7 @@ private:
 	AlienStrategy *_alienStrategy;
 	SavedBattleGame *_battleGame;
 	std::vector<const RuleResearch*> _discovered;
+	std::vector<std::string> _performedOperations;
 	std::map<std::string, int> _generatedEvents;
 	std::map<std::string, int> _ufopediaRuleStatus;
 	std::map<std::string, int> _manufactureRuleStatus;
@@ -152,8 +155,11 @@ private:
 	std::map<std::string, bool> _hiddenPurchaseItemsMap;
 	std::vector<AlienMission*> _activeMissions;
 	std::vector<GeoscapeEvent*> _geoscapeEvents;
+	std::vector<CovertOperation*> _covertOperations;
+	std::vector<DiplomacyFaction*> _diplomacyFactions;
 	bool _debug, _warned;
 	int _monthsPassed;
+	int _loyalty;
 	std::string _graphRegionToggles;
 	std::string _graphCountryToggles;
 	std::string _graphFinanceToggles;
@@ -212,6 +218,10 @@ public:
 	std::vector<int64_t> &getFundsList();
 	/// Sets new funds.
 	void setFunds(int64_t funds);
+	/// Gets the current loyalty score.
+	int getLoyalty() const { return _loyalty; };
+	/// Sets the new loyalty score.
+	void setLoyalty(int loyalty) { _loyalty = loyalty; };
 	/// Gets the current globe longitude.
 	double getGlobeLongitude() const;
 	/// Sets the new globe longitude.
@@ -268,6 +278,12 @@ public:
 	void setResearchRuleStatus(const std::string &researchRule, int newStatus);
 	/// Sets the item as hidden or unhidden
 	void setHiddenPurchaseItemsStatus(const std::string &itemName, bool hidden);
+	/// Add covert operation to the "performed operation" list
+	void addPerformedCovertOperation(const std::string & operation) { _performedOperations.push_back(operation); };
+	/// Remove covert operation from the "performed operation" list
+	void removePerformedCovertOperation(const std::string& operation);
+	/// Get list of performed operations
+	const std::vector<std::string> &getPerformedCovertOperations() { return _performedOperations; };
 	/// Remove a research from the "already discovered" list
 	void removeDiscoveredResearch(const RuleResearch *research);
 	/// Add a finished ResearchProject
@@ -364,6 +380,10 @@ public:
 	std::vector<GeoscapeEvent*> &getGeoscapeEvents() { return _geoscapeEvents; }
 	/// Read-only access to the current geoscape events.
 	const std::vector<GeoscapeEvent*> &getGeoscapeEvents() const { return _geoscapeEvents; }
+	/// Full access to the current diplomacy factions.
+	std::vector<DiplomacyFaction*>& getDiplomacyFactions() { return _diplomacyFactions; }
+	/// Read-only access to the current diplomacy factions.
+	const std::vector<DiplomacyFaction*>& getDiplomacyFactions() const { return _diplomacyFactions; }
 	/// Locate a region containing a position.
 	Region *locateRegion(double lon, double lat) const;
 	/// Locate a region containing a Target.

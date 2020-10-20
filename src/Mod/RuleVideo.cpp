@@ -23,7 +23,7 @@
 namespace OpenXcom
 {
 
-RuleVideo::RuleVideo(const std::string &id) : _id(id), _useUfoAudioSequence(false), _winGame(false), _loseGame(false)
+RuleVideo::RuleVideo(const std::string &id) : _id(id), _useUfoAudioSequence(false), _customCutscene(false), _winGame(false), _loseGame(false)
 {
 	// backwards-compatibility failsafe
 	if (_id == "winGame")
@@ -58,6 +58,7 @@ static void _loadSlide(SlideshowSlide &slide, const YAML::Node &node)
 void RuleVideo::load(const YAML::Node &node)
 {
 	_useUfoAudioSequence = node["useUfoAudioSequence"].as<bool>(false);
+	_customCutscene = node["customCutscene"].as<bool>(false);
 	_winGame = node["winGame"].as<bool>(_winGame);
 	_loseGame = node["loseGame"].as<bool>(_loseGame);
 
@@ -91,6 +92,11 @@ void RuleVideo::load(const YAML::Node &node)
 bool RuleVideo::useUfoAudioSequence() const
 {
 	return _useUfoAudioSequence;
+}
+
+bool RuleVideo::customCutscene() const
+{
+	return _customCutscene;
 }
 
 const std::vector<std::string> * RuleVideo::getVideos() const

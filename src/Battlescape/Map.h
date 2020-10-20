@@ -73,7 +73,7 @@ private:
 	int _nvColor;
 	Game *_game;
 	SavedBattleGame *_save;
-	Surface *_arrow;
+	Surface *_arrow, *_missionPointer, *_sensorPointer;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	bool _anyIndicator, _isAltPressed;
 	int _spriteWidth, _spriteHeight;

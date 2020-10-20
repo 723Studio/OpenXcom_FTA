@@ -39,6 +39,7 @@ class Mod;
 class InfoboxOKState;
 class SoldierDiary;
 class RuleSkill;
+class BattleScript;
 
 enum BattleActionMove { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2 };
 
@@ -157,6 +158,7 @@ private:
 	std::list<BattleState*> _states, _deleted;
 	bool _playerPanicHandled;
 	int _AIActionCounter;
+	int _itemObjectivesNumber;
 	BattleAction _currentAction;
 	bool _AISecondMove, _playedAggroSound;
 	bool _endTurnRequested;
@@ -218,6 +220,7 @@ public:
 	/// Spawns a new unit in the middle of battle.
 	void spawnNewUnit(BattleItem *item);
 	void spawnNewUnit(BattleActionAttack attack, Position position);
+	void scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock);
 	/// Spawns units from items that explode before battle
 	void spawnFromPrimedItems();
 	/// Removes spawned units that belong to the player to avoid dealing with recovery
@@ -295,6 +298,8 @@ public:
 	void playSound(int sound);
 	/// Play unit response sound on battlefield.
 	void playUnitResponseSound(BattleUnit *unit, int type);
+	/// Returns if we need to proceed battle and there would be more battle scripts to be processed.
+	bool scriptsToProcess();
 	/// Sets up a mission complete notification.
 	void missionComplete();
 	std::list<BattleState*> getStates();
@@ -304,6 +309,8 @@ public:
 	bool areAllEnemiesNeutralized() const { return _allEnemiesNeutralized; }
 	/// Resets the flag.
 	void resetAllEnemiesNeutralized() { _allEnemiesNeutralized = false; }
+	/// Process battlescripts.
+	void processBattleScripts(const std::vector<BattleScript*>* script);
 };
 
 }
