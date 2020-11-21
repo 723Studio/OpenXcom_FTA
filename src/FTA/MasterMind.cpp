@@ -133,7 +133,7 @@ void MasterMind::updateLoyalty(int score, LoyaltySource source)
 	}
 	int loyalty = _game->getSavedGame()->getLoyalty();
 	loyalty += std::round((score * coef) / 100);
-	Log(LOG_DEBUG) << "Loyalty updating to:  " << loyalty << " from coef: " << coef << " and scope value: " << score; //FINNIK_TODO remove for next release
+	Log(LOG_DEBUG) << "Loyalty updating to:  " << loyalty << " from coef: " << coef << " and scope value: " << score; //FtATODO remove for next release
 	_game->getSavedGame()->setLoyalty(loyalty);
 }
 

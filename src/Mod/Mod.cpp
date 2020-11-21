@@ -343,7 +343,7 @@ Mod::Mod() :
 	_noLOSAccuracyPenaltyGlobal(-1),
 	_surrenderMode(0),
 	_ftaGame(false), _researchTreeDisabled(false),
-	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000),
+	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100),
 	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
 	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
 	_loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"),
@@ -2462,8 +2462,6 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		_coefAlienMission = nodeLoyalty["coefAlienMission"].as<int>(_coefAlienMission);
 		_coefUfo = nodeLoyalty["coefUfo"].as<int>(_coefUfo);
 		_coefAlienBase = nodeLoyalty["coefAlienBase"].as<int>(_coefAlienBase);
-		_noFundsPenalty = nodeLoyalty["noFundsPenalty"].as<int>(_noFundsPenalty);
-		_noFundsValue = nodeLoyalty["noFundsValue"].as<int>(_noFundsValue);
 	}
 
 	if (const YAML::Node &nodeGameOver = doc["gameOver"])
@@ -2526,7 +2524,6 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_pediaReplaceCraftFuelWithRangeType = doc["pediaReplaceCraftFuelWithRangeType"].as<int>(_pediaReplaceCraftFuelWithRangeType);
 	_missionRatings = doc["missionRatings"].as<std::map<int, std::string> >(_missionRatings);
 	_monthlyRatings = doc["monthlyRatings"].as<std::map<int, std::string> >(_monthlyRatings);
-	_loyaltyRatings = doc["loyaltyRatings"].as<std::map<int, std::string> >(_loyaltyRatings);
 	_fixedUserOptions = doc["fixedUserOptions"].as<std::map<std::string, std::string> >(_fixedUserOptions);
 	_recommendedUserOptions = doc["recommendedUserOptions"].as<std::map<std::string, std::string> >(_recommendedUserOptions);
 	_hiddenMovementBackgrounds = doc["hiddenMovementBackgrounds"].as<std::vector<std::string> >(_hiddenMovementBackgrounds);
@@ -4389,11 +4386,6 @@ const std::map<int, std::string> *Mod::getMissionRatings() const
 const std::map<int, std::string> *Mod::getMonthlyRatings() const
 {
 	return &_monthlyRatings;
-}
-
-const std::map<int, std::string>* Mod::getLoyaltyRatings() const
-{
-	return &_loyaltyRatings;
 }
 
 const std::vector<std::string> &Mod::getHiddenMovementBackgrounds() const

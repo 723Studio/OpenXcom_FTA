@@ -48,12 +48,12 @@
 namespace OpenXcom
 {
 /**
-* Initializes all the elements in the Monthly Report screen.
-* @param game Pointer to the core game.
-* @param psi Show psi training afterwards?
-* @param globe Pointer to the globe.
-*/
-MonthlyReportState::MonthlyReportState(Globe* globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0)
+ * Initializes all the elements in the Monthly Report screen.
+ * @param game Pointer to the core game.
+ * @param psi Show psi training afterwards?
+ * @param globe Pointer to the globe.
+ */
+MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0)
 {
 	_globe = globe;
 	// Create objects
@@ -163,7 +163,7 @@ MonthlyReportState::MonthlyReportState(Globe* globe) : _gameOver(0), _ratingTota
 	{
 		rating = "";
 		int temp = INT_MIN;
-		const std::map<int, std::string>* monthlyRatings = _game->getMod()->getMonthlyRatings();
+		const std::map<int, std::string> *monthlyRatings = _game->getMod()->getMonthlyRatings();
 		for (std::map<int, std::string>::const_iterator i = monthlyRatings->begin(); i != monthlyRatings->end(); ++i)
 		{
 			if (i->first > temp && i->first <= _ratingTotal)
@@ -277,17 +277,17 @@ MonthlyReportState::MonthlyReportState(Globe* globe) : _gameOver(0), _ratingTota
 }
 
 /**
-*
-*/
+ *
+ */
 MonthlyReportState::~MonthlyReportState()
 {
 }
 
 /**
-* Returns to the previous screen.
-* @param action Pointer to an action.
-*/
-void MonthlyReportState::btnOkClick(Action*)
+ * Returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void MonthlyReportState::btnOkClick(Action *)
 {
 	if (!_gameOver)
 	{
@@ -299,7 +299,7 @@ void MonthlyReportState::btnOkClick(Action*)
 			// Iterate through all your soldiers
 			for (std::vector<Soldier*>::iterator s = (*b)->getSoldiers()->begin(); s != (*b)->getSoldiers()->end(); ++s)
 			{
-				Soldier* soldier = _game->getSavedGame()->getSoldier((*s)->getId());
+				Soldier *soldier = _game->getSavedGame()->getSoldier((*s)->getId());
 				// Award medals to eligible soldiers
 				soldier->getDiary()->addMonthlyService();
 				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
@@ -344,7 +344,7 @@ void MonthlyReportState::btnOkClick(Action*)
 			else
 				cutsceneId = _game->getMod()->getLoseMoneyCutscene();
 
-			const RuleVideo* videoRule = _game->getMod()->getVideo(cutsceneId, true);
+			const RuleVideo *videoRule = _game->getMod()->getVideo(cutsceneId, true);
 			if (videoRule->getLoseGame())
 			{
 				_game->getSavedGame()->setEnding(END_LOSE);
@@ -376,11 +376,11 @@ void MonthlyReportState::btnOkClick(Action*)
 }
 
 /**
-* Update all our activity counters, gather all our scores,
-* get our countries to make sign pacts, adjust their fundings,
-* assess their satisfaction, and finally calculate our overall
-* total score, with thanks to Volutar for the formulas.
-*/
+ * Update all our activity counters, gather all our scores,
+ * get our countries to make sign pacts, adjust their fundings,
+ * assess their satisfaction, and finally calculate our overall
+ * total score, with thanks to Volutar for the formulas.
+ */
 void MonthlyReportState::calculateChanges()
 {
 	// initialize all our variables.
@@ -398,7 +398,7 @@ void MonthlyReportState::calculateChanges()
 	{
 		(*k)->newMonth();
 		if ((*k)->getActivityXcom().size() > 2)
-			_lastMonthsRating += (*k)->getActivityXcom().at(lastMonthOffset) - (*k)->getActivityAlien().at(lastMonthOffset);
+			_lastMonthsRating += (*k)->getActivityXcom().at(lastMonthOffset)-(*k)->getActivityAlien().at(lastMonthOffset);
 		xcomSubTotal += (*k)->getActivityXcom().at(monthOffset);
 		alienTotal += (*k)->getActivityAlien().at(monthOffset);
 	}
@@ -416,7 +416,7 @@ void MonthlyReportState::calculateChanges()
 
 	// now that we have our totals we can send the relevant info to the countries
 	// and have them make their decisions weighted on the council's perspective.
-	const RuleAlienMission* infiltration = _game->getMod()->getRandomMission(OBJECTIVE_INFILTRATION, _game->getSavedGame()->getMonthsPassed());
+	const RuleAlienMission *infiltration = _game->getMod()->getRandomMission(OBJECTIVE_INFILTRATION, _game->getSavedGame()->getMonthsPassed());
 	int pactScore = 0;
 	if (infiltration)
 	{
@@ -442,8 +442,8 @@ void MonthlyReportState::calculateChanges()
 		(*k)->newMonth(xcomTotal, alienTotal, pactScore, averageFunding);
 		// and after they've made their decisions, calculate the difference, and add
 		// them to the appropriate lists.
-		_fundingDiff += (*k)->getFunding().back() - (*k)->getFunding().at((*k)->getFunding().size() - 2);
-		switch ((*k)->getSatisfaction())
+		_fundingDiff += (*k)->getFunding().back()-(*k)->getFunding().at((*k)->getFunding().size()-2);
+		switch((*k)->getSatisfaction())
 		{
 		case 1:
 			_sadList.push_back((*k)->getRules()->getType());
@@ -460,13 +460,13 @@ void MonthlyReportState::calculateChanges()
 }
 
 /**
-* Builds a sentence from a list of countries, adding the appropriate
-* separators and pluralization.
-* @param countries List of country string IDs.
-* @param singular String ID to append at the end if the list is singular.
-* @param plural String ID to append at the end if the list is plural.
-*/
-std::string MonthlyReportState::countryList(const std::vector<std::string>& countries, const std::string& singular, const std::string& plural)
+ * Builds a sentence from a list of countries, adding the appropriate
+ * separators and pluralization.
+ * @param countries List of country string IDs.
+ * @param singular String ID to append at the end if the list is singular.
+ * @param plural String ID to append at the end if the list is plural.
+ */
+std::string MonthlyReportState::countryList(const std::vector<std::string> &countries, const std::string &singular, const std::string &plural)
 {
 	std::ostringstream ss;
 	if (!countries.empty())
@@ -489,6 +489,67 @@ std::string MonthlyReportState::countryList(const std::vector<std::string>& coun
 		}
 	}
 	return ss.str();
+}
+
+
+/**
+ * Initializes all the elements in the Monthly Report screen.
+ * @param game Pointer to the core game.
+ * @param psi Show psi training afterwards?
+ * @param globe Pointer to the globe.
+ */
+AlphaGameVersionEnds::AlphaGameVersionEnds() : _gameOver(0)
+{
+	
+	// Create objects
+	_window = new Window(this, 320, 200, 0, 0);
+	_btnOk = new TextButton(50, 12, 135, 180);
+	_txtTitle = new Text(300, 34, 16, 8);
+	_txtDesc = new Text(280, 130, 16, 46);
+
+	// Set palette
+	setInterface("monthlyReport");
+
+	add(_window, "window", "monthlyReport");
+	add(_btnOk, "button", "monthlyReport");
+	add(_txtTitle, "text1", "monthlyReport");
+	add(_txtDesc, "text2", "monthlyReport");
+
+	centerAllSurfaces();
+
+	// Set up objects
+	setWindowBackground(_window, "monthlyReport");
+
+	_btnOk->setText(tr("STR_OK"));
+	_btnOk->onMouseClick((ActionHandler)&AlphaGameVersionEnds::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&AlphaGameVersionEnds::btnOkClick, Options::keyOk);
+	_btnOk->onKeyboardPress((ActionHandler)&AlphaGameVersionEnds::btnOkClick, Options::keyCancel);
+
+
+	_txtTitle->setBig();
+	_txtTitle->setText(tr("STR_FTA_ALPHA_END"));
+	_txtTitle->setAlign(ALIGN_CENTER);
+	_txtTitle->setWordWrap(true);
+	_txtDesc->setText(tr("STR_FTA_ALPHA_END_DESC"));
+	_txtDesc->setWordWrap(true);
+}
+
+/**
+ *
+ */
+AlphaGameVersionEnds::~AlphaGameVersionEnds()
+{
+}
+
+/**
+ * Returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void AlphaGameVersionEnds::btnOkClick(Action*)
+{
+	_game->getSavedGame()->setEnding(END_WIN);
+	_game->pushState(new StatisticsState());
+	_game->getMod()->playMusic("GMLOSE");
 }
 
 }

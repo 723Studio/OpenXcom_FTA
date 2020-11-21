@@ -160,7 +160,7 @@ private:
 	std::vector<DiplomacyFaction*> _diplomacyFactions;
 	bool _debug, _warned;
 	int _monthsPassed;
-	int _loyalty, _lastMonthsLoyalty;
+	int _loyalty;
 	std::string _graphRegionToggles;
 	std::string _graphCountryToggles;
 	std::string _graphFinanceToggles;
@@ -223,10 +223,6 @@ public:
 	int getLoyalty() const { return _loyalty; };
 	/// Sets the new loyalty score.
 	void setLoyalty(int loyalty) { _loyalty = loyalty; };
-	/// Gets the last month loyalty score.
-	int getLastMonthsLoyalty() const { return _lastMonthsLoyalty; };
-	/// Sets the new last month loyalty score.
-	void setLastMonthsLoyalty(int loyalty) { _lastMonthsLoyalty = loyalty; };
 	/// Gets the current globe longitude.
 	double getGlobeLongitude() const;
 	/// Sets the new globe longitude.

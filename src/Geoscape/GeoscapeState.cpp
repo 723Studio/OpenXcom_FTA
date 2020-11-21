@@ -73,7 +73,6 @@
 #include "FundingState.h"
 #include "../FTA/DiplomacyStartState.h"
 #include "MonthlyReportState.h"
-#include "AltMonthlyReportState.h"
 #include "ProductionCompleteState.h"
 #include "UfoDetectedState.h"
 #include "GeoscapeCraftState.h"
@@ -2764,24 +2763,10 @@ void GeoscapeState::time1Month()
 	// Handle funding
 	timerReset();
 	_game->getSavedGame()->monthlyFunding();
-	if (_game->getMod()->getIsFTAGame())
-	{
-		if (_game->getSavedGame()->getMonthsPassed() > 3)
-		{
-			popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
-		}
-		else
-		{
-			popup(new AltMonthlyReportState(_globe));
-		}
-	}
-	else
-	{
-		popup(new MonthlyReportState(_globe));
-	}
+	if (_game->getMod()->getIsFTAGame()) { 	popup(new AlphaGameVersionEnds());	} else { popup(new MonthlyReportState(_globe)); } //temp for alpha FTA release
 
 	// Handle Xcom Operatives discovering bases
-	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20) && !_game->getMod()->getIsFTAGame()) // for now let's disable it in FtA
+	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20))
 	{
 		for (std::vector<AlienBase*>::const_iterator b = _game->getSavedGame()->getAlienBases()->begin(); b != _game->getSavedGame()->getAlienBases()->end(); ++b)
 		{
