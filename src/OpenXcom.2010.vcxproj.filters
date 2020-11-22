@@ -1179,6 +1179,9 @@
     <ClCompile Include="Basescape\SoldierTransformationListState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Geoscape\AltMonthlyReportState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2421,6 +2424,9 @@
     </ClInclude>
     <ClInclude Include="Basescape\SoldierTransformationListState.h">
       <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\AltMonthlyReportState.h">
+      <Filter>Geoscape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

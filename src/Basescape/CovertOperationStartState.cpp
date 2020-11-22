@@ -502,7 +502,7 @@ std::string CovertOperationStartState::getOperationTimeString(bool mod)
 		}
 		else if (time > 20)
 		{
-			return ("STR_MONTH");
+			return ("STR_A_MONTH");
 		}
 		else if (time > 10)
 		{

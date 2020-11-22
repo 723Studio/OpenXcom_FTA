@@ -241,6 +241,8 @@ public:
 	void setGlobeZoom(int zoom);
 	/// Handles monthly funding.
 	void monthlyFunding();
+	/// Handles monthly scoring (reduced method for FtA).
+	void monthlyScoring();
 	/// Gets the current game time.
 	GameTime *getTime() const;
 	/// Sets the current game time.

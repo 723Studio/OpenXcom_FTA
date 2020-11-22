@@ -2763,9 +2763,9 @@ void GeoscapeState::time1Month()
 
 	// Handle funding
 	timerReset();
-	_game->getSavedGame()->monthlyFunding();
 	if (_game->getMod()->getIsFTAGame())
 	{
+		_game->getSavedGame()->monthlyScoring();
 		if (_game->getSavedGame()->getMonthsPassed() > 3)
 		{
 			popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
@@ -2777,6 +2777,7 @@ void GeoscapeState::time1Month()
 	}
 	else
 	{
+		_game->getSavedGame()->monthlyFunding();
 		popup(new MonthlyReportState(_globe));
 	}
 

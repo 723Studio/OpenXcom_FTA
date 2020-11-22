@@ -267,7 +267,7 @@ private:
 	GameTime _startingTime;
 	int _startingDifficulty;
 	int _baseDefenseMapFromLocation;
-	std::map<int, std::string> _missionRatings, _monthlyRatings, _loyaltyRatings;
+	std::map<int, std::string> _missionRatings, _monthlyRatings, _loyaltyRatings, _reputationLevels;
 	std::map<std::string, std::string> _fixedUserOptions, _recommendedUserOptions;
 	std::vector<std::string> _hiddenMovementBackgrounds;
 	std::vector<std::string> _baseNamesFirst, _baseNamesMiddle, _baseNamesLast;
@@ -893,6 +893,8 @@ public:
 	const GameTime &getStartingTime() const;
 	/// Gets the game starting difficulty.
 	int getStartingDifficulty() const { return _startingDifficulty; }
+	/// Gets initial funding.
+	int getInitialFunding() const { return _initialFunding; }
 	/// Gets an MCDPatch.
 	MCDPatch *getMCDPatch(const std::string &id) const;
 	/// Gets the list of external Sprites.
@@ -969,9 +971,11 @@ public:
 	ScriptGlobal *getScriptGlobal() const;
 	RuleResearch *getFinalResearch() const;
 	RuleBaseFacility *getDestroyedFacility() const;
+	/// Get custom ratings
 	const std::map<int, std::string> *getMissionRatings() const;
 	const std::map<int, std::string> *getMonthlyRatings() const;
 	const std::map<int, std::string>* getLoyaltyRatings() const;
+	const std::map<int, std::string>* getReputationLevels() const;
 	const std::map<std::string, std::string> &getFixedUserOptions() const { return _fixedUserOptions; }
 	const std::map<std::string, std::string> &getRecommendedUserOptions() const { return _recommendedUserOptions; }
 	const std::vector<std::string> &getHiddenMovementBackgrounds() const;

@@ -35,6 +35,7 @@
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../Geoscape/BaseNameState.h"
+#include "../FTA/MasterMind.h"
 #include "../Savegame/AlienBase.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFaction.h"
@@ -184,81 +185,33 @@ void NewGameState::btnOkClick(Action *)
 	//choose the game scenario
 	if (_game->getMod()->getIsFTAGame())
 	{
-		//XCOM Base init
-		Base* base = save->getBases()->at(0);
-		double lon, lat;
-		lon = 0.21; //TODO random array here
-		lat = -0.85; //TODO random array here
-		base->setLongitude(lon);
-		base->setLatitude(lat);
-		base->setName(tr("STR_LAST_STAND")); //TODO random array here
-		gs->getGlobe()->center(lon, lat);
-		for (std::vector<Craft*>::iterator i = base->getCrafts()->begin(); i != base->getCrafts()->end(); ++i)
-		{
-			(*i)->setLongitude(lon);
-			(*i)->setLatitude(lat);
-		}
-		//spawn ragional ADVENT center
-		AlienDeployment* aBaseDeployment = mod->getDeployment("STR_INITIAL_REGIONAL_HQ");
-		AlienBase* aBase = new AlienBase(aBaseDeployment, 0);
-		aBase->setId(save->getId(aBaseDeployment->getMarkerName()));
-		aBase->setAlienRace(aBaseDeployment->getRace());
-		aBase->setLongitude(lon + 0.23); //TODO random array here
-		aBase->setLatitude(lat - 0.05); //TODO random array here
-		aBase->setDiscovered(false);
-		save->getAlienBases()->push_back(aBase);
-		//init the Game
-		gs->init();
-		//init Factions
-		for (std::vector<std::string>::const_iterator i = mod->getDiplomacyFactionList()->begin(); i != mod->getDiplomacyFactionList()->end(); ++i)
-		{
-			RuleDiplomacyFaction* factionRules = mod->getDiplomacyFaction(*i);
-			DiplomacyFaction* faction = new DiplomacyFaction(*factionRules);
-			if (factionRules->getDiscoverResearch().empty() || save->isResearched(mod->getResearch(factionRules->getDiscoverResearch())))
-			{
-				faction->setDiscovered(true);
-			}
-			faction->setReputation(factionRules->getStartingReputation());
-			faction->updateReputationLevel();
-			save->getDiplomacyFactions().push_back(faction);
-		}
-		//start base defense mission
-		SavedBattleGame* bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
-		_game->getSavedGame()->setBattleGame(bgame);
-		bgame->setMissionType("STR_BASE_DEFENSE");
-		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
-		bgen.setBase(base);
-		bgen.setAlienCustomDeploy(_game->getMod()->getDeployment("STR_INITIAL_BASE_DEFENSE"));
-		//bgen.setAlienRace("STR_INITIAL_BASE_DEFENSE_RACE");
-		bgen.setWorldShade(0);
-		bgen.run();
-		_game->pushState(new BriefingState(0, base));
+		_game->getMasterMind()->newGameHelper(diff, gs);
 	}
 	else //vanilla
 	{
 		gs->init();
-    auto base = _game->getSavedGame()->getBases()->back();
-    if (base->getMarker() != -1)
-    {
-      // center and rotate 35 degrees down (to see the base location while typoing its name)
-		  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
+		auto base = _game->getSavedGame()->getBases()->back();
+		if (base->getMarker() != -1)
+		{
+		  // center and rotate 35 degrees down (to see the base location while typoing its name)
+			  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
       
-      if (base->getName().empty())
-      {
-        // fixed location, custom name
-        _game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
-      }
-      else if (Options::customInitialBase)
-      {
-        // fixed location, fixed name
-        _game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
-      }
-    }
-    else
-    {
-      // custom location, custom name
-      _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
-    }
+		  if (base->getName().empty())
+		  {
+			// fixed location, custom name
+			_game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
+		  }
+		  else if (Options::customInitialBase)
+		  {
+			// fixed location, fixed name
+			_game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
+		  }
+		}
+		else
+		{
+		  // custom location, custom name
+		  _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
+		}
 	}
 }
 

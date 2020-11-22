@@ -45,12 +45,12 @@ private:
 	Text* _txtDesc, * _txtFailure;
 	int _gameOver;
 	int _ratingTotal, _fundingDiff, _lastMonthsRating, _loyalty, _lastMonthsLoyalty;
-	std::string _stuffMessage;
+	std::string _stuffMessage, _firstFaction, _secondFaction, _thirdFaction;
 	std::vector<std::string> _happyList, _sadList, _pactList, _cancelPactList;
 	Globe* _globe;
 	std::vector<Soldier*> _soldiersMedalled;
-	/// Builds a country list string.
-	std::string countryList(const std::vector<std::string>& countries, const std::string& singular, const std::string& plural);
+	/// Builds a faction list string.
+	std::string factionList(const std::vector<std::string>& factions, const std::string& singular, const std::string& plural);
 public:
 	/// Creates the Monthly Report state.
 	AltMonthlyReportState(Globe* globe);
@@ -58,6 +58,8 @@ public:
 	~AltMonthlyReportState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
+	/// Calculate monthly updates.
+	void calculateUpdates();
 	/// Calculate monthly scores.
 	void calculateChanges();
 };

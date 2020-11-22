@@ -2527,6 +2527,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_missionRatings = doc["missionRatings"].as<std::map<int, std::string> >(_missionRatings);
 	_monthlyRatings = doc["monthlyRatings"].as<std::map<int, std::string> >(_monthlyRatings);
 	_loyaltyRatings = doc["loyaltyRatings"].as<std::map<int, std::string> >(_loyaltyRatings);
+	_reputationLevels = doc["reputationLevels"].as<std::map<int, std::string> >(_reputationLevels);
 	_fixedUserOptions = doc["fixedUserOptions"].as<std::map<std::string, std::string> >(_fixedUserOptions);
 	_recommendedUserOptions = doc["recommendedUserOptions"].as<std::map<std::string, std::string> >(_recommendedUserOptions);
 	_hiddenMovementBackgrounds = doc["hiddenMovementBackgrounds"].as<std::vector<std::string> >(_hiddenMovementBackgrounds);
@@ -4394,6 +4395,11 @@ const std::map<int, std::string> *Mod::getMonthlyRatings() const
 const std::map<int, std::string>* Mod::getLoyaltyRatings() const
 {
 	return &_loyaltyRatings;
+}
+
+const std::map<int, std::string>* Mod::getReputationLevels() const
+{
+	return &_reputationLevels;
 }
 
 const std::vector<std::string> &Mod::getHiddenMovementBackgrounds() const

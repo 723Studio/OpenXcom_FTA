@@ -20,31 +20,33 @@
 #include <climits>
 #include <sstream>
 #include "../Engine/Game.h"
-#include "../Mod/Mod.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/Options.h"
+#include "../Engine/Unicode.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
+#include "../Menu/SaveGameState.h"
+#include "../Menu/StatisticsState.h"
+#include "../Menu/CutsceneState.h"
+#include "PsiTrainingState.h"
+#include "TrainingState.h"
+#include "Globe.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GameTime.h"
-#include "PsiTrainingState.h"
-#include "TrainingState.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/Country.h"
-#include "../Mod/RuleCountry.h"
-#include "Globe.h"
-#include "../Engine/Options.h"
-#include "../Engine/Unicode.h"
-#include "../Menu/CutsceneState.h"
+#include "../Savegame/DiplomacyFaction.h"
 #include "../Savegame/Base.h"
-#include "../Battlescape/CommendationState.h"
 #include "../Savegame/SoldierDiary.h"
-#include "../Menu/SaveGameState.h"
+#include "../Mod/Mod.h"
+#include "../Mod/RuleCountry.h"
+#include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
-#include "../Menu/StatisticsState.h"
+#include "../FTA/MasterMind.h"
+#include "../Battlescape/CommendationState.h"
 
 namespace OpenXcom
 {
@@ -292,10 +294,10 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 		_game->getSavedGame()->setWarned(false);
 	}
 
-	ss5 << countryList(_happyList, "STR_COUNTRY_IS_PARTICULARLY_PLEASED", "STR_COUNTRIES_ARE_PARTICULARLY_HAPPY");
-	ss5 << countryList(_sadList, "STR_COUNTRY_IS_UNHAPPY_WITH_YOUR_ABILITY", "STR_COUNTRIES_ARE_UNHAPPY_WITH_YOUR_ABILITY");
-	ss5 << countryList(_pactList, "STR_COUNTRY_HAS_SIGNED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_SIGNED_A_SECRET_PACT");
-	ss5 << countryList(_cancelPactList, "STR_COUNTRY_HAS_CANCELLED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_CANCELLED_A_SECRET_PACT");
+	ss5 << factionList(_happyList, "STR_COUNTRY_IS_PARTICULARLY_PLEASED", "STR_COUNTRIES_ARE_PARTICULARLY_HAPPY");
+	ss5 << factionList(_sadList, "STR_COUNTRY_IS_UNHAPPY_WITH_YOUR_ABILITY", "STR_COUNTRIES_ARE_UNHAPPY_WITH_YOUR_ABILITY");
+	ss5 << factionList(_pactList, "STR_COUNTRY_HAS_SIGNED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_SIGNED_A_SECRET_PACT");
+	ss5 << factionList(_cancelPactList, "STR_COUNTRY_HAS_CANCELLED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_CANCELLED_A_SECRET_PACT");
 
 	_txtDesc->setText(ss5.str());
 }
@@ -400,6 +402,100 @@ void AltMonthlyReportState::btnOkClick(Action*)
 }
 
 /**
+* Update all faction and loyalty conditions, prepare FtA-specific
+* data to show in state and finally calculate our overall total score,
+* with thanks to Volutar for the formulas.
+*/
+void AltMonthlyReportState::calculateUpdates()
+{
+	// initialize all our variables.
+	_lastMonthsRating = 0;
+	int xcomSubTotal = 0;
+	int xcomTotal = 0;
+	int alienTotal = 0;
+	int monthOffset = _game->getSavedGame()->getFundsList().size() - 2;
+	int lastMonthOffset = _game->getSavedGame()->getFundsList().size() - 3;
+	if (lastMonthOffset < 0)
+		lastMonthOffset += 2;
+
+	// update activity meters, calculate a total score based on regional activity
+	// and gather last month's score
+	for (std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin(); k != _game->getSavedGame()->getRegions()->end(); ++k)
+	{
+		(*k)->newMonth();
+		if ((*k)->getActivityXcom().size() > 2)
+		{
+			_lastMonthsRating += (*k)->getActivityXcom().at(lastMonthOffset) - (*k)->getActivityAlien().at(lastMonthOffset);
+		}
+		xcomSubTotal += (*k)->getActivityXcom().at(monthOffset);
+		alienTotal += (*k)->getActivityAlien().at(monthOffset);
+	}
+
+	// the council is more lenient after the first month
+	if (_game->getSavedGame()->getMonthsPassed() > 1)
+	{
+		_game->getSavedGame()->getResearchScores().at(monthOffset) += 400;
+	}
+	xcomTotal = _game->getSavedGame()->getResearchScores().at(monthOffset) + xcomSubTotal;
+
+	if (_game->getSavedGame()->getResearchScores().size() > 2)
+	{
+		_lastMonthsRating += _game->getSavedGame()->getResearchScores().at(lastMonthOffset);
+	}
+
+	//calculate total.
+	_ratingTotal = xcomTotal - alienTotal;
+
+	//handle loyalty updating
+	_loyalty = _game->getSavedGame()->getLoyalty();
+	_lastMonthsLoyalty = _game->getSavedGame()->getLastMonthsLoyalty();
+
+	int funds = _game->getSavedGame()->getFunds();
+	if (funds < 0)
+	{
+		int noFundsV = _game->getMod()->getNoFundsValue();
+		if (funds < noFundsV)
+		{
+			int	discontent = _game->getMod()->getNoFundsPenalty() * _game->getSavedGame()->getDifficultyCoefficient();
+			_stuffMessage = tr("STR_STUFF_NO_MONEY1");
+
+			if (funds < noFundsV * 2)
+			{
+				discontent *= 2;
+				_stuffMessage = tr("STR_STUFF_NO_MONEY2");
+			}
+			if (funds < noFundsV * 5)
+			{
+				discontent *= 2;
+				_stuffMessage = tr("STR_STUFF_NO_MONEY5");
+			}
+			if (funds < noFundsV * 10)
+			{
+				discontent *= 2;
+				_stuffMessage = tr("STR_STUFF_NO_MONEY10");
+			}
+			if (funds < noFundsV * 20)
+			{
+				discontent *= 2;
+				_stuffMessage = tr("STR_STUFF_NO_MONEY20");
+			}
+			_game->getMasterMind()->updateLoyalty(discontent, XCOM_GEOSCAPE);
+		}
+
+	}
+		//update loyalty data after it was loaded
+	_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
+
+	// update factions
+	for (std::vector<DiplomacyFaction*>::iterator k = _game. ->begin(); k != _game->getSavedGame()->getCountries()->end(); ++k)
+	{
+
+	}
+
+
+}
+
+/**
 * Update all our activity counters, gather all our scores,
 * get our countries to make sign pacts, adjust their fundings,
 * assess their satisfaction, and finally calculate our overall
@@ -480,50 +576,6 @@ void AltMonthlyReportState::calculateChanges()
 			break;
 		}
 	}
-	//calculate total.
-	_ratingTotal = xcomTotal - alienTotal;
-
-	//now its time to prepare FtA data
-	_loyalty = _game->getSavedGame()->getLoyalty();
-	_lastMonthsLoyalty = _game->getSavedGame()->getLastMonthsLoyalty();
-
-	int funds = _game->getSavedGame()->getFunds();
-	if (funds < 0)
-	{
-		int noFundsV = _game->getMod()->getNoFundsValue();
-		if (funds < noFundsV)
-		{
-			int	discontent = _game->getMod()->getNoFundsPenalty() * _game->getSavedGame()->getDifficultyCoefficient();
-			_stuffMessage = tr("STR_STUFF_NO_MONEY1");
-
-			if (funds < noFundsV * 2)
-			{
-				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY2");
-			}
-			if (funds < noFundsV * 5)
-			{
-				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY5");
-			}
-			if (funds < noFundsV * 10)
-			{
-				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY10");
-			}
-			if (funds < noFundsV * 20)
-			{
-				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY20");
-			}
-			_game->getMasterMind()->updateLoyalty(discontent, XCOM_GEOSCAPE);
-		}
-
-	}
-
-
-	//update loyalty data after it was loaded
-	_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
 }
 
 /**
@@ -533,7 +585,7 @@ void AltMonthlyReportState::calculateChanges()
 * @param singular String ID to append at the end if the list is singular.
 * @param plural String ID to append at the end if the list is plural.
 */
-std::string AltMonthlyReportState::countryList(const std::vector<std::string>& countries, const std::string& singular, const std::string& plural)
+std::string AltMonthlyReportState::factionList(const std::vector<std::string>& countries, const std::string& singular, const std::string& plural)
 {
 	std::ostringstream ss;
 	if (!countries.empty())

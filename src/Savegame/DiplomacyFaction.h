@@ -32,6 +32,7 @@ enum ThinkPeriod { TIMESTEP_DAILY, TIMESTEP_MONTHLY };
 */
 enum TreatyName { HELP_TREATY, RESEARCH_TREATY };
 
+
 class RuleDiplomacyFaction;
 class Game;
 class SavedGame;
@@ -48,10 +49,10 @@ class DiplomacyFaction
 {
 private:
 	const RuleDiplomacyFaction &_rule;
-	int _reputation, _reputationLvL;
-	bool _discovered;
+	int _reputationScore, _reputationLvL;
+	bool _discovered, _thisMonthDiscovered;
 	std::vector<std::string> _treaties;
-	std::string _generatedCommandType;
+	std::string _reputationName, _generatedCommandType;
 public:
 	/// Creates a blank Diplomacy Faction.
 	DiplomacyFaction(const RuleDiplomacyFaction &rule);
@@ -64,19 +65,25 @@ public:
 	/// Gets the Faction's ruleset.
 	const RuleDiplomacyFaction &getRules() const { return _rule; };
 	/// Gets current player's reputation in this Faction.
-	int getReputation() const { return _reputation; }
+	int getReputationScore() const { return _reputationScore; }
 	/// Sets current player's reputation in this Faction.
-	void setReputation(int reputation);
+	void setReputationScore(int reputation) { _reputationScore = reputation; };
 	/// Gets corrent reputation level.
-	int getReputationLevel();
+	int getReputationLevel() const { return _reputationScore;};
 	/// Gets corrent reputation level name.
-	std::string getReputationName();
-	/// Update reputation level based on current reputation of the faction.
-	void updateReputationLevel();
+	std::string getReputationName() const { return _reputationName; };
+	/// Sets new reputation level of the faction.
+	void setReputationLevel(int level) { _reputationLvL = level; };
+	/// Sets new reputation level of the faction.
+	void setReputationName(std::string reputationName ) { _reputationName = reputationName; };
 	/// Is this Faction was discovered?
 	bool isDiscovered() const { return _discovered; }
 	/// Sets Faction's discovered status.
-	void setDiscovered(bool status);
+	void setDiscovered(bool status) { _discovered = status; };
+	/// Was this Faction discovered this month?
+	bool isThisMonthDiscovered() const { return _thisMonthDiscovered; }
+	/// Sets Faction's this month discovered status.
+	void setThisMonthDiscovered(bool status) { _thisMonthDiscovered = status; };
 	/// Handle Faction logic.
 	bool think(Game& engine, ThinkPeriod = TIMESTEP_DAILY);
 	/// Generates mission for the faction base on current situation in the game.

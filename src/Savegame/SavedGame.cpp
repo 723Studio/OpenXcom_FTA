@@ -1214,6 +1214,33 @@ void SavedGame::monthlyFunding()
 }
 
 /**
+ * Calculate monthly score and calcualte funds
+ * for FtA Game
+ */
+void SavedGame::monthlyScoring()
+{
+	auto baseMaintenance = getBaseMaintenance();
+	_funds.back() -= baseMaintenance;
+	_funds.push_back(_funds.back());
+	_maintenance.back() = baseMaintenance;
+	_maintenance.push_back(0);
+	_incomes.push_back(0);
+	_expenditures.push_back(baseMaintenance);
+	_researchScores.push_back(0);
+
+	if (_incomes.size() > 12)
+		_incomes.erase(_incomes.begin());
+	if (_expenditures.size() > 12)
+		_expenditures.erase(_expenditures.begin());
+	if (_researchScores.size() > 12)
+		_researchScores.erase(_researchScores.begin());
+	if (_funds.size() > 12)
+		_funds.erase(_funds.begin());
+	if (_maintenance.size() > 12)
+		_maintenance.erase(_maintenance.begin());
+}
+
+/**
  * Returns the current time of the game.
  * @return Pointer to the game time.
  */

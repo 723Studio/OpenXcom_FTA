@@ -185,7 +185,7 @@ set ( geoscape_src
   Geoscape/AlienBaseState.cpp
   Geoscape/AllocatePsiTrainingState.cpp
   Geoscape/AllocateTrainingState.cpp
-  Geoscape/AltMonthlyReportState.cpp.cpp
+  Geoscape/AltMonthlyReportState.cpp
   Geoscape/BaseDefenseState.cpp
   Geoscape/BaseDestroyedState.cpp
   Geoscape/BaseNameState.cpp

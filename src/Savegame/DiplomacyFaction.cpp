@@ -35,7 +35,7 @@
 namespace OpenXcom
 {
 
-DiplomacyFaction::DiplomacyFaction(const RuleDiplomacyFaction &rule) : _rule(rule), _reputation(0), _reputationLvL(0), _discovered(false)
+DiplomacyFaction::DiplomacyFaction(const RuleDiplomacyFaction &rule) : _rule(rule), _reputationScore(0), _reputationLvL(0), _discovered(false), _thisMonthDiscovered(false)
 {
 	// Empty by design.
 }
@@ -51,9 +51,10 @@ DiplomacyFaction::~DiplomacyFaction()
  */
 void DiplomacyFaction::load(const YAML::Node &node)
 {
-	_reputation = node["reputation"].as<int>(_reputation);
+	_reputationScore = node["reputationScore"].as<int>(_reputationScore);
 	_reputationLvL = node["reputationLvL"].as<int>(_reputationLvL);
 	_discovered = node["discovered"].as<bool>(_discovered);
+	_thisMonthDiscovered = node["thisMonthDiscovered"].as<bool>(_thisMonthDiscovered);
 	_treaties = node["treaties"].as<std::vector<std::string>>(_treaties);
 }
 
@@ -65,110 +66,20 @@ YAML::Node DiplomacyFaction::save() const
 {
 	YAML::Node node;
 	node["name"] = _rule.getName();
-	node["reputation"] = _reputation;
+	node["reputationScore"] = _reputationScore;
 	node["reputationLvL"] = _reputationLvL;
 	if (_discovered)
 	{
 		node["discovered"] = _discovered;
 	}
+	if (_thisMonthDiscovered)
+	{
+		node["thisMonthDiscovered"] = _thisMonthDiscovered;
+	}
 	node["treaties"] = _treaties;
 	return node;
 }
 
-/**
- * Sets current player's reputation in this Faction.
- * @param new reputation value.
- */
-void DiplomacyFaction::setReputation(int reputation)
-{
-	_reputation = reputation;
-}
-
-int DiplomacyFaction::getReputationLevel()
-{
-	return _reputationLvL;
-}
-
-std::string DiplomacyFaction::getReputationName()
-{
-	int repLvl = getReputationLevel();
-	if (repLvl == 3)
-	{
-		return "STR_ALLY";
-	}
-	else if (repLvl == 2)
-	{
-		return "STR_HONORED";
-	}
-	else if (repLvl == 1)
-	{
-		return "STR_FRIENDLY";
-	}
-	else if (repLvl == 0)
-	{
-		return "STR_NEUTRAL";
-	}
-	else if (repLvl == -1)
-	{
-		return "STR_UNFRIENDLY";
-	}
-	else if (repLvl == -2)
-	{
-		return "STR_HOSTILE";
-	}
-	else if (repLvl == -3)
-	{
-		return "STR_HATED";
-	}
-	else
-	{
-		return "STR_ERROR";
-	}
-
-}
-
-void DiplomacyFaction::updateReputationLevel()
-{
-	if (_reputation >= 75)
-	{
-		_reputationLvL = 3;
-	}
-	else if (_reputation >= 50 && _reputation < 75)
-	{
-		_reputationLvL = 2;
-	}
-	else if (_reputation >= 25 && _reputation < 50)
-	{
-		_reputationLvL = 1;
-	}
-	else if (_reputation >= -25 && _reputation < 25)
-	{
-		_reputationLvL = 0;
-	}
-	else if (_reputation <= -50 && _reputation < 25)
-	{
-		_reputationLvL = -1;
-	}
-	else if (_reputation <= -50 && _reputation < 25)
-	{
-		_reputationLvL = -2;
-	}
-	else if (_reputation <= -50 && _reputation < 25)
-	{
-		_reputationLvL = -3;
-	}
-	else { _reputationLvL = 0; }
-}
-
-
-/**
- * Sets status of the Faction to the player, was it discovered or not.
- * @param isDiscovered status.
- */
-void DiplomacyFaction::setDiscovered(bool status)
-{
-	_discovered = status;
-}
 /**
  * Handle Faction logic..
  * @param Game game engine.
@@ -185,6 +96,7 @@ bool DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 		if (!_discovered && save.isResearched(mod.getResearch(_rule.getDiscoverResearch())))
 		{
 			setDiscovered(true);
+			setThisMonthDiscovered(true);
 			//spawn celebration event if faction wants it
 			if (!_rule.getDiscoverEvent().empty())
 			{

@@ -26,46 +26,49 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Game.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Exception.h"
+#include "../Engine/State.h"
+#include "../Engine/LocalizedText.h"
+#include "../Engine/Language.h"
 #include "../Mod/Mod.h"
-#include "../Geoscape/Globe.h"
-#include "../Savegame/GameTime.h"
-#include "../Savegame/SavedGame.h"
-#include "../Savegame/Base.h"
-#include "../Savegame/BaseFacility.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleArcScript.h"
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleMissionScript.h"
+#include "../Mod/RuleResearch.h"
+#include "../Mod/RuleRegion.h"
+#include "../Mod/RuleCountry.h"
+#include "../Mod/RuleAlienMission.h"
+#include "../Mod/RuleGlobe.h"
+#include "../Mod/AlienDeployment.h"
+#include "../Mod/RuleManufacture.h"
+#include "../Mod/RuleDiplomacyFaction.h"
+#include "../Savegame/GameTime.h"
+#include "../Savegame/SavedGame.h"
+#include "../Savegame/Base.h"
+#include "../Savegame/BaseFacility.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDiary.h"
-#include "../FTA/DiplomacyStartState.h"
 #include "../Savegame/ResearchProject.h"
-#include "../Mod/RuleResearch.h"
 #include "../Savegame/Production.h"
-#include "../Mod/RuleManufacture.h"
-#include "../Savegame/ItemContainer.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
-#include "../Mod/RuleRegion.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/Country.h"
-#include "../Mod/RuleCountry.h"
-#include "../Mod/RuleAlienMission.h"
 #include "../Savegame/AlienStrategy.h"
 #include "../Savegame/AlienMission.h"
-#include "../Savegame/GeoscapeEvent.h"
-#include "../Geoscape/GeoscapeEventState.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../Savegame/GeoscapeEvent.h"
+#include "../Geoscape/GeoscapeState.h"
+#include "../Geoscape/Globe.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
-#include "../Mod/RuleGlobe.h"
-#include "../Engine/Exception.h"
-#include "../Mod/AlienDeployment.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
+
 
 namespace OpenXcom
 {
@@ -76,6 +79,73 @@ MasterMind::MasterMind(Game* engine): _game(engine)
 }
 MasterMind::~MasterMind()
 {
+}
+
+/**
+* Handle additional operations and functions .
+* @param eventName - string with rules name of the event.
+* @return true is event was generater successfully.
+*/
+void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
+{
+	SavedGame* save = _game->getSavedGame();
+	Mod* mod = _game->getMod();
+	Base* base = save->getBases()->at(0);
+	double lon, lat;
+	lon = RNG::generate(0.20, 0.22); //TODO random array here
+	lat = RNG::generate(-0.832, -0.87) ; //TODO random array here
+	base->setLongitude(lon);
+	base->setLatitude(lat);
+	std::string baseName = _game->getLanguage()->getString("STR_LAST_STAND"); //TODO random array here
+	base->setName(baseName);
+	gs->getGlobe()->center(lon, lat);
+
+	for (std::vector<Craft*>::iterator i = base->getCrafts()->begin(); i != base->getCrafts()->end(); ++i)
+	{
+		(*i)->setLongitude(lon);
+		(*i)->setLatitude(lat);
+	}
+	//spawn regional ADVENT center
+	AlienDeployment* aBaseDeployment = mod->getDeployment("STR_INITIAL_REGIONAL_HQ");
+	AlienBase* aBase = new AlienBase(aBaseDeployment, 0);
+	aBase->setId(save->getId(aBaseDeployment->getMarkerName()));
+	aBase->setAlienRace(aBaseDeployment->getRace());
+	aBase->setLongitude(lon + RNG::generate(0.20, 0.26)); //TODO random array here
+	aBase->setLatitude(lat - RNG::generate(0.04, 0.06)); //TODO random array here
+	aBase->setDiscovered(false);
+	save->getAlienBases()->push_back(aBase);
+
+	//init the Game
+	gs->init();
+
+	//init Factions
+	for (std::vector<std::string>::const_iterator i = mod->getDiplomacyFactionList()->begin(); i != mod->getDiplomacyFactionList()->end(); ++i)
+	{
+		RuleDiplomacyFaction* factionRules = mod->getDiplomacyFaction(*i);
+		DiplomacyFaction* faction = new DiplomacyFaction(*factionRules);
+		if (factionRules->getDiscoverResearch().empty() || save->isResearched(mod->getResearch(factionRules->getDiscoverResearch())))
+		{
+			faction->setDiscovered(true);
+		}
+		faction->setReputationScore(factionRules->getStartingReputation());
+		faction->updateReputationLevel();
+		save->getDiplomacyFactions().push_back(faction);
+	}
+	//adjust funding
+	int funds = mod->getInitialFunding();
+	funds = funds * 1000 + static_cast<int>(RNG::generate(-1258, 6365)); 
+	save->setFunds(funds);
+
+	//start base defense mission
+	SavedBattleGame* bgame = new SavedBattleGame(mod, _game->getLanguage());
+	_game->getSavedGame()->setBattleGame(bgame);
+	bgame->setMissionType("STR_BASE_DEFENSE");
+	BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+	bgen.setBase(base);
+	bgen.setAlienCustomDeploy(mod->getDeployment("STR_INITIAL_BASE_DEFENSE"));
+	bgen.setWorldShade(0);
+	bgen.run();
+	_game->pushState(new BriefingState(0, base));
 }
 
 /**
@@ -96,7 +166,6 @@ bool MasterMind::spawnEvent(std::string name)
 	if (minutes < 30) minutes = 30; // just in case
 	newEvent->setSpawnCountdown(minutes);
 	_game->getSavedGame()->getGeoscapeEvents().push_back(newEvent);
-	// remember that it has been generated
 	_game->getSavedGame()->addGeneratedEvent(eventRules);
 
 	return true;
@@ -137,6 +206,42 @@ void MasterMind::updateLoyalty(int score, LoyaltySource source)
 	_game->getSavedGame()->setLoyalty(loyalty);
 }
 
+bool MasterMind::updateReputationLvl(DiplomacyFaction* faction)
+{
+	int temp = INT_MIN;
+	int repScore = faction->getReputationScore();
+	int curLvl = faction->getReputationLevel();
+	bool changed = false;
+	std::string repName = "STR_NEUTRAL";
+	const std::map<int, std::string>* repLevels = _game->getMod()->getReputationLevels();
+	for (std::map<int, std::string>::const_iterator i = repLevels->begin(); i != repLevels->end(); ++i)
+	{
+		if (i->first > temp && i->first <= repScore)
+		{
+			temp = i->first;
+			repName =i->second;
+		}
+	}
 
+	int newLvl = 0; //STR_NEUTRAL is default resolve
+
+	if (repName == "STR_FRIENDLY") newLvl = 1;
+	else if (repName == "STR_HONORED") newLvl = 2;
+	else if (repName == "STR_ALLY") newLvl = 3;
+	else if (repName == "STR_UNFRIENDLY") newLvl = -1;
+	else if (repName == "STR_HOSTILE") newLvl = -2;
+	else if (repName == "STR_HATED") newLvl = -3;
+
+	if (curLvl != newLvl)
+	{
+		changed = true;
+		faction->setReputationLevel(newLvl);
+		faction->setReputationName(repName);
+
+		//FINNIKTODO add cross-factional relations
+	}
+
+	return changed;
+}
 
 }
