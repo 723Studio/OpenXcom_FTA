@@ -413,7 +413,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 				std::string lookingName = (*i).first;
 				if (factionName == lookingName)
 				{
-					(*j)->setReputation((*j)->getReputation() + (*i).second);
+					(*j)->setReputationScore((*j)->getReputationScore() + (*i).second);
 					_results->addReputation(factionName, (*i).second);
 					break;
 				}

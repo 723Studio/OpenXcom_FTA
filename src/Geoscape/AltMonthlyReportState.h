@@ -45,7 +45,7 @@ private:
 	Text* _txtDesc, * _txtFailure;
 	int _gameOver;
 	int _ratingTotal, _fundingDiff, _lastMonthsRating, _loyalty, _lastMonthsLoyalty;
-	std::string _stuffMessage, _firstFaction, _secondFaction, _thirdFaction;
+	std::string _stuffMessage, _factionMessage;
 	std::vector<std::string> _happyList, _sadList, _pactList, _cancelPactList;
 	Globe* _globe;
 	std::vector<Soldier*> _soldiersMedalled;

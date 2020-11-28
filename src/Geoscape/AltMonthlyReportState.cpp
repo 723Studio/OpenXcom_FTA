@@ -409,18 +409,19 @@ void AltMonthlyReportState::btnOkClick(Action*)
 void AltMonthlyReportState::calculateUpdates()
 {
 	// initialize all our variables.
+	SavedGame* save = _game->getSavedGame();
 	_lastMonthsRating = 0;
 	int xcomSubTotal = 0;
 	int xcomTotal = 0;
 	int alienTotal = 0;
-	int monthOffset = _game->getSavedGame()->getFundsList().size() - 2;
-	int lastMonthOffset = _game->getSavedGame()->getFundsList().size() - 3;
+	int monthOffset = save->getFundsList().size() - 2;
+	int lastMonthOffset = save->getFundsList().size() - 3;
 	if (lastMonthOffset < 0)
 		lastMonthOffset += 2;
 
 	// update activity meters, calculate a total score based on regional activity
 	// and gather last month's score
-	for (std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin(); k != _game->getSavedGame()->getRegions()->end(); ++k)
+	for (std::vector<Region*>::iterator k = save->getRegions()->begin(); k != save->getRegions()->end(); ++k)
 	{
 		(*k)->newMonth();
 		if ((*k)->getActivityXcom().size() > 2)
@@ -432,25 +433,25 @@ void AltMonthlyReportState::calculateUpdates()
 	}
 
 	// the council is more lenient after the first month
-	if (_game->getSavedGame()->getMonthsPassed() > 1)
+	if (save->getMonthsPassed() > 1)
 	{
-		_game->getSavedGame()->getResearchScores().at(monthOffset) += 400;
+		save->getResearchScores().at(monthOffset) += 400;
 	}
-	xcomTotal = _game->getSavedGame()->getResearchScores().at(monthOffset) + xcomSubTotal;
+	xcomTotal = save->getResearchScores().at(monthOffset) + xcomSubTotal;
 
-	if (_game->getSavedGame()->getResearchScores().size() > 2)
+	if (save->getResearchScores().size() > 2)
 	{
-		_lastMonthsRating += _game->getSavedGame()->getResearchScores().at(lastMonthOffset);
+		_lastMonthsRating += save->getResearchScores().at(lastMonthOffset);
 	}
 
 	//calculate total.
 	_ratingTotal = xcomTotal - alienTotal;
 
 	//handle loyalty updating
-	_loyalty = _game->getSavedGame()->getLoyalty();
-	_lastMonthsLoyalty = _game->getSavedGame()->getLastMonthsLoyalty();
+	_loyalty = save->getLoyalty();
+	_lastMonthsLoyalty = save->getLastMonthsLoyalty();
 
-	int funds = _game->getSavedGame()->getFunds();
+	int funds = save->getFunds();
 	if (funds < 0)
 	{
 		int noFundsV = _game->getMod()->getNoFundsValue();
@@ -487,10 +488,12 @@ void AltMonthlyReportState::calculateUpdates()
 	_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
 
 	// update factions
-	for (std::vector<DiplomacyFaction*>::iterator k = _game. ->begin(); k != _game->getSavedGame()->getCountries()->end(); ++k)
+	for (auto i : _game->getSavedGame()->getDiplomacyFactions())
 	{
+		bool changed = _game->getMasterMind()->updateReputationLvl(i);
 
 	}
+
 
 
 }

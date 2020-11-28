@@ -48,7 +48,7 @@ public:
 	/// Loyalty update handler
 	void updateLoyalty(int score, LoyaltySource source = XCOM_GEOSCAPE);
 	/// Update reputations level based on its current reputation score
-	bool updateReputationLvl(DiplomacyFaction* faction);
+	bool updateReputationLvl(DiplomacyFaction* faction, bool initial = false);
 
 };
 

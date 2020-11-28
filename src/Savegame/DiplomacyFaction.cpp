@@ -103,7 +103,8 @@ bool DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 				bool success = engine.getMasterMind()->spawnEvent(_rule.getDiscoverEvent());
 			}
 			// update reputation level for just discovered fraction
-			updateReputationLevel();
+			engine.getMasterMind()->updateReputationLvl(this);
+			this->setThisMonthDiscovered(true);
 			// and if it turns friendly at start we sign help treaty by default
 			if (_reputationLvL > 0)
 			{

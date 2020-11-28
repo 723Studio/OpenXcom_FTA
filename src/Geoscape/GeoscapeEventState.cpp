@@ -356,7 +356,7 @@ void GeoscapeEventState::eventLogic()
 				std::string lookingName = (*i).first;
 				if (factionName == lookingName)
 				{
-					(*j)->setReputation((*j)->getReputation() + (*i).second);
+					(*j)->setReputationScore((*j)->getReputationScore() + (*i).second);
 					break;
 				}
 			}

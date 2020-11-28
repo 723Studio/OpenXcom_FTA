@@ -128,7 +128,7 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 			faction->setDiscovered(true);
 		}
 		faction->setReputationScore(factionRules->getStartingReputation());
-		faction->updateReputationLevel();
+		updateReputationLvl(faction);
 		save->getDiplomacyFactions().push_back(faction);
 	}
 	//adjust funding
@@ -206,39 +206,50 @@ void MasterMind::updateLoyalty(int score, LoyaltySource source)
 	_game->getSavedGame()->setLoyalty(loyalty);
 }
 
-bool MasterMind::updateReputationLvl(DiplomacyFaction* faction)
+/**
+* Handle updating of faction reputation level based on current score, rules and other conditions.
+* @param faction - DiplomacyFaction we are updating.
+* @paran initial - to define if we are performing updating of reputation due to new game initialisation (default false).
+* @return true if reputation level was updated.
+*/
+bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
 {
-	int temp = INT_MIN;
 	int repScore = faction->getReputationScore();
 	int curLvl = faction->getReputationLevel();
 	bool changed = false;
 	std::string repName = "STR_NEUTRAL";
+	int newLvl = 3; //STR_NEUTRAL is default resolve
+
 	const std::map<int, std::string>* repLevels = _game->getMod()->getReputationLevels();
-	for (std::map<int, std::string>::const_iterator i = repLevels->begin(); i != repLevels->end(); ++i)
+	if (repLevels)
 	{
-		if (i->first > temp && i->first <= repScore)
+		int temp = INT_MIN;
+		for (auto& i : *repLevels)
 		{
-			temp = i->first;
-			repName =i->second;
+			if (i.first > temp && i.first <= repScore)
+			{
+				temp = i.first;
+				repName = i.second;
+			}
 		}
-	}
 
-	int newLvl = 0; //STR_NEUTRAL is default resolve
+		if (repName == "STR_ALLY") newLvl = 6;
+		else if (repName == "STR_HONORED") newLvl = 5;
+		else if (repName == "STR_FRIENDLY") newLvl = 4;
+		else if (repName == "STR_UNFRIENDLY") newLvl = 2;
+		else if (repName == "STR_HOSTILE") newLvl = 1;
+		else if (repName == "STR_HATED") newLvl = 0;
 
-	if (repName == "STR_FRIENDLY") newLvl = 1;
-	else if (repName == "STR_HONORED") newLvl = 2;
-	else if (repName == "STR_ALLY") newLvl = 3;
-	else if (repName == "STR_UNFRIENDLY") newLvl = -1;
-	else if (repName == "STR_HOSTILE") newLvl = -2;
-	else if (repName == "STR_HATED") newLvl = -3;
-
-	if (curLvl != newLvl)
-	{
-		changed = true;
-		faction->setReputationLevel(newLvl);
-		faction->setReputationName(repName);
-
-		//FINNIKTODO add cross-factional relations
+		if (curLvl != newLvl)
+		{
+			if (!faction->isThisMonthDiscovered() || initial)
+			{
+				changed = true;
+				faction->setReputationLevel(newLvl);
+				faction->setReputationName(repName);
+				//FINNIKTODO add cross-factional relations
+			}
+		}
 	}
 
 	return changed;
