@@ -115,7 +115,7 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 	_txtFailure->setText(tr("STR_YOU_HAVE_FAILED"));
 	_txtFailure->setVisible(false);
 
-	calculateChanges();
+	std::string updates = calculateUpdates();
 
 	int month = _game->getSavedGame()->getTime()->getMonth() - 1, year = _game->getSavedGame()->getTime()->getYear();
 	if (month == 0)
@@ -179,32 +179,16 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 
 	_txtRating->setText(tr("STR_MONTHLY_RATING").arg(_ratingTotal).arg(rating));
 
+	std::ostringstream ss;
+	ss << tr("STR_LOYALTY") << "> " << Unicode::TOK_COLOR_FLIP << _game->getSavedGame()->getLoyalty();
+	_txtLoyalty->setText(ss.str());
+
 	std::ostringstream ss2;
 	ss2 << tr("STR_MAINTENANCE") << "> " << Unicode::TOK_COLOR_FLIP << Unicode::formatFunding(_game->getSavedGame()->getBaseMaintenance());
 	_txtMaintenance->setText(ss2.str());
 
-	int performanceBonus = _ratingTotal * _game->getMod()->getPerformanceBonusFactor();
-	if (performanceBonus > 0)
-	{
-		// increase funds by performance bonus
-		_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + performanceBonus);
-		// display
-		std::ostringstream ss4;
-		ss4 << tr("STR_PERFORMANCE_BONUS") << "> " << Unicode::TOK_COLOR_FLIP << Unicode::formatFunding(performanceBonus);
-		_txtBonus->setText(ss4.str());
-		// shuffle the fields a bit for better overview
-		int upper = _txtMaintenance->getY();
-		int lower = _txtBonus->getY();
-		_txtMaintenance->setY(lower);
-		_txtBalance->setY(lower);
-		_txtBonus->setY(upper);
-	}
-	else
-	{
-		// vanilla view
-		_txtBonus->setVisible(false);
-		_txtDesc->setY(_txtBonus->getY());
-	}
+	_txtBonus->setVisible(false);
+	_txtDesc->setY(_txtBonus->getY());
 
 	std::ostringstream ss3;
 	ss3 << tr("STR_BALANCE") << "> " << Unicode::TOK_COLOR_FLIP << Unicode::formatFunding(_game->getSavedGame()->getFunds());
@@ -214,13 +198,13 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 
 	// calculate satisfaction
 	std::ostringstream ss5;
-	std::string satisFactionString = "";
+	std::string loyaltyString = tr("STR_COUNCIL_IS_DISSATISFIED");
 	bool resetWarning = true;
 	if (!_game->getMod()->getLoyaltyRatings()->empty())  //FtA - checks around loyalty
 	{
 		if (_lastMonthsLoyalty <= difficulty_threshold && _loyalty <= difficulty_threshold)
 		{
-			satisFactionString = tr("STR_YOU_HAVE_NOT_SUCCEEDED");
+			loyaltyString = tr("STR_YOU_HAVE_NOT_SUCCEEDED");
 			_pactList.erase(_pactList.begin(), _pactList.end());
 			_cancelPactList.erase(_cancelPactList.begin(), _cancelPactList.end());
 			_happyList.erase(_happyList.begin(), _happyList.end());
@@ -236,26 +220,24 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 				if (i->first > temp && i->first <= _loyalty)
 				{
 					temp = i->first;
-					satisFactionString = tr(i->second);
+					loyaltyString = tr(i->second);
 				}
 			}
 		}
 	}
 	else //vanilla - checks around rating
 	{
-		satisFactionString = tr("STR_COUNCIL_IS_DISSATISFIED");
-
 		if (_ratingTotal > difficulty_threshold)
 		{
-			satisFactionString = tr("STR_COUNCIL_IS_GENERALLY_SATISFIED");
+			loyaltyString = tr("STR_COUNCIL_IS_GENERALLY_SATISFIED");
 		}
 		if (_ratingTotal > 500)
 		{
-			satisFactionString = tr("STR_COUNCIL_IS_VERY_PLEASED");
+			loyaltyString = tr("STR_COUNCIL_IS_VERY_PLEASED");
 		}
 		if (_lastMonthsRating <= difficulty_threshold && _ratingTotal <= difficulty_threshold)
 		{
-			satisFactionString = tr("STR_YOU_HAVE_NOT_SUCCEEDED");
+			loyaltyString = tr("STR_YOU_HAVE_NOT_SUCCEEDED");
 			_pactList.erase(_pactList.begin(), _pactList.end());
 			_cancelPactList.erase(_cancelPactList.begin(), _cancelPactList.end());
 			_happyList.erase(_happyList.begin(), _happyList.end());
@@ -264,8 +246,8 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 		}
 	}
 
-
-	ss5 << satisFactionString;
+	ss5 << "\n";
+	ss5 << loyaltyString;
 
 	if (!_gameOver)
 	{
@@ -294,11 +276,8 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 		_game->getSavedGame()->setWarned(false);
 	}
 
-	ss5 << factionList(_happyList, "STR_COUNTRY_IS_PARTICULARLY_PLEASED", "STR_COUNTRIES_ARE_PARTICULARLY_HAPPY");
-	ss5 << factionList(_sadList, "STR_COUNTRY_IS_UNHAPPY_WITH_YOUR_ABILITY", "STR_COUNTRIES_ARE_UNHAPPY_WITH_YOUR_ABILITY");
-	ss5 << factionList(_pactList, "STR_COUNTRY_HAS_SIGNED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_SIGNED_A_SECRET_PACT");
-	ss5 << factionList(_cancelPactList, "STR_COUNTRY_HAS_CANCELLED_A_SECRET_PACT", "STR_COUNTRIES_HAVE_CANCELLED_A_SECRET_PACT");
-
+	ss5 << updates;
+	
 	_txtDesc->setText(ss5.str());
 }
 
@@ -406,7 +385,7 @@ void AltMonthlyReportState::btnOkClick(Action*)
 * data to show in state and finally calculate our overall total score,
 * with thanks to Volutar for the formulas.
 */
-void AltMonthlyReportState::calculateUpdates()
+std::string AltMonthlyReportState::calculateUpdates()
 {
 	// initialize all our variables.
 	SavedGame* save = _game->getSavedGame();
@@ -417,7 +396,10 @@ void AltMonthlyReportState::calculateUpdates()
 	int monthOffset = save->getFundsList().size() - 2;
 	int lastMonthOffset = save->getFundsList().size() - 3;
 	if (lastMonthOffset < 0)
+	{
 		lastMonthOffset += 2;
+	}
+	std::ostringstream ss;
 
 	// update activity meters, calculate a total score based on regional activity
 	// and gather last month's score
@@ -437,6 +419,7 @@ void AltMonthlyReportState::calculateUpdates()
 	{
 		save->getResearchScores().at(monthOffset) += 400;
 	}
+
 	xcomTotal = save->getResearchScores().at(monthOffset) + xcomSubTotal;
 
 	if (save->getResearchScores().size() > 2)
@@ -446,6 +429,37 @@ void AltMonthlyReportState::calculateUpdates()
 
 	//calculate total.
 	_ratingTotal = xcomTotal - alienTotal;
+
+	// update factions
+	std::vector<OpenXcom::DiplomacyFaction*> factions = _game->getSavedGame()->getDiplomacyFactions();
+	if (!factions.empty())
+	{
+		ss << "\n\n";
+		for (std::vector<DiplomacyFaction*>::iterator k = factions.begin(); k != factions.end(); ++k)
+		{
+			bool changed = _game->getMasterMind()->updateReputationLvl(*k);
+
+			if ((*k)->isThisMonthDiscovered())
+			{
+				ss << tr("STR_WE_DISCOVERED_FACTION");
+				ss << tr((*k)->getRules().getName());
+				ss << ". ";
+				ss << tr("STR_THEIR_ATTITUDE_TO_US");
+				ss <<  tr((*k)->getReputationName());
+				ss << ". ";
+				ss << "\n\n";
+			}
+			else if (changed && (*k)->isDiscovered())
+			{
+				ss << tr((*k)->getRules().getName());
+				ss << tr("STR_ATTITUDE_BECOME");
+				ss << tr((*k)->getReputationName());
+				ss << ". ";
+				ss << "\n\n";
+			}
+		}
+
+	}
 
 	//handle loyalty updating
 	_loyalty = save->getLoyalty();
@@ -458,28 +472,29 @@ void AltMonthlyReportState::calculateUpdates()
 		if (funds < noFundsV)
 		{
 			int	discontent = _game->getMod()->getNoFundsPenalty() * _game->getSavedGame()->getDifficultyCoefficient();
-			_stuffMessage = tr("STR_STUFF_NO_MONEY1");
+			auto stuffMessage = tr("STR_STUFF_NO_MONEY1");
 
 			if (funds < noFundsV * 2)
 			{
 				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY2");
+				stuffMessage = tr("STR_STUFF_NO_MONEY2");
 			}
 			if (funds < noFundsV * 5)
 			{
 				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY5");
+				stuffMessage = tr("STR_STUFF_NO_MONEY5");
 			}
 			if (funds < noFundsV * 10)
 			{
 				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY10");
+				stuffMessage = tr("STR_STUFF_NO_MONEY10");
 			}
 			if (funds < noFundsV * 20)
 			{
 				discontent *= 2;
-				_stuffMessage = tr("STR_STUFF_NO_MONEY20");
+				stuffMessage = tr("STR_STUFF_NO_MONEY20");
 			}
+			ss << stuffMessage;
 			_game->getMasterMind()->updateLoyalty(discontent, XCOM_GEOSCAPE);
 		}
 
@@ -487,138 +502,15 @@ void AltMonthlyReportState::calculateUpdates()
 		//update loyalty data after it was loaded
 	_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
 
-	// update factions
-	for (auto i : _game->getSavedGame()->getDiplomacyFactions())
-	{
-		bool changed = _game->getMasterMind()->updateReputationLvl(i);
-
-	}
-
-
-
-}
-
-/**
-* Update all our activity counters, gather all our scores,
-* get our countries to make sign pacts, adjust their fundings,
-* assess their satisfaction, and finally calculate our overall
-* total score, with thanks to Volutar for the formulas.
-*/
-void AltMonthlyReportState::calculateChanges()
-{
-	// initialize all our variables.
-	_lastMonthsRating = 0;
-	int xcomSubTotal = 0;
-	int xcomTotal = 0;
-	int alienTotal = 0;
-	int monthOffset = _game->getSavedGame()->getFundsList().size() - 2;
-	int lastMonthOffset = _game->getSavedGame()->getFundsList().size() - 3;
-	if (lastMonthOffset < 0)
-		lastMonthOffset += 2;
-	// update activity meters, calculate a total score based on regional activity
-	// and gather last month's score
-	for (std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin(); k != _game->getSavedGame()->getRegions()->end(); ++k)
-	{
-		(*k)->newMonth();
-		if ((*k)->getActivityXcom().size() > 2)
-			_lastMonthsRating += (*k)->getActivityXcom().at(lastMonthOffset) - (*k)->getActivityAlien().at(lastMonthOffset);
-		xcomSubTotal += (*k)->getActivityXcom().at(monthOffset);
-		alienTotal += (*k)->getActivityAlien().at(monthOffset);
-	}
-	// apply research bonus AFTER calculating our total, because this bonus applies to the council ONLY,
-	// and shouldn't influence each country's decision.
-
-	// the council is more lenient after the first month
-
-	if (_game->getSavedGame()->getMonthsPassed() > 1)
-		_game->getSavedGame()->getResearchScores().at(monthOffset) += 400;
-
-	xcomTotal = _game->getSavedGame()->getResearchScores().at(monthOffset) + xcomSubTotal;
-
-	if (_game->getSavedGame()->getResearchScores().size() > 2)
-		_lastMonthsRating += _game->getSavedGame()->getResearchScores().at(lastMonthOffset);
-
-	// now that we have our totals we can send the relevant info to the countries
-	// and have them make their decisions weighted on the council's perspective.
-	const RuleAlienMission* infiltration = _game->getMod()->getRandomMission(OBJECTIVE_INFILTRATION, _game->getSavedGame()->getMonthsPassed());
-	int pactScore = 0;
-	if (infiltration)
-	{
-		pactScore = infiltration->getPoints();
-	}
-	int averageFunding = _game->getSavedGame()->getCountryFunding() / _game->getSavedGame()->getCountries()->size() / 1000 * 1000;
-	for (std::vector<Country*>::iterator k = _game->getSavedGame()->getCountries()->begin(); k != _game->getSavedGame()->getCountries()->end(); ++k)
-	{
-		// add them to the list of new pact members
-		// this is done BEFORE initiating a new month
-		// because the _newPact flag will be reset in the
-		// process
-		if ((*k)->getNewPact())
-		{
-			_pactList.push_back((*k)->getRules()->getType());
-		}
-		if ((*k)->getCancelPact() && (*k)->getPact())
-		{
-			_cancelPactList.push_back((*k)->getRules()->getType());
-		}
-		// determine satisfaction level, sign pacts, adjust funding
-		// and update activity meters,
-		(*k)->newMonth(xcomTotal, alienTotal, pactScore, averageFunding);
-		// and after they've made their decisions, calculate the difference, and add
-		// them to the appropriate lists.
-		_fundingDiff += (*k)->getFunding().back() - (*k)->getFunding().at((*k)->getFunding().size() - 2);
-		switch ((*k)->getSatisfaction())
-		{
-		case 1:
-			_sadList.push_back((*k)->getRules()->getType());
-			break;
-		case 3:
-			_happyList.push_back((*k)->getRules()->getType());
-			break;
-		default:
-			break;
-		}
-	}
-}
-
-/**
-* Builds a sentence from a list of countries, adding the appropriate
-* separators and pluralization.
-* @param countries List of country string IDs.
-* @param singular String ID to append at the end if the list is singular.
-* @param plural String ID to append at the end if the list is plural.
-*/
-std::string AltMonthlyReportState::factionList(const std::vector<std::string>& countries, const std::string& singular, const std::string& plural)
-{
-	std::ostringstream ss;
-	if (!countries.empty())
-	{
-		ss << "\n\n";
-		if (countries.size() == 1)
-		{
-			ss << tr(singular).arg(tr(countries.front()));
-		}
-		else
-		{
-			LocalizedText list = tr(countries.front());
-			std::vector<std::string>::const_iterator i;
-			for (i = countries.begin() + 1; i < countries.end() - 1; ++i)
-			{
-				list = tr("STR_COUNTRIES_COMMA").arg(list).arg(tr(*i));
-			}
-			list = tr("STR_COUNTRIES_AND").arg(list).arg(tr(*i));
-			ss << tr(plural).arg(list);
-		}
-	}
 	return ss.str();
+	
+
+
+
 }
 
-
 /**
-* Initializes all the elements in the Monthly Report screen.
-* @param game Pointer to the core game.
-* @param psi Show psi training afterwards?
-* @param globe Pointer to the globe.
+* Initializes all the elements in the Alpha Ends screen.
 */
 AlphaGameVersionEnds::AlphaGameVersionEnds() : _gameOver(0)
 {
@@ -657,8 +549,8 @@ AlphaGameVersionEnds::AlphaGameVersionEnds() : _gameOver(0)
 }
 
 /**
-	*
-	*/
+*
+*/
 AlphaGameVersionEnds::~AlphaGameVersionEnds()
 {
 }

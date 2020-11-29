@@ -326,7 +326,7 @@ DiplomacyChooseBaseState::DiplomacyChooseBaseState(DiplomacyFaction* faction, Tr
 	}
 
 	centerAllSurfaces();
-	setWindowBackground(_window, interfaceName); //FINNIK TODO: change background, its creppy!
+	setWindowBackground(_window, interfaceName); //#FINNIKTODO: change background, its creppy!
 	_txtTitle->setText(tr("STR_CHOOSE_BASE"));
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setWordWrap(true);

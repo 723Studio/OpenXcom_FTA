@@ -92,11 +92,11 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 	Mod* mod = _game->getMod();
 	Base* base = save->getBases()->at(0);
 	double lon, lat;
-	lon = RNG::generate(0.20, 0.22); //TODO random array here
-	lat = RNG::generate(-0.832, -0.87) ; //TODO random array here
+	lon = RNG::generate(0.20, 0.22); //#FINNIKTODO random array here
+	lat = RNG::generate(-0.832, -0.87) ; //#FINNIKTODO random array here
 	base->setLongitude(lon);
 	base->setLatitude(lat);
-	std::string baseName = _game->getLanguage()->getString("STR_LAST_STAND"); //TODO random array here
+	std::string baseName = _game->getLanguage()->getString("STR_LAST_STAND"); //#FINNIKTODO random array here
 	base->setName(baseName);
 	gs->getGlobe()->center(lon, lat);
 
@@ -110,8 +110,8 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 	AlienBase* aBase = new AlienBase(aBaseDeployment, 0);
 	aBase->setId(save->getId(aBaseDeployment->getMarkerName()));
 	aBase->setAlienRace(aBaseDeployment->getRace());
-	aBase->setLongitude(lon + RNG::generate(0.20, 0.26)); //TODO random array here
-	aBase->setLatitude(lat - RNG::generate(0.04, 0.06)); //TODO random array here
+	aBase->setLongitude(lon + RNG::generate(0.20, 0.26)); //#FINNIKTODO random array here
+	aBase->setLatitude(lat - RNG::generate(0.04, 0.06)); //#FINNIKTODO random array here
 	aBase->setDiscovered(false);
 	save->getAlienBases()->push_back(aBase);
 
@@ -174,35 +174,43 @@ bool MasterMind::spawnEvent(std::string name)
 void MasterMind::updateLoyalty(int score, LoyaltySource source)
 {
 	int coef = 100;
+	std::string reason = "";
 	switch (source)
 	{
 	case OpenXcom::XCOM_BATTLESCAPE:
 		coef = _game->getMod()->getCoefBattlescape();
+		reason = "XCOM_BATTLESCAPE";
 		break;
 	case OpenXcom::XCOM_DOGFIGHT:
 		coef = _game->getMod()->getCoefDogfight();
+		reason = "XCOM_DOGFIGHT";
 		break;
 	case OpenXcom::XCOM_GEOSCAPE:
 		coef = _game->getMod()->getCoefGeoscape();
+		reason = "XCOM_GEOSCAPE";
 		break;
 	case OpenXcom::XCOM_RESEARCH:
 		coef = _game->getMod()->getCoefResearch();
+		reason = "XCOM_RESEARCH";
 		break;
 	case OpenXcom::ALIEN_MISSION_DESPAWN:
-		coef = _game->getMod()->getCoefAlienMission();
+		coef = _game->getMod()->getCoefAlienMission() * (-1);
+		reason = "ALIEN_MISSION_DESPAWN";
 		break;
 	case OpenXcom::ALIEN_UFO_ACTIVITY:
-		coef = _game->getMod()->getCoefUfo();
+		coef = _game->getMod()->getCoefUfo() * (-1);
+		reason = "ALIEN_UFO_ACTIVITY";
 		break;
 	case OpenXcom::ALIEN_BASE:
-		coef = _game->getMod()->getCoefAlienBase();
+		coef = _game->getMod()->getCoefAlienBase() * (-1);
+		reason = "ALIEN_BASE";
 		break;
 	default:
 		break;
 	}
 	int loyalty = _game->getSavedGame()->getLoyalty();
 	loyalty += std::round((score * coef) / 100);
-	Log(LOG_DEBUG) << "Loyalty updating to:  " << loyalty << " from coef: " << coef << " and scope value: " << score; //FtATODO remove for next release
+	Log(LOG_DEBUG) << "Loyalty updating to:  " << loyalty << " from coef: " << coef << " and score value: " << score << " with reason: " << reason; //#FINNIKTODO #CLEARLOGS remove for next release
 	_game->getSavedGame()->setLoyalty(loyalty);
 }
 
@@ -240,14 +248,14 @@ bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
 		else if (repName == "STR_HOSTILE") newLvl = 1;
 		else if (repName == "STR_HATED") newLvl = 0;
 
-		if (curLvl != newLvl)
+		if ((curLvl != newLvl && !faction->isThisMonthDiscovered()) || initial)
 		{
-			if (!faction->isThisMonthDiscovered() || initial)
+			faction->setReputationLevel(newLvl);
+			faction->setReputationName(repName);
+			if (!initial)
 			{
 				changed = true;
-				faction->setReputationLevel(newLvl);
-				faction->setReputationName(repName);
-				//FINNIKTODO add cross-factional relations
+				//#FINNIKTODO add cross-factional relations
 			}
 		}
 	}

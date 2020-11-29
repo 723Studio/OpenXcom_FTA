@@ -69,7 +69,7 @@ namespace OpenXcom
 CovertOperationEquipmentState::CovertOperationEquipmentState(Base* base, CovertOperationStartState* operation) : _lstScroll(0), _sel(0), _operation(operation), _base(base), _totalItems(0), _ammoColor(0), _reload(true)
 {
 	_rule = operation->getRule();
-	bool hasSoldiers = false; // operation->getSoldiers().size() > 0; //TODO
+	bool hasSoldiers = false; // operation->getSoldiers().size() > 0; //#FINNIKTODO
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -238,9 +238,6 @@ void CovertOperationEquipmentState::init()
 	State::init();
 
 	_game->getSavedGame()->setBattleGame(0);
-
-	/*Craft* c = _base->getCrafts()->at(_craft);
-	c->setInBattlescape(false);*/ //TODO check if it needs to be replaced
 
 	// don't reload after closing error popups
 	if (_reload)

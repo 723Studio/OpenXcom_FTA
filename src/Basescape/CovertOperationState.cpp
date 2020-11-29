@@ -157,7 +157,7 @@ void CovertOperationState::onSelectOperation(Action*)
 */
 void CovertOperationState::onCurrentGlobalResearchClick(Action*)
 {
-	return; //TODO
+	return; //#FINNIKTODO
 	//_game->pushState(new GlobalResearchState(true));
 }
 /**

@@ -2702,7 +2702,7 @@ void GeoscapeState::time1Day()
 	}
 
 	// pay attention to your maintenance player!
-	if (_game->getSavedGame()->getTime()->isLastDayOfMonth())
+	if (_game->getSavedGame()->getTime()->isLastDayOfMonth() && !_game->getMod()->getIsFTAGame()) //not for FtA for now, sorry #FINNIKTODO
 	{
 		int month = _game->getSavedGame()->getMonthsPassed();
 		int currentScore = _game->getSavedGame()->getCurrentScore(month + 1);
@@ -2782,7 +2782,7 @@ void GeoscapeState::time1Month()
 	}
 
 	// Handle Xcom Operatives discovering bases
-	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20) && !_game->getMod()->getIsFTAGame()) // for now let's disable it in FtA
+	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20) && !_game->getMod()->getIsFTAGame()) // #FINNIKTODO for now let's disable it in FtA
 	{
 		for (std::vector<AlienBase*>::const_iterator b = _game->getSavedGame()->getAlienBases()->begin(); b != _game->getSavedGame()->getAlienBases()->end(); ++b)
 		{

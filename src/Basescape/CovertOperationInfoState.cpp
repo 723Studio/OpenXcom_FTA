@@ -143,7 +143,7 @@ namespace OpenXcom
 		{
 			return;
 		}
-		return; // _game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow())); TODO
+		return; // _game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow())); #FINNIKTODO
 	}
 
 	void CovertOperationInfoState::fillSoldiersList()

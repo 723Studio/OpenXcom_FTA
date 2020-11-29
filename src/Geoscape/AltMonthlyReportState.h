@@ -49,8 +49,6 @@ private:
 	std::vector<std::string> _happyList, _sadList, _pactList, _cancelPactList;
 	Globe* _globe;
 	std::vector<Soldier*> _soldiersMedalled;
-	/// Builds a faction list string.
-	std::string factionList(const std::vector<std::string>& factions, const std::string& singular, const std::string& plural);
 public:
 	/// Creates the Monthly Report state.
 	AltMonthlyReportState(Globe* globe);
@@ -59,9 +57,7 @@ public:
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
 	/// Calculate monthly updates.
-	void calculateUpdates();
-	/// Calculate monthly scores.
-	void calculateChanges();
+	std::string calculateUpdates();
 };
 
 /**

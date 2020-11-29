@@ -178,7 +178,7 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_btnRemoveScientist->setText("-");
 	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_LEFT);
 	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_RIGHT);
-	_btnResearchState->setText("*");
+	_btnResearchState->setText("STR_LAB_ICON");
 	_btnResearchState->onMouseClick((ActionHandler)&CovertOperationStartState::btnResearchStateClick);
 
 
@@ -189,7 +189,7 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_btnRemoveEngineer->setText("-");
 	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_LEFT);
 	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_RIGHT);
-	_btnManufactureState->setText("*");
+	_btnManufactureState->setText("STR_WORKSHOP_ICON");
 	_btnManufactureState->onMouseClick((ActionHandler)&CovertOperationStartState::btnManufactureStateClick);
 
 	_txtOptionalSoldiers->setVisible(_rule->getOptionalSoldierSlots() > 0);

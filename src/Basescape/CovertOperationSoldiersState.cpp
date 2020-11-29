@@ -437,7 +437,7 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 */
 void CovertOperationSoldiersState::btnDeassignCraftSoldiersClick(Action* action)
 {
-	//Craft* c = _base->getCrafts()->at(0); //TODO
+	//Craft* c = _base->getCrafts()->at(0); //#FINNIKTODO
 	//int row = 0;
 	//for (auto s : *_base->getSoldiers())
 	//{

@@ -272,7 +272,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	int eng = this->getAssignedEngineers();
 	if (sci > 0) _base->setScientists(_base->getScientists() + sci);
 	if (eng > 0) _base->setEngineers(_base->getEngineers() + eng);
-	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //TODO date
+	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //#FINNIKTODO date
 	//load results of operation
 	if (operationResult)
 	{
