@@ -67,9 +67,28 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param origin Game section that originated this state.
  */
-DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState, OptionsOrigin origin) : _base(base), _faction(faction), _debriefingState(debriefingState),
-		_sel(0), _total(0), _spaceChange(0), _origin(origin), _reset(false), _sellAllButOne(false)
+DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState, OptionsOrigin origin) :
+		_base(base), _faction(faction), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
+		_reset(false), _sellAllButOne(false), _delayedInitDone(false)
 {
+
+	_timerInc = new Timer(250);
+	_timerInc->onTimer((StateHandler)&DiplomacySellState::increase);
+	_timerDec = new Timer(250);
+	_timerDec->onTimer((StateHandler)&DiplomacySellState::decrease);
+}
+
+/**
+ * Delayed constructor functionality.
+ */
+void DiplomacySellState::delayedInit()
+{
+	if (_delayedInitDone)
+	{
+		return;
+	}
+	_delayedInitDone = true;
+
 	bool overfull = _debriefingState == 0 && Options::storageLimitsEnforced && _base->storesOverfull();
 	bool overfullCritical = overfull ? _base->storesOverfullCritical() : false;
 
@@ -112,7 +131,7 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 
 	centerAllSurfaces();
 
-	// Set up objects
+	// Set up objects		// Set up objects
 	setWindowBackground(_window, "sellMenu");
 
 	_btnOk->setText(tr("STR_SELL_SACK"));
@@ -164,20 +183,20 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 
 	_cats.push_back("STR_ALL_ITEMS");
 
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-	{
-		if (_debriefingState) break;
-		if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
-		{
-			TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), 0, 1, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
+	//for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	//{
+	//	if (_debriefingState) break;
+	//	if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
+	//	{
+	//		TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), 0, 1, 0, 0 };
+	//		_items.push_back(row);
+	//		std::string cat = getCategory(_items.size() - 1);
+	//		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
+	//		{
+	//			_cats.push_back(cat);
+	//		}
+	//	}
+	//}
 	for (std::vector<Craft*>::iterator i = _base->getCrafts()->begin(); i != _base->getCrafts()->end(); ++i)
 	{
 		if (_debriefingState) break;
@@ -192,26 +211,26 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 			}
 		}
 	}
-	if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
+	//if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
+	//{
+	//	TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0 };
+	//	_items.push_back(row);
+	//	std::string cat = getCategory(_items.size() - 1);
+	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
+	//	{
+	//		_cats.push_back(cat);
+	//	}
+	//}
+	//if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
+	//{
+	//	TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0 };
+	//	_items.push_back(row);
+	//	std::string cat = getCategory(_items.size() - 1);
+	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
+	//	{
+	//		_cats.push_back(cat);
+	//	}
+	//}
 	const std::vector<std::string>& items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -261,8 +280,8 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 		}
 	}
 
-
-	if (_game->getMod()->getUseCustomCategories())
+	_vanillaCategories = _cats.size();
+	if (_game->getMod()->getDisplayCustomCategories() > 0)
 	{
 		bool hasUnassigned = false;
 
@@ -287,8 +306,12 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 			}
 		}
 		// then use them nicely in order
-		_cats.clear();
-		_cats.push_back("STR_ALL_ITEMS");
+		if (_game->getMod()->getDisplayCustomCategories() == 1)
+		{
+			_cats.clear();
+			_cats.push_back("STR_ALL_ITEMS");
+			_vanillaCategories = _cats.size();
+		}
 		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
 		for (std::vector<std::string>::const_iterator k = categories.begin(); k != categories.end(); ++k)
 		{
@@ -318,11 +341,6 @@ DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, De
 	_cbxCategory->onKeyboardRelease((ActionHandler)&DiplomacySellState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
 	updateList();
-
-	_timerInc = new Timer(250);
-	_timerInc->onTimer((StateHandler)&DiplomacySellState::increase);
-	_timerDec = new Timer(250);
-	_timerDec->onTimer((StateHandler)&DiplomacySellState::decrease);
 }
 
 /**
@@ -339,6 +357,8 @@ DiplomacySellState::~DiplomacySellState()
 */
 void DiplomacySellState::init()
 {
+	delayedInit();
+
 	State::init();
 
 	if (_reset)
@@ -379,6 +399,14 @@ std::string DiplomacySellState::getCategory(int sel) const
 		rule = (RuleItem*)_items[sel].rule;
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
+			if (rule->getVehicleUnit())
+			{
+				return "STR_PERSONNEL"; // OXCE: critters fighting for us
+			}
+			if (rule->isAlien())
+			{
+				return "STR_PRISONERS"; // OXCE: live aliens
+			}
 			return "STR_ALIENS";
 		}
 		if (rule->getBattleType() == BT_NONE)
@@ -389,7 +417,7 @@ std::string DiplomacySellState::getCategory(int sel) const
 			}
 			if (_game->getMod()->isArmorStorageItem(rule))
 			{
-				return "STR_EQUIPMENT";
+				return "STR_ARMORS"; // OXCE: armors
 			}
 			return "STR_COMPONENTS";
 		}
@@ -459,14 +487,15 @@ void DiplomacySellState::updateList()
 	_lstItems->clearList();
 	_rows.clear();
 
-	const std::string selectedCategory = _cats[_cbxCategory->getSelected()];
+	size_t selCategory = _cbxCategory->getSelected();
+	const std::string selectedCategory = _cats[selCategory];
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
-		if (_game->getMod()->getUseCustomCategories())
+		if (selCategory >= _vanillaCategories)
 		{
 			if (categoryUnassigned && _items[i].type == TRANSFER_ITEM)
 			{
@@ -764,7 +793,7 @@ void DiplomacySellState::btnTransferClick(Action*)
 void DiplomacySellState::btnSellAllClick(Action*)
 {
 	bool allItemsSelected = true;
-	for (size_t i = 0; i < _lstItems->getRows(); ++i)
+	for (size_t i = 0; i < _lstItems->getTexts(); ++i)
 	{
 		if (_items[_rows[i]].qtySrc > _items[_rows[i]].amount)
 		{
@@ -775,7 +804,7 @@ void DiplomacySellState::btnSellAllClick(Action*)
 	int dir = allItemsSelected ? -1 : 1;
 
 	size_t backup = _sel;
-	for (size_t i = 0; i < _lstItems->getRows(); ++i)
+	for (size_t i = 0; i < _lstItems->getTexts(); ++i)
 	{
 		_sel = i;
 		changeByValue(INT_MAX, dir);

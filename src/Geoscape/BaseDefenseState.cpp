@@ -26,6 +26,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/ItemContainer.h"
 #include "../Savegame/Region.h"
 #include "../Mod/RuleRegion.h"
 #include "../Savegame/BaseFacility.h"
@@ -189,6 +190,8 @@ void BaseDefenseState::nextStep()
 
 
 		BaseFacility* def = _base->getDefenses()->at(_attacks);
+		const RuleItem* ammo = (def)->getRules()->getAmmoItem();
+		int ammoNeeded = (def)->getRules()->getAmmoNeeded();
 
 		switch (_action)
 		{
@@ -208,12 +211,20 @@ void BaseDefenseState::nextStep()
 			_action = BDA_RESOLVE;
 			return;
 		case BDA_RESOLVE:
-			if (!RNG::percent((def)->getRules()->getHitRatio()))
+			if (ammo && _base->getStorageItems()->getItem(ammo) < ammoNeeded)
+			{
+				_lstDefenses->setCellText(_row, 2, tr("STR_NO_AMMO"));
+			}
+			else if (!RNG::percent((def)->getRules()->getHitRatio()))
 			{
 				_lstDefenses->setCellText(_row, 2, tr("STR_MISSED"));
 			}
 			else
 			{
+				if (ammo && ammoNeeded > 0)
+				{
+					_base->getStorageItems()->removeItem(ammo, ammoNeeded);
+				}
 				_lstDefenses->setCellText(_row, 2, tr("STR_HIT"));
 				_game->getMod()->getSound("GEO.CAT", (def)->getRules()->getHitSound())->play();
 				int dmg = (def)->getRules()->getDefenseValue();

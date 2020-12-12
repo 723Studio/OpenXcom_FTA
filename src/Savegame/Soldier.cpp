@@ -118,17 +118,33 @@ Soldier::~Soldier()
  * @param mod Game mod.
  * @param save Pointer to savegame.
  */
-void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared)
+void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
 {
-	_id = node["id"].as<int>(_id);
-	_name = node["name"].as<std::string>();
+	if (!soldierTemplate)
+	{
+		_id = node["id"].as<int>(_id);
+	}
+	_name = node["name"].as<std::string>(_name);
 	if (node["callsign"])
 	{
 		_callsign = node["callsign"].as<std::string>();
 	}
 	_nationality = node["nationality"].as<int>(_nationality);
-	_initialStats = node["initialStats"].as<UnitStats>(_initialStats);
-	_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
+	if (soldierTemplate)
+	{
+		UnitStats ii, cc;
+		if (node["initialStats"])
+			ii = node["initialStats"].as<UnitStats>(ii);
+		if (node["currentStats"])
+			cc = node["currentStats"].as<UnitStats>(cc);
+		_initialStats = UnitStats::templateMerge(_initialStats, ii);
+		_currentStats = UnitStats::templateMerge(_currentStats, cc);
+	}
+	else
+	{
+		_initialStats = node["initialStats"].as<UnitStats>(_initialStats);
+		_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
+	}
 	_dailyDogfightExperienceCache = node["dailyDogfightExperienceCache"].as<UnitStats>(_dailyDogfightExperienceCache);
 
 	// re-roll mana stats when upgrading saves
@@ -139,16 +155,20 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		_initialStats.mana = reroll;
 	}
 
-	_rank = (SoldierRank)node["rank"].as<int>();
-	_gender = (SoldierGender)node["gender"].as<int>();
-	_look = (SoldierLook)node["look"].as<int>();
+	_rank = (SoldierRank)node["rank"].as<int>(_rank);
+	_gender = (SoldierGender)node["gender"].as<int>(_gender);
+	_look = (SoldierLook)node["look"].as<int>(_look);
 	_lookVariant = node["lookVariant"].as<int>(_lookVariant);
 	_missions = node["missions"].as<int>(_missions);
 	_kills = node["kills"].as<int>(_kills);
 	_manaMissing = node["manaMissing"].as<int>(_manaMissing);
 	_healthMissing = node["healthMissing"].as<int>(_healthMissing);
 	_recovery = node["recovery"].as<float>(_recovery);
-	Armor *armor = mod->getArmor(node["armor"].as<std::string>());
+	Armor *armor = _armor;
+	if (node["armor"])
+	{
+		armor = mod->getArmor(node["armor"].as<std::string>());
+	}
 	if (armor == 0)
 	{
 		armor = mod->getArmor(mod->getSoldier(mod->getSoldiersList().front())->getArmor());
@@ -1244,6 +1264,29 @@ void Soldier::trainPsi1Day()
 }
 
 /**
+ * Is the soldier already fully psi-trained?
+ * @return True, if the soldier cannot gain any more stats in the psi-training facility.
+ */
+bool Soldier::isFullyPsiTrained()
+{
+	if (_currentStats.psiSkill >= _rules->getStatCaps().psiSkill)
+	{
+		if (Options::allowPsiStrengthImprovement)
+		{
+			if (_currentStats.psiStrength >= _rules->getStatCaps().psiStrength)
+			{
+				return true;
+			}
+		}
+		else
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * returns whether or not the unit is in psi training
  * @return true/false
  */
@@ -1564,12 +1607,15 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	{
 		// a clone already has the correct soldier type, but random stats
 		// if we don't want random stats, let's copy them from the source soldier
-		UnitStats sourceStats = *sourceSoldier->getCurrentStats() + calculateStatChanges(mod, transformationRule, sourceSoldier, 0);
+		UnitStats sourceStats = *sourceSoldier->getCurrentStats() + calculateStatChanges(mod, transformationRule, sourceSoldier, 0, sourceSoldier->getRules());
 		UnitStats mergedStats = UnitStats::combine(transformationRule->getRerollStats(), sourceStats, _currentStats);
 		setBothStats(&mergedStats);
 	}
 	else
 	{
+		// backup original soldier type, it will still be needed later for stat change calculations
+		RuleSoldier* sourceSoldierType = _rules;
+
 		// change soldier type if needed
 		if (!transformationRule->getProducedSoldierType().empty() && _rules->getType() != transformationRule->getProducedSoldierType())
 		{
@@ -1623,7 +1669,7 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 		}
 
 		// change stats
-		_currentStats += calculateStatChanges(mod, transformationRule, sourceSoldier, 0);
+		_currentStats += calculateStatChanges(mod, transformationRule, sourceSoldier, 0, sourceSoldierType);
 
 		// and randomize stats where needed
 		{
@@ -1693,7 +1739,7 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
  * @param mode 0 = final, 1 = min, 2 = max
  * @return The stat changes
  */
-UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode)
+UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType)
 {
 	UnitStats statChange;
 
@@ -1759,7 +1805,7 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 			: transformationSoldierType->getStatCaps();
 		UnitStats cappedChange = upperBound - currentStats;
 
-		bool isSameSoldierType = (transformationSoldierType == _rules);
+		bool isSameSoldierType = (transformationSoldierType == sourceSoldierType);
 		bool softLimit = transformationRule->isSoftLimit(isSameSoldierType);
 		if (softLimit)
 		{

@@ -144,7 +144,7 @@ const float TilesToVexels = 16.0f;
  * @param type String defining the type.
  */
 RuleItem::RuleItem(const std::string &type) :
-	_type(type), _name(type), _vehicleUnit(nullptr), _size(0.0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _stackSize(1),
+	_type(type), _name(type), _vehicleUnit(nullptr), _size(0.0), _costBuy(0), _costSell(0), _costDispose(0), _transferTime(24), _weight(3), _throwRange(0), _underwaterThrowRange(0),
 	_bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),
 	_hitAnimation(0), _hitMissAnimation(-1),
 	_meleeAnimation(0), _meleeMissAnimation(-1),
@@ -162,12 +162,12 @@ RuleItem::RuleItem(const std::string &type) :
 	_woundRecovery(0), _healthRecovery(0), _stunRecovery(0), _energyRecovery(0), _manaRecovery(0), _moraleRecovery(0), _painKillerRecovery(1.0f),
 	_recoveryPoints(0), _armor(20), _turretType(-1),
 	_aiUseDelay(-1), _aiMeleeHitCount(25),
-	_recover(true), _recoverCorpse(true), _ignoreInBaseDefense(false), _ignoreInCraftEquip(true), _liveAlien(false), _missionObjective(false), _alienArtifact(true),
+	_recover(true), _recoverCorpse(true), _ignoreInBaseDefense(false), _ignoreInCraftEquip(true), _liveAlien(false), _missionObjective(false), _alienArtifact(false),
 	_liveAlienPrisonType(0), _attraction(0), _flatUse(0, 1), _flatThrow(0, 1), _flatPrime(0, 1), _flatUnprime(0, 1), _arcingShot(false),
 	_experienceTrainingMode(ETM_DEFAULT), _manaExperience(0), _listOrder(0),
 	_maxRange(200), _minRange(0), _dropoff(2), _bulletSpeed(0), _explosionSpeed(0), _shotgunPellets(0), _shotgunBehaviorType(0), _shotgunSpread(100), _shotgunChoke(100),
 	_spawnUnitFaction(-1),
-	_psiTargetMatrix(6),
+	_targetMatrix(7),
 	_LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false), _manaRequired(false),
 	_meleePower(0), _specialType(-1), _vaporColor(-1), _vaporDensity(0), _vaporProbability(15),
 	_vaporColorSurface(-1), _vaporDensitySurface(0), _vaporProbabilitySurface(15),
@@ -384,9 +384,11 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_size = node["size"].as<double>(_size);
 	_costBuy = node["costBuy"].as<int>(_costBuy);
 	_costSell = node["costSell"].as<int>(_costSell);
+	_costDispose = node["costDispose"].as<int>(_costDispose);
 	_transferTime = node["transferTime"].as<int>(_transferTime);
 	_weight = node["weight"].as<int>(_weight);
-	_stackSize = node["stackSize"].as<int>(_stackSize);
+	_throwRange = node["throwRange"].as<int>(_throwRange);
+	_underwaterThrowRange = node["underwaterThrowRange"].as<int>(_underwaterThrowRange);
 	_missionObjective = node["missionObjective"].as<bool>(_missionObjective);
 	_alienArtifact = node["alienArtifact"].as<bool>(_alienArtifact);
 
@@ -426,6 +428,7 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 			_dropoff = 1;
 			_confAimed.range = 0;
 			_accuracyMulti.setPsiAttack();
+			_targetMatrix = 6; // only hostile and neutral by default
 		}
 		else
 		{
@@ -657,7 +660,12 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_zombieUnit = node["zombieUnit"].as<std::string>(_zombieUnit);
 	_spawnUnit = node["spawnUnit"].as<std::string>(_spawnUnit);
 	_spawnUnitFaction = node["spawnUnitFaction"].as<int>(_spawnUnitFaction);
-	_psiTargetMatrix = node["psiTargetMatrix"].as<int>(_psiTargetMatrix);
+	if (node["psiTargetMatrix"])
+	{
+		// TODO: just backwards-compatibility, remove in 2022, update ruleset validator too
+		_targetMatrix = node["psiTargetMatrix"].as<int>(_targetMatrix);
+	}
+	_targetMatrix = node["targetMatrix"].as<int>(_targetMatrix);
 	_LOSRequired = node["LOSRequired"].as<bool>(_LOSRequired);
 	_meleePower = node["meleePower"].as<int>(_meleePower);
 	_underwaterOnly = node["underwaterOnly"].as<bool>(_underwaterOnly);
@@ -727,7 +735,10 @@ void RuleItem::afterLoad(const Mod* mod)
 		}
 		else
 		{
-			throw Exception("Sorry modders, cannot recover live aliens from random inorganic junk '" + pair.first + "'!");
+			if (!mod->getIsFTAGame())
+			{
+				throw Exception("Sorry modders, cannot recover live aliens from random inorganic junk '" + pair.first + "'!");
+			}
 		}
 	}
 
@@ -2326,24 +2337,26 @@ int RuleItem::getMeleePower() const
 }
 
 /**
- * Checks the psiamp's allowed targets.
+ * Checks if this item can be used to target a given faction.
+ * Usage #1: checks the psiamp's allowed targets.
  * - Not used in AI.
  * - Mind control of the same faction is hardcoded disabled.
+ * Usage #2: checks if a death trap item applies to a given faction.
  * @return True if allowed, false otherwise.
  */
-bool RuleItem::isPsiTargetAllowed(UnitFaction targetFaction) const
+bool RuleItem::isTargetAllowed(UnitFaction targetFaction) const
 {
 	if (targetFaction == FACTION_PLAYER)
 	{
-		return _psiTargetMatrix & 1;
+		return _targetMatrix & 1;
 	}
 	else if (targetFaction == FACTION_HOSTILE)
 	{
-		return _psiTargetMatrix & 2;
+		return _targetMatrix & 2;
 	}
 	else if (targetFaction == FACTION_NEUTRAL)
 	{
-		return _psiTargetMatrix & 4;
+		return _targetMatrix & 4;
 	}
 	return false;
 }

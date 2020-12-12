@@ -71,6 +71,29 @@ struct UnitStats
 		}
 	}
 
+	static UnitStats templateMerge(const UnitStats& origStats, const UnitStats& fixedStats)
+	{
+		UnitStats r;
+		fieldLoop(
+			[&](Ptr p)
+			{
+				if ((fixedStats.*p) == -1)
+				{
+					(r.*p) = 0;
+				}
+				else if ((fixedStats.*p) != 0)
+				{
+					(r.*p) = (fixedStats.*p);
+				}
+				else
+				{
+					(r.*p) = (origStats.*p);
+				}
+			}
+		);
+		return r;
+	}
+
 	/*
 	 * Soft limit definition:
 	 * 1. if the statChange is zero or negative, keep statChange as it is (i.e. don't apply any limits)
@@ -335,7 +358,9 @@ struct StatAdjustment
 class Unit
 {
 private:
-	std::string _type, _civilianRecoveryType;
+	std::string _type;
+	std::string _civilianRecoveryType, _spawnedPersonName;
+	YAML::Node _spawnedSoldier;
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
@@ -349,10 +374,11 @@ private:
 	int _intelligence, _aggression, _spotter, _sniper, _energyRecovery;
 	SpecialAbility _specab;
 	const Unit *_spawnUnit = nullptr;
+	const Unit* _altUnit = nullptr;
 	std::string _spawnUnitName;
 	std::string _specialObjectiveType;
 	bool _livingWeapon;
-	std::string _meleeWeapon, _psiWeapon;
+	std::string _meleeWeapon, _psiWeapon, _altRecoveredUnit;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
 	std::vector<std::vector<const RuleItem*> > _builtInWeapons;
 	bool _capturable;
@@ -360,6 +386,7 @@ private:
 	bool _isLeeroyJenkins;
 	bool _waitIfOutsideWeaponRange;
 	int _pickUpWeaponsMoreActively;
+	bool _vip;
 
 public:
 	/// Creates a blank unit ruleset.
@@ -374,7 +401,11 @@ public:
 	/// Gets the unit's type.
 	const std::string& getType() const;
 	/// Gets the type of staff (soldier/engineer/scientists) or type of item to be recovered when a civilian is saved.
-	std::string getCivilianRecoveryType() const;
+	const std::string &getCivilianRecoveryType() const { return _civilianRecoveryType; }
+	/// Gets the custom name of the "spawned person".
+	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
+	/// Gets the spawned soldier template.
+	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 	/// Gets the unit's stats.
 	UnitStats *getStats();
 	/// Gets the unit's random part of stats.
@@ -443,6 +474,9 @@ public:
 	bool canSurrender() const;
 	/// Gets special objective type of a unit.
 	const std::string& getSpecialObjectiveType() const { return _specialObjectiveType; };
+	/// Gets alternative unit for recovery.
+	const Unit* getAltUnit() const { return _altUnit; };
+	//const std::string& getAltRecoveredUnit() const { return _altUnit->getType(); }; //_altRecoveredUnit
 	/// Checks if this unit surrenders automatically, if all other units surrendered too.
 	bool autoSurrender() const;
 	bool isLeeroyJenkins() const { return _isLeeroyJenkins; };
@@ -452,6 +486,8 @@ public:
 	int getPickUpWeaponsMoreActively() const { return _pickUpWeaponsMoreActively; }
 	/// Should alien inventory show full name (e.g. Sectoid Leader) or just the race (e.g. Sectoid)?
 	bool getShowFullNameInAlienInventory(Mod *mod) const;
+	/// Is this a VIP unit?
+	bool isVIP() const { return _vip; }
 
 	/// Name of class used in script.
 	static constexpr const char *ScriptName = "RuleUnit";

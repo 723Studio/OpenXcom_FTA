@@ -77,6 +77,16 @@ ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::st
 	_lstTopics->setBackground(_window);
 	_lstTopics->setMargin(0);
 	_lstTopics->setAlign(ALIGN_CENTER);
+
+	if (Options::oxceDisableProductionDependencyTree)
+	{
+		_txtTitle->setHeight(_txtTitle->getHeight() * 11);
+		_txtTitle->setWordWrap(true);
+		_txtTitle->setText(tr("STR_THIS_FEATURE_IS_DISABLED_3"));
+		_btnShowAll->setVisible(false);
+		_lstTopics->setVisible(false);
+		return;
+	}
 }
 
 ManufactureDependenciesTreeState::~ManufactureDependenciesTreeState()
@@ -89,7 +99,11 @@ ManufactureDependenciesTreeState::~ManufactureDependenciesTreeState()
 void ManufactureDependenciesTreeState::init()
 {
 	State::init();
-	initList();
+
+	if (!Options::oxceDisableProductionDependencyTree)
+	{
+		initList();
+	}
 }
 
 /**

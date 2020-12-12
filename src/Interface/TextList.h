@@ -99,7 +99,9 @@ public:
 	/// Gets the amount of text in the list.
 	size_t getTexts() const;
 	/// Gets the amount of rows in the list.
-	size_t getRows() const;
+	size_t getRowsDoNotUse() const;
+	/// Gets the index of the last row in the list.
+	int getLastRowIndex() const;
 	/// Gets the amount of visible rows in the list.
 	size_t getVisibleRows() const;
 	/// Adds a new row to the text list.

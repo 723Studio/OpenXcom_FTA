@@ -73,6 +73,7 @@
 #include "FundingState.h"
 #include "../FTA/DiplomacyStartState.h"
 #include "MonthlyReportState.h"
+#include "AltMonthlyReportState.h"
 #include "ProductionCompleteState.h"
 #include "UfoDetectedState.h"
 #include "GeoscapeCraftState.h"
@@ -127,6 +128,7 @@
 #include "../Engine/Exception.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleInterface.h"
+#include "../Mod/RuleVideo.h"
 #include "../FTA/MasterMind.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
@@ -138,7 +140,7 @@ namespace OpenXcom
  * Initializes all the elements in the Geoscape screen.
  * @param game Pointer to the core game.
  */
-GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomOutEffectDone(false), _minimizedDogfights(0)
+GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomOutEffectDone(false), _minimizedDogfights(0), _slowdownCounter(0)
 {
 	int screenWidth = Options::baseXGeoscape;
 	int screenHeight = Options::baseYGeoscape;
@@ -799,6 +801,20 @@ void GeoscapeState::timeAdvance()
 	int timeSpan = 0;
 	if (_timeSpeed == _btn5Secs)
 	{
+		if (Options::oxceGeoSlowdownFactor > 1)
+		{
+			_slowdownCounter--;
+			if (_slowdownCounter > 0)
+			{
+				// wait
+				_globe->draw();
+				return;
+			}
+			else
+			{
+				_slowdownCounter = Clamp(Options::oxceGeoSlowdownFactor, 2, 100);
+			}
+		}
 		timeSpan = 1;
 	}
 	else if (_timeSpeed == _btn1Min)
@@ -1568,7 +1584,7 @@ void GeoscapeState::ufoHuntingAndEscorting()
 			// look for more attractive target
 			for (auto craft : *crafts)
 			{
-				if (!craft->getMissionComplete())
+				if (!craft->getMissionComplete() && !craft->getRules()->isUndetectable())
 				{
 					int tmpAttraction = craft->getHunterKillerAttraction((*ufo)->getHuntMode());
 					if (tmpAttraction < newAttraction && (*ufo)->insideRadarRange(craft))
@@ -1649,7 +1665,7 @@ void GeoscapeState::baseHunting()
 				for (auto craft : *crafts)
 				{
 					// Craft is flying (i.e. not in base)
-					if (craft->getStatus() == "STR_OUT" && !craft->isDestroyed())
+					if (craft->getStatus() == "STR_OUT" && !craft->isDestroyed() && !craft->getRules()->isUndetectable())
 					{
 						// Craft is close enough and RNG is in our favour
 						if (craft->getDistance((*ab)) < Nautical((*ab)->getDeployment()->getBaseDetectionRange()) && RNG::percent((*ab)->getDeployment()->getBaseDetectionChance()))
@@ -2031,14 +2047,24 @@ void GeoscapeState::time30Minutes()
  */
 void GeoscapeState::time1Hour()
 {
+	//Handle 1-hour research FtA process
+	if (_game->getMod()->getIsFTAGame())
+	{
+		for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+		{
+			handleResearch(*i);
+		}
+	}
+
 	// Handle craft maintenance
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
 		for (std::vector<Craft*>::iterator j = (*i)->getCrafts()->begin(); j != (*i)->getCrafts()->end(); ++j)
 		{
+			int bonus = _game->getMasterMind()->getLoyaltyPerformanceBonus();
 			if ((*j)->getStatus() == "STR_REPAIRS")
 			{
-				(*j)->repair();
+				(*j)->repair(bonus);
 			}
 			else if ((*j)->getStatus() == "STR_REARMING")
 			{
@@ -2083,7 +2109,8 @@ void GeoscapeState::time1Hour()
 		std::map<Production*, productionProgress_e> toRemove;
 		for (std::vector<Production*>::const_iterator j = (*i)->getProductions().begin(); j != (*i)->getProductions().end(); ++j)
 		{
-			toRemove[(*j)] = (*j)->step((*i), _game->getSavedGame(), _game->getMod(), _game->getLanguage());
+			int bonus = _game->getMasterMind()->getLoyaltyPerformanceBonus();
+			toRemove[(*j)] = (*j)->step((*i), _game->getSavedGame(), _game->getMod(), _game->getLanguage(), bonus);
 		}
 		for (std::map<Production*, productionProgress_e>::iterator j = toRemove.begin(); j != toRemove.end(); ++j)
 		{
@@ -2142,6 +2169,25 @@ void GeoscapeState::time1Hour()
 			(*i)->setDetected(true);
 			popup(new MissionDetectedState(*i, this));
 			break;
+		}
+	}
+
+	//handle covert operations logic and updates
+	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	{
+		for (auto operation : (*i)->getCovertOperations())
+		{
+			bool process = operation->think(*_game, *_globe);
+			if (process)
+				timerReset();
+			// Remove finished operation 
+			Collections::deleteIf(
+				_game->getSavedGame()->getGeoscapeEvents(),
+				[](GeoscapeEvent* ge)
+				{
+					return ge->isOver();
+				}
+			);
 		}
 	}
 
@@ -2241,6 +2287,7 @@ void GeoscapeState::time1Day()
 {
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
+	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	for (Base *base : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2271,220 +2318,9 @@ void GeoscapeState::time1Day()
 		}
 
 		// Handle science project
-		// 1. gather finished research
-		std::vector<ResearchProject*> finished;
-		for (ResearchProject *project : base->getResearch())
+		if (!_game->getMod()->getIsFTAGame())
 		{
-			if (project->step())
-			{
-				finished.push_back(project);
-			}
-		}
-		// 2. remember available research before adding new finished research
-		std::vector<RuleResearch*> before;
-		if (!finished.empty())
-		{
-			saveGame->getAvailableResearchProjects(before, mod, base);
-		}
-		// 3. add finished research, including lookups and getonefrees (up to 4x)
-		for (ResearchProject *project : finished)
-		{
-			const RuleResearch *bonus = 0;
-			const RuleResearch *research = project->getRules();
-
-			// 3a. remove finished research from the base where it was researched
-			base->removeResearch(project);
-			project = nullptr;
-
-			// 3b. handle interrogation and spawned items
-			if (Options::retainCorpses && research->destroyItem())
-			{
-				auto ruleUnit = mod->getUnit(research->getName(), false);
-				if (ruleUnit)
-				{
-					auto ruleCorpse = ruleUnit->getArmor()->getCorpseGeoscape();
-					if (ruleCorpse && ruleCorpse->isRecoverable() && ruleCorpse->isCorpseRecoverable())
-					{
-						base->getStorageItems()->addItem(ruleCorpse->getType());
-					}
-				}
-			}
-			RuleItem *spawnedItem = _game->getMod()->getItem(research->getSpawnedItem());
-			if (spawnedItem)
-			{
-				Transfer *t = new Transfer(1);
-				t->setItems(research->getSpawnedItem());
-				base->getTransfers()->push_back(t);
-			}
-			// 3c. handle getonefrees (topic+lookup)
-			if (!research->getGetOneFree().empty() || !research->getGetOneFreeProtected().empty())
-			{
-				std::vector<const RuleResearch *> possibilities;
-				for (auto& free : research->getGetOneFree())
-				{
-					if (saveGame->isResearchRuleStatusDisabled(free->getName()))
-					{
-						continue; // skip disabled topics
-					}
-					if (!saveGame->isResearched(free, false))
-					{
-						possibilities.push_back(free);
-					}
-				}
-				for (auto& itMap : research->getGetOneFreeProtected())
-				{
-					if (saveGame->isResearched(itMap.first, false))
-					{
-						for (auto& itVector : itMap.second)
-						{
-							if (saveGame->isResearchRuleStatusDisabled(itVector->getName()))
-							{
-								continue; // skip disabled topics
-							}
-							if (!saveGame->isResearched(itVector, false))
-							{
-								possibilities.push_back(itVector);
-							}
-						}
-					}
-				}
-				if (!possibilities.empty())
-				{
-					size_t pick = 0;
-					if (!research->sequentialGetOneFree())
-					{
-						pick = RNG::generate(0, possibilities.size() - 1);
-					}
-					bonus = possibilities.at(pick);
-					saveGame->addFinishedResearch(bonus, mod, base);
-					_game->getMasterMind()->updateLoyalty(bonus->getPoints(), XCOM_RESEARCH);
-					if (!bonus->getLookup().empty())
-					{
-						auto lookup = mod->getResearch(bonus->getLookup(), true);
-						saveGame->addFinishedResearch(lookup, mod, base);
-						_game->getMasterMind()->updateLoyalty(lookup->getPoints(), XCOM_RESEARCH);
-					}
-				}
-			}
-			// 3d. determine and remember if the ufopedia article should pop up again or not
-			// Note: because different topics may lead to the same lookup
-			const RuleResearch *newResearch = research;
-			std::string name = research->getLookup().empty() ? research->getName() : research->getLookup();
-			if (saveGame->isResearched(name, false))
-			{
-				newResearch = 0;
-			}
-			// 3e. handle core research (topic+lookup)
-			saveGame->addFinishedResearch(research, mod, base);
-			_game->getMasterMind()->updateLoyalty(research->getPoints(), XCOM_RESEARCH);
-			if (!research->getLookup().empty())
-			{
-				auto lookup = mod->getResearch(research->getLookup(), true);
-				saveGame->addFinishedResearch(lookup, mod, base);
-				_game->getMasterMind()->updateLoyalty(lookup->getPoints(), XCOM_RESEARCH);
-			}
-			// 3e. handle cutscene
-			if (!research->getCutscene().empty())
-			{
-				popup(new CutsceneState(research->getCutscene()));
-			}
-			if (bonus && !bonus->getCutscene().empty())
-			{
-				popup(new CutsceneState(bonus->getCutscene()));
-			}
-			// 3e. handle research complete popup + ufopedia article popups (topic+bonus)
-			popup(new ResearchCompleteState(newResearch, bonus, research));
-			// 3f. reset timer
-			timerReset();
-			// 3g. warning if weapon is researched before its clip
-			if (newResearch)
-			{
-				RuleItem *item = mod->getItem(newResearch->getName());
-				if (item && item->getBattleType() == BT_FIREARM && !item->getPrimaryCompatibleAmmo()->empty())
-				{
-					RuleManufacture *man = mod->getManufacture(item->getType());
-					if (man && !man->getRequirements().empty())
-					{
-						const auto &req = man->getRequirements();
-						const RuleItem *ammo = item->getPrimaryCompatibleAmmo()->front();
-						if (std::find_if(req.begin(), req.end(), [&](const RuleResearch* r){ return r->getName() == ammo->getType(); }) != req.end() && !saveGame->isResearched(req, true))
-						{
-							popup(new ResearchRequiredState(item));
-						}
-					}
-				}
-			}
-			// 3h. inform about new possible research
-			std::vector<RuleResearch *> after;
-			saveGame->getAvailableResearchProjects(after, mod, base);
-			std::vector<RuleResearch *> newPossibleResearch;
-			saveGame->getNewlyAvailableResearchProjects(before, after, newPossibleResearch);
-			popup(new NewPossibleResearchState(base, newPossibleResearch));
-			// 3i. inform about new possible manufacture, purchase, craft and facilities
-			std::vector<RuleManufacture *> newPossibleManufacture;
-			saveGame->getDependableManufacture(newPossibleManufacture, research, mod, base);
-			if (bonus)
-			{
-				saveGame->getDependableManufacture(newPossibleManufacture, bonus, mod, base);
-			}
-			if (!newPossibleManufacture.empty())
-			{
-				popup(new NewPossibleManufactureState(base, newPossibleManufacture));
-			}
-			std::vector<RuleItem *> newPossiblePurchase;
-			_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, research, _game->getMod());
-			if (bonus)
-			{
-				_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, bonus, _game->getMod());
-			}
-			if (!newPossiblePurchase.empty())
-			{
-				popup(new NewPossiblePurchaseState(base, newPossiblePurchase));
-			}
-			std::vector<RuleCraft *> newPossibleCraft;
-			_game->getSavedGame()->getDependableCraft(newPossibleCraft, research, _game->getMod());
-			if (bonus)
-			{
-				_game->getSavedGame()->getDependableCraft(newPossibleCraft, bonus, _game->getMod());
-			}
-			if (!newPossibleCraft.empty())
-			{
-				popup(new NewPossibleCraftState(base, newPossibleCraft));
-			}
-			std::vector<RuleBaseFacility *> newPossibleFacilities;
-			_game->getSavedGame()->getDependableFacilities(newPossibleFacilities, research, _game->getMod());
-			if (bonus)
-			{
-				_game->getSavedGame()->getDependableFacilities(newPossibleFacilities, bonus, _game->getMod());
-			}
-			if (!newPossibleFacilities.empty())
-			{
-				popup(new NewPossibleFacilityState(base, _globe, newPossibleFacilities));
-			}
-			// 3j. now iterate through all the bases and remove this project from their labs (unless it can still yield more stuff!)
-			for (Base *otherBase : *saveGame->getBases())
-			{
-				for (ResearchProject* otherProject : otherBase->getResearch())
-				{
-					if (research->getName() == otherProject->getRules()->getName())
-					{
-						if (saveGame->hasUndiscoveredGetOneFree(research, true))
-						{
-							// This research topic still has some more undiscovered non-disabled and *AVAILABLE* "getOneFree" topics, keep it!
-						}
-						else if (saveGame->hasUndiscoveredProtectedUnlock(research, mod))
-						{
-							// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
-						}
-						else
-						{
-							// This topic can't give you anything else anymore, remove it!
-							otherBase->removeResearch(otherProject);
-							break;
-						}
-					}
-				}
-			}
+			handleResearch(base);
 		}
 
 		// Handle soldier wounds and martial training
@@ -2497,6 +2333,7 @@ void GeoscapeState::time1Day()
 			if ((*j)->isInTraining())
 			{
 				(*j)->trainPhys(_game->getMod()->getCustomTrainingFactor());
+				(*j)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
 				if ((*j)->isFullyTrained())
 				{
 					(*j)->setTraining(false);
@@ -2518,15 +2355,25 @@ void GeoscapeState::time1Day()
 		}
 		if (!trainingFinishedList.empty())
 		{
-			popup(new TrainingFinishedState(base, trainingFinishedList));
+			popup(new TrainingFinishedState(base, trainingFinishedList, false));
 		}
 		// Handle psionic training
 		if (base->getAvailablePsiLabs() > 0 && Options::anytimePsiTraining)
 		{
+			std::vector<Soldier*> psiTrainingFinishedList;
 			for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
 			{
 				(*s)->trainPsi1Day();
-				(*s)->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && saveGame->isResearched(_game->getMod()->getPsiRequirements())));
+				(*s)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
+				if ((*s)->isInPsiTraining() && (*s)->isFullyPsiTrained())
+				{
+					(*s)->setPsiTraining(false);
+					psiTrainingFinishedList.push_back(*s);
+				}
+			}
+			if (!psiTrainingFinishedList.empty())
+			{
+				popup(new TrainingFinishedState(base, psiTrainingFinishedList, true));
 			}
 		}
 	}
@@ -2555,24 +2402,6 @@ void GeoscapeState::time1Day()
 		if (answer)
 		{
 			bool success = processCommand(mod->getMissionScript(faction->getCommandType()));
-		}
-	}
-	//handle daily covert operations logic
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
-	{
-		for (auto operation : (*i)->getCovertOperations())
-		{
-			bool process = operation->think(*_game, *_globe);
-			if (process)
-				timerReset();
-			// Remove finished operation 
-			Collections::deleteIf(
-				_game->getSavedGame()->getGeoscapeEvents(),
-				[](GeoscapeEvent* ge)
-				{
-					return ge->isOver();
-				}
-			);
 		}
 	}
 
@@ -2692,9 +2521,13 @@ void GeoscapeState::time1Day()
 			popup(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette));
 		}
 	}
+	else if (saveGame->getEnding() != END_NONE && saveGame->isIronman())
+	{
+		_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_IRONMAN, _palette));
+	}
 
 	// pay attention to your maintenance player!
-	if (_game->getSavedGame()->getTime()->isLastDayOfMonth())
+	if (_game->getSavedGame()->getTime()->isLastDayOfMonth() && !_game->getMod()->getIsFTAGame()) //not for FtA for now, sorry #FINNIKTODO
 	{
 		int month = _game->getSavedGame()->getMonthsPassed();
 		int currentScore = _game->getSavedGame()->getCurrentScore(month + 1);
@@ -2736,6 +2569,7 @@ void GeoscapeState::time1Month()
 	// Handle Psi-Training and initiate a new retaliation mission, if applicable
 	if (!Options::anytimePsiTraining)
 	{
+		bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
 		for (std::vector<Base*>::const_iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
 		{
 			if ((*b)->getAvailablePsiLabs() > 0)
@@ -2745,7 +2579,7 @@ void GeoscapeState::time1Month()
 					if ((*s)->isInPsiTraining())
 					{
 						(*s)->trainPsi();
-						(*s)->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
+						(*s)->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
 					}
 				}
 			}
@@ -2754,15 +2588,30 @@ void GeoscapeState::time1Month()
 
 	// Handle funding
 	timerReset();
-	_game->getSavedGame()->monthlyFunding();
-	if (_game->getMod()->getIsFTAGame()) { 	popup(new AlphaGameVersionEnds());	} else { popup(new MonthlyReportState(_globe)); } //temp for alpha FTA release
+	if (_game->getMod()->getIsFTAGame())
+	{
+		_game->getSavedGame()->monthlyScoring();
+		if (_game->getSavedGame()->getMonthsPassed() > 3)
+		{
+			popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
+		}
+		else
+		{
+			popup(new AltMonthlyReportState(_globe));
+		}
+	}
+	else
+	{
+		_game->getSavedGame()->monthlyFunding();
+		popup(new MonthlyReportState(_globe));
+	}
 
 	// Handle Xcom Operatives discovering bases
-	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20))
+	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20) && !_game->getMod()->getIsFTAGame()) // #FINNIKTODO for now let's disable it in FtA
 	{
 		for (std::vector<AlienBase*>::const_iterator b = _game->getSavedGame()->getAlienBases()->begin(); b != _game->getSavedGame()->getAlienBases()->end(); ++b)
 		{
-			if (!(*b)->isDiscovered()|| !(*b)->getDeployment()->isHidden())
+			if (!(*b)->isDiscovered())
 			{
 				(*b)->setDiscovered(true);
 				popup(new AlienBaseState(*b, this));
@@ -3184,6 +3033,45 @@ void GeoscapeState::handleDogfights()
 }
 
 /**
+ * Goes through all active dogfight instances and tries to perform the same action.
+ * @param button Action to perform.
+ */
+void GeoscapeState::handleDogfightMultiAction(int button)
+{
+	for (auto d : _dogfights)
+	{
+		if (d->isMinimized())
+			continue;
+
+		SDL_Event ev;
+		ev.type = SDL_MOUSEBUTTONDOWN;
+		ev.button.button = SDL_BUTTON_LEFT;
+		Action a = Action(&ev, 0.0, 0.0, 0, 0);
+
+		switch (button)
+		{
+		case 0:
+			d->btnStandoffSimulateLeftPress(&a);
+			break;
+		case 1:
+			d->btnCautiousSimulateLeftPress(&a);
+			break;
+		case 2:
+			d->btnStandardSimulateLeftPress(&a);
+			break;
+		case 3:
+			d->btnAggressiveSimulateLeftPress(&a);
+			break;
+		case 4:
+			d->btnDisengageSimulateLeftPress(&a);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+/**
  * Goes through all dogfight instances and tries to award pilot experience.
  * This is called each time any UFO takes any damage in dogfight... very ugly, but I couldn't find a better place for it.
  *
@@ -3288,7 +3176,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 	int ufoDamagePercentage = 0;
 	if (_game->getMod()->getLessAliensDuringBaseDefense())
 	{
-		ufoDamagePercentage = ufo->getDamage() * 100 / ufo->getCraftStats().damageMax;
+		ufoDamagePercentage = ufo->getDamagePercentage();
 	}
 
 	// Whatever happens in the base defense, the UFO has finished its duty
@@ -3818,6 +3706,10 @@ bool GeoscapeState::processCommand(RuleMissionScript *command)
 						{
 							validAreas.push_back(std::make_pair(region->getType(), counter));
 						}
+						else if (!(*j).isPoint())
+						{
+							validAreas.push_back(std::make_pair(region->getType(), counter));
+						}
 						counter++;
 					}
 				}
@@ -4175,6 +4067,206 @@ void GeoscapeState::updateSlackingIndicator()
 	{
 		_txtSlacking->setText("");
 	}
+}
+
+void GeoscapeState::handleResearch(Base* base)
+{
+	SavedGame* saveGame = _game->getSavedGame();
+	Mod* mod = _game->getMod();
+
+	// 1. gather finished research
+	std::vector<ResearchProject*> finished;
+	for (ResearchProject* project : base->getResearch())
+	{
+		int bonus = _game->getMasterMind()->getLoyaltyPerformanceBonus();
+		if (project->step(bonus))
+		{
+			finished.push_back(project);
+		}
+	}
+	// 2. remember available research before adding new finished research
+	std::vector<RuleResearch*> before;
+	if (!finished.empty())
+	{
+		saveGame->getAvailableResearchProjects(before, mod, base);
+	}
+	// 3. add finished research, including lookups and getonefrees (up to 4x)
+	for (ResearchProject* project : finished)
+	{
+		const RuleResearch* bonus = 0;
+		const RuleResearch* research = project->getRules();
+
+		// 3a. remove finished research from the base where it was researched
+		base->removeResearch(project);
+		project = nullptr;
+
+		// 3b. handle interrogation and spawned items/events
+		if (Options::retainCorpses && research->destroyItem())
+		{
+			auto ruleUnit = mod->getUnit(research->getName(), false);
+			if (ruleUnit)
+			{
+				auto ruleCorpse = ruleUnit->getArmor()->getCorpseGeoscape();
+				if (ruleCorpse && ruleCorpse->isRecoverable() && ruleCorpse->isCorpseRecoverable())
+				{
+					base->getStorageItems()->addItem(ruleCorpse->getType());
+				}
+			}
+		}
+		RuleItem* spawnedItem = _game->getMod()->getItem(research->getSpawnedItem());
+		if (spawnedItem)
+		{
+			Transfer* t = new Transfer(1);
+			t->setItems(research->getSpawnedItem());
+			base->getTransfers()->push_back(t);
+		}
+		auto researchEvent = research->getSpawnedEvent();
+		if (!researchEvent.empty())
+		{
+			_game->getMasterMind()->spawnEvent(researchEvent);
+		}
+		// 3c. handle getonefrees (topic+lookup)
+		if ((bonus = saveGame->selectGetOneFree(research)))
+		{
+			saveGame->addFinishedResearch(bonus, mod, base);
+			if (!bonus->getLookup().empty())
+			{
+				saveGame->addFinishedResearch(mod->getResearch(bonus->getLookup(), true), mod, base);
+			}
+		}
+		// 3d. determine and remember if the ufopedia article should pop up again or not
+		// Note: because different topics may lead to the same lookup
+		const RuleResearch* newResearch = research;
+		std::string name = research->getLookup().empty() ? research->getName() : research->getLookup();
+		if (saveGame->isResearched(name, false))
+		{
+			newResearch = 0;
+		}
+		// 3e. handle core research (topic+lookup)
+		saveGame->addFinishedResearch(research, mod, base);
+		_game->getMasterMind()->updateLoyalty(research->getPoints(), XCOM_RESEARCH);
+		if (!research->getLookup().empty())
+		{
+			auto lookup = mod->getResearch(research->getLookup(), true);
+			saveGame->addFinishedResearch(lookup, mod, base);
+			_game->getMasterMind()->updateLoyalty(lookup->getPoints(), XCOM_RESEARCH);
+		}
+		// 3e. handle cutscene
+		if (!research->getCutscene().empty())
+		{
+			popup(new CutsceneState(research->getCutscene()));
+			if (saveGame->getEnding() == END_NONE)
+			{
+				const RuleVideo* videoRule = _game->getMod()->getVideo(research->getCutscene(), true);
+				if (videoRule->getWinGame()) saveGame->setEnding(END_WIN);
+				if (videoRule->getLoseGame()) saveGame->setEnding(END_LOSE);
+			}
+		}
+		if (bonus && !bonus->getCutscene().empty())
+		{
+			popup(new CutsceneState(bonus->getCutscene()));
+			if (saveGame->getEnding() == END_NONE)
+			{
+				const RuleVideo* videoRule = _game->getMod()->getVideo(bonus->getCutscene(), true);
+				if (videoRule->getWinGame()) saveGame->setEnding(END_WIN);
+				if (videoRule->getLoseGame()) saveGame->setEnding(END_LOSE);
+			}
+		}
+		// 3e. handle research complete popup + ufopedia article popups (topic+bonus)
+		popup(new ResearchCompleteState(newResearch, bonus, research));
+		// 3f. reset timer
+		timerReset();
+		// 3g. warning if weapon is researched before its clip
+		if (newResearch)
+		{
+			RuleItem* item = mod->getItem(newResearch->getName());
+			if (item && item->getBattleType() == BT_FIREARM && !item->getPrimaryCompatibleAmmo()->empty())
+			{
+				RuleManufacture* man = mod->getManufacture(item->getType());
+				if (man && !man->getRequirements().empty())
+				{
+					const auto& req = man->getRequirements();
+					const RuleItem* ammo = item->getPrimaryCompatibleAmmo()->front();
+					if (std::find_if(req.begin(), req.end(), [&](const RuleResearch* r) { return r->getName() == ammo->getType(); }) != req.end() && !saveGame->isResearched(req, true))
+					{
+						popup(new ResearchRequiredState(item));
+					}
+				}
+			}
+		}
+		// 3h. inform about new possible research
+		std::vector<RuleResearch*> after;
+		saveGame->getAvailableResearchProjects(after, mod, base);
+		std::vector<RuleResearch*> newPossibleResearch;
+		saveGame->getNewlyAvailableResearchProjects(before, after, newPossibleResearch);
+		popup(new NewPossibleResearchState(base, newPossibleResearch));
+		// 3i. inform about new possible manufacture, purchase, craft and facilities
+		std::vector<RuleManufacture*> newPossibleManufacture;
+		saveGame->getDependableManufacture(newPossibleManufacture, research, mod, base);
+		if (bonus)
+		{
+			saveGame->getDependableManufacture(newPossibleManufacture, bonus, mod, base);
+		}
+		if (!newPossibleManufacture.empty())
+		{
+			popup(new NewPossibleManufactureState(base, newPossibleManufacture));
+		}
+		std::vector<RuleItem*> newPossiblePurchase;
+		_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, research, _game->getMod());
+		if (bonus)
+		{
+			_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, bonus, _game->getMod());
+		}
+		if (!newPossiblePurchase.empty())
+		{
+			popup(new NewPossiblePurchaseState(base, newPossiblePurchase));
+		}
+		std::vector<RuleCraft*> newPossibleCraft;
+		_game->getSavedGame()->getDependableCraft(newPossibleCraft, research, _game->getMod());
+		if (bonus)
+		{
+			_game->getSavedGame()->getDependableCraft(newPossibleCraft, bonus, _game->getMod());
+		}
+		if (!newPossibleCraft.empty())
+		{
+			popup(new NewPossibleCraftState(base, newPossibleCraft));
+		}
+		std::vector<RuleBaseFacility*> newPossibleFacilities;
+		_game->getSavedGame()->getDependableFacilities(newPossibleFacilities, research, _game->getMod());
+		if (bonus)
+		{
+			_game->getSavedGame()->getDependableFacilities(newPossibleFacilities, bonus, _game->getMod());
+		}
+		if (!newPossibleFacilities.empty())
+		{
+			popup(new NewPossibleFacilityState(base, _globe, newPossibleFacilities));
+		}
+		// 3j. now iterate through all the bases and remove this project from their labs (unless it can still yield more stuff!)
+		for (Base* otherBase : *saveGame->getBases())
+		{
+			for (ResearchProject* otherProject : otherBase->getResearch())
+			{
+				if (research->getName() == otherProject->getRules()->getName())
+				{
+					if (saveGame->hasUndiscoveredGetOneFree(research, true))
+					{
+						// This research topic still has some more undiscovered non-disabled and *AVAILABLE* "getOneFree" topics, keep it!
+					}
+					else if (saveGame->hasUndiscoveredProtectedUnlock(research, mod))
+					{
+						// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
+					}
+					else
+					{
+						// This topic can't give you anything else anymore, remove it!
+						otherBase->removeResearch(otherProject);
+						break;
+					}
+				}
+			}
+		}
+	}
+
 }
 
 void GeoscapeState::cbxRegionChange(Action *)

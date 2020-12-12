@@ -43,7 +43,7 @@ private:
 
 	Surface *_bg;
 	MiniBaseView *_mini;
-	TextButton *_btnOk, *_btnTransfers, *_btnStores, *_btnMonthlyCosts;
+	TextButton *_btnOk, *_btnTransfers, *_btnStores, *_btnMonthlyCosts, *_btnDispose;
 	TextEdit *_edtBase;
 
 	Text *_txtPersonnel, *_txtSoldiers, *_txtEngineers, *_txtScientists;
@@ -76,6 +76,8 @@ public:
 	void btnTransfersClick(Action *action);
 	/// Handler for clicking the Stores button.
 	void btnStoresClick(Action *action);
+	/// Handler for clicking the Dispose button.
+	void btnDisposeClick(Action* action);
 	/// Handler for clicking the Monthly Costs button.
 	void btnMonthlyCostsClick(Action *action);
 };

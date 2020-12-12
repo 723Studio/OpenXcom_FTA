@@ -159,7 +159,7 @@ void ScrollBar::handle(Action *action, State *state)
 	{
 		int cursorY = action->getAbsoluteYMouse() - getY();
 		int y = Clamp(cursorY + _offset, 0, getHeight() - _thumbRect.h + 1);
-		double scale = (double)_list->getRows() / getHeight();
+		double scale = (double)_list->getRowsDoNotUse() / getHeight();
 		int scroll = (int)Round(y * scale);
 		_list->scrollTo(scroll);
 	}
@@ -260,7 +260,7 @@ void ScrollBar::drawTrack()
  */
 void ScrollBar::drawThumb()
 {
-	double scale = (double)getHeight() / _list->getRows();
+	double scale = (double)getHeight() / _list->getRowsDoNotUse();
 	_thumbRect.x = 0;
 	_thumbRect.y = (int)floor(_list->getScroll() * scale);
 	_thumbRect.w = _thumb->getWidth();

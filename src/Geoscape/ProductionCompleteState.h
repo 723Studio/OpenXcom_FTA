@@ -18,6 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
+#include <map>
+#include <vector>
 #include "../Engine/State.h"
 #include "../Savegame/Production.h"
 
@@ -41,6 +43,9 @@ private:
 	Base *_base;
 	GeoscapeState *_state;
 
+	std::map<std::string, int> _randomProductionInfo;
+	std::vector<std::string> _index;
+
 	TextButton *_btnOk, *_btnGotoBase, *_btnSummary;
 	Window *_window;
 	Text *_txtMessage, *_txtItem, *_txtQuantity;
@@ -57,6 +62,8 @@ public:
 	void btnGotoBaseClick(Action *action);
 	/// Handler for clicking the Summary button.
 	void btnSummaryClick(Action *action);
+	/// Handler for clicking the Summary list.
+	void lstSummaryClick(Action *action);
 };
 
 }

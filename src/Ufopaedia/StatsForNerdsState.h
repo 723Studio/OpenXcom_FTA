@@ -121,7 +121,7 @@ private:
 	void addRuleItemUseCostFull(std::ostringstream &ss, const RuleItemUseCost &value, const std::string &propertyName, const RuleItemUseCost &defaultvalue = RuleItemUseCost(), bool smartFormat = false, const RuleItemUseCost &formatBy = RuleItemUseCost());
 	void addBattleMediKitType(std::ostringstream &ss, const BattleMediKitType &value, const std::string &propertyName, const BattleMediKitType &defaultvalue = BMT_NORMAL);
 	void addMediKitTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue);
-	void addPsiampTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue);
+	void addItemTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue);
 	void addExperienceTrainingMode(std::ostringstream &ss, const ExperienceTrainingMode &value, const std::string &propertyName, const ExperienceTrainingMode &defaultvalue = ETM_DEFAULT);
 	void addRuleStatBonus(std::ostringstream &ss, const RuleStatBonus &value, const std::string &propertyName);
 	void addSpriteResourcePath(std::ostringstream &ss, Mod *mod, const std::string &resourceSetName, const int &resourceId);

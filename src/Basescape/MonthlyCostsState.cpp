@@ -42,6 +42,7 @@ namespace OpenXcom
  */
 MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 {
+	bool isFta = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(300, 20, 10, 170);
@@ -51,8 +52,16 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	_txtTotal = new Text(60, 9, 249, 32);
 	_txtRental = new Text(150, 9, 10, 40);
 	_txtSalaries = new Text(150, 9, 10, 80);
-	_txtIncome = new Text(150, 9, 10, 146);
-	_txtMaintenance = new Text(150, 9, 10, 154);
+	if (isFta)
+	{
+		_txtMaintenance = new Text(150, 9, 10, 150);
+	}
+	else //vanilla
+	{
+		_txtIncome = new Text(150, 9, 10, 146);
+		_txtMaintenance = new Text(150, 9, 10, 154);
+	}
+	
 	_lstCrafts = new TextList(288, 32, 10, 48);
 	_lstSalaries = new TextList(288, 40, 10, 88);
 	_lstMaintenance = new TextList(300, 9, 10, 128);
@@ -72,7 +81,10 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	add(_txtSalaries, "text1", "costsInfo");
 	add(_lstSalaries, "list", "costsInfo");
 	add(_lstMaintenance, "text1", "costsInfo");
-	add(_txtIncome, "list", "costsInfo");
+	if (!isFta)
+	{
+		add(_txtIncome, "list", "costsInfo");
+	}
 	add(_txtMaintenance, "list", "costsInfo");
 	add(_lstTotal, "text2", "costsInfo");
 
@@ -100,9 +112,12 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 
 	_txtSalaries->setText(tr("STR_SALARIES"));
 
-	std::ostringstream ss;
-	ss << tr("STR_INCOME") << "=" << Unicode::formatFunding(_game->getSavedGame()->getCountryFunding());
-	_txtIncome->setText(ss.str());
+	if (!isFta)
+	{
+		std::ostringstream ss;
+		ss << tr("STR_INCOME") << "=" << Unicode::formatFunding(_game->getSavedGame()->getCountryFunding());
+		_txtIncome->setText(ss.str());
+	}
 
 	std::ostringstream ss2;
 	ss2 << tr("STR_MAINTENANCE") << "=" << Unicode::formatFunding(_game->getSavedGame()->getBaseMaintenance());

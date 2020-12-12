@@ -53,6 +53,7 @@ public:
 
 	static const std::string NONE;
 private:
+	std::string _ufopediaType;
 	std::string _type, _spriteSheet, _spriteInv, _corpseGeoName, _storeItemName, _specWeaponName;
 	std::string _requiresName;
 	std::string _layersDefaultPrefix;
@@ -83,12 +84,12 @@ private:
 	std::vector<int> _selectWeaponSoundMale, _selectWeaponSoundFemale;
 	std::vector<int> _annoyedSoundMale, _annoyedSoundFemale;
 	int _size, _weight, _visibilityAtDark, _visibilityAtDay, _personalLight;
-	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision;
+	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision, _psiCamouflage;
 	float _damageModifier[DAMAGE_TYPES];
 	std::vector<int> _loftempsSet;
 	UnitStats _stats;
 	int _deathFrames;
-	bool _constantAnimation, _canHoldWeapon, _hasInventory;
+	bool _constantAnimation, _hasInventory;
 	ForcedTorso _forcedTorso;
 	int _faceColorGroup, _hairColorGroup, _utileColorGroup, _rankColorGroup;
 	std::vector<int> _faceColor, _hairColor, _utileColor, _rankColor;
@@ -117,6 +118,9 @@ public:
 	void afterLoad(const Mod* mod);
 	/// Gets whether or not there is an infinite supply of this armor.
 	bool hasInfiniteSupply() const { return _infiniteSupply; }
+
+	/// Gets the custom name of the Ufopedia article related to this armor.
+	const std::string& getUfopediaType() const;
 
 	/// Gets the armor's type.
 	const std::string& getType() const;
@@ -233,8 +237,6 @@ public:
 	int getDeathFrames() const;
 	/// Gets if armor uses constant animation.
 	bool getConstantAnimation() const;
-	/// Gets if armor can hold weapon.
-	bool getCanHoldWeapon() const;
 	/// Checks if this armor ignores gender (power suit/flying suit).
 	ForcedTorso getForcedTorso() const;
 	/// Gets built-in weapons of armor.
@@ -255,6 +257,8 @@ public:
 	int getHeatVision() const;
 	/// Gets info about psi vision.
 	int getPsiVision() const;
+	/// Gets info about psi camouflage.
+	int getPsiCamouflage() const;
 	/// Gets personal light radius;
 	int getPersonalLight() const;
 	/// Gets how armor react to fear.

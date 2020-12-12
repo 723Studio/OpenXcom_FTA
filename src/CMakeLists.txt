@@ -26,7 +26,9 @@ set ( basescape_src
   Basescape/CraftSoldiersState.cpp
   Basescape/CraftsState.cpp
   Basescape/CraftWeaponsState.cpp
+  Basescape/CustomBattleMessage.cpp
   Basescape/DismantleFacilityState.cpp
+  Basescape/DisposeState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/ManageAlienContainmentState.cpp
@@ -58,6 +60,7 @@ set ( basescape_src
   Basescape/SoldierSortUtil.cpp
   Basescape/SoldiersState.cpp
   Basescape/SoldierTransformationState.cpp
+  Basescape/SoldierTransformationListState.cpp
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
   Basescape/TechTreeViewerState.cpp
@@ -87,6 +90,7 @@ set ( battlescape_src
   Battlescape/CommendationLateState.cpp
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp
+  Battlescape/CustomBattleMessageState.cpp
   Battlescape/DebriefingState.cpp
   Battlescape/Explosion.cpp
   Battlescape/ExplosionBState.cpp
@@ -184,6 +188,7 @@ set ( geoscape_src
   Geoscape/AlienBaseState.cpp
   Geoscape/AllocatePsiTrainingState.cpp
   Geoscape/AllocateTrainingState.cpp
+  Geoscape/AltMonthlyReportState.cpp
   Geoscape/BaseDefenseState.cpp
   Geoscape/BaseDestroyedState.cpp
   Geoscape/BaseNameState.cpp
@@ -265,6 +270,7 @@ set ( menu_src
   Menu/MainMenuState.cpp
   Menu/NewBattleState.cpp
   Menu/NewGameState.cpp
+  Menu/NotesState.cpp
   Menu/OptionsAdvancedState.cpp
   Menu/OptionsAudioState.cpp
   Menu/OptionsBaseState.cpp
@@ -492,7 +498,7 @@ if ( MSVC )
   set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W${MSVC_WARNING_LEVEL}" )
   set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /W${MSVC_WARNING_LEVEL}" )
   if ( FATAL_WARNING )
-    add_definitions ( /WX )
+    add_compile_options ( /WX )
   endif ( FATAL_WARNING )
   set ( CMAKE_EXE_LINKER_FLAGS "/manifest:no" )
   set ( CMAKE_MODULE_LINKER_FLAGS "/manifest:no" )

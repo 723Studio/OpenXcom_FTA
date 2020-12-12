@@ -203,7 +203,7 @@ void GlobalManufactureState::fillProductionList()
 		{
 			std::string baseName = base->getName(_game->getLanguage());
 			_lstManufacture->addRow(3, baseName.c_str(), "", "");
-			_lstManufacture->setRowColor(_lstManufacture->getTexts() - 1, _lstManufacture->getSecondaryColor());
+			_lstManufacture->setRowColor(_lstManufacture->getLastRowIndex(), _lstManufacture->getSecondaryColor());
 
 			// dummy
 			_bases.push_back(0);

@@ -60,7 +60,7 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
-	_txtAvailable = new Text(95, 9, 16, 24);
+	_txtAvailable = new Text(99, 9, 16, 24);
 	_txtUsed = new Text(95, 9, 122, 24);
 	_txtChances = new Text(110, 9, 205, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
@@ -437,7 +437,7 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 */
 void CovertOperationSoldiersState::btnDeassignCraftSoldiersClick(Action* action)
 {
-	//Craft* c = _base->getCrafts()->at(0); //TODO
+	//Craft* c = _base->getCrafts()->at(0); //#FINNIKTODO
 	//int row = 0;
 	//for (auto s : *_base->getSoldiers())
 	//{

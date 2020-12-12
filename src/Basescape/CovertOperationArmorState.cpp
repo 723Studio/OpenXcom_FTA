@@ -482,7 +482,7 @@ void CovertOperationArmorState::lstSoldiersClick(Action* action)
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 		{
 			_savedScrollPosition = _lstSoldiers->getScroll();
-			if (!allowedArmor.empty()) _game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));// TODO _game->pushState(new CovertOperationSoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE, allowedArmor));
+			if (!allowedArmor.empty()) _game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));// #FINNIKTODO _game->pushState(new CovertOperationSoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE, allowedArmor));
 			else _game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));
 		}
 		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)

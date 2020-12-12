@@ -44,7 +44,7 @@ public:
 	void setAssignedEngineers (int);
 	bool getSellItems() const;
 	void setSellItems (bool);
-	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang);
+	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int bonus = 100);
 	const RuleManufacture * getRules() const;
 	void startItem(Base * b, SavedGame * g, const Mod *m) const;
 	void refundItem(Base * b, SavedGame * g, const Mod *m) const;

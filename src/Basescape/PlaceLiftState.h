@@ -25,6 +25,8 @@ namespace OpenXcom
 class Base;
 class BaseView;
 class Text;
+class TextList;
+class Window;
 class Globe;
 class RuleBaseFacility;
 
@@ -41,6 +43,11 @@ private:
 	Text *_txtTitle;
 	bool _first;
 	RuleBaseFacility *_lift;
+
+	std::vector<RuleBaseFacility*> _accessLifts;
+	Window *_window;
+	Text *_txtHeader;
+	TextList *_lstAccessLifts;
 public:
 	/// Creates the Place Lift state.
 	PlaceLiftState(Base *base, Globe *globe, bool first);
@@ -48,6 +55,8 @@ public:
 	~PlaceLiftState();
 	/// Handler for clicking the base view.
 	void viewClick(Action *action);
+	/// Handler for clicking the Access Lifts list.
+	void lstAccessLiftsClick(Action *action);
 };
 
 }

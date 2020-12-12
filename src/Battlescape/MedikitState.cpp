@@ -232,7 +232,7 @@ void MedikitState::onHealClick(Action *)
 
 	if (_action->spendTU(&_action->result))
 	{
-		bool canContinueHealing = _tileEngine->medikitUse(_action, _targetUnit, BMA_HEAL, _medikitView->getSelectedPart());
+		bool canContinueHealing = _tileEngine->medikitUse(_action, _targetUnit, BMA_HEAL, (UnitBodyPart)_medikitView->getSelectedPart());
 		_medikitView->updateSelectedPart();
 		_medikitView->invalidate();
 		update();

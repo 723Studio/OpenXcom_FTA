@@ -171,7 +171,7 @@ class MapScript
 {
 private:
 	MapScriptCommand _type;
-	bool _canBeSkipped;
+	bool _canBeSkipped, _markAsReinforcementsBlock;
 	std::vector<SDL_Rect*> _rects;
 	std::vector<int> _groups, _blocks, _frequencies, _maxUses, _conditionals;
 	int _verticalGroup, _horizontalGroup, _crossingGroup;
@@ -200,6 +200,8 @@ public:
 	MapScriptCommand getType() const {return _type;};
 	/// Can this command be skipped if unsuccessful?
 	bool canBeSkipped() const { return _canBeSkipped; };
+	/// Should blocks added by this command be used as reinforcements blocks?
+	bool markAsReinforcementsBlock() const { return _markAsReinforcementsBlock; }
 	/// Gets the rects, describing the areas this command applies to.
 	const std::vector<SDL_Rect*> *getRects() const {return &_rects;};
 	/// Gets the X size for this command.
@@ -241,7 +243,7 @@ public:
 	/// Gets the vertical levels for a command
 	const std::vector<VerticalLevel> &getVerticalLevels() const;
 	/// Sets the vertical levels for a command from a base facility's vertical levels
-	void setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels);
+	void setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels, int size);
 };
 
 }

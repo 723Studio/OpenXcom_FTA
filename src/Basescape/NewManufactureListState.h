@@ -40,7 +40,7 @@ class NewManufactureListState : public State
 {
 private:
 	Base *_base;
-	bool _showRequirements, _detailClicked;
+	bool _showRequirements, _refreshCategories, _doInit;
 	TextButton *_btnOk;
 	ToggleTextButton *_btnShowOnlyNew;
 	TextEdit *_btnQuickSearch;

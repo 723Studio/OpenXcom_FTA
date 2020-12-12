@@ -39,7 +39,7 @@ private:
 	Target *_target;
 	Window *_window;
 	Text *_txtTarget;
-	TextButton *_btnOk, *_btnCancel;
+	TextButton *_btnOk, *_btnTransfer, *_btnCancel;
 	// Checks the starting condition
 	std::string checkStartingCondition();
 public:
@@ -49,6 +49,8 @@ public:
 	~ConfirmDestinationState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Transfer button.
+	void btnTransferClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 };

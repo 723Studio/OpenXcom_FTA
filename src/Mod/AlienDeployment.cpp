@@ -49,6 +49,7 @@ namespace YAML
 		{
 			Node node;
 			node["alienRank"] = rhs.alienRank;
+			node["customUnitType"] = rhs.customUnitType;
 			node["lowQty"] = rhs.lowQty;
 			node["highQty"] = rhs.highQty;
 			node["dQty"] = rhs.dQty;
@@ -65,6 +66,7 @@ namespace YAML
 				return false;
 
 			rhs.alienRank = node["alienRank"].as<int>(rhs.alienRank);
+			rhs.customUnitType = node["customUnitType"].as<std::string>(rhs.customUnitType);
 			rhs.lowQty = node["lowQty"].as<int>(rhs.lowQty);
 			rhs.highQty = node["highQty"].as<int>(rhs.highQty);
 			rhs.dQty = node["dQty"].as<int>(rhs.dQty);
@@ -108,6 +110,65 @@ namespace YAML
 			return true;
 		}
 	};
+	template<>
+	struct convert<OpenXcom::ReinforcementsData>
+	{
+		static Node encode(const OpenXcom::ReinforcementsData& rhs)
+		{
+			Node node;
+			node["type"] = rhs.type;
+			node["briefing"] = rhs.briefing;
+			node["minDifficulty"] = rhs.minDifficulty;
+			node["maxDifficulty"] = rhs.maxDifficulty;
+			node["objectiveDestroyed"] = rhs.objectiveDestroyed;
+			node["turns"] = rhs.turns;
+			node["minTurn"] = rhs.minTurn;
+			node["maxTurn"] = rhs.maxTurn;
+			node["executionOdds"] = rhs.executionOdds;
+			node["maxRuns"] = rhs.maxRuns;
+			node["useSpawnNodes"] = rhs.useSpawnNodes;
+			node["mapBlockFilterType"] = (int)(rhs.mapBlockFilterType);
+			node["spawnBlocks"] = rhs.spawnBlocks;
+			node["spawnBlockGroups"] = rhs.spawnBlockGroups;
+			node["spawnNodeRanks"] = rhs.spawnNodeRanks;
+			node["spawnZLevels"] = rhs.spawnZLevels;
+			node["randomizeZLevels"] = rhs.randomizeZLevels;
+			node["minDistanceFromXcomUnits"] = rhs.minDistanceFromXcomUnits;
+			node["maxDistanceFromBorders"] = rhs.maxDistanceFromBorders;
+			node["forceSpawnNearFriend"] = rhs.forceSpawnNearFriend;
+			node["data"] = rhs.data;
+			return node;
+		}
+
+		static bool decode(const Node& node, OpenXcom::ReinforcementsData& rhs)
+		{
+			if (!node.IsMap())
+				return false;
+
+			rhs.type = node["type"].as<std::string>(rhs.type);
+			rhs.briefing = node["briefing"].as< OpenXcom::BriefingData >(rhs.briefing);
+			rhs.minDifficulty = node["minDifficulty"].as<int>(rhs.minDifficulty);
+			rhs.maxDifficulty = node["maxDifficulty"].as<int>(rhs.maxDifficulty);
+			rhs.objectiveDestroyed = node["objectiveDestroyed"].as<bool>(rhs.objectiveDestroyed);
+			rhs.turns = node["turns"].as< std::vector<int> >(rhs.turns);
+			rhs.minTurn = node["minTurn"].as<int>(rhs.minTurn);
+			rhs.maxTurn = node["maxTurn"].as<int>(rhs.maxTurn);
+			rhs.executionOdds = node["executionOdds"].as<int>(rhs.executionOdds);
+			rhs.maxRuns = node["maxRuns"].as<int>(rhs.maxRuns);
+			rhs.useSpawnNodes = node["useSpawnNodes"].as<bool>(rhs.useSpawnNodes);
+			rhs.mapBlockFilterType = (OpenXcom::MapBlockFilterType)(node["mapBlockFilterType"].as<int>(rhs.mapBlockFilterType));
+			rhs.spawnBlocks = node["spawnBlocks"].as< std::vector<std::string> >(rhs.spawnBlocks);
+			rhs.spawnBlockGroups = node["spawnBlockGroups"].as< std::vector<int> >(rhs.spawnBlockGroups);
+			rhs.spawnNodeRanks = node["spawnNodeRanks"].as< std::vector<int> >(rhs.spawnNodeRanks);
+			rhs.spawnZLevels = node["spawnZLevels"].as< std::vector<int> >(rhs.spawnZLevels);
+			rhs.randomizeZLevels = node["randomizeZLevels"].as<bool>(rhs.randomizeZLevels);
+			rhs.minDistanceFromXcomUnits = node["minDistanceFromXcomUnits"].as<int>(rhs.minDistanceFromXcomUnits);
+			rhs.maxDistanceFromBorders = node["maxDistanceFromBorders"].as<int>(rhs.maxDistanceFromBorders);
+			rhs.forceSpawnNearFriend = node["forceSpawnNearFriend"].as<bool>(rhs.forceSpawnNearFriend);
+			rhs.data = node["data"].as< std::vector<OpenXcom::DeploymentData> >(rhs.data);
+			return true;
+		}
+	};
 }
 
 namespace OpenXcom
@@ -119,13 +180,13 @@ namespace OpenXcom
  * @param type String defining the type.
  */
 AlienDeployment::AlienDeployment(const std::string &type) :
-	_type(type), _bughuntMinTurn(0), _width(0), _length(0), _height(0), _civilians(0), _civilianSpawnNodeRank(0),
+	_type(type), _bughuntMinTurn(0), _width(0), _length(0), _height(0), _civilians(0), _markCiviliansAsVIP(false), _civilianSpawnNodeRank(0),
 	_shade(-1), _minShade(-1), _maxShade(-1), _finalDestination(false), _isAlienBase(false), _isHidden(false), _fakeUnderwaterSpawnChance(0),
 	_alert("STR_ALIENS_TERRORISE"), _alertBackground("BACK03.SCR"), _alertDescription(""), _alertSound(-1),
 	_markerName("STR_TERROR_SITE"), _markerIcon(-1), _durationMin(0), _durationMax(0), _minDepth(0), _maxDepth(0),
 	_genMissionFrequency(0), _genMissionLimit(1000),
 	_objectiveType(-1), _objectivesRequired(0), _objectiveCompleteScore(0), _objectiveFailedScore(0), _despawnPenalty(0), _abortPenalty(0), _points(0),
-	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _keepCraftAfterFailedMission(false), _allowObjectiveRecovery(false), _escapeType(ESCAPE_NONE),
+	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _keepCraftAfterFailedMission(false), _allowObjectiveRecovery(false), _escapeType(ESCAPE_NONE), _vipSurvivalPercentage(0),
 	_baseDetectionRange(0), _baseDetectionChance(100), _huntMissionMaxFrequency(60)
 {
 }
@@ -167,10 +228,12 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_extendedObjectiveType = node["extendedObjectiveType"].as<std::string>(_extendedObjectiveType);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_data = node["data"].as< std::vector<DeploymentData> >(_data);
+	_reinforcements = node["reinforcements"].as< std::vector<ReinforcementsData> >(_reinforcements);
 	_width = node["width"].as<int>(_width);
 	_length = node["length"].as<int>(_length);
 	_height = node["height"].as<int>(_height);
 	_civilians = node["civilians"].as<int>(_civilians);
+	_markCiviliansAsVIP = node["markCiviliansAsVIP"].as<bool>(_markCiviliansAsVIP);
 	_civilianSpawnNodeRank = node["civilianSpawnNodeRank"].as<int>(_civilianSpawnNodeRank);
 	mod->loadUnorderedNamesToInt(_type, _civiliansByType, node["civiliansByType"]);
 	_terrains = node["terrains"].as<std::vector<std::string> >(_terrains);
@@ -221,6 +284,16 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 		_objectiveFailedText = node["objectiveFailed"][0].as<std::string>(_objectiveFailedText);
 		_objectiveFailedScore = node["objectiveFailed"][1].as<int>(_objectiveFailedScore);
 	}
+	_missionCompleteText = node["missionCompleteText"].as<std::string>(_missionCompleteText);
+	_missionFailedText = node["missionFailedText"].as<std::string>(_missionFailedText);
+	if (node["successEvents"])
+	{
+		_successEvents.load(node["successEvents"]);
+	}
+	if (node["failureEvents"])
+	{
+		_failureEvents.load(node["failureEvents"]);
+	}
 	_despawnPenalty = node["despawnPenalty"].as<int>(_despawnPenalty);
 	_abortPenalty = node["abortPenalty"].as<int>(_abortPenalty);
 	_points = node["points"].as<int>(_points);
@@ -233,6 +306,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_keepCraftAfterFailedMission = node["keepCraftAfterFailedMission"].as<bool>(_keepCraftAfterFailedMission);
 	_allowObjectiveRecovery = node["allowObjectiveRecovery"].as<bool>(_allowObjectiveRecovery);
 	_escapeType = EscapeType(node["escapeType"].as<int>(_escapeType));
+	_vipSurvivalPercentage = node["vipSurvivalPercentage"].as<int>(_vipSurvivalPercentage);
 	if (node["genMission"])
 	{
 		_genMission.load(node["genMission"]);
@@ -326,6 +400,30 @@ int AlienDeployment::getBughuntMinTurn() const
 const std::vector<DeploymentData>* AlienDeployment::getDeploymentData() const
 {
 	return &_data;
+}
+
+/**
+ * Gets the highest used alien rank.
+ * @return Highest used alien rank.
+ */
+int AlienDeployment::getMaxAlienRank() const
+{
+	int max = 0;
+	for (auto& dd : _data)
+	{
+		if (dd.alienRank > max)
+			max = dd.alienRank;
+	}
+	return max;
+}
+
+/**
+ * Gets a pointer to the reinforcements data.
+ * @return Pointer to the reinforcements data.
+ */
+const std::vector<ReinforcementsData>* AlienDeployment::getReinforcementsData() const
+{
+	return &_reinforcements;
 }
 
 /**
@@ -601,12 +699,14 @@ const std::string &AlienDeployment::getObjectivePopup() const
  * Fills out the variables associated with mission success, and returns if those variables actually contain anything.
  * @param &text a reference to the text we wish to alter.
  * @param &score a reference to the score we wish to alter.
+ * @param &missionText a reference to the custom mission text we wish to alter.
  * @return if there is anything worthwhile processing.
  */
-bool AlienDeployment::getObjectiveCompleteInfo(std::string &text, int &score) const
+bool AlienDeployment::getObjectiveCompleteInfo(std::string &text, int &score, std::string &missionText) const
 {
 	text = _objectiveCompleteText;
 	score = _objectiveCompleteScore;
+	missionText = _missionCompleteText;
 	return !text.empty();
 }
 
@@ -614,12 +714,14 @@ bool AlienDeployment::getObjectiveCompleteInfo(std::string &text, int &score) co
  * Fills out the variables associated with mission failure, and returns if those variables actually contain anything.
  * @param &text a reference to the text we wish to alter.
  * @param &score a reference to the score we wish to alter.
+ * @param &missionText a reference to the custom mission text we wish to alter.
  * @return if there is anything worthwhile processing.
  */
-bool AlienDeployment::getObjectiveFailedInfo(std::string &text, int &score) const
+bool AlienDeployment::getObjectiveFailedInfo(std::string &text, int &score, std::string &missionText) const
 {
 	text = _objectiveFailedText;
 	score = _objectiveFailedScore;
+	missionText = _missionFailedText;
 	return !text.empty();
 }
 

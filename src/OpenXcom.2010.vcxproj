@@ -92,14 +92,10 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>
-      </ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
@@ -131,13 +127,9 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;_DEBUG;_CONSOLE%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>
-      </ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
@@ -165,16 +157,12 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>
-      </ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
@@ -204,16 +192,12 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>
-      </ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/utf-8</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
@@ -261,6 +245,7 @@
     <ClCompile Include="Basescape\CraftsState.cpp" />
     <ClCompile Include="Basescape\CraftWeaponsState.cpp" />
     <ClCompile Include="Basescape\DismantleFacilityState.cpp" />
+    <ClCompile Include="Basescape\DisposeState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
@@ -291,6 +276,7 @@
     <ClCompile Include="Basescape\SoldierMemorialState.cpp" />
     <ClCompile Include="Basescape\SoldierSortUtil.cpp" />
     <ClCompile Include="Basescape\SoldiersState.cpp" />
+    <ClCompile Include="Basescape\SoldierTransformationListState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationState.cpp" />
     <ClCompile Include="Basescape\StoresState.cpp" />
     <ClCompile Include="Basescape\TechTreeSelectState.cpp" />
@@ -318,6 +304,7 @@
     <ClCompile Include="Battlescape\CommendationLateState.cpp" />
     <ClCompile Include="Battlescape\CommendationState.cpp" />
     <ClCompile Include="Battlescape\ConfirmEndMissionState.cpp" />
+    <ClCompile Include="Battlescape\CustomBattleMessageState.cpp" />
     <ClCompile Include="Battlescape\DebriefingState.cpp" />
     <ClCompile Include="Battlescape\Explosion.cpp" />
     <ClCompile Include="Battlescape\ExplosionBState.cpp" />
@@ -405,6 +392,7 @@
     <ClCompile Include="FTA\MasterMind.cpp" />
     <ClCompile Include="Geoscape\AlienBaseState.cpp" />
     <ClCompile Include="Geoscape\AllocateTrainingState.cpp" />
+    <ClCompile Include="Geoscape\AltMonthlyReportState.cpp" />
     <ClCompile Include="Geoscape\CraftNotEnoughPilotsState.cpp" />
     <ClCompile Include="Geoscape\DogfightErrorState.cpp" />
     <ClCompile Include="Geoscape\DogfightExperienceState.cpp" />
@@ -479,6 +467,7 @@
     <ClCompile Include="Menu\ListLoadState.cpp" />
     <ClCompile Include="Menu\ListSaveState.cpp" />
     <ClCompile Include="Menu\LoadGameState.cpp" />
+    <ClCompile Include="Menu\NotesState.cpp" />
     <ClCompile Include="Menu\OptionsAdvancedState.cpp" />
     <ClCompile Include="Menu\DeleteGameState.cpp" />
     <ClCompile Include="Menu\ErrorMessageState.cpp" />
@@ -524,12 +513,6 @@
     <ClCompile Include="Mod\RuleStatBonus.cpp" />
     <ClCompile Include="Mod\RuleCommendations.cpp" />
     <ClCompile Include="Mod\RuleConverter.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="Mod\ExtraSounds.cpp" />
     <ClCompile Include="Mod\ExtraSprites.cpp" />
     <ClCompile Include="Mod\ExtraStrings.cpp" />
@@ -657,6 +640,7 @@
     <ClInclude Include="Basescape\CraftsState.h" />
     <ClInclude Include="Basescape\CraftWeaponsState.h" />
     <ClInclude Include="Basescape\DismantleFacilityState.h" />
+    <ClInclude Include="Basescape\DisposeState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
@@ -687,6 +671,7 @@
     <ClInclude Include="Basescape\SoldierMemorialState.h" />
     <ClInclude Include="Basescape\SoldierSortUtil.h" />
     <ClInclude Include="Basescape\SoldiersState.h" />
+    <ClInclude Include="Basescape\SoldierTransformationListState.h" />
     <ClInclude Include="Basescape\SoldierTransformationState.h" />
     <ClInclude Include="Basescape\StoresState.h" />
     <ClInclude Include="Basescape\TechTreeSelectState.h" />
@@ -714,6 +699,7 @@
     <ClInclude Include="Battlescape\CommendationLateState.h" />
     <ClInclude Include="Battlescape\CommendationState.h" />
     <ClInclude Include="Battlescape\ConfirmEndMissionState.h" />
+    <ClInclude Include="Battlescape\CustomBattleMessageState.h" />
     <ClInclude Include="Battlescape\DebriefingState.h" />
     <ClInclude Include="Battlescape\Explosion.h" />
     <ClInclude Include="Battlescape\ExplosionBState.h" />
@@ -817,6 +803,7 @@
     <ClInclude Include="FTA\MasterMind.h" />
     <ClInclude Include="Geoscape\AlienBaseState.h" />
     <ClInclude Include="Geoscape\AllocateTrainingState.h" />
+    <ClInclude Include="Geoscape\AltMonthlyReportState.h" />
     <ClInclude Include="Geoscape\Cord.h" />
     <ClInclude Include="Geoscape\CraftNotEnoughPilotsState.h" />
     <ClInclude Include="Geoscape\DogfightErrorState.h" />
@@ -891,6 +878,7 @@
     <ClInclude Include="Menu\ListLoadState.h" />
     <ClInclude Include="Menu\ListSaveState.h" />
     <ClInclude Include="Menu\LoadGameState.h" />
+    <ClInclude Include="Menu\NotesState.h" />
     <ClInclude Include="Menu\OptionsAdvancedState.h" />
     <ClInclude Include="Menu\DeleteGameState.h" />
     <ClInclude Include="Menu\ErrorMessageState.h" />
@@ -938,7 +926,6 @@
     <ClInclude Include="Mod\RuleStatBonus.h" />
     <ClInclude Include="Mod\RuleCommendations.h" />
     <ClInclude Include="Mod\RuleConverter.h" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Mod\ArticleDefinition.h" />
     <ClInclude Include="Mod\City.h" />

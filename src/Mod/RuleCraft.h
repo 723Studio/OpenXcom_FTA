@@ -151,14 +151,17 @@ private:
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
 	int _sprite, _marker;
-	int _weapons, _soldiers, _pilots, _vehicles, _costBuy, _costRent, _costSell;
+	std::vector<int> _skinSprites;
+	int _weapons, _soldiers, _pilots, _vehicles, _costBuy, _costRent, _costSell, _costDispose;
 	char _weaponTypes[WeaponMax][WeaponTypeMax];
 	std::string _refuelItem;
 	std::string _weaponStrings[WeaponMax];
 	int _repairRate, _refuelRate, _transferTime, _score;
 	RuleTerrain *_battlescapeTerrainData;
-	bool _keepCraftAfterFailedMission, _allowLanding, _spacecraft, _notifyWhenRefueled, _autoPatrol;
+	int _maxSkinIndex;
+	bool _keepCraftAfterFailedMission, _allowLanding, _spacecraft, _notifyWhenRefueled, _autoPatrol, _undetectable;
 	int _listOrder, _maxItems, _maxAltitude;
+	double _maxStorageSpace;
 	std::vector<std::vector <int> > _deployment;
 	std::vector<int> _craftInventoryTile;
 	RuleCraftStats _stats;
@@ -178,7 +181,8 @@ public:
 	/// Gets the base functions required to buy craft.
 	RuleBaseFacilityFunctions getRequiresBuyBaseFunc() const { return _requiresBuyBaseFunc; }
 	/// Gets the craft's sprite.
-	int getSprite() const;
+	int getSprite(int skinIndex) const;
+	const std::vector<int> &getSkinSpritesRaw() const { return _skinSprites; }
 	/// Gets the craft's globe marker.
 	int getMarker() const;
 	/// Gets the craft's maximum fuel.
@@ -203,6 +207,8 @@ public:
 	int getRentCost() const;
 	/// Gets the craft's value.
 	int getSellCost() const;
+	/// Gets the craft's disposal cost.
+	int getDisposeCost() const { return _costDispose; };
 	/// Gets the craft's refuel item.
 	const std::string &getRefuelItem() const;
 	/// Gets the craft's repair rate.
@@ -221,6 +227,8 @@ public:
 	int getScore() const;
 	/// Gets the craft's terrain data.
 	RuleTerrain *getBattlescapeTerrainData() const;
+	/// Gets the craft's maximum skin index.
+	int getMaxSkinIndex() const { return _maxSkinIndex; }
 	/// Checks if this craft is lost after a failed mission or not.
 	bool keepCraftAfterFailedMission() const;
 	/// Checks if this craft is capable of landing (on missions).
@@ -231,6 +239,8 @@ public:
 	bool notifyWhenRefueled() const;
 	/// Does this craft support auto patrol?
 	bool canAutoPatrol() const;
+	/// Is this craft immune to detection by HKs and alien bases?
+	bool isUndetectable() const { return _undetectable; }
 	/// Gets the list weight for this craft.
 	int getListOrder() const;
 	/// Gets the deployment priority for the craft.
@@ -239,6 +249,8 @@ public:
 	const std::vector<int> &getCraftInventoryTile() const;
 	/// Gets the item limit for this craft.
 	int getMaxItems() const;
+	/// Gets the item storage space limit for this craft.
+	double getMaxStorageSpace() const;
 	/// Test for possibility of usage of weapon type in weapon slot.
 	bool isValidWeaponSlot(int slot, int weaponType) const;
 	int getWeaponTypesRaw(int slot, int subslot) const;

@@ -37,9 +37,11 @@ class TileEngine;
 class Pathfinding;
 class Mod;
 class InfoboxOKState;
+class CustomBattleMessageState;
 class SoldierDiary;
 class RuleSkill;
 class BattleScript;
+class RuleTerrain;
 
 enum BattleActionMove { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2 };
 
@@ -85,6 +87,8 @@ struct BattleAction : BattleActionCost
 	bool finalAction;
 	int number; // first action of turn, second, etc.?
 	bool sprayTargeting; // Used to separate waypoint checks between confirm firing mode and the "spray" autoshot
+	BattleActionOrigin relativeOrigin = BattleActionOrigin::CENTRE; // preferred origin voxel (centre, left or right)
+	int terrainMeleeTilePart = 0; // terrain melee
 
 	/// Default constructor
 	BattleAction() : target(-1, -1, -1), targeting(false), value(0), strafe(false), run(false), ignoreSpottedEnemies(false), diff(0), autoShotCounter(0), cameraPosition(0, 0, -1), desperate(false), finalFacing(-1), finalAction(false), number(0), sprayTargeting(false) { }
@@ -113,6 +117,13 @@ struct BattlescapeTally
 	int inExit = 0;
 	/// number of live soldiers in the middle of the battlefield.
 	int inField = 0;
+
+	/// number of live VIPs on entrance tiles
+	int vipInEntrance = 0;
+	/// number of live VIPs on exit tiles.
+	int vipInExit = 0;
+	/// number of live VIPs in the middle of the battlefield.
+	int vipInField = 0;
 };
 
 /**
@@ -218,11 +229,12 @@ public:
 	/// Spawns a new unit in the middle of battle.
 	void spawnNewUnit(BattleItem *item);
 	void spawnNewUnit(BattleActionAttack attack, Position position);
-	void scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock);
 	/// Spawns units from items that explode before battle
 	void spawnFromPrimedItems();
 	/// Removes spawned units that belong to the player to avoid dealing with recovery
 	void removeSummonedPlayerUnits();
+	/// Tally summoned player-controlled VIPs. We may still need to correct this in the Debriefing.
+	void tallySummonedVIPs();
 	/// Handles kneeling action.
 	bool kneel(BattleUnit *bu);
 	/// Cancels the current action.
@@ -309,6 +321,12 @@ public:
 	void resetAllEnemiesNeutralized() { _allEnemiesNeutralized = false; }
 	/// Process battlescripts.
 	void processBattleScripts(const std::vector<BattleScript*>* script);
+	/// Gets valid blocks to process the battlescript command.
+	std::vector<std::pair<int, int>> getValidBlocks(BattleScript* command);
+	/// Spawn units as part of battlescript commands.
+	void scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock);
+	/// Display message fro the battlescript
+	void displayScriptMessage(BattleScript* command);
 };
 
 }

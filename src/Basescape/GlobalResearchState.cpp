@@ -185,7 +185,7 @@ void GlobalResearchState::fillProjectList()
 		{
 			std::string baseName = base->getName(_game->getLanguage());
 			_lstResearch->addRow(3, baseName.c_str(), "", "");
-			_lstResearch->setRowColor(_lstResearch->getTexts() - 1, _lstResearch->getSecondaryColor());
+			_lstResearch->setRowColor(_lstResearch->getLastRowIndex(), _lstResearch->getSecondaryColor());
 
 			// dummy
 			_bases.push_back(0);

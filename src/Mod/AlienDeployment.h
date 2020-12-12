@@ -37,6 +37,7 @@ struct ItemSet
 struct DeploymentData
 {
 	int alienRank;
+	std::string customUnitType;
 	int lowQty, highQty, dQty, extraQty;
 	int percentageOutsideUfo;
 	std::vector<ItemSet> itemSets, extraRandomItems;
@@ -49,8 +50,33 @@ struct BriefingData
 	bool showCraft, showTarget;
 	BriefingData() : palette(0), textOffset(0), music("GMDEFEND"), background("BACK16.SCR"), showCraft(true), showTarget(true) { /*Empty by Design*/ };
 };
+enum MapBlockFilterType : int { MFT_NONE, MFT_BY_MAPSCRIPT, MFT_BY_REINFORCEMENTS, MFT_BY_BOTH_UNION, MFT_BY_BOTH_INTERSECTION };
+struct ReinforcementsData
+{
+	std::string type;
+	BriefingData briefing;
+	int minDifficulty = 0;
+	int maxDifficulty = 4;
+	bool objectiveDestroyed = false;
+	std::vector<int> turns;
+	int minTurn = 0;
+	int maxTurn = -1;
+	int executionOdds = 100;
+	int maxRuns = -1;
+	bool useSpawnNodes = true;
+	MapBlockFilterType mapBlockFilterType = MFT_BY_BOTH_UNION;
+	std::vector<std::string> spawnBlocks;
+	std::vector<int> spawnBlockGroups;
+	std::vector<int> spawnNodeRanks;
+	std::vector<int> spawnZLevels;
+	bool randomizeZLevels = true;
+	int minDistanceFromXcomUnits = 0;
+	int maxDistanceFromBorders = 0;
+	bool forceSpawnNearFriend = true;
+	std::vector<DeploymentData> data;
+};
 enum ChronoTrigger { FORCE_LOSE, FORCE_ABORT, FORCE_WIN, FORCE_WIN_SURRENDER };
-enum EscapeType { ESCAPE_NONE, ESCAPE_EXIT, ESCAPE_ENTRY, ESCAPE_EITHER };
+enum EscapeType : int { ESCAPE_NONE, ESCAPE_EXIT, ESCAPE_ENTRY, ESCAPE_EITHER };
 /**
  * Represents a specific type of Alien Deployment.
  * Contains constant info about a Alien Deployment like
@@ -71,7 +97,9 @@ private:
 	std::string _alternativeDeployment, _alternativeDeploymentResearch;
 	int _bughuntMinTurn;
 	std::vector<DeploymentData> _data;
+	std::vector<ReinforcementsData> _reinforcements;
 	int _width, _length, _height, _civilians;
+	bool _markCiviliansAsVIP;
 	int _civilianSpawnNodeRank;
 	std::map<std::string, int> _civiliansByType;
 	std::vector<std::string> _terrains, _music;
@@ -85,12 +113,14 @@ private:
 	int _alertSound;
 	BriefingData _briefingData;
 	std::string _markerName, _objectivePopup, _objectiveCompleteText, _objectiveFailedText;
-	WeightedOptions _genMission;
+	std::string _missionCompleteText, _missionFailedText;
+	WeightedOptions _genMission, _successEvents, _failureEvents;
 	int _markerIcon, _durationMin, _durationMax, _minDepth, _maxDepth, _genMissionFrequency, _genMissionLimit;
 	int _objectiveType, _objectivesRequired, _objectiveCompleteScore, _objectiveFailedScore, _despawnPenalty, _abortPenalty, _points, _turnLimit, _cheatTurn;
 	ChronoTrigger _chronoTrigger;
 	bool _keepCraftAfterFailedMission, _allowObjectiveRecovery;
 	EscapeType _escapeType;
+	int _vipSurvivalPercentage;
 	std::string _baseSelfDestructCode;
 	int _baseDetectionRange, _baseDetectionChance, _huntMissionMaxFrequency;
 	std::vector<std::pair<size_t, WeightedOptions*> > _huntMissionDistribution;
@@ -122,10 +152,16 @@ public:
 	int getBughuntMinTurn() const;
 	/// Gets a pointer to the data.
 	const std::vector<DeploymentData>* getDeploymentData() const;
+	/// Gets the highest used alien rank.
+	int getMaxAlienRank() const;
+	/// Gets a pointer to the reinforcements data.
+	const std::vector<ReinforcementsData>* getReinforcementsData() const;
 	/// Gets dimensions.
 	void getDimensions(int *width, int *length, int *height) const;
 	/// Gets civilians.
 	int getCivilians() const;
+	/// Gets the civilian spawn node rank.
+	bool getMarkCiviliansAsVIP() const { return _markCiviliansAsVIP; }
 	/// Gets the civilian spawn node rank.
 	int getCivilianSpawnNodeRank() const { return _civilianSpawnNodeRank; }
 	/// Gets civilians by type.
@@ -156,6 +192,10 @@ public:
 	std::string getLoseCutscene() const;
 	/// Gets the cutscene to play when this mission is aborted.
 	std::string getAbortCutscene() const;
+	/// Gets geoscape event rule name to spawn after success mission.
+	std::string chooseSuccessEvent() const { return _successEvents.choose(); };
+	/// Gets geoscape event rule name to spawn after failure mission.
+	std::string chooseFailureEvent() const { return _failureEvents.choose(); };
 	/// Gets the alert message for this mission type.
 	std::string getAlertMessage() const;
 	/// Gets the alert background for this mission type.
@@ -187,9 +227,9 @@ public:
 	/// Gets the string to pop up when the mission objectives are complete.
 	const std::string &getObjectivePopup() const;
 	/// Fills out the objective complete info.
-	bool getObjectiveCompleteInfo(std::string &text, int &score) const;
+	bool getObjectiveCompleteInfo(std::string &text, int &score, std::string &missionText) const;
 	/// Fills out the objective failed info.
-	bool getObjectiveFailedInfo(std::string &text, int &score) const;
+	bool getObjectiveFailedInfo(std::string &text, int &score, std::string &missionText) const;
 	/// Gets the score penalty XCom receives for ignoring this site.
 	int getDespawnPenalty() const;
 	/// Gets the score penalty XCom receives for aborting this mission.
@@ -218,6 +258,8 @@ public:
 	bool keepCraftAfterFailedMission() const;
 	bool allowObjectiveRecovery() const;
 	EscapeType getEscapeType() const;
+	/// Gets the percentage of VIP units that must survive in order to accomplish the mission.
+	int getVIPSurvivalPercentage() const { return _vipSurvivalPercentage; }
 
 	/// Generates a hunt mission based on the given month.
 	std::string generateHuntMission(const size_t monthsPassed) const;

@@ -249,9 +249,18 @@ size_t TextList::getTexts() const
  * Returns the amount of physical rows stored in the list.
  * @return Number of rows.
  */
-size_t TextList::getRows() const
+size_t TextList::getRowsDoNotUse() const
 {
 	return _rows.size();
+}
+
+/**
+ * Gets the index of the last row in the list.
+ * @return Index of the last row or -1 if the list is empty.
+ */
+int TextList::getLastRowIndex() const
+{
+	return _texts.size() - 1;
 }
 
 /**

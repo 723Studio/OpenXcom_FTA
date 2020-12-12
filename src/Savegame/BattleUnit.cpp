@@ -65,10 +65,10 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth) :
 	_verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0), _fallPhase(0), _kneeled(false), _floating(false),
 	_dontReselect(false), _fire(0), _currentAIState(0), _visible(false),
 	_exp{ }, _expTmp{ },
-	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0), _moraleRestored(0), _coverReserve(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
+	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0), _moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0),
 	_geoscapeSoldier(soldier), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
-	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false), _capturable(true)
+	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false), _capturable(true), _vip(false)
 {
 	_name = soldier->getName(true);
 	_id = soldier->getId();
@@ -398,11 +398,11 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_fallPhase(0), _kneeled(false), _floating(false), _dontReselect(false), _fire(0), _currentAIState(0),
 	_visible(false), _exp{ }, _expTmp{ },
 	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
-	_moraleRestored(0), _coverReserve(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
+	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT),
 	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0),  _unitRules(unit),
 	_rankInt(0), _turretType(-1), _hidingForTurn(false), _respawn(false), _alreadyRespawned(false),
-	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false)
+	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false), _vip(false)
 {
 	if (enviro)
 	{
@@ -439,6 +439,10 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 			_pickUpWeaponsMoreActively = mod->getAIPickUpWeaponsMoreActively();
 		else
 			_pickUpWeaponsMoreActively = mod->getAIPickUpWeaponsMoreActivelyCiv();
+	}
+	if (_unitRules && _unitRules->isVIP())
+	{
+		_vip = true;
 	}
 
 	_movementType = _armor->getMovementType();
@@ -487,7 +491,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_maxViewDistanceAtDay = _armor->getVisibilityAtDay() ? _armor->getVisibilityAtDay() : mod->getMaxViewDistance();
 
 	_breathFrame = -1; // most aliens don't breathe per-se, that's exclusive to humanoids
-	if (armor->drawBubbles())
+	if (_armor->drawBubbles())
 	{
 		_breathFrame = 0;
 	}
@@ -653,8 +657,10 @@ void BattleUnit::load(const YAML::Node &node, const Mod *mod, const ScriptGlobal
 	}
 	_mindControllerID = node["mindControllerID"].as<int>(_mindControllerID);
 	_summonedPlayerUnit = node["summonedPlayerUnit"].as<bool>(_summonedPlayerUnit);
+	_resummonedFakeCivilian = node["resummonedFakeCivilian"].as<bool>(_resummonedFakeCivilian);
 	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<bool>(_pickUpWeaponsMoreActively);
 	_disableIndicators = node["disableIndicators"].as<bool>(_disableIndicators);
+	_vip = node["vip"].as<bool>(_vip);
 	_meleeAttackedBy = node["meleeAttackedBy"].as<std::vector<int> >(_meleeAttackedBy);
 
 	_scriptValues.load(node, shared);
@@ -742,10 +748,14 @@ YAML::Node BattleUnit::save(const ScriptGlobal *shared) const
 	}
 	node["mindControllerID"] = _mindControllerID;
 	node["summonedPlayerUnit"] = _summonedPlayerUnit;
+	if (_resummonedFakeCivilian)
+		node["resummonedFakeCivilian"] = _resummonedFakeCivilian;
 	if (_pickUpWeaponsMoreActively)
 		node["pickUpWeaponsMoreActively"] = _pickUpWeaponsMoreActively;
 	if (_disableIndicators)
 		node["disableIndicators"] = _disableIndicators;
+	if (_vip)
+		node["vip"] = _vip;
 	if (!_meleeAttackedBy.empty())
 	{
 		node["meleeAttackedBy"] = _meleeAttackedBy;
@@ -1624,7 +1634,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 
 		if (isWoundable())
 		{
-			_fatalWounds[bodypart] += std::get<toWound>(args.data);
+			setValueMax(_fatalWounds[bodypart], std::get<toWound>(args.data), 0, 100);
 			moraleChange(-std::get<toWound>(args.data));
 		}
 
@@ -2227,11 +2237,7 @@ int BattleUnit::getAccuracyModifier(const BattleItem *item) const
  */
 void BattleUnit::setArmor(int armor, UnitSide side)
 {
-	if (armor < 0)
-	{
-		armor = 0;
-	}
-	_currentArmor[side] = armor;
+	_currentArmor[side] = Clamp(armor, 0, _maxArmor[side]);
 }
 
 /**
@@ -3683,11 +3689,22 @@ int BattleUnit::getTurretType() const
  * @param part The body part (in the range 0-5)
  * @return The amount of fatal wound of a body part
  */
-int BattleUnit::getFatalWound(int part) const
+int BattleUnit::getFatalWound(UnitBodyPart part) const
 {
-	if (part < 0 || part > 5)
+	if (part < 0 || part >= BODYPART_MAX)
 		return 0;
 	return _fatalWounds[part];
+}
+/**
+ * Set fatal wound amount of a body part
+ * @param wound The amount of fatal wound of a body part shoud have
+ * @param part The body part (in the range 0-5)
+ */
+void BattleUnit::setFatalWound(int wound, UnitBodyPart part)
+{
+	if (part < 0 || part >= BODYPART_MAX)
+		return;
+	_fatalWounds[part] = Clamp(wound, 0, 100);
 }
 
 /**
@@ -3696,9 +3713,9 @@ int BattleUnit::getFatalWound(int part) const
  * @param woundAmount the amount of fatal wound healed
  * @param healthAmount The amount of health to add to soldier health
  */
-void BattleUnit::heal(int part, int woundAmount, int healthAmount)
+void BattleUnit::heal(UnitBodyPart part, int woundAmount, int healthAmount)
 {
-	if (part < 0 || part > 5 || !_fatalWounds[part])
+	if (part < 0 || part >= BODYPART_MAX || !_fatalWounds[part])
 	{
 		return;
 	}
@@ -4115,15 +4132,6 @@ void BattleUnit::setTimeUnits(int tu)
 }
 
 /**
- * Set a specific number of energy.
- * @param energy energy.
- */
-void BattleUnit::setEnergy(int energy)
-{
-	_energy = energy;
-}
-
-/**
  * Get the faction the unit was killed by.
  * @return faction
  */
@@ -4358,24 +4366,6 @@ bool BattleUnit::tookFireDamage() const
 void BattleUnit::toggleFireDamage()
 {
 	_hitByFire = !_hitByFire;
-}
-
-/**
- * Changes the amount of TUs reserved for cover.
- * @param reserve time units.
- */
-void BattleUnit::setCoverReserve(int reserve)
-{
-	_coverReserve = reserve;
-}
-
-/**
- * Returns the amount of TUs reserved for cover.
- * @return time units.
- */
-int BattleUnit::getCoverReserve() const
-{
-	return _coverReserve;
 }
 
 /**
@@ -4930,6 +4920,13 @@ void BattleUnit::disableIndicators()
 namespace
 {
 
+void setArmorValueScript(BattleUnit *bu, int side, int value)
+{
+	if (bu && 0 <= side && side < SIDE_MAX)
+	{
+		bu->setArmor(value, (UnitSide)side);
+	}
+}
 void getArmorValueScript(const BattleUnit *bu, int &ret, int side)
 {
 	if (bu && 0 <= side && side < SIDE_MAX)
@@ -4939,7 +4936,7 @@ void getArmorValueScript(const BattleUnit *bu, int &ret, int side)
 	}
 	ret = 0;
 }
-void getArmorMaxScript(const BattleUnit *bu, int &ret, int side)
+void getArmorValueMaxScript(const BattleUnit *bu, int &ret, int side)
 {
 	if (bu && 0 <= side && side < SIDE_MAX)
 	{
@@ -4948,6 +4945,34 @@ void getArmorMaxScript(const BattleUnit *bu, int &ret, int side)
 	}
 	ret = 0;
 }
+
+void setFatalWoundScript(BattleUnit *bu, int part, int val)
+{
+	if (bu && 0 <= part && part < BODYPART_MAX)
+	{
+		bu->setFatalWound(val, (UnitBodyPart)part);
+	}
+}
+void getFatalWoundScript(const BattleUnit *bu, int &ret, int part)
+{
+	if (bu && 0 <= part && part < BODYPART_MAX)
+	{
+		ret = bu->getFatalWound((UnitBodyPart)part);
+		return;
+	}
+	ret = 0;
+}
+void getFatalWoundMaxScript(const BattleUnit *bu, int &ret, int part)
+{
+	if (bu && 0 <= part && part < BODYPART_MAX)
+	{
+		ret = 100;
+		return;
+	}
+	ret = 0;
+}
+
+
 void getGenderScript(const BattleUnit *bu, int &ret)
 {
 	if (bu)
@@ -5398,6 +5423,12 @@ std::string debugDisplayScript(const BattleUnit* bu)
 			s += "\" race: \"";
 			s += unit->getRace();
 		}
+		auto soldier = bu->getGeoscapeSoldier();
+		if (soldier)
+		{
+			s += "\" name: \"";
+			s += soldier->getName();
+		}
 		s += "\" id: ";
 		s += std::to_string(bu->getId());
 		s += " faction: ";
@@ -5488,9 +5519,14 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.add<&setBaseStatRangeScript<&BattleUnit::_morale, 0, 100>>("setMorale");
 
 
-	bu.add<&getArmorValueScript>("getArmor");
-	bu.add<&getArmorMaxScript>("getArmorMax");
+	bu.add<&setArmorValueScript>("setArmor", "first arg is side, second one is new value of armor");
+	bu.add<&getArmorValueScript>("getArmor", "first arg return armor value, second arg is side");
+	bu.add<&getArmorValueMaxScript>("getArmorMax", "first arg return max armor value, second arg is side");
 
+	bu.add<&BattleUnit::getFatalWounds>("getFatalwoundsTotal", "sum for every body part");
+	bu.add<&setFatalWoundScript>("setFatalwounds", "first arg is body part, second one is new value of wounds");
+	bu.add<&getFatalWoundScript>("getFatalwounds", "first arg return wounds number, second arg is body part");
+	bu.add<&getFatalWoundMaxScript>("getFatalwoundsMax", "first arg return max wounds number, second arg is body part");
 
 	UnitStats::addGetStatsScript<&BattleUnit::_stats>(bu, "Stats.");
 	UnitStats::addSetStatsWithCurrScript<&BattleUnit::_stats, &BattleUnit::_tu, &BattleUnit::_energy, &BattleUnit::_health, &BattleUnit::_mana>(bu, "Stats.");
@@ -5500,8 +5536,6 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.add<&getVisibleUnitsCountScript>("getVisibleUnitsCount");
 	bu.add<&getFactionScript>("getFaction");
 
-	bu.add<&BattleUnit::getFatalWounds>("getFatalwoundsTotal");
-	bu.add<&BattleUnit::getFatalWound>("getFatalwounds");
 	bu.add<&BattleUnit::getOverKillDamage>("getOverKillDamage");
 	bu.addRules<Armor, &BattleUnit::getArmor>("getRuleArmor");
 	bu.addFunc<getRuleSoldierScript>("getRuleSoldier");
@@ -5511,8 +5545,8 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.addFunc<getRightHandWeaponConstScript>("getRightHandWeapon");
 	bu.addFunc<getLeftHandWeaponScript>("getLeftHandWeapon");
 	bu.addFunc<getLeftHandWeaponConstScript>("getLeftHandWeapon");
-	bu.addFunc<reduceByBraveryScript>("reduceByBravery");
-	bu.addFunc<reduceByResistanceScript>("reduceByResistance");
+	bu.addFunc<reduceByBraveryScript>("reduceByBravery", "change first arg1 to `(110 - bravery) * arg1 / 100`");
+	bu.addFunc<reduceByResistanceScript>("reduceByResistance", "change first arg1 to `arg1 * resist[arg2]`");
 
 	bu.add<&getPositionXScript>("getPosition.getX");
 	bu.add<&getPositionYScript>("getPosition.getY");
@@ -5621,6 +5655,7 @@ void battleActionImpl(BindBase& b)
 	b.addCustomConst("battle_action_use", BA_USE);
 	b.addCustomConst("battle_action_mindcontrol", BA_MINDCONTROL);
 	b.addCustomConst("battle_action_panic", BA_PANIC);
+	b.addCustomConst("battle_action_cqb", BA_CQB);
 }
 
 void moveTypesImpl(BindBase& b)
@@ -5692,8 +5727,11 @@ ModScript::SelectMoveSoundUnitParser::SelectMoveSoundUnitParser(ScriptGlobal* sh
 ModScript::ReactionUnitParser::ReactionUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
 	"reaction_chance",
 	"distance",
-	"action_unit", "reaction_unit", "weapon", "battle_action", "action_target",
-	"move", }
+
+	"action_unit",
+	"reaction_unit", "reaction_weapon", "reaction_battle_action",
+	"weapon", "skill", "battle_action", "action_target",
+	"move", "arc_to_action_unit", "battle_game" }
 {
 	BindBase b { this };
 
@@ -5750,12 +5788,36 @@ ModScript::DamageUnitParser::DamageUnitParser(ScriptGlobal* shared, const std::s
 
 ModScript::TryPsiAttackUnitParser::TryPsiAttackUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
 	"psi_attack_success",
+
 	"item",
 	"attacker",
 	"victim",
+	"skill",
 	"attack_strength",
 	"defense_strength",
-	"battle_action" }
+	"battle_action",
+	"battle_game",
+}
+{
+	BindBase b { this };
+
+	b.addCustomPtr<const Mod>("rules", mod);
+
+	battleActionImpl(b);
+}
+
+ModScript::TryMeleeAttackUnitParser::TryMeleeAttackUnitParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"melee_attack_success",
+
+	"item",
+	"attacker",
+	"victim",
+	"skill",
+	"attack_strength",
+	"defense_strength",
+	"battle_action",
+	"battle_game",
+}
 {
 	BindBase b { this };
 

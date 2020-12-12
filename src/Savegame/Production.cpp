@@ -94,7 +94,7 @@ void Production::setSellItems (bool sell)
 
 bool Production::haveEnoughMoneyForOneMoreUnit(SavedGame * g) const
 {
-	return (g->getFunds() >= _rules->getManufactureCost());
+	return _rules->haveEnoughMoneyForOneMoreUnit(g->getFunds());
 }
 
 bool Production::haveEnoughLivingSpaceForOneMoreUnit(Base * b)
@@ -125,10 +125,10 @@ bool Production::haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const
 	return true;
 }
 
-productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang)
+productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int bonus)
 {
 	int done = getAmountProduced();
-	_timeSpent += _engineers;
+	_timeSpent += (_engineers * bonus) / 100;
 
 	if (done < getAmountProduced())
 	{
@@ -234,6 +234,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 						{
 							s->setName(lang->getString(_rules->getSpawnedPersonName()));
 						}
+						s->load(_rules->getSpawnedSoldierTemplate(), m, g, m->getScriptGlobal(), true); // load from soldier template
 						t->setSoldier(s);
 						b->getTransfers()->push_back(t);
 					}

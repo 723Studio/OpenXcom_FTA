@@ -142,6 +142,20 @@ int BaseFacility::getBuildTime() const
 }
 
 /**
+ * Returns the base facility's remaining time
+ * until it's finished building (0 = complete).
+ * Facility upgrades and downgrades are ignored in this calculation.
+ * @return Time left in days.
+ */
+int BaseFacility::getAdjustedBuildTime() const
+{
+	if (_hadPreviousFacility)
+		return 0;
+
+	return _buildTime;
+}
+
+/**
  * Changes the base facility's remaining time
  * until it's finished building.
  * @param time Time left in days.
@@ -214,7 +228,6 @@ void BaseFacility::setCraftForDrawing(Craft *craft)
 
 /**
  * Gets whether this facility was placed over another or was placed by removing another
- * Used for determining if this facility should count for base connectivity
  * @return true if placed over or by removing another facility
  */
 bool BaseFacility::getIfHadPreviousFacility() const
@@ -229,6 +242,16 @@ bool BaseFacility::getIfHadPreviousFacility() const
 void BaseFacility::setIfHadPreviousFacility(bool hadPreviousFacility)
 {
 	_hadPreviousFacility = hadPreviousFacility;
+}
+
+/**
+ * Is the facility fully built or being upgraded/downgraded?
+ * Used for determining if this facility should count for base connectivity
+ * @return True, if fully built or being upgraded/downgraded.
+ */
+bool BaseFacility::isBuiltOrHadPreviousFacility() const
+{
+	return _buildTime == 0 || _hadPreviousFacility;
 }
 
 }

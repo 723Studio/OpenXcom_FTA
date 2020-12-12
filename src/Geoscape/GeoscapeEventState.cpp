@@ -32,11 +32,13 @@
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleRegion.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -210,6 +212,43 @@ void GeoscapeEventState::eventLogic()
 	// 2. give/take funds
 	save->setFunds(save->getFunds() + rule.getFunds());
 
+	// 3. spawn/transfer persons (soldiers, engineers, scientists, ...)
+	const std::string& spawnedPersonType = rule.getSpawnedPersonType();
+	if (rule.getSpawnedPersons() > 0 && !spawnedPersonType.empty())
+	{
+		if (spawnedPersonType == "STR_SCIENTIST")
+		{
+			Transfer* t = new Transfer(24);
+			t->setScientists(rule.getSpawnedPersons());
+			hq->getTransfers()->push_back(t);
+		}
+		else if (spawnedPersonType == "STR_ENGINEER")
+		{
+			Transfer* t = new Transfer(24);
+			t->setEngineers(rule.getSpawnedPersons());
+			hq->getTransfers()->push_back(t);
+		}
+		else
+		{
+			RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+			if (ruleSoldier)
+			{
+				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
+				{
+					Transfer* t = new Transfer(24);
+					Soldier* s = mod->genSoldier(save, ruleSoldier->getType());
+					if (!rule.getSpawnedPersonName().empty())
+					{
+						s->setName(tr(rule.getSpawnedPersonName()));
+					}
+					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
+					t->setSoldier(s);
+					hq->getTransfers()->push_back(t);
+				}
+			}
+		}
+	}
+
 	// 3. spawn/transfer item into the HQ
 	std::map<std::string, int> itemsToTransfer;
 
@@ -262,8 +301,8 @@ void GeoscapeEventState::eventLogic()
 
 	for (auto rName : rule.getResearchList())
 	{
-		const RuleResearch* rRule = mod->getResearch(rName, true);
-		if (!save->isResearched(rRule, false))
+		const RuleResearch *rRule = mod->getResearch(rName, true);
+		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
 		{
 			possibilities.push_back(rRule);
 		}
@@ -272,15 +311,36 @@ void GeoscapeEventState::eventLogic()
 	if (!possibilities.empty())
 	{
 		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
-		const RuleResearch* eventResearch = possibilities.at(pickResearch);
+		const RuleResearch *eventResearch = possibilities.at(pickResearch);
+
+		bool alreadyResearched = false;
+		std::string name = eventResearch->getLookup().empty() ? eventResearch->getName() : eventResearch->getLookup();
+		if (save->isResearched(name, false))
+		{
+			alreadyResearched = true; // we have seen the pedia article already, don't show it again
+		}
+
 		save->addFinishedResearch(eventResearch, mod, hq, true);
-		_researchName = eventResearch->getName();
+		_researchName = alreadyResearched ? "" : eventResearch->getName();
 
 		if (!eventResearch->getLookup().empty())
 		{
 			const RuleResearch* lookupResearch = mod->getResearch(eventResearch->getLookup(), true);
 			save->addFinishedResearch(lookupResearch, mod, hq, true);
-			_researchName = lookupResearch->getName();
+			_researchName = alreadyResearched ? "" : lookupResearch->getName();
+		}
+
+		if (auto bonus = save->selectGetOneFree(eventResearch))
+		{
+			save->addFinishedResearch(bonus, mod, hq, true);
+			_bonusResearchName = bonus->getName();
+
+			if (!bonus->getLookup().empty())
+			{
+				const RuleResearch *bonusLookup = mod->getResearch(bonus->getLookup(), true);
+				save->addFinishedResearch(bonusLookup, mod, hq, true);
+				_bonusResearchName = bonusLookup->getName();
+			}
 		}
 	}
 
@@ -296,7 +356,7 @@ void GeoscapeEventState::eventLogic()
 				std::string lookingName = (*i).first;
 				if (factionName == lookingName)
 				{
-					(*j)->setReputation((*j)->getReputation() + (*i).second);
+					(*j)->setReputationScore((*j)->getReputationScore() + (*i).second);
 					break;
 				}
 			}
@@ -340,6 +400,10 @@ void GeoscapeEventState::btnOkClick(Action*)
 		_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
 	}
 
+	if (!_bonusResearchName.empty())
+	{
+		Ufopaedia::openArticle(_game, _bonusResearchName);
+	}
 	if (!_researchName.empty())
 	{
 		Ufopaedia::openArticle(_game, _researchName);

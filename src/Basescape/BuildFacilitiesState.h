@@ -40,6 +40,7 @@ protected:
 	Base *_base;
 	State *_state;
 	std::vector<RuleBaseFacility*> _facilities;
+	size_t _lstScroll;
 
 	TextButton *_btnOk;
 	Window *_window;

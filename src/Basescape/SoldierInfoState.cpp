@@ -299,6 +299,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 
 	_btnDiary->setText(tr("STR_DIARY"));
 	_btnDiary->onMouseClick((ActionHandler)&SoldierInfoState::btnDiaryClick);
+	_btnDiary->setVisible(Options::soldierDiaries);
 
 	_txtPsionic->setText(tr("STR_IN_PSIONIC_TRAINING"));
 
@@ -493,8 +494,12 @@ void SoldierInfoState::init()
 
 	_btnArmor->setText(wsArmor);
 
-	_btnSack->setVisible(_game->getSavedGame()->getMonthsPassed() > -1 && !(_soldier->getCraft() && _soldier->getCraft()->getStatus() == "STR_OUT") && _soldier->getCovertOperation() != 0);
-
+	_btnSack->setVisible(_game->getSavedGame()->getMonthsPassed() > -1 && !(_soldier->getCraft() && _soldier->getCraft()->getStatus() == "STR_OUT"));
+	if (_soldier->getCovertOperation() != 0)
+	{
+		_btnSack->setVisible(false);
+	}
+	bool test = _btnSack->getVisible();
 	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString())));
 
 	_txtMissions->setText(tr("STR_MISSIONS").arg(_soldier->getMissions()));

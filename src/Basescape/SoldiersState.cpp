@@ -39,6 +39,7 @@
 #include "SoldierInfoState.h"
 #include "SoldierMemorialState.h"
 #include "SoldierTransformationState.h"
+#include "SoldierTransformationListState.h"
 #include "../Battlescape/InventoryState.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -146,6 +147,9 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 
 		if (isTrnBtnVisible)
 			_availableOptions.push_back("STR_TRAINING");
+
+		if (isTransformationAvailable)
+			_availableOptions.push_back("STR_TRANSFORMATIONS_OVERVIEW");
 
 		bool refreshDeadSoldierStats = false;
 		for (auto transformationRule : availableTransformations)
@@ -596,6 +600,10 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 	{
 		_cbxScreenActions->setSelected(0);
 		_game->pushState(new AllocateTrainingState(_base));
+	}
+	else if (selAction == "STR_TRANSFORMATIONS_OVERVIEW")
+	{
+		_game->pushState(new SoldierTransformationListState(_base, _cbxScreenActions));
 	}
 	else
 	{

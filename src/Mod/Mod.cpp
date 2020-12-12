@@ -152,6 +152,8 @@ bool Mod::EXTENDED_ITEM_RELOAD_COST;
 bool Mod::EXTENDED_RUNNING_COST;
 bool Mod::EXTENDED_HWP_LOAD_ORDER;
 int Mod::EXTENDED_MELEE_REACTIONS;
+int Mod::EXTENDED_TERRAIN_MELEE;
+int Mod::EXTENDED_UNDERWATER_THROW_FACTOR;
 
 constexpr size_t MaxDifficultyLevels = 5;
 
@@ -229,6 +231,8 @@ void Mod::resetGlobalStatics()
 	EXTENDED_RUNNING_COST = false;
 	EXTENDED_HWP_LOAD_ORDER = false;
 	EXTENDED_MELEE_REACTIONS = 0;
+	EXTENDED_TERRAIN_MELEE = 0;
+	EXTENDED_UNDERWATER_THROW_FACTOR = 0;
 }
 
 /**
@@ -335,11 +339,11 @@ Mod::Mod() :
 	_maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100), _minReactionAccuracy(0), _chanceToStopRetaliation(0), _lessAliensDuringBaseDefense(false),
 	_allowCountriesToCancelAlienPact(false), _buildInfiltrationBaseCloseToTheCountry(false), _allowAlienBasesOnWrongTextures(true),
 	_kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
-	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8),
+	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0),
 	_noLOSAccuracyPenaltyGlobal(-1),
 	_surrenderMode(0),
 	_ftaGame(false), _researchTreeDisabled(false),
-	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100),
+	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000),
 	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
 	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
 	_loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"),
@@ -348,7 +352,7 @@ Mod::Mod() :
 	_crewEmergencyEvacuationSurvivalChance(100), _pilotsEmergencyEvacuationSurvivalChance(100),
 	_soldiersPerSergeant(5), _soldiersPerCaptain(11), _soldiersPerColonel(23), _soldiersPerCommander(30),
 	_pilotAccuracyZeroPoint(55), _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60),
-	_performanceBonusFactor(0), _useCustomCategories(false), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false),
+	_performanceBonusFactor(0), _enableNewResearchSorting(false), _displayCustomCategories(0), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false),
 	_alienInventoryOffsetX(80), _alienInventoryOffsetBigUnit(32),
 	_hidePediaInfoButton(false), _extraNerdyPediaInfo(false),
 	_giveScoreAlsoForResearchedArtifacts(false), _statisticalBulletConservation(false), _stunningImprovesMorale(false),
@@ -1635,7 +1639,7 @@ void Mod::loadAll()
 	ModScript parser{ _scriptGlobal, this };
 	auto mods = FileMap::getRulesets();
 
-	Log(LOG_INFO) << "Loading rulesets...";
+	Log(LOG_INFO) << "Loading begins...";
 	_scriptGlobal->beginLoad();
 	_modData.clear();
 	_modData.resize(mods.size());
@@ -1664,6 +1668,7 @@ void Mod::loadAll()
 		offset += size;
 	}
 
+	Log(LOG_INFO) << "Pre-loading rulesets...";
 	// load rulesets that can affect loading vanilla resources
 	for (size_t i = 0; _modData.size() > i; ++i)
 	{
@@ -1678,6 +1683,7 @@ void Mod::loadAll()
 		}
 	}
 
+	Log(LOG_INFO) << "Loading vanilla resources...";
 	// vanilla resources load
 	_modCurrent = &_modData.at(0);
 	loadVanillaResources();
@@ -1691,6 +1697,7 @@ void Mod::loadAll()
 	_soundOffsetBattle = _sounds["BATTLE.CAT"]->getMaxSharedSounds();
 	_soundOffsetGeo = _sounds["GEO.CAT"]->getMaxSharedSounds();
 
+	Log(LOG_INFO) << "Loading rulesets...";
 	// load rest rulesets
 	for (size_t i = 0; mods.size() > i; ++i)
 	{
@@ -1706,6 +1713,7 @@ void Mod::loadAll()
 			throwModOnErrorHelper(modId, e.what());
 		}
 	}
+	Log(LOG_INFO) << "Loading rulesets done.";
 
 	//back master
 	_modCurrent = &_modData.at(0);
@@ -1755,6 +1763,7 @@ void Mod::loadAll()
 	afterLoadHelper("items", this, _items, &RuleItem::afterLoad);
 	afterLoadHelper("manufacture", this, _manufacture, &RuleManufacture::afterLoad);
 	afterLoadHelper("units", this, _units, &Unit::afterLoad);
+	afterLoadHelper("covertOperations", this, _covertOperations, &RuleCovertOperation::afterLoad);
 	afterLoadHelper("armors", this, _armors, &Armor::afterLoad);
 	afterLoadHelper("soldiers", this, _soldiers, &RuleSoldier::afterLoad);
 	afterLoadHelper("facilities", this, _facilities, &RuleBaseFacility::afterLoad);
@@ -1864,6 +1873,7 @@ void Mod::loadAll()
 	{
 		_fixedUserOptions.erase("oxceUpdateCheck");
 		_fixedUserOptions.erase("maximizeInfoScreens"); // FIXME: make proper categorisations in the next release
+		_fixedUserOptions.erase("oxceAutoNightVisionThreshold");
 
 		const std::vector<OptionInfo> &options = Options::getOptionInfo();
 		for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)
@@ -1876,6 +1886,7 @@ void Mod::loadAll()
 		Options::save();
 	}
 
+	Log(LOG_INFO) << "Loading ended.";
 
 	sortLists();
 	loadExtraResources();
@@ -2046,6 +2057,8 @@ void Mod::loadConstants(const YAML::Node &node)
 	EXTENDED_RUNNING_COST = node["extendedRunningCost"].as<bool>(EXTENDED_RUNNING_COST);
 	EXTENDED_HWP_LOAD_ORDER = node["extendedHwpLoadOrder"].as<bool>(EXTENDED_HWP_LOAD_ORDER);
 	EXTENDED_MELEE_REACTIONS = node["extendedMeleeReactions"].as<int>(EXTENDED_MELEE_REACTIONS);
+	EXTENDED_TERRAIN_MELEE = node["extendedTerrainMelee"].as<int>(EXTENDED_TERRAIN_MELEE);
+	EXTENDED_UNDERWATER_THROW_FACTOR = node["extendedUnderwaterThrowFactor"].as<int>(EXTENDED_UNDERWATER_THROW_FACTOR);
 }
 
 /**
@@ -2228,7 +2241,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		if (rule != 0)
 		{
 			_researchListOrder += 100;
-			rule->load(*i, this, _researchListOrder);
+			rule->load(*i, this, parsers, _researchListOrder);
 			if ((*i)["unlockFinalMission"].as<bool>(false))
 			{
 				_finalResearch = (*i)["name"].as<std::string>(_finalResearch);
@@ -2375,7 +2388,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_psiUnlockResearch = doc["psiUnlockResearch"].as<std::string>(_psiUnlockResearch);
 	_ufopaediaUnlockResearch = doc["ufopaediaUnlockResearch"].as<std::string>(_ufopaediaUnlockResearch);
 	_fakeUnderwaterBaseUnlockResearch = doc["fakeUnderwaterBaseUnlockResearch"].as<std::string>(_fakeUnderwaterBaseUnlockResearch);
-	_baseConstructionUnlockResearch = doc["baseConstructionUnlockResearch"].as<std::string>(_baseConstructionUnlockResearch);
+	_newBaseUnlockResearch = doc["newBaseUnlockResearch"].as<std::string>(_newBaseUnlockResearch);
+	_baseConstructionUnlockResearch = doc["baseConstructionUnlockResearch"].as<std::string>(_baseConstructionUnlockResearch); // Duplication in FtA, works a bit difference
 	_destroyedFacility = doc["destroyedFacility"].as<std::string>(_destroyedFacility);
 
 	_aiUseDelayGrenade = doc["turnAIUseGrenade"].as<int>(_aiUseDelayGrenade);
@@ -2411,6 +2425,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_closeQuartersAccuracyGlobal = doc["closeQuartersAccuracyGlobal"].as<int>(_closeQuartersAccuracyGlobal);
 	_closeQuartersTuCostGlobal = doc["closeQuartersTuCostGlobal"].as<int>(_closeQuartersTuCostGlobal);
 	_closeQuartersEnergyCostGlobal = doc["closeQuartersEnergyCostGlobal"].as<int>(_closeQuartersEnergyCostGlobal);
+	_closeQuartersSneakUpGlobal = doc["closeQuartersSneakUpGlobal"].as<int>(_closeQuartersSneakUpGlobal);
 	_noLOSAccuracyPenaltyGlobal = doc["noLOSAccuracyPenaltyGlobal"].as<int>(_noLOSAccuracyPenaltyGlobal);
 	_surrenderMode = doc["surrenderMode"].as<int>(_surrenderMode);
 	_bughuntMinTurn = doc["bughuntMinTurn"].as<int>(_bughuntMinTurn);
@@ -2448,6 +2463,10 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		_coefAlienMission = nodeLoyalty["coefAlienMission"].as<int>(_coefAlienMission);
 		_coefUfo = nodeLoyalty["coefUfo"].as<int>(_coefUfo);
 		_coefAlienBase = nodeLoyalty["coefAlienBase"].as<int>(_coefAlienBase);
+		_noFundsPenalty = nodeLoyalty["noFundsPenalty"].as<int>(_noFundsPenalty);
+		_noFundsValue = nodeLoyalty["noFundsValue"].as<int>(_noFundsValue);
+		_performanceCap = nodeLoyalty["performanceCap"].as<int>(_performanceCap);
+		_performanceFactor = nodeLoyalty["performanceFactor"].as<int>(_performanceFactor);
 	}
 
 	if (const YAML::Node &nodeGameOver = doc["gameOver"])
@@ -2491,7 +2510,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		}
 	}
 	_performanceBonusFactor = doc["performanceBonusFactor"].as<int>(_performanceBonusFactor);
-	_useCustomCategories = doc["useCustomCategories"].as<bool>(_useCustomCategories);
+	_enableNewResearchSorting = doc["enableNewResearchSorting"].as<bool>(_enableNewResearchSorting);
+	_displayCustomCategories = doc["displayCustomCategories"].as<int>(_displayCustomCategories);
 	_shareAmmoCategories = doc["shareAmmoCategories"].as<bool>(_shareAmmoCategories);
 	_showDogfightDistanceInKm = doc["showDogfightDistanceInKm"].as<bool>(_showDogfightDistanceInKm);
 	_showFullNameInAlienInventory = doc["showFullNameInAlienInventory"].as<bool>(_showFullNameInAlienInventory);
@@ -2509,6 +2529,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_pediaReplaceCraftFuelWithRangeType = doc["pediaReplaceCraftFuelWithRangeType"].as<int>(_pediaReplaceCraftFuelWithRangeType);
 	_missionRatings = doc["missionRatings"].as<std::map<int, std::string> >(_missionRatings);
 	_monthlyRatings = doc["monthlyRatings"].as<std::map<int, std::string> >(_monthlyRatings);
+	_loyaltyRatings = doc["loyaltyRatings"].as<std::map<int, std::string> >(_loyaltyRatings);
+	_reputationLevels = doc["reputationLevels"].as<std::map<int, std::string> >(_reputationLevels);
 	_fixedUserOptions = doc["fixedUserOptions"].as<std::map<std::string, std::string> >(_fixedUserOptions);
 	_recommendedUserOptions = doc["recommendedUserOptions"].as<std::map<std::string, std::string> >(_recommendedUserOptions);
 	_hiddenMovementBackgrounds = doc["hiddenMovementBackgrounds"].as<std::vector<std::string> >(_hiddenMovementBackgrounds);
@@ -4373,6 +4395,16 @@ const std::map<int, std::string> *Mod::getMonthlyRatings() const
 	return &_monthlyRatings;
 }
 
+const std::map<int, std::string>* Mod::getLoyaltyRatings() const
+{
+	return &_loyaltyRatings;
+}
+
+const std::map<int, std::string>* Mod::getReputationLevels() const
+{
+	return &_reputationLevels;
+}
+
 const std::vector<std::string> &Mod::getHiddenMovementBackgrounds() const
 {
 	return _hiddenMovementBackgrounds;
@@ -4633,7 +4665,7 @@ void Mod::loadVanillaResources()
 			if (Options::preferredSound == SOUND_14)
 				cats[0] = catsWin;
 			else if (Options::preferredSound == SOUND_10)
-				cats[1] = catsDos;
+				cats[0] = catsDos;
 
 			Options::currentSound = SOUND_AUTO;
 			for (size_t i = 0; i < ARRAYLEN(catsId); ++i)
@@ -4660,7 +4692,7 @@ void Mod::loadVanillaResources()
 				}
 				if (sound->getTotalSounds() == 0)
 				{
-					Log(LOG_ERROR) << "No sound files found for " << catsId[i];
+					Log(LOG_ERROR) << catsId[i] << " not found: " << catsWin[i] + " or " + catsDos[i] + " required";
 				}
 			}
 		}
@@ -4728,7 +4760,15 @@ void Mod::loadVanillaResources()
 		for (size_t i = 0; i < ARRAYLEN(surfaceNames); ++i)
 		{
 			SurfaceSet* s = _sets[surfaceNames[i]];
-			s->setMaxSharedFrames((int)s->getTotalFrames());
+			if (s)
+			{
+				s->setMaxSharedFrames((int)s->getTotalFrames());
+			}
+			else
+			{
+				Log(LOG_ERROR) << "Surface set " << surfaceNames[i] << " not found.";
+				throw Exception("Surface set " + surfaceNames[i] + " not found.");
+			}
 		}
 		//special case for surface set that is loaded later
 		{

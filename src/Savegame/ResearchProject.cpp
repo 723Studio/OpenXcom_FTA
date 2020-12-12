@@ -34,9 +34,9 @@ ResearchProject::ResearchProject(RuleResearch * p, int c) : _project(p), _assign
  * Called every day to compute time spent on this ResearchProject
  * @return true if the ResearchProject is finished
  */
-bool ResearchProject::step()
+bool ResearchProject::step(int bonus)
 {
-	_spent += _assigned;
+	_spent += (_assigned * bonus) / 100;
 	return isFinished();
 }
 

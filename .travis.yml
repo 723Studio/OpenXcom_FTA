@@ -1,4 +1,9 @@
+# NOTE: We're using both Travis CI and Github Actions, if you change this file,
+# also change .github/workflows/ci.yml accordingly.
 language: cpp
+
+# default is Xenial aka 16.04 and its yaml-cpp package is too old. Use Focal aka 20.04 instead.
+dist: focal
 
 cache: ccache
 
@@ -6,11 +11,28 @@ compiler:
   - clang
   - gcc
 
+arch:
+  - amd64
+  - arm64
+
 os:
   - linux
-  - osx
 
-sudo: false
+# Our matrix is sparse, only linux has the full mesh, include the Mac/Win builds by hand.
+jobs:
+  include:
+    - os: osx
+      compiler: clang  # `gcc` is a wrapper for clang on MacOS, skip it.
+      before_install:
+       - export PATH="/usr/local/opt/ccache/libexec:$PATH"
+
+    - os: windows
+      compiler: cl  # cmake picks up MSVC and cl
+      install:
+        - export DEPS=https://openxcom.org/download/dev/openxcom-deps-win-vc2017.zip
+        - curl -O "$DEPS" && 7z x "${DEPS##*/}"
+      before_script:
+        - export BUILD_ARGS="/clp:NoSummary"  # summary too big for the 4MiB Travis limit
 
 addons:
   apt:
@@ -19,26 +41,24 @@ addons:
       - libsdl-mixer1.2-dev
       - libsdl-image1.2-dev
       - libsdl-gfx1.2-dev
+      - libyaml-cpp-dev
   homebrew:
     update: true
-    brewfile: scripts/Brewfile.travis
+    packages:
+      - ccache
+      - sdl
+      - sdl_gfx
+      - sdl_image
+      - sdl_mixer
+      - yaml-cpp
 
 env:
-  - BUILD_TYPE=Release EXTRA_WARNING_FLAGS="-Wall -Wextra"
+  - CMAKE_BUILD_TYPE=Release
 
-before_install:
-  - if [ $TRAVIS_OS_NAME == linux ]; then mkdir $TRAVIS_BUILD_DIR/dependency-prefix; fi
-  - if [ $TRAVIS_OS_NAME == linux ]; then export PKG_CONFIG_PATH=$TRAVIS_BUILD_DIR/dependency-prefix/lib/pkgconfig; fi
-  - if [ $TRAVIS_OS_NAME == osx ]; then export PATH="/usr/local/opt/ccache/libexec:$PATH"; fi
-  - if [ $TRAVIS_OS_NAME == linux ] && [ $TRAVIS_COMPILER == clang ]; then export CCACHE_CPP2=yes; fi
-
-install:
-  - if [ $TRAVIS_OS_NAME == linux ]; then bash scripts/compile_YAML-CPP.travis; fi
-
-before_script:
-  - bash scripts/cmake_prepare_build.travis
-
-script: make -j2
+script:
+  - mkdir -p build
+  - cmake -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DENABLE_WARNING=1 -DCHECK_CCACHE=TRUE -B build .
+  - cmake --build build -v -j2 --config ${CMAKE_BUILD_TYPE} -- ${BUILD_ARGS}
 
 after_script:
-  - ccache -s
+  - if [ $TRAVIS_OS_NAME != windows ]; then ccache -s; fi

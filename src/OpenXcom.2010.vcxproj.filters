@@ -624,7 +624,6 @@
     <ClCompile Include="Interface\ToggleTextButton.cpp">
       <Filter>Interface</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp" />
     <ClCompile Include="Savegame\SerializationHelper.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
@@ -1107,6 +1106,18 @@
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="Battlescape\InventoryPersonalState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\DogfightExperienceState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\SoldierTransformationListState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\NotesState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
     <ClCompile Include="FTA\DiplomacyStartState.cpp">
       <Filter>FTA</Filter>
     </ClCompile>
@@ -1163,6 +1174,18 @@
     </ClCompile>
     <ClCompile Include="Mod\BattleScript.cpp">
       <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\SoldierTransformationListState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\AltMonthlyReportState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\DisposeState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Battlescape\CustomBattleMessageState.cpp">
+      <Filter>Battlescape</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1798,7 +1821,6 @@
     <ClInclude Include="Interface\ToggleTextButton.h">
       <Filter>Interface</Filter>
     </ClInclude>
-    <ClInclude Include="pch.h" />
     <ClInclude Include="Engine\ShaderDraw.h">
       <Filter>Engine</Filter>
     </ClInclude>
@@ -2329,6 +2351,21 @@
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h">
       <Filter>Mod</Filter>
     </ClInclude>
+    <ClInclude Include="Battlescape\InventoryPersonalState.h">
+      <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\DogfightExperienceState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Functions.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\SoldierTransformationListState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\NotesState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
     <ClInclude Include="FTA\DiplomacyStartState.h">
       <Filter>FTA</Filter>
     </ClInclude>
@@ -2388,6 +2425,18 @@
     </ClInclude>
     <ClInclude Include="Mod\BattleScript.h">
       <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\SoldierTransformationListState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\AltMonthlyReportState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\DisposeState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Battlescape\CustomBattleMessageState.h">
+      <Filter>Battlescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

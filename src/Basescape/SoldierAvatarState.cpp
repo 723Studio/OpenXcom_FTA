@@ -18,6 +18,7 @@
  */
 #include "SoldierAvatarState.h"
 #include <sstream>
+#include <string>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
@@ -36,13 +37,6 @@
 
 namespace OpenXcom
 {
-
-static std::string IntToString (int a)
-{
-	std::ostringstream temp;
-	temp << a;
-	return temp.str();
-}
 
 /**
  * Initializes all the elements in the Soldier Avatar window.
@@ -104,14 +98,14 @@ SoldierAvatarState::SoldierAvatarState(Base *base, size_t soldier) : _base(base)
 	std::string prefix = "STR_AVATAR_NAME_";
 	for  (int variant = 0; variant <= _game->getMod()->getMaxLookVariant(); ++variant)
 	{
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 1), GENDER_MALE,   LOOK_BLONDE,    variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 2), GENDER_MALE,   LOOK_BROWNHAIR, variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 3), GENDER_MALE,   LOOK_ORIENTAL,  variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 4), GENDER_MALE,   LOOK_AFRICAN,   variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 5), GENDER_FEMALE, LOOK_BLONDE,    variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 6), GENDER_FEMALE, LOOK_BROWNHAIR, variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 7), GENDER_FEMALE, LOOK_ORIENTAL,  variant));
-		_avatars.push_back(SoldierAvatar(prefix + IntToString(variant*8 + 8), GENDER_FEMALE, LOOK_AFRICAN,   variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 1), GENDER_MALE,   LOOK_BLONDE,    variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 2), GENDER_MALE,   LOOK_BROWNHAIR, variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 3), GENDER_MALE,   LOOK_ORIENTAL,  variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 4), GENDER_MALE,   LOOK_AFRICAN,   variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 5), GENDER_FEMALE, LOOK_BLONDE,    variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 6), GENDER_FEMALE, LOOK_BROWNHAIR, variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 7), GENDER_FEMALE, LOOK_ORIENTAL,  variant));
+		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 8), GENDER_FEMALE, LOOK_AFRICAN,   variant));
 	}
 
 	for (std::vector<SoldierAvatar>::const_iterator i = _avatars.begin(); i != _avatars.end(); ++i)
@@ -173,7 +167,11 @@ void SoldierAvatarState::initPreview(Soldier *s)
 			ss.str("");
 			ss << look;
 			ss << ".SPK";
-			surf = _game->getMod()->getSurface(ss.str(), true);
+			surf = _game->getMod()->getSurface(ss.str(), false);
+		}
+		if (!surf)
+		{
+			surf = _game->getMod()->getSurface(look, true);
 		}
 		surf->blitNShade(_soldierSurface, 0, 0);
 	}

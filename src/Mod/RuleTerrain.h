@@ -48,6 +48,7 @@ private:
 	double _ambientVolume;
 	std::vector<int> _ambienceRandom;
 	int _minAmbienceRandomDelay, _maxAmbienceRandomDelay;
+	int _lastCraftSkinIndex;
 public:
 	RuleTerrain(const std::string &name);
 	~RuleTerrain();
@@ -61,6 +62,8 @@ public:
 	std::vector<MapBlock*> *getMapBlocks();
 	/// Gets the terrain's mapdatafiles.
 	std::vector<MapDataSet*> *getMapDataSets();
+	/// Refreshes the terrain's mapdatafiles. Use for craft skins ONLY!
+	void refreshMapDataSets(int craftSkinIndex, Mod *mod);
 	/// Gets a random mapblock.
 	MapBlock *getRandomMapBlock(int maxSizeX, int maxSizeY, int group, bool force = true);
 	/// Gets a mapblock given its name.

@@ -197,6 +197,22 @@ void StatsForNerdsState::buildUI(bool debug, bool ids, bool defaults)
 	_btnNext->onMouseClick((ActionHandler)&StatsForNerdsState::btnNextClick);
 	_btnNext->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnNextClick, Options::keyGeoRight);
 
+	if (Options::oxceDisableStatsForNerds)
+	{
+		_txtTitle->setHeight(_txtTitle->getHeight() * 9);
+		_txtTitle->setWordWrap(true);
+		_txtTitle->setText(tr("STR_THIS_FEATURE_IS_DISABLED_2"));
+		_txtArticle->setVisible(false);
+		_lstRawData->setVisible(false);
+		_btnIncludeDebug->setVisible(false);
+		_btnIncludeIds->setVisible(false);
+		_btnIncludeDefaults->setVisible(false);
+		_btnPrev->setVisible(false);
+		_btnNext->setVisible(false);
+		_cbxRelatedStuff->setVisible(false);
+		return;
+	}
+
 	if (!_mainArticle)
 	{
 		_btnPrev->setVisible(false);
@@ -223,7 +239,11 @@ StatsForNerdsState::~StatsForNerdsState()
 void StatsForNerdsState::init()
 {
 	State::init();
-	initLists();
+
+	if (!Options::oxceDisableStatsForNerds)
+	{
+		initLists();
+	}
 }
 /**
  * Opens the details for the selected ammo item.
@@ -433,7 +453,7 @@ void StatsForNerdsState::addSection(const std::string &name, const std::string &
 	if (_showDefaults || forceShow)
 	{
 		_lstRawData->addRow(2, name.c_str(), desc.c_str());
-		_lstRawData->setRowColor(_lstRawData->getTexts() - 1, color);
+		_lstRawData->setRowColor(_lstRawData->getLastRowIndex(), color);
 	}
 
 	// reset counter
@@ -470,9 +490,9 @@ void StatsForNerdsState::addHeading(const std::string &propertyName, const std::
 			addTranslation(ss2, moreDetail);
 		}
 		_lstRawData->addRow(2, trp(propertyName).c_str(), ss2.str().c_str());
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _white);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _white);
 	}
-	_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 0, _blue);
+	_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 0, _blue);
 
 	// reset counter
 	_counter = 0;
@@ -518,7 +538,7 @@ void StatsForNerdsState::addVectorOfGeneric(std::ostringstream &ss, const std::v
 	++_counter;
 	if (!vec.empty())
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -544,7 +564,7 @@ void StatsForNerdsState::addSingleString(std::ostringstream &ss, const std::stri
 	++_counter;
 	if (id != defaultId)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -655,7 +675,7 @@ void StatsForNerdsState::addBoolean(std::ostringstream &ss, const bool &value, c
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -674,7 +694,7 @@ void StatsForNerdsState::addFloat(std::ostringstream &ss, const float &value, co
 	++_counter;
 	if (!AreSame(value, defaultvalue))
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -697,7 +717,7 @@ void StatsForNerdsState::addFloatAsPercentage(std::ostringstream &ss, const floa
 	++_counter;
 	if (!AreSame(value, defaultvalue))
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -716,7 +736,7 @@ void StatsForNerdsState::addDouble(std::ostringstream &ss, const double &value, 
 	++_counter;
 	if (!AreSame(value, defaultvalue))
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -753,7 +773,7 @@ void StatsForNerdsState::addInteger(std::ostringstream &ss, const int &value, co
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -776,7 +796,7 @@ void StatsForNerdsState::addIntegerScriptTag(std::ostringstream &ss, const int &
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 0, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 0, _pink);
 	}
 }
 
@@ -800,7 +820,7 @@ void StatsForNerdsState::addIntegerPercent(std::ostringstream &ss, const int &va
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -821,7 +841,7 @@ void StatsForNerdsState::addIntegerNauticalMiles(std::ostringstream &ss, const i
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -842,7 +862,7 @@ void StatsForNerdsState::addIntegerKnots(std::ostringstream &ss, const int &valu
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -861,7 +881,7 @@ void StatsForNerdsState::addIntegerKm(std::ostringstream &ss, const int &value, 
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -891,7 +911,7 @@ void StatsForNerdsState::addIntegerSeconds(std::ostringstream &ss, const int &va
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -921,7 +941,7 @@ void StatsForNerdsState::addVectorOfIntegers(std::ostringstream &ss, const std::
 	++_counter;
 	if (!vec.empty())
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -959,7 +979,7 @@ void StatsForNerdsState::addBattleType(std::ostringstream &ss, const BattleType 
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1005,7 +1025,7 @@ void StatsForNerdsState::addDamageType(std::ostringstream &ss, const ItemDamageT
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1039,7 +1059,7 @@ void StatsForNerdsState::addDamageRandomType(std::ostringstream &ss, const ItemD
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1079,7 +1099,7 @@ void StatsForNerdsState::addBattleFuseType(std::ostringstream &ss, const BattleF
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1098,7 +1118,7 @@ void StatsForNerdsState::addRuleItemUseCostBasic(std::ostringstream &ss, const R
 	++_counter;
 	if (value.Time != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1211,7 +1231,7 @@ void StatsForNerdsState::addRuleItemUseCostFull(std::ostringstream &ss, const Ru
 	++_counter;
 	if (!isDefault)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1241,7 +1261,7 @@ void StatsForNerdsState::addBattleMediKitType(std::ostringstream &ss, const Batt
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1278,38 +1298,38 @@ void StatsForNerdsState::addMediKitTargets(std::ostringstream& ss, const RuleIte
 	++_counter;
 	if (value->getMedikitTargetMatrixRaw() != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
 /**
- * Adds psiamp target types to the table.
+ * Adds item target types to the table.
  */
-void StatsForNerdsState::addPsiampTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue)
+void StatsForNerdsState::addItemTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue)
 {
-	if (value->getPsiTargetMatrixRaw() == defaultvalue && !_showDefaults)
+	if (value->getTargetMatrixRaw() == defaultvalue && !_showDefaults)
 	{
 		return;
 	}
 	resetStream(ss);
 	ss << "{";
 	// FIXME: make translatable one day, when some better default names are suggested
-	if (value->isPsiTargetAllowed(FACTION_PLAYER))
+	if (value->isTargetAllowed(FACTION_PLAYER))
 		ss << "friend" << ", ";
-	if (value->isPsiTargetAllowed(FACTION_HOSTILE))
+	if (value->isTargetAllowed(FACTION_HOSTILE))
 		ss << "hostile" << ", ";
-	if (value->isPsiTargetAllowed(FACTION_NEUTRAL))
+	if (value->isTargetAllowed(FACTION_NEUTRAL))
 		ss << "neutral" << ", ";
 	ss << "}";
 	if (_showIds)
 	{
-		ss << " [" << value->getPsiTargetMatrixRaw() << "]";
+		ss << " [" << value->getTargetMatrixRaw() << "]";
 	}
 	_lstRawData->addRow(2, trp(propertyName).c_str(), ss.str().c_str());
 	++_counter;
-	if (value->getPsiTargetMatrixRaw() != defaultvalue)
+	if (value->getTargetMatrixRaw() != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1368,7 +1388,7 @@ void StatsForNerdsState::addExperienceTrainingMode(std::ostringstream &ss, const
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1432,7 +1452,7 @@ void StatsForNerdsState::addRuleStatBonus(std::ostringstream &ss, const RuleStat
 	++_counter;
 	if (value.isModded())
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -1462,7 +1482,7 @@ void StatsForNerdsState::addSpriteResourcePath(std::ostringstream &ss, Mod *mod,
 
 				_lstRawData->addRow(2, numbers.str().c_str(), ss.str().c_str());
 				++_counter;
-				_lstRawData->setRowColor(_lstRawData->getTexts() - 1, _gold);
+				_lstRawData->setRowColor(_lstRawData->getLastRowIndex(), _gold);
 				return;
 			}
 		}
@@ -1503,7 +1523,7 @@ void StatsForNerdsState::addSoundVectorResourcePaths(std::ostringstream &ss, Mod
 
 					_lstRawData->addRow(2, numbers.str().c_str(), ss.str().c_str());
 					++_counter;
-					_lstRawData->setRowColor(_lstRawData->getTexts() - 1, _gold);
+					_lstRawData->setRowColor(_lstRawData->getLastRowIndex(), _gold);
 				}
 			}
 		}
@@ -1570,7 +1590,8 @@ void StatsForNerdsState::initItemList()
 	int psiRequiredDefault = itemBattleType == BT_PSIAMP ? true : false;
 	addBoolean(ss, itemRule->isPsiRequired(), "psiRequired", psiRequiredDefault);
 	addBoolean(ss, itemRule->isManaRequired(), "manaRequired");
-	addPsiampTargets(ss, itemRule, "psiTargetMatrix", 6);
+	int targetMatrixDefault = itemBattleType == BT_PSIAMP ? 6 : 7;
+	addItemTargets(ss, itemRule, "targetMatrix", targetMatrixDefault);
 	addBoolean(ss, itemRule->isLOSRequired(), "LOSRequired");
 
 	if (itemBattleType == BT_FIREARM
@@ -1637,6 +1658,8 @@ void StatsForNerdsState::initItemList()
 	}
 
 	addInteger(ss, itemRule->getWeight(), "weight", 3);
+	addInteger(ss, itemRule->getThrowRange(), "throwRange");
+	addInteger(ss, itemRule->getUnderwaterThrowRange(), "underwaterThrowRange");
 
 	addRuleStatBonus(ss, *itemRule->getThrowMultiplierRaw(), "throwMultiplier");
 	addIntegerPercent(ss, itemRule->getAccuracyThrow(), "accuracyThrow", 100);
@@ -2085,7 +2108,7 @@ void StatsForNerdsState::addUnitStatBonus(std::ostringstream &ss, const UnitStat
 	++_counter;
 	if (!isDefault)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2152,7 +2175,7 @@ void StatsForNerdsState::addArmorDamageModifiers(std::ostringstream &ss, const s
 	++_counter;
 	if (!isDefault)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2183,7 +2206,7 @@ void StatsForNerdsState::addMovementType(std::ostringstream &ss, const MovementT
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2212,7 +2235,7 @@ void StatsForNerdsState::addForcedTorso(std::ostringstream &ss, const ForcedTors
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2261,7 +2284,7 @@ void StatsForNerdsState::addDrawingRoutine(std::ostringstream &ss, const int &va
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2356,6 +2379,7 @@ void StatsForNerdsState::initArmorList()
 
 	addIntegerPercent(ss, armorRule->getHeatVision(), "heatVision");
 	addInteger(ss, armorRule->getPsiVision(), "psiVision");
+	addInteger(ss, armorRule->getPsiCamouflage(), "psiCamouflage");
 
 	addInteger(ss, armorRule->getVisibilityAtDay(), "visibilityAtDay");
 	addInteger(ss, armorRule->getVisibilityAtDark(), "visibilityAtDark");
@@ -2387,6 +2411,7 @@ void StatsForNerdsState::initArmorList()
 
 		addSection("{Naming}", "", _white);
 		addSingleString(ss, armorRule->getType(), "type");
+		addSingleString(ss, armorRule->getUfopediaType(), "ufopediaType");
 		addRuleNamed(ss, armorRule->getRequiredResearch(), "requires");
 
 		addSection("{Recovery}", "", _white);
@@ -2548,7 +2573,7 @@ void StatsForNerdsState::addVectorOfPositions(std::ostringstream &ss, const std:
 	++_counter;
 	if (!vec.empty())
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2565,7 +2590,7 @@ void StatsForNerdsState::addBuildCostItem(std::ostringstream &ss, const std::pai
 	ss << costItem.second.second;
 	_lstRawData->addRow(2, "", ss.str().c_str());
 	++_counter;
-	_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+	_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 }
 
 /**
@@ -2598,7 +2623,7 @@ void StatsForNerdsState::addRightClickActionType(std::ostringstream &ss, const i
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2671,6 +2696,8 @@ void StatsForNerdsState::initFacilityList()
 	addIntegerPercent(ss, facilityRule->getRadarChance(), "radarChance");
 	addInteger(ss, facilityRule->getDefenseValue(), "defense");
 	addIntegerPercent(ss, facilityRule->getHitRatio(), "hitRatio");
+	addInteger(ss, facilityRule->getAmmoNeeded(), "ammoNeeded", 1);
+	addRule(ss, facilityRule->getAmmoItem(), "ammoItem");
 
 	addInteger(ss, facilityRule->getMaxAllowedPerBase(), "maxAllowedPerBase");
 	addInteger(ss, facilityRule->getManaRecoveryPerDay(), "manaRecoveryPerDay");
@@ -2706,6 +2733,8 @@ void StatsForNerdsState::initFacilityList()
 
 		addInteger(ss, facilityRule->getSpriteFacility(), "spriteFacility", -1);
 		addSpriteResourcePath(ss, mod, "BASEBITS.PCK", facilityRule->getSpriteFacility());
+
+		addBoolean(ss, facilityRule->connectorsDisabled(), "connectorsDisabled");
 
 		addSection("{Sounds}", "", _white);
 		addInteger(ss, facilityRule->getFireSound(), "fireSound");
@@ -2759,6 +2788,7 @@ void StatsForNerdsState::initCraftList()
 	addInteger(ss, craftRule->getPilots(), "pilots");
 	addInteger(ss, craftRule->getVehicles(), "vehicles");
 	addInteger(ss, craftRule->getMaxItems(), "maxItems");
+	addDouble(ss, craftRule->getMaxStorageSpace(), "maxStorageSpace");
 
 	addInteger(ss, craftRule->getMaxAltitude(), "maxAltitude", -1);
 	addInteger(ss, craftRule->getWeapons(), "weapons");
@@ -2810,12 +2840,15 @@ void StatsForNerdsState::initCraftList()
 		for (int i = 0; i < RuleCraft::WeaponMax; ++i)
 		{
 			std::ostringstream ss2;
-			ss2 << "{";
-			ss2 << craftRule->getWeaponTypesRaw(i, 0);
+			auto weaponType = craftRule->getWeaponTypesRaw(i, 0);
+			ss2 << "{" << weaponType;
 			for (int j = 1; j < RuleCraft::WeaponTypeMax; ++j)
 			{
-				ss2 << ",";
-				ss2 << craftRule->getWeaponTypesRaw(i, j);
+				if (weaponType != craftRule->getWeaponTypesRaw(i, j))
+				{
+					weaponType = craftRule->getWeaponTypesRaw(i, j);
+					ss2 << "," << weaponType;
+				}
 			}
 			ss2 << "}";
 			tmp.push_back(ss2.str());
@@ -2852,6 +2885,7 @@ void StatsForNerdsState::initCraftList()
 	addBoolean(ss, craftRule->getAllowLanding(), "allowLanding", true);
 	addBoolean(ss, craftRule->notifyWhenRefueled(), "notifyWhenRefueled");
 	addBoolean(ss, craftRule->canAutoPatrol(), "autoPatrol");
+	addBoolean(ss, craftRule->isUndetectable(), "undetectable");
 
 	addBoolean(ss, craftRule->keepCraftAfterFailedMission(), "keepCraftAfterFailedMission");
 
@@ -2881,14 +2915,16 @@ void StatsForNerdsState::initCraftList()
 		addInteger(ss, craftRule->getListOrder(), "listOrder");
 
 		addSection("{Geoscape}", "", _white);
-		addInteger(ss, craftRule->getSprite(), "sprite (Minimized)", -1);
-		addSpriteResourcePath(ss, mod, "INTICON.PCK", craftRule->getSprite());
-		addInteger(ss, craftRule->getSprite() + 11, "_sprite (Dogfight)", 10);
-		addSpriteResourcePath(ss, mod, "INTICON.PCK", craftRule->getSprite() + 11);
-		addInteger(ss, craftRule->getSprite() + 33, "_sprite (Base)", 32);
-		addSpriteResourcePath(ss, mod, "BASEBITS.PCK", craftRule->getSprite() + 33);
+		addInteger(ss, craftRule->getSprite(0), "sprite (Minimized)", -1);
+		addSpriteResourcePath(ss, mod, "INTICON.PCK", craftRule->getSprite(0));
+		addInteger(ss, craftRule->getSprite(0) + 11, "_sprite (Dogfight)", 10);
+		addSpriteResourcePath(ss, mod, "INTICON.PCK", craftRule->getSprite(0) + 11);
+		addInteger(ss, craftRule->getSprite(0) + 33, "_sprite (Base)", 32);
+		addSpriteResourcePath(ss, mod, "BASEBITS.PCK", craftRule->getSprite(0) + 33);
 		addInteger(ss, craftRule->getMarker(), "marker", -1);
 		addInteger(ss, craftRule->getScore(), "score");
+		addInteger(ss, craftRule->getMaxSkinIndex(), "maxSkinIndex");
+		addBoolean(ss, !craftRule->getSkinSpritesRaw().empty(), "skinSprites", false); // just say if there is any or not
 
 		addSection("{Battlescape}", "", _white);
 		addBoolean(ss, craftRule->getBattlescapeTerrainData() != 0, "battlescapeTerrainData", false); // just say if there is any or not
@@ -2938,7 +2974,7 @@ void StatsForNerdsState::addHuntMode(std::ostringstream &ss, const int &value, c
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 
@@ -2967,7 +3003,7 @@ void StatsForNerdsState::addHuntBehavior(std::ostringstream &ss, const int &valu
 	++_counter;
 	if (value != defaultvalue)
 	{
-		_lstRawData->setCellColor(_lstRawData->getTexts() - 1, 1, _pink);
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	}
 }
 

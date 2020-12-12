@@ -66,13 +66,36 @@ namespace OpenXcom
 		}
 
 		// Set palette
-		setStandardPalette(ruleInterface->getPalette());
+		if (defs->customPalette)
+		{
+			if (ruleInterface->getPalette() == "PAL_GEOSCAPE")
+				_cursorColor = Mod::GEOSCAPE_CURSOR;
+			else if (ruleInterface->getPalette() == "PAL_BASESCAPE")
+				_cursorColor = Mod::BASESCAPE_CURSOR;
+			else if (ruleInterface->getPalette() == "PAL_UFOPAEDIA")
+				_cursorColor = Mod::UFOPAEDIA_CURSOR;
+			else if (ruleInterface->getPalette() == "PAL_GRAPHS")
+				_cursorColor = Mod::GRAPHS_CURSOR;
+			else
+				_cursorColor = Mod::BATTLESCAPE_CURSOR;
+
+			setCustomPalette(_game->getMod()->getSurface(defs->image_id)->getPalette(), _cursorColor);
+		}
+		else
+		{
+			setStandardPalette(ruleInterface->getPalette());
+		}
 
 		_buttonColor = ruleInterface->getElement("button")->color;
 		_textColor = ruleInterface->getElement("text")->color;
 		_textColor2 = ruleInterface->getElement("text")->color2;
 		_listColor1 = ruleInterface->getElement("list")->color;
 		_listColor2 = ruleInterface->getElement("list")->color2;
+		_arrowColor = _listColor2;
+		if (ruleInterface->getElement("arrow"))
+		{
+			_arrowColor = ruleInterface->getElement("arrow")->color;
+		}
 		if (ruleInterface->getElement("ammoColor"))
 		{
 			_ammoColor = ruleInterface->getElement("ammoColor")->color;
@@ -102,7 +125,10 @@ namespace OpenXcom
 		ArticleState::initLayout();
 
 		// Step 1: background image
-		_game->getMod()->getSurface(ruleInterface->getBackgroundImage())->blitNShade(_bg, 0, 0);
+		if (!defs->customPalette)
+		{
+			_game->getMod()->getSurface(ruleInterface->getBackgroundImage())->blitNShade(_bg, 0, 0);
+		}
 
 		// Step 2: article image (optional)
 		Surface *image = _game->getMod()->getSurface(defs->image_id, false);
@@ -113,7 +139,7 @@ namespace OpenXcom
 
 		// Step 3: info button image
 		Surface *button = _game->getMod()->getSurface(ruleInterface->getBackgroundImage() + "-InfoButton", false);
-		if (button && _game->getMod()->getShowPediaInfoButton())
+		if (!defs->customPalette && button && _game->getMod()->getShowPediaInfoButton())
 		{
 			switch (defs->getType())
 			{

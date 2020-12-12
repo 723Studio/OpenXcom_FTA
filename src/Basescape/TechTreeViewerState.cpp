@@ -71,6 +71,7 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 	_txtCostIndicator = new Text(100, 9, 16, 32); // experimental cost indicator
 	_lstLeft = new TextList(132, 128, 8, 40);
 	_lstRight = new TextList(132, 128, 164, 40);
+	_lstFull = new TextList(288, 128, 8, 40);
 	_btnNew = new TextButton(148, 16, 8, 176);
 	_btnOk = new TextButton(148, 16, 164, 176);
 
@@ -91,6 +92,7 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 	add(_txtCostIndicator, "text", "techTreeViewer");
 	add(_lstLeft, "list", "techTreeViewer");
 	add(_lstRight, "list", "techTreeViewer");
+	add(_lstFull, "list", "techTreeViewer");
 	add(_btnNew, "button", "techTreeViewer");
 	add(_btnOk, "button", "techTreeViewer");
 
@@ -117,6 +119,12 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 	_lstRight->setWordWrap(true);
 	_lstRight->onMouseClick((ActionHandler)&TechTreeViewerState::onSelectRightTopic);
 
+	_lstFull->setColumns(1, 288);
+	_lstFull->setSelectable(true);
+	_lstFull->setBackground(_window);
+	_lstFull->setWordWrap(true);
+	_lstFull->onMouseClick((ActionHandler)&TechTreeViewerState::onSelectFullTopic);
+
 	_btnNew->setText(tr("STR_SELECT_TOPIC"));
 	_btnNew->onMouseClick((ActionHandler)&TechTreeViewerState::btnNewClick);
 	_btnNew->onKeyboardPress((ActionHandler)&TechTreeViewerState::btnNewClick, Options::keyToggleQuickSearch);
@@ -124,6 +132,22 @@ TechTreeViewerState::TechTreeViewerState(const RuleResearch *r, const RuleManufa
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&TechTreeViewerState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&TechTreeViewerState::btnOkClick, Options::keyCancel);
+	_btnOk->onKeyboardPress((ActionHandler)&TechTreeViewerState::btnBackClick, SDLK_BACKSPACE);
+
+	if (Options::oxceDisableTechTreeViewer)
+	{
+		_txtTitle->setHeight(_txtTitle->getHeight() * 9);
+		_txtTitle->setWordWrap(true);
+		_txtTitle->setText(tr("STR_THIS_FEATURE_IS_DISABLED_1"));
+		_txtSelectedTopic->setVisible(false);
+		_txtProgress->setVisible(false);
+		_txtCostIndicator->setVisible(false);
+		_lstLeft->setVisible(false);
+		_lstRight->setVisible(false);
+		_lstFull->setVisible(false);
+		_btnNew->setVisible(false);
+		return;
+	}
 
 	int discoveredSum = 0;
 	// pre-calculate globally
@@ -211,7 +235,11 @@ TechTreeViewerState::~TechTreeViewerState()
 void TechTreeViewerState::init()
 {
 	State::init();
-	initLists();
+
+	if (!Options::oxceDisableTechTreeViewer)
+	{
+		initLists();
+	}
 }
 
 /**
@@ -221,6 +249,21 @@ void TechTreeViewerState::init()
 void TechTreeViewerState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * Navigates to the previous topic from the browsing history.
+ * @param action Pointer to an action.
+ */
+void TechTreeViewerState::btnBackClick(Action *)
+{
+	if (!_history.empty())
+	{
+		_selectedFlag = _history.back().second;
+		_selectedTopic = _history.back().first;
+		_history.pop_back();
+		initLists();
+	}
 }
 
 /**
@@ -244,19 +287,17 @@ void TechTreeViewerState::initLists()
 		if (_selectedFlag == TTV_MANUFACTURING)
 		{
 			ss << tr("STR_M_FLAG");
-			_txtCostIndicator->setText("");
 		}
 		else if (_selectedFlag == TTV_FACILITIES)
 		{
 			ss << tr("STR_F_FLAG");
-			_txtCostIndicator->setText("");
 		}
 		else if (_selectedFlag == TTV_ITEMS)
 		{
 			ss << tr("STR_I_FLAG");
-			_txtCostIndicator->setText("");
 		}
 		_txtSelectedTopic->setText(tr("STR_TOPIC").arg(ss.str()));
+		_txtCostIndicator->setText("");
 	}
 
 	// reset
@@ -266,6 +307,10 @@ void TechTreeViewerState::initLists()
 	_rightFlags.clear();
 	_lstLeft->clearList();
 	_lstRight->clearList();
+	_lstFull->clearList();
+	_lstLeft->setVisible(true);
+	_lstRight->setVisible(true);
+	_lstFull->setVisible(false);
 
 	if (_selectedFlag == TTV_NONE)
 	{
@@ -444,8 +489,8 @@ void TechTreeViewerState::initLists()
 			itemName.insert(0, "  ");
 			_lstLeft->addRow(1, itemName.c_str());
 			_lstLeft->setRowColor(row, getResearchColor(_selectedTopic));
-			_leftTopics.push_back("-");
-			_leftFlags.push_back(TTV_NONE);
+			_leftTopics.push_back(_selectedTopic);
+			_leftFlags.push_back(TTV_ITEMS);
 			++row;
 		}
 
@@ -626,6 +671,24 @@ void TechTreeViewerState::initLists()
 			++row;
 
 			std::string name = tr(rule->getSpawnedItem());
+			name.insert(0, "  ");
+			_lstRight->addRow(1, name.c_str());
+			_lstRight->setRowColor(row, _white);
+			_rightTopics.push_back(rule->getSpawnedItem());
+			_rightFlags.push_back(TTV_ITEMS);
+			++row;
+		}
+
+		// spawned event
+		if (!rule->getSpawnedEvent().empty())
+		{
+			_lstRight->addRow(1, tr("STR_SPAWNED_EVENT").c_str());
+			_lstRight->setRowColor(row, _blue);
+			_rightTopics.push_back("-");
+			_rightFlags.push_back(TTV_NONE);
+			++row;
+
+			std::string name = tr(rule->getSpawnedEvent());
 			name.insert(0, "  ");
 			_lstRight->addRow(1, name.c_str());
 			_lstRight->setRowColor(row, _white);
@@ -912,7 +975,7 @@ void TechTreeViewerState::initLists()
 				}
 			}
 		}
-		bool showDetails = _game->getSavedGame()->getDebugMode();
+		bool showDetails = false;
 		if (Options::isPasswordCorrect() && (SDL_GetModState() & KMOD_ALT))
 		{
 			showDetails = true;
@@ -970,11 +1033,11 @@ void TechTreeViewerState::initLists()
 			}
 			if (showDisclaimer > 0)
 			{
+				_lstRight->addRow(1, tr("STR_AFFECTS_GAME_PROGRESSION").c_str());
 				if (showDisclaimer == 1)
-					_lstRight->addRow(1, tr("STR_AFFECTS_GAME_PROGRESSION").c_str());
+					_lstRight->setRowColor(row, _gold);
 				else
-					_lstRight->addRow(1, ".");
-				_lstRight->setRowColor(row, _gold);
+					_lstRight->setRowColor(row, _white);
 				_rightTopics.push_back("-");
 				_rightFlags.push_back(TTV_NONE);
 				++row;
@@ -1063,8 +1126,8 @@ void TechTreeViewerState::initLists()
 				name << i.second;
 				_lstLeft->addRow(1, name.str().c_str());
 				_lstLeft->setRowColor(row, _white);
-				_leftTopics.push_back("-");
-				_leftFlags.push_back(TTV_NONE);
+				_leftTopics.push_back(i.first->getType());
+				_leftFlags.push_back(TTV_ITEMS);
 				++row;
 			}
 		}
@@ -1101,8 +1164,8 @@ void TechTreeViewerState::initLists()
 				name << i.second;
 				_lstRight->addRow(1, name.str().c_str());
 				_lstRight->setRowColor(row, _white);
-				_rightTopics.push_back("-");
-				_rightFlags.push_back(TTV_NONE);
+				_rightTopics.push_back(i.first->getType());
+				_rightFlags.push_back(TTV_ITEMS);
 				++row;
 			}
 		}
@@ -1139,8 +1202,8 @@ void TechTreeViewerState::initLists()
 					name << i.second;
 					_lstRight->addRow(1, name.str().c_str());
 					_lstRight->setRowColor(row, _white);
-					_rightTopics.push_back("-");
-					_rightFlags.push_back(TTV_NONE);
+					_rightTopics.push_back(i.first->getType());
+					_rightFlags.push_back(TTV_ITEMS);
 					++row;
 				}
 			}
@@ -1158,6 +1221,10 @@ void TechTreeViewerState::initLists()
 			// person joining
 			std::ostringstream name;
 			name << "  ";
+			if (!rule->getSpawnedSoldierTemplate().IsNull())
+			{
+				name << "*";
+			}
 			name << tr(rule->getSpawnedPersonName() != "" ? rule->getSpawnedPersonName() : rule->getSpawnedPersonType());
 			_lstRight->addRow(1, name.str().c_str());
 			_lstRight->setRowColor(row, _white);
@@ -1264,6 +1331,10 @@ void TechTreeViewerState::initLists()
 	}
 	else if (_selectedFlag == TTV_ITEMS)
 	{
+		_lstLeft->setVisible(false);
+		_lstRight->setVisible(false);
+		_lstFull->setVisible(true);
+
 		int row = 0;
 		RuleItem *rule = _game->getMod()->getItem(_selectedTopic);
 		if (rule == 0)
@@ -1273,8 +1344,8 @@ void TechTreeViewerState::initLists()
 		const std::vector<const RuleResearch *> reqs = rule->getRequirements();
 		if (reqs.size() > 0)
 		{
-			_lstLeft->addRow(1, tr("STR_RESEARCH_REQUIRED_USE").c_str());
-			_lstLeft->setRowColor(row, _blue);
+			_lstFull->addRow(1, tr("STR_RESEARCH_REQUIRED_USE").c_str());
+			_lstFull->setRowColor(row, _blue);
 			_leftTopics.push_back("-");
 			_leftFlags.push_back(TTV_NONE);
 			++row;
@@ -1282,8 +1353,8 @@ void TechTreeViewerState::initLists()
 			{
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
-				_lstLeft->addRow(1, name.c_str());
-				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
+				_lstFull->addRow(1, name.c_str());
+				_lstFull->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1294,8 +1365,8 @@ void TechTreeViewerState::initLists()
 		const std::vector<const RuleResearch *> reqsBuy = rule->getBuyRequirements();
 		if (reqsBuy.size() > 0)
 		{
-			_lstLeft->addRow(1, tr("STR_RESEARCH_REQUIRED_BUY").c_str());
-			_lstLeft->setRowColor(row, _blue);
+			_lstFull->addRow(1, tr("STR_RESEARCH_REQUIRED_BUY").c_str());
+			_lstFull->setRowColor(row, _blue);
 			_leftTopics.push_back("-");
 			_leftFlags.push_back(TTV_NONE);
 			++row;
@@ -1303,8 +1374,8 @@ void TechTreeViewerState::initLists()
 			{
 				std::string name = tr(i->getName());
 				name.insert(0, "  ");
-				_lstLeft->addRow(1, name.c_str());
-				_lstLeft->setRowColor(row, getResearchColor(i->getName()));
+				_lstFull->addRow(1, name.c_str());
+				_lstFull->setRowColor(row, getResearchColor(i->getName()));
 				_leftTopics.push_back(i->getName());
 				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
@@ -1315,8 +1386,8 @@ void TechTreeViewerState::initLists()
 		if (rule->getRequiresBuyBaseFunc().any())
 		{
 			const std::vector<std::string> servicesBuy = _game->getMod()->getBaseFunctionNames(rule->getRequiresBuyBaseFunc());
-			_lstLeft->addRow(1, tr("STR_SERVICES_REQUIRED_BUY").c_str());
-			_lstLeft->setRowColor(row, _blue);
+			_lstFull->addRow(1, tr("STR_SERVICES_REQUIRED_BUY").c_str());
+			_lstFull->setRowColor(row, _blue);
 			_leftTopics.push_back("-");
 			_leftFlags.push_back(TTV_NONE);
 			++row;
@@ -1324,10 +1395,94 @@ void TechTreeViewerState::initLists()
 			{
 				std::string name = tr(i);
 				name.insert(0, "  ");
-				_lstLeft->addRow(1, name.c_str());
-				_lstLeft->setRowColor(row, _gold);
+				_lstFull->addRow(1, name.c_str());
+				_lstFull->setRowColor(row, _gold);
 				_leftTopics.push_back("-");
 				_leftFlags.push_back(TTV_NONE);
+				++row;
+			}
+		}
+
+		// 4. produced by
+		std::vector<std::string> producedBy;
+		for (auto& j : _game->getMod()->getManufactureList())
+		{
+			RuleManufacture* temp = _game->getMod()->getManufacture(j);
+			bool found = false;
+			for (auto& i : temp->getProducedItems())
+			{
+				if (i.first == rule)
+				{
+					producedBy.push_back(j);
+					found = true;
+					break;
+				}
+			}
+			if (!found)
+			{
+				for (auto& itMap : temp->getRandomProducedItems())
+				{
+					for (auto& i : itMap.second)
+					{
+						if (i.first == rule)
+						{
+							producedBy.push_back(j);
+							found = true;
+							break;
+						}
+					}
+					if (found) break;
+				}
+			}
+		}
+		if (producedBy.size() > 0)
+		{
+			_lstFull->addRow(1, tr("STR_PRODUCED_BY").c_str());
+			_lstFull->setRowColor(row, _blue);
+			_leftTopics.push_back("-");
+			_leftFlags.push_back(TTV_NONE);
+			++row;
+			for (std::vector<std::string>::const_iterator i = producedBy.begin(); i != producedBy.end(); ++i)
+			{
+				std::string name = tr((*i));
+				name.insert(0, "  ");
+				name.append(tr("STR_M_FLAG"));
+				_lstFull->addRow(1, name.c_str());
+				if (!isDiscoveredManufacture((*i)))
+				{
+					_lstFull->setRowColor(row, _pink);
+				}
+				_leftTopics.push_back((*i));
+				_leftFlags.push_back(TTV_MANUFACTURING);
+				++row;
+			}
+		}
+
+		// 5. spawned by
+		std::vector<std::string> spawnedBy;
+		for (auto& j : _game->getMod()->getResearchList())
+		{
+			RuleResearch* temp = _game->getMod()->getResearch(j);
+			if (temp->getSpawnedItem() == rule->getType())
+			{
+				spawnedBy.push_back(j);
+			}
+		}
+		if (spawnedBy.size() > 0)
+		{
+			_lstFull->addRow(1, tr("STR_SPAWNED_BY").c_str());
+			_lstFull->setRowColor(row, _blue);
+			_leftTopics.push_back("-");
+			_leftFlags.push_back(TTV_NONE);
+			++row;
+			for (std::vector<std::string>::const_iterator i = spawnedBy.begin(); i != spawnedBy.end(); ++i)
+			{
+				std::string name = tr((*i));
+				name.insert(0, "  ");
+				_lstFull->addRow(1, name.c_str());
+				_lstFull->setRowColor(row, getResearchColor((*i)));
+				_leftTopics.push_back((*i));
+				_leftFlags.push_back(TTV_RESEARCH);
 				++row;
 			}
 		}
@@ -1343,6 +1498,7 @@ void TechTreeViewerState::onSelectLeftTopic(Action *)
 	int index = _lstLeft->getSelectedRow();
 	if (_leftFlags[index] > TTV_NONE)
 	{
+		_history.push_back(std::make_pair(_selectedTopic, _selectedFlag));
 		_selectedFlag = _leftFlags[index];
 		_selectedTopic = _leftTopics[index];
 		initLists();
@@ -1358,8 +1514,25 @@ void TechTreeViewerState::onSelectRightTopic(Action *)
 	int index = _lstRight->getSelectedRow();
 	if (_rightFlags[index] > TTV_NONE)
 	{
+		_history.push_back(std::make_pair(_selectedTopic, _selectedFlag));
 		_selectedFlag = _rightFlags[index];
 		_selectedTopic = _rightTopics[index];
+		initLists();
+	}
+}
+
+/**
+ * Selects the topic.
+ * @param action Pointer to an action.
+ */
+void TechTreeViewerState::onSelectFullTopic(Action *)
+{
+	int index = _lstFull->getSelectedRow();
+	if (_leftFlags[index] > TTV_NONE)
+	{
+		_history.push_back(std::make_pair(_selectedTopic, _selectedFlag));
+		_selectedFlag = _leftFlags[index];
+		_selectedTopic = _leftTopics[index];
 		initLists();
 	}
 }
@@ -1369,6 +1542,7 @@ void TechTreeViewerState::onSelectRightTopic(Action *)
 */
 void TechTreeViewerState::setSelectedTopic(const std::string &selectedTopic, TTVMode topicType)
 {
+	_history.push_back(std::make_pair(_selectedTopic, _selectedFlag));
 	_selectedTopic = selectedTopic;
 	_selectedFlag = topicType;
 }

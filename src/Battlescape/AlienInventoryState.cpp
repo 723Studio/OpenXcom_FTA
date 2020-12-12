@@ -88,6 +88,20 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 	_txtName->setBig();
 	_txtName->setHighContrast(true);
 	_txtName->setAlign(ALIGN_CENTER);
+
+	if (Options::oxceDisableAlienInventory)
+	{
+		_txtName->setHeight(_txtName->getHeight() * 9);
+		_txtName->setWordWrap(true);
+		_txtName->setText(tr("STR_THIS_FEATURE_IS_DISABLED_5"));
+		_soldier->setVisible(false);
+		_txtLeftHand->setVisible(false);
+		_txtRightHand->setVisible(false);
+		_btnArmor->onKeyboardPress((ActionHandler)&AlienInventoryState::btnOkClick, Options::keyCancel);
+		_inv->setVisible(false);
+		return;
+	}
+
 	if (unit->getOriginalFaction() == FACTION_NEUTRAL)
 	{
 		_txtName->setText(tr(unit->getType()));
@@ -168,7 +182,11 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 				ss.str("");
 				ss << look;
 				ss << ".SPK";
-				surf = _game->getMod()->getSurface(ss.str(), true);
+				surf = _game->getMod()->getSurface(ss.str(), false);
+			}
+			if (!surf)
+			{
+				surf = _game->getMod()->getSurface(look, true);
 			}
 			surf->blitNShade(_soldier, 0, 0);
 		}
@@ -436,7 +454,7 @@ void AlienInventoryState::btnArmorClickMiddle(Action *action)
 	BattleUnit *unit = _inv->getSelectedUnit();
 	if (unit != 0)
 	{
-		std::string articleId = unit->getArmor()->getType();
+		std::string articleId = unit->getArmor()->getUfopediaType();
 		Ufopaedia::openArticle(_game, articleId);
 	}
 }

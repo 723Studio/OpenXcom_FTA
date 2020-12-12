@@ -278,7 +278,7 @@ int Projectile::calculateThrow(double accuracy)
 	for (std::vector<Position>::iterator i = targets.begin(); i != targets.end(); ++i)
 	{
 		targetVoxel = *i;
-		if (_save->getTileEngine()->validateThrow(_action, originVoxel, targetVoxel, &curvature, &test, forced))
+		if (_save->getTileEngine()->validateThrow(_action, originVoxel, targetVoxel, _save->getDepth(), &curvature, &test, forced))
 		{
 			break;
 		}
@@ -304,9 +304,11 @@ int Projectile::calculateThrow(double accuracy)
 			applyAccuracy(originVoxel, &targetVoxel, accuracy, true, false); //arcing shot deviation
 			deltas = Position(0,0,0);
 		}
+
+
 		test = _save->getTileEngine()->calculateParabolaVoxel(originVoxel, targetVoxel, true, &_trajectory, _action.actor, curvature, deltas);
 		if (forced) return O_OBJECT; //fake hit
-		Position endPoint = _trajectory.back().toTile();
+		Position endPoint = getPositionFromEnd(_trajectory, ItemDropVoxelOffset).toTile();
 		Tile *endTile = _save->getTile(endPoint);
 		// check if the item would land on a tile with a blocking object
 		if (_action.type == BA_THROW
@@ -466,17 +468,40 @@ bool Projectile::move()
 }
 
 /**
+ * Get Position at offset from start from trajectory vector.
+ * @param trajectory Vector that have trajectory.
+ * @param pos Offset counted from begining of trajectory.
+ * @return Position in voxel space.
+ */
+Position Projectile::getPositionFromStart(const std::vector<Position>& trajectory, int pos)
+{
+	if (pos >= 0 && pos < (int)trajectory.size())
+		return trajectory.at(pos);
+	else if (pos < 0)
+		return trajectory.at(0);
+	else
+		return trajectory.at(trajectory.size() - 1);
+}
+
+/**
+ * Get Position at offset from start from trajectory vector.
+ * @param trajectory Vector that have trajectory.
+ * @param pos Offset counted from ending of trajectory.
+ * @return Position in voxel space.
+ */
+Position Projectile::getPositionFromEnd(const std::vector<Position>& trajectory, int pos)
+{
+	return getPositionFromStart(trajectory, trajectory.size() + pos - 1);
+}
+
+/**
  * Gets the current position in voxel space.
  * @param offset Offset.
  * @return Position in voxel space.
  */
 Position Projectile::getPosition(int offset) const
 {
-	int posOffset = (int)_position + offset;
-	if (posOffset >= 0 && posOffset < (int)_trajectory.size())
-		return _trajectory.at(posOffset);
-	else
-		return _trajectory.at(_position);
+	return getPositionFromStart(_trajectory, (int)_position + offset);
 }
 
 /**

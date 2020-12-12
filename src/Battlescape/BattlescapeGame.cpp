@@ -51,11 +51,13 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Mod/RuleTerrain.h"
 #include "../Mod/Armor.h"
 #include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "InfoboxState.h"
 #include "InfoboxOKState.h"
+#include "CustomBattleMessageState.h"
 #include "UnitFallBState.h"
 #include "../Engine/Logger.h"
 #include "../Savegame/BattleUnitStatistics.h"
@@ -482,7 +484,7 @@ bool BattlescapeGame::kneel(BattleUnit *bu)
  */
 void BattlescapeGame::endTurn()
 {
-	_debugPlay = false;
+	_debugPlay = _save->getDebugMode() && ((SDL_GetModState() & KMOD_CTRL) != 0) && (_save->getSide() != FACTION_NEUTRAL);
 	_currentAction.type = BA_NONE;
 	_currentAction.skillRules = nullptr;
 	getMap()->getWaypoints()->clear();
@@ -530,7 +532,7 @@ void BattlescapeGame::endTurn()
 				const RuleItem *rule = item->getRules();
 				const Tile *tile = item->getTile();
 				BattleUnit *unit = item->getOwner();
-				if (!tile && unit && rule->isExplodingInHands())
+				if (!tile && unit && rule->isExplodingInHands() && !_allEnemiesNeutralized)
 				{
 					tile = unit->getTile();
 				}
@@ -665,14 +667,11 @@ void BattlescapeGame::endTurn()
 		}
 	}
 
-	bool battleComplete = tally.liveAliens == 0 || tally.liveSoldiers == 0;
-	if (battleComplete)
-	{
-		if (toDoScripts)
-		{
-			battleComplete = false;
-		}
-	}
+	// having active battleScripts or "escort the VIPs" missions don't end when all aliens are neutralized
+	// objective type MUST_DESTROY was already handled above
+	bool killingAllAliensIsNotEnough = (_save->getVIPSurvivalPercentage() > 0 && _save->getVIPEscapeType() != ESCAPE_NONE); 
+
+	bool battleComplete = ((!killingAllAliensIsNotEnough || !toDoScripts) && tally.liveAliens == 0) || tally.liveSoldiers == 0;
 
 	if ((side != FACTION_NEUTRAL || battleComplete)
 		&& _endTurnRequested)
@@ -1801,7 +1800,7 @@ void BattlescapeGame::primaryAction(Position pos)
 			if (_save->selectUnit(pos) && _save->selectUnit(pos)->getVisible())
 			{
 				auto targetFaction = _save->selectUnit(pos)->getFaction();
-				bool psiTargetAllowed = _currentAction.weapon->getRules()->isPsiTargetAllowed(targetFaction);
+				bool psiTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
 				if (_currentAction.type == BA_MINDCONTROL && targetFaction == FACTION_PLAYER)
 				{
 					// no mind controlling allies, unwanted side effects
@@ -2351,11 +2350,58 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 			nullptr,
 			getDepth());
 
-		// just bare minimum, this unit will never be used for anything except recovery
+		// just bare minimum, this unit will never be used for anything except recovery (not even for scoring)
 		newUnit->setTile(nullptr, _save);
 		newUnit->setPosition(TileEngine::invalid);
 		newUnit->setAIModule(new AIModule(_save, newUnit, 0));
+		newUnit->markAsResummonedFakeCivilian();
 		_save->getUnits()->push_back(newUnit);
+	}
+}
+
+/**
+ * Tally summoned player-controlled VIPs. We may still need to correct this in the Debriefing.
+ */
+void BattlescapeGame::tallySummonedVIPs()
+{
+	EscapeType escapeType = _save->getVIPEscapeType();
+	for (auto unit : *_save->getUnits())
+	{
+		if (unit->isVIP() && unit->isSummonedPlayerUnit())
+		{
+			if (unit->getStatus() == STATUS_DEAD)
+			{
+				_save->addLostVIP(unit->getValue());
+			}
+			else if (escapeType == ESCAPE_EXIT)
+			{
+				if (unit->isInExitArea(END_POINT))
+					_save->addSavedVIP(unit->getValue());
+				else
+					_save->addLostVIP(unit->getValue());
+			}
+			else if (escapeType == ESCAPE_ENTRY)
+			{
+				if (unit->isInExitArea(START_POINT))
+					_save->addSavedVIP(unit->getValue());
+				else
+					_save->addLostVIP(unit->getValue());
+			}
+			else if (escapeType == ESCAPE_EITHER)
+			{
+				if (unit->isInExitArea(START_POINT) || unit->isInExitArea(END_POINT))
+					_save->addSavedVIP(unit->getValue());
+				else
+					_save->addLostVIP(unit->getValue());
+			}
+			else //if (escapeType == ESCAPE_NONE)
+			{
+				if (unit->isInExitArea(START_POINT))
+					_save->addSavedVIP(unit->getValue()); // waiting in craft, saved even if aborted
+				else
+					_save->addWaitingOutsideVIP(unit->getValue()); // waiting outside, lost if aborted
+			}
+		}
 	}
 }
 
@@ -2805,7 +2851,7 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 	for (std::vector<BattleUnit*>::iterator j = _save->getUnits()->begin(); j != _save->getUnits()->end(); ++j)
 	{
 		//TODO: add handling of stunned units for display purposes in AbortMissionState
-		if (!(*j)->isOut() && !(*j)->isOutThresholdExceed())
+		if (!(*j)->isOut() && (!(*j)->isOutThresholdExceed() || ((*j)->getUnitRules() && (*j)->getUnitRules()->getSpawnUnit())))
 		{
 			bool vip = false;
 			if ((*j)->getGeoscapeSoldier() == 0)
@@ -2814,11 +2860,11 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 			}
 			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
 			{
-				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER)
+				if (Options::allowPsionicCapture && (*j)->getFaction() == FACTION_PLAYER && (*j)->getCapturable())
 				{
 					// don't count psi-captured units
 				}
-				else if (isSurrendering((*j)))
+				else if (isSurrendering((*j)) && (*j)->getCapturable())
 				{
 					// don't count surrendered units
 				}
@@ -2829,8 +2875,27 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 			}
 			else if ((*j)->getOriginalFaction() == FACTION_PLAYER || vip)
 			{
-				if ((*j)->isSummonedPlayerUnit() && !vip)
+				if ((*j)->isSummonedPlayerUnit() && !vip) //a little mess with merging OXCE and FtA VIPs =(
+				{
+					if ((*j)->isVIP())
+					{
+						// used only for display purposes in AbortMissionState
+						// count only player-controlled VIPs, not civilian VIPs!
+						if ((*j)->isInExitArea(START_POINT))
+						{
+							tally.vipInEntrance++;
+						}
+						else if ((*j)->isInExitArea(END_POINT))
+						{
+							tally.vipInExit++;
+						}
+						else
+						{
+							tally.vipInField++;
+						}
+					}
 					continue;
+				}
 
 				if ((*j)->isInExitArea(START_POINT))
 				{
@@ -2909,6 +2974,58 @@ bool BattlescapeGame::getKneelReserved() const
  */
 int BattlescapeGame::checkForProximityGrenades(BattleUnit *unit)
 {
+	// death trap?
+	Tile* deathTrapTile = nullptr;
+	for (int sx = 0; sx < unit->getArmor()->getSize(); sx++)
+	{
+		for (int sy = 0; sy < unit->getArmor()->getSize(); sy++)
+		{
+			Tile* t = _save->getTile(unit->getPosition() + Position(sx, sy, 0));
+			if (!deathTrapTile && t && t->getFloorSpecialTileType() >= DEATH_TRAPS)
+			{
+				deathTrapTile = t;
+			}
+		}
+	}
+	if (deathTrapTile)
+	{
+		std::ostringstream ss;
+		ss << "STR_DEATH_TRAP_" << deathTrapTile->getFloorSpecialTileType();
+		auto deathTrapRule = getMod()->getItem(ss.str());
+		if (deathTrapRule &&
+			deathTrapRule->isTargetAllowed(unit->getOriginalFaction()) &&
+			(deathTrapRule->getBattleType() == BT_PROXIMITYGRENADE || deathTrapRule->getBattleType() == BT_MELEE))
+		{
+			BattleItem* deathTrapItem = nullptr;
+			for (auto item : *deathTrapTile->getInventory())
+			{
+				if (item->getRules() == deathTrapRule)
+				{
+					deathTrapItem = item;
+					break;
+				}
+			}
+			if (!deathTrapItem)
+			{
+				deathTrapItem = _save->createItemForTile(deathTrapRule, deathTrapTile);
+			}
+			if (deathTrapRule->getBattleType() == BT_PROXIMITYGRENADE)
+			{
+				deathTrapItem->setFuseTimer(0);
+				Position p = deathTrapTile->getPosition().toVoxel() + Position(8, 8, deathTrapTile->getTerrainLevel());
+				statePushNext(new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_NONE, nullptr, deathTrapItem)));
+				return 2;
+			}
+			else if (deathTrapRule->getBattleType() == BT_MELEE)
+			{
+				Position p = deathTrapTile->getPosition().toVoxel() + Position(8, 8, 12);
+				// EXPERIMENTAL: terrainMeleeTilePart = 4 (V_UNIT); no attacker
+				statePushNext(new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_HIT, nullptr, deathTrapItem), nullptr, false, 0, 0, 4));
+				return 2;
+			}
+		}
+	}
+
 	bool exploded = false;
 	bool glow = false;
 	int size = unit->getArmor()->getSize() + 1;
@@ -3065,6 +3182,10 @@ void BattlescapeGame::autoEndBattle()
 {
 	if (Options::battleAutoEnd) 
 	{
+		if (_save->getVIPSurvivalPercentage() > 0 && _save->getVIPEscapeType() != ESCAPE_NONE)
+		{
+			return; // "escort the VIPs" missions don't end when all aliens are neutralized
+		}
 		bool end = false;
 		bool askForConfirmation = false;
 		if (_save->getObjectiveType() == MUST_DESTROY)
@@ -3099,7 +3220,6 @@ void BattlescapeGame::autoEndBattle()
  */
 void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* script)
 {
-	Log(LOG_INFO) << "And now battleScripts are processing!";
 	// create an array to track command success/failure
 	std::map<int, bool> conditionals;
 	int mapsize_x = _save->getMapSizeX();
@@ -3168,8 +3288,6 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 			// each command can be attempted multiple times, as randomization within the rects may occur
 			for (int j = 0; j < command->getExecutions(); ++j)
 			{
-				int x = 0, y = 0;
-				std::vector<SDL_Rect*> available;
 				std::vector<std::pair<int, int> > validBlocks;
 				switch (command->getType())
 				{
@@ -3178,46 +3296,17 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 					break;
 				case BSC_SPAWN_UNIT:					
 					//finding a spot
-					SDL_Rect wholeMap;
-					wholeMap.x = 0;
-					wholeMap.y = 0;
-					wholeMap.w = (mapsize_x / 10);
-					wholeMap.h = (mapsize_y / 10);
-					if (command->getRects()->empty())
-					{
-						available.push_back(&wholeMap);
-					}
-					else
-					{
-						available = *command->getRects();
-					}
-
-					for (std::vector<SDL_Rect*>::const_iterator i = available.begin(); i != available.end(); ++i)
-					{
-						int x0 = (*i)->x;
-						int y0 = (*i)->y;
-						int w = (*i)->w;
-						int h = (*i)->h;
-						for (x = x0; x + 1 <= x0 + w && x + 1 <= wholeMap.w; ++x)
-						{
-							for (y = y0; y + 1 <= y0 + h && y + 1 <= wholeMap.h; ++y)
-							{
-								if (std::find(validBlocks.begin(), validBlocks.end(), std::make_pair(x, y)) == validBlocks.end())
-								{
-									validBlocks.push_back(std::make_pair(x, y));
-								}
-							}
-						}
-					}
+					validBlocks = getValidBlocks(command);		
 					if (validBlocks.empty())
 					{
 						Log(LOG_DEBUG) << "No valid location for the unit spawning with battlScript.";
 						continue;
 					}
+					//spawn units
 					scriptSpawnUnit(command, validBlocks);
 					break;
 				case BSC_SHOW_MESSAGE:
-					Log(LOG_ERROR) << "Sorry, there is no support of processing showMessage command yet! :] ";
+					displayScriptMessage(command);
 					break;
 				case BSC_ADDBLOCK:
 					Log(LOG_ERROR) << "Sorry, there is no support of processing addBlock command yet! :] ";
@@ -3231,6 +3320,115 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 	}
 }
 
+void OpenXcom::BattlescapeGame::displayScriptMessage(BattleScript* command)
+{
+	auto messageList = command->getBattleMessages();
+	if (!messageList.empty())
+	{
+		int roll = RNG::generate(0, messageList.size() - 1);
+		auto message = messageList.at(roll);
+		_parentState->getGame()->pushState(new CustomBattleMessageState(message));
+	}
+	else
+	{
+		Log(LOG_ERROR) << "No battle messages to display";
+	}
+}
+
+std::vector<std::pair<int, int>> OpenXcom::BattlescapeGame::getValidBlocks(BattleScript* command)
+{
+	int x = 0, y = 0;
+	std::vector<SDL_Rect*> available;
+	std::vector<std::pair<int, int> > validBlocks;
+	std::vector<std::vector<bool>> compliantBlocksMap;
+	int sizeX = (_save->getMapSizeX() / 10);
+	int sizeY = (_save->getMapSizeY() / 10);
+	bool checkGroups = !command->getGroups()->empty();
+
+	compliantBlocksMap.resize((sizeX), std::vector<bool>((sizeY), false)); // start with all false
+
+	if (!command->getSpawnBlocks().empty())
+	{
+		for (auto& dir : command->getSpawnBlocks())
+		{
+			if (dir == "North")
+				for (int x = 0; x < sizeX; ++x) compliantBlocksMap[x][0] = true;
+			else if (dir == "West")
+				for (int y = 0; y < sizeY; ++y) compliantBlocksMap[0][y] = true;
+			else if (dir == "South")
+				for (int x = 0; x < sizeX; ++x) compliantBlocksMap[x][sizeY - 1] = true;
+			else if (dir == "East")
+				for (int y = 0; y < sizeY; ++y) compliantBlocksMap[sizeX - 1][y] = true;
+			else if (dir == "NW")
+				compliantBlocksMap[0][0] = true;
+			else if (dir == "NE")
+				compliantBlocksMap[sizeX - 1][0] = true;
+			else if (dir == "SW")
+				compliantBlocksMap[0][sizeY - 1] = true;
+			else if (dir == "SE")
+				compliantBlocksMap[sizeX - 1][sizeY - 1] = true;
+		}
+	}
+	else
+	{
+		compliantBlocksMap.resize((sizeX), std::vector<bool>((sizeY), true)); //whole map
+	}
+
+	validBlocks.reserve(sizeX * sizeY);
+
+	for (x = 0; x < sizeX; ++x)
+	{
+		for (y = 0; y < sizeY; ++y)
+		{
+			if (compliantBlocksMap[x][y])
+			{
+				if (checkGroups)
+				{
+					auto terrain = _save->getBattleGame()->getMod()->getTerrain(_save->getFlattenedMapTerrainNames()[x][y], false);
+					if (!terrain)
+					{
+						auto craft = _save->getBattleGame()->getMod()->getCraft(_save->getFlattenedMapTerrainNames()[x][y], false);
+						if (craft)
+						{
+							terrain = craft->getBattlescapeTerrainData();
+						}
+					}
+					if (!terrain)
+					{
+						auto ufo = _save->getBattleGame()->getMod()->getUfo(_save->getFlattenedMapTerrainNames()[x][y], false);
+						if (ufo)
+						{
+							terrain = ufo->getBattlescapeTerrainData();
+						}
+					}
+					if (terrain)
+					{
+						auto mapblock = terrain->getMapBlock(_save->getFlattenedMapBlockNames()[x][y]);
+						if (mapblock)
+						{
+							bool groupMatched = false;
+							for (auto group : *command->getGroups())
+							{
+								if (mapblock->isInGroup(group))
+								{
+									groupMatched = true;
+									break;
+								}
+							}
+							if (!groupMatched)
+							{
+								continue; // don't add this map block into compliantBlocksList
+							}
+						}
+					}
+				}
+				validBlocks.push_back(std::make_pair(x, y));
+			}
+		}
+	}
+
+	return validBlocks;
+}
 
 void OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock)
 {
@@ -3239,8 +3437,6 @@ void OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command, std::vect
 	{
 		throw Exception("BattleScript generator encountered an error: no units defined for: " + command->getType());
 	}
-	//int zMin = command->getLevels().first;
-	//int zMax = command->getLevels().second;
 	int zMin = command->getMinLevel();
 	int zMax = command->getMaxLevel();
 	int z = 0;
@@ -3378,7 +3574,6 @@ void OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command, std::vect
 					_save->setSelectedUnit(newUnit);
 					_parentState->getMap()->setCursorType(CT_NONE);
 					// show a little infobox with message
-					Game* game = _parentState->getGame();
 					std::string messageText;
 					if (faction == FACTION_PLAYER)
 					{
@@ -3392,7 +3587,8 @@ void OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command, std::vect
 					{
 						messageText = "STR_INCOMING_ENEMY_REINFORCEMENTS";
 					}
-					game->pushState(new InfoboxState(game->getLanguage()->getString(messageText), 4000));
+					//_parentState->getGame()->pushState(new InfoboxState(_parentState->getGame()->getLanguage()->getString(messageText), 4000));
+					_parentState->getGame()->pushState(new InfoboxOKState(_parentState->getGame()->getLanguage()->getString(messageText)));
 
 				}
 			}

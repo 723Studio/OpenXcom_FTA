@@ -29,7 +29,9 @@ namespace OpenXcom
 /**
  * RuleTerrain construction.
  */
-RuleTerrain::RuleTerrain(const std::string &name) : _name(name), _script("DEFAULT"), _minDepth(0), _maxDepth(0), _ambience(-1), _ambientVolume(0.5), _minAmbienceRandomDelay(20), _maxAmbienceRandomDelay(60)
+RuleTerrain::RuleTerrain(const std::string &name) : _name(name), _script("DEFAULT"), _minDepth(0), _maxDepth(0),
+	_ambience(-1), _ambientVolume(0.5), _minAmbienceRandomDelay(20), _maxAmbienceRandomDelay(60),
+	_lastCraftSkinIndex(0)
 {
 }
 
@@ -124,6 +126,50 @@ std::vector<MapBlock*> *RuleTerrain::getMapBlocks()
 std::vector<MapDataSet*> *RuleTerrain::getMapDataSets()
 {
 	return &_mapDataSets;
+}
+
+/**
+ * Refreshes the terrain's mapdatafiles. Use for craft skins ONLY!
+ */
+void RuleTerrain::refreshMapDataSets(int craftSkinIndex, Mod *mod)
+{
+	if (_lastCraftSkinIndex == craftSkinIndex)
+	{
+		return;
+	}
+
+	std::vector<std::string> newNames;
+	for (auto item : _mapDataSets)
+	{
+		if (item->getName() == "BLANKS")
+		{
+			newNames.push_back(item->getName());
+		}
+		else if (_lastCraftSkinIndex == 0)
+		{
+			newNames.push_back(item->getName() + "_" + std::to_string(craftSkinIndex));
+		}
+		else
+		{
+			size_t lastPos = item->getName().find_last_of("_");
+			std::string stripped = item->getName().substr(0, lastPos);
+			if (craftSkinIndex > 0)
+			{
+				newNames.push_back(stripped + "_" + std::to_string(craftSkinIndex));
+			}
+			else
+			{
+				newNames.push_back(stripped);
+			}
+		}
+	}
+	_mapDataSets.clear();
+	for (auto& newName : newNames)
+	{
+		_mapDataSets.push_back(mod->getMapDataSet(newName));
+	}
+	newNames.clear();
+	_lastCraftSkinIndex = craftSkinIndex;
 }
 
 /**

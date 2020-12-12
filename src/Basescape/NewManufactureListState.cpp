@@ -48,7 +48,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
  */
-NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _showRequirements(false), _detailClicked(false), _lstScroll(0)
+NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _showRequirements(false), _refreshCategories(true), _doInit(true), _lstScroll(0)
 {
 	_screen = false;
 
@@ -135,7 +135,13 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 void NewManufactureListState::init()
 {
 	State::init();
-	fillProductionList(!_detailClicked);
+
+	if (_doInit)
+	{
+		fillProductionList(_refreshCategories);
+	}
+	_doInit = true;
+	_refreshCategories = true;
 }
 
 /**
@@ -170,7 +176,7 @@ void NewManufactureListState::lstProdClickLeft(Action *)
 	}
 
 	// check and display error messages only further down the chain
-	_detailClicked = true;
+	_refreshCategories = false;
 	_game->pushState(new ManufactureStartState(_base, rule));
 }
 
@@ -187,7 +193,7 @@ void NewManufactureListState::lstProdClickRight(Action *)
 		_showRequirements = !_showRequirements;
 		auto baseFunc = _base->getProvidedBaseFunc({});
 
-		for (size_t row = 0; row < _lstManufacture->getRows(); ++row)
+		for (size_t row = 0; row < _lstManufacture->getTexts(); ++row)
 		{
 			RuleManufacture *info = _game->getMod()->getManufacture(_displayedStrings[row]);
 			if (info)
@@ -249,7 +255,7 @@ void NewManufactureListState::lstProdClickRight(Action *)
 */
 void NewManufactureListState::lstProdClickMiddle(Action *)
 {
-	_lstScroll = _lstManufacture->getScroll();
+	_doInit = false;
 	const RuleManufacture *selectedTopic = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
 	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
 	{
@@ -350,7 +356,6 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 	}
 
 	_showRequirements = false;
-	_detailClicked = false;
 
 	_lstManufacture->clearList();
 	_possibleProductions.clear();
@@ -465,7 +470,7 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 		_catStrings.clear();
 		_catStrings.push_back("STR_ALL_ITEMS");
 
-		for (size_t r = 0; r < _lstManufacture->getRows(); ++r)
+		for (size_t r = 0; r < _lstManufacture->getTexts(); ++r)
 		{
 			RuleManufacture *info = _game->getMod()->getManufacture(_displayedStrings[r]);
 			if (info)

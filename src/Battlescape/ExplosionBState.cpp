@@ -46,9 +46,10 @@ namespace OpenXcom
  * @param lowerWeapon Whether the unit causing this explosion should now lower their weapon.
  * @param range Distance between weapon and target.
  * @param explosionCounter Counter for chain terrain explosions.
+ * @param terrainMeleeTilePart Tile part for terrain melee.
  */
-ExplosionBState::ExplosionBState(BattlescapeGame *parent, Position center, BattleActionAttack attack, Tile *tile, bool lowerWeapon, int range, int explosionCounter) : BattleState(parent),
-	_explosionCounter(explosionCounter), _attack(attack), _center(center), _damageType(), _tile(tile), _targetPsiOrHit(nullptr),
+ExplosionBState::ExplosionBState(BattlescapeGame *parent, Position center, BattleActionAttack attack, Tile *tile, bool lowerWeapon, int range, int explosionCounter, int terrainMeleeTilePart) : BattleState(parent),
+	_explosionCounter(explosionCounter), _terrainMeleeTilePart(terrainMeleeTilePart), _attack(attack), _center(center), _damageType(), _tile(tile), _targetPsiOrHit(nullptr),
 	_power(0), _radius(6), _range(range), _areaOfEffect(false), _lowerWeapon(lowerWeapon), _hit(false), _psi(false)
 {
 
@@ -135,7 +136,7 @@ void ExplosionBState::init()
 		}
 		else if (type == BT_MELEE || _hit)
 		{
-			if (!_parent->getTileEngine()->meleeAttack(_attack, _targetPsiOrHit))
+			if (!_parent->getTileEngine()->meleeAttack(_attack, _targetPsiOrHit, _terrainMeleeTilePart))
 			{
 				_power = 0;
 				miss = true;
@@ -260,7 +261,7 @@ void ExplosionBState::init()
 	else
 	// create a bullet hit
 	{
-		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range);
+		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
 		_parent->setStateInterval(std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed()))));
 		int anim = -1;

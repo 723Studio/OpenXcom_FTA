@@ -33,7 +33,7 @@ Unit::Unit(const std::string &type) :
 	_moraleLossWhenKilled(100), _aggroSound(-1), _moveSound(-1), _intelligence(0), _aggression(0),
 	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
-	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1)
+	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _vip(false)
 {
 }
 
@@ -58,6 +58,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	}
 	_type = node["type"].as<std::string>(_type);
 	_civilianRecoveryType = node["civilianRecoveryType"].as<std::string>(_civilianRecoveryType);
+	_spawnedPersonName = node["spawnedPersonName"].as<std::string>(_spawnedPersonName);
+	if (node["spawnedSoldier"])
+	{
+		_spawnedSoldier = node["spawnedSoldier"];
+	}
 	_race = node["race"].as<std::string>(_race);
 	_showFullNameInAlienInventory = node["showFullNameInAlienInventory"].as<int>(_showFullNameInAlienInventory);
 	_rank = node["rank"].as<std::string>(_rank);
@@ -91,8 +96,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<int>(_pickUpWeaponsMoreActively);
 	_meleeWeapon = node["meleeWeapon"].as<std::string>(_meleeWeapon);
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
-	_capturable = node["capturable"].as<bool>(_capturable); 
-	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType);
+	_capturable = node["capturable"].as<bool>(_capturable);
+	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
+	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType); //FtA way to specify units
+	_vip = node["vip"].as<bool>(_vip); //OXCE variant
+
 	_builtInWeaponsNames = node["builtInWeaponSets"].as<std::vector<std::vector<std::string> > >(_builtInWeaponsNames);
 	if (node["builtInWeapons"])
 	{
@@ -121,6 +129,7 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
+	mod->linkRule(_altUnit, _altRecoveredUnit);	
 }
 
 /**
@@ -131,15 +140,6 @@ void Unit::afterLoad(const Mod* mod)
 const std::string& Unit::getType() const
 {
 	return _type;
-}
-
-/**
-* Gets the type of staff (soldier/engineer/scientists) or type of item to be recovered when a civilian is saved.
-* @return The type of staff/item to recover.
-*/
-std::string Unit::getCivilianRecoveryType() const
-{
-	return _civilianRecoveryType;
 }
 
 /**

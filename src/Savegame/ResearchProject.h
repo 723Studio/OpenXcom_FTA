@@ -38,7 +38,7 @@ class ResearchProject
 public:
 	ResearchProject(RuleResearch * p, int c = 0);
 	/// Game logic. Called every new day to compute time spent.
-	bool step();
+	bool step(int bonus = 100);
 	/// gets state of project.
 	bool isFinished();
 	/// set the number of scientist assigned to this ResearchProject

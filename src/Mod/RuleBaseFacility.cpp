@@ -36,9 +36,9 @@ namespace OpenXcom
  * @param type String defining the type.
  */
 RuleBaseFacility::RuleBaseFacility(const std::string &type) :
-	_type(type), _spriteShape(-1), _spriteFacility(-1), _missileAttraction(100), _fakeUnderwater(-1), _lift(false), _hyper(false), _mind(false), _grav(false), _mindPower(1),
+	_type(type), _spriteShape(-1), _spriteFacility(-1), _connectorsDisabled(false), _missileAttraction(100), _fakeUnderwater(-1), _lift(false), _hyper(false), _mind(false), _grav(false), _mindPower(1),
 	_size(1), _buildCost(0), _refundValue(0), _buildTime(0), _monthlyCost(0), _storage(0), _personnel(0), _aliens(0), _crafts(0),
-	_labs(0), _workshops(0), _psiLabs(0), _sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0), _defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _listOrder(0),
+	_labs(0), _workshops(0), _psiLabs(0), _sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0), _defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _ammoNeeded(1), _listOrder(0),
 	_trainingRooms(0), _maxAllowedPerBase(0), _sickBayAbsoluteBonus(0.0f), _sickBayRelativeBonus(0.0f),
 	_prisonType(0), _rightClickActionType(0), _verticalLevels(), _removalTime(0), _canBeBuiltOver(false), _destroyedFacility(0)
 {
@@ -73,6 +73,7 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 	mod->loadSpriteOffset(_type, _spriteShape, node["spriteShape"], "BASEBITS.PCK");
 	mod->loadSpriteOffset(_type, _spriteFacility, node["spriteFacility"], "BASEBITS.PCK");
 
+	_connectorsDisabled = node["connectorsDisabled"].as<bool>(_connectorsDisabled);
 	_fakeUnderwater = node["fakeUnderwater"].as<int>(_fakeUnderwater);
 	_missileAttraction = node["missileAttraction"].as<int>(_missileAttraction);
 	_lift = node["lift"].as<bool>(_lift);
@@ -102,6 +103,8 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 	mod->loadSoundOffset(_type, _fireSound, node["fireSound"], "GEO.CAT");
 	mod->loadSoundOffset(_type, _hitSound, node["hitSound"], "GEO.CAT");
 
+	_ammoNeeded = node["ammoNeeded"].as<int>(_ammoNeeded);
+	_ammoItemName = node["ammoItem"].as<std::string>(_ammoItemName);
 	_mapName = node["mapName"].as<std::string>(_mapName);
 	_listOrder = node["listOrder"].as<int>(_listOrder);
 	_trainingRooms = node["trainingRooms"].as<int>(_trainingRooms);
@@ -163,6 +166,8 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
  */
 void RuleBaseFacility::afterLoad(const Mod* mod)
 {
+	mod->linkRule(_ammoItem, _ammoItemName);
+
 	if (!_destroyedFacilityName.empty())
 	{
 		mod->linkRule(_destroyedFacility, _destroyedFacilityName);

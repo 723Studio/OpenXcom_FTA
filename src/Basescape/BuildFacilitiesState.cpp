@@ -18,6 +18,7 @@
  */
 #include <algorithm>
 #include "BuildFacilitiesState.h"
+#include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
@@ -31,6 +32,7 @@
 #include "../Savegame/Base.h"
 #include "PlaceFacilityState.h"
 #include "../Mod/Mod.h"
+#include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
 {
@@ -41,7 +43,7 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param state Pointer to the base state to refresh.
  */
-BuildFacilitiesState::BuildFacilitiesState(Base *base, State *state) : _base(base), _state(state)
+BuildFacilitiesState::BuildFacilitiesState(Base *base, State *state) : _base(base), _state(state), _lstScroll(0)
 {
 	_screen = false;
 
@@ -79,6 +81,7 @@ BuildFacilitiesState::BuildFacilitiesState(Base *base, State *state) : _base(bas
 	_lstFacilities->setWordWrap(true);
 	_lstFacilities->setScrolling(true, 0);
 	_lstFacilities->onMouseClick((ActionHandler)&BuildFacilitiesState::lstFacilitiesClick);
+	_lstFacilities->onMouseClick((ActionHandler)&BuildFacilitiesState::lstFacilitiesClick, SDL_BUTTON_MIDDLE);
 
 }
 
@@ -164,6 +167,12 @@ void BuildFacilitiesState::populateBuildList()
 			++row;
 		}
 	}
+
+	if (_lstScroll > 0)
+	{
+		_lstFacilities->scrollTo(_lstScroll);
+		_lstScroll = 0;
+	}
 }
 
 /**
@@ -191,13 +200,21 @@ void BuildFacilitiesState::btnOkClick(Action *)
  * Places the selected facility.
  * @param action Pointer to an action.
  */
-void BuildFacilitiesState::lstFacilitiesClick(Action *)
+void BuildFacilitiesState::lstFacilitiesClick(Action *action)
 {
 	auto index = _lstFacilities->getSelectedRow();
 	if (index >= _facilities.size())
 	{
 		return;
 	}
+
+	_lstScroll = _lstFacilities->getScroll();
+	if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+	{
+		Ufopaedia::openArticle(_game, _facilities[index]->getType());
+		return;
+	}
+
 	_game->pushState(new PlaceFacilityState(_base, _facilities[index]));
 }
 

@@ -244,7 +244,8 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 		}
 	}
 
-	if (_game->getMod()->getUseCustomCategories())
+	_vanillaCategories = _cats.size();
+	if (_game->getMod()->getDisplayCustomCategories() > 0)
 	{
 		bool hasUnassigned = false;
 
@@ -269,9 +270,13 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			}
 		}
 		// then use them nicely in order
-		_cats.clear();
-		_cats.push_back("STR_ALL_ITEMS");
-		_cats.push_back("STR_FILTER_HIDDEN");
+		if (_game->getMod()->getDisplayCustomCategories() == 1)
+		{
+			_cats.clear();
+			_cats.push_back("STR_ALL_ITEMS");
+			_cats.push_back("STR_FILTER_HIDDEN");
+			_vanillaCategories = _cats.size();
+		}
 		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
 		for (std::vector<std::string>::const_iterator k = categories.begin(); k != categories.end(); ++k)
 		{
@@ -343,6 +348,10 @@ std::string DiplomacyPurchaseState::getCategory(int sel) const
 		rule = (RuleItem*)_items[sel].rule;
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
+			if (rule->getVehicleUnit())
+				return "STR_PERSONNEL"; // OXCE: critters fighting for us
+			if (rule->isAlien())
+				return "STR_PRISONERS"; // OXCE: live aliens
 			return "STR_ALIENS";
 		}
 		if (rule->getBattleType() == BT_NONE)
@@ -353,7 +362,7 @@ std::string DiplomacyPurchaseState::getCategory(int sel) const
 			}
 			if (_game->getMod()->isArmorStorageItem(rule))
 			{
-				return "STR_EQUIPMENT";
+				return "STR_ARMORS"; // OXCE: armors
 			}
 			return "STR_COMPONENTS";
 		}
@@ -478,7 +487,8 @@ void DiplomacyPurchaseState::updateList()
 	_lstItems->clearList();
 	_rows.clear();
 
-	const std::string selectedCategory = _cats[_cbxCategory->getSelected()];
+	size_t selCategory = _cbxCategory->getSelected();
+	const std::string selectedCategory = _cats[selCategory];
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 	bool categoryHidden = (selectedCategory == "STR_FILTER_HIDDEN");
@@ -498,7 +508,7 @@ void DiplomacyPurchaseState::updateList()
 		{
 			continue;
 		}
-		else if (_game->getMod()->getUseCustomCategories())
+		else if (selCategory >= _vanillaCategories)
 		{
 			if (categoryUnassigned && _items[i].type == TRANSFER_ITEM)
 			{

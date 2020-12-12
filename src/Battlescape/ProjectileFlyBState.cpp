@@ -166,7 +166,7 @@ void ProjectileFlyBState::init()
 		}
 		break;
 	case BA_THROW:
-		if (!validThrowRange(&_action, _parent->getTileEngine()->getOriginVoxel(_action, 0), _parent->getSave()->getTile(_action.target)))
+		if (!validThrowRange(&_action, _parent->getTileEngine()->getOriginVoxel(_action, 0), _parent->getSave()->getTile(_action.target), _parent->getSave()->getDepth()))
 		{
 			// out of range
 			_action.result = "STR_OUT_OF_RANGE";
@@ -218,6 +218,23 @@ void ProjectileFlyBState::init()
 					&& !(_unit->getFaction() == FACTION_PLAYER && closeQuartersTarget->getFaction() == FACTION_NEUTRAL) // Civilians don't inhibit player
 					&& !(_unit->getFaction() == FACTION_NEUTRAL && closeQuartersTarget->getFaction() == FACTION_PLAYER)) // Player doesn't inhibit civilians
 				{
+					if (RNG::percent(_parent->getMod()->getCloseQuartersSneakUpGlobal()))
+					{
+						if (_unit->getFaction() == FACTION_HOSTILE) // alien attacker (including mind-controlled xcom)
+						{
+							if (!closeQuartersTarget->hasVisibleUnit(_unit))
+							{
+								continue; // the xcom/civilian victim *DOES NOT SEE* the attacker and cannot defend itself
+							}
+						}
+						else // xcom/civilian attacker (including mind-controlled aliens)
+						{
+							if (_unit->getTurnsSinceSpotted() > 1)
+							{
+								continue; // the aliens (as a collective) *ARE NOT AWARE* of the attacker and cannot defend themselves
+							}
+						}
+					}
 					closeQuartersTargetList.push_back(closeQuartersTarget);
 				}
 			}
@@ -305,7 +322,7 @@ void ProjectileFlyBState::init()
 			}
 		}
 	}
-	else if (!_action.weapon->getRules()->getArcingShot())
+	else if (!_action.weapon->getArcingShot(_action.type))
 	{
 		// determine the target voxel.
 		// aim at the center of the unit, the object, the walls or the floor (in that priority)
@@ -324,8 +341,28 @@ void ProjectileFlyBState::init()
 			}
 			else
 			{
-				if (!_parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer))
+				bool foundLoF = _parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer);
+
+				if (!foundLoF && Options::oxceEnableOffCentreShooting)
 				{
+					// If we can't target from the standard shooting position, try a bit left and right from the centre.
+					for (auto& rel_pos : { BattleActionOrigin::LEFT, BattleActionOrigin::RIGHT })
+					{
+						_action.relativeOrigin = rel_pos;
+						originVoxel = _parent->getTileEngine()->getOriginVoxel(_action, _parent->getSave()->getTile(_origin));
+						foundLoF = _parent->getTileEngine()->canTargetUnit(&originVoxel, targetTile, &_targetVoxel, _unit, isPlayer);
+						if (foundLoF)
+						{
+							break;
+						}
+					}
+				}
+
+				if (!foundLoF)
+				{
+					// Failed to find LOF
+					_action.relativeOrigin = BattleActionOrigin::CENTRE; // reset to the normal origin
+
 					_targetVoxel = TileEngine::invalid.toVoxel(); // out of bounds, even after voxel to tile calculation.
 					if (isPlayer)
 					{
@@ -577,8 +614,7 @@ void ProjectileFlyBState::think()
 	/* TODO refactoring : store the projectile in this state, instead of getting it from the map each time? */
 	if (_parent->getMap()->getProjectile() == 0)
 	{
-		Tile *t = _parent->getSave()->getTile(_action.actor->getPosition());
-		bool hasFloor = t && !t->hasNoFloor(_parent->getSave());
+		bool hasFloor = _action.actor->haveNoFloorBelow() == false;
 		bool unitCanFly = _action.actor->getMovementType() == MT_FLY;
 
 		if (_action.weapon->haveNextShotsForAction(_action.type, _action.autoShotCounter)
@@ -635,7 +671,7 @@ void ProjectileFlyBState::think()
 			if (_action.type == BA_THROW)
 			{
 				_parent->getMap()->resetCameraSmoothing();
-				Position pos = _parent->getMap()->getProjectile()->getPosition(-1).toTile();
+				Position pos = _parent->getMap()->getProjectile()->getPosition(Projectile::ItemDropVoxelOffset).toTile();
 				if (pos.y > _parent->getSave()->getMapSizeY())
 				{
 					pos.y--;
@@ -652,7 +688,7 @@ void ProjectileFlyBState::think()
 					if (ruleItem->getBattleType() == BT_GRENADE || ruleItem->getBattleType() == BT_PROXIMITYGRENADE)
 					{
 						// it's a hot grenade to explode immediately
-						_parent->statePushFront(new ExplosionBState(_parent, _parent->getMap()->getProjectile()->getPosition(-1), attack));
+						_parent->statePushFront(new ExplosionBState(_parent, _parent->getMap()->getProjectile()->getPosition(Projectile::ItemDropVoxelOffset), attack));
 					}
 					else
 					{
@@ -823,6 +859,15 @@ void ProjectileFlyBState::cancel()
 		if (!_parent->getMap()->getCamera()->isOnScreen(p, false, 0, false))
 			_parent->getMap()->getCamera()->centerOnPosition(p);
 	}
+	if (_parent->areAllEnemiesNeutralized())
+	{
+		// stop autoshots when battle auto-ends
+		_action.autoShotCounter = 1000;
+
+		// Rationale: if there are any fatally wounded soldiers
+		// the game still allows the player to resume playing the current turn (and heal them)
+		// but we don't want to resume auto-shooting (it just looks silly)
+	}
 }
 
 /**
@@ -830,22 +875,46 @@ void ProjectileFlyBState::cancel()
  * @param action Pointer to throw action.
  * @param origin Position to throw from.
  * @param target Tile to throw to.
+ * @param depth Battlescape depth.
  * @return True when the range is valid.
  */
-bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin, Tile *target)
+bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin, Tile *target, int depth)
 {
 	// note that all coordinates and thus also distances below are in number of tiles (not in voxels).
 	if (action->type != BA_THROW)
 	{
 		return true;
 	}
+	int xdiff = action->target.x - action->actor->getPosition().x;
+	int ydiff = action->target.y - action->actor->getPosition().y;
+	int realDistanceSq = (xdiff * xdiff) + (ydiff * ydiff);
+
+	if (depth > 0)
+	{
+		if (action->weapon->getRules()->getUnderwaterThrowRange() > 0)
+		{
+			return realDistanceSq <= action->weapon->getRules()->getUnderwaterThrowRangeSq();
+		}
+	}
+	else
+	{
+		if (action->weapon->getRules()->getThrowRange() > 0)
+		{
+			return realDistanceSq <= action->weapon->getRules()->getThrowRangeSq();
+		}
+	}
+
+	double realDistance = sqrt((double)realDistanceSq);
+
 	int offset = 2;
 	int zd = (origin.z)-((action->target.z * 24 + offset) - target->getTerrainLevel());
 	int weight = action->weapon->getTotalWeight();
 	double maxDistance = (getMaxThrowDistance(weight, action->actor->getBaseStats()->strength, zd) + 8) / 16.0;
-	int xdiff = action->target.x - action->actor->getPosition().x;
-	int ydiff = action->target.y - action->actor->getPosition().y;
-	double realDistance = sqrt((double)(xdiff*xdiff)+(double)(ydiff*ydiff));
+
+	if (depth > 0 && Mod::EXTENDED_UNDERWATER_THROW_FACTOR > 0)
+	{
+		maxDistance = maxDistance * (double)Mod::EXTENDED_UNDERWATER_THROW_FACTOR / 100.0;
+	}
 
 	return realDistance <= maxDistance;
 }

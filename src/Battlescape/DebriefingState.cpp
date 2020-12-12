@@ -61,6 +61,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Menu/MainMenuState.h"
 #include "../Interface/Cursor.h"
+#include "../Engine/Exception.h"
 #include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "../Basescape/ManageAlienContainmentState.h"
@@ -989,7 +990,7 @@ void DebriefingState::prepareDebriefing()
 	for (std::vector<std::string>::const_iterator i = _game->getMod()->getItemsList().begin(); i != _game->getMod()->getItemsList().end(); ++i)
 	{
 		RuleItem *rule = _game->getMod()->getItem(*i);
-		if (rule->getSpecialType() > 1)
+		if (rule->getSpecialType() > 1 && rule->getSpecialType() < DEATH_TRAPS)
 		{
 			RecoveryItem *item = new RecoveryItem();
 			item->name = *i;
@@ -1046,15 +1047,16 @@ void DebriefingState::prepareDebriefing()
 	_stats.push_back(new DebriefingStat("STR_ITEMS_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_OBJECTIVE_SECURED", false));
 
+	std::string missionCompleteText, missionFailedText;
 	std::string objectiveCompleteText, objectiveFailedText;
 	int objectiveCompleteScore = 0, objectiveFailedScore = 0;
 	if (ruleDeploy)
 	{
-		if (ruleDeploy->getObjectiveCompleteInfo(objectiveCompleteText, objectiveCompleteScore))
+		if (ruleDeploy->getObjectiveCompleteInfo(objectiveCompleteText, objectiveCompleteScore, missionCompleteText))
 		{
 			_stats.push_back(new DebriefingStat(objectiveCompleteText, false));
 		}
-		if (ruleDeploy->getObjectiveFailedInfo(objectiveFailedText, objectiveFailedScore))
+		if (ruleDeploy->getObjectiveFailedInfo(objectiveFailedText, objectiveFailedScore, missionFailedText))
 		{
 			_stats.push_back(new DebriefingStat(objectiveFailedText, false));
 		}
@@ -1063,6 +1065,11 @@ void DebriefingState::prepareDebriefing()
 			_stats.push_back(new DebriefingStat("STR_MISSION_ABORTED", false));
 			addStat("STR_MISSION_ABORTED", 1, -ruleDeploy->getAbortPenalty());
 		}
+	}
+	if (battle->getVIPSurvivalPercentage() > 0)
+	{
+		_stats.push_back(new DebriefingStat("STR_VIPS_LOST", false));
+		_stats.push_back(new DebriefingStat("STR_VIPS_SAVED", false));
 	}
 
 	_stats.push_back(new DebriefingStat("STR_CIVILIANS_KILLED_BY_ALIENS", false));
@@ -1451,6 +1458,7 @@ void DebriefingState::prepareDebriefing()
 	}
 
 	// time to care for units.
+	bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
 	for (std::vector<BattleUnit*>::iterator j = battle->getUnits()->begin(); j != battle->getUnits()->end(); ++j)
 	{
 		UnitStatus status = (*j)->getStatus();
@@ -1681,13 +1689,19 @@ void DebriefingState::prepareDebriefing()
 			else if (oldFaction == FACTION_NEUTRAL)
 			{
 				// if mission fails, all civilians die
-				if (aborted || playersSurvived == 0)
+				if ((aborted && !success) || playersSurvived == 0)
 				{
-					addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -value);
+					if (!(*j)->isResummonedFakeCivilian())
+					{
+						addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -value);
+					}
 				}
 				else
 				{
-					addStat("STR_CIVILIANS_SAVED", 1, value);
+					if (!(*j)->isResummonedFakeCivilian())
+					{
+						addStat("STR_CIVILIANS_SAVED", 1, value);
+					}
 					recoverCivilian(*j, base);
 				}
 			}
@@ -1729,6 +1743,55 @@ void DebriefingState::prepareDebriefing()
 		playersSurvived = 0; // assuming you aborted and left everyone behind
 		success = false;
 	}
+
+	bool savedEnoughVIPs = true;
+	if (battle->getVIPSurvivalPercentage() > 0)
+	{
+		bool retreated = aborted && (playersSurvived > 0);
+
+		// 1. correct our initial assessment if necessary
+		battle->correctVIPStats(success, retreated);
+		int vipSubtotal = battle->getSavedVIPs() + battle->getLostVIPs();
+
+		// 2. add non-fake civilian VIPs, no scoring
+		for (auto unit : *battle->getUnits())
+		{
+			if (unit->isVIP() && unit->getOriginalFaction() == FACTION_NEUTRAL && !unit->isResummonedFakeCivilian())
+			{
+				if (unit->getStatus() == STATUS_DEAD)
+					battle->addLostVIP(0);
+				else if (success)
+					battle->addSavedVIP(0);
+				else
+					battle->addLostVIP(0);
+			}
+		}
+
+		// 3. check if we saved enough VIPs
+		int vipTotal = battle->getSavedVIPs() + battle->getLostVIPs();
+		if (vipTotal > 0)
+		{
+			int ratio = battle->getSavedVIPs() * 100 / vipTotal;
+			if (ratio < battle->getVIPSurvivalPercentage())
+			{
+				savedEnoughVIPs = false; // didn't save enough VIPs
+				success = false;
+			}
+		}
+		else
+		{
+			savedEnoughVIPs = false; // nobody to save?
+			success = false;
+		}
+
+		// 4. add stats
+		if (vipSubtotal > 0 || (vipTotal > 0 && !savedEnoughVIPs))
+		{
+			addStat("STR_VIPS_LOST", battle->getLostVIPs(), battle->getLostVIPsScore());
+			addStat("STR_VIPS_SAVED", battle->getSavedVIPs(), battle->getSavedVIPsScore());
+		}
+	}
+
 	if ((!aborted || success) && playersSurvived > 0) 	// RECOVER UFO : run through all tiles to recover UFO components and items
 	{
 		if (target == "STR_BASE")
@@ -1746,7 +1809,15 @@ void DebriefingState::prepareDebriefing()
 		else
 		{
 			_txtTitle->setText(tr("STR_ALIENS_DEFEATED"));
-			if (!objectiveCompleteText.empty())
+			if (!aborted && !savedEnoughVIPs)
+			{
+				// Special case: mission was NOT aborted, all enemies were neutralized, but we couldn't save enough VIPs...
+				if (!objectiveFailedText.empty())
+				{
+					addStat(objectiveFailedText, 1, objectiveFailedScore);
+				}
+			}
+			else if (!objectiveCompleteText.empty())
 			{
 				int victoryStat = 0;
 				if (ruleDeploy->getEscapeType() != ESCAPE_NONE)
@@ -1764,9 +1835,29 @@ void DebriefingState::prepareDebriefing()
 				{
 					victoryStat = 1;
 				}
+				if (battle->getVIPSurvivalPercentage() > 0)
+				{
+					victoryStat = 1; // TODO: maybe show battle->getSavedVIPs() instead? need feedback...
+				}
 
 				addStat(objectiveCompleteText, victoryStat, objectiveCompleteScore);
 			}
+		}
+		if (!aborted && !savedEnoughVIPs)
+		{
+			// Special case: mission was NOT aborted, all enemies were neutralized, but we couldn't save enough VIPs...
+			if (!missionFailedText.empty())
+			{
+				_txtTitle->setText(tr(missionFailedText));
+			}
+			else
+			{
+				_txtTitle->setText(tr("STR_TERROR_CONTINUES"));
+			}
+		}
+		else if (!missionCompleteText.empty())
+		{
+			_txtTitle->setText(tr(missionCompleteText));
 		}
 
 		if (!aborted)
@@ -1788,7 +1879,7 @@ void DebriefingState::prepareDebriefing()
 					if (battle->getTile(i)->getMapData(tp))
 					{
 						size_t specialType = battle->getTile(i)->getMapData(tp)->getSpecialType();
-						if (specialType != nonRecoverType && _recoveryStats.find(specialType) != _recoveryStats.end())
+						if (specialType != nonRecoverType && specialType < (size_t)DEATH_TRAPS && _recoveryStats.find(specialType) != _recoveryStats.end())
 						{
 							addStat(_recoveryStats[specialType]->name, 1, _recoveryStats[specialType]->value);
 						}
@@ -1834,6 +1925,10 @@ void DebriefingState::prepareDebriefing()
 				addStat(objectiveFailedText, 1, objectiveFailedScore);
 			}
 		}
+		if (!missionFailedText.empty())
+		{
+			_txtTitle->setText(tr(missionFailedText));
+		}
 
 		if (playersSurvived > 0 && !_destroyBase)
 		{
@@ -1849,9 +1944,11 @@ void DebriefingState::prepareDebriefing()
 	int extraPoints = 0;
 	if (ruleDeploy && ruleDeploy->getExtendedObjectiveType() == "STR_EVACUATION" && (vipsLost > 0 || vipsSaved > 0))
 	{
+		success = true;
 		if (vipsSaved == 0 || (vipsSaved * 4) < vipsLost)
 		{
 			_txtTitle->setText(tr("STR_EVACUATION_FAILED"));
+			success = false;
 			if (!objectiveFailedText.empty())
 			{
 				addStat(objectiveFailedText, 1, objectiveFailedScore);
@@ -1872,9 +1969,11 @@ void DebriefingState::prepareDebriefing()
 	}
 	else if (ruleDeploy && ruleDeploy->getExtendedObjectiveType() == "STR_ITEM_EXTRACTION" && (_game->getSavedGame()->getSavedBattle()->getItemObjectivesNumber() > 0))
 	{
+		success = true;
 		if (_recoveredItemObjs == 0)
 		{
 			_txtTitle->setText(tr("STR_ITEM_EXTRACTION_FAILED"));
+			success = false;
 			if (!objectiveFailedText.empty())
 			{
 				addStat(objectiveFailedText, 1, objectiveFailedScore);
@@ -2097,7 +2196,25 @@ void DebriefingState::prepareDebriefing()
 		const RuleResearch *research = _game->getMod()->getResearch(ruleDeploy->getUnlockedResearch());
 		if (research)
 		{
+			std::vector<const RuleResearch*> researchVec;
+			researchVec.push_back(research);
 			_game->getSavedGame()->addFinishedResearch(research, _game->getMod(), base, true);
+			if (!research->getLookup().empty())
+			{
+				researchVec.push_back(_game->getMod()->getResearch(research->getLookup(), true));
+				_game->getSavedGame()->addFinishedResearch(researchVec.back(), _game->getMod(), base, true);
+			}
+
+			if (auto bonus = _game->getSavedGame()->selectGetOneFree(research))
+			{
+				researchVec.push_back(bonus);
+				_game->getSavedGame()->addFinishedResearch(bonus, _game->getMod(), base, true);
+				if (!bonus->getLookup().empty())
+				{
+					researchVec.push_back(_game->getMod()->getResearch(bonus->getLookup(), true));
+					_game->getSavedGame()->addFinishedResearch(researchVec.back(), _game->getMod(), base, true);
+				}
+			}
 
 			// check and interrupt alien missions if necessary (based on unlocked research)
 			for (auto am : _game->getSavedGame()->getAlienMissions())
@@ -2105,7 +2222,8 @@ void DebriefingState::prepareDebriefing()
 				auto interruptResearchName = am->getRules().getInterruptResearch();
 				if (!interruptResearchName.empty())
 				{
-					if (interruptResearchName == research->getName())
+					auto interruptResearch = _game->getMod()->getResearch(interruptResearchName, true);
+					if (std::find(researchVec.begin(), researchVec.end(), interruptResearch) != researchVec.end())
 					{
 						am->setInterrupted(true);
 					}
@@ -2126,6 +2244,21 @@ void DebriefingState::prepareDebriefing()
 					addStat(_recoveryStats[specialType]->name, 1, _recoveryStats[specialType]->value);
 				}
 			}
+		}
+
+		// Generate success event after mission
+		auto eventName = ruleDeploy->chooseSuccessEvent();
+		if (!eventName.empty())
+		{
+			_game->getMasterMind()->spawnEvent(eventName);
+		}
+	}
+	else if (!success)
+	{
+		auto eventName = ruleDeploy->chooseFailureEvent();
+		if (!eventName.empty())
+		{
+			_game->getMasterMind()->spawnEvent(eventName);
 		}
 	}
 
@@ -2394,7 +2527,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 
 				if (awardItemPoints)
 				{
-					if (rule->isAlienArtifact())
+					if (rule->isAlienArtifact() || !_game->getMod()->getIsFTAGame())
 					{
 						addStat("STR_ALIEN_ARTIFACTS_RECOVERED", 1, points);
 					}
@@ -2494,6 +2627,10 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 void DebriefingState::recoverCivilian(BattleUnit *from, Base *base)
 {
 	std::string type = from->getUnitRules()->getCivilianRecoveryType();
+	if (type.empty())
+	{
+		return;
+	}
 	if (type == "STR_SCIENTIST")
 	{
 		Transfer *t = new Transfer(24);
@@ -2513,6 +2650,11 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base)
 		{
 			Transfer *t = new Transfer(24);
 			Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier->getType());
+			if (!from->getUnitRules()->getSpawnedPersonName().empty())
+			{
+				s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));
+			}
+			s->load(from->getUnitRules()->getSpawnedSoldierTemplate(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
 			t->setSoldier(s);
 			base->getTransfers()->push_back(t);
 		}
@@ -2570,8 +2712,18 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base)
  */
 void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 {
+	RuleItem* liveAlienItemRule;
+	auto altUnit = from->getUnitRules()->getAltUnit();
+	if (altUnit != nullptr)
+	{
+		liveAlienItemRule = _game->getMod()->getItem(altUnit->getType());
+	}
+	else
+	{
+		liveAlienItemRule = _game->getMod()->getItem(from->getType());
+	}
+	
 	// Transform a live alien into one or more recovered items?
-	RuleItem* liveAlienItemRule = _game->getMod()->getItem(from->getType());
 	if (liveAlienItemRule && !liveAlienItemRule->getRecoveryTransformations().empty())
 	{
 		addItemsToBaseStores(liveAlienItemRule, base, 1, true);
@@ -2581,15 +2733,30 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		return;
 	}
 
-	std::string type = from->getType();
-	RuleItem *ruleLiveAlienItem = _game->getMod()->getItem(type);
-	bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
+	// This ain't good! Let's display at least some useful info before we crash...
+	if (!liveAlienItemRule)
+	{
+		std::ostringstream ss;
+		ss << "Live alien item definition is missing. Unit ID = " << from->getId();
+		ss << "; Type = " << from->getType();
+		ss << "; Status = " << from->getStatus();
+		ss << "; Faction = " << from->getFaction();
+		ss << "; Orig. faction = " << from->getOriginalFaction();
+		if (from->getSpawnUnit())
+		{
+			ss << "; Spawn unit = [" << from->getSpawnUnit()->getType() << "]";
+		}
+		ss << "; isSurrendering = " << from->isSurrendering();
+		throw Exception(ss.str());
+	}
+
+	bool killPrisonersAutomatically = base->getAvailableContainment(liveAlienItemRule->getPrisonType()) == 0;
 	if (killPrisonersAutomatically)
 	{
 		// check also other bases, maybe we can transfer/redirect prisoners there
 		for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 		{
-			if ((*i)->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) > 0)
+			if ((*i)->getAvailableContainment(liveAlienItemRule->getPrisonType()) > 0)
 			{
 				killPrisonersAutomatically = false;
 				break;
@@ -2598,7 +2765,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 	}
 	if (killPrisonersAutomatically)
 	{
-		_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 1; // 1 = not available in any base
+		_containmentStateInfo[liveAlienItemRule->getPrisonType()] = 1; // 1 = not available in any base
 
 		if (!from->getArmor()->getCorpseBattlescape().empty())
 		{
@@ -2616,7 +2783,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 	}
 	else
 	{
-		RuleResearch *research = _game->getMod()->getResearch(type);
+		RuleResearch *research = _game->getMod()->getResearch(liveAlienItemRule->getType());
 		bool surrendered = (!from->isOut() || from->getStatus() == STATUS_IGNORE_ME)
 			&& (from->isSurrendering() || _game->getSavedGame()->getSavedBattle()->getChronoTrigger() == FORCE_WIN_SURRENDER);
 		if (research != 0 && !_game->getSavedGame()->isResearched(research))
@@ -2634,14 +2801,14 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, 10);
 		}
 
-		addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);
-		int availableContainment = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType());
-		int usedContainment = base->getUsedContainment(ruleLiveAlienItem->getPrisonType());
+		addItemsToBaseStores(liveAlienItemRule, base, 1, false);
+		int availableContainment = base->getAvailableContainment(liveAlienItemRule->getPrisonType());
+		int usedContainment = base->getUsedContainment(liveAlienItemRule->getPrisonType());
 		int freeContainment = availableContainment - (usedContainment * _limitsEnforced);
 		// no capacity, or not enough capacity
 		if (availableContainment == 0 || freeContainment < 0)
 		{
-			_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 2; // 2 = overfull
+			_containmentStateInfo[liveAlienItemRule->getPrisonType()] = 2; // 2 = overfull
 		}
 	}
 }
@@ -2661,13 +2828,13 @@ bool DebriefingState::handleVipRecovery(BattleUnit* unit, Base* base, bool resul
 		std::string type = rules->getCivilianRecoveryType();
 		if (type == "STR_SCIENTIST")
 		{
-			Transfer* t = new Transfer(24);
+			Transfer* t = new Transfer(12);
 			t->setScientists(1);
 			base->getTransfers()->push_back(t);
 		}
 		else if (type == "STR_ENGINEER")
 		{
-			Transfer* t = new Transfer(24);
+			Transfer* t = new Transfer(12);
 			t->setEngineers(1);
 			base->getTransfers()->push_back(t);
 		}
@@ -2676,7 +2843,7 @@ bool DebriefingState::handleVipRecovery(BattleUnit* unit, Base* base, bool resul
 			RuleSoldier* ruleSoldier = _game->getMod()->getSoldier(type);
 			if (ruleSoldier != 0)
 			{
-				Transfer* t = new Transfer(24);
+				Transfer* t = new Transfer(12);
 				Soldier* s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier->getType());
 				unit->setGeoscapeSoldied(s);
 				created = true;

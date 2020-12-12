@@ -496,6 +496,17 @@ void Ufo::setDamage(int damage, const Mod *mod)
 }
 
 /**
+ * Returns the ratio between the amount of damage this
+ * ufo can take and the total it can take before it's
+ * destroyed.
+ * @return Percentage of damage.
+ */
+int Ufo::getDamagePercentage() const
+{
+	return (int)floor((double)_damage / _stats.damageMax * 100);
+}
+
+/**
  * Returns whether this UFO has been detected by radars.
  * @return Detection status.
  */
@@ -1280,7 +1291,9 @@ std::string debugDisplayScript(const Ufo* u)
 		s += u->getRules()->getType();
 		s += "\" id: ";
 		s += std::to_string(u->getId());
-		s += "\")";
+		s += "\" damage: ";
+		s += std::to_string(u->getDamagePercentage());
+		s += "%)";
 		return s;
 	}
 	else
@@ -1310,6 +1323,7 @@ void Ufo::ScriptRegister(ScriptParserBase* parser)
 
 	u.add<&Ufo::getDamage>("getDamage");
 	u.add<&getDamageMaxScript>("getDamageMax");
+	u.add<&Ufo::getDamagePercentage>("getDamagePercentage");
 
 	u.add<&Ufo::getDetected>("getDetected");
 	u.add<&Ufo::getHyperDetected>("getHyperDetected");

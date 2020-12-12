@@ -246,7 +246,7 @@ pl:
   STR_MAP_DEPTH: "Głębokość"
   STR_DIFFICULTY: "Poziom trudności"
   STR_ALIEN_RACE: "Rasa"
-  STR_ALIEN_TECH_LEVEL: "Poziom technologiczny"
+  STR_ALIEN_TECH_LEVEL: "Poziom techniczny"
   STR_RANDOMIZE: "Losuj"
   STR_OXCE_REQUIRED_QUESTION: "Ta modyfikacja do poprawnego działania wymaga OpenXcom Extended. Uruchomić modyfikację?"
   STR_RESTORE_DEFAULTS_QUESTION: "Czy na pewno chcesz przywrócić domyślne ustawienia?"

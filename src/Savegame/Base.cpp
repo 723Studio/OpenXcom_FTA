@@ -1399,25 +1399,6 @@ const std::vector<Production *> & Base::getProductions() const
 	return _productions;
 }
 
-
-/**
- * Returns whether or not this base
- * is equipped with hyper-wave
- * detection facilities.
- * @return True if the base has hyper-wave detection.
- */
-bool Base::getHyperDetection() const
-{
-	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
-	{
-		if ((*i)->getRules()->isHyperwave() && (*i)->getBuildTime() == 0)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
 /**
  * Returns the total amount of Psi Lab Space
  * available in the base.
@@ -1909,10 +1890,10 @@ std::list<std::vector<BaseFacility*>::iterator> Base::getDisconnectedFacilities(
 			BaseFacility *neighborRight = (x+1 < BASE_SIZE && grid[x+1][y] != 0) ? *(grid[x+1][y]->first) : 0;
 			BaseFacility *neighborTop = (y-1 >= 0 && grid[x][y-1] != 0) ? *(grid[x][y-1]->first) : 0;
 			BaseFacility *neighborBottom= (y+1 < BASE_SIZE && grid[x][y+1] != 0) ? *(grid[x][y+1]->first) : 0;
-			if ((fac->getBuildTime() == 0) || (fac->getIfHadPreviousFacility()) || (neighborLeft != 0 && (neighborLeft == fac || neighborLeft->getBuildTime() > neighborLeft->getRules()->getBuildTime()))) stack.push(std::make_pair(x-1,y));
-			if ((fac->getBuildTime() == 0) || (fac->getIfHadPreviousFacility()) || (neighborRight != 0 && (neighborRight == fac || neighborRight->getBuildTime() > neighborRight->getRules()->getBuildTime()))) stack.push(std::make_pair(x+1,y));
-			if ((fac->getBuildTime() == 0) || (fac->getIfHadPreviousFacility()) || (neighborTop != 0 && (neighborTop == fac || neighborTop->getBuildTime() > neighborTop->getRules()->getBuildTime()))) stack.push(std::make_pair(x,y-1));
-			if ((fac->getBuildTime() == 0) || (fac->getIfHadPreviousFacility()) || (neighborBottom != 0 && (neighborBottom == fac || neighborBottom->getBuildTime() > neighborBottom->getRules()->getBuildTime()))) stack.push(std::make_pair(x,y+1));
+			if (fac->isBuiltOrHadPreviousFacility() || (neighborLeft != 0 && (neighborLeft == fac || neighborLeft->getBuildTime() > neighborLeft->getRules()->getBuildTime()))) stack.push(std::make_pair(x-1,y));
+			if (fac->isBuiltOrHadPreviousFacility() || (neighborRight != 0 && (neighborRight == fac || neighborRight->getBuildTime() > neighborRight->getRules()->getBuildTime()))) stack.push(std::make_pair(x+1,y));
+			if (fac->isBuiltOrHadPreviousFacility() || (neighborTop != 0 && (neighborTop == fac || neighborTop->getBuildTime() > neighborTop->getRules()->getBuildTime()))) stack.push(std::make_pair(x,y-1));
+			if (fac->isBuiltOrHadPreviousFacility() || (neighborBottom != 0 && (neighborBottom == fac || neighborBottom->getBuildTime() > neighborBottom->getRules()->getBuildTime()))) stack.push(std::make_pair(x,y+1));
 		}
 	}
 
@@ -2297,7 +2278,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 				auto find = std::find(prisonBegin, prisonCurr, type);
 				if (find != prisonCurr)
 				{
-					availablePrisonTypes[find - prisonBegin] = prisonSize;
+					availablePrisonTypes[find - prisonBegin] += prisonSize;
 				}
 			}
 		};

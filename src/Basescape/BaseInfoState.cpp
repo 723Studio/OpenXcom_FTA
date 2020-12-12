@@ -35,6 +35,7 @@
 #include "MonthlyCostsState.h"
 #include "TransfersState.h"
 #include "StoresState.h"
+#include "DisposeState.h"
 #include "BasescapeState.h"
 
 namespace OpenXcom
@@ -48,13 +49,25 @@ namespace OpenXcom
  */
 BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _state(state)
 {
+	bool isFtA = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_mini = new MiniBaseView(128, 16, 182, 8);
-	_btnOk = new TextButton(30, 14, 10, 180);
-	_btnTransfers = new TextButton(80, 14, 46, 180);
-	_btnStores = new TextButton(80, 14, 132, 180);
-	_btnMonthlyCosts = new TextButton(92, 14, 218, 180);
+	if (isFtA)
+	{
+		_btnOk = new TextButton(21, 14, 8, 180);
+		_btnTransfers = new TextButton(63, 14, 31, 180);
+		_btnStores = new TextButton(50, 14, 96, 180);
+		_btnDispose = new TextButton(85, 14, 148, 180);
+		_btnMonthlyCosts = new TextButton(77, 14, 235, 180);
+	}
+	else
+	{
+		_btnOk = new TextButton(30, 14, 10, 180);
+		_btnTransfers = new TextButton(80, 14, 46, 180);
+		_btnStores = new TextButton(80, 14, 132, 180);
+		_btnMonthlyCosts = new TextButton(92, 14, 218, 180);
+	}
 	_edtBase = new TextEdit(this, 127, 16, 8, 8);
 
 	_txtPersonnel = new Text(300, 9, 8, 30);
@@ -109,6 +122,10 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 	add(_btnOk, "button", "baseInfo");
 	add(_btnTransfers, "button", "baseInfo");
 	add(_btnStores, "button", "baseInfo");
+	if (isFtA)
+	{
+		add(_btnDispose, "button", "baseInfo");
+	}
 	add(_btnMonthlyCosts, "button", "baseInfo");
 	add(_edtBase, "text1", "baseInfo");
 
@@ -182,14 +199,34 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&BaseInfoState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&BaseInfoState::btnOkClick, Options::keyOk);
 	_btnOk->onKeyboardPress((ActionHandler)&BaseInfoState::btnOkClick, Options::keyCancel);
 
-	_btnTransfers->setText(tr("STR_TRANSFERS_UC"));
+	if (isFtA)
+	{
+		_btnTransfers->setText(tr("STR_TRANSFERS_LC"));
+	}
+	else
+	{
+		_btnTransfers->setText(tr("STR_TRANSFERS_UC"));
+	}
 	_btnTransfers->onMouseClick((ActionHandler)&BaseInfoState::btnTransfersClick);
 
-	_btnStores->setText(tr("STR_STORES_UC"));
+	if (isFtA)
+	{
+		_btnStores->setText(tr("STR_STORES_LC"));
+	}
+	else
+	{
+		_btnStores->setText(tr("STR_STORES_UC"));
+	}
 	_btnStores->onMouseClick((ActionHandler)&BaseInfoState::btnStoresClick);
 
+	if (isFtA)
+	{
+		_btnDispose->setText(tr("STR_DISPOSE_DISMISS_LC"));
+		_btnDispose->onMouseClick((ActionHandler)&BaseInfoState::btnDisposeClick);
+	}
 	_btnMonthlyCosts->setText(tr("STR_MONTHLY_COSTS"));
 	_btnMonthlyCosts->onMouseClick((ActionHandler)&BaseInfoState::btnMonthlyCostsClick);
 
@@ -445,6 +482,15 @@ void BaseInfoState::btnTransfersClick(Action *)
 void BaseInfoState::btnStoresClick(Action *)
 {
 	_game->pushState(new StoresState(_base));
+}
+
+/**
+ * Goes to the Dispose/Dismiss screen.
+ * @param action Pointer to an action.
+ */
+void BaseInfoState::btnDisposeClick(Action* action)
+{
+	_game->pushState(new DisposeState(_base, 0));
 }
 
 /**

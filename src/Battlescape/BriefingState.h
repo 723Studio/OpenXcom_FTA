@@ -27,6 +27,7 @@ class Window;
 class Text;
 class Craft;
 class Base;
+struct BriefingData;
 
 /**
  * Briefing screen which displays info
@@ -40,9 +41,10 @@ private:
 	Text *_txtTitle, *_txtTarget, *_txtCraft, *_txtBriefing;
 	std::string _cutsceneId, _musicId;
 	bool _infoOnly;
+	bool _disableCutsceneAndMusic;
 public:
 	/// Creates the Briefing state.
-	BriefingState(Craft *craft = 0, Base *base = 0, bool infoOnly = false);
+	BriefingState(Craft *craft = 0, Base *base = 0, bool infoOnly = false, BriefingData *customBriefing = nullptr);
 	/// Cleans up the Briefing state.
 	~BriefingState();
 	/// Initialization

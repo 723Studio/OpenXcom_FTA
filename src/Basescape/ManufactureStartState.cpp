@@ -101,7 +101,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	_btnCancel->onMouseClick((ActionHandler)&ManufactureStartState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&ManufactureStartState::btnCancelClick, Options::keyCancel);
 
-	bool productionPossible = _game->getSavedGame()->getFunds() > _item->getManufactureCost();
+	bool productionPossible = _item->haveEnoughMoneyForOneMoreUnit(_game->getSavedGame()->getFunds());
 	// check available workspace later
 	//int availableWorkSpace = _base->getFreeWorkshops();
 	//productionPossible &= (availableWorkSpace > 0);
@@ -121,6 +121,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
 	_lstRequiredItems->setBackground(_window);
 
+	bool hasRequirements = _item->getRequiredCrafts().size() > 0 || _item->getRequiredItems().size() > 0;
 	int row = 0;
 	for (auto& iter : _item->getRequiredCrafts())
 	{
@@ -173,7 +174,20 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 		_lstRequiredItems->setCellColor(row, 0, _lstRequiredItems->getSecondaryColor());
 		row++;
 	}
-	if (!_item->getProducedItems().empty())
+	bool hasVanillaOutput = false;
+	if (_item->getProducedItems().size() == 1)
+	{
+		const RuleItem* match = _game->getMod()->getItem(_item->getName(), false);
+		if (match)
+		{
+			auto iter = _item->getProducedItems().find(match);
+			if (iter != _item->getProducedItems().end())
+			{
+				hasVanillaOutput = ((*iter).second == 1);
+			}
+		}
+	}
+	if (!hasVanillaOutput && !_item->getProducedItems().empty())
 	{
 		// separator line
 		_lstRequiredItems->addRow(1, tr("STR_UNITS_PRODUCED").c_str());
@@ -190,10 +204,10 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 		}
 	}
 
-	_txtRequiredItemsTitle->setVisible(row);
-	_txtItemNameColumn->setVisible(row);
-	_txtUnitRequiredColumn->setVisible(row);
-	_txtUnitAvailableColumn->setVisible(row);
+	_txtRequiredItemsTitle->setVisible(hasRequirements);
+	_txtItemNameColumn->setVisible(hasRequirements);
+	_txtUnitRequiredColumn->setVisible(hasRequirements);
+	_txtUnitAvailableColumn->setVisible(hasRequirements);
 	_lstRequiredItems->setVisible(row);
 
 	_btnStart->setText(tr("STR_START_PRODUCTION"));

@@ -328,7 +328,7 @@ int Tile::getFootstepSound(Tile *tileBelow) const
 		sound = _objects[O_FLOOR]->getFootstepSound();
 	if (_objects[O_OBJECT] && _objects[O_OBJECT]->getBigWall() <= 1 && _objects[O_OBJECT]->getFootstepSound() > -1)
 		sound = _objects[O_OBJECT]->getFootstepSound();
-	if (!_objects[O_FLOOR] && !_objects[O_OBJECT] && tileBelow != 0 && tileBelow->getTerrainLevel() == -24)
+	if (!_objects[O_FLOOR] && !_objects[O_OBJECT] && tileBelow != 0 && tileBelow->getTerrainLevel() == -24 && tileBelow->getMapData(O_OBJECT))
 		sound = tileBelow->getMapData(O_OBJECT)->getFootstepSound();
 
 	return sound;

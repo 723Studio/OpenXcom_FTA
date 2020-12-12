@@ -178,13 +178,13 @@ std::string CovertOperation::getOddsName()
 std::string CovertOperation::getTimeLeftName()
 {
 	int time = _cost - _spent;
-	if (time > 45)
+	if (time > 45 * 24)
 		return ("STR_SEVERAL_MONTHS");
-	else if (time > 20)
+	else if (time > 20 * 24)
 		return ("STR_MONTH");
-	else if (time > 10)
+	else if (time > 10 * 24)
 		return ("STR_SEVERAL_WEEKS");
-	else if (time > 6)
+	else if (time > 6 * 24)
 		return ("STR_WEEK");
 	else
 		return ("STR_SEVERAL_DAYS");
@@ -208,7 +208,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	{
 		++_spent;
 		//should we spawn ongoing event?
-		std::string progressEvent = _rule->getProgressEvent();
+		std::string progressEvent = _rule->chooseProgressEvent();
 		if (!progressEvent.empty())
 		{
 			bool spawn = false;
@@ -218,7 +218,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			{
 				if (RNG::percent(_rule->getProgressEventChance()))
 				{
-					_progressEventSpawned = engine.getMasterMind()->spawnEvent(_rule->getProgressEvent());
+					_progressEventSpawned = engine.getMasterMind()->spawnEvent(progressEvent);
 				}
 			}
 		}
@@ -272,7 +272,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	int eng = this->getAssignedEngineers();
 	if (sci > 0) _base->setScientists(_base->getScientists() + sci);
 	if (eng > 0) _base->setEngineers(_base->getEngineers() + eng);
-	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //TODO date
+	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //#FINNIKTODO date
 	//load results of operation
 	if (operationResult)
 	{
@@ -380,6 +380,26 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 				save.addFinishedResearch(lookupResearch, &mod, _base, true);
 				_researchName = lookupResearch->getName();
 			}
+			if (auto bonus = save.selectGetOneFree(eventResearch))
+			{
+				save.addFinishedResearch(bonus, &mod, _base, true);
+				if (!bonus->getLookup().empty())
+				{
+					save.addFinishedResearch(mod.getResearch(bonus->getLookup(), true), &mod, _base, true);
+				}
+			}
+			// check and interrupt alien missions if necessary (based on unlocked research)
+			for (auto am : save.getAlienMissions())
+			{
+				auto interruptResearchName = am->getRules().getInterruptResearch();
+				if (!interruptResearchName.empty())
+				{
+					if (interruptResearchName == eventResearch->getName())
+					{
+						am->setInterrupted(true);
+					}
+				}
+			}
 		}
 	}
 	
@@ -393,7 +413,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 				std::string lookingName = (*i).first;
 				if (factionName == lookingName)
 				{
-					(*j)->setReputation((*j)->getReputation() + (*i).second);
+					(*j)->setReputationScore((*j)->getReputationScore() + (*i).second);
 					_results->addReputation(factionName, (*i).second);
 					break;
 				}

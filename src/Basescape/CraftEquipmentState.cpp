@@ -65,7 +65,7 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param craft ID of the selected craft.
  */
-CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) : _lstScroll(0), _sel(0), _craft(craft), _base(base), _totalItems(0), _ammoColor(0), _reload(true)
+CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) : _lstScroll(0), _sel(0), _craft(craft), _base(base), _totalItems(0), _totalItemStorageSize(0.0), _ammoColor(0), _reload(true)
 {
 	Craft *c = _base->getCrafts()->at(_craft);
 	bool craftHasACrew = c->getNumSoldiers() > 0;
@@ -303,6 +303,7 @@ void CraftEquipmentState::initList()
 
 	// reset
 	_totalItems = 0;
+	_totalItemStorageSize = 0.0;
 	_items.clear();
 	_lstEquipment->clearList();
 
@@ -322,6 +323,7 @@ void CraftEquipmentState::initList()
 		{
 			cQty = c->getItems()->getItem(*i);
 			_totalItems += cQty;
+			_totalItemStorageSize += cQty * rule->getSize();
 		}
 
 		if ((isVehicle || rule->isInventoryItem()) && rule->canBeEquippedToCraftInventory() &&
@@ -679,6 +681,7 @@ void CraftEquipmentState::moveLeftByValue(int change)
 	{
 		c->getItems()->removeItem(_items[_sel], change);
 		_totalItems -= change;
+		_totalItemStorageSize -= change * item->getSize();
 		if (_game->getSavedGame()->getMonthsPassed() > -1)
 		{
 			_base->getStorageItems()->addItem(_items[_sel], change);
@@ -784,8 +787,28 @@ void CraftEquipmentState::moveRightByValue(int change, bool suppressErrors)
 			}
 			change = c->getRules()->getMaxItems() - _totalItems;
 		}
+		if (c->getRules()->getMaxStorageSpace() > 0.0 && _totalItemStorageSize + (change * item->getSize()) > c->getRules()->getMaxStorageSpace() + 0.05)
+		{
+			if (item->getSize() > 0.0)
+			{
+				change = (int)floor((c->getRules()->getMaxStorageSpace() + 0.05 - _totalItemStorageSize) / item->getSize());
+			}
+			if (change < 0)
+			{
+				// if the player is already over the maximum (e.g. after a mod update), don't go into some ridiculous minus values
+				change = 0;
+			}
+			if (!suppressErrors)
+			{
+				_timerRight->stop();
+				LocalizedText msg(tr("STR_NO_MORE_EQUIPMENT_ALLOWED_BY_SIZE").arg(c->getRules()->getMaxStorageSpace()));
+				_game->pushState(new ErrorMessageState(msg, _palette, _game->getMod()->getInterface("craftEquipment")->getElement("errorMessage")->color, "BACK04.SCR", _game->getMod()->getInterface("craftEquipment")->getElement("errorPalette")->color));
+				_reload = false;
+			}
+		}
 		c->getItems()->addItem(_items[_sel],change);
 		_totalItems += change;
+		_totalItemStorageSize += change * item->getSize();
 		if (_game->getSavedGame()->getMonthsPassed() > -1)
 		{
 			_base->getStorageItems()->removeItem(_items[_sel],change);

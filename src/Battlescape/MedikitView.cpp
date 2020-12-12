@@ -64,7 +64,7 @@ MedikitView::MedikitView (int w, int h, int x, int y, Game * game, BattleUnit *u
 void MedikitView::draw()
 {
 	SurfaceSet *set = _game->getMod()->getSurfaceSet("MEDIBITS.DAT");
-	int fatal_wound = _unit->getFatalWound(_selectedPart);
+	int fatal_wound = _unit->getFatalWound((UnitBodyPart)_selectedPart);
 	std::ostringstream ss, ss1;
 	int green = 0;
 	int red = 3;
@@ -76,7 +76,7 @@ void MedikitView::draw()
 	this->lock();
 	for (unsigned int i = 0; i < set->getTotalFrames(); i++)
 	{
-		int wound = _unit->getFatalWound(i);
+		int wound = _unit->getFatalWound((UnitBodyPart)i);
 		Surface * surface = set->getFrame (i);
 		int baseColor = wound ? red : green;
 		surface->blitNShade(this, 0, 0, 0, false, baseColor);
@@ -132,9 +132,9 @@ int MedikitView::getSelectedPart() const
  */
 void MedikitView::updateSelectedPart()
 {
-	for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < BODYPART_MAX; ++i)
 	{
-		if (_unit->getFatalWound(i))
+		if (_unit->getFatalWound((UnitBodyPart)i))
 		{
 			_selectedPart = i;
 			break;

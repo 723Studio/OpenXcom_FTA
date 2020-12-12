@@ -37,14 +37,14 @@ class Mod;
 class RuleCovertOperation
 {
 private:
-	std::string _name, _description, _successDescription, _failureDescription, _successBackground, _failureBackground, _successMusic, _failureMusic, _successEvent,  _failureEvent, _progressEvent, _specialRule;
+	std::string _name, _description, _successDescription, _failureDescription, _successBackground, _failureBackground, _successMusic, _failureMusic, _successEvent,  _failureEvent, _specialRule;
 	std::vector<std::string> _requires, _canceledBy, _allowedArmor, _successResearchList, _failureResearchList;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	int _soldierSlots, _optionalSoldierSlots, _scientistSlots, _engineerSlots, _optionalSoldierEffect, _scientistEffect, _engineerEffect, _itemSpaceEffect, _armorEffect;
 	double _itemSpaceLimit;
-	int _baseChances, _costs, _successScore, _failureScore, _successFunds, _failureFunds, _progressEventChance, _trapChance, _danger;
-	bool _repeatProgressEvent;
-	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment;
+	int _baseChances, _costs, _successScore, _failureScore, _successFunds, _failureFunds, _progressEventChance, _trapChance, _danger, _concealedItemsBonus, _requiredItemsEffect;
+	bool _repeatProgressEvent, _allowAllEquipment;
+	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
 	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItems, _soldierTypeEffectiveness; //TODO processing of _requiredReputationLvl
 	int _listOrder;
 public:
@@ -54,6 +54,8 @@ public:
 	~RuleCovertOperation();
 	/// Loads craft data from YAML.
 	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	/// Cross link with other rules.
+	void afterLoad(const Mod* mod);
 	/// Gets the operation's name.
 	const std::string& getName() const { return _name; };
 	/// Gets the operation's description.
@@ -83,7 +85,7 @@ public:
 	/// Gets the event name that would be spawned on failure operation result.
 	const std::string& getFailureEvent() const { return _failureEvent; };
 	/// Gets the event name that would be spawned while operation is in progress.
-	const std::string& getProgressEvent() const { return _progressEvent; };
+	const WeightedOptions& getProgressEvent() const { return _progressEvent; };
 	/// Gets the operation's list of projects that would be discovered on success resolve.
 	const std::vector<std::string>& getSuccessResearchList() const { return _successResearchList; };
 	/// Gets the operation's list of projects that would be discovered on failure.
@@ -133,7 +135,9 @@ public:
 	/// Gets chosen deployment that would run as failure resolve of covert operation.
 	std::string chooseGenInstantTrapDeploumentType() const;
 	/// Gets chosen deployment that would run as success resolve of covert operation.
-	std::string chooseGenInstantSuccessDeploumentType() const; 
+	std::string chooseGenInstantSuccessDeploumentType() const;
+	/// Gets chosen geoscape event that would run in progress of covert operation.
+	std::string chooseProgressEvent() const;
 	/// Gets the faction's required reputation list for this operation.
 	const std::map<std::string, int>& getRequiredReputationLvlList() const { return _requiredReputationLvl; }
 	/// Gets the factions reputation award list for this operation on success result.
@@ -150,6 +154,12 @@ public:
 	const WeightedOptions& getFailureWeightedItemList() const { return _failureWeightedItemList; }
 	/// Gets the operation's required item list.
 	const std::map<std::string, int>& getRequiredItemList() const { return _requiredItems; }
+	/// Gets bonus for having required items for this operation.
+	int getRequiredItemsEffect() const { return _requiredItemsEffect; };
+	/// Gets if this covert operation does not have any effects for concealed or heavy weapons.
+	bool getAllowAllEquipment() const { return _allowAllEquipment; };
+	/// Gets bonus for concealed-only weapons for this operation.
+	int getConcealedItemsBonus() const { return _concealedItemsBonus; }; 
 	/// Gets the operation's allowed armor.
 	const std::vector<std::string>& getAllowedArmor() const { return _allowedArmor; };
 	/// Gets the operation's allowed armor effect.

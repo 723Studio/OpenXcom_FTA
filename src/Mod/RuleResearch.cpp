@@ -20,6 +20,7 @@
 #include "RuleResearch.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Collections.h"
+#include "../Engine/ScriptBind.h"
 #include "Mod.h"
 
 namespace OpenXcom
@@ -34,16 +35,17 @@ RuleResearch::RuleResearch(const std::string &name) : _name(name), _cost(0), _po
  * @param node YAML node.
  * @param listOrder The list weight for this research.
  */
-void RuleResearch::load(const YAML::Node &node, Mod* mod, int listOrder)
+void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parsers, int listOrder)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(parent, mod, parsers, listOrder);
 	}
 	_name = node["name"].as<std::string>(_name);
 	_lookup = node["lookup"].as<std::string>(_lookup);
 	_cutscene = node["cutscene"].as<std::string>(_cutscene);
 	_spawnedItem = node["spawnedItem"].as<std::string>(_spawnedItem);
+	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
 	_cost = node["cost"].as<int>(_cost);
 	_points = node["points"].as<int>(_points);
 	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);
@@ -66,6 +68,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, int listOrder)
 	{
 		throw Exception("Research topic " + _name + " has requirements, but the cost is not zero. Sorry, this is not allowed!");
 	}
+	_scriptValues.load(node, parsers.getShared());
 }
 
 /**
@@ -248,6 +251,47 @@ const std::string & RuleResearch::getCutscene() const
 const std::string & RuleResearch::getSpawnedItem() const
 {
 	return _spawnedItem;
+}
+
+////////////////////////////////////////////////////////////
+//					Script binding
+////////////////////////////////////////////////////////////
+
+namespace
+{
+
+	std::string debugDisplayScript(const RuleResearch* ru)
+	{
+		if (ru)
+		{
+			std::string s;
+			s += RuleResearch::ScriptName;
+			s += "(name: \"";
+			s += ru->getName();
+			s += "\")";
+			return s;
+		}
+		else
+		{
+			return "null";
+		}
+	}
+
+}
+
+/**
+ * Register RuleResearch in script parser.
+ * @param parser Script parser.
+ */
+void RuleResearch::ScriptRegister(ScriptParserBase* parser)
+{
+	Bind<RuleResearch> ar = { parser };
+
+	ar.add<&RuleResearch::getCost>("getCost");
+	ar.add<&RuleResearch::getPoints>("getPoints");
+
+	ar.addScriptValue<BindBase::OnlyGet, &RuleResearch::_scriptValues>();
+	ar.addDebugDisplay<&debugDisplayScript>();
 }
 
 }

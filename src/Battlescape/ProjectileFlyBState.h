@@ -55,7 +55,7 @@ public:
 	/// Runs state functionality every cycle.
 	void think() override;
 	/// Validates the throwing range.
-	static bool validThrowRange(BattleAction *action, Position origin, Tile *target);
+	static bool validThrowRange(BattleAction *action, Position origin, Tile *target, int depth);
 	/// Calculates the maximum throwing range.
 	static int getMaxThrowDistance(int weight, int strength, int level);
 	/// Set the origin voxel, used for the blaster launcher.

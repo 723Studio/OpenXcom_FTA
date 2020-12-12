@@ -30,6 +30,7 @@ namespace OpenXcom
 class Mod;
 class Base;
 class Position;
+class RuleItem;
 struct VerticalLevel;
 enum BasePlacementErrors : int;
 
@@ -48,6 +49,7 @@ private:
 	RuleBaseFacilityFunctions _provideBaseFunc = 0;
 	RuleBaseFacilityFunctions _forbiddenBaseFunc = 0;
 	int _spriteShape, _spriteFacility;
+	bool _connectorsDisabled;
 	int _missileAttraction;
 	int _fakeUnderwater;
 	bool _lift, _hyper, _mind, _grav;
@@ -57,6 +59,9 @@ private:
 	int _storage, _personnel, _aliens, _crafts, _labs, _workshops, _psiLabs;
 	int _sightRange, _sightChance;
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound;
+	int _ammoNeeded;
+	const RuleItem* _ammoItem;
+	std::string _ammoItemName;
 	std::string _mapName;
 	int _listOrder, _trainingRooms;
 	int _maxAllowedPerBase;
@@ -101,6 +106,8 @@ public:
 	int getSpriteShape() const;
 	/// Gets the facility's content sprite.
 	int getSpriteFacility() const;
+	/// Should there be connectors leading to this facility?
+	bool connectorsDisabled() const { return _connectorsDisabled; }
 	/// Gets the facility's size.
 	int getSize() const;
 	/// Gets the facility's missile attraction.
@@ -154,6 +161,10 @@ public:
 	int getDefenseValue() const;
 	/// Gets the facility's weapon hit ratio.
 	int getHitRatio() const;
+	/// Gets the facility's weapon ammo capacity.
+	int getAmmoNeeded() const { return _ammoNeeded; }
+	/// Gets the facility's weapon ammo item.
+	const RuleItem* getAmmoItem() const { return _ammoItem; }
 	/// Gets the facility's battlescape map name.
 	std::string getMapName() const;
 	/// Gets the facility's fire sound.

@@ -222,7 +222,7 @@ private:
 	bool _allowAlienBasesOnWrongTextures;
 	bool _ftaGame, _researchTreeDisabled;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
-	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal;
+	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
 	int _noLOSAccuracyPenaltyGlobal;
 	int _surrenderMode;
 	int _bughuntMinTurn, _bughuntMaxEnemies, _bughuntRank, _bughuntLowMorale, _bughuntTimeUnitsLeft;
@@ -233,7 +233,7 @@ private:
 	bool _healthReplenishAfterMission = true;
 	std::string _manaUnlockResearch;
 
-	int _coefBattlescape, _coefGeoscape, _coefDogfight, _coefResearch, _coefAlienMission, _coefUfo, _coefAlienBase;
+	int _coefBattlescape, _coefGeoscape, _coefDogfight, _coefResearch, _coefAlienMission, _coefUfo, _coefAlienBase, _noFundsPenalty, _noFundsValue, _performanceCap, _performanceFactor;
 
 	std::string _loseMoney, _loseRating, _loseDefeat;
 	int _ufoGlancingHitThreshold, _ufoBeamWidthParameter;
@@ -245,7 +245,9 @@ private:
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
 	int _pilotBraveryThresholds[3];
 	int _performanceBonusFactor;
-	bool _useCustomCategories, _shareAmmoCategories, _showDogfightDistanceInKm, _showFullNameInAlienInventory;
+	bool _enableNewResearchSorting;
+	int _displayCustomCategories;
+	bool _shareAmmoCategories, _showDogfightDistanceInKm, _showFullNameInAlienInventory;
 	int _alienInventoryOffsetX, _alienInventoryOffsetBigUnit;
 	bool _hidePediaInfoButton, _extraNerdyPediaInfo;
 	bool _giveScoreAlsoForResearchedArtifacts, _statisticalBulletConservation, _stunningImprovesMorale;
@@ -255,8 +257,8 @@ private:
 	int _defeatScore, _defeatFunds;
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
-	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _baseConstructionUnlockResearch;
-	std::string _ufopaediaUnlockResearch;
+	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _newBaseUnlockResearch;
+	std::string _ufopaediaUnlockResearch, _baseConstructionUnlockResearch;
 
 	std::string _destroyedFacility;
 	YAML::Node _startingBaseDefault, _startingBaseBeginner, _startingBaseExperienced, _startingBaseVeteran, _startingBaseGenius, _startingBaseSuperhuman;
@@ -265,7 +267,7 @@ private:
 	GameTime _startingTime;
 	int _startingDifficulty;
 	int _baseDefenseMapFromLocation;
-	std::map<int, std::string> _missionRatings, _monthlyRatings;
+	std::map<int, std::string> _missionRatings, _monthlyRatings, _loyaltyRatings, _reputationLevels;
 	std::map<std::string, std::string> _fixedUserOptions, _recommendedUserOptions;
 	std::vector<std::string> _hiddenMovementBackgrounds;
 	std::vector<std::string> _baseNamesFirst, _baseNamesMiddle, _baseNamesLast;
@@ -379,6 +381,8 @@ public:
 	static bool EXTENDED_RUNNING_COST;
 	static bool EXTENDED_HWP_LOAD_ORDER;
 	static int EXTENDED_MELEE_REACTIONS;
+	static int EXTENDED_TERRAIN_MELEE;
+	static int EXTENDED_UNDERWATER_THROW_FACTOR;
 
 	// reset all the statics in all classes to default values
 	static void resetGlobalStatics();
@@ -725,6 +729,8 @@ public:
 	int getCloseQuartersTuCostGlobal() const { return _closeQuartersTuCostGlobal; }
 	/// Gets the default close quarters combat energy cost (default = 8).
 	int getCloseQuartersEnergyCostGlobal() const { return _closeQuartersEnergyCostGlobal; }
+	/// Gets the percentage for successfully avoiding CQC when sneaking up on the enemy (default = 0% = turned off).
+	int getCloseQuartersSneakUpGlobal() const { return _closeQuartersSneakUpGlobal; }
 	/// Gets the default accuracy penalty for having no LOS to the target (default = 0 is no penalty)
 	int getNoLOSAccuracyPenaltyGlobal() const { return _noLOSAccuracyPenaltyGlobal; }
 	/// Gets the surrender mode (default = 0).
@@ -772,10 +778,11 @@ public:
 	/// Gets the cutscene ID that should be played when the player loses the last base.
 	const std::string &getLoseDefeatCutscene() const { return _loseDefeat; }
 
-	/// Gets the research topic required for building XCOM bases after game starts.
-	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; }
 	/// Gets the research topic required for building XCOM bases on fakeUnderwater globe textures.
 	const std::string &getFakeUnderwaterBaseUnlockResearch() const { return _fakeUnderwaterBaseUnlockResearch; }
+	/// Gets the research topic required for building XCOM bases.
+	const std::string &getNewBaseUnlockResearch() const { return _newBaseUnlockResearch; } //OXCE version
+	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; } //FtA version
 	/// Gets the research topic required for using Ufopaedia.
 	const std::string& getUfopaediaUnlockResearch() const { return _ufopaediaUnlockResearch; }
 
@@ -821,8 +828,10 @@ public:
 	int getPilotBraveryThresholdNormal() const { return _pilotBraveryThresholds[2]; }
 	/// Gets a performance bonus factor
 	int getPerformanceBonusFactor() const { return _performanceBonusFactor; }
-	/// Should custom categories be used in Buy/Sell/Transfer GUIs?
-	bool getUseCustomCategories() const { return _useCustomCategories; }
+	/// Should the player have the option to sort the 'New Research' list?
+	bool getEnableNewResearchSorting() const { return _enableNewResearchSorting; }
+	/// Should custom categories be used in Buy/Sell/Transfer GUIs? 0=no, 1=yes, custom only, 2=both vanilla and custom.
+	int getDisplayCustomCategories() const { return _displayCustomCategories; }
 	/// Should weapons "inherit" categories of their ammo?
 	bool getShareAmmoCategories() const { return _shareAmmoCategories; }
 	/// Should distance in dogfight GUI be shown in kilometers?
@@ -886,6 +895,8 @@ public:
 	const GameTime &getStartingTime() const;
 	/// Gets the game starting difficulty.
 	int getStartingDifficulty() const { return _startingDifficulty; }
+	/// Gets initial funding.
+	int getInitialFunding() const { return _initialFunding; }
 	/// Gets an MCDPatch.
 	MCDPatch *getMCDPatch(const std::string &id) const;
 	/// Gets the list of external Sprites.
@@ -949,19 +960,26 @@ public:
 	const std::vector<std::string> *getMissionScriptList() const;
 	RuleMissionScript *getMissionScript(const std::string &name, bool error = false) const;
 	/// Get settings for loyalty
-	int getCoefBattlescape() const { return _coefBattlescape; };
-	int getCoefGeoscape() const { return _coefGeoscape; };
-	int getCoefDogfight() const { return _coefDogfight; };
-	int getCoefResearch() const { return _coefResearch; };
-	int getCoefAlienMission() const { return _coefAlienMission; };
-	int getCoefUfo() const { return _coefUfo; };
-	int getCoefAlienBase() const { return _coefAlienBase; };
+	int getLoyaltyCoefBattlescape() const { return _coefBattlescape; };
+	int getLoyaltyCoefGeoscape() const { return _coefGeoscape; };
+	int getLoyaltyCoefDogfight() const { return _coefDogfight; };
+	int getLoyaltyCoefResearch() const { return _coefResearch; };
+	int getLoyaltyCoefAlienMission() const { return _coefAlienMission; };
+	int getLoyaltyCoefUfo() const { return _coefUfo; };
+	int getLoyaltyCoefAlienBase() const { return _coefAlienBase; };
+	int getLoyaltyNoFundsPenalty() const { return _noFundsPenalty; };
+	int getLoyaltyNoFundsValue() const { return _noFundsValue; };
+	int getLoyaltyPerformanceCap() const { return _performanceCap; };
+	int getLoyaltyPerformanceFactor() const { return _performanceFactor; };
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;
 	RuleResearch *getFinalResearch() const;
 	RuleBaseFacility *getDestroyedFacility() const;
+	/// Get custom ratings
 	const std::map<int, std::string> *getMissionRatings() const;
 	const std::map<int, std::string> *getMonthlyRatings() const;
+	const std::map<int, std::string>* getLoyaltyRatings() const;
+	const std::map<int, std::string>* getReputationLevels() const;
 	const std::map<std::string, std::string> &getFixedUserOptions() const { return _fixedUserOptions; }
 	const std::map<std::string, std::string> &getRecommendedUserOptions() const { return _recommendedUserOptions; }
 	const std::vector<std::string> &getHiddenMovementBackgrounds() const;

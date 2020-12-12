@@ -91,6 +91,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_txtDamage = new Text(100, 17, 14, 24);
 	_txtShield = new Text(100, 17, 120, 24);
 	_txtFuel = new Text(82, 17, 228, 24);
+	_txtSkin = new Text(32, 9, 144, 46);
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 204 : 46;
@@ -99,12 +100,12 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		_txtWName[i] = new Text(95, 16, x - d, y);
 		_txtWAmmo[i] = new Text(75, 24, x, y + 16);
 	}
-	_sprite = new Surface(32, 40, 144, 56);
+	_sprite = new InteractiveSurface(32, 40, 144, 56);
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 184 : 121;
 		const int y = top + 16 + (i / 2) * top_row;
-		_weapon[i] = new Surface(15, 17, x, y);
+		_weapon[i] = new InteractiveSurface(15, 17, x, y);
 	}
 	_crew = new Surface(220, 18, 85, bottom - 1);
 	_equip = new Surface(220, 18, 85, bottom + bottom_row);
@@ -126,6 +127,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	add(_txtDamage, "text1", "craftInfo");
 	add(_txtShield, "text1", "craftInfo");
 	add(_txtFuel, "text1", "craftInfo");
+	add(_txtSkin, "text1", "craftInfo");
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		add(_txtWName[i], "text2", "craftInfo");
@@ -151,7 +153,10 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		const char num[] = { char('1' + i), 0 };
 		_btnW[i]->setText(num);
 		_btnW[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWClick);
+		_weapon[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWIconClick);
 	}
+
+	_sprite->onMouseClick((ActionHandler)&CraftInfoState::btnCraftIconClick);
 
 	_btnCrew->setText(tr("STR_CREW"));
 	_btnCrew->onMouseClick((ActionHandler)&CraftInfoState::btnCrewClick);
@@ -169,6 +174,12 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_edtCraft->setBig();
 	_edtCraft->setAlign(ALIGN_CENTER);
 	_edtCraft->onChange((ActionHandler)&CraftInfoState::edtCraftChange);
+
+	_txtSkin->setAlign(ALIGN_CENTER);
+	if (_craft->getRules()->getMaxSkinIndex() > 0)
+	{
+		_txtSkin->setText(tr("STR_CRAFT_SKIN_ID").arg(_craft->getSkinIndex()));
+	}
 
 	for(int i =0; i < _weaponNum; ++i)
 	{
@@ -196,7 +207,7 @@ void CraftInfoState::init()
 
 	_sprite->clear();
 	SurfaceSet *texture = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
-	texture->getFrame(_craft->getRules()->getSprite() + 33)->blitNShade(_sprite, 0, 0);
+	texture->getFrame(_craft->getSkinSprite() + 33)->blitNShade(_sprite, 0, 0);
 
 	std::ostringstream firlsLine;
 	firlsLine << tr("STR_DAMAGE_UC_").arg(Unicode::formatPercentage(_craft->getDamagePercentage()));
@@ -379,7 +390,12 @@ void CraftInfoState::btnOkClick(Action *)
  */
 void CraftInfoState::btnUfopediaClick(Action *)
 {
-	if (_craft)
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+	if (_craft && ftaUnlocked)
 	{
 		std::string articleId = _craft->getRules()->getType();
 		Ufopaedia::openArticle(_game, articleId);
@@ -400,6 +416,59 @@ void CraftInfoState::btnWClick(Action * act)
 			_game->pushState(new CraftWeaponsState(_base, _craftId, i));
 			return;
 		}
+	}
+}
+
+/**
+ * Toggles the enabled/disabled status of the weapon.
+ * @param action Pointer to an action.
+ */
+void CraftInfoState::btnWIconClick(Action *action)
+{
+	for(int i = 0; i < _weaponNum; ++i)
+	{
+		if (action->getSender() == _weapon[i])
+		{
+			CraftWeapon *w1 = _craft->getWeapons()->at(i);
+			if (w1)
+			{
+				// Toggle the weapon status
+				w1->setDisabled(!w1->isDisabled());
+
+				// If we just enabled the weapon, we should begin rearming immediately.
+				if (!w1->isDisabled())
+				{
+					_craft->checkup();
+				}
+
+				// Update the onscreen info.
+				// Note: This method is overkill, since we only need to update a few things. But at least this ensures we haven't missed anything.
+				init();
+			}
+		}
+	}
+}
+
+/**
+ * Toggles the craft skin.
+ * @param action Pointer to an action.
+ */
+void CraftInfoState::btnCraftIconClick(Action *action)
+{
+	if (_craft->getRules()->getMaxSkinIndex() > 0)
+	{
+		int newIndex = _craft->getSkinIndex() + 1;
+		if (newIndex > _craft->getRules()->getMaxSkinIndex())
+		{
+			newIndex = 0;
+		}
+		_craft->setSkinIndex(newIndex);
+
+		_txtSkin->setText(tr("STR_CRAFT_SKIN_ID").arg(_craft->getSkinIndex()));
+
+		_sprite->clear();
+		SurfaceSet* texture = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
+		texture->getFrame(_craft->getSkinSprite() + 33)->blitNShade(_sprite, 0, 0);
 	}
 }
 

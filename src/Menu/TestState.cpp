@@ -286,7 +286,7 @@ void TestState::testCase4()
 	std::map<std::string, int> blockMap;
 	std::map<std::string, int> datasetMap;
 
-	auto addMapblockAndDataset = [](RuleTerrain *terrainRule, std::map<std::string, int> &blockMapRef, std::map<std::string, int> &datasetMapRef)
+	auto addMapblockAndDataset = [](RuleTerrain *terrainRule, std::map<std::string, int> &blockMapRef, std::map<std::string, int> &datasetMapRef, int maxSkinIndex = 0)
 	{
 		if (terrainRule)
 		{
@@ -296,11 +296,18 @@ void TestState::testCase4()
 				Unicode::upperCase(uc);
 				blockMapRef[uc] += 1;
 			}
-			for (auto &dataset : *terrainRule->getMapDataSets())
+			for (int skinIndex = 0; skinIndex <= maxSkinIndex; ++skinIndex)
 			{
-				std::string uc = dataset->getName();
-				Unicode::upperCase(uc);
-				datasetMapRef[uc] += 1;
+				for (auto& dataset : *terrainRule->getMapDataSets())
+				{
+					std::string uc = dataset->getName();
+					Unicode::upperCase(uc);
+					if (skinIndex > 0 && uc != "BLANKS")
+					{
+						uc = uc + "_" + std::to_string(skinIndex);
+					}
+					datasetMapRef[uc] += 1;
+				}
 			}
 		}
 	};
@@ -320,7 +327,7 @@ void TestState::testCase4()
 	{
 		RuleCraft *craftRule = _game->getMod()->getCraft(craftName);
 		RuleTerrain *terrainRule = craftRule->getBattlescapeTerrainData();
-		addMapblockAndDataset(terrainRule, blockMap, datasetMap);
+		addMapblockAndDataset(terrainRule, blockMap, datasetMap, craftRule->getMaxSkinIndex());
 	}
 
 	// 2. check for existence of mapblock MAP and RMP files
@@ -681,7 +688,11 @@ void TestState::testCase1()
 		{
 			continue;
 		}
-		total += checkMCD(terrainRule, uniqueResults);
+		for (int skinIndex = 0; skinIndex <= craftRule->getMaxSkinIndex(); ++skinIndex)
+		{
+			terrainRule->refreshMapDataSets(skinIndex, _game->getMod()); // change skin
+			total += checkMCD(terrainRule, uniqueResults);
+		}
 	}
 	if (total > 0)
 	{

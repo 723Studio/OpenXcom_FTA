@@ -40,6 +40,7 @@ private:
 	TextButton* _btnAnswerOne, * _btnAnswerTwo, * _btnAnswerThree, * _btnAnswerFour;
 
 	std::string _researchName;
+	std::string _bonusResearchName;
 	const RuleEvent &_eventRule;
 
 	/// Helper performing event logic.

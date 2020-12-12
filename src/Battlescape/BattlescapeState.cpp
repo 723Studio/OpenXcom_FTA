@@ -185,6 +185,7 @@ BattlescapeState::BattlescapeState() :
 	}
 	_numVisibleUnit[9]->setX(_numVisibleUnit[9]->getX() - 2); // center number 10
 	_btnToggleNV = new InteractiveSurface(12, 12, x + 2, y - 23);
+	_btnTogglePL = new InteractiveSurface(12, 12, x + 2, y - 23 - 13);
 	_warning = new WarningMessage(224, 24, x + 48, y + 32);
 	_btnLaunch = new BattlescapeButton(32, 24, screenWidth - 32, 0); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnLaunch->setVisible(false);
@@ -345,6 +346,7 @@ BattlescapeState::BattlescapeState() :
 		add(_numVisibleUnit[i]);
 	}
 	add(_btnToggleNV);
+	add(_btnTogglePL);
 	add(_warning, "warning", "battlescape", _icons);
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
@@ -540,7 +542,7 @@ BattlescapeState::BattlescapeState() :
 	if (_save->getGlobalShade() > Options::oxceAutoNightVisionThreshold)
 	{
 		// turn personal lights off
-		_save->getTileEngine()->togglePersonalLighting();
+		//_save->getTileEngine()->togglePersonalLighting();
 		// turn night vision on
 		_map->toggleNightVision();
 	}
@@ -571,7 +573,7 @@ BattlescapeState::BattlescapeState() :
 	_txtVisibleUnitTooltip[VISIBLE_MAX] = "STR_CENTER_ON_WOUNDED_FRIEND";
 	_txtVisibleUnitTooltip[VISIBLE_MAX+1] = "STR_CENTER_ON_DIZZY_FRIEND";
 
-	_btnToggleNV->onMouseClick((ActionHandler)& BattlescapeState::btnToggleNightVisionAndPersonalLightsClick);
+	_btnToggleNV->onMouseClick((ActionHandler)& BattlescapeState::btnAndroidNightVisionClick);
 	_btnToggleNV->setTooltip("STR_TOGGLE_NIGHT_VISION");
 	_btnToggleNV->onMouseIn((ActionHandler)& BattlescapeState::txtTooltipIn);
 	_btnToggleNV->onMouseOut((ActionHandler)& BattlescapeState::txtTooltipOut);
@@ -581,6 +583,18 @@ BattlescapeState::BattlescapeState() :
 	_btnToggleNV->setVisible(_save->getGlobalShade() > Options::oxceAutoNightVisionThreshold);
 #else
 	_btnToggleNV->setVisible(false);
+#endif
+
+	_btnTogglePL->onMouseClick((ActionHandler)&BattlescapeState::btnAndroidPersonalLightsClick);
+	_btnTogglePL->setTooltip("STR_TOGGLE_PERSONAL_LIGHTING");
+	_btnTogglePL->onMouseIn((ActionHandler)&BattlescapeState::txtTooltipIn);
+	_btnTogglePL->onMouseOut((ActionHandler)&BattlescapeState::txtTooltipOut);
+	_btnTogglePL->drawRect(0, 0, 12, 12, 15);
+	_btnTogglePL->drawRect(1, 1, 10, 10, _indicatorPurple);
+#ifdef __ANDROID__
+	_btnTogglePL->setVisible(_save->getGlobalShade() > Options::oxceAutoNightVisionThreshold);
+#else
+	_btnTogglePL->setVisible(false);
 #endif
 
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
@@ -1269,7 +1283,12 @@ void BattlescapeState::btnShowLayersClick(Action *)
  */
 void BattlescapeState::btnUfopaediaClick(Action *)
 {
-	if (allowButtons())
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+	if (allowButtons() && ftaUnlocked)
 	{
 		Ufopaedia::open(_game);
 	}
@@ -1490,14 +1509,27 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 }
 
 /**
- * Toggles night vision (purely cosmetic) and personal lights (NOT cosmetic!).
+ * Toggles night vision (purely cosmetic).
  * @param action Pointer to an action.
  */
-void BattlescapeState::btnToggleNightVisionAndPersonalLightsClick(Action* action)
+void BattlescapeState::btnAndroidNightVisionClick(Action *action)
 {
 	if (allowButtons())
 	{
 		_map->toggleNightVision();
+	}
+
+	action->getDetails()->type = SDL_NOEVENT; // consume the event
+}
+
+/**
+ * Toggles personal lights (NOT cosmetic!).
+ * @param action Pointer to an action.
+ */
+void BattlescapeState::btnAndroidPersonalLightsClick(Action *action)
+{
+	if (allowButtons())
+	{
 		_save->getTileEngine()->togglePersonalLighting();
 	}
 
@@ -1884,7 +1916,11 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 					ss.str("");
 					ss << look;
 					ss << ".SPK";
-					surf = _game->getMod()->getSurface(ss.str(), true);
+					surf = _game->getMod()->getSurface(ss.str(), false);
+				}
+				if (!surf)
+				{
+					surf = _game->getMod()->getSurface(look, true);
 				}
 
 				// crop
@@ -2124,9 +2160,9 @@ void BattlescapeState::blinkHealthBar()
 
 	if (++color > maxcolor) color = maxcolor - 3;
 
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < BODYPART_MAX; i++)
 	{
-		if (bu->getFatalWound(i) > 0)
+		if (bu->getFatalWound((UnitBodyPart)i) > 0)
 		{
 			_barHealth->setColor(_barHealthColor + color);
 			return;
@@ -2360,7 +2396,11 @@ inline void BattlescapeState::handle(Action *action)
 				{
 					if (_save->getSide() == FACTION_PLAYER)
 					{
-						if (altPressed)
+						if (Options::oxceDisableHitLog)
+						{
+							_game->pushState(new InfoboxState(tr("STR_THIS_FEATURE_IS_DISABLED_4")));
+						}
+						else if (altPressed)
 						{
 							// turn diary
 							_game->pushState(new TurnDiaryState(_save->getHitLog()));
@@ -2967,6 +3007,9 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 		}
 	}
 
+	// let's count summoned player-controlled VIPs before we remove them :)
+	_battleGame->tallySummonedVIPs();
+	// this removes player-controlled VIPs (not civilian VIPs)
 	_battleGame->removeSummonedPlayerUnits();
 
 	AlienDeployment *ruleDeploy = _game->getMod()->getDeployment(_save->getMissionType());
@@ -3384,6 +3427,11 @@ void BattlescapeState::txtTooltipInEndTurn(Action *action)
 		ss << tr(_currentTooltip);
 		ss << " ";
 		ss << _save->getTurn();
+		if (_save->getTurnLimit() > 0)
+		{
+			ss << "/" << _save->getTurnLimit();
+		}
+
 		_txtTooltip->setText(ss.str().c_str());
 	}
 }
@@ -3517,6 +3565,14 @@ void BattlescapeState::stopScrolling(Action *action)
 void BattlescapeState::autosave()
 {
 	_autosave = true;
+}
+
+/**
+ * Is busy?
+ */
+bool BattlescapeState::isBusy() const
+{
+	return (_map->getCursorType() == CT_NONE || _battleGame->isBusy());
 }
 
 }

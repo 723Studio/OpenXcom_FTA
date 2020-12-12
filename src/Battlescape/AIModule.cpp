@@ -80,6 +80,16 @@ AIModule::~AIModule()
 }
 
 /**
+ * Resets the unsaved AI state.
+ */
+void AIModule::reset()
+{
+	// these variables are not saved in save() and also not initiated in think()
+	_escapeTUs = 0;
+	_ambushTUs = 0;
+}
+
+/**
  * Loads the AI state from a YAML file.
  * @param node YAML node.
  */
@@ -429,7 +439,7 @@ void AIModule::think(BattleAction *action)
 		action->finalFacing = _attackAction->finalFacing;
 		action->updateTU();
 		// if this is a "find fire point" action, don't increment the AI counter.
-		if (action->type == BA_WALK && _rifle
+		if (action->type == BA_WALK && _rifle && _unit->getArmor()->allowsMoving()
 			// so long as we can take a shot afterwards.
 			&& BattleActionCost(BA_SNAPSHOT, _unit, action->weapon).haveTU())
 		{
@@ -1526,10 +1536,10 @@ int AIModule::scoreFiringMode(BattleAction *action, BattleUnit *target, bool che
 		Position origin = _save->getTileEngine()->getOriginVoxel((*action), 0);
 		Position targetPosition;
 
-		if (action->weapon->getRules()->getArcingShot() || action->type == BA_THROW)
+		if (action->weapon->getArcingShot(action->type) || action->type == BA_THROW)
 		{
 			targetPosition = target->getPosition().toVoxel() + Position (8,8, (2 + -target->getTile()->getTerrainLevel()));
-			if (!_save->getTileEngine()->validateThrow((*action), origin, targetPosition))
+			if (!_save->getTileEngine()->validateThrow((*action), origin, targetPosition, _save->getDepth()))
 			{
 				return 0;
 			}
@@ -2371,7 +2381,7 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 
 		if (_traceAI)
 		{
-			Log(LOG_INFO) << "Evaluate option " << i << ", score = " << newScore;
+			Log(LOG_INFO) << "Evaluate option " << (int)i << ", score = " << newScore;
 		}
 	}
 
@@ -2408,7 +2418,7 @@ void AIModule::grenadeAction()
 		Position originVoxel = _save->getTileEngine()->getOriginVoxel(action, 0);
 		Position targetVoxel = action.target.toVoxel() + Position (8,8, (2 + -_save->getTile(action.target)->getTerrainLevel()));
 		// are we within range?
-		if (_save->getTileEngine()->validateThrow(action, originVoxel, targetVoxel))
+		if (_save->getTileEngine()->validateThrow(action, originVoxel, targetVoxel, _save->getDepth()))
 		{
 			_attackAction->weapon = grenade;
 			_attackAction->target = action.target;

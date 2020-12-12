@@ -31,6 +31,8 @@
 #include "../Basescape/BasescapeState.h"
 #include "../Basescape/ManufactureState.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/ItemContainer.h"
+#include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
 {
@@ -103,15 +105,19 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_lstSummary->setSelectable(true);
 	_lstSummary->setMargin(8);
 	_lstSummary->setVisible(false);
+	_lstSummary->onMouseClick((ActionHandler)&ProductionCompleteState::lstSummaryClick, SDL_BUTTON_RIGHT);
 
 	if (production && !production->getRules()->getRandomProducedItems().empty())
 	{
 		_btnGotoBase->setVisible(false);
+		_randomProductionInfo = production->getRandomProductionInfo(); // local copy is necessary
+		_index.reserve(_randomProductionInfo.size());
 		for (auto& each : production->getRandomProductionInfo())
 		{
 			std::ostringstream ss;
 			ss << each.second;
 			_lstSummary->addRow(2, tr(each.first).c_str(), ss.str().c_str());
+			_index.push_back(each.first);
 		}
 	}
 	else
@@ -195,6 +201,53 @@ void ProductionCompleteState::btnSummaryClick(Action *)
 	_txtItem->setVisible(true);
 	_txtQuantity->setVisible(true);
 	_lstSummary->setVisible(true);
+}
+
+/**
+ * Sells the selected item(s)... unless they were sold, transferred or otherwise disposed of earlier already.
+ * @param action Pointer to an action.
+ */
+void ProductionCompleteState::lstSummaryClick(Action *)
+{
+	// 1. remember stuff
+	auto scrollPos = _lstSummary->getScroll();
+	unsigned int sel = _lstSummary->getSelectedRow();
+	std::string itemName = _index[sel];
+	int itemCount = _randomProductionInfo[itemName];
+
+	// 2. deal with it
+	auto itemRule = _game->getMod()->getItem(itemName, false);
+	if (itemRule)
+	{
+		// check if we sold something in the meantime
+		if (_base->getStorageItems()->getItem(itemRule) < itemCount)
+		{
+			itemCount = _base->getStorageItems()->getItem(itemRule);
+			_randomProductionInfo[itemName] -= itemCount; // just decrease amount by the maximum we can sell
+		}
+		else
+		{
+			// remove completely
+			_index.erase(_index.begin() + sel);
+		}
+
+		if (itemCount > 0)
+		{
+			int total = itemCount * itemRule->getSellCost();
+			_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + total);
+			_base->getStorageItems()->removeItem(itemRule, itemCount);
+		}
+	}
+
+	// 3. refresh UI
+	_lstSummary->clearList();
+	for (auto& name : _index)
+	{
+		std::ostringstream ss;
+		ss << _randomProductionInfo[name];
+		_lstSummary->addRow(2, tr(name).c_str(), ss.str().c_str());
+	}
+	_lstSummary->scrollTo(scrollPos);
 }
 
 }

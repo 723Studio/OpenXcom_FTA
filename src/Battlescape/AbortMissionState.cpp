@@ -66,7 +66,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	add(_btnCancel, "messageWindowButtons", "battlescape");
 
 	// Check available areas (maybe should be cached somewhere)
-	bool exit = false, craft = true;
+	bool exit = false, craft = true, entry = false;
 	AlienDeployment *deployment = _game->getMod()->getDeployment(_battleGame->getMissionType());
 	if (deployment != 0)
 	{
@@ -80,6 +80,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 				if ((*i)->getType() == MSC_ADDCRAFT)
 				{
 					craft = true;
+					entry = true;
 					break;
 				}
 			}
@@ -95,6 +96,18 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 			{
 				exit = true;
 				break;
+			}
+		}
+		if (!entry)
+		{
+			for (int i = 0; i < _battleGame->getMapSizeXYZ(); ++i)
+			{
+				Tile* tile = _battleGame->getTile(i);
+				if (tile && tile->getFloorSpecialTileType() == START_POINT)
+				{
+					entry = true;
+					break;
+				}
 			}
 		}
 	}
@@ -113,23 +126,23 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	_txtInEntrance->setHighContrast(true);
 	if (craft)
 	{
-		_txtInEntrance->setText(tr("STR_UNITS_IN_CRAFT", _inEntrance));
+		_txtInEntrance->setText(tr("STR_UNITS_IN_CRAFT", _inEntrance + tally.vipInEntrance));
 	}
 	else
 	{
-		_txtInEntrance->setText(tr("STR_UNITS_IN_ENTRANCE", _inEntrance));
+		_txtInEntrance->setText(tr("STR_UNITS_IN_ENTRANCE", _inEntrance + tally.vipInEntrance));
 	}
 
 	_txtInExit->setBig();
 	_txtInExit->setHighContrast(true);
-	_txtInExit->setText(tr("STR_UNITS_IN_EXIT", _inExit));
+	_txtInExit->setText(tr("STR_UNITS_IN_EXIT", _inExit + tally.vipInExit));
 
 	_txtOutside->setBig();
 	_txtOutside->setHighContrast(true);
-	_txtOutside->setText(tr("STR_UNITS_OUTSIDE", _outside));
+	_txtOutside->setText(tr("STR_UNITS_OUTSIDE", _outside + tally.vipInField));
 
 
-	if (_battleGame->getMissionType() == "STR_BASE_DEFENSE")
+	if (_battleGame->getMissionType() == "STR_BASE_DEFENSE" || (!exit && !entry))
 	{
 		_txtInEntrance->setVisible(false);
 		_txtInExit->setVisible(false);
@@ -140,6 +153,12 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 		_txtInEntrance->setY(26);
 		_txtOutside->setY(54);
 		_txtInExit->setVisible(false);
+	}
+	else if (!entry)
+	{
+		_txtInExit->setY(26);
+		_txtOutside->setY(54);
+		_txtInEntrance->setVisible(false);
 	}
 
 	_txtAbort->setBig();

@@ -29,7 +29,7 @@ namespace OpenXcom
 {
 
 MapScript::MapScript() :
-	_type(MSC_UNDEFINED), _canBeSkipped(true),
+	_type(MSC_UNDEFINED), _canBeSkipped(true), _markAsReinforcementsBlock(false),
 	_verticalGroup(MT_NSROAD), _horizontalGroup(MT_EWROAD), _crossingGroup(MT_CROSSING),
 	_sizeX(1), _sizeY(1), _sizeZ(0),
 	_executionChances(100), _executions(1), _cumulativeFrequency(0), _label(0),
@@ -265,6 +265,7 @@ void MapScript::load(const YAML::Node& node)
 	_horizontalGroup = node["horizontalGroup"].as<int>(_horizontalGroup);
 	_crossingGroup = node["crossingGroup"].as<int>(_crossingGroup);
 	_canBeSkipped = node["canBeSkipped"].as<bool>(_canBeSkipped);
+	_markAsReinforcementsBlock = node["markAsReinforcementsBlock"].as<bool>(_markAsReinforcementsBlock);
 	_executionChances = node["executionChances"].as<int>(_executionChances);
 	_executions = node["executions"].as<int>(_executions);
 	_ufoName = node["UFOName"].as<std::string>(_ufoName);
@@ -467,10 +468,12 @@ const std::vector<VerticalLevel> &MapScript::getVerticalLevels() const
  * For use only with base defense maps as a special case,
  * set _verticalLevels directly for a new MapScript
  * @param verticalLevels the vector of VerticalLevels
+ * @param size the size of the facility whose VerticalLevels are being loaded
  */
-void MapScript::setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels)
+void MapScript::setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels, int size)
 {
 	_verticalLevels = verticalLevels;
+	_sizeX = _sizeY = size;
 }
 
 }

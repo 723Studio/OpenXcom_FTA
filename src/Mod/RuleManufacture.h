@@ -20,6 +20,7 @@
 #include <string>
 #include <map>
 #include <yaml-cpp/yaml.h>
+#include <stdint.h>
 #include "RuleBaseFacilityFunctions.h"
 
 namespace OpenXcom
@@ -48,6 +49,7 @@ class RuleManufacture
 private:
 	std::string _name, _category;
 	std::string _spawnedPersonType, _spawnedPersonName;
+	YAML::Node _spawnedSoldier;
 	std::vector<std::string> _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	std::vector<const RuleResearch*> _requires;
@@ -89,6 +91,8 @@ public:
 	int getManufactureTime() const;
 	/// Gets the cost of manufacturing one object.
 	int getManufactureCost() const;
+	/// Checks if there's enough funds to manufacture one object.
+	bool haveEnoughMoneyForOneMoreUnit(int64_t funds) const;
 	/// Should all resources of a cancelled project be refunded?
 	bool getRefund() const;
 	/// Gets the list of items required to manufacture one object.
@@ -106,6 +110,8 @@ public:
 	const std::string &getSpawnedPersonType() const;
 	/// Gets the custom name of the "manufactured person".
 	const std::string &getSpawnedPersonName() const;
+	/// Gets the spawned soldier template.
+	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 	/// Is it possible to use auto-sell feature for this manufacturing project?
 	bool canAutoSell() const;
 	/// Gets the list weight for this manufacture item.

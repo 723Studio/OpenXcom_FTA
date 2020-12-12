@@ -132,6 +132,7 @@ private:
 	GameEnding _end;
 	bool _ironman;
 	GameTime *_time;
+	std::vector<std::string> _userNotes;
 	std::vector<int> _researchScores;
 	std::vector<int64_t> _funds, _maintenance, _incomes, _expenditures;
 	double _globeLon, _globeLat;
@@ -159,7 +160,7 @@ private:
 	std::vector<DiplomacyFaction*> _diplomacyFactions;
 	bool _debug, _warned;
 	int _monthsPassed;
-	int _loyalty;
+	int _loyalty, _lastMonthsLoyalty;
 	std::string _graphRegionToggles;
 	std::string _graphCountryToggles;
 	std::string _graphFinanceToggles;
@@ -222,6 +223,10 @@ public:
 	int getLoyalty() const { return _loyalty; };
 	/// Sets the new loyalty score.
 	void setLoyalty(int loyalty) { _loyalty = loyalty; };
+	/// Gets the last month loyalty score.
+	int getLastMonthsLoyalty() const { return _lastMonthsLoyalty; };
+	/// Sets the new last month loyalty score.
+	void setLastMonthsLoyalty(int loyalty) { _lastMonthsLoyalty = loyalty; };
 	/// Gets the current globe longitude.
 	double getGlobeLongitude() const;
 	/// Sets the new globe longitude.
@@ -236,6 +241,8 @@ public:
 	void setGlobeZoom(int zoom);
 	/// Handles monthly funding.
 	void monthlyFunding();
+	/// Handles monthly scoring (reduced method for FtA).
+	void monthlyScoring();
 	/// Gets the current game time.
 	GameTime *getTime() const;
 	/// Sets the current game time.
@@ -279,11 +286,13 @@ public:
 	/// Sets the item as hidden or unhidden
 	void setHiddenPurchaseItemsStatus(const std::string &itemName, bool hidden);
 	/// Add covert operation to the "performed operation" list
-	void addPerformedCovertOperation(const std::string & operation) { _performedOperations.push_back(operation); };
+	void addPerformedCovertOperation(const std::string& operation) { _performedOperations.push_back(operation); };
 	/// Remove covert operation from the "performed operation" list
 	void removePerformedCovertOperation(const std::string& operation);
 	/// Get list of performed operations
-	const std::vector<std::string> &getPerformedCovertOperations() { return _performedOperations; };
+	const std::vector<std::string>& getPerformedCovertOperations() { return _performedOperations; };
+	/// Selects a "getOneFree" topic for the given research rule.
+	const RuleResearch* selectGetOneFree(const RuleResearch* research);
 	/// Remove a research from the "already discovered" list
 	void removeDiscoveredResearch(const RuleResearch *research);
 	/// Add a finished ResearchProject
@@ -426,8 +435,6 @@ public:
 	void setLastSelectedArmor(const std::string &value);
 	/// Gets the last selected armor
 	std::string getLastSelectedArmor() const;
-	/// Returns the craft corresponding to the specified unique id.
-	Craft *findCraftByUniqueId(const CraftId& craftId) const;
 	/// Gets the name of a global equipment layout at specified index.
 	const std::string &getGlobalEquipmentLayoutName(int index) const;
 	/// Sets the name of a global equipment layout at specified index.
@@ -476,6 +483,8 @@ public:
 	int getCurrentScore(int monthsPassed) const;
 	/// Clear links for the given alien base. Use this before deleting the alien base.
 	void clearLinksForAlienBase(AlienBase* alienBase, const Mod* mod);
+	/// Gets the list of user notes.
+	std::vector<std::string>& getUserNotes() { return _userNotes; }
 };
 
 }

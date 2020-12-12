@@ -146,7 +146,7 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
 SavedGame::SavedGame() : _difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0),
 						 _globeLat(0.0), _globeZoom(0), _battleGame(0), _debug(false),
 						 _warned(false), _monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false),
-						 _loyalty(0)
+						 _loyalty(0), _lastMonthsLoyalty(0)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -430,8 +430,10 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_graphCountryToggles = doc["graphCountryToggles"].as<std::string>(_graphCountryToggles);
 	_graphFinanceToggles = doc["graphFinanceToggles"].as<std::string>(_graphFinanceToggles);
 	_loyalty = doc["loyalty"].as<int>(_loyalty);
+	_lastMonthsLoyalty = doc["lastMonthsLoyalty"].as<int>(_lastMonthsLoyalty);
 	_funds = doc["funds"].as< std::vector<int64_t> >(_funds);
 	_maintenance = doc["maintenance"].as< std::vector<int64_t> >(_maintenance);
+	_userNotes = doc["userNotes"].as< std::vector<std::string> >(_userNotes);
 	_researchScores = doc["researchScores"].as< std::vector<int> >(_researchScores);
 	_incomes = doc["incomes"].as< std::vector<int64_t> >(_incomes);
 	_expenditures = doc["expenditures"].as< std::vector<int64_t> >(_expenditures);
@@ -864,8 +866,10 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["graphFinanceToggles"] = _graphFinanceToggles;
 	node["rng"] = RNG::getSeed();
 	node["loyalty"] = _loyalty;
+	node["lastMonthsLoyalty"] = _lastMonthsLoyalty;
 	node["funds"] = _funds;
 	node["maintenance"] = _maintenance;
+	node["userNotes"] = _userNotes;
 	node["researchScores"] = _researchScores;
 	node["incomes"] = _incomes;
 	node["expenditures"] = _expenditures;
@@ -1210,6 +1214,33 @@ void SavedGame::monthlyFunding()
 }
 
 /**
+ * Calculate monthly score and calcualte funds
+ * for FtA Game
+ */
+void SavedGame::monthlyScoring()
+{
+	auto baseMaintenance = getBaseMaintenance();
+	_funds.back() -= baseMaintenance;
+	_funds.push_back(_funds.back());
+	_maintenance.back() = baseMaintenance;
+	_maintenance.push_back(0);
+	_incomes.push_back(0);
+	_expenditures.push_back(baseMaintenance);
+	_researchScores.push_back(0);
+
+	if (_incomes.size() > 12)
+		_incomes.erase(_incomes.begin());
+	if (_expenditures.size() > 12)
+		_expenditures.erase(_expenditures.begin());
+	if (_researchScores.size() > 12)
+		_researchScores.erase(_researchScores.begin());
+	if (_funds.size() > 12)
+		_funds.erase(_funds.begin());
+	if (_maintenance.size() > 12)
+		_maintenance.erase(_maintenance.begin());
+}
+
+/**
  * Returns the current time of the game.
  * @return Pointer to the game time.
  */
@@ -1471,6 +1502,58 @@ void SavedGame::removePerformedCovertOperation(const std::string& operation)
 		_performedOperations.erase(r);
 		erased = true; }
 	if (!erased) { Log(LOG_ERROR) << "Covert Operation named " << operation << " was not deleted from <performed operation> list!";	}
+}
+
+ /*
+ * Selects a "getOneFree" topic for the given research rule.
+ * @param research Pointer to the given research rule.
+ * @return Pointer to the selected getOneFree topic. Nullptr, if nothing was selected.
+ */
+const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
+{
+	if (!research->getGetOneFree().empty() || !research->getGetOneFreeProtected().empty())
+	{
+		std::vector<const RuleResearch*> possibilities;
+		for (auto& free : research->getGetOneFree())
+		{
+			if (isResearchRuleStatusDisabled(free->getName()))
+			{
+				continue; // skip disabled topics
+			}
+			if (!isResearched(free, false))
+			{
+				possibilities.push_back(free);
+			}
+		}
+		for (auto& itMap : research->getGetOneFreeProtected())
+		{
+			if (isResearched(itMap.first, false))
+			{
+				for (auto& itVector : itMap.second)
+				{
+					if (isResearchRuleStatusDisabled(itVector->getName()))
+					{
+						continue; // skip disabled topics
+					}
+					if (!isResearched(itVector, false))
+					{
+						possibilities.push_back(itVector);
+					}
+				}
+			}
+		}
+		if (!possibilities.empty())
+		{
+			size_t pick = 0;
+			if (!research->sequentialGetOneFree())
+			{
+				pick = RNG::generate(0, possibilities.size() - 1);
+			}
+			auto ret = possibilities.at(pick);
+			return ret;
+		}
+	}
+	return nullptr;
 }
 
 /*
@@ -2584,6 +2667,7 @@ Region *SavedGame::locateRegion(double lon, double lat) const
 	{
 		return *found;
 	}
+	Log(LOG_ERROR) << "Failed to find a region at location [" << lon << ", " << lat << "].";
 	return 0;
 }
 
@@ -2742,25 +2826,6 @@ void SavedGame::setLastSelectedArmor(const std::string &value)
 std::string SavedGame::getLastSelectedArmor() const
 {
 	return _lastselectedArmor;
-}
-
-/**
- * Returns the craft corresponding to the specified unique id.
- * @param craftId The unique craft id to look up.
- * @return The craft with the specified id, or NULL.
- */
-Craft *SavedGame::findCraftByUniqueId(const CraftId& craftId) const
-{
-	for (std::vector<Base*>::const_iterator base = _bases.begin(); base != _bases.end(); ++base)
-	{
-		for (std::vector<Craft*>::const_iterator craft = (*base)->getCrafts()->begin(); craft != (*base)->getCrafts()->end(); ++craft)
-		{
-			if ((*craft)->getUniqueId() == craftId)
-				return *craft;
-		}
-	}
-
-	return NULL;
 }
 
 /**
@@ -3194,6 +3259,30 @@ std::string debugDisplayScript(const GameTime* p)
 	}
 }
 
+void getRuleResearch(const Mod* mod, const RuleResearch*& rule, const std::string& name)
+{
+	if (mod)
+	{
+		rule = mod->getResearch(name);
+	}
+	else
+	{
+		rule = nullptr;
+	}
+}
+
+void isResearchedScript(const SavedGame* sg, int& val, const RuleResearch* name)
+{
+	if (sg)
+	{
+		if (sg->isResearched(name))
+		{
+			val = 1;
+		}
+	}
+	val = 0;
+}
+
 std::string debugDisplayScript(const SavedGame* p)
 {
 	if (p)
@@ -3255,6 +3344,9 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 	sgg.add<&getTimeScript>("getTime", "Get global time that is Greenwich Mean Time");
 	sgg.add<&getRandomScript>("getRandomState");
 	sgg.add<&getLoyaltyScript>("getLoyalty");
+
+	sgg.add<&getRuleResearch>("getRuleResearch");
+	sgg.add<&isResearchedScript>("isResearched");
 
 	sgg.addScriptValue<&SavedGame::_scriptValues>();
 

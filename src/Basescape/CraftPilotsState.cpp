@@ -207,7 +207,18 @@ void CraftPilotsState::updateUI()
 	}
 	_txtApproachSpeedValue->setText(ss3.str().c_str());
 
-	_btnAdd->setVisible((int)(_lstPilots->getRows()) < c->getRules()->getPilots());
+	_btnAdd->setVisible((int)(_lstPilots->getTexts()) < c->getRules()->getPilots());
+
+	int availablePilots = 0;
+	for (auto soldier : *_base->getSoldiers())
+	{
+		// must be on board & able to drive
+		if (soldier->getCraft() == c && soldier->getRules()->getAllowPiloting())
+		{
+			availablePilots++;
+		}
+	}
+	_btnRemoveAll->setVisible(availablePilots != c->getRules()->getPilots());
 }
 
 /**

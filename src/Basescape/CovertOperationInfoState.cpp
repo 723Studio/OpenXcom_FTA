@@ -45,14 +45,14 @@ namespace OpenXcom
 		// Create objects
 		_window = new Window(this, 320, 200, 0, 0);
 		_txtTitle = new Text(304, 17, 8, 7);
-		_txtScientists = new Text(150, 9, 8, 20);
-		_txtEngineers = new Text(150, 9, 8, 30);
-		_txtDungeonLevel = new Text(150, 9, 164, 20);
-		_txtProgress = new Text(150, 9, 164, 30);
-		_txtSoldiers = new Text(150, 9, 8, 40);
-		_txtAditionalInfo = new Text(150, 9, 164, 40);
-		_lstSoldiers = new TextList(148, 120, 8, 50);
-		_lstAditionalInfo = new TextList(148, 112, 120, 50);
+		_txtScientists = new Text(150, 9, 8, 25);
+		_txtEngineers = new Text(150, 9, 8, 35);
+		_txtDungeonLevel = new Text(150, 9, 164, 25);
+		_txtProgress = new Text(150, 9, 164, 35);
+		_txtSoldiers = new Text(145, 9, 8, 45);
+		_txtAditionalInfo = new Text(150, 9, 164, 45);
+		_lstSoldiers = new TextList(140, 112, 8, 55);
+		_lstAditionalInfo = new TextList(148, 108, 120, 55);
 		_btnOk = new TextButton(304, 16, 8, 176);
 
 		// Set palette
@@ -143,15 +143,20 @@ namespace OpenXcom
 		{
 			return;
 		}
-		return; // _game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow())); TODO
+		return; // _game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow())); #FINNIKTODO
 	}
 
 	void CovertOperationInfoState::fillSoldiersList()
 	{
 		std::vector<Soldier*> soldiers = _operation->getSoldiers();
+		int n = 0;
 		for (std::vector<Soldier*>::iterator i = soldiers.begin(); i < soldiers.end(); i++)
 		{
 			_lstSoldiers->addRow(1, (*i)->getName().c_str());
+		}
+		if (n > 13)
+		{
+			_lstSoldiers->setScrolling(true);
 		}
 	}
 

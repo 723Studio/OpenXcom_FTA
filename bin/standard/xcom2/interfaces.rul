@@ -180,6 +180,22 @@ interfaces: #done
         color: 1
       - id: button
         color: 1
+  - type: noteMenu
+    backgroundImage: BACK01.SCR
+    elements:
+      - id: palette
+        color: 4
+      - id: window
+        color: 1
+      - id: text
+        color: 1
+        color2: 239
+      - id: list
+        color: 1
+        color2: 239
+        border: 1
+      - id: button
+        color: 1
   - type: errorMessages
     elements:
       - id: geoscapePalette
@@ -2323,4 +2339,22 @@ interfaces: #done
         color2: 244
         border: 1
       - id: button
+        color: 1
+  - type: transformationList
+    backgroundImage: BACK02.SCR
+    elements:
+      - id: palette
+        color: 2
+      - id: window
+        color: 1
+      - id: text1
+        color: 1
+      - id: text2
+        color: 1
+      - id: list
+        color: 239
+        border: 1
+      - id: button
+        color: 1
+      - id: button2
         color: 1

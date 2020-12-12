@@ -451,7 +451,11 @@ void InventoryState::init()
 				ss.str("");
 				ss << look;
 				ss << ".SPK";
-				surf = _game->getMod()->getSurface(ss.str(), true);
+				surf = _game->getMod()->getSurface(ss.str(), false);
+			}
+			if (!surf)
+			{
+				surf = _game->getMod()->getSurface(look, true);
 			}
 			surf->blitNShade(_soldier, 0, 0);
 		}
@@ -745,7 +749,7 @@ void InventoryState::btnArmorClickMiddle(Action *action)
 	BattleUnit *unit = _inv->getSelectedUnit();
 	if (unit != 0)
 	{
-		std::string articleId = unit->getArmor()->getType();
+		std::string articleId = unit->getArmor()->getUfopediaType();
 		Ufopaedia::openArticle(_game, articleId);
 	}
 }
@@ -949,8 +953,14 @@ void InventoryState::btnInventorySaveClick(Action *)
  */
 void InventoryState::btnUfopaediaClick(Action *)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+
+	// don't accept clicks when moving items or pedia loked
+	if (_inv->getSelectedItem() != 0 || !ftaUnlocked)
 	{
 		return;
 	}

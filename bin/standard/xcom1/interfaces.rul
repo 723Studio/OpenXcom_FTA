@@ -180,6 +180,22 @@ interfaces:
         color: 239   # bright green
       - id: button
         color: 239   # bright green
+  - type: noteMenu
+    backgroundImage: BACK01.SCR
+    elements:
+      - id: palette
+        color: 6     # oxide
+      - id: window
+        color: 133   # minty green
+      - id: text
+        color: 239   # bright green
+        color2: 138  # yellow
+      - id: list
+        color: 138   # yellow
+        color2: 133  # minty green
+        border: 133  # minty green
+      - id: button
+        color: 133   # minty green
   - type: errorMessages
     elements:
       - id: geoscapePalette
@@ -2236,3 +2252,22 @@ interfaces:
         border: 218  # blue
       - id: button
         color: 218   # blue
+  - type: transformationList
+    backgroundImage: BACK02.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 2     # orange
+      - id: window
+        color: 241   # pink
+      - id: text1
+        color: 218   # blue
+      - id: text2
+        color: 241   # pink
+      - id: list
+        color: 246   # purple
+        border: 241  # pink
+      - id: button
+        color: 218   # blue
+      - id: button2
+        color: 241   # pink

@@ -119,10 +119,14 @@ public:
 	int getMarkerId() const override;
 	/// Gets the UFO's marker sprite.
 	int getMarker() const override;
+
 	/// Gets the UFO's amount of damage.
 	int getDamage() const;
 	/// Sets the UFO's amount of damage.
 	void setDamage(int damage, const Mod *mod);
+	/// Gets the UFO's percentage of damage.
+	int getDamagePercentage() const;
+
 	/// Gets the UFO's detection status.
 	bool getDetected() const;
 	/// Sets the UFO's detection status.

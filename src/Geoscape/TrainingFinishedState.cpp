@@ -27,6 +27,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "AllocateTrainingState.h"
+#include "AllocatePsiTrainingState.h"
 #include "../Engine/Options.h"
 
 namespace OpenXcom
@@ -35,8 +36,9 @@ namespace OpenXcom
  * Initializes all the elements in the TrainingFinished screen.
  * @param base Pointer to the base to get info from.
  * @param list List of soldiers who finished their training
+ * @param psi Is psi training?
  */
-TrainingFinishedState::TrainingFinishedState(Base *base, const std::vector<Soldier *> & list) : _base(base)
+TrainingFinishedState::TrainingFinishedState(Base *base, const std::vector<Soldier *> & list, bool psi) : _base(base), _psi(psi)
 {
 	_screen = false;
 
@@ -64,12 +66,12 @@ TrainingFinishedState::TrainingFinishedState(Base *base, const std::vector<Soldi
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&TrainingFinishedState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&TrainingFinishedState::btnOkClick, Options::keyCancel);
-	_btnOpen->setText(tr("STR_TRAINING"));
+	_btnOpen->setText(tr(_psi ? "STR_PSI_TRAINING" : "STR_TRAINING"));
 	_btnOpen->onMouseClick((ActionHandler)&TrainingFinishedState::btnOpenClick);
 	_btnOpen->onKeyboardPress((ActionHandler)&TrainingFinishedState::btnOpenClick, Options::keyOk);
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr("STR_TRAINING_FINISHED").arg(base->getName()));
+	_txtTitle->setText(tr(_psi ? "STR_PSI_TRAINING_FINISHED" : "STR_TRAINING_FINISHED").arg(base->getName()));
 
 	_lstPossibilities->setColumns(1, 250);
 	_lstPossibilities->setBig();
@@ -91,13 +93,20 @@ void TrainingFinishedState::btnOkClick(Action *)
 }
 
 /**
- * Opens the AllocateTrainingState.
+ * Opens the AllocateTrainingState/AllocatePsiTrainingState.
  * @param action Pointer to an action.
  */
 void TrainingFinishedState::btnOpenClick(Action *)
 {
 	_game->popState();
-	_game->pushState(new AllocateTrainingState(_base));
+	if (_psi)
+	{
+		_game->pushState(new AllocatePsiTrainingState(_base));
+	}
+	else
+	{
+		_game->pushState(new AllocateTrainingState(_base));
+	}
 }
 
 }

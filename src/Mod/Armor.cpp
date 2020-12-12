@@ -64,8 +64,8 @@ Armor::Armor(const std::string &type) :
 	_type(type), _infiniteSupply(false), _frontArmor(0), _sideArmor(0), _leftArmorDiff(0), _rearArmor(0), _underArmor(0),
 	_drawingRoutine(0), _drawBubbles(false), _movementType(MT_WALK), _turnBeforeFirstStep(false), _turnCost(1), _moveSound(-1), _size(1), _weight(0),
 	_visibilityAtDark(0), _visibilityAtDay(0), _personalLight(15),
-	_camouflageAtDay(0), _camouflageAtDark(0), _antiCamouflageAtDay(0), _antiCamouflageAtDark(0), _heatVision(0), _psiVision(0),
-	_deathFrames(3), _constantAnimation(false), _canHoldWeapon(false), _hasInventory(true), _forcedTorso(TORSO_USE_GENDER),
+	_camouflageAtDay(0), _camouflageAtDark(0), _antiCamouflageAtDay(0), _antiCamouflageAtDark(0), _heatVision(0), _psiVision(0), _psiCamouflage(0),
+	_deathFrames(3), _constantAnimation(false), _hasInventory(true), _forcedTorso(TORSO_USE_GENDER),
 	_faceColorGroup(0), _hairColorGroup(0), _utileColorGroup(0), _rankColorGroup(0),
 	_fearImmune(defTriBool), _bleedImmune(defTriBool), _painImmune(defTriBool), _zombiImmune(defTriBool),
 	_ignoresMeleeThreat(defTriBool), _createsMeleeThreat(defTriBool),
@@ -103,6 +103,7 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	{
 		load(parent, parsers, mod);
 	}
+	_ufopediaType = node["ufopediaType"].as<std::string>(_ufopediaType);
 	_type = node["type"].as<std::string>(_type);
 	_spriteSheet = node["spriteSheet"].as<std::string>(_spriteSheet);
 	_spriteInv = node["spriteInv"].as<std::string>(_spriteInv);
@@ -163,6 +164,7 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	_antiCamouflageAtDark = node["antiCamouflageAtDark"].as<int>(_antiCamouflageAtDark);
 	_heatVision = node["heatVision"].as<int>(_heatVision);
 	_psiVision = node["psiVision"].as<int>(_psiVision);
+	_psiCamouflage = node["psiCamouflage"].as<int>(_psiCamouflage);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	if (const YAML::Node &dmg = node["damageModifier"])
 	{
@@ -177,17 +179,6 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	_deathFrames = node["deathFrames"].as<int>(_deathFrames);
 	_constantAnimation = node["constantAnimation"].as<bool>(_constantAnimation);
 	_forcedTorso = (ForcedTorso)node["forcedTorso"].as<int>(_forcedTorso);
-	_canHoldWeapon =
-		(_drawingRoutine == 0 ||
-		_drawingRoutine == 1 ||
-		_drawingRoutine == 4 ||
-		_drawingRoutine == 6 ||
-		_drawingRoutine == 10 ||
-		_drawingRoutine == 13 ||
-		_drawingRoutine == 14 ||
-		_drawingRoutine == 15 ||
-		_drawingRoutine == 17 ||
-		_drawingRoutine == 18);
 
 	if (const YAML::Node &size = node["size"])
 	{
@@ -297,6 +288,18 @@ void Armor::afterLoad(const Mod* mod)
 }
 
 
+
+/**
+ * Gets the custom name of the Ufopedia article related to this armor.
+ * @return The ufopedia article name.
+ */
+const std::string& Armor::getUfopediaType() const
+{
+	if (!_ufopediaType.empty())
+		return _ufopediaType;
+
+	return _type;
+}
 
 /**
  * Returns the language string that names
@@ -631,15 +634,6 @@ bool Armor::getConstantAnimation() const
 }
 
 /**
- * Gets if armor can hold weapon.
- * @return if it can hold weapon
- */
-bool Armor::getCanHoldWeapon() const
-{
-	return _canHoldWeapon;
-}
-
-/*
  * Checks if this armor ignores gender (power suit/flying suit).
  * @return which torso to force on the sprite.
  */
@@ -731,6 +725,15 @@ int Armor::getHeatVision() const
 int Armor::getPsiVision() const
 {
 	return _psiVision;
+}
+
+/**
+ * Gets info about psi camouflage.
+ * @return psi camo data.
+ */
+int Armor::getPsiCamouflage() const
+{
+	return _psiCamouflage;
 }
 
 /**

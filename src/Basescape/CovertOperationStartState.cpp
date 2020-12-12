@@ -178,7 +178,7 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_btnRemoveScientist->setText("-");
 	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_LEFT);
 	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_RIGHT);
-	_btnResearchState->setText("*");
+	_btnResearchState->setText(tr("STR_LAB_ICON"));
 	_btnResearchState->onMouseClick((ActionHandler)&CovertOperationStartState::btnResearchStateClick);
 
 
@@ -189,7 +189,7 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_btnRemoveEngineer->setText("-");
 	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_LEFT);
 	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_RIGHT);
-	_btnManufactureState->setText("*");
+	_btnManufactureState->setText(tr("STR_WORKSHOP_ICON"));
 	_btnManufactureState->onMouseClick((ActionHandler)&CovertOperationStartState::btnManufactureStateClick);
 
 	_txtOptionalSoldiers->setVisible(_rule->getOptionalSoldierSlots() > 0);
@@ -496,19 +496,19 @@ std::string CovertOperationStartState::getOperationTimeString(bool mod)
 	int time = getOperationCost();
 	if (!mod)
 	{
-		if (time > 45)
+		if (time > 45 * 24)
 		{
 			return ("STR_SEVERAL_MONTHS");
 		}
-		else if (time > 20)
+		else if (time > 20 * 24)
 		{
-			return ("STR_MONTH");
+			return ("STR_A_MONTH");
 		}
-		else if (time > 10)
+		else if (time > 10 * 24)
 		{
 			return ("STR_SEVERAL_WEEKS");
 		}
-		else if (time > 6)
+		else if (time > 6 * 24)
 		{
 			return ("STR_WEEK");
 		}
@@ -613,7 +613,7 @@ double CovertOperationStartState::getOperationOdds()
 				}
 			}
 		}
-		int change = reqItemsN * 5;
+		int change = reqItemsN * _rule->getRequiredItemsEffect();
 		_chances = _chances - change;
 	}
 	//now lets check soldier armor if we have something about it in rules
@@ -702,21 +702,25 @@ double CovertOperationStartState::getOperationOdds()
 		_chances = _chances + effect;
 
 		// let's check if itemset has specific FTA's item categories
-		bool isConcealed = true;
-		int heavy = 0;
-		double itemCatEffect = 0;
-		for (std::map<std::string, int>::iterator i = _items->getContents()->begin(); i != _items->getContents()->end(); ++i)
+		if (!_rule->getAllowAllEquipment())
 		{
-			RuleItem* item = _game->getMod()->getItem((*i).first);
-			isConcealed = item->belongsToCategory("STR_CONCEALABLE");
-			if (item->belongsToCategory("STR_HEAVY_WEAPONS")) ++heavy;
+			bool isConcealed = true;
+			int heavy = 0;
+			int itemBonusEffect = _rule->getConcealedItemsBonus();
+			double itemCatEffect = 0;
+			for (std::map<std::string, int>::iterator i = _items->getContents()->begin(); i != _items->getContents()->end(); ++i)
+			{
+				RuleItem* item = _game->getMod()->getItem((*i).first);
+				isConcealed = item->belongsToCategory("STR_CONCEALABLE");
+				if (item->belongsToCategory("STR_HEAVY_WEAPONS")) ++heavy;
+			}
+			if (isConcealed)
+			{
+				itemCatEffect = itemBonusEffect * static_cast<double>(assignedSoldiersN);
+			}
+			itemCatEffect = itemCatEffect - (heavy * itemBonusEffect * 2 / assignedSoldiersN);
+			_chances = _chances + itemCatEffect;
 		}
-		if (isConcealed)
-		{
-			itemCatEffect = 4 * static_cast<double>(assignedSoldiersN);
-		}
-		itemCatEffect = itemCatEffect - (heavy * 10 / assignedSoldiersN);
-		_chances = _chances + itemCatEffect;
 	}
 
 	if (_chances > 200) // we dont want too high chances

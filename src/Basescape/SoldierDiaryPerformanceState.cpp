@@ -250,7 +250,7 @@ void SoldierDiaryPerformanceState::init()
 		for (int i = 0; i != 3; ++i)
 		{
 			_lstPerformance->addRow(1, tr(titleArray[i]).c_str());
-			_lstPerformance->setRowColor(_lstPerformance->getRows() - 1, _lstPerformance->getSecondaryColor());
+			_lstPerformance->setRowColor(_lstPerformance->getLastRowIndex(), _lstPerformance->getSecondaryColor());
 			for (std::map<std::string, int>::const_iterator j = mapArray[i].begin(); j != mapArray[i].end(); ++j)
 			{
 				std::ostringstream ss;
@@ -286,7 +286,7 @@ void SoldierDiaryPerformanceState::init()
 		for (int i = 0; i != 3; ++i)
 		{
 			_lstPerformance->addRow(1, tr(titleArray[i]).c_str());
-			_lstPerformance->setRowColor(_lstPerformance->getRows() - 1, _lstPerformance->getSecondaryColor());
+			_lstPerformance->setRowColor(_lstPerformance->getLastRowIndex(), _lstPerformance->getSecondaryColor());
 			for (std::map<std::string, int>::const_iterator j = mapArray[i].begin() ; j != mapArray[i].end() ; ++j)
 			{
 				if ((*j).first == "NO_UFO") continue;

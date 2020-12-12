@@ -607,7 +607,7 @@ void Inventory::setSelectedItem(BattleItem *item)
 	drawItems();
 	if (_tu)
 	{
-		drawGridLabels(true);
+		drawGridLabels(!Options::oxceDisableInventoryTuCost);
 	}
 }
 

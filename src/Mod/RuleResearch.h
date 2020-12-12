@@ -21,6 +21,7 @@
 #include <vector>
 #include <yaml-cpp/yaml.h>
 #include "RuleBaseFacilityFunctions.h"
+#include "ModScript.h"
 
 namespace OpenXcom
 {
@@ -42,7 +43,7 @@ class Mod;
 class RuleResearch
 {
  private:
-	std::string _name, _lookup, _cutscene, _spawnedItem;
+	std::string _name, _lookup, _cutscene, _spawnedItem, _spawnedEvent;
 	int _cost, _points;
 	std::vector<std::string> _dependenciesName, _unlocksName, _disablesName, _getOneFreeName, _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
@@ -52,14 +53,21 @@ class RuleResearch
 	std::map<const RuleResearch*, std::vector<const RuleResearch*> > _getOneFreeProtected;
 	bool _needItem, _destroyItem;
 	int _listOrder;
+
+	ScriptValues<RuleResearch> _scriptValues;
 public:
+	/// Name of class used in script.
+	static constexpr const char* ScriptName = "RuleResearch";
+	/// Register all useful function used by script.
+	static void ScriptRegister(ScriptParserBase* parser);
+
 	static const int RESEARCH_STATUS_NEW = 0;
 	static const int RESEARCH_STATUS_NORMAL = 1;
 	static const int RESEARCH_STATUS_DISABLED = 2;
 	RuleResearch(const std::string &name);
 
 	/// Loads the research from YAML.
-	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	void load(const YAML::Node& node, Mod* mod, const ModScript& parsers, int listOrder);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
@@ -97,6 +105,8 @@ public:
 	const std::string & getCutscene() const;
 	/// Gets the item to spawn in the base stores when this topic is researched.
 	const std::string & getSpawnedItem() const;
+	/// Gets the geoscape event to spawn when this topic is researched.
+	const std::string& getSpawnedEvent() const { return _spawnedEvent; }
 };
 
 }

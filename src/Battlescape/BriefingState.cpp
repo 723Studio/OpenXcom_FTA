@@ -49,8 +49,9 @@ namespace OpenXcom
  * @param craft Pointer to the craft in the mission.
  * @param base Pointer to the base in the mission.
  * @param infoOnly Only show static info, when briefing is re-opened during the battle.
+ * @param customBriefing Pointer to a custom briefing (used for Reinforcements notification).
  */
-BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly) : _infoOnly(infoOnly)
+BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingData *customBriefing) : _infoOnly(infoOnly), _disableCutsceneAndMusic(false)
 {
 	Options::baseXResolution = Options::baseXGeoscape;
 	Options::baseYResolution = Options::baseYGeoscape;
@@ -90,7 +91,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly) : _infoOnl
 
 	std::string title = mission;
 	std::string desc = title + "_BRIEFING";
-	if (!deployment) // none defined - should never happen, but better safe than sorry i guess.
+	if (!deployment && !customBriefing) // none defined - should never happen, but better safe than sorry i guess.
 	{
 		setStandardPalette("PAL_GEOSCAPE", 0);
 		_musicId = "GMDEFEND";
@@ -98,7 +99,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly) : _infoOnl
 	}
 	else
 	{
-		BriefingData data = deployment->getBriefingData();
+		BriefingData data = customBriefing ? *customBriefing : deployment->getBriefingData();
 		setStandardPalette("PAL_GEOSCAPE", data.palette);
 		_window->setBackground(_game->getMod()->getSurface(data.background));
 		_txtCraft->setY(56 + data.textOffset);
@@ -116,6 +117,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly) : _infoOnl
 			desc = data.desc;
 		}
 	}
+	_disableCutsceneAndMusic = _infoOnly && !customBriefing;
 
 	add(_window, "window", "briefing");
 	add(_btnOk, "button", "briefing");
@@ -204,7 +206,7 @@ BriefingState::~BriefingState()
 void BriefingState::init()
 {
 	State::init();
-	if (_infoOnly) return;
+	if (_disableCutsceneAndMusic) return;
 
 	if (!_cutsceneId.empty())
 	{

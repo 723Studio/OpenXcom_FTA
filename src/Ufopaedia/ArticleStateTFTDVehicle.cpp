@@ -110,11 +110,11 @@ namespace OpenXcom
 			_lstStats2->addRow(2, tr("STR_WEAPON_POWER").c_str(), ss8.str().c_str());
 		}
 
-		for (size_t i = 0; i != _lstStats->getRows(); ++i)
+		for (size_t i = 0; i != _lstStats->getTexts(); ++i)
 		{
 			_lstStats->setCellColor(i, 1, _listColor2);
 		}
-		for (size_t i = 0; i != _lstStats2->getRows(); ++i)
+		for (size_t i = 0; i != _lstStats2->getTexts(); ++i)
 		{
 			_lstStats2->setCellColor(i, 1, _listColor2);
 		}

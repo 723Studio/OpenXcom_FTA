@@ -34,6 +34,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Mod/RuleInterface.h"
+#include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 
 namespace OpenXcom
@@ -47,7 +48,15 @@ namespace OpenXcom
 		_txtTitle = new Text(300, 17, 5, 24);
 
 		// Set palette
-		setStandardPalette("PAL_BATTLEPEDIA");
+		auto customArmorSprite = defs->image_id.empty() ? nullptr : _game->getMod()->getSurface(defs->image_id, true);
+		if (defs->customPalette && customArmorSprite)
+		{
+			setCustomPalette(customArmorSprite->getPalette(), Mod::BATTLESCAPE_CURSOR);
+		}
+		else
+		{
+			setStandardPalette("PAL_BATTLEPEDIA");
+		}
 
 		_buttonColor = _game->getMod()->getInterface("articleArmor")->getElement("button")->color;
 		_textColor = _game->getMod()->getInterface("articleArmor")->getElement("text")->color;
@@ -74,8 +83,12 @@ namespace OpenXcom
 		_image = new Surface(320, 200, 0, 0);
 		add(_image);
 
-		auto defaultPrefix = armor->getLayersDefaultPrefix();
-		if (!defaultPrefix.empty())
+		if (customArmorSprite)
+		{
+			// blit on the background, so that text and button are always visible
+			customArmorSprite->blitNShade(_bg, 0, 0);
+		}
+		else if (!armor->getLayersDefaultPrefix().empty())
 		{
 			// dummy default soldier (M0)
 			Soldier *s = new Soldier(_game->getMod()->getSoldier(_game->getMod()->getSoldiersList().front(), true), armor, 0);
@@ -94,7 +107,7 @@ namespace OpenXcom
 		{
 			std::string look = armor->getSpriteInventory();
 			look += "M0.SPK";
-			if (!FileMap::fileExists("UFOGRAPH/" + look) && !_game->getMod()->getSurface(look, false))
+			if (!_game->getMod()->getSurface(look, false))
 			{
 				look = armor->getSpriteInventory() + ".SPK";
 			}
@@ -137,7 +150,15 @@ namespace OpenXcom
 			ItemDamageType dt = (ItemDamageType)i;
 			int percentage = (int)Round(armor->getDamageModifier(dt) * 100.0f);
 			std::string damage = getDamageTypeText(dt);
-			if (percentage != 100 && damage != "STR_UNKNOWN")
+			bool unlocked = true;
+			if (_game->getMod()->getIsFTAGame())
+			{
+				if (!_game->getSavedGame()->isResearched(damage))
+				{
+					unlocked = false; //hide unresearched damage types 
+				}
+			}
+			if (percentage != 100 && damage != "STR_UNKNOWN" && unlocked)
 			{
 				addStat(damage, Unicode::formatPercentage(percentage));
 			}
