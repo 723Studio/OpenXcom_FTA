@@ -70,8 +70,6 @@ private:
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
 	/// Draws the number in item stack.
 	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
-	/// Checks if item can be placed in stacks
-	bool isItemStackable(BattleItem *item);
 public:
 	/// Creates a new inventory view at the specified position and size.
 	Inventory(Game *game, int width, int height, int x = 0, int y = 0, bool base = false);
@@ -122,7 +120,7 @@ public:
 	/// Attempts to place an item in an inventory slot.
 	bool fitItem(RuleInventory *newSlot, BattleItem *item, std::string &warning);
 	/// Checks if two items can be stacked on one another.
-	bool canBeStacked(BattleItem *itemA, BattleItem *itemB);
+	bool canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory *ruleInventory);
 	/// Checks for item overlap.
 	static bool overlapItems(BattleUnit *unit, BattleItem *item, RuleInventory *slot, int x = 0, int y = 0);
 	/// Shows a warning message.
