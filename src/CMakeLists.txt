@@ -26,7 +26,6 @@ set ( basescape_src
   Basescape/CraftSoldiersState.cpp
   Basescape/CraftsState.cpp
   Basescape/CraftWeaponsState.cpp
-  Basescape/CustomBattleMessage.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/DisposeState.cpp
   Basescape/GlobalManufactureState.cpp
