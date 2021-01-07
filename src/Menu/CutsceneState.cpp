@@ -78,13 +78,7 @@ void CutsceneState::init()
 
 	if (fmv && (!slide || Options::preferredVideo == VIDEO_FMV))
 	{
-		_game->pushState(
-			new VideoState(
-				videoRule->getVideos(),
-				videoRule->getAudioTracks(),
-				videoRule->useUfoAudioSequence(),
-				videoRule->customCutscene())
-		);
+		_game->pushState(new VideoState(videoRule->getVideos(), videoRule->getAudioTracks(), videoRule->useUfoAudioSequence(), videoRule->customCutscene()));
 	}
 	else if (slide && (!fmv || Options::preferredVideo == VIDEO_SLIDE))
 	{
