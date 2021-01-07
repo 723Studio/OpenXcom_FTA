@@ -413,14 +413,13 @@ void VideoState::init()
 		{
 			_useUfoAudioSequence = false;
 		}
-		else
-		{
-			// ensure user can hear both music and sound effects for the
-			// vanilla intro sequence
-			Options::musicVolume = Options::soundVolume = std::max(prevMusicVol, prevSoundVol);
-			_game->setVolume(Options::soundVolume, Options::musicVolume, -1);
-		}
 	}
+
+	// ensure user can hear both music and sound effects for the
+	// vanilla intro sequence
+	Options::musicVolume = Options::soundVolume = std::max(prevMusicVol, prevSoundVol);
+	_game->setVolume(Options::soundVolume, Options::musicVolume, -1);
+
 	_game->getCursor()->setVisible(false);
 
 	int dx = (Options::baseXResolution - Screen::ORIGINAL_WIDTH) / 2;
@@ -536,12 +535,9 @@ void VideoState::init()
 	_game->getScreen()->clear();
 	_game->getScreen()->flip();
 
-	if (_useUfoAudioSequence)
-	{
-		Options::musicVolume = prevMusicVol;
-		Options::soundVolume = prevSoundVol;
-		_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
-	}
+	Options::musicVolume = prevMusicVol;
+	Options::soundVolume = prevSoundVol;
+	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
 
 #ifndef __NO_MUSIC
 	Sound::stop();
