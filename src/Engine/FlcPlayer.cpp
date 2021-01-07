@@ -82,7 +82,7 @@ enum PlayingState
 
 FlcPlayer::FlcPlayer() : _fileBuf(0), _mainScreen(0), _realScreen(0), _game(0)
 {
-	_volume = Game::volumeExponent(Options::musicVolume);
+	_volume = Game::volumeExponent(std::max(Options::musicVolume, Options::soundVolume));
 }
 
 FlcPlayer::~FlcPlayer()
