@@ -170,10 +170,30 @@ BattleUnit *Inventory::getSelectedUnit() const
 void Inventory::setSelectedUnit(BattleUnit *unit, bool resetGroundOffset)
 {
 	_selUnit = unit;
+	updateUnitItems();
+
 	if (resetGroundOffset)
 	{
 		_groundOffset = 999;
 		arrangeGround(1);
+	}
+}
+
+
+void Inventory::updateUnitItems()
+{
+	for (std::map<std::string, std::map<int, std::map<int, int> > >::iterator i = _stackLevel.begin(), next_it = i; i != _stackLevel.end(); i = next_it)
+	{
+		++next_it;
+		if (i->first != "STR_GROUND")
+		{
+			_stackLevel.erase(i);
+		}
+	}
+
+	for (std::vector<BattleItem*>::iterator i = _selUnit->getInventory()->begin(); i != _selUnit->getInventory()->end(); ++i)
+	{
+		_stackLevel[(*i)->getSlot()->getId()][(*i)->getSlotX()][(*i)->getSlotY()] += 1;
 	}
 }
 
@@ -599,6 +619,10 @@ void Inventory::setSelectedItem(BattleItem *item)
 		{
 			_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
 		}
+		else
+		{
+			_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] = 0;
+		}
 	}
 	else
 	{
@@ -793,9 +817,7 @@ void Inventory::mouseClick(Action *action, State *state)
 
 						if (newSlot->getType() != INV_GROUND)
 						{
-							// FIXME: which slot to choose
 							_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] -= 1;
-
 							placed = fitItem(newSlot, item, warning);
 
 							if (!placed)
@@ -860,7 +882,7 @@ void Inventory::mouseClick(Action *action, State *state)
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 
-				bool canStack = canBeStacked(item, _selItem, slot);
+				bool canStack = item ? canBeStacked(item, _selItem, slot) : true;
 
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
@@ -1462,6 +1484,8 @@ void Inventory::arrangeGround(int alterOffset)
 			}
 		);
 
+		updateUnitItems();
+
 		// Now for each item type, find the most topleft position that is not occupied and will fit.
 		for (auto& i : itemListOrder)
 		{
@@ -1525,7 +1549,7 @@ void Inventory::arrangeGround(int alterOffset)
 						{
 							j->setSlotX(x);
 							j->setSlotY(y);
-							_stackLevel[j->getSlot()->getId()][x][y] += 1;
+							_stackLevel[j->getSlot()->getId()][j->getSlotX()][j->getSlotY()] += 1;
 						}
 						donePlacing = true;
 					}
@@ -1552,6 +1576,7 @@ void Inventory::arrangeGround(int alterOffset)
 			} // end stacks for this item type
 		} // end of item types
 	}
+
 	if (alterOffset > 0)
 	{
 		if (xMax >= _groundOffset + slotsX)

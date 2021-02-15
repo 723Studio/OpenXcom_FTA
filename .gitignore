@@ -80,3 +80,4 @@ bin/user
 /makefile
 /.kdev4/
 /*.kdev4
+MacOSX10.9.sdk
