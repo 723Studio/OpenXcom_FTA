@@ -484,7 +484,7 @@ void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &st
 	int invWidth = battleItem->getRules()->getInventoryWidth();
 	int invHeight = battleItem->getRules()->getInventoryHeight();
 	const std::string &inventoryId = battleItem->getSlot()->getId();
-	if (_stackLevel[inventoryId][slotX][slotY] > -1000)
+	if (_stackLevel[inventoryId][slotX][slotY] > -1000 && _stackLevel[inventoryId][slotX][slotY] > 1)
 	{
 		int stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
 		if (_stackLevel[inventoryId][slotX][slotY] > 9)
@@ -1692,10 +1692,10 @@ bool Inventory::canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory
 		// and if it's a medikit, it has the same number of charges
 		itemA->getPainKillerQuantity() == itemB->getPainKillerQuantity() &&
 		itemA->getHealQuantity() == itemB->getHealQuantity() &&
-		itemA->getStimulantQuantity() == itemB->getStimulantQuantity()) &&
+		itemA->getStimulantQuantity() == itemB->getStimulantQuantity() &&
 		(ruleInventory->getType() == INV_GROUND ||
-		(itemA->getRules()->getStackSize() > 1) && ruleInventory->getType() == INV_SLOT);
-	;
+		(itemA->getRules()->getStackSize() > 1) && ruleInventory->getType() == INV_SLOT)
+	);
 }
 
 /**
