@@ -49,7 +49,7 @@ private:
 	bool _tu, _base;
 	BattleItem *_mouseOverItem;
 	int _groundOffset, _animFrame;
-	std::map<int, std::map<int, int> > _stackLevel;
+	std::map<std::string, std::map<int, std::map<int, int> > > _stackLevel;
 	std::vector<std::vector<char>> _occupiedSlotsCache;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	NumberText *_stackNumber;
@@ -68,6 +68,9 @@ private:
 	void moveItem(BattleItem *item, RuleInventory *slot, int x, int y);
 	/// Gets the slot in the specified position.
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
+	/// Draws the number in item stack.
+	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
+	void updateUnitItems();
 public:
 	/// Creates a new inventory view at the specified position and size.
 	Inventory(Game *game, int width, int height, int x = 0, int y = 0, bool base = false);
@@ -118,7 +121,7 @@ public:
 	/// Attempts to place an item in an inventory slot.
 	bool fitItem(RuleInventory *newSlot, BattleItem *item, std::string &warning);
 	/// Checks if two items can be stacked on one another.
-	bool canBeStacked(BattleItem *itemA, BattleItem *itemB);
+	bool canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory *ruleInventory);
 	/// Checks for item overlap.
 	static bool overlapItems(BattleUnit *unit, BattleItem *item, RuleInventory *slot, int x = 0, int y = 0);
 	/// Shows a warning message.
