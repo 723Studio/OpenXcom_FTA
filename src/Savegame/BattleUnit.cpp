@@ -2696,7 +2696,6 @@ bool BattleUnit::fitItemToInventory(RuleInventory *slot, BattleItem *item)
  * Adds an item to an XCom soldier (auto-equip).
  * @param item Pointer to the Item.
  * @param mod Pointer to the Mod.
- * @param save Pointer to the saved battle game for storing items.
  * @param allowSecondClip allow the unit to take a second clip or not. (only applies to xcom soldiers, aliens are allowed regardless of this flag)
  * @param allowAutoLoadout allow auto equip of weapons for solders.
  * @param allowUnloadedWeapons allow equip of weapons without ammo.

@@ -46,7 +46,6 @@
 #include <unordered_map>
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
-#include "../Engine/Logger.h"
 #include "TileEngine.h"
 
 namespace OpenXcom

@@ -1242,9 +1242,18 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 						// let's not be greedy, we'll only take a second extra clip
 						// if everyone else has had a chance to take a first.
 						bool allowSecondClip = (pass == 3);
-						if ((*i)->addItem(*j, mod, allowSecondClip, allowAutoLoadout))
+						bool placed = false;
+						int stackSize = (*j)->getRules()->getStackSize();
+						for (int s = 0; s < stackSize + 1; ++s) //we want to fill all stack
 						{
-							j = craftInv->erase(j);
+							if ((*i)->addItem(*j, mod, allowSecondClip, allowAutoLoadout))
+							{
+								j = craftInv->erase(j);
+								placed = true;
+							}
+						}
+						if (placed)
+						{
 							add = false;
 							break;
 						}
