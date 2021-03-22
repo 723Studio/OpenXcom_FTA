@@ -65,7 +65,7 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	_btnAnswerThree = new TextButton(236, 16, 42, 162);
 	_btnAnswerFour = new TextButton(115, 16, 163, 162);
 
-	_txtHint = new Text(115, 10, 42, 148);
+	_txtTooltip = new Text(115, 10, 42, 148);
 
 	// Set palette
 	setInterface("geoscapeEvent");
@@ -80,7 +80,8 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	add(_btnAnswerThree, "button", "geoscapeEvent");
 	add(_btnAnswerFour, "button", "geoscapeEvent");
 
-	add(_txtHint, "text1", "geoscapeEvent");
+	add(_txtTooltip, "text1", "geoscapeEvent");
+
 
 	centerAllSurfaces();
 
@@ -106,7 +107,7 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	_btnAnswerThree->setVisible(false);
 	_btnAnswerFour->setVisible(false);
 
-	_txtHint->setText("");
+	_txtTooltip->setText("");
 
 	_customAnswers = _eventRule.getCustomAnswers();
 	switch (_customAnswers.size())
@@ -131,7 +132,7 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 		_btnAnswerTwo->setHeight(16);
 		_btnAnswerOne->setY(142);
 		_btnAnswerTwo->setY(142);
-		_txtHint->setY(132);
+		_txtTooltip->setY(132);
 	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
 		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
@@ -398,6 +399,7 @@ void GeoscapeEventState::eventLogic()
 }
 /**
 	* Spawns custom events based on the chosen button.
+	* After that closes the window and shows a pedia article if needed.
 	* @param int playerChoice - an index of the pressed button
 	*/
 void GeoscapeEventState::spawnCustomEvents(int playerChoice)
@@ -551,7 +553,7 @@ void GeoscapeEventState::btnAnswerFourClickRight(Action* action)
 void GeoscapeEventState::txtTooltipIn(Action* action)
 {
 	_currentTooltip = action->getSender()->getTooltip();
-	_txtHint->setText(tr(_currentTooltip));
+	_txtTooltip->setText(tr(_currentTooltip));
 }
 
 /**
@@ -563,7 +565,7 @@ void GeoscapeEventState::txtTooltipOut(Action* action)
 	if (_currentTooltip == action->getSender()->getTooltip()) 
 		{
 			_currentTooltip = "";
-			_txtHint->setText("");
+			_txtTooltip->setText("");
 		}
 }
 

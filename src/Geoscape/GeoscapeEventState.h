@@ -40,7 +40,7 @@ private:
 	Text *_txtTitle, *_txtMessage;
 	TextButton *_btnOk;
 	TextButton* _btnAnswerOne, * _btnAnswerTwo, * _btnAnswerThree, * _btnAnswerFour;
-	Text* _txtHint;
+	Text* _txtTooltip;
 
 	std::string _researchName;
 	std::string _bonusResearchName;
