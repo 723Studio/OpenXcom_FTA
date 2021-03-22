@@ -109,6 +109,7 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 
 	_txtTooltip->setText("");
 
+	bool bTooltipIsPresent = false;
 	_customAnswers = _eventRule.getCustomAnswers();
 	switch (_customAnswers.size())
 	{
@@ -118,14 +119,17 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 		if (!_customAnswers[3].description.empty())
 		{
 			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
 		}
 		_btnAnswerThree->setWidth(115);
+		[[clang::fallthrough]];
 	case 3:
 		_btnAnswerThree->setText(tr(_customAnswers[2].title));
 		_btnAnswerThree->setVisible(true);
 		if (!_customAnswers[2].description.empty())
 		{
 			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
 		}
 		_txtMessage->setHeight(78);
 		_btnAnswerOne->setHeight(16);
@@ -133,20 +137,27 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 		_btnAnswerOne->setY(142);
 		_btnAnswerTwo->setY(142);
 		_txtTooltip->setY(132);
+		[[clang::fallthrough]];
 	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
 		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
 		if (!_customAnswers[0].description.empty())
 		{
 			_btnAnswerOne->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
 		}
 		if (!_customAnswers[1].description.empty())
 		{
 			_btnAnswerTwo->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
 		}
 		_btnAnswerOne->setVisible(true);
 		_btnAnswerTwo->setVisible(true);
 		_btnOk->setVisible(false);
+		if (bTooltipIsPresent)
+		{
+			_txtMessage->setHeight(_txtMessage->getHeight() - _txtTooltip->getHeight());
+		}
 		break;
 	default:
 		break;
@@ -408,13 +419,6 @@ void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 	{
 		bool success = _game->getMasterMind()->spawnEvent(eventName);
 	}
-
-	// #TODO: can this be extracted? maybe unite with OK button?
-	_game->popState();
-	if (!_researchName.empty())
-	{
-		Ufopaedia::openArticle(_game, _researchName);
-	}
 }
 /**
 	*
@@ -445,17 +449,21 @@ void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
 
-	Base *base = _game->getSavedGame()->getBases()->front();
-	if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())
+	if (!_game->getMod()->getIsFTAGame())
 	{
-		_game->pushState(new SellState(base, 0));
-		_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+		Base* base = _game->getSavedGame()->getBases()->front();
+		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())
+		{
+			_game->pushState(new SellState(base, 0));
+			_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+		}
 	}
 
 	if (!_bonusResearchName.empty())
 	{
 		Ufopaedia::openArticle(_game, _bonusResearchName);
 	}
+
 	if (!_researchName.empty())
 	{
 		Ufopaedia::openArticle(_game, _researchName);
@@ -469,6 +477,7 @@ void GeoscapeEventState::btnOkClick(Action*)
 void GeoscapeEventState::btnAnswerOneClick(Action* action)
 {
 	spawnCustomEvents(0);
+	btnOkClick(action);
 }
 
 /**
@@ -490,6 +499,7 @@ void GeoscapeEventState::btnAnswerOneClickRight(Action* action)
 void GeoscapeEventState::btnAnswerTwoClick(Action* action)
 {
 	spawnCustomEvents(1);
+	btnOkClick(action);
 }
 
 /**
@@ -511,6 +521,7 @@ void GeoscapeEventState::btnAnswerTwoClickRight(Action* action)
 void GeoscapeEventState::btnAnswerThreeClick(Action* action)
 {
 	spawnCustomEvents(2);
+	btnOkClick(action);
 }
 
 /**
@@ -532,6 +543,7 @@ void GeoscapeEventState::btnAnswerThreeClickRight(Action* action)
 void GeoscapeEventState::btnAnswerFourClick(Action* action)
 {
 	spawnCustomEvents(3);
+	btnOkClick(action);
 }
 
 /**
