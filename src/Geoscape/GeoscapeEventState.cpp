@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "GeoscapeEventState.h"
-#include <map>
 #include "../Basescape/SellState.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -66,6 +65,8 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	_btnAnswerThree = new TextButton(236, 16, 42, 162);
 	_btnAnswerFour = new TextButton(115, 16, 163, 162);
 
+	_txtHint = new Text(115, 10, 42, 148);
+
 	// Set palette
 	setInterface("geoscapeEvent");
 
@@ -78,6 +79,8 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	add(_btnAnswerTwo, "button", "geoscapeEvent");
 	add(_btnAnswerThree, "button", "geoscapeEvent");
 	add(_btnAnswerFour, "button", "geoscapeEvent");
+
+	add(_txtHint, "text1", "geoscapeEvent");
 
 	centerAllSurfaces();
 
@@ -102,50 +105,68 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 	_btnAnswerTwo->setVisible(false);
 	_btnAnswerThree->setVisible(false);
 	_btnAnswerFour->setVisible(false);
-	_btnAnswerOne->setTooltip("0");
-	_btnAnswerTwo->setTooltip("1");
-	_btnAnswerThree->setTooltip("2");
-	_btnAnswerFour->setTooltip("3");
 
-	auto customAnswers = _eventRule.getCustomAnswers();
-	int answersN = customAnswers.size();
-	if (answersN > 0)
+	_txtHint->setText("");
+
+	_customAnswers = _eventRule.getCustomAnswers();
+	switch (_customAnswers.size())
 	{
-		_btnOk->setVisible(false);
-		_btnAnswerOne->setText(tr(customAnswers[0].title));
-		_btnAnswerTwo->setText(tr(customAnswers[1].title));
-		_btnAnswerThree->setText(tr(customAnswers[2].title));
-		_btnAnswerFour->setText(tr(customAnswers[3].title));
-		if (answersN > 1) //case with answersN == 1 is not allowed on loading
+	case 4:
+		_btnAnswerFour->setText(tr(_customAnswers[3].title));
+		_btnAnswerFour->setVisible(true);
+		if (!_customAnswers[3].description.empty())
 		{
-			_btnAnswerOne->setVisible(true);
-			_btnAnswerTwo->setVisible(true);
-			if (answersN > 2)
-			{
-				_btnAnswerThree->setVisible(true);
-				_txtMessage->setHeight(78);
-				_btnAnswerOne->setHeight(16);
-				_btnAnswerTwo->setHeight(16);
-				_btnAnswerOne->setY(142);
-				_btnAnswerTwo->setY(142);
-				if (answersN > 3)
-				{
-					_btnAnswerFour->setVisible(true);
-					_btnAnswerThree->setWidth(115);
-				}
-			}
+			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
 		}
+		_btnAnswerThree->setWidth(115);
+	case 3:
+		_btnAnswerThree->setText(tr(_customAnswers[2].title));
+		_btnAnswerThree->setVisible(true);
+		if (!_customAnswers[2].description.empty())
+		{
+			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
+		}
+		_txtMessage->setHeight(78);
+		_btnAnswerOne->setHeight(16);
+		_btnAnswerTwo->setHeight(16);
+		_btnAnswerOne->setY(142);
+		_btnAnswerTwo->setY(142);
+		_txtHint->setY(132);
+	case 2:
+		_btnAnswerOne->setText(tr(_customAnswers[0].title));
+		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
+		if (!_customAnswers[0].description.empty())
+		{
+			_btnAnswerOne->setTooltip("STR_BUTTON_HINT");
+		}
+		if (!_customAnswers[1].description.empty())
+		{
+			_btnAnswerTwo->setTooltip("STR_BUTTON_HINT");
+		}
+		_btnAnswerOne->setVisible(true);
+		_btnAnswerTwo->setVisible(true);
+		_btnOk->setVisible(false);
+		break;
+	default:
+		break;
 	}
 
-	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick);
-	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick, SDL_BUTTON_RIGHT);
-	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick);
-	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick, SDL_BUTTON_RIGHT);
-	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick);
-	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick, SDL_BUTTON_RIGHT);
-	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick);
-	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerClick, SDL_BUTTON_RIGHT);
-
+	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerOneClick);
+	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerOneClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerOne->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerOne->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerTwoClick);
+	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerTwoClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerTwo->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerTwo->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerThreeClick);
+	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerThreeClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerThree->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerThree->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerFourClick);
+	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerFourClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerFour->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerFour->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
 
 	eventLogic();
 }
@@ -375,7 +396,24 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 }
+/**
+	* Spawns custom events based on the chosen button.
+	* @param int playerChoice - an index of the pressed button
+	*/
+void GeoscapeEventState::spawnCustomEvents(int playerChoice)
+{
+	for (auto eventName : _customAnswers[playerChoice].spawnEvent)
+	{
+		bool success = _game->getMasterMind()->spawnEvent(eventName);
+	}
 
+	// #TODO: can this be extracted? maybe unite with OK button?
+	_game->popState();
+	if (!_researchName.empty())
+	{
+		Ufopaedia::openArticle(_game, _researchName);
+	}
+}
 /**
 	*
 	*/
@@ -422,37 +460,112 @@ void GeoscapeEventState::btnOkClick(Action*)
 	}
 }
 
-void GeoscapeEventState::btnAnswerClick(Action* action)
+/**
+	* Calls spawning of events for custom button 1
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerOneClick(Action* action)
 {
-	auto customAnswers = _eventRule.getCustomAnswers();
-	std::string buttonTooltip = action->getSender()->getTooltip();
-	int n = 0;
-	if (buttonTooltip == "1") n = 1;
-	if (buttonTooltip == "2") n = 2;
-	if (buttonTooltip == "3") n = 3;
+	spawnCustomEvents(0);
+}
 
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-	{
-		if (!customAnswers[n].description.empty())
+/**
+	* Shows description for custom button 1 if present
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerOneClickRight(Action* action)
+{
+	if (!_customAnswers[0].description.empty())
 		{
-			_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, customAnswers[n].description));
+			_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[0].description));
 		}
-	}
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-	{
-		for (auto eventName : customAnswers[n].spawnEvent)
-		{
-			bool success = _game->getMasterMind()->spawnEvent(eventName);
-		}
+}
 
-		_game->popState();
-		if (!_researchName.empty())
-		{
-			Ufopaedia::openArticle(_game, _researchName);
-		}
+/**
+	* Calls spawning of events for custom button 2
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerTwoClick(Action* action)
+{
+	spawnCustomEvents(1);
+}
+
+/**
+	* Shows description for custom button 2 if present
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerTwoClickRight(Action* action)
+{
+	if (!_customAnswers[1].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[1].description));
 	}
 }
 
+/**
+	* Calls spawning of events for custom button 3
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerThreeClick(Action* action)
+{
+	spawnCustomEvents(2);
+}
+
+/**
+	* Shows description for custom button 3 if present
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerThreeClickRight(Action* action)
+{
+	if (!_customAnswers[2].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[2].description));
+	}
+}
+
+/**
+	* Calls spawning of events for custom button 4
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerFourClick(Action* action)
+{
+	spawnCustomEvents(3);
+}
+
+/**
+	* Shows description for custom button 4 if present
+	* @param action Pointer to an action.
+	*/
+void GeoscapeEventState::btnAnswerFourClickRight(Action* action)
+{
+	if (!_customAnswers[3].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[3].description));
+	}
+}
+
+/**
+ * Shows a tooltip for the appropriate button.
+ * @param action Pointer to an action.
+ */
+void GeoscapeEventState::txtTooltipIn(Action* action)
+{
+	_currentTooltip = action->getSender()->getTooltip();
+	_txtHint->setText(tr(_currentTooltip));
+}
+
+/**
+ * Clears the tooltip text.
+ * @param action Pointer to an action.
+ */
+void GeoscapeEventState::txtTooltipOut(Action* action)
+{
+	if (_currentTooltip == action->getSender()->getTooltip()) 
+		{
+			_currentTooltip = "";
+			_txtHint->setText("");
+		}
+}
 
 /**
 * Initializes all the elements in the GeoscapeEventAnswerInfoState window.
@@ -501,3 +614,4 @@ void GeoscapeEventAnswerInfoState::btnOkClick(Action*)
 }
 
 }
+

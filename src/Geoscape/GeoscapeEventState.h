@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include <map>
 
 namespace OpenXcom
 {
@@ -27,6 +28,7 @@ class Window;
 class Text;
 class GeoscapeEvent;
 class RuleEvent;
+class CustomAnswer;
 
 /**
  * Displays info about a custom Geoscape event.
@@ -38,13 +40,19 @@ private:
 	Text *_txtTitle, *_txtMessage;
 	TextButton *_btnOk;
 	TextButton* _btnAnswerOne, * _btnAnswerTwo, * _btnAnswerThree, * _btnAnswerFour;
+	Text* _txtHint;
 
 	std::string _researchName;
 	std::string _bonusResearchName;
 	const RuleEvent &_eventRule;
+	std::map<int, CustomAnswer> _customAnswers;
+	std::string _currentTooltip;
 
 	/// Helper performing event logic.
 	void eventLogic();
+	/// Function to spawn custom events based on the chosen button
+	void spawnCustomEvents(int playerChoice);
+
 public:
 	/// Creates the GeoscapeEventState.
 	GeoscapeEventState(GeoscapeEvent *geoEvent);
@@ -55,7 +63,25 @@ public:
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the custom answer button.
-	void btnAnswerClick(Action* action);
+	void btnAnswerOneClick(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerOneClickRight(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerTwoClick(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerTwoClickRight(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerThreeClick(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerThreeClickRight(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerFourClick(Action* action);
+	/// Handler for clicking the custom answer button.
+	void btnAnswerFourClickRight(Action* action);
+	/// Handler for showing a mouseover tooltip
+	void txtTooltipIn(Action* action);
+	/// Handler for hiding a mouseover tooltip
+	void txtTooltipOut(Action* action);
 };
 
 class GeoscapeEventAnswerInfoState : public State
