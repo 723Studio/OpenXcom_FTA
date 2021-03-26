@@ -1244,12 +1244,17 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 						bool allowSecondClip = (pass == 3);
 						bool placed = false;
 						int stackSize = (*j)->getRules()->getStackSize();
-						for (int s = 0; s < stackSize + 1; ++s) //we want to fill all stack
+						auto itemType = (*j)->getRules()->getType(); // remember current item type so we can stop filling the stack if we run out of items of this type.
+						for (int s = 0; s < stackSize; ++s) //we want to fill all stack 
 						{
 							if ((*i)->addItem(*j, mod, allowSecondClip, allowAutoLoadout))
 							{
 								j = craftInv->erase(j);
 								placed = true;
+							}
+							if (j == craftInv->end() || itemType != (*j)->getRules()->getType()) // Using shortcut evaluation trick here. Wonder if it's better to separate these two conditions
+							{
+								break;
 							}
 						}
 						if (placed)

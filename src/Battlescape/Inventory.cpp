@@ -188,6 +188,7 @@ void Inventory::updateUnitItems()
 		{
 			_stackLevel.erase(i);
 		}
+
 	}
 
 	for (std::vector<BattleItem*>::iterator i = _selUnit->getInventory()->begin(); i != _selUnit->getInventory()->end(); ++i)
@@ -485,7 +486,15 @@ void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &st
 	const std::string &inventoryId = battleItem->getSlot()->getId();
 	if (_stackLevel[inventoryId][slotX][slotY] > -1000 && _stackLevel[inventoryId][slotX][slotY] > 1)
 	{
-		int stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
+		int stackX;
+		if (inventoryId == "STR_GROUND") // we need ground offset for items behind visible range that require scrolling
+		{
+			stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
+		}
+		else // soldier inventory is always on screen so ground offset is not applicable
+		{
+			stackX = (invX + ((slotX + invWidth)) * RuleInventory::SLOT_W) - 4;
+		}
 		if (_stackLevel[inventoryId][slotX][slotY] > 9)
 		{
 			stackX -= 4;
@@ -908,7 +917,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
 						}
 					}
-					else if (canStack)
+					else if (item && canStack) //if there is an item we can stack with
 					{
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
