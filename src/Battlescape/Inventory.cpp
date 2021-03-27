@@ -188,7 +188,6 @@ void Inventory::updateUnitItems()
 		{
 			_stackLevel.erase(i);
 		}
-
 	}
 
 	for (std::vector<BattleItem*>::iterator i = _selUnit->getInventory()->begin(); i != _selUnit->getInventory()->end(); ++i)
@@ -890,8 +889,8 @@ void Inventory::mouseClick(Action *action, State *state)
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 
-				bool canStack = item ? canBeStacked(item, _selItem, slot) : true;
-
+				bool canStack = item ? canBeStacked(item, _selItem, slot) : true; //#TODO: assess the current stack size to not exceed maximum allowed size
+																		// maybe need to modify cnaBeStacked() function to accomodate slot coordinates and see if the item fits in the stack?
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
 				{
@@ -1628,7 +1627,7 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 		warning = "STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION";
 		return false;
 	}
-
+	// #TODO: Need to implement searching for existing stack of items of that type if it is stackable, so we don't make a new stack if we find an empty slot first
 	bool placed = false;
 	int maxSlotX = 0;
 	int maxSlotY = 0;
@@ -1641,12 +1640,18 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 	{
 		for (int x2 = 0; x2 <= maxSlotX && !placed; ++x2)
 		{
-			if (!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2))
+			BattleItem* itemInSlot = _selUnit->getItem(newSlot, x2, y2);
+			// check if item fits in the slot or if it can be stacked with the item that occupies that slot
+			if (
+				(!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2)) ||
+				(canBeStacked(item, itemInSlot, newSlot) && _stackLevel[newSlot->getId()][x2][y2] < itemInSlot->getRules()->getStackSize()) 
+				) // #TODO: consider moving stack size assessment inside canBeStacked() function
 			{
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
 				{
 					placed = true;
 					moveItem(item, newSlot, x2, y2);
+					_stackLevel[newSlot->getId()][x2][y2] += 1;
 					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 					drawItems();
 				}
