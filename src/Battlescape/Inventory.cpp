@@ -889,7 +889,7 @@ void Inventory::mouseClick(Action *action, State *state)
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 
-				bool canStack = item ? canBeStacked(item, _selItem, slot) : true; //#TODO: assess the current stack size to not exceed maximum allowed size
+				bool canStack = item ? canBeStacked(item, _selItem, slot) : true; // TODO: assess the current stack size to not exceed maximum allowed size
 																		// maybe need to modify cnaBeStacked() function to accomodate slot coordinates and see if the item fits in the stack?
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
@@ -1627,10 +1627,40 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 		warning = "STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION";
 		return false;
 	}
-	// #TODO: Need to implement searching for existing stack of items of that type if it is stackable, so we don't make a new stack if we find an empty slot first
+	// TODO: NEED SOME REFACTORING HERE!
 	bool placed = false;
 	int maxSlotX = 0;
 	int maxSlotY = 0;
+	// Search for existing stack of items of that type and see if we can increase it istead of making a new one
+	for (std::vector<BattleItem*>::iterator itemInInventory = _selUnit->getInventory()->begin(); itemInInventory != _selUnit->getInventory()->end(); ++itemInInventory)
+	{
+		if ((*itemInInventory)->getRules()->getType() == item->getRules()->getType())
+		{
+			auto itemSlot = (*itemInInventory)->getSlot();
+			int slotX = (*itemInInventory)->getSlotX();
+			int slotY = (*itemInInventory)->getSlotY();
+			//if (_stackLevel[itemSlot->getId()][slotX][slotY] < (*itemInInventory)->getRules()->getStackSize())
+			if (canBeStacked(item, *itemInInventory, itemSlot) && _stackLevel[itemSlot->getId()][slotX][slotY] < (*itemInInventory)->getRules()->getStackSize())
+			{
+				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(itemSlot)))
+				{
+					placed = true;
+					moveItem(item, itemSlot, slotX, slotY); // TODO: See if increasing stack level can be moved inside moveItem()
+					_stackLevel[itemSlot->getId()][slotX][slotY] += 1;
+					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
+					drawItems();
+					break; // break for() cycle: we are done here
+				}
+				else
+				{
+					warning = "STR_NOT_ENOUGH_TIME_UNITS";
+				}
+			}
+
+		}
+	}
+	if (placed) { return placed; }
+
 	for (std::vector<RuleSlot>::iterator j = newSlot->getSlots()->begin(); j != newSlot->getSlots()->end(); ++j)
 	{
 		if (j->x > maxSlotX) maxSlotX = j->x;
@@ -1645,12 +1675,12 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			if (
 				(!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2)) ||
 				(canBeStacked(item, itemInSlot, newSlot) && _stackLevel[newSlot->getId()][x2][y2] < itemInSlot->getRules()->getStackSize()) 
-				) // #TODO: consider moving stack size assessment inside canBeStacked() function
+				) // TODO: consider moving stack size assessment inside canBeStacked() function
 			{
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
 				{
 					placed = true;
-					moveItem(item, newSlot, x2, y2);
+					moveItem(item, newSlot, x2, y2); // TODO: See if increasing stack level can be moved inside moveItem()
 					_stackLevel[newSlot->getId()][x2][y2] += 1;
 					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 					drawItems();

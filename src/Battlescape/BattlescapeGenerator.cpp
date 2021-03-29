@@ -1252,6 +1252,11 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 								j = craftInv->erase(j);
 								placed = true;
 							}
+							else
+							{
+								break; // if we can't fit even one no point in trying to equip more
+							}
+							// if there are no more items of this type or we reached the end of the craft inventory then break
 							if (j == craftInv->end() || itemType != (*j)->getRules()->getType()) // Using shortcut evaluation trick here. Wonder if it's better to separate these two conditions
 							{
 								break;
