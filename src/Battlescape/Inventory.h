@@ -121,7 +121,9 @@ public:
 	/// Attempts to place an item in an inventory slot.
 	bool fitItem(RuleInventory *newSlot, BattleItem *item, std::string &warning);
 	/// Checks if two items can be stacked on one another.
-	bool canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory *ruleInventory);
+	bool canBeStacked(BattleItem *itemA, BattleItem *itemB);
+	/// Checks if two items can be stacked on one another in soldier inventory.
+	bool canBeStacked(BattleItem* selItem, BattleItem* itemInInventory, RuleInventory* inventorySlot, int x, int y);
 	/// Checks for item overlap.
 	static bool overlapItems(BattleUnit *unit, BattleItem *item, RuleInventory *slot, int x = 0, int y = 0);
 	/// Shows a warning message.

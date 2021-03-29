@@ -618,17 +618,18 @@ void Inventory::setSelectedItem(BattleItem *item)
 	_selItem = (item && !item->getRules()->isFixed()) ? item : 0;
 	if (_selItem)
 	{
+		// TODO: see if this can be changed to unconditional reduction, because we track every item slot stack level now, not just ground
 		RuleInventory* slot = _selItem->getSlot();
 		if (
 			slot->getType() == INV_GROUND
-			|| canBeStacked(_selItem, _selItem, slot)
+			|| canBeStacked(_selItem, _selItem, slot, _selItem->getSlotX(), _selItem->getSlotY())
 		   )
 		{
-			_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
+			_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
 		}
 		else
 		{
-			_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] = 0;
+			_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] = 0;
 		}
 	}
 	else
@@ -889,8 +890,7 @@ void Inventory::mouseClick(Action *action, State *state)
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 
-				bool canStack = item ? canBeStacked(item, _selItem, slot) : true; // TODO: assess the current stack size to not exceed maximum allowed size
-																		// maybe need to modify cnaBeStacked() function to accomodate slot coordinates and see if the item fits in the stack?
+				bool canStack = item ? canBeStacked(item, _selItem, slot, x, y) : true;
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
 				{
@@ -1040,7 +1040,7 @@ void Inventory::mouseClick(Action *action, State *state)
 				{
 					x += _groundOffset;
 					BattleItem *item = _selUnit->getItem(slot, x, y);
-					if (canBeStacked(item, _selItem, slot))
+					if (canBeStacked(item, _selItem, slot, x, y))
 					{
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
@@ -1114,9 +1114,9 @@ void Inventory::mouseClick(Action *action, State *state)
 		else
 		{
 			RuleInventory* slot = _selItem->getSlot();
-			if (slot->getType() == INV_GROUND || canBeStacked(_selItem, _selItem, slot))
+			if (slot->getType() == INV_GROUND || canBeStacked(_selItem, _selItem, slot, _selItem->getSlotX(), _selItem->getSlotY()))
 			{
-				_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] += 1;
+				_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] += 1;
 			}
 			// Return item to original position
 			setSelectedItem(0);
@@ -1467,7 +1467,7 @@ void Inventory::arrangeGround(int alterOffset)
 					bool stacked = false;
 					for (auto& itemStack : iterItemList->second)
 					{
-						if (canBeStacked(i, itemStack.at(0), ground))
+						if (canBeStacked(i, itemStack.at(0)))
 						{
 							itemStack.push_back(i);
 							stacked = true;
@@ -1640,7 +1640,7 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			int slotX = (*itemInInventory)->getSlotX();
 			int slotY = (*itemInInventory)->getSlotY();
 			//if (_stackLevel[itemSlot->getId()][slotX][slotY] < (*itemInInventory)->getRules()->getStackSize())
-			if (canBeStacked(item, *itemInInventory, itemSlot) && _stackLevel[itemSlot->getId()][slotX][slotY] < (*itemInInventory)->getRules()->getStackSize())
+			if (canBeStacked(item, *itemInInventory, itemSlot, slotX, slotY))
 			{
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(itemSlot)))
 				{
@@ -1674,8 +1674,8 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			// check if item fits in the slot or if it can be stacked with the item that occupies that slot
 			if (
 				(!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2)) ||
-				(canBeStacked(item, itemInSlot, newSlot) && _stackLevel[newSlot->getId()][x2][y2] < itemInSlot->getRules()->getStackSize()) 
-				) // TODO: consider moving stack size assessment inside canBeStacked() function
+				(canBeStacked(item, itemInSlot, newSlot, x2, y2)) 
+				) 
 			{
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
 				{
@@ -1701,7 +1701,7 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
  * @param itemB Second item.
  * @return True, if the items can be stacked on one another.
  */
-bool Inventory::canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory *ruleInventory)
+bool Inventory::canBeStacked(BattleItem* itemA, BattleItem* itemB)
 {
 	//both items actually exist
 	if (!itemA || !itemB) return false;
@@ -1735,9 +1735,25 @@ bool Inventory::canBeStacked(BattleItem *itemA, BattleItem *itemB, RuleInventory
 		// and if it's a medikit, it has the same number of charges
 		itemA->getPainKillerQuantity() == itemB->getPainKillerQuantity() &&
 		itemA->getHealQuantity() == itemB->getHealQuantity() &&
-		itemA->getStimulantQuantity() == itemB->getStimulantQuantity() &&
-		(ruleInventory->getType() == INV_GROUND ||
-		(itemA->getRules()->getStackSize() > 1) && ruleInventory->getType() == INV_SLOT)
+		itemA->getStimulantQuantity() == itemB->getStimulantQuantity());
+}
+
+/**
+ *Checks if two items can be stacked on one another in a soldier inventory slot.
+ * @param itemA First item.
+ * @param itemB Second item.
+ * @param ruleInventory Inventory slot
+ * @param x X position in slot.
+ * @param y Y position in slot.
+ * @return True, if the items can be stacked on one another.
+ */
+bool Inventory::canBeStacked(BattleItem *selItem, BattleItem *itemInInventory, RuleInventory *inventorySlot, int x, int y)
+{
+	return (
+		canBeStacked(selItem, itemInInventory) &&
+		(inventorySlot->getType() == INV_GROUND || // TODO: probably can remove this
+		(itemInInventory->getRules()->getStackSize() > 1) && inventorySlot->getType() == INV_SLOT &&
+		_stackLevel[inventorySlot->getId()][x][y] < itemInInventory->getRules()->getStackSize())
 	);
 }
 
