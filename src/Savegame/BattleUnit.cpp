@@ -2654,6 +2654,41 @@ std::vector<BattleItem*> *BattleUnit::getInventory()
 }
 
 /**
+ * Check if item can stack with one that currently occupies the slot
+ * @param item Item to fit.
+ * @param slot Slot to fit.
+ * @param x X position in the slot.
+ * @param y Y position in the slot.
+ * @return True if item can be stacked to a slot.
+ */
+bool BattleUnit::canStackToSlot(BattleItem* item, RuleInventory* slot, int x, int y) const
+{
+	// See if item is stackable at all. If not we can quit straight away
+	if (item->getRules()->getStackSize() < 2) {	return false; }
+	// Check if our item is of the same type as the one in the slot
+	if (item->getRules()->getType() != getItem(slot, x, y)->getRules()->getType()) { return false; }
+
+	// Count the amount of items that occupy that slot
+	int stackSize = 0;
+	for (std::vector<BattleItem*>::const_iterator i = _inventory.begin(); i != _inventory.end(); ++i)
+	{
+		if ((*i)->getSlot() == slot && (*i)->occupiesSlot(x, y))
+		{
+			++stackSize;
+		}
+	}
+
+	if (stackSize < item->getRules()->getStackSize())
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+};
+
+/**
  * Fit item into inventory slot.
  * @param slot Slot to fit.
  * @param item Item to fit.
@@ -2679,7 +2714,8 @@ bool BattleUnit::fitItemToInventory(RuleInventory *slot, BattleItem *item)
 	{
 		for (const RuleSlot &rs : *slot->getSlots())
 		{
-			if (!Inventory::overlapItems(this, item, slot, rs.x, rs.y) && slot->fitItemInSlot(rule, rs.x, rs.y))
+			if (!Inventory::overlapItems(this, item, slot, rs.x, rs.y) && slot->fitItemInSlot(rule, rs.x, rs.y) ||
+				canStackToSlot(item, slot, rs.x, rs.y))
 			{
 				item->moveToOwner(this);
 				item->setSlot(slot);
@@ -2724,6 +2760,22 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 			{
 				if (rule->getType() == i->getRules()->getType())
 				{
+					if (mod->getIsFTAGame() && rule->getStackSize() > 1) // FtA logic
+					{
+						++tally;
+						if (allowSecondClip && rule->getBattleType() == BT_AMMO)
+						{
+							if (tally == 2 * rule->getStackSize())
+							{
+								return false;
+							}
+						}
+						else if(tally == rule->getStackSize())
+						{
+							return false;
+						}
+					}
+					else // standard logic
 					if (allowSecondClip && rule->getBattleType() == BT_AMMO)
 					{
 						tally++;
