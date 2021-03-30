@@ -545,6 +545,7 @@ std::vector<std::vector<char>>* Inventory::clearOccupiedSlotsCache()
 void Inventory::moveItem(BattleItem *item, RuleInventory *slot, int x, int y)
 {
 	_game->getSavedGame()->getSavedBattle()->getTileEngine()->itemMoveInventory(_selUnit->getTile(), _selUnit, item, slot, x, y);
+	_stackLevel[slot->getId()][x][y] += 1;
 }
 
 /**
@@ -618,19 +619,7 @@ void Inventory::setSelectedItem(BattleItem *item)
 	_selItem = (item && !item->getRules()->isFixed()) ? item : 0;
 	if (_selItem)
 	{
-		// TODO: see if this can be changed to unconditional reduction, because we track every item slot stack level now, not just ground
-		RuleInventory* slot = _selItem->getSlot();
-		if (
-			slot->getType() == INV_GROUND
-			|| canBeStacked(_selItem, _selItem, slot, _selItem->getSlotX(), _selItem->getSlotY())
-		   )
-		{
-			_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
-		}
-		else
-		{
-			_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] = 0;
-		}
+		_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
 	}
 	else
 	{
@@ -889,46 +878,25 @@ void Inventory::mouseClick(Action *action, State *state)
 					x += _groundOffset;
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
+				bool canStack = (slot->getType() == INV_GROUND && canBeStacked(item, _selItem)) || (canBeStacked(item, _selItem, slot, x, y));
 
-				bool canStack = item ? canBeStacked(item, _selItem, slot, x, y) : true;
 				// Check if this inventory section supports the item
 				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
 				{
 					_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION"));
 				}
 				// Put item in empty slot, or stack it, if possible.
-				else if (item == 0 || item == _selItem || canStack)
+				else if (!overlapItems(_selUnit, _selItem, slot, x, y) && slot->fitItemInSlot(_selItem->getRules(), x, y) || canStack)
 				{
-					if (!overlapItems(_selUnit, _selItem, slot, x, y) && slot->fitItemInSlot(_selItem->getRules(), x, y))
+					if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 					{
-						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
-						{
-							moveItem(_selItem, slot, x, y);
-							if (slot->getType() == INV_GROUND || canStack)
-							{
-								_stackLevel[slot->getId()][x][y] += 1;
-							}
-							setSelectedItem(0);
-							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-						}
-						else
-						{
-							_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
-						}
+						moveItem(_selItem, slot, x, y);
+						setSelectedItem(0);
+						_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 					}
-					else if (item && canStack) //if there is an item we can stack with
+					else
 					{
-						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
-						{
-							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[slot->getId()][item->getSlotX()][item->getSlotY()] += 1;
-							setSelectedItem(0);
-							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-						}
-						else
-						{
-							_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
-						}
+						_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
 					}
 				}
 				// Put item in weapon
@@ -1045,7 +1013,6 @@ void Inventory::mouseClick(Action *action, State *state)
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getSlot()->getCost(slot)))
 						{
 							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[slot->getId()][item->getSlotX()][item->getSlotY()] += 1;
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 						}
@@ -1639,14 +1606,12 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			auto itemSlot = (*itemInInventory)->getSlot();
 			int slotX = (*itemInInventory)->getSlotX();
 			int slotY = (*itemInInventory)->getSlotY();
-			//if (_stackLevel[itemSlot->getId()][slotX][slotY] < (*itemInInventory)->getRules()->getStackSize())
 			if (canBeStacked(item, *itemInInventory, itemSlot, slotX, slotY))
 			{
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(itemSlot)))
 				{
 					placed = true;
-					moveItem(item, itemSlot, slotX, slotY); // TODO: See if increasing stack level can be moved inside moveItem()
-					_stackLevel[itemSlot->getId()][slotX][slotY] += 1;
+					moveItem(item, itemSlot, slotX, slotY); 
 					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 					drawItems();
 					break; // break for() cycle: we are done here
@@ -1680,8 +1645,7 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
 				{
 					placed = true;
-					moveItem(item, newSlot, x2, y2); // TODO: See if increasing stack level can be moved inside moveItem()
-					_stackLevel[newSlot->getId()][x2][y2] += 1;
+					moveItem(item, newSlot, x2, y2);
 					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 					drawItems();
 				}
@@ -1751,9 +1715,8 @@ bool Inventory::canBeStacked(BattleItem *selItem, BattleItem *itemInInventory, R
 {
 	return (
 		canBeStacked(selItem, itemInInventory) &&
-		(inventorySlot->getType() == INV_GROUND || // TODO: probably can remove this
-		(itemInInventory->getRules()->getStackSize() > 1) && inventorySlot->getType() == INV_SLOT &&
-		_stackLevel[inventorySlot->getId()][x][y] < itemInInventory->getRules()->getStackSize())
+		(itemInInventory->getRules()->getStackSize() > 1) && inventorySlot->getType() == INV_SLOT && // check if
+		_stackLevel[inventorySlot->getId()][x][y] < itemInInventory->getRules()->getStackSize()
 	);
 }
 
