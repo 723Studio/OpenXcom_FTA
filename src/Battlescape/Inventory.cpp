@@ -1594,11 +1594,14 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 		warning = "STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION";
 		return false;
 	}
-	// TODO: NEED SOME REFACTORING HERE!
+
 	bool placed = false;
+	bool canPlace = false;
 	int maxSlotX = 0;
 	int maxSlotY = 0;
-	// Search for existing stack of items of that type and see if we can increase it istead of making a new one
+	int newSlotX, newSlotY;
+	// Search for existing stack of items of that type and see if we can increase it instead of making a new one.
+	// Remember slot, x and y if we have found suitable stack
 	for (std::vector<BattleItem*>::iterator itemInInventory = _selUnit->getInventory()->begin(); itemInInventory != _selUnit->getInventory()->end(); ++itemInInventory)
 	{
 		if ((*itemInInventory)->getRules()->getType() == item->getRules()->getType())
@@ -1608,54 +1611,56 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			int slotY = (*itemInInventory)->getSlotY();
 			if (canBeStacked(item, *itemInInventory, itemSlot, slotX, slotY))
 			{
-				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(itemSlot)))
-				{
-					placed = true;
-					moveItem(item, itemSlot, slotX, slotY); 
-					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-					drawItems();
-					break; // break for() cycle: we are done here
-				}
-				else
-				{
-					warning = "STR_NOT_ENOUGH_TIME_UNITS";
-				}
+				newSlot = itemSlot;
+				newSlotX = slotX;
+				newSlotY = slotY;
+				canPlace = true;
+				break;
 			}
-
 		}
 	}
-	if (placed) { return placed; }
 
-	for (std::vector<RuleSlot>::iterator j = newSlot->getSlots()->begin(); j != newSlot->getSlots()->end(); ++j)
+	if (!canPlace) // If there is no existing stack to fit the item, search for an empty slot
 	{
-		if (j->x > maxSlotX) maxSlotX = j->x;
-		if (j->y > maxSlotY) maxSlotY = j->y;
-	}
-	for (int y2 = 0; y2 <= maxSlotY && !placed; ++y2)
-	{
-		for (int x2 = 0; x2 <= maxSlotX && !placed; ++x2)
+		for (std::vector<RuleSlot>::iterator j = newSlot->getSlots()->begin(); j != newSlot->getSlots()->end(); ++j)
 		{
-			BattleItem* itemInSlot = _selUnit->getItem(newSlot, x2, y2);
-			// check if item fits in the slot or if it can be stacked with the item that occupies that slot
-			if (
-				(!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2)) ||
-				(canBeStacked(item, itemInSlot, newSlot, x2, y2)) 
-				) 
+			if (j->x > maxSlotX) maxSlotX = j->x;
+			if (j->y > maxSlotY) maxSlotY = j->y;
+		}
+		for (int y2 = 0; y2 <= maxSlotY && !canPlace; ++y2)
+		{
+			for (int x2 = 0; x2 <= maxSlotX && !canPlace; ++x2)
 			{
-				if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
+				// check if item fits in the slot and save slotX and slotY if it does
+				if (!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2))
 				{
-					placed = true;
-					moveItem(item, newSlot, x2, y2);
-					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-					drawItems();
-				}
-				else
-				{
-					warning = "STR_NOT_ENOUGH_TIME_UNITS";
+					newSlotX = x2;
+					newSlotY = y2;
+					canPlace = true;
 				}
 			}
 		}
 	}
+
+	if (!canPlace) // if no available slot is found then inventory is full
+	{
+		warning = "STR_NOT_ENOUGH_SPACE";
+		return false;
+	}
+
+	// finally if we've found a suitable slot and have enough time, try to place the item
+	if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
+	{
+		placed = true;
+		moveItem(item, newSlot, newSlotX, newSlotY);
+		_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
+		drawItems();
+	}
+	else
+	{
+		warning = "STR_NOT_ENOUGH_TIME_UNITS";
+	}
+
 	return placed;
 }
 
