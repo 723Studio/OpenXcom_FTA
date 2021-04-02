@@ -2753,7 +2753,7 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 		weight = getCarriedWeight() + item->getTotalWeight();
 		// allow all weapons to be loaded by avoiding this check,
 		// they'll return false later anyway if the unit has something in his hand.
-		if (rule->getBattleType() != BT_FIREARM && rule->getBattleType() != BT_MELEE)
+		if (rule->getBattleType() != BT_FIREARM && rule->getBattleType() != BT_MELEE || rule->getStackSize() > 1)
 		{
 			int tally = 0;
 			for (BattleItem *i : *getInventory())
@@ -2863,6 +2863,26 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 				if (!placed && allowTwoMainWeapons && fitItemToInventory(leftHand, item))
 				{
 					placed = true;
+				}
+				// if we have a stackable weapon i.e. throwing knife in one of the hands, put spare items in the inventory
+				if (!placed && mod->getIsFTAGame() && item->getRules()->getStackSize() > 1 &&
+					(
+						getRightHandWeapon() && getRightHandWeapon()->getRules()->getType() == item->getRules()->getType() ||
+						getLeftHandWeapon() && getLeftHandWeapon()->getRules()->getType() == item->getRules()->getType()) 
+					)
+				{
+					for (const std::string& s : mod->getInvsList())
+					{
+						RuleInventory* slot = mod->getInventory(s);
+						if (slot->getType() == INV_SLOT)
+						{
+							placed = fitItemToInventory(slot, item);
+							if (placed)
+							{
+								break;
+							}
+						}
+					}
 				}
 			}
 		}
