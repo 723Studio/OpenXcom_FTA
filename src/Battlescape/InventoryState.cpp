@@ -1402,12 +1402,22 @@ void InventoryState::_applyInventoryTemplate(std::vector<EquipmentLayoutItem*> &
 		}
 
 		// check if the slot is not occupied already (e.g. by a fixed weapon)
-		if (matchedWeapon && !_inv->overlapItems(
-			unit,
-			matchedWeapon,
-			_game->getMod()->getInventory((*templateIt)->getSlot(), true),
-			(*templateIt)->getSlotX(),
-			(*templateIt)->getSlotY()))
+		if (matchedWeapon && (
+				!_inv->overlapItems(
+					unit,
+					matchedWeapon,
+					_game->getMod()->getInventory((*templateIt)->getSlot(), true),
+					(*templateIt)->getSlotX(),
+					(*templateIt)->getSlotY()
+				) ||
+				_inv->canBeStacked(
+					matchedWeapon,
+					unit->getItem(_game->getMod()->getInventory((*templateIt)->getSlot(), true), (*templateIt)->getSlotX(), (*templateIt)->getSlotY()),
+					_game->getMod()->getInventory((*templateIt)->getSlot(), true),
+					(*templateIt)->getSlotX(),
+					(*templateIt)->getSlotY()
+				)
+			))  // I'd really want to make this fragment more readable and reduce repeated function calls, but don't want to mess with the original code too much
 		{
 			// move matched item from ground to the appropriate inventory slot
 			matchedWeapon->moveToOwner(unit);
