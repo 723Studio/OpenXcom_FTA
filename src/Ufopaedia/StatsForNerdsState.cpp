@@ -1898,6 +1898,8 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getTUUnload(3), "tuUnload", 8);
 		endHeading();
 	}
+	addInteger(ss, itemRule->getStackSize(), "stackSize", 1);
+	addInteger(ss, itemRule->getConeSize(), "coneSize", 0);
 
 	addInteger(ss, itemRule->getArmor(), "armor", 20);
 
