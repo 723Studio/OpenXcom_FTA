@@ -31,6 +31,7 @@
 #include "PrimeGrenadeState.h"
 #include "MedikitState.h"
 #include "ScannerState.h"
+#include "HackingState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
@@ -187,6 +188,12 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 	else if (weapon->getBattleType() == BT_MINDPROBE)
 	{
 		addItem(BA_USE, weapon->getPsiAttackName().empty() ? "STR_USE_MIND_PROBE" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
+	}
+	else if (weapon->getBattleType() == BT_HACKING)
+	{
+		// addItem(BA_USE, weapon->getHackingActionName(), &id, Options::keyBattleActionItem1); // TODO: Will we use a separate function for hacking actions?
+		// Use scanner method at this time
+		addItem(BA_USE, weapon->getPsiAttackName().empty() ? "STR_USE_HACKING_TOOL" : weapon->getPsiAttackName(), & id, Options::keyBattleActionItem1);
 	}
 
 }
@@ -452,6 +459,20 @@ void ActionMenuState::handleAction()
 			{
 				_game->popState();
 			}
+		}
+		else if (_action->type == BA_USE && weapon->getBattleType() == BT_HACKING)
+		{
+		// spend TUs first, then show the interface
+		// TODO: Use Medikit as reference for interacting with computer consoles on the battlescape
+		if (_action->spendTU(&_action->result))
+		{
+			_game->popState();
+			_game->pushState(new HackingState(_action));
+		}
+		else
+		{
+			_game->popState();
+		}
 		}
 		else if (_action->type == BA_LAUNCH)
 		{

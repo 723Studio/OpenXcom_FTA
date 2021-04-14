@@ -1267,6 +1267,11 @@
     </ClCompile>
     <ClCompile Include="Geoscape\PrisonReportState.cpp">
       <Filter>Geoscape</Filter>
+    <ClCompile Include="Battlescape\HackingState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Battlescape\HackingView.cpp">
+      <Filter>Battlescape</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2599,6 +2604,11 @@
     </ClInclude>
     <ClInclude Include="Geoscape\PrisonReportState.h">
       <Filter>Geoscape</Filter>
+    <ClInclude Include="Battlescape\HackingState.h">
+      <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Battlescape\HackingView.h">
+      <Filter>Battlescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
