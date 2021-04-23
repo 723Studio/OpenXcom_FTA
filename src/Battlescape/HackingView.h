@@ -23,6 +23,7 @@ namespace OpenXcom
 {
 // Classes forward declarations
 class BattleUnit;
+class HackingNode;
 
 /**
  * Displays a view of hacking minigame.
@@ -32,13 +33,18 @@ class HackingView : public InteractiveSurface
 	Game* _game;
 	/// Handle clicking
 	void mouseClick(Action* action, State* state) override;
-	BattleUnit* _unit;  // we may need it or we may not
+	BattleUnit* _unit = nullptr;  // we may need it or we may not
 	int _frame;
+	int _x{ 10 }, _y{ 50 };
+	HackingNode* _node = nullptr;
 public:
 	/// Create the ScannerView
-	HackingView(int w, int h, int x, int y, Game* game, BattleUnit* unit);
+	//HackingView(int w, int h, int x, int y, Game* game, BattleUnit* unit);
+	HackingView(int w, int h, int x, int y, Game* game);
+	~HackingView();
 	/// Draw the scanner view
 	void draw() override;
+	void drawGrid();
 	void animate();
 };
 } //namespace

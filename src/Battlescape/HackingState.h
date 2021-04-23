@@ -30,7 +30,7 @@ class Timer;
 class BattleUnit;
 //class TileEngine;
 struct BattleAction;
-
+class HackingNode;
 /**
  * The Hacking Tool User Interface. Hacking tool is an item for hacking stationary computers and enemy drones.
  */
@@ -38,18 +38,19 @@ class HackingState : public State
 {
 	Surface* _bg;
 	HackingView* _hackingView;
-	Text* _someTxt;
+	Text* _consoleTxt;
 	InteractiveSurface* _exitButton;
 	BattleUnit* _targetUnit; // we will need it for drone hacking
 	//BattleItem* _item; // we may need it later
 	BattleAction *_action;
 	Timer* _timerAnimate;
 	//TileEngine* _tileEngine;
-	 
+	HackingNode* _nodeArray[13][5] { };
 	/// Handler for the exit button.
 	void onExitClick(Action* action);
 	/// Handler for the  button.
 	//void onButtonClick(Action* action);
+	void onNodeClick(Action* action);
 	
 	/// Updates the hacking tool interface.
 	void update();

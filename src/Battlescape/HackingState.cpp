@@ -32,8 +32,135 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 
+
 namespace OpenXcom
 {
+
+constexpr int hackingGridStartX { 66 };
+constexpr int hackingViewStartY { 29 };
+constexpr int hackingNodeOffsetX { 18 };
+constexpr int hackingGridHeight { 9 };
+constexpr int hackingGridWidth { 36 };
+
+enum class NodeState
+{
+	DISABLED,
+	ACTIVATED,
+	LOCKED,
+	IMPENETRABLE
+};
+
+enum class NodeColor
+{
+	GRAY = 7,
+	RED = 40,
+	GREEN = 54,
+	YELLOW = 21
+};
+
+class HackingNode : public InteractiveSurface
+{
+	static const int _nodeBlob[7][6];
+	Uint8 _color = 40;
+	//Sint16 _x, _y;
+	NodeState _nodeState{ NodeState::DISABLED };
+	std::array<HackingNode*, 4> _neighbourNodes{};
+public:
+	HackingNode(Sint16 x, Sint16 y);
+	void draw() override;
+//	void mouseClick(Action* action, State* state) override;
+	int getColor() const { return _color; }
+	void setColor(Uint8 color) { _color = color; }
+	NodeState getState() { return _nodeState; }
+	void setState(NodeState state)
+	{
+		if(_nodeState == state) return;
+		else
+		{
+			_nodeState = state;
+			_redraw = true;
+		}
+	}
+	void setNeighbour(int index, HackingNode* node) { _neighbourNodes[index] = node; }
+	void activateNeighbours();
+	
+};
+
+const int HackingNode::_nodeBlob[7][6] =
+{
+	{0,0,1,1,0,0},
+	{0,1,2,2,1,0},
+	{1,2,3,3,2,1},
+	{1,3,5,5,3,1},
+	{1,2,3,3,2,1},
+	{0,1,2,2,1,0},
+	{0,0,1,1,0,0}
+};
+
+
+HackingNode::HackingNode(Sint16 x, Sint16 y) : InteractiveSurface(6, 7, x, y)//, _x(x), _y(y)
+{
+	_redraw = true;
+}
+
+void HackingNode::draw()
+{
+	// set the color of the node
+	switch (_nodeState)
+	{
+	case NodeState::ACTIVATED:
+	{
+		_color = (Uint8)NodeColor::GREEN;
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		_color = (Uint8)NodeColor::RED;
+		break;
+	}
+	case NodeState::IMPENETRABLE:
+	{
+		_color = (Uint8)NodeColor::YELLOW;
+		break;
+	}
+	case NodeState::DISABLED:
+	default:
+		_color = (Uint8)NodeColor::GRAY;
+	};
+	// draw node blob
+	for (int y = 0; y < 7; ++y)
+	{
+		for (int x = 0; x < 6; ++x)
+		{
+			Uint8 pixelOffset = _nodeBlob[y][x];
+			if (pixelOffset == 0)
+			{
+				continue;
+			}
+			else
+			{
+				Uint8 color = _color - pixelOffset;
+				setPixel(x, y, color);
+			}
+		}
+	}
+}
+void HackingNode::activateNeighbours()
+{
+	for (int i = 0; i < _neighbourNodes.size(); ++i)
+		if (_neighbourNodes[i])
+		{
+			_neighbourNodes[i]->setVisible(true);
+			_neighbourNodes[i]->invalidate();
+		}
+}
+
+//void HackingNode::mouseClick(Action* action, State* state)
+//{
+//	_color += 17;
+//	_redraw = true;
+//}
+
 
 /**
  * Initializes the Hacking State.
@@ -49,9 +176,14 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 		_game->getScreen()->resetDisplay(false);
 	}
 	_bg = new Surface(320, 200);
-	//_hackingView = new HackingView(152, 152, 56, 24, _game, _action->actor);
-	_exitButton = new InteractiveSurface(20, 20, 257, 150);
-	//_someTxt = new Text(20, 20, 257, 150);
+	_hackingView = new HackingView(164, 121, 41, 26, _game);//, _action->actor);
+	
+	_exitButton = new InteractiveSurface(20, 20, 255, 157);
+	_consoleTxt = new Text(55, 108, 215, 26);
+	_consoleTxt->setWordWrap(true);
+	_consoleTxt->setSmall();
+	_consoleTxt->setText("It's a long text that I need to write to see how it fits on the console screen. I need more text here. And even more text.");
+	
 
 	if (_game->getScreen()->getDY() > 50)
 	{
@@ -61,10 +193,63 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	// Set palette
 	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
 
-//	add(_hackingView);
 	add(_bg);
+	add(_hackingView);
+	
+	add(_consoleTxt);
+	//_bg->drawRect(0, 0, 320, 200, 3);
 	//add(_exitButton, "buttonExit", "hackingTool", _bg); // TODO: add new interface to rulesets
 	add(_exitButton);
+
+	// Create node grid 
+	for (int i = 0; i < std::size(_nodeArray); ++i)
+		for (int j = 0; (j < std::size(_nodeArray[i])- 1 + i % 2) ; ++j) // 1 less for even i and full length for odd
+		{
+			_nodeArray[i][j] = new HackingNode(hackingGridStartX + hackingGridWidth * j - hackingNodeOffsetX *(i % 2),
+												hackingViewStartY + hackingGridHeight * i);
+			add(_nodeArray[i][j]);
+			_nodeArray[i][j]->setVisible(false);
+			_nodeArray[i][j]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
+		}
+	// Link nodes
+	for(int i = 0; i < std::size(_nodeArray); ++i)
+		for (int j = 0; j < std::size(_nodeArray[i]); ++j)
+		{
+			if (_nodeArray[i][j])
+			{
+				if (i > 0)
+				{
+					if (j >= i % 2)
+					{
+						_nodeArray[i][j]->setNeighbour(0, _nodeArray[i - 1][j - i % 2]);
+					}
+					if (j < std::size(_nodeArray[i]) - 1)
+					{
+						_nodeArray[i][j]->setNeighbour(1, _nodeArray[i - 1][j + 1 - i % 2]);
+					}
+				}
+				if (i < std::size(_nodeArray) - 1)
+				{
+					if (j >= i % 2)
+					{
+						_nodeArray[i][j]->setNeighbour(2, _nodeArray[i + 1][j - i % 2]);
+					}
+					if (j < std::size(_nodeArray[i + 1]) - 1)
+					{
+						_nodeArray[i][j]->setNeighbour(3, _nodeArray[i + 1][j + 1 - i % 2]);
+					}
+				}
+			}
+		}
+	// TODO: Set up defence
+	_nodeArray[5][2]->setState(NodeState::IMPENETRABLE);
+	_nodeArray[1][2]->setState(NodeState::IMPENETRABLE);
+	_nodeArray[3][2]->setState(NodeState::LOCKED);
+	
+	// TODO: set starting node (random)
+	_nodeArray[3][0]->setVisible(true);
+	_nodeArray[3][0]->setState(NodeState::ACTIVATED);
+	_nodeArray[3][0]->activateNeighbours();
 
 
 	centerAllSurfaces();
@@ -118,6 +303,12 @@ void HackingState::handle(Action* action)
 void HackingState::update()
 {
 	// TODO: update hacking interface
+	_hackingView->invalidate();
+	//for (int i = 0; i < std::size(_nodeArray); ++i)
+	//	for (int j = 0; (j < std::size(_nodeArray[i]) - 1 + i % 2); ++j)
+	//	{
+	//		_nodeArray[i][j]->invalidate();
+	//	}
 }
 
 /**
@@ -149,6 +340,41 @@ void HackingState::onExitClick(Action*)
 		_game->getScreen()->resetDisplay(false);
 	}
 	_game->popState();
+}
+
+void HackingState::onNodeClick(Action* action)
+{
+	HackingNode* node = dynamic_cast<HackingNode*>(action->getSender());
+	if (!node) { return; }
+
+	switch (node->getState())
+	{
+	case NodeState::DISABLED:
+	{
+		node->setState(NodeState::ACTIVATED);
+		node->activateNeighbours();
+		_consoleTxt->setText(">Proceeding...");
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		node->setState(NodeState::ACTIVATED);
+		node->activateNeighbours();
+		_consoleTxt->setText(">Breaking in...");
+		break;
+	}
+	case NodeState::IMPENETRABLE:
+	{
+		_consoleTxt->setText(">Can't proceed!");
+		break;
+	}
+	case NodeState::ACTIVATED:
+	default:
+		break;
+	}
+		
+	update();
+	
 }
 
 } // namespace
