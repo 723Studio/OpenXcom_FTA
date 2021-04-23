@@ -61,6 +61,7 @@ public:
 		_redraw = true;
 	};
 	void draw() override;
+	void drawGrid();
 	void animate();
 	int getColor() const { return _color; }
 	int getGridRow() const { return _gridRow; }

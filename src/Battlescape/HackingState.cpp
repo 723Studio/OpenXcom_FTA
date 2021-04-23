@@ -86,6 +86,132 @@ std::string toString(type t)
 	return ss.str();
 }
 
+constexpr int hackingGridStartX { 66 };
+constexpr int hackingViewStartY { 29 };
+constexpr int hackingNodeOffsetX { 18 };
+constexpr int hackingGridHeight { 9 };
+constexpr int hackingGridWidth { 36 };
+
+enum class NodeState
+{
+	DISABLED,
+	ACTIVATED,
+	LOCKED,
+	IMPENETRABLE
+};
+
+enum class NodeColor
+{
+	GRAY = 7,
+	RED = 40,
+	GREEN = 54,
+	YELLOW = 21
+};
+
+class HackingNode : public InteractiveSurface
+{
+	static const int _nodeBlob[7][6];
+	Uint8 _color = 40;
+	//Sint16 _x, _y;
+	NodeState _nodeState{ NodeState::DISABLED };
+	std::array<HackingNode*, 4> _neighbourNodes{};
+public:
+	HackingNode(Sint16 x, Sint16 y);
+	void draw() override;
+//	void mouseClick(Action* action, State* state) override;
+	int getColor() const { return _color; }
+	void setColor(Uint8 color) { _color = color; }
+	NodeState getState() { return _nodeState; }
+	void setState(NodeState state)
+	{
+		if(_nodeState == state) return;
+		else
+		{
+			_nodeState = state;
+			_redraw = true;
+		}
+	}
+	void setNeighbour(int index, HackingNode* node) { _neighbourNodes[index] = node; }
+	void activateNeighbours();
+	
+};
+
+const int HackingNode::_nodeBlob[7][6] =
+{
+	{0,0,1,1,0,0},
+	{0,1,2,2,1,0},
+	{1,2,3,3,2,1},
+	{1,3,5,5,3,1},
+	{1,2,3,3,2,1},
+	{0,1,2,2,1,0},
+	{0,0,1,1,0,0}
+};
+
+
+HackingNode::HackingNode(Sint16 x, Sint16 y) : InteractiveSurface(6, 7, x, y)//, _x(x), _y(y)
+{
+	_redraw = true;
+}
+
+void HackingNode::draw()
+{
+	// set the color of the node
+	switch (_nodeState)
+	{
+	case NodeState::ACTIVATED:
+	{
+		_color = (Uint8)NodeColor::GREEN;
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		_color = (Uint8)NodeColor::RED;
+		break;
+	}
+	case NodeState::IMPENETRABLE:
+	{
+		_color = (Uint8)NodeColor::YELLOW;
+		break;
+	}
+	case NodeState::DISABLED:
+	default:
+		_color = (Uint8)NodeColor::GRAY;
+	};
+	// draw node blob
+	for (int y = 0; y < 7; ++y)
+	{
+		for (int x = 0; x < 6; ++x)
+		{
+			Uint8 pixelOffset = _nodeBlob[y][x];
+			if (pixelOffset == 0)
+			{
+				continue;
+			}
+			else
+			{
+				Uint8 color = _color - pixelOffset;
+				setPixel(x, y, color);
+			}
+		}
+	}
+}
+void HackingNode::activateNeighbours()
+{
+	for (int i = 0; i < _neighbourNodes.size(); ++i)
+		if (_neighbourNodes[i])
+		{
+			_neighbourNodes[i]->setVisible(true);
+			_neighbourNodes[i]->invalidate();
+		}
+}
+
+//void HackingNode::mouseClick(Action* action, State* state)
+//{
+//	_color += 17;
+//	_redraw = true;
+//}
+
+
 /**
  * Initializes the Hacking State.
  * @param action Pointer to an action.

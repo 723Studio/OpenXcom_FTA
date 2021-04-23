@@ -114,6 +114,10 @@ void HackingNode::animate()
 	}
 }
 
+HackingView::~HackingView()
+{
+	delete _node;
+}
 /**
  * Initializes the Hacking view.
  * @param w The HackingView width.
