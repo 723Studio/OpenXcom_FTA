@@ -46,11 +46,14 @@ class HackingState : public State
 	Timer* _timerAnimate;
 	//TileEngine* _tileEngine;
 	HackingNode* _nodeArray[13][5] { };
+
 	/// Handler for the exit button.
 	void onExitClick(Action* action);
 	/// Handler for the  button.
 	//void onButtonClick(Action* action);
 	void onNodeClick(Action* action);
+	///  Shows nodes that are linked to the current node.
+	void showNeighbours(HackingNode* node);
 	
 	/// Updates the hacking tool interface.
 	void update();

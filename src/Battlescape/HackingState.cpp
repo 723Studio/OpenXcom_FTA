@@ -62,28 +62,18 @@ class HackingNode : public InteractiveSurface
 {
 	static const int _nodeBlob[7][6];
 	Uint8 _color = 40;
-	//Sint16 _x, _y;
+	int _gridRow, _gridCol;
 	NodeState _nodeState{ NodeState::DISABLED };
-	std::array<HackingNode*, 4> _neighbourNodes{};
+
 public:
-	HackingNode(Sint16 x, Sint16 y);
+	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY);
 	void draw() override;
-//	void mouseClick(Action* action, State* state) override;
 	int getColor() const { return _color; }
+	int getGridRow() const { return _gridRow; }
+	int getGridCol() const { return _gridCol; }
 	void setColor(Uint8 color) { _color = color; }
-	NodeState getState() { return _nodeState; }
-	void setState(NodeState state)
-	{
-		if(_nodeState == state) return;
-		else
-		{
-			_nodeState = state;
-			_redraw = true;
-		}
-	}
-	void setNeighbour(int index, HackingNode* node) { _neighbourNodes[index] = node; }
-	void activateNeighbours();
-	
+	NodeState getState() const { return _nodeState; }
+	void setState(NodeState state) { _nodeState = state; }	
 };
 
 const int HackingNode::_nodeBlob[7][6] =
@@ -98,7 +88,7 @@ const int HackingNode::_nodeBlob[7][6] =
 };
 
 
-HackingNode::HackingNode(Sint16 x, Sint16 y) : InteractiveSurface(6, 7, x, y)//, _x(x), _y(y)
+HackingNode::HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
 {
 	_redraw = true;
 }
@@ -145,22 +135,6 @@ void HackingNode::draw()
 		}
 	}
 }
-void HackingNode::activateNeighbours()
-{
-	for (int i = 0; i < _neighbourNodes.size(); ++i)
-		if (_neighbourNodes[i])
-		{
-			_neighbourNodes[i]->setVisible(true);
-			_neighbourNodes[i]->invalidate();
-		}
-}
-
-//void HackingNode::mouseClick(Action* action, State* state)
-//{
-//	_color += 17;
-//	_redraw = true;
-//}
-
 
 /**
  * Initializes the Hacking State.
@@ -197,59 +171,33 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	add(_hackingView);
 	
 	add(_consoleTxt);
-	//_bg->drawRect(0, 0, 320, 200, 3);
 	//add(_exitButton, "buttonExit", "hackingTool", _bg); // TODO: add new interface to rulesets
 	add(_exitButton);
 
 	// Create node grid 
-	for (int i = 0; i < std::size(_nodeArray); ++i)
-		for (int j = 0; (j < std::size(_nodeArray[i])- 1 + i % 2) ; ++j) // 1 less for even i and full length for odd
+	for (int row = 0; row < std::size(_nodeArray); ++row)
+		for (int col = 0; (col < std::size(_nodeArray[row])- 1 + row % 2) ; ++col) // 1 less for even row and full length for odd
 		{
-			_nodeArray[i][j] = new HackingNode(hackingGridStartX + hackingGridWidth * j - hackingNodeOffsetX *(i % 2),
-												hackingViewStartY + hackingGridHeight * i);
-			add(_nodeArray[i][j]);
-			_nodeArray[i][j]->setVisible(false);
-			_nodeArray[i][j]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
+			_nodeArray[row][col] = new HackingNode(hackingGridStartX + hackingGridWidth * col - hackingNodeOffsetX *(row % 2),
+												hackingViewStartY + hackingGridHeight * row,
+												row, col);
+			add(_nodeArray[row][col]);
+			_nodeArray[row][col]->setVisible(false);
+			_nodeArray[row][col]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
 		}
-	// Link nodes
-	for(int i = 0; i < std::size(_nodeArray); ++i)
-		for (int j = 0; j < std::size(_nodeArray[i]); ++j)
-		{
-			if (_nodeArray[i][j])
-			{
-				if (i > 0)
-				{
-					if (j >= i % 2)
-					{
-						_nodeArray[i][j]->setNeighbour(0, _nodeArray[i - 1][j - i % 2]);
-					}
-					if (j < std::size(_nodeArray[i]) - 1)
-					{
-						_nodeArray[i][j]->setNeighbour(1, _nodeArray[i - 1][j + 1 - i % 2]);
-					}
-				}
-				if (i < std::size(_nodeArray) - 1)
-				{
-					if (j >= i % 2)
-					{
-						_nodeArray[i][j]->setNeighbour(2, _nodeArray[i + 1][j - i % 2]);
-					}
-					if (j < std::size(_nodeArray[i + 1]) - 1)
-					{
-						_nodeArray[i][j]->setNeighbour(3, _nodeArray[i + 1][j + 1 - i % 2]);
-					}
-				}
-			}
-		}
+	
 	// TODO: Set up defence
+	_nodeArray[5][1]->setState(NodeState::IMPENETRABLE);
+	_nodeArray[1][1]->setState(NodeState::IMPENETRABLE);
+	_nodeArray[3][1]->setState(NodeState::LOCKED);
+	_nodeArray[9][2]->setState(NodeState::IMPENETRABLE);
 	_nodeArray[5][2]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[1][2]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[3][2]->setState(NodeState::LOCKED);
+	_nodeArray[7][2]->setState(NodeState::LOCKED);
 	
 	// TODO: set starting node (random)
 	_nodeArray[3][0]->setVisible(true);
 	_nodeArray[3][0]->setState(NodeState::ACTIVATED);
-	_nodeArray[3][0]->activateNeighbours();
+	showNeighbours(_nodeArray[3][0]);
 
 
 	centerAllSurfaces();
@@ -304,11 +252,6 @@ void HackingState::update()
 {
 	// TODO: update hacking interface
 	_hackingView->invalidate();
-	//for (int i = 0; i < std::size(_nodeArray); ++i)
-	//	for (int j = 0; (j < std::size(_nodeArray[i]) - 1 + i % 2); ++j)
-	//	{
-	//		_nodeArray[i][j]->invalidate();
-	//	}
 }
 
 /**
@@ -352,14 +295,14 @@ void HackingState::onNodeClick(Action* action)
 	case NodeState::DISABLED:
 	{
 		node->setState(NodeState::ACTIVATED);
-		node->activateNeighbours();
+		showNeighbours(node);
 		_consoleTxt->setText(">Proceeding...");
 		break;
 	}
 	case NodeState::LOCKED:
 	{
 		node->setState(NodeState::ACTIVATED);
-		node->activateNeighbours();
+		showNeighbours(node);
 		_consoleTxt->setText(">Breaking in...");
 		break;
 	}
@@ -375,6 +318,44 @@ void HackingState::onNodeClick(Action* action)
 		
 	update();
 	
+}
+
+/**
+ * Shows nodes that are linked to the current node.
+ * @param node Pointer to the current node.
+ */
+void HackingState::showNeighbours(HackingNode* node)
+{
+	// Get node position
+	int Row = node->getGridRow();
+	int Col = node->getGridCol();
+	int maxRow = std::size(_nodeArray) - 1;
+	int maxCol = std::size(_nodeArray[0]) - 1;
+	Col -= Row % 2; // adjust column position if we are on an odd row
+
+	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	{
+		if (currRow >= 0)
+		{
+			// show the node to the upper/lower left
+			if (Col >= 0)
+			{
+				if (_nodeArray[currRow][Col])
+				{
+					_nodeArray[currRow][Col]->setVisible(true);
+				}
+			}
+			// show the node to the upper/lower right
+			if (Col < maxCol)
+			{
+				if (_nodeArray[currRow][Col + 1])
+				{
+					_nodeArray[currRow][Col + 1]->setVisible(true);
+				}
+			}
+		}
+		currRow += 2;
+	}
 }
 
 } // namespace
