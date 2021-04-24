@@ -112,28 +112,18 @@ class HackingNode : public InteractiveSurface
 {
 	static const int _nodeBlob[7][6];
 	Uint8 _color = 40;
-	//Sint16 _x, _y;
+	int _gridRow, _gridCol;
 	NodeState _nodeState{ NodeState::DISABLED };
-	std::array<HackingNode*, 4> _neighbourNodes{};
+
 public:
-	HackingNode(Sint16 x, Sint16 y);
+	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY);
 	void draw() override;
-//	void mouseClick(Action* action, State* state) override;
 	int getColor() const { return _color; }
+	int getGridRow() const { return _gridRow; }
+	int getGridCol() const { return _gridCol; }
 	void setColor(Uint8 color) { _color = color; }
-	NodeState getState() { return _nodeState; }
-	void setState(NodeState state)
-	{
-		if(_nodeState == state) return;
-		else
-		{
-			_nodeState = state;
-			_redraw = true;
-		}
-	}
-	void setNeighbour(int index, HackingNode* node) { _neighbourNodes[index] = node; }
-	void activateNeighbours();
-	
+	NodeState getState() const { return _nodeState; }
+	void setState(NodeState state) { _nodeState = state; }	
 };
 
 const int HackingNode::_nodeBlob[7][6] =
@@ -148,7 +138,7 @@ const int HackingNode::_nodeBlob[7][6] =
 };
 
 
-HackingNode::HackingNode(Sint16 x, Sint16 y) : InteractiveSurface(6, 7, x, y)//, _x(x), _y(y)
+HackingNode::HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
 {
 	_redraw = true;
 }
@@ -195,22 +185,6 @@ void HackingNode::draw()
 		}
 	}
 }
-void HackingNode::activateNeighbours()
-{
-	for (int i = 0; i < _neighbourNodes.size(); ++i)
-		if (_neighbourNodes[i])
-		{
-			_neighbourNodes[i]->setVisible(true);
-			_neighbourNodes[i]->invalidate();
-		}
-}
-
-//void HackingNode::mouseClick(Action* action, State* state)
-//{
-//	_color += 17;
-//	_redraw = true;
-//}
-
 
 /**
  * Initializes the Hacking State.
@@ -549,6 +523,44 @@ void HackingState::notifyState(HackingNode* node)
 	}
 	default:
 		break;
+	}
+}
+
+/**
+ * Shows nodes that are linked to the current node.
+ * @param node Pointer to the current node.
+ */
+void HackingState::showNeighbours(HackingNode* node)
+{
+	// Get node position
+	int Row = node->getGridRow();
+	int Col = node->getGridCol();
+	int maxRow = std::size(_nodeArray) - 1;
+	int maxCol = std::size(_nodeArray[0]) - 1;
+	Col -= Row % 2; // adjust column position if we are on an odd row
+
+	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	{
+		if (currRow >= 0)
+		{
+			// show the node to the upper/lower left
+			if (Col >= 0)
+			{
+				if (_nodeArray[currRow][Col])
+				{
+					_nodeArray[currRow][Col]->setVisible(true);
+				}
+			}
+			// show the node to the upper/lower right
+			if (Col < maxCol)
+			{
+				if (_nodeArray[currRow][Col + 1])
+				{
+					_nodeArray[currRow][Col + 1]->setVisible(true);
+				}
+			}
+		}
+		currRow += 2;
 	}
 }
 
