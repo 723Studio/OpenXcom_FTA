@@ -37,7 +37,7 @@ namespace OpenXcom
 {
 
 constexpr int hackingGridStartX { 66 };
-constexpr int hackingViewStartY { 29 };
+constexpr int hackingGridStartY { 29 };
 constexpr int hackingNodeOffsetX { 18 };
 constexpr int hackingGridHeight { 9 };
 constexpr int hackingGridWidth { 36 };
@@ -47,7 +47,8 @@ enum class NodeState
 	DISABLED,
 	ACTIVATED,
 	LOCKED,
-	IMPENETRABLE
+	IMPENETRABLE,
+	TARGET
 };
 
 enum class NodeColor
@@ -55,7 +56,8 @@ enum class NodeColor
 	GRAY = 7,
 	RED = 40,
 	GREEN = 54,
-	YELLOW = 21
+	YELLOW = 21,
+	BLUE = 213
 };
 
 class HackingNode : public InteractiveSurface
@@ -113,10 +115,16 @@ void HackingNode::draw()
 		_color = (Uint8)NodeColor::YELLOW;
 		break;
 	}
+	case NodeState::TARGET:
+	{
+		_color = (Uint8)NodeColor::BLUE;
+		break;
+	}
 	case NodeState::DISABLED:
 	default:
 		_color = (Uint8)NodeColor::GRAY;
 	};
+	
 	// draw node blob
 	for (int y = 0; y < 7; ++y)
 	{
@@ -179,13 +187,16 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 		for (int col = 0; (col < std::size(_nodeArray[row])- 1 + row % 2) ; ++col) // 1 less for even row and full length for odd
 		{
 			_nodeArray[row][col] = new HackingNode(hackingGridStartX + hackingGridWidth * col - hackingNodeOffsetX *(row % 2),
-												hackingViewStartY + hackingGridHeight * row,
+												hackingGridStartY + hackingGridHeight * row,
 												row, col);
 			add(_nodeArray[row][col]);
 			_nodeArray[row][col]->setVisible(false);
 			_nodeArray[row][col]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
 		}
-	
+
+	// TODO: Set target node (random)
+	_nodeArray[3][4]->setState(NodeState::TARGET);
+
 	// TODO: Set up defence
 	_nodeArray[5][1]->setState(NodeState::IMPENETRABLE);
 	_nodeArray[1][1]->setState(NodeState::IMPENETRABLE);
@@ -220,16 +231,16 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_exitButton->onKeyboardPress((ActionHandler)&HackingState::onExitClick, Options::keyCancel);
 
 	// TODO: enable animation handling when it's ready
-	//_timerAnimate = new Timer(125);
-	//_timerAnimate->onTimer((StateHandler)&HackingState::animate);
-	//_timerAnimate->start();
+	_timerAnimate = new Timer(125);
+	_timerAnimate->onTimer((StateHandler)&HackingState::animate);
+	_timerAnimate->start();
 
 	update();
 }
 
 HackingState::~HackingState()
 {
-//	delete _timerAnimate;
+	delete _timerAnimate;
 }
 
 /**
@@ -259,7 +270,7 @@ void HackingState::update()
  */
 void HackingState::animate()
 {
-//	_hackingView->animate(); // TODO: uncomment when ready
+	_hackingView->animate(); // TODO: uncomment when ready
 }
 
 /**
@@ -268,7 +279,7 @@ void HackingState::animate()
 void HackingState::think()
 {
 	State::think();
-//	_timerAnimate->think(this, 0); // TODO: uncomment when ready
+	_timerAnimate->think(this, 0); // TODO: uncomment when ready
 }
 
 /**
@@ -292,10 +303,16 @@ void HackingState::onNodeClick(Action* action)
 
 	switch (node->getState())
 	{
+	case NodeState::TARGET:
+	{
+		onExitClick(0);
+		break;
+	}
 	case NodeState::DISABLED:
 	{
 		node->setState(NodeState::ACTIVATED);
 		showNeighbours(node);
+		addLinks(node);
 		_consoleTxt->setText(">Proceeding...");
 		break;
 	}
@@ -303,6 +320,7 @@ void HackingState::onNodeClick(Action* action)
 	{
 		node->setState(NodeState::ACTIVATED);
 		showNeighbours(node);
+		addLinks(node);
 		_consoleTxt->setText(">Breaking in...");
 		break;
 	}
@@ -351,6 +369,45 @@ void HackingState::showNeighbours(HackingNode* node)
 				if (_nodeArray[currRow][Col + 1])
 				{
 					_nodeArray[currRow][Col + 1]->setVisible(true);
+				}
+			}
+		}
+		currRow += 2;
+	}
+}
+
+/**
+ * Adds links from the current node to the surrounding activated nodes.
+ * @param node Pointer to the current node.
+ */
+void HackingState::addLinks(HackingNode* node)
+{
+	// Get node position
+	int Row = node->getGridRow();
+	int Col = node->getGridCol();
+	int maxRow = std::size(_nodeArray) - 1;
+	int maxCol = std::size(_nodeArray[0]) - 1;
+	Col -= Row % 2; // adjust column position if we are on an odd row
+
+	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	{
+		if (currRow >= 0)
+		{
+			// check and link the node to the upper/lower left
+			if (Col >= 0)
+			{
+				if (_nodeArray[currRow][Col] && _nodeArray[currRow][Col]->getState() == NodeState::ACTIVATED)
+				{
+					_hackingView->addLink(node->getX(), node->getY(), _nodeArray[currRow][Col]->getX(), _nodeArray[currRow][Col]->getY());
+				}
+			}
+			// check and link the node to the upper/lower right
+			if (Col < maxCol)
+			{
+				if (_nodeArray[currRow][Col + 1] && _nodeArray[currRow][Col + 1]->getState() == NodeState::ACTIVATED)
+				{
+					_hackingView->addLink(node->getX(), node->getY(), _nodeArray[currRow][Col + 1]->getX(), _nodeArray[currRow][Col + 1]->getY());
+					
 				}
 			}
 		}

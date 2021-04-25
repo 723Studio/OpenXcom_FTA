@@ -30,58 +30,11 @@
 namespace OpenXcom
 {
 
-//class HackingNode : public InteractiveSurface
-//{
-//	static const int _nodeBlob[7][6];
-//	Uint8 _color = 40;
-//
-//public:
-//	HackingNode();
-//	void draw() override;
-//	void mouseClick(Action* action, State* state) override;
-//};
-//
-//const int HackingNode::_nodeBlob[7][6] =
-//{
-//	{0,0,1,1,0,0},
-//	{0,1,2,2,1,0},
-//	{1,2,3,3,2,1},
-//	{1,3,5,5,3,1},
-//	{1,2,3,3,2,1},
-//	{0,1,2,2,1,0},
-//	{0,0,1,1,0,0}
-//};
-//
-//
-//HackingNode::HackingNode() : InteractiveSurface(6, 7)
-//{
-//
-//}
-//void HackingNode::draw()
-//{
-//	for (int y = 0; y < 7; ++y)
-//	{
-//		for (int x = 0; x < 6; ++x)
-//		{
-//			Uint8 pixelOffset = _nodeBlob[y][x];
-//			if (pixelOffset == 0)
-//			{
-//				continue;
-//			}
-//			else
-//			{
-//				Uint8 color = _color - pixelOffset;
-//				setPixel(x, y, color);
-//			}
-//		}
-//	}
-//}
-//void HackingNode::mouseClick(Action* action, State* state)
-//{
-//	_color += 17;
-//	_redraw = true;
-//	//_color = _color%
-//}
+struct Point
+{
+	Sint16 x, y;
+	Point(Sint16 x, Sint16 y) : x(x), y(y) {}
+};
 /**
  * Initializes the Hacking view.
  * @param w The HackingView width.
@@ -95,12 +48,10 @@ namespace OpenXcom
 HackingView::HackingView(int w, int h, int x, int y, Game* game) : InteractiveSurface(w, h, x, y), _game(game), _frame(0)
 {
 	_redraw = true;
-	//_node = new HackingNode;
 }
 
 HackingView::~HackingView()
 {
-	delete _node;
 }
 /**
  * Draws the HackingView view.
@@ -112,16 +63,19 @@ void HackingView::draw()
 	//surface = new Surface(5, 5, 0, 0);
 	//HackingNode* node = new HackingNode();
 	
-	this->lock();
+	//this->lock();
 	// TODO: draw the hacking view
-	clear();
+	//clear();
 	//drawRect(0, 0, this->getWidth(), this->getHeight(), 90);
-	drawGrid();
+	for (auto link : _linkArray)
+	{
+		drawLine(link.first.x, link.first.y, link.second.x, link.second.y, 50 - _frame);
+	}
 	//surface->drawRect(0,0,5,5,35);
 	//surface->blitNShade(this, _x, _y, 0);
 	//_node->draw();
 	//_node->blitNShade(this, _x-2, _y-3, 0);
-	this->unlock();
+	//this->unlock();
 
 }
 
@@ -144,8 +98,8 @@ void HackingView::mouseClick(Action* action, State* state)
 	// example:
 	//SurfaceSet* set = _game->getMod()->getSurfaceSet("MEDIBITS.DAT");
 
-	_x = action->getRelativeXMouse() / action->getXScale();
-	_y = action->getRelativeYMouse() / action->getYScale();
+	//_x = action->getRelativeXMouse() / action->getXScale();
+	//_y = action->getRelativeYMouse() / action->getYScale();
 
 	
 	// Find what node we clicked on and process action logic
@@ -169,11 +123,25 @@ void HackingView::animate()
 {
 	// TODO: rework animation frames if needed
 	_frame++;
-	if (_frame > 1)
+	if (_frame > 2)
 	{
 		_frame = 0;
 	}
 	_redraw = true;
+}
+
+void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
+{
+	Sint16 xOffset = getX() - 3;
+	Sint16 yOffset = getY() - 3;
+	if (x1 > x2) // lines are drawn wrong from left to right, so we make sure they are all drawn right to left
+	{
+		_linkArray.push_back(std::make_pair(Point(x1 - xOffset, y1 - yOffset), Point(x2 - xOffset, y2 - yOffset)));
+	}
+	else
+	{
+		_linkArray.push_back(std::make_pair(Point(x2 - xOffset, y2 - yOffset), Point(x1 - xOffset, y1 - yOffset)));
+	}
 }
 
 } // namespace

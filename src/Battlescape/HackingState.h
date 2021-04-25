@@ -54,7 +54,8 @@ class HackingState : public State
 	void onNodeClick(Action* action);
 	///  Shows nodes that are linked to the current node.
 	void showNeighbours(HackingNode* node);
-	
+	/// Adds links from the current node to the surrounding activated nodes
+	void addLinks(HackingNode* node);
 	/// Updates the hacking tool interface.
 	void update();
 	/// Handles Minigame animation.
