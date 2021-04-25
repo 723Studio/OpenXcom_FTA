@@ -116,7 +116,6 @@ void HackingNode::animate()
 
 HackingView::~HackingView()
 {
-	delete _node;
 }
 /**
  * Initializes the Hacking view.
@@ -281,6 +280,20 @@ void HackingView::revealFirewall(HackingNode* node)
 {
 	_nodeArray[node->getGridRow() - 2][node->getGridCol()]->setVisible(true);
 	_nodeArray[node->getGridRow() + 2][node->getGridCol()]->setVisible(true);
+}
+
+void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
+{
+	Sint16 xOffset = getX() - 3;
+	Sint16 yOffset = getY() - 3;
+	if (x1 > x2) // lines are drawn wrong from left to right, so we make sure they are all drawn right to left
+	{
+		_linkArray.push_back(std::make_pair(Point(x1 - xOffset, y1 - yOffset), Point(x2 - xOffset, y2 - yOffset)));
+	}
+	else
+	{
+		_linkArray.push_back(std::make_pair(Point(x2 - xOffset, y2 - yOffset), Point(x1 - xOffset, y1 - yOffset)));
+	}
 }
 
 } // namespace
