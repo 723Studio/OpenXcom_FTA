@@ -110,20 +110,28 @@ enum class NodeColor
 	BLUE = 213
 };
 
+/**
+ * Helper class that represents a clickable Node that is drawn on the Hacking view.
+ * It can have one of 5 states described in NodeState and has a corresponding color
+ * defined in NodeColor
+ */
 class HackingNode : public InteractiveSurface
 {
 	static const int _nodeBlob[7][6];
-	Uint8 _color = 40;
+	Uint8 _color = (Uint8)NodeColor::GRAY;
 	int _gridRow, _gridCol;
 	NodeState _nodeState{ NodeState::DISABLED };
 
 public:
-	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY);
+	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
+	{
+		_redraw = true;
+	};
 	void draw() override;
 	int getColor() const { return _color; }
 	int getGridRow() const { return _gridRow; }
 	int getGridCol() const { return _gridCol; }
-	void setColor(Uint8 color) { _color = color; }
+	void setColor(Uint8 color) { _color = color; } // TODO: probably won't need a setter in release
 	NodeState getState() const { return _nodeState; }
 	void setState(NodeState state) { _nodeState = state; }	
 };
@@ -140,9 +148,17 @@ const int HackingNode::_nodeBlob[7][6] =
 };
 
 
-HackingNode::HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
+/**
+ * Helper function that returns a string representation of a type (mainly used for numbers).
+ * @param t The value to stringify.
+ * @return A string representation of the value.
+ */
+template<typename type>
+std::string toString(type t)
 {
-	_redraw = true;
+	std::ostringstream ss;
+	ss << t;
+	return ss.str();
 }
 
 void HackingNode::draw()
