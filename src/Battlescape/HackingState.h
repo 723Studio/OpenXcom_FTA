@@ -32,6 +32,7 @@ class BattleUnit;
 //class TileEngine;
 struct BattleAction;
 class HackingNode;
+class ConsoleTextManager;
 /**
  * The Hacking Tool User Interface. Hacking tool is an item for hacking stationary computers and enemy drones.
  */
@@ -50,7 +51,7 @@ class HackingState : public State
 	Timer* _timerAnimate;
 	//TileEngine* _tileEngine;
 	HackingNode* _nodeArray[13][5] { };
-
+	ConsoleTextManager* _consoleManager;
 	int _timeUnits, _maxTimeUnits{ 250 }, _health, _maxHealth{20}; // temporary debug fields (change later for battle item stats)
 
 

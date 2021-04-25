@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include<deque>
 #include "HackingState.h"
 #include "HackingView.h"
 //#include "BattlescapeGame.h"
@@ -99,6 +100,35 @@ const int HackingNode::_nodeBlob[7][6] =
 	{0,0,1,1,0,0}
 };
 
+/**
+ * Helper class to manage message console text 
+ */
+class ConsoleTextManager
+{
+	std::deque<std::string> _messageLog { };
+	Text* _consoleTxt;
+public:
+	ConsoleTextManager(Text* txtField) : _consoleTxt(txtField) {};
+	void addMessage(std::string msg);
+};
+void ConsoleTextManager::addMessage(std::string msg)
+{
+	std::ostringstream _text{ "" };
+	_messageLog.push_back(msg);
+	do
+	{
+		_text.str("");
+		for (auto msgLine : _messageLog)
+		{
+			_text << msgLine << '\n';
+		}
+		_consoleTxt->setText(_text.str());
+		if (_consoleTxt->getNumLines() > 14)
+		{
+			_messageLog.pop_front();
+		}
+	} while (_consoleTxt->getNumLines() > 14);	
+}
 
 /**
  * Helper function that returns a string representation of a type (mainly used for numbers).
@@ -183,7 +213,9 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_consoleTxt->setWordWrap(true);
 	_consoleTxt->setSmall();
 	_consoleTxt->setHighContrast(true);
-	_consoleTxt->setText("It's a long text that I need to write to see how it fits on the console screen.\n I need more text here. And even more text.");
+	_consoleManager = new ConsoleTextManager(_consoleTxt);
+	_consoleManager->addMessage(">Logging in...");
+	_consoleManager->addMessage(">Success!");
 
 	_txtTimeUnits = new Text(75, 9, 41, 158);
 	_numTimeUnits = new Text(18, 9, 118, 158);
@@ -243,9 +275,9 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_nodeArray[7][2]->setState(NodeState::LOCKED);
 	
 	// TODO: set starting node (random)
-	_nodeArray[3][0]->setVisible(true);
-	_nodeArray[3][0]->setState(NodeState::ACTIVATED);
-	showNeighbours(_nodeArray[3][0]);
+	_nodeArray[5][0]->setVisible(true);
+	_nodeArray[5][0]->setState(NodeState::ACTIVATED);
+	showNeighbours(_nodeArray[5][0]);
 
 
 	centerAllSurfaces();
@@ -280,7 +312,7 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_numTimeUnits->setColor(color2);
 	_numTimeUnits->setHighContrast(true);
 
-	_barTimeUnits->setScale(static_cast<double>(_barTimeUnits->getWidth() - 1) / _maxTimeUnits);
+	_barTimeUnits->setScale((static_cast<double>(_barTimeUnits->getWidth()) - 1) / _maxTimeUnits);
 
 	_txtHealth->setColor(color);
 	_txtHealth->setHighContrast(true);
@@ -289,7 +321,7 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_numHealth->setColor(color2);
 	_numHealth->setHighContrast(true);
 
-	_barHealth->setScale(static_cast<double>(_barHealth->getWidth() - 1) / _maxHealth);
+	_barHealth->setScale((static_cast<double>(_barHealth->getWidth()) - 1) / _maxHealth);
 
 	// Set up animation
 	_timerAnimate = new Timer(125);
@@ -392,7 +424,8 @@ void HackingState::onNodeClick(Action* action)
 		}
 		else
 		{
-			_consoleTxt->setText(">Not enough time units!");
+			//_consoleTxt->setText(">Not enough time units!");
+			_consoleManager->addMessage(">Not enough time units!");
 		}
 		break;
 	}
@@ -405,11 +438,13 @@ void HackingState::onNodeClick(Action* action)
 			node->setState(NodeState::ACTIVATED);
 			showNeighbours(node);
 			addLinks(node);
-			_consoleTxt->setText(">Proceeding...");
+			_consoleManager->addMessage(">Proceeding");
+			//_consoleTxt->setText(">Proceeding");
 		}
 		else
 		{
-			_consoleTxt->setText(">Not enough time units!");
+			//_consoleTxt->setText(">Not enough time units!");
+			_consoleManager->addMessage(">Not enough time units!");
 		}
 		break;
 	}
@@ -423,20 +458,24 @@ void HackingState::onNodeClick(Action* action)
 			node->setState(NodeState::ACTIVATED);
 			showNeighbours(node);
 			addLinks(node);
-			_consoleTxt->setText(">Breaking in...");
+			_consoleManager->addMessage(">Breaking firewall");
+			//_consoleTxt->setText(">Breaking in...");
 		}
 		else
 		{
 			if (_timeUnits < 30)
-				_consoleTxt->setText(">Not enough time units");
+				//_consoleTxt->setText(">Not enough time units");
+				_consoleManager->addMessage(">Not enough time units!");
 			if (_health < 10)
-				_consoleTxt->setText(">Not enough health");
+				//_consoleTxt->setText(">Not enough health");
+				_consoleManager->addMessage(">Not enough health!");
 		}
 		break;
 	}
 	case NodeState::IMPENETRABLE:
 	{
-		_consoleTxt->setText(">Can't proceed!");
+		//_consoleTxt->setText(">Can't proceed!");
+		_consoleManager->addMessage(">Can't proceed through this node!");
 		break;
 	}
 	case NodeState::ACTIVATED:
