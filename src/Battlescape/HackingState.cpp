@@ -26,9 +26,11 @@
 #include "../Engine/Timer.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Options.h"
+#include "../Interface/Bar.h"
 #include "../Interface/Text.h"
 //#include "../Savegame/BattleUnit.h"
 #include "../Mod/Mod.h"
+#include "../Mod/RuleInterface.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 
@@ -60,20 +62,28 @@ enum class NodeColor
 	BLUE = 213
 };
 
+/**
+ * Helper class that represents a clickable Node that is drawn on the Hacking view.
+ * It can have one of 5 states described in NodeState and has a corresponding color
+ * defined in NodeColor
+ */
 class HackingNode : public InteractiveSurface
 {
 	static const int _nodeBlob[7][6];
-	Uint8 _color = 40;
+	Uint8 _color = (Uint8)NodeColor::GRAY;
 	int _gridRow, _gridCol;
 	NodeState _nodeState{ NodeState::DISABLED };
 
 public:
-	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY);
+	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
+	{
+		_redraw = true;
+	};
 	void draw() override;
 	int getColor() const { return _color; }
 	int getGridRow() const { return _gridRow; }
 	int getGridCol() const { return _gridCol; }
-	void setColor(Uint8 color) { _color = color; }
+	void setColor(Uint8 color) { _color = color; } // TODO: probably won't need a setter in release
 	NodeState getState() const { return _nodeState; }
 	void setState(NodeState state) { _nodeState = state; }	
 };
@@ -90,9 +100,17 @@ const int HackingNode::_nodeBlob[7][6] =
 };
 
 
-HackingNode::HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY)
+/**
+ * Helper function that returns a string representation of a type (mainly used for numbers).
+ * @param t The value to stringify.
+ * @return A string representation of the value.
+ */
+template<typename type>
+std::string toString(type t)
 {
-	_redraw = true;
+	std::ostringstream ss;
+	ss << t;
+	return ss.str();
 }
 
 void HackingNode::draw()
@@ -164,8 +182,17 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_consoleTxt = new Text(55, 108, 215, 26);
 	_consoleTxt->setWordWrap(true);
 	_consoleTxt->setSmall();
-	_consoleTxt->setText("It's a long text that I need to write to see how it fits on the console screen. I need more text here. And even more text.");
-	
+	_consoleTxt->setHighContrast(true);
+	_consoleTxt->setText("It's a long text that I need to write to see how it fits on the console screen.\n I need more text here. And even more text.");
+
+	_txtTimeUnits = new Text(75, 9, 41, 158);
+	_numTimeUnits = new Text(18, 9, 118, 158);
+	_barTimeUnits = new Bar(69, 6, 136, 159);
+
+	_txtHealth = new Text(75, 9, 41, 167);
+	_numHealth = new Text(18, 9, 118, 167);
+	_barHealth = new Bar(69, 6, 136, 168);
+
 
 	if (_game->getScreen()->getDY() > 50)
 	{
@@ -173,14 +200,24 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	}
 
 	// Set palette
-	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
+	//_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
+	setStandardPalette("PAL_BATTLESCAPE");
 
 	add(_bg);
 	add(_hackingView);
 	
-	add(_consoleTxt);
+	//add();
+	add(_consoleTxt, "textName", "stats", 0);
 	//add(_exitButton, "buttonExit", "hackingTool", _bg); // TODO: add new interface to rulesets
 	add(_exitButton);
+
+	add(_txtTimeUnits);
+	add(_numTimeUnits);
+	add(_barTimeUnits, "barTUs", "stats", 0);
+
+	add(_txtHealth);
+	add(_numHealth);
+	add(_barHealth, "barHealth", "stats", 0);
 
 	// Create node grid 
 	for (int row = 0; row < std::size(_nodeArray); ++row)
@@ -230,17 +267,58 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_exitButton->onMouseClick((ActionHandler)&HackingState::onExitClick);
 	_exitButton->onKeyboardPress((ActionHandler)&HackingState::onExitClick, Options::keyCancel);
 
-	// TODO: enable animation handling when it's ready
+
+	// TODO: change interface in rulesets?
+	Uint8 color = _game->getMod()->getInterface("stats")->getElement("text")->color;
+	Uint8 color2 = _game->getMod()->getInterface("stats")->getElement("text")->color2;
+	
+
+	_txtTimeUnits->setColor(color);
+	_txtTimeUnits->setHighContrast(true);
+	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
+
+	_numTimeUnits->setColor(color2);
+	_numTimeUnits->setHighContrast(true);
+
+	_barTimeUnits->setScale(static_cast<double>(_barTimeUnits->getWidth() - 1) / _maxTimeUnits);
+
+	_txtHealth->setColor(color);
+	_txtHealth->setHighContrast(true);
+	_txtHealth->setText(tr("STR_HEALTH"));
+
+	_numHealth->setColor(color2);
+	_numHealth->setHighContrast(true);
+
+	_barHealth->setScale(static_cast<double>(_barHealth->getWidth() - 1) / _maxHealth);
+
+	// Set up animation
 	_timerAnimate = new Timer(125);
 	_timerAnimate->onTimer((StateHandler)&HackingState::animate);
 	_timerAnimate->start();
 
-	update();
+
 }
 
 HackingState::~HackingState()
 {
 	delete _timerAnimate;
+}
+
+/**
+ * Updates hacking device info which can change
+ * after going into other screens.
+ */
+void HackingState::init()
+{
+	State::init();
+
+	_timeUnits = _maxTimeUnits;
+	_barTimeUnits->setMax(_maxTimeUnits);
+	
+	_health = _maxHealth;
+	_barHealth->setMax(_maxHealth);
+
+	update();
 }
 
 /**
@@ -261,8 +339,11 @@ void HackingState::handle(Action* action)
  */
 void HackingState::update()
 {
-	// TODO: update hacking interface
 	_hackingView->invalidate();
+	_numTimeUnits->setText(toString(_timeUnits));
+	_barTimeUnits->setValue(_timeUnits);
+	_numHealth->setText(toString(_health));
+	_barHealth->setValue(_health);
 }
 
 /**
@@ -270,7 +351,7 @@ void HackingState::update()
  */
 void HackingState::animate()
 {
-	_hackingView->animate(); // TODO: uncomment when ready
+	_hackingView->animate(); 
 }
 
 /**
@@ -279,7 +360,7 @@ void HackingState::animate()
 void HackingState::think()
 {
 	State::think();
-	_timerAnimate->think(this, 0); // TODO: uncomment when ready
+	_timerAnimate->think(this, 0); 
 }
 
 /**
@@ -305,23 +386,52 @@ void HackingState::onNodeClick(Action* action)
 	{
 	case NodeState::TARGET:
 	{
-		onExitClick(0);
+		if (_timeUnits >= 20)
+		{
+			onExitClick(0);
+		}
+		else
+		{
+			_consoleTxt->setText(">Not enough time units!");
+		}
 		break;
 	}
 	case NodeState::DISABLED:
 	{
-		node->setState(NodeState::ACTIVATED);
-		showNeighbours(node);
-		addLinks(node);
-		_consoleTxt->setText(">Proceeding...");
+		// TODO: remove magic numbers
+		if (_timeUnits >= 20)
+		{
+			_timeUnits -= 20;
+			node->setState(NodeState::ACTIVATED);
+			showNeighbours(node);
+			addLinks(node);
+			_consoleTxt->setText(">Proceeding...");
+		}
+		else
+		{
+			_consoleTxt->setText(">Not enough time units!");
+		}
 		break;
 	}
 	case NodeState::LOCKED:
 	{
-		node->setState(NodeState::ACTIVATED);
-		showNeighbours(node);
-		addLinks(node);
-		_consoleTxt->setText(">Breaking in...");
+		// TODO: remove magic numbers
+		if (_timeUnits >= 30 && _health >= 10)
+		{
+			_timeUnits -= 30;
+			_health -= 10;
+			node->setState(NodeState::ACTIVATED);
+			showNeighbours(node);
+			addLinks(node);
+			_consoleTxt->setText(">Breaking in...");
+		}
+		else
+		{
+			if (_timeUnits < 30)
+				_consoleTxt->setText(">Not enough time units");
+			if (_health < 10)
+				_consoleTxt->setText(">Not enough health");
+		}
 		break;
 	}
 	case NodeState::IMPENETRABLE:

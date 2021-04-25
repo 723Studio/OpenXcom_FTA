@@ -25,6 +25,7 @@ namespace OpenXcom
 class InteractiveSurface;
 class HackingView;
 class Text;
+class Bar;
 class Timer;
 //class BattleItem;
 class BattleUnit;
@@ -39,6 +40,9 @@ class HackingState : public State
 	Surface* _bg;
 	HackingView* _hackingView;
 	Text* _consoleTxt;
+	Text* _txtTimeUnits, * _txtHealth;
+	Text* _numTimeUnits, * _numHealth;
+	Bar* _barTimeUnits, * _barHealth;
 	InteractiveSurface* _exitButton;
 	BattleUnit* _targetUnit; // we will need it for drone hacking
 	//BattleItem* _item; // we may need it later
@@ -47,6 +51,11 @@ class HackingState : public State
 	//TileEngine* _tileEngine;
 	HackingNode* _nodeArray[13][5] { };
 
+	int _timeUnits, _maxTimeUnits{ 250 }, _health, _maxHealth{20}; // temporary debug fields (change later for battle item stats)
+
+
+	/// Updates the hacking device info.
+	void init() override;
 	/// Handler for the exit button.
 	void onExitClick(Action* action);
 	/// Handler for the  button.
