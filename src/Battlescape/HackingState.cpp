@@ -147,6 +147,35 @@ const int HackingNode::_nodeBlob[7][6] =
 	{0,0,1,1,0,0}
 };
 
+/**
+ * Helper class to manage message console text 
+ */
+class ConsoleTextManager
+{
+	std::deque<std::string> _messageLog { };
+	Text* _consoleTxt;
+public:
+	ConsoleTextManager(Text* txtField) : _consoleTxt(txtField) {};
+	void addMessage(std::string msg);
+};
+void ConsoleTextManager::addMessage(std::string msg)
+{
+	std::ostringstream _text{ "" };
+	_messageLog.push_back(msg);
+	do
+	{
+		_text.str("");
+		for (auto msgLine : _messageLog)
+		{
+			_text << msgLine << '\n';
+		}
+		_consoleTxt->setText(_text.str());
+		if (_consoleTxt->getNumLines() > 14)
+		{
+			_messageLog.pop_front();
+		}
+	} while (_consoleTxt->getNumLines() > 14);	
+}
 
 /**
  * Helper function that returns a string representation of a type (mainly used for numbers).
