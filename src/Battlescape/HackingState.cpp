@@ -21,12 +21,13 @@
 #include "HackingState.h"
 #include "HackingView.h"
 //#include "BattlescapeGame.h"
-#include "../Engine/InteractiveSurface.h"
-#include "../Engine/Game.h"
 #include "../Engine/Action.h"
-#include "../Engine/Timer.h"
-#include "../Engine/Screen.h"
+#include "../Engine/Game.h"
+#include "../Engine/InteractiveSurface.h"
 #include "../Engine/Options.h"
+#include "../Engine//RNG.h"
+#include "../Engine/Screen.h"
+#include "../Engine/Timer.h"
 #include "../Interface/Bar.h"
 #include "../Interface/Text.h"
 //#include "../Savegame/BattleUnit.h"
@@ -263,21 +264,24 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 			_nodeArray[row][col]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
 		}
 
-	// TODO: Set target node (random)
-	_nodeArray[3][4]->setState(NodeState::TARGET);
+	// Set target node 
+	int finishRow = RNG::generate(0, 5) * 2 + 1;
+	_nodeArray[finishRow][4]->setState(NodeState::TARGET);
 
-	// TODO: Set up defence
-	_nodeArray[5][1]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[1][1]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[3][1]->setState(NodeState::LOCKED);
-	_nodeArray[9][2]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[5][2]->setState(NodeState::IMPENETRABLE);
-	_nodeArray[7][2]->setState(NodeState::LOCKED);
+	// Set up defence
+	for (int col = 1; col <= 3; ++col)
+	{
+		int rndOffset = RNG::generate(0, 3) * 2;
+		_nodeArray[1 + rndOffset][col]->setState(NodeState::IMPENETRABLE);
+		_nodeArray[3 + rndOffset][col]->setState(NodeState::LOCKED);
+		_nodeArray[5 + rndOffset][col]->setState(NodeState::IMPENETRABLE);
+	}
 	
-	// TODO: set starting node (random)
-	_nodeArray[5][0]->setVisible(true);
-	_nodeArray[5][0]->setState(NodeState::ACTIVATED);
-	showNeighbours(_nodeArray[5][0]);
+	// Set starting node 
+	int startRow = RNG::generate(0, 1) * 2 + 5;
+	_nodeArray[startRow][0]->setVisible(true);
+	_nodeArray[startRow][0]->setState(NodeState::ACTIVATED);
+	showNeighbours(_nodeArray[startRow][0]);
 
 
 	centerAllSurfaces();
@@ -327,7 +331,6 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_timerAnimate = new Timer(125);
 	_timerAnimate->onTimer((StateHandler)&HackingState::animate);
 	_timerAnimate->start();
-
 
 }
 
