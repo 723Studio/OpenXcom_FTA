@@ -167,7 +167,7 @@ void ConsoleTextManager::addMessage(std::string msg)
 		_text.str("");
 		for (auto msgLine : _messageLog)
 		{
-			_text << msgLine << '\n';
+			_text << ">" << msgLine << '\n';
 		}
 		_consoleTxt->setText(_text.str());
 		if (_consoleTxt->getNumLines() > 14)
@@ -599,17 +599,19 @@ void HackingState::showNeighbours(HackingNode* node)
 			// show the node to the upper/lower left
 			if (Col >= 0)
 			{
-				if (_nodeArray[currRow][Col])
+				if (_nodeArray[currRow][Col] && !_nodeArray[currRow][Col]->getVisible())
 				{
 					_nodeArray[currRow][Col]->setVisible(true);
+					notifyState(_nodeArray[currRow][Col]);
 				}
 			}
 			// show the node to the upper/lower right
 			if (Col < maxCol)
 			{
-				if (_nodeArray[currRow][Col + 1])
+				if (_nodeArray[currRow][Col + 1] && !_nodeArray[currRow][Col + 1]->getVisible())
 				{
 					_nodeArray[currRow][Col + 1]->setVisible(true);
+					notifyState(_nodeArray[currRow][Col + 1]);
 				}
 			}
 		}
@@ -617,6 +619,34 @@ void HackingState::showNeighbours(HackingNode* node)
 	}
 }
 
+/**
+ * Logs to the console if the node has special properties.
+ * @param node Pointer to the current node.
+ */
+void HackingState::notifyState(HackingNode* node)
+{
+//	if (node->getVisible()) { return; } // we have already uncovered the node
+	switch (node->getState())
+	{
+	case NodeState::IMPENETRABLE:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_FIREWALL_DETECTED"));
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_FIREWALL_BREACH_DETECTED"));
+		break;
+	}
+	case NodeState::TARGET:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_OBJECTIVE_DETECTED"));
+		break;
+	}
+	default:
+		break;
+	}
+}
 /**
  * Adds links from the current node to the surrounding activated nodes.
  * @param node Pointer to the current node.
