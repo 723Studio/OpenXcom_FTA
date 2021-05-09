@@ -381,7 +381,7 @@ private:
 	std::vector<std::string> _supportedInventorySectionsNames;
 	std::vector<const RuleInventory*> _supportedInventorySections;
 	int _waypoints, _invWidth, _invHeight;
-
+	int _hackingHp, _hackingTu, _hackingRange;
 	int _painKiller, _heal, _stimulant;
 	BattleMediKitType _medikitType;
 	bool _medikitTargetSelf, _medikitTargetImmune;
@@ -939,6 +939,14 @@ public:
 	int getMonthlyMaintenance() const;
 	/// Gets how many waypoints are used for a "spray" attack
 	int getSprayWaypoints() const;
+
+	/// Gets how many hacking health points does an item have.
+	int getHackingHP() const { return _hackingHp; }
+	/// Gets how many hacking time units does an item have.
+	int getHackingTU() const { return _hackingTu; }
+	/// Gets the hacking range for the item.
+	int getHackingRange() const { return _hackingRange; }
+
 	/// Gets script.
 	template<typename Script>
 	const typename Script::Container &getScript() const { return _battleItemScripts.get<Script>(); }

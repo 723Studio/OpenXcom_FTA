@@ -46,13 +46,14 @@ class HackingState : public State
 	Bar* _barTimeUnits, * _barHealth;
 	InteractiveSurface* _exitButton;
 	BattleUnit* _targetUnit; // we will need it for drone hacking
-	//BattleItem* _item; // we may need it later
+//	BattleItem* _item; // we may need it later
 	BattleAction *_action;
 	Timer* _timerAnimate;
 	//TileEngine* _tileEngine;
 	HackingNode* _nodeArray[13][5] { };
 	ConsoleTextManager* _consoleManager;
-	int _timeUnits, _maxTimeUnits{ 250 }, _health, _maxHealth{20}; // temporary debug fields (change later for battle item stats)
+	int _timeUnits, _maxTimeUnits, _health, _maxHealth; // temporary debug fields (change later for battle item stats)
+	int _tuBaseCost, _tuFirewallCost, _hpFirewallCost;
 
 
 	/// Updates the hacking device info.
@@ -64,6 +65,8 @@ class HackingState : public State
 	void onNodeClick(Action* action);
 	///  Shows nodes that are linked to the current node.
 	void showNeighbours(HackingNode* node);
+	/// Log to the console if the node has special properties
+	void notifyState(HackingNode* node);
 	/// Adds links from the current node to the surrounding activated nodes
 	void addLinks(HackingNode* node);
 	/// Updates the hacking tool interface.

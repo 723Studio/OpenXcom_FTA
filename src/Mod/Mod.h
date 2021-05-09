@@ -248,6 +248,7 @@ private:
 	bool _healthReplenishAfterMission = true;
 	std::string _manaUnlockResearch;
 
+	int _hackingBaseTuCost, _hackingFirewallBaseTuCost, _hackingFirewallBaseHpCost;
 	std::string _loseMoney, _loseRating, _loseDefeat;
 	int _ufoGlancingHitThreshold, _ufoBeamWidthParameter;
 	int _ufoTractorBeamSizeModifiers[5];
@@ -1140,6 +1141,10 @@ public:
 	RuleEvent* getEvent(const std::string& name, bool error = false) const;
 	const std::vector<std::string> *getMissionScriptList() const;
 	RuleMissionScript *getMissionScript(const std::string &name, bool error = false) const;
+	/// Get settings for hacking
+	int getHackingBaseTuCost() const { return _hackingBaseTuCost; }
+	int getHackingFirewallBaseTuCost() const { return _hackingFirewallBaseTuCost; }
+	int getHackingFirewallBaseHpCost() const { return _hackingFirewallBaseHpCost; }
 	/// Get settings for loyalty
 	int getLoyaltyCoefBattlescape() const { return _coefBattlescape; };
 	int getLoyaltyCoefGeoscape() const { return _coefGeoscape; };

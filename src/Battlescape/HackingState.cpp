@@ -20,10 +20,11 @@
 #include<deque>
 #include "HackingState.h"
 #include "HackingView.h"
-//#include "BattlescapeGame.h"
+#include "BattlescapeGame.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Engine//RNG.h"
 #include "../Engine/Screen.h"
@@ -33,6 +34,7 @@
 //#include "../Savegame/BattleUnit.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
+#include "../Savegame/BattleItem.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 
@@ -121,7 +123,7 @@ void ConsoleTextManager::addMessage(std::string msg)
 		_text.str("");
 		for (auto msgLine : _messageLog)
 		{
-			_text << msgLine << '\n';
+			_text << ">" << msgLine << '\n';
 		}
 		_consoleTxt->setText(_text.str());
 		if (_consoleTxt->getNumLines() > 14)
@@ -206,6 +208,13 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 		Options::baseYResolution = Screen::ORIGINAL_HEIGHT;
 		_game->getScreen()->resetDisplay(false);
 	}
+
+	_tuBaseCost = _game->getMod()->getHackingBaseTuCost();
+	_tuFirewallCost = _game->getMod()->getHackingFirewallBaseTuCost();
+	_hpFirewallCost = _game->getMod()->getHackingFirewallBaseHpCost();
+	_maxTimeUnits = _action->weapon->getRules()->getHackingTU();
+	_maxHealth = _action->weapon->getRules()->getHackingHP();
+
 	_bg = new Surface(320, 200);
 	_hackingView = new HackingView(164, 121, 41, 26, _game);//, _action->actor);
 	
@@ -215,8 +224,8 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	_consoleTxt->setSmall();
 	_consoleTxt->setHighContrast(true);
 	_consoleManager = new ConsoleTextManager(_consoleTxt);
-	_consoleManager->addMessage(">Logging in...");
-	_consoleManager->addMessage(">Success!");
+	_consoleManager->addMessage(tr("STR_HACKING_LOGIN"));
+	_consoleManager->addMessage(tr("STR_HACKING_LOGIN_SUCCESS"));
 
 	_txtTimeUnits = new Text(75, 9, 41, 158);
 	_numTimeUnits = new Text(18, 9, 118, 158);
@@ -237,20 +246,25 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 	setStandardPalette("PAL_BATTLESCAPE");
 
 	add(_bg);
-	add(_hackingView);
-	
-	//add();
-	add(_consoleTxt, "textName", "stats", 0);
-	//add(_exitButton, "buttonExit", "hackingTool", _bg); // TODO: add new interface to rulesets
-	add(_exitButton);
+	add(_hackingView, "viewscreen", "hacking", _bg);
+	add(_consoleTxt, "textConsole", "hacking", _bg);
+	add(_exitButton, "exitButton", "hacking", _bg);
+	add(_txtTimeUnits, "textTUs", "hacking", _bg);
+	add(_numTimeUnits, "numTUs", "hacking", _bg);
+	add(_barTimeUnits, "barTUs", "hacking", _bg);
+	add(_txtHealth, "textHP", "hacking", _bg);
+	add(_numHealth, "numHP", "hacking", _bg);
+	add(_barHealth, "barHP", "hacking", _bg);
 
-	add(_txtTimeUnits);
-	add(_numTimeUnits);
-	add(_barTimeUnits, "barTUs", "stats", 0);
+	_txtTimeUnits->setHighContrast(true);
+	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
+	_numTimeUnits->setHighContrast(true);
+	_barTimeUnits->setScale((static_cast<double>(_barTimeUnits->getWidth()) - 1) / _maxTimeUnits);
 
-	add(_txtHealth);
-	add(_numHealth);
-	add(_barHealth, "barHealth", "stats", 0);
+	_txtHealth->setHighContrast(true);
+	_txtHealth->setText(tr("STR_HEALTH"));
+	_numHealth->setHighContrast(true);
+	_barHealth->setScale((static_cast<double>(_barHealth->getWidth()) - 1) / _maxHealth);
 
 	// Create node grid 
 	for (int row = 0; row < std::size(_nodeArray); ++row)
@@ -259,7 +273,7 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 			_nodeArray[row][col] = new HackingNode(hackingGridStartX + hackingGridWidth * col - hackingNodeOffsetX *(row % 2),
 												hackingGridStartY + hackingGridHeight * row,
 												row, col);
-			add(_nodeArray[row][col]);
+			add(_nodeArray[row][col], "node", "hacking", _hackingView);
 			_nodeArray[row][col]->setVisible(false);
 			_nodeArray[row][col]->onMouseClick((ActionHandler)&HackingState::onNodeClick);
 		}
@@ -286,46 +300,12 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 
 	centerAllSurfaces();
 
-	Surface* backgroundSprite = 0;
-
-	// TODO: see if we need to use something like this:
-	//if (!_item->getRules()->getMediKitCustomBackground().empty())
-	//{
-	//	backgroundSprite = _game->getMod()->getSurface(_item->getRules()->getMediKitCustomBackground(), false);
-	//}
-	if (!backgroundSprite)
-	{
-		backgroundSprite = _game->getMod()->getSurface("HackingUI");
-	}
+	Surface* backgroundSprite = _game->getMod()->getSurface("HackingUI");
 
 	backgroundSprite->blitNShade(_bg, 0, 0);
 
 	_exitButton->onMouseClick((ActionHandler)&HackingState::onExitClick);
 	_exitButton->onKeyboardPress((ActionHandler)&HackingState::onExitClick, Options::keyCancel);
-
-
-	// TODO: change interface in rulesets?
-	Uint8 color = _game->getMod()->getInterface("stats")->getElement("text")->color;
-	Uint8 color2 = _game->getMod()->getInterface("stats")->getElement("text")->color2;
-	
-
-	_txtTimeUnits->setColor(color);
-	_txtTimeUnits->setHighContrast(true);
-	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
-
-	_numTimeUnits->setColor(color2);
-	_numTimeUnits->setHighContrast(true);
-
-	_barTimeUnits->setScale((static_cast<double>(_barTimeUnits->getWidth()) - 1) / _maxTimeUnits);
-
-	_txtHealth->setColor(color);
-	_txtHealth->setHighContrast(true);
-	_txtHealth->setText(tr("STR_HEALTH"));
-
-	_numHealth->setColor(color2);
-	_numHealth->setHighContrast(true);
-
-	_barHealth->setScale((static_cast<double>(_barHealth->getWidth()) - 1) / _maxHealth);
 
 	// Set up animation
 	_timerAnimate = new Timer(125);
@@ -349,7 +329,7 @@ void HackingState::init()
 
 	_timeUnits = _maxTimeUnits;
 	_barTimeUnits->setMax(_maxTimeUnits);
-	
+
 	_health = _maxHealth;
 	_barHealth->setMax(_maxHealth);
 
@@ -417,68 +397,73 @@ void HackingState::onNodeClick(Action* action)
 	HackingNode* node = dynamic_cast<HackingNode*>(action->getSender());
 	if (!node) { return; }
 
+	if (_health <= 0) { return; }
+
 	switch (node->getState())
 	{
 	case NodeState::TARGET:
 	{
-		if (_timeUnits >= 20)
+		if (_timeUnits >= _tuBaseCost)
 		{
+			// TODO: Add hacking success logic
 			onExitClick(0);
 		}
 		else
 		{
-			//_consoleTxt->setText(">Not enough time units!");
-			_consoleManager->addMessage(">Not enough time units!");
+			_consoleManager->addMessage(tr("STR_HACKING_NOT_ENOUGH_TU"));
 		}
 		break;
 	}
 	case NodeState::DISABLED:
 	{
-		// TODO: remove magic numbers
-		if (_timeUnits >= 20)
+		if (_timeUnits >= _tuBaseCost)
 		{
-			_timeUnits -= 20;
+			_timeUnits -= _tuBaseCost;
 			node->setState(NodeState::ACTIVATED);
+			_consoleManager->addMessage(tr("STR_HACKING_PROCEED"));
 			showNeighbours(node);
 			addLinks(node);
-			_consoleManager->addMessage(">Proceeding");
-			//_consoleTxt->setText(">Proceeding");
 		}
 		else
 		{
-			//_consoleTxt->setText(">Not enough time units!");
-			_consoleManager->addMessage(">Not enough time units!");
+			_consoleManager->addMessage(tr("STR_HACKING_NOT_ENOUGH_TU"));
 		}
 		break;
 	}
 	case NodeState::LOCKED:
 	{
-		// TODO: remove magic numbers
-		if (_timeUnits >= 30 && _health >= 10)
+		if (_timeUnits >= _tuFirewallCost) 
 		{
-			_timeUnits -= 30;
-			_health -= 10;
-			node->setState(NodeState::ACTIVATED);
-			showNeighbours(node);
-			addLinks(node);
-			_consoleManager->addMessage(">Breaking firewall");
-			//_consoleTxt->setText(">Breaking in...");
+			_timeUnits -= _tuFirewallCost;
+			_health -= _hpFirewallCost;
+			if (_health > 0)
+			{
+				node->setState(NodeState::ACTIVATED);
+				_consoleManager->addMessage(tr("STR_HACKING_FIREWALL_BREACHED"));
+				// Show the entire firewall once it's been breached
+				_nodeArray[node->getGridRow() - 2][node->getGridCol()]->setVisible(true);
+				_nodeArray[node->getGridRow() + 2][node->getGridCol()]->setVisible(true);
+				showNeighbours(node);
+				addLinks(node);
+			}
+			else
+			{
+				_health = 0;
+				_consoleManager->addMessage(tr("STR_HACKING_VIRUS_TERMINATED"));
+			}
 		}
 		else
 		{
-			if (_timeUnits < 30)
-				//_consoleTxt->setText(">Not enough time units");
-				_consoleManager->addMessage(">Not enough time units!");
-			if (_health < 10)
-				//_consoleTxt->setText(">Not enough health");
-				_consoleManager->addMessage(">Not enough health!");
+			if (_timeUnits < _tuFirewallCost)
+			{
+				_consoleManager->addMessage(tr("STR_HACKING_NOT_ENOUGH_TU"));
+			}
 		}
 		break;
 	}
 	case NodeState::IMPENETRABLE:
 	{
-		//_consoleTxt->setText(">Can't proceed!");
-		_consoleManager->addMessage(">Can't proceed through this node!");
+		_consoleManager->addMessage(tr("STR_HACKING_NODE_IMPENETRABLE"));
 		break;
 	}
 	case NodeState::ACTIVATED:
@@ -510,17 +495,19 @@ void HackingState::showNeighbours(HackingNode* node)
 			// show the node to the upper/lower left
 			if (Col >= 0)
 			{
-				if (_nodeArray[currRow][Col])
+				if (_nodeArray[currRow][Col] && !_nodeArray[currRow][Col]->getVisible())
 				{
 					_nodeArray[currRow][Col]->setVisible(true);
+					notifyState(_nodeArray[currRow][Col]);
 				}
 			}
 			// show the node to the upper/lower right
 			if (Col < maxCol)
 			{
-				if (_nodeArray[currRow][Col + 1])
+				if (_nodeArray[currRow][Col + 1] && !_nodeArray[currRow][Col + 1]->getVisible())
 				{
 					_nodeArray[currRow][Col + 1]->setVisible(true);
+					notifyState(_nodeArray[currRow][Col + 1]);
 				}
 			}
 		}
@@ -528,6 +515,34 @@ void HackingState::showNeighbours(HackingNode* node)
 	}
 }
 
+/**
+ * Logs to the console if the node has special properties.
+ * @param node Pointer to the current node.
+ */
+void HackingState::notifyState(HackingNode* node)
+{
+//	if (node->getVisible()) { return; } // we have already uncovered the node
+	switch (node->getState())
+	{
+	case NodeState::IMPENETRABLE:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_FIREWALL_DETECTED"));
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_FIREWALL_BREACH_DETECTED"));
+		break;
+	}
+	case NodeState::TARGET:
+	{
+		_consoleManager->addMessage(tr("STR_HACKING_OBJECTIVE_DETECTED"));
+		break;
+	}
+	default:
+		break;
+	}
+}
 /**
  * Adds links from the current node to the surrounding activated nodes.
  * @param node Pointer to the current node.
