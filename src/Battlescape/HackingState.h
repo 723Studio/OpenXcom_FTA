@@ -22,6 +22,7 @@
 namespace OpenXcom
 {
 
+
 class InteractiveSurface;
 class HackingView;
 class Text;
@@ -33,6 +34,9 @@ class BattleUnit;
 struct BattleAction;
 class HackingNode;
 class ConsoleTextManager;
+
+typedef void (State::* LogHandler)(HackingNode*);
+
 /**
  * The Hacking Tool User Interface. Hacking tool is an item for hacking stationary computers and enemy drones.
  */
@@ -50,9 +54,9 @@ class HackingState : public State
 	BattleAction *_action;
 	Timer* _timerAnimate;
 	//TileEngine* _tileEngine;
-	HackingNode* _nodeArray[13][5] { };
+	
 	ConsoleTextManager* _consoleManager;
-	int _timeUnits, _maxTimeUnits, _health, _maxHealth; // temporary debug fields (change later for battle item stats)
+	int _timeUnits{ 0 }, _maxTimeUnits{ 0 }, _health{ 0 }, _maxHealth{ 0 };
 	int _tuBaseCost, _tuFirewallCost, _hpFirewallCost;
 
 
@@ -64,11 +68,11 @@ class HackingState : public State
 	//void onButtonClick(Action* action);
 	void onNodeClick(Action* action);
 	///  Shows nodes that are linked to the current node.
-	void showNeighbours(HackingNode* node);
+	void revealNeighbours(HackingNode* node);
 	/// Log to the console if the node has special properties
 	void notifyState(HackingNode* node);
 	/// Adds links from the current node to the surrounding activated nodes
-	void addLinks(HackingNode* node);
+//	void addLinks(HackingNode* node);
 	/// Updates the hacking tool interface.
 	void update();
 	/// Handles Minigame animation.

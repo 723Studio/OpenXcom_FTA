@@ -22,32 +22,86 @@
 namespace OpenXcom
 {
 // Classes forward declarations
-class BattleUnit;
-class HackingNode;
-struct Point;
-/**
- * Displays a view of hacking minigame.
- */
-class HackingView : public InteractiveSurface
-{
-	Game* _game;
-	std::vector<std::pair<Point, Point>> _linkArray{};
 
-	/// Handle clicking
-	void mouseClick(Action* action, State* state) override;
-	BattleUnit* _unit = nullptr;  // we may need it or we may not
-	int _frame;
-	int _x{ 10 }, _y{ 50 };
+struct Point;
+
+enum class NodeState
+{
+	DISABLED,
+	ACTIVATED,
+	LOCKED,
+	IMPENETRABLE,
+	TARGET
+};
+
+enum class NodeColor
+{
+	GRAY = 7,
+	RED = 40,
+	GREEN = 54,
+	YELLOW = 21,
+	BLUE = 215
+};
+
+/**
+ * Class that represents a clickable Node that is drawn on the Hacking view.
+ * It can have one of 5 states described in NodeState and has a corresponding color
+ * defined in NodeColor
+ */
+class HackingNode : public InteractiveSurface
+{
+	static const int _nodeBlob[7][6];
+	Uint8 _color = (Uint8)NodeColor::GRAY;
+	int _gridRow, _gridCol, _frame;
+	NodeState _nodeState{ NodeState::DISABLED };
 
 public:
-	/// Create the HackingView
-	//HackingView(int w, int h, int x, int y, Game* game, BattleUnit* unit);
-	HackingView(int w, int h, int x, int y, Game* game);
-	~HackingView();
-	/// Draw the scanner view
+	HackingNode(Sint16 x, Sint16 y, int gridX, int gridY) : InteractiveSurface(6, 7, x, y), _gridRow(gridX), _gridCol(gridY), _frame(0)
+	{
+		_redraw = true;
+	};
 	void draw() override;
-	void drawGrid();
 	void animate();
-	void addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2);
+	int getColor() const { return _color; }
+	int getGridRow() const { return _gridRow; }
+	int getGridCol() const { return _gridCol; }
+	NodeState getState() const { return _nodeState; }
+	void setState(NodeState state) { _nodeState = state; }
 };
+
+/**
+ * Displays a view of hacking minigame. Contains a field where hacking nodes are placed in a grid pattern
+ * and an array of animated lines that connect the nodes once they have been activated.
+ * Class is responsible for drawing the hacking node grid and updating it according to player actions that are handled by HackingState
+ */
+class HackingView : public Surface
+{
+	std::vector<std::pair<Point, Point>> _linkArray{};
+	HackingNode* _nodeArray[13][5]{ };
+	int _frame;
+
+	/// Add a line on the field connecting two points
+	void addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2);
+	/// Add lines from the current node to its neigbours that has already been activated
+	void addLinks(HackingNode* node);
+public:
+	/// Create the HackingView
+	HackingView(int w, int h, int x, int y);
+	~HackingView();
+	/// Generate the starting state of the hacking grid
+	void initField();
+	/// Draw the Hacking view
+	void draw() override;
+	/// Update the animation of the hacking view elements
+	void animate();
+	/// Set the node to active state and update its links
+	void activateNode(HackingNode* node);
+	/// Reveal the entire firewall structure after its weak point has been breached
+	void revealFirewall(HackingNode* node);
+	int getGridHeight() const { return std::size(_nodeArray); }
+	int getGridWidth() const { return std::size(_nodeArray[0]); }
+	HackingNode* const getNode(int row, int col) const { return _nodeArray[row][col]; }
+	
+};
+
 } //namespace

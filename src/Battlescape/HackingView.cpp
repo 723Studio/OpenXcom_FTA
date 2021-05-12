@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 OpenXcom Developers.
+ * Copyright 2010-2021 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
  *
@@ -18,14 +18,8 @@
  */
 
 #include "HackingView.h"
-#include "../Engine/Game.h"
-//#include "../Mod/Mod.h"
-//#include "../Mod/RuleInterface.h"
-//#include "../Engine/SurfaceSet.h"
-#include "../Engine/Action.h"
-//#include "../Engine/Language.h"
-//#include "../Savegame/BattleUnit.h"
-//#include "../Interface/Text.h"
+#include "HackingState.h"
+#include "../Engine/RNG.h"
 
 namespace OpenXcom
 {
@@ -35,85 +29,153 @@ struct Point
 	Sint16 x, y;
 	Point(Sint16 x, Sint16 y) : x(x), y(y) {}
 };
+
+
+constexpr int hackingGridStartX{ 66 };
+constexpr int hackingGridStartY{ 29 };
+constexpr int hackingNodeOffsetX{ 18 };
+constexpr int hackingGridHeight{ 9 };
+constexpr int hackingGridWidth{ 36 };
+constexpr int gridLineColor{ 50 };
+
+
+
+const int HackingNode::_nodeBlob[7][6] =
+{
+	{0,0,1,1,0,0},
+	{0,1,2,2,1,0},
+	{1,2,3,3,2,1},
+	{1,3,5,5,3,1},
+	{1,2,3,3,2,1},
+	{0,1,2,2,1,0},
+	{0,0,1,1,0,0}
+};
+
+
+void HackingNode::draw()
+{
+	// set the color of the node
+	switch (_nodeState)
+	{
+	case NodeState::ACTIVATED:
+	{
+		_color = (Uint8)NodeColor::GREEN;
+		break;
+	}
+	case NodeState::LOCKED:
+	{
+		_color = (Uint8)NodeColor::RED;
+		break;
+	}
+	case NodeState::IMPENETRABLE:
+	{
+		_color = (Uint8)NodeColor::YELLOW;
+		break;
+	}
+	case NodeState::TARGET:
+	{
+		_color = (Uint8)NodeColor::BLUE;
+		break;
+	}
+	case NodeState::DISABLED:
+	default:
+		_color = (Uint8)NodeColor::GRAY;
+	};
+
+	// draw node blob
+	for (int y = 0; y < 7; ++y)
+	{
+		for (int x = 0; x < 6; ++x)
+		{
+			Uint8 pixelOffset = _nodeBlob[y][x];
+			if (pixelOffset == 0)
+			{
+				continue;
+			}
+			else
+			{
+				Uint8 color = _color - pixelOffset - _frame;
+				setPixel(x, y, color);
+			}
+		}
+	}
+}
+
+void HackingNode::animate()
+{
+	if (_nodeState == NodeState::LOCKED || _nodeState == NodeState::TARGET)
+	{
+		_frame++;
+		if (_frame > 1)
+		{
+			_frame = 0;
+		}
+		_redraw = true;
+	}
+}
+
 /**
  * Initializes the Hacking view.
  * @param w The HackingView width.
  * @param h The HackingView height.
  * @param x The HackingView x origin.
  * @param y The HackingView y origin.
- * @param game Pointer to the core game.
- * @param unit The current unit.
  */
-//HackingView::HackingView(int w, int h, int x, int y, Game* game, BattleUnit* unit) : InteractiveSurface(w, h, x, y), _game(game), _unit(unit), _frame(0)
-HackingView::HackingView(int w, int h, int x, int y, Game* game) : InteractiveSurface(w, h, x, y), _game(game), _frame(0)
+HackingView::HackingView(int w, int h, int x, int y) : Surface(w, h, x, y), _frame(0)
 {
 	_redraw = true;
+
+	// Create node grid 
+	for (int row = 0; row < std::size(_nodeArray); ++row)
+		for (int col = 0; (col < std::size(_nodeArray[row]) - 1 + row % 2); ++col) // 1 less for even row and full length for odd
+		{
+			_nodeArray[row][col] = new HackingNode(hackingGridStartX + hackingGridWidth * col - hackingNodeOffsetX * (row % 2),
+				hackingGridStartY + hackingGridHeight * row,
+				row, col);
+			_nodeArray[row][col]->setVisible(false);
+		}
 }
 
 HackingView::~HackingView()
 {
 }
+
 /**
- * Draws the HackingView view.
+ * Generates the starting state of the Hacking view.
+ * Sets up starting point, objectives and defenses
+ */
+void HackingView::initField()
+{
+	// Set target node 
+	int finishRow = RNG::generate(0, 5) * 2 + 1;
+	_nodeArray[finishRow][4]->setState(NodeState::TARGET);
+
+	// Set up defence
+	for (int col = 1; col <= 3; ++col)
+	{
+		int rndOffset = RNG::generate(0, 3) * 2;
+		_nodeArray[1 + rndOffset][col]->setState(NodeState::IMPENETRABLE);
+		_nodeArray[3 + rndOffset][col]->setState(NodeState::LOCKED);
+		_nodeArray[5 + rndOffset][col]->setState(NodeState::IMPENETRABLE);
+	}
+
+	// Set starting node 
+	int startRow = RNG::generate(0, 1) * 2 + 5;
+	_nodeArray[startRow][0]->setState(NodeState::ACTIVATED);
+	_nodeArray[startRow][0]->setVisible(true);
+	_nodeArray[startRow - 1][0]->setVisible(true);
+	_nodeArray[startRow + 1][0]->setVisible(true);
+}
+
+/**
+ * Draws the links between the nodes on the HackingView. Nodes are drawn separately
  */
 void HackingView::draw()
 {
-	//SurfaceSet* set = _game->getMod()->getSurfaceSet("DETBLOB.DAT");
-	//Surface* surface = 0;
-	//surface = new Surface(5, 5, 0, 0);
-	//HackingNode* node = new HackingNode();
-	
-	//this->lock();
-	// TODO: draw the hacking view
-	//clear();
-	//drawRect(0, 0, this->getWidth(), this->getHeight(), 90);
 	for (auto link : _linkArray)
 	{
-		drawLine(link.first.x, link.first.y, link.second.x, link.second.y, 50 - _frame);
+		drawLine(link.first.x, link.first.y, link.second.x, link.second.y, gridLineColor - _frame);
 	}
-	//surface->drawRect(0,0,5,5,35);
-	//surface->blitNShade(this, _x, _y, 0);
-	//_node->draw();
-	//_node->blitNShade(this, _x-2, _y-3, 0);
-	//this->unlock();
-
-}
-
-void HackingView::drawGrid()
-{
-	
-	
-
-	
-}
-
-/**
- * Handles clicks on the medikit view.
- * @param action Pointer to an action.
- * @param state State that the action handlers belong to.
- */
-void HackingView::mouseClick(Action* action, State* state)
-{
-	// We will need to get a set of nodes here
-	// example:
-	//SurfaceSet* set = _game->getMod()->getSurfaceSet("MEDIBITS.DAT");
-
-	//_x = action->getRelativeXMouse() / action->getXScale();
-	//_y = action->getRelativeYMouse() / action->getYScale();
-
-	
-	// Find what node we clicked on and process action logic
-	// example:
-/*	for (unsigned int i = 0; i < set->getTotalFrames(); i++)
-	{
-		Surface* surface = set->getFrame(i);
-		if (surface->getPixel(x, y))
-		{
-			_selectedPart = i;
-			_redraw = true;
-			break;
-		}
-	}*/
 }
 
 /**
@@ -121,15 +183,29 @@ void HackingView::mouseClick(Action* action, State* state)
  */
 void HackingView::animate()
 {
-	// TODO: rework animation frames if needed
 	_frame++;
 	if (_frame > 2)
 	{
 		_frame = 0;
 	}
 	_redraw = true;
+	for (int row = 0; row < std::size(_nodeArray); ++row)
+		for (int col = 0; (col < std::size(_nodeArray[row])); ++col) 
+		{
+			if (_nodeArray[row][col])
+			{
+				_nodeArray[row][col]->animate();
+			}
+		}
 }
 
+/**
+ * Adds a single line to the array of links that connect centers of the nodes using provided coordinates
+ * @param x1 
+ * @param y1 
+ * @param x2 
+ * @param y2 
+*/
 void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
 {
 	Sint16 xOffset = getX() - 3;
@@ -142,6 +218,65 @@ void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
 	{
 		_linkArray.push_back(std::make_pair(Point(x2 - xOffset, y2 - yOffset), Point(x1 - xOffset, y1 - yOffset)));
 	}
+}
+
+/**
+ * Adds links from the current node to the surrounding activated nodes.
+ * @param node Pointer to the current node.
+ */
+void HackingView::addLinks(HackingNode* node)
+{
+	// Get node position
+	int Row = node->getGridRow();
+	int Col = node->getGridCol();
+	int maxRow = std::size(_nodeArray) - 1;
+	int maxCol = std::size(_nodeArray[0]) - 1;
+	Col -= Row % 2; // adjust column position if we are on an odd row
+
+	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	{
+		if (currRow >= 0)
+		{
+			// check and link the node to the upper/lower left
+			if (Col >= 0)
+			{
+				if (_nodeArray[currRow][Col] && _nodeArray[currRow][Col]->getState() == NodeState::ACTIVATED)
+				{
+					addLink(node->getX(), node->getY(), _nodeArray[currRow][Col]->getX(), _nodeArray[currRow][Col]->getY());
+				}
+			}
+			// check and link the node to the upper/lower right
+			if (Col < maxCol)
+			{
+				if (_nodeArray[currRow][Col + 1] && _nodeArray[currRow][Col + 1]->getState() == NodeState::ACTIVATED)
+				{
+					addLink(node->getX(), node->getY(), _nodeArray[currRow][Col + 1]->getX(), _nodeArray[currRow][Col + 1]->getY());
+				}
+			}
+		}
+		currRow += 2;
+	}
+}
+
+/**
+ * Activates the current node and connects it to the surrounding activated nodes with animated lines
+ * @param node Current node
+*/
+void HackingView::activateNode(HackingNode* node)
+{
+	node->setState(NodeState::ACTIVATED);
+	addLinks(node);
+}
+
+/**
+ * Sets visible one node above and one below the current node.
+ * Must only be used on the firewall center to show the whole firewall once it's been breached
+ * @param node Current node
+*/
+void HackingView::revealFirewall(HackingNode* node)
+{
+	_nodeArray[node->getGridRow() - 2][node->getGridCol()]->setVisible(true);
+	_nodeArray[node->getGridRow() + 2][node->getGridCol()]->setVisible(true);
 }
 
 } // namespace
