@@ -154,8 +154,9 @@ class ConsoleTextManager
 {
 	std::deque<std::string> _messageLog { };
 	Text* _consoleTxt;
+	int _maxNumLines;
 public:
-	ConsoleTextManager(Text* txtField) : _consoleTxt(txtField) {};
+	ConsoleTextManager(Text* txtField, int numLines = 14) : _consoleTxt(txtField), _maxNumLines(numLines) {};
 	void addMessage(std::string msg);
 };
 void ConsoleTextManager::addMessage(std::string msg)
@@ -170,11 +171,11 @@ void ConsoleTextManager::addMessage(std::string msg)
 			_text << ">" << msgLine << '\n';
 		}
 		_consoleTxt->setText(_text.str());
-		if (_consoleTxt->getNumLines() > 14)
+		if (_consoleTxt->getNumLines() > _maxNumLines)
 		{
 			_messageLog.pop_front();
 		}
-	} while (_consoleTxt->getNumLines() > 14);	
+	} while (_consoleTxt->getNumLines() > _maxNumLines);
 }
 
 /**
@@ -188,55 +189,6 @@ std::string toString(type t)
 	std::ostringstream ss;
 	ss << t;
 	return ss.str();
-}
-
-void HackingNode::draw()
-{
-	// set the color of the node
-	switch (_nodeState)
-	{
-	case NodeState::ACTIVATED:
-	{
-		_color = (Uint8)NodeColor::GREEN;
-		break;
-	}
-	case NodeState::LOCKED:
-	{
-		_color = (Uint8)NodeColor::RED;
-		break;
-	}
-	case NodeState::IMPENETRABLE:
-	{
-		_color = (Uint8)NodeColor::YELLOW;
-		break;
-	}
-	case NodeState::TARGET:
-	{
-		_color = (Uint8)NodeColor::BLUE;
-		break;
-	}
-	case NodeState::DISABLED:
-	default:
-		_color = (Uint8)NodeColor::GRAY;
-	};
-	
-	// draw node blob
-	for (int y = 0; y < 7; ++y)
-	{
-		for (int x = 0; x < 6; ++x)
-		{
-			Uint8 pixelOffset = _nodeBlob[y][x];
-			if (pixelOffset == 0)
-			{
-				continue;
-			}
-			else
-			{
-				Uint8 color = _color - pixelOffset;
-				setPixel(x, y, color);
-			}
-		}
-	}
 }
 
 /**
@@ -257,6 +209,7 @@ HackingState::HackingState(BattleAction* action, Tile* targetTile, TileEngine* t
 	_targetUnit = _targetTile->getUnit();
 	_targetObject = _targetTile->getBattleObject();
 
+	_targetUnit = nullptr; // TODO: change to actual target
 	_tuBaseCost = _game->getMod()->getHackingBaseTuCost();
 	_tuFirewallCost = _game->getMod()->getHackingFirewallBaseTuCost();
 	_hpFirewallCost = _game->getMod()->getHackingFirewallBaseHpCost();
@@ -583,35 +536,38 @@ void HackingState::notifyState(HackingNode* node)
  * Shows nodes that are linked to the current node.
  * @param node Pointer to the current node.
  */
-void HackingState::showNeighbours(HackingNode* node)
+void HackingState::revealNeighbours(HackingNode* node)
 {
 	// Get node position
-	int Row = node->getGridRow();
-	int Col = node->getGridCol();
-	int maxRow = std::size(_nodeArray) - 1;
-	int maxCol = std::size(_nodeArray[0]) - 1;
-	Col -= Row % 2; // adjust column position if we are on an odd row
+	int row = node->getGridRow();
+	int col = node->getGridCol();
+	// Get node grid boundaries
+	int maxRow = _hackingView->getWidth() - 1;
+	int maxCol = _hackingView->getHeight() - 1;
+	col -= row % 2; // adjust column position if we are on an odd row
 
-	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	for (int currRow = row - 1; currRow <= row + 1 && currRow <= maxRow;)
 	{
 		if (currRow >= 0)
 		{
 			// show the node to the upper/lower left
-			if (Col >= 0)
+			if (col >= 0)
 			{
-				if (_nodeArray[currRow][Col] && !_nodeArray[currRow][Col]->getVisible())
+				HackingNode* node = _hackingView->getNode(currRow, col);
+				if (node && !node->getVisible())
 				{
-					_nodeArray[currRow][Col]->setVisible(true);
-					notifyState(_nodeArray[currRow][Col]);
+					node->setVisible(true);
+					notifyState(node);
 				}
 			}
 			// show the node to the upper/lower right
-			if (Col < maxCol)
+			if (col < maxCol)
 			{
-				if (_nodeArray[currRow][Col + 1] && !_nodeArray[currRow][Col + 1]->getVisible())
+				HackingNode* node = _hackingView->getNode(currRow, col + 1);
+				if (node && !node->getVisible())
 				{
-					_nodeArray[currRow][Col + 1]->setVisible(true);
-					notifyState(_nodeArray[currRow][Col + 1]);
+					node->setVisible(true);
+					notifyState(node);
 				}
 			}
 		}
@@ -625,7 +581,6 @@ void HackingState::showNeighbours(HackingNode* node)
  */
 void HackingState::notifyState(HackingNode* node)
 {
-//	if (node->getVisible()) { return; } // we have already uncovered the node
 	switch (node->getState())
 	{
 	case NodeState::IMPENETRABLE:
@@ -645,44 +600,6 @@ void HackingState::notifyState(HackingNode* node)
 	}
 	default:
 		break;
-	}
-}
-/**
- * Adds links from the current node to the surrounding activated nodes.
- * @param node Pointer to the current node.
- */
-void HackingState::addLinks(HackingNode* node)
-{
-	// Get node position
-	int Row = node->getGridRow();
-	int Col = node->getGridCol();
-	int maxRow = std::size(_nodeArray) - 1;
-	int maxCol = std::size(_nodeArray[0]) - 1;
-	Col -= Row % 2; // adjust column position if we are on an odd row
-
-	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
-	{
-		if (currRow >= 0)
-		{
-			// check and link the node to the upper/lower left
-			if (Col >= 0)
-			{
-				if (_nodeArray[currRow][Col] && _nodeArray[currRow][Col]->getState() == NodeState::ACTIVATED)
-				{
-					_hackingView->addLink(node->getX(), node->getY(), _nodeArray[currRow][Col]->getX(), _nodeArray[currRow][Col]->getY());
-				}
-			}
-			// check and link the node to the upper/lower right
-			if (Col < maxCol)
-			{
-				if (_nodeArray[currRow][Col + 1] && _nodeArray[currRow][Col + 1]->getState() == NodeState::ACTIVATED)
-				{
-					_hackingView->addLink(node->getX(), node->getY(), _nodeArray[currRow][Col + 1]->getX(), _nodeArray[currRow][Col + 1]->getY());
-					
-				}
-			}
-		}
-		currRow += 2;
 	}
 }
 

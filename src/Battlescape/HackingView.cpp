@@ -117,6 +117,7 @@ void HackingNode::animate()
 HackingView::~HackingView()
 {
 }
+
 /**
  * Initializes the Hacking view.
  * @param w The HackingView width.
@@ -282,6 +283,13 @@ void HackingView::revealFirewall(HackingNode* node)
 	_nodeArray[node->getGridRow() + 2][node->getGridCol()]->setVisible(true);
 }
 
+/**
+ * Adds a single line to the array of links that connect centers of the nodes using provided coordinates
+ * @param x1 
+ * @param y1 
+ * @param x2 
+ * @param y2 
+*/
 void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
 {
 	Sint16 xOffset = getX() - 3;
@@ -294,6 +302,65 @@ void HackingView::addLink(Sint16 x1, Sint16 y1, Sint16 x2, Sint16 y2)
 	{
 		_linkArray.push_back(std::make_pair(Point(x2 - xOffset, y2 - yOffset), Point(x1 - xOffset, y1 - yOffset)));
 	}
+}
+
+/**
+ * Adds links from the current node to the surrounding activated nodes.
+ * @param node Pointer to the current node.
+ */
+void HackingView::addLinks(HackingNode* node)
+{
+	// Get node position
+	int Row = node->getGridRow();
+	int Col = node->getGridCol();
+	int maxRow = std::size(_nodeArray) - 1;
+	int maxCol = std::size(_nodeArray[0]) - 1;
+	Col -= Row % 2; // adjust column position if we are on an odd row
+
+	for (int currRow = Row - 1; currRow <= Row + 1 && currRow <= maxRow;)
+	{
+		if (currRow >= 0)
+		{
+			// check and link the node to the upper/lower left
+			if (Col >= 0)
+			{
+				if (_nodeArray[currRow][Col] && _nodeArray[currRow][Col]->getState() == NodeState::ACTIVATED)
+				{
+					addLink(node->getX(), node->getY(), _nodeArray[currRow][Col]->getX(), _nodeArray[currRow][Col]->getY());
+				}
+			}
+			// check and link the node to the upper/lower right
+			if (Col < maxCol)
+			{
+				if (_nodeArray[currRow][Col + 1] && _nodeArray[currRow][Col + 1]->getState() == NodeState::ACTIVATED)
+				{
+					addLink(node->getX(), node->getY(), _nodeArray[currRow][Col + 1]->getX(), _nodeArray[currRow][Col + 1]->getY());
+				}
+			}
+		}
+		currRow += 2;
+	}
+}
+
+/**
+ * Activates the current node and connects it to the surrounding activated nodes with animated lines
+ * @param node Current node
+*/
+void HackingView::activateNode(HackingNode* node)
+{
+	node->setState(NodeState::ACTIVATED);
+	addLinks(node);
+}
+
+/**
+ * Sets visible one node above and one below the current node.
+ * Must only be used on the firewall center to show the whole firewall once it's been breached
+ * @param node Current node
+*/
+void HackingView::revealFirewall(HackingNode* node)
+{
+	_nodeArray[node->getGridRow() - 2][node->getGridCol()]->setVisible(true);
+	_nodeArray[node->getGridRow() + 2][node->getGridCol()]->setVisible(true);
 }
 
 } // namespace
