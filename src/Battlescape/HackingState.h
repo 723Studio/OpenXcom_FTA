@@ -28,7 +28,7 @@ class HackingView;
 class Text;
 class Bar;
 class Timer;
-//class BattleItem;
+class BattleItem;
 class BattleUnit;
 class BattleObject;
 class Tile;

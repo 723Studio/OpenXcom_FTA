@@ -209,7 +209,6 @@ HackingState::HackingState(BattleAction* action, Tile* targetTile, TileEngine* t
 	_targetUnit = _targetTile->getUnit();
 	_targetObject = _targetTile->getBattleObject();
 
-	_targetUnit = nullptr; // TODO: change to actual target
 	_tuBaseCost = _game->getMod()->getHackingBaseTuCost();
 	_tuFirewallCost = _game->getMod()->getHackingFirewallBaseTuCost();
 	_hpFirewallCost = _game->getMod()->getHackingFirewallBaseHpCost();

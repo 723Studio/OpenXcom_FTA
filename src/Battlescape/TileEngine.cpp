@@ -4376,6 +4376,43 @@ bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim, int 
 	return meleeAttackCalculate(attack, victim) > 0;
 }
 
+bool TileEngine::hackAttack(BattleAction& action, BattleUnit* target)
+{
+	if (!target)
+		return false;
+
+	// TODO: Add XP training
+
+	// Award MC battle unit kill
+	BattleUnitKills killStat;
+	killStat.setUnitStats(target);
+	killStat.setTurn(_save->getTurn(), _save->getSide());
+	killStat.weapon = action.weapon->getRules()->getName();
+	killStat.weaponAmmo = action.weapon->getRules()->getName(); //Hacking weapons got no ammo, just filling up the field
+	killStat.faction = target->getOriginalFaction();
+	killStat.mission = _save->getGeoscapeSave()->getMissionStatistics()->size();
+	killStat.id = target->getId();
+	if (!action.actor->getStatistics()->duplicateEntry(STATUS_TURNING, target->getId()))
+	{
+		killStat.status = STATUS_TURNING;
+		action.actor->getStatistics()->kills.push_back(new BattleUnitKills(killStat));
+	}
+	target->setMindControllerId(action.actor->getId());
+	target->convertToFaction(action.actor->getFaction());
+	calculateLighting(LL_UNITS, target->getPosition());
+	calculateFOV(target->getPosition()); //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+	target->recoverTimeUnits();
+	target->allowReselect();
+	target->abortTurn(); // resets unit status to STANDING
+
+	// if all units from either faction are mind controlled - auto-end the mission.
+	if (_save->getSide() == FACTION_PLAYER && Options::allowPsionicCapture)
+	{
+		_save->getBattleGame()->autoEndBattle();
+	}
+	return true;
+}
+
 /**
  *  Attempts a hacking attack action.
  * @param action Pointer to an action.
