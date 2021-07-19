@@ -66,6 +66,7 @@
 #include "ConfirmEndMissionState.h"
 #include "../fmath.h"
 
+#include "HackingBState.h"
 namespace OpenXcom
 {
 
@@ -1927,6 +1928,44 @@ void BattlescapeGame::primaryAction(Position pos)
 						_parentState->getGame()->getCursor()->setVisible(false);
 						_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
 						statePushBack(new PsiAttackBState(this, _currentAction));
+					}
+					else
+					{
+						_parentState->warning("STR_LINE_OF_SIGHT_REQUIRED");
+					}
+				}
+			}
+		}
+		else if (_currentAction.type == BA_USE && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->getIsFTAGame())
+		{
+			auto targetUnit = _save->selectUnit(pos);
+			if (targetUnit && targetUnit->getVisible())
+			{
+				auto targetFaction = targetUnit->getFaction();
+				bool hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
+				if (_currentAction.type == BA_USE && targetFaction == FACTION_PLAYER)
+				{
+					// no hacking allies
+					hackTargetAllowed = false;
+				}
+				else if (_currentAction.type == BA_USE && targetUnit->getUnitRules() && !targetUnit->getUnitRules()->canBeMindControlled()) // TODO: update canBeMindControlled to canBeHacked
+				{
+					hackTargetAllowed = false;
+				}
+				if (hackTargetAllowed)
+				{
+					_currentAction.updateTU();
+					_currentAction.target = pos;
+					if (!_currentAction.weapon->getRules()->isLOSRequired() ||
+						(_currentAction.actor->getFaction() == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
+						std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
+					{
+						// get the sound/animation started
+						getMap()->setCursorType(CT_NORMAL);
+						//_parentState->getGame()->getCursor()->setVisible(false);
+						_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
+						statePushBack(new HackingBState(this, _currentAction, _parentState->getGame()));
+
 					}
 					else
 					{

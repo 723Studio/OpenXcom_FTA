@@ -462,17 +462,31 @@ void ActionMenuState::handleAction()
 		}
 		else if (_action->type == BA_USE && weapon->getBattleType() == BT_HACKING)
 		{
-		// spend TUs first, then show the interface
-		// TODO: Use Medikit as reference for interacting with computer consoles on the battlescape
-		if (_action->spendTU(&_action->result))
-		{
+			// OLD VERSION OF USE HACKING DEVICE
+			//// spend TUs first, then show the interface
+			//// TODO: Use Medikit as reference for interacting with computer consoles on the battlescape
+			//if (_action->spendTU(&_action->result))
+			//{
+			//	_game->popState();
+			//	_game->pushState(new HackingState(_action));
+			//}
+			//else
+			//{
+			//	_game->popState();
+			//}
+			
+			// NEW VERSION
+			// check beforehand if we have enough time units
+			if (!_action->haveTU(&_action->result))
+			{
+				//nothing
+			}
+			else
+			{
+				_action->targeting = true;
+				newHitLog = true;
+			}
 			_game->popState();
-			_game->pushState(new HackingState(_action));
-		}
-		else
-		{
-			_game->popState();
-		}
 		}
 		else if (_action->type == BA_LAUNCH)
 		{

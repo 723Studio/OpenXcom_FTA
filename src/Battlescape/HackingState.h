@@ -28,9 +28,9 @@ class HackingView;
 class Text;
 class Bar;
 class Timer;
-//class BattleItem;
+class BattleItem;
 class BattleUnit;
-//class TileEngine;
+class TileEngine;
 struct BattleAction;
 class HackingNode;
 class ConsoleTextManager;
@@ -49,11 +49,11 @@ class HackingState : public State
 	Text* _numTimeUnits, * _numHealth;
 	Bar* _barTimeUnits, * _barHealth;
 	InteractiveSurface* _exitButton;
-	BattleUnit* _targetUnit; // we will need it for drone hacking
+	BattleUnit* _targetUnit; 
 //	BattleItem* _item; // we may need it later
-	BattleAction *_action;
+	BattleAction* _action;
 	Timer* _timerAnimate;
-	//TileEngine* _tileEngine;
+	TileEngine* _tileEngine;
 	
 	ConsoleTextManager* _consoleManager;
 	int _timeUnits{ 0 }, _maxTimeUnits{ 0 }, _health{ 0 }, _maxHealth{ 0 };
@@ -64,22 +64,19 @@ class HackingState : public State
 	void init() override;
 	/// Handler for the exit button.
 	void onExitClick(Action* action);
-	/// Handler for the  button.
-	//void onButtonClick(Action* action);
+	/// Handler for the node click.
 	void onNodeClick(Action* action);
 	///  Shows nodes that are linked to the current node.
 	void revealNeighbours(HackingNode* node);
 	/// Log to the console if the node has special properties
 	void notifyState(HackingNode* node);
-	/// Adds links from the current node to the surrounding activated nodes
-//	void addLinks(HackingNode* node);
 	/// Updates the hacking tool interface.
 	void update();
 	/// Handles Minigame animation.
 	void animate();
 public:
 	/// Creates the HackingState.
-	HackingState(BattleAction* action);//BattleUnit* targetUnit, BattleAction* action, TileEngine* tile);
+	HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine);
 	~HackingState();
 	/// Handler for right-clicking anything.
 	void handle(Action* action) override;

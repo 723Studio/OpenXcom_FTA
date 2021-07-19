@@ -465,6 +465,7 @@
     <ClCompile Include="Geoscape\UfoLostState.cpp" />
     <ClCompile Include="Geoscape\UfoTrackerState.cpp" />
     <ClCompile Include="Battlescape\HackingView.cpp" />
+    <ClCompile Include="Battlescape\HackingBState.cpp" />
     <ClCompile Include="Interface\ArrowButton.cpp" />
     <ClCompile Include="Interface\Bar.cpp" />
     <ClCompile Include="Interface\BattlescapeButton.cpp" />
@@ -906,6 +907,7 @@
     <ClInclude Include="Geoscape\UfoLostState.h" />
     <ClInclude Include="Geoscape\UfoTrackerState.h" />
     <ClInclude Include="Battlescape\HackingView.h" />
+    <ClInclude Include="Battlescape\HackingBState.h" />
     <ClInclude Include="Interface\ArrowButton.h" />
     <ClInclude Include="Interface\Bar.h" />
     <ClInclude Include="Interface\BattlescapeButton.h" />

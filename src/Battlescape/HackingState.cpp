@@ -20,7 +20,8 @@
 #include<deque>
 #include "HackingState.h"
 #include "HackingView.h"
-#include "BattlescapeGame.h"
+//#include "BattlescapeGame.h"
+#include "TileEngine.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/InteractiveSurface.h"
@@ -30,7 +31,8 @@
 #include "../Engine/Timer.h"
 #include "../Interface/Bar.h"
 #include "../Interface/Text.h"
-//#include "../Savegame/BattleUnit.h"
+#include "../Savegame/BattleUnit.h"
+#include "../Savegame/BattleUnitStatistics.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "../Savegame/BattleItem.h"
@@ -86,10 +88,11 @@ std::string toString(type t)
 
 /**
  * Initializes the Hacking State.
- * @param game Pointer to the core game.
  * @param action Pointer to an action.
+ * @param targetUnit Pointer to a target unit
+ * @param tileEngine Pointer to a TileEngine
  */
-HackingState::HackingState(BattleAction* action) : _action(action)
+HackingState::HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine) : _action(action), _targetUnit(targetUnit), _tileEngine(tileEngine)
 {
 	if (Options::maximizeInfoScreens)
 	{
@@ -98,7 +101,6 @@ HackingState::HackingState(BattleAction* action) : _action(action)
 		_game->getScreen()->resetDisplay(false);
 	}
 
-	_targetUnit = nullptr; // TODO: change to actual target
 	_tuBaseCost = _game->getMod()->getHackingBaseTuCost();
 	_tuFirewallCost = _game->getMod()->getHackingFirewallBaseTuCost();
 	_hpFirewallCost = _game->getMod()->getHackingFirewallBaseHpCost();
@@ -278,7 +280,7 @@ void HackingState::onNodeClick(Action* action)
 	{
 		if (_timeUnits >= _tuBaseCost)
 		{
-			// TODO: Add hacking success logic
+			_tileEngine->hackAttack(*_action, _targetUnit);
 			onExitClick(0);
 		}
 		else
@@ -353,8 +355,8 @@ void HackingState::revealNeighbours(HackingNode* node)
 	int row = node->getGridRow();
 	int col = node->getGridCol();
 	// Get node grid boundaries
-	int maxRow = _hackingView->getWidth() - 1;
-	int maxCol = _hackingView->getHeight() - 1;
+	int maxRow = _hackingView->getGridHeight() - 1;
+	int maxCol = _hackingView->getGridWidth() - 1;
 	col -= row % 2; // adjust column position if we are on an odd row
 
 	for (int currRow = row - 1; currRow <= row + 1 && currRow <= maxRow;)
