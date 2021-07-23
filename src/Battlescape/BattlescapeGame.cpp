@@ -1948,9 +1948,10 @@ void BattlescapeGame::primaryAction(Position pos)
 					// no hacking allies
 					hackTargetAllowed = false;
 				}
-				else if (_currentAction.type == BA_USE && targetUnit->getUnitRules() && !targetUnit->getUnitRules()->canBeMindControlled()) // TODO: update canBeMindControlled to canBeHacked
+				else if (_currentAction.type == BA_USE && !targetUnit->canBeHacked()) 
 				{
 					hackTargetAllowed = false;
+					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
 				if (hackTargetAllowed)
 				{

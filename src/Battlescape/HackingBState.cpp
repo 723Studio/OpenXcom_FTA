@@ -63,7 +63,7 @@ namespace OpenXcom
 
 		_item = _action.weapon;
 
-		if (!_item) // can't make a psi attack without a weapon
+		if (!_item) // can't do hacking without a hacking device
 		{
 			_parent->popState();
 			return;

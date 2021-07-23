@@ -72,7 +72,8 @@ Armor::Armor(const std::string &type) :
 	_overKill(0.5f), _meleeDodgeBackPenalty(0),
 	_allowsRunning(defTriBool), _allowsStrafing(defTriBool), _allowsSneaking(defTriBool), _allowsKneeling(defTriBool), _allowsMoving(1),
 	_isPilotArmor(false), _allowTwoMainWeapons(false), _instantWoundRecovery(false),
-	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1)
+	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1),
+	_hackingDefense(0)
 {
 	for (int i=0; i < DAMAGE_TYPES; i++)
 		_damageModifier[i] = 1.0f;
@@ -266,6 +267,8 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	_standHeight = node["standHeight"].as<int>(_standHeight);
 	_kneelHeight = node["kneelHeight"].as<int>(_kneelHeight);
 	_floatHeight = node["floatHeight"].as<int>(_floatHeight);
+
+	_hackingDefense = node["hackingDefense"].as<int>(_hackingDefense);
 }
 
 /**

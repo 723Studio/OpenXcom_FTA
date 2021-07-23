@@ -166,6 +166,7 @@ private:
 	bool _instantWoundRecovery;
 	bool _isAlwaysVisible = false;
 	int _standHeight, _kneelHeight, _floatHeight;
+	int _hackingDefense;
 public:
 	/// Creates a blank armor ruleset.
 	Armor(const std::string &type);
@@ -431,6 +432,8 @@ public:
 	int getKneelHeight() const;
 	/// Gets a unit's float elevation while wearing this armor.
 	int getFloatHeight() const;
+	/// Gets a unit's hacking defense value
+	int getHackingDefense() const { return _hackingDefense; }
 };
 
 }

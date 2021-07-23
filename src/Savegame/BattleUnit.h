@@ -854,6 +854,8 @@ public:
 	ArmorMoveCost getMoveCostBaseFly() const { return _moveCostBaseFly; }
 	/// Multiplier of normal move cost.
 	ArmorMoveCost getMoveCostBaseNormal() const { return _moveCostBaseNormal; }
+	/// Checks if this unit can be hacked.
+	bool canBeHacked() const;
 };
 
 } //namespace OpenXcom
