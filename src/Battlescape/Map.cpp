@@ -1505,7 +1505,8 @@ void Map::drawTerrain(Surface *surface)
 							}
 							if (!ignore)
 							{
-								int frame[6] = { 0, 0, 0, 11, 13, 15 };
+								int frame[7] = {0, 0, 0, 11, 13, 15, 17};
+								assert(_cursorType < std::size(frame) && "_cursorType value too large"); // array scope check
 								tmpSurface = _game->getMod()->getSurfaceSet("CURSOR.PCK")->getFrame(frame[_cursorType] + (_animFrame / 4) % 2);
 								Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, 0);
 							}

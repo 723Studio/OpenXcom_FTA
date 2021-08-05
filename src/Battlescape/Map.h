@@ -41,7 +41,7 @@ class Text;
 class Tile;
 class UnitSprite;
 
-enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
+enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW, CT_HACK };
 enum TilePart : int;
 
 /**

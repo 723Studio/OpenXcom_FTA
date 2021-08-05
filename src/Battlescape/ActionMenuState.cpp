@@ -193,7 +193,7 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 	{
 		// addItem(BA_USE, weapon->getHackingActionName(), &id, Options::keyBattleActionItem1); // TODO: Will we use a separate function for hacking actions?
 		// Use scanner method at this time
-		addItem(BA_USE, weapon->getPsiAttackName().empty() ? "STR_USE_HACKING_TOOL" : weapon->getPsiAttackName(), & id, Options::keyBattleActionItem1);
+		addItem(BA_HACK, weapon->getPsiAttackName().empty() ? "STR_USE_HACKING_TOOL" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
 	}
 
 }
@@ -460,7 +460,7 @@ void ActionMenuState::handleAction()
 				_game->popState();
 			}
 		}
-		else if (_action->type == BA_USE && weapon->getBattleType() == BT_HACKING)
+		else if (_action->type == BA_HACK && weapon->getBattleType() == BT_HACKING)
 		{
 			// OLD VERSION OF USE HACKING DEVICE
 			//// spend TUs first, then show the interface

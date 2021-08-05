@@ -1176,6 +1176,10 @@ void BattlescapeGame::setupCursor()
 		{
 			getMap()->setCursorType(CT_WAYPOINT);
 		}
+		else if (_currentAction.type == BA_HACK)
+		{
+			getMap()->setCursorType(CT_HACK);
+		}
 		else
 		{
 			getMap()->setCursorType(CT_AIM);

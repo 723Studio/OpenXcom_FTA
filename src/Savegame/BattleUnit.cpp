@@ -2258,6 +2258,7 @@ RuleItemUseCost BattleUnit::getActionTUs(BattleActionType actionType, const Rule
 				cost = item->getCostAimed();
 				break;
 			case BA_USE:
+			case BA_HACK: // TODO: consider isolating CostHack?
 				cost = item->getCostUse();
 				break;
 			case BA_MINDCONTROL:
@@ -6560,6 +6561,7 @@ void battleActionImpl(BindBase& b)
 	b.addCustomConst("battle_action_mindcontrol", BA_MINDCONTROL);
 	b.addCustomConst("battle_action_panic", BA_PANIC);
 	b.addCustomConst("battle_action_cqb", BA_CQB);
+	b.addCustomConst("battle_action_hack", BA_HACK);
 }
 
 void moveTypesImpl(BindBase& b)
