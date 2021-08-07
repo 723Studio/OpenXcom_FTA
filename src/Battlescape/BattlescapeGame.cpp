@@ -104,7 +104,6 @@ void BattleActionCost::clearTU()
 }
 
 
-
 /**
  * Test if action can be performed.
  * @param message optional message with error condition.

@@ -172,7 +172,8 @@ RuleItem::RuleItem(const std::string &type)
 	  _maxRange(200), _minRange(0), _dropoff(2), _bulletSpeed(0), _explosionSpeed(0), _shotgunPellets(0), _shotgunBehaviorType(0), _shotgunSpread(100), _shotgunChoke(100),
 	  _spawnUnitFaction(-1),
 	  _targetMatrix(7),
-	  _LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false)
+	  _LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false),
+	  _isTerminal(false), _alterationMCDNumber(0), _alterationMCDRadius(0),//test
 	  _meleePower(0), _specialType(-1), _vaporColor(-1), _vaporDensity(0), _vaporProbability(15),
 	  _vaporColorSurface(-1), _vaporDensitySurface(0), _vaporProbabilitySurface(15),
 	  _kneelBonus(-1), _oneHandedPenalty(-1),
@@ -654,6 +655,9 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_hackingTu = node["hackingTu"].as<int>(_hackingTu);
 
 	_recoveryPoints = node["recoveryPoints"].as<int>(_recoveryPoints);
+	_isTerminal = node["isTerminal"].as<bool>(_isTerminal);//test
+	_alterationMCDNumber = node["alterationMCDNumber"].as<int>(_alterationMCDNumber);//test
+	_alterationMCDRadius = node["alterationMCDRadius"].as<int>(_alterationMCDRadius);//test
 	_armor = node["armor"].as<int>(_armor);
 	_turretType = node["turretType"].as<int>(_turretType);
 	if (const YAML::Node &nodeAI = node["ai"])
