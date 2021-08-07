@@ -33,6 +33,8 @@ class RuleObject
 private:
 	std::string _type;
 	int _hackingDefence;
+	int _alterationMCDNumber, _alterationMCDRadius;
+	bool _isTerminal;
 
 public:
 	/// Creates a blank RuleObject.

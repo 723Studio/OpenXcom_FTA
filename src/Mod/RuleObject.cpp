@@ -39,6 +39,10 @@ void RuleObject::load(const YAML::Node& node)
 	}
 	_type = node["type"].as<std::string>(_type);
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
+
+	_isTerminal = node["isTerminal"].as<bool>(_isTerminal);
+	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_isTerminal);
+	_alterationMCDRadius= node["alterationMCDRadius"].as<int>(_alterationMCDRadius);
 }
 
 }
