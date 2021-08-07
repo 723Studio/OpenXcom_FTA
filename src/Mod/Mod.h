@@ -98,6 +98,7 @@ class RuleMusic;
 class RuleDiplomacyFaction;
 class RuleDiplomacyFactionEvent;
 class RuleCovertOperation;
+class RuleObject;
 class RuleArcScript;
 class RuleEventScript;
 class RuleEvent;
@@ -201,6 +202,7 @@ private:
 	std::map<std::string, RuleDiplomacyFaction*> _diplomacyFactions;
 	std::map<std::string, RuleDiplomacyFactionEvent*> _diplomacyFactionEvents;
 	std::map<std::string, RuleCovertOperation*> _covertOperations;
+	std::map<std::string, RuleObject*> _objects;
 	std::map<std::string, RuleArcScript*> _arcScripts;
 	std::map<std::string, RuleEventScript*> _eventScripts;
 	std::map<std::string, RuleEvent*> _events;
@@ -316,6 +318,7 @@ private:
 	std::vector<std::string> _diplomacyFactionIndex;
 	std::vector<std::string> _diplomacyFactionEventIndex;
 	std::vector<std::string> _covertOperationIndex;
+	std::vector<std::string> _objectIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<SDL_Color> _transparencies;
 	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder, _intelligenceListOrder;
@@ -1130,6 +1133,8 @@ public:
 	RuleDiplomacyFactionEvent* getDiplomacyFactionEvent(const std::string& name, bool error = false) const;
 	/// Gets Covert Operation rules for FTA game
 	RuleCovertOperation* getCovertOperation(const std::string& name, bool error = false) const;
+	/// Gets Object rules for FTA game
+	RuleObject* getObject(const std::string& type, bool error = false) const;
 	const std::vector<std::string>* getDiplomacyFactionList() const;
 	const std::vector<std::string>* getDiplomacyFactionEventList() const;
 	const std::vector<std::string>* getCovertOperationList() const;

@@ -358,6 +358,7 @@ set ( mod_src
   Mod/RuleManufactureShortcut.cpp
   Mod/RuleMissionScript.cpp
   Mod/RuleMusic.cpp
+  Mod/RuleObject.cpp
   Mod/RulePrisoner.cpp
   Mod/RuleRegion.cpp
   Mod/RuleResearch.cpp

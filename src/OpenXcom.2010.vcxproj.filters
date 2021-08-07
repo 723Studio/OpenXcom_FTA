@@ -1275,6 +1275,8 @@
     </ClCompile>
     <ClCompile Include="Battlescape\HackingBState.cpp">
       <Filter>Battlescape</Filter>
+    <ClCompile Include="Mod\RuleObject.cpp">
+      <Filter>Mod</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2615,6 +2617,8 @@
     </ClInclude>
     <ClInclude Include="Battlescape\HackingBState.h">
       <Filter>Battlescape</Filter>
+    <ClInclude Include="Mod\RuleObject.h">
+      <Filter>Mod</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
