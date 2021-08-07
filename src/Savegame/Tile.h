@@ -353,7 +353,7 @@ protected:
 	/// Get pointer to the BattleObject
 	BattleObject* getBattleObject() const { return _battleObject; };
 	/// Set BattleObject
-	void setObject(BattleObject* object);
+	void setBattleObject(BattleObject* object);
 	/// Get top-most item
 	BattleItem* getTopItem();
 	/// New turn preparations.

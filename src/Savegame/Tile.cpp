@@ -841,7 +841,7 @@ void Tile::removeItem(BattleItem *item)
 	item->setTile(0);
 }
 
-void Tile::setObject(BattleObject* object)
+void Tile::setBattleObject(BattleObject* object)
 {
 	_battleObject->setTile(0);
 	//update with new BattleObject
