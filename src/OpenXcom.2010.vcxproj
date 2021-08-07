@@ -592,6 +592,7 @@
     <ClCompile Include="Savegame\BaseFacility.cpp" />
     <ClCompile Include="Savegame\BasePrisoner.cpp" />
     <ClCompile Include="Savegame\BattleItem.cpp" />
+    <ClCompile Include="Savegame\BattleObject.cpp" />
     <ClCompile Include="Savegame\BattleUnit.cpp" />
     <ClCompile Include="Savegame\Country.cpp" />
     <ClCompile Include="Savegame\CovertOperation.cpp" />
@@ -1036,6 +1037,7 @@
     <ClInclude Include="Savegame\BaseFacility.h" />
     <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Savegame\BattleItem.h" />
+    <ClInclude Include="Savegame\BattleObject.h" />
     <ClInclude Include="Savegame\BattleUnit.h" />
     <ClInclude Include="Savegame\BattleUnitStatistics.h" />
     <ClInclude Include="Savegame\Country.h" />

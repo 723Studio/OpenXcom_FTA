@@ -33,12 +33,7 @@ class RuleObject
 private:
 	std::string _type;
 	int _hackingDefence;
-	/*int _genMissionFrequency;
-	int _sellPriceFactor, _buyPriceFactor, _repPriceFactor, _stockMod, _powerHungry, _scienceBaseCost;
-	int _startingReputation, _startingFunds, _startingPower;
-	std::map<std::string, int> _startingItems, _startingStaff, _staffWeights;
-	std::map<std::string, double> _wishList;
-	std::vector<std::string> _helpTreatyMissions, _helpTreatyEventScripts, _usualEventsScripts, _happyEvents, _angryEvents, _startingResearches, _factionalEvents;*/
+
 public:
 	/// Creates a blank RuleObject.
 	RuleObject(const std::string& name);
