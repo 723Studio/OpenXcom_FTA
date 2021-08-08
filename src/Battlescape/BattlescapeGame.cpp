@@ -2071,12 +2071,12 @@ void BattlescapeGame::primaryAction(Position pos)
 			if (_save->getTile(pos)->getBattleObject())
 			{
 				
-				const BattleObject *battleObject = _save->getTile(pos)->getBattleObject();
+				BattleObject* battleObject = _save->getTile(pos)->getBattleObject();
 				
-				if (battleObject->getIsTerminal())
+				if (battleObject->getHackingDefence()>0)
 				{
-					const int doorMCD = battleObject->getAlterationMCDNumber();
-					const int radius = battleObject->getAlterationMCDRadius();
+					const int doorMCD = battleObject->getRules()->getAlterationMCDNumber();
+					const int radius = battleObject->getRules()->getAlterationMCDRadius();
 
 					Tile* tile = _save->getTile(pos);
 					bool objective = false;
@@ -2110,9 +2110,8 @@ void BattlescapeGame::primaryAction(Position pos)
 										currentpart2 = tiles[i]->getMapData(currentpart)->getDataset()->getObject(diemcd)->getObjectType();
 									else
 										currentpart2 = currentpart;
-									if (tiles[i]->destroy(currentpart, _save->getObjectiveType()))
-										objective = true;
-									currentpart = currentpart2;
+
+									tile->SwitchToAltMCD(currentpart);
 								}
 
 

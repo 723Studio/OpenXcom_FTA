@@ -173,7 +173,6 @@ RuleItem::RuleItem(const std::string &type)
 	  _spawnUnitFaction(-1),
 	  _targetMatrix(7),
 	  _LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false)
-	  _isTerminal(false), _alterationMCDNumber(0), _alterationMCDRadius(0),//test
 	  _meleePower(0), _specialType(-1), _vaporColor(-1), _vaporDensity(0), _vaporProbability(15),
 	  _vaporColorSurface(-1), _vaporDensitySurface(0), _vaporProbabilitySurface(15),
 	  _kneelBonus(-1), _oneHandedPenalty(-1),
@@ -650,15 +649,7 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_medikitTargetImmune = node["medikitTargetImmune"].as<bool>(_medikitTargetImmune);
 	_medikitTargetMatrix = node["medikitTargetMatrix"].as<int>(_medikitTargetMatrix);
 	_medikitBackground = node["medikitBackground"].as<std::string>(_medikitBackground);
-
-	_hackingHp = node["hackingHp"].as<int>(_hackingHp);
-	_hackingTu = node["hackingTu"].as<int>(_hackingTu);
-	_hackingRange = node["hackingRange"].as<int>(_hackingRange);
-
 	_recoveryPoints = node["recoveryPoints"].as<int>(_recoveryPoints);
-	_isTerminal = node["isTerminal"].as<bool>(_isTerminal);//test
-	_alterationMCDNumber = node["alterationMCDNumber"].as<int>(_alterationMCDNumber);//test
-	_alterationMCDRadius = node["alterationMCDRadius"].as<int>(_alterationMCDRadius);//test
 	_armor = node["armor"].as<int>(_armor);
 	_turretType = node["turretType"].as<int>(_turretType);
 	if (const YAML::Node &nodeAI = node["ai"])

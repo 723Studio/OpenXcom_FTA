@@ -313,10 +313,10 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 			continue;
 		object = new BattleObject(mod->getObject(type), &id);
 		object->load(*i, mod);
-		_battleObjects.push_back(object);
+		
 		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));
-		if (pos.x != -1)
-			getTile(pos)->setBattleObject(object);
+		getTile(pos)->setBattleObject(object);
+		_battleObjects.push_back(object);
 
 	}
 

@@ -23,7 +23,7 @@
 namespace OpenXcom
 {
 
-RuleObject::RuleObject(const std::string& type) : _type(type), _hackingDefence(0)
+RuleObject::RuleObject(const std::string& type) : _type(type), _hackingDefence(0), _alterationMCDNumber(0), _alterationMCDRadius(0)
 {
 }
 
@@ -40,8 +40,7 @@ void RuleObject::load(const YAML::Node& node)
 	_type = node["type"].as<std::string>(_type);
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
 
-	_isTerminal = node["isTerminal"].as<bool>(_isTerminal);
-	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_isTerminal);
+	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_alterationMCDNumber);
 	_alterationMCDRadius= node["alterationMCDRadius"].as<int>(_alterationMCDRadius);
 }
 

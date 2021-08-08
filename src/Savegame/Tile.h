@@ -130,7 +130,7 @@ protected:
 	Uint8 _overlaps = 0;
 	Position _pos;
 	BattleUnit *_unit;
-	BattleObject* _battleObject;
+	BattleObject* _battleObject = nullptr;
 	std::vector<BattleItem *> _inventory;
 
 	void loadBinary(Uint8 *buffer, Tile::SerializationKey& serializationKey);
@@ -215,6 +215,9 @@ protected:
 	int getFootstepSound(Tile *tileBelow) const;
 	/// Open a door, returns the ID, 0(normal), 1(ufo) or -1 if no door opened.
 	int openDoor(TilePart part, BattleUnit *unit = 0, BattleActionType reserve = BA_NONE, bool rClick = false);
+
+	///Switch tilepart to AltMCD, return true if successful
+	bool SwitchToAltMCD(TilePart part);
 
 	/**
 	 * Check if the ufo door is open or opening. Used for visibility/light blocking checks.

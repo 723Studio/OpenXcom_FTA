@@ -19,6 +19,7 @@
  */
 #include <yaml-cpp/yaml.h>
 #include "../Mod/RuleObject.h"
+#include "../Battlescape/Position.h"
 
 namespace OpenXcom
 {
@@ -47,8 +48,7 @@ private:
 	Tile* _tile;
 	int _hackingDefence;
 	bool _wasHacked;
-	bool _isTerminal;//test
-	int _alterationMCDRadius, _alterationMCDNumber;//test
+	Position _position;
 
 public:
 	/// Creates a BattleObject of the specified type.
@@ -80,13 +80,10 @@ public:
 	int getHackingDefence() const { return _hackingDefence; };
 	/// Sets the objects's hacking defence value.
 	void setHackingDefence(int hackingDefence) { _hackingDefence = hackingDefence; };
-	///Checks a flag if the object is terminal.
-	bool getIsTerminal() const { return _isTerminal; };
-	///returns the number against which altMCD is compared.
-	int getAlterationMCDNumber() const { return _alterationMCDNumber; };
 	///returns a tile radius of alterations caused by hacking
-	int getAlterationMCDRadius() const { return _alterationMCDRadius; };
+	Position getPosition() { return _position; } ;
 
+	void setPosition(Position pos) { _position = pos; };
 };
 
 }

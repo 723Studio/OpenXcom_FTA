@@ -60,6 +60,7 @@ void BattleObject::load(const YAML::Node& node, Mod* mod)
 {
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
 	_wasHacked = node["wasHacked"].as<bool>(_wasHacked);
+	_position = node["position"].as<Position>(_position);
 }
 
 /**

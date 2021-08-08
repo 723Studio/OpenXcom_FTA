@@ -34,7 +34,6 @@ private:
 	std::string _type;
 	int _hackingDefence;
 	int _alterationMCDNumber, _alterationMCDRadius;
-	bool _isTerminal;
 
 public:
 	/// Creates a blank RuleObject.
@@ -47,6 +46,9 @@ public:
 	const std::string& getType() const { return _type; }
 	/// Gets the RuleObject's hacking defence.
 	int getHackingDefence() const { return _hackingDefence; };
+
+	int getAlterationMCDNumber() const { return _alterationMCDNumber; };
+	int getAlterationMCDRadius() const { return _alterationMCDRadius; };
 
 
 
