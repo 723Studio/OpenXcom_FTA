@@ -355,9 +355,6 @@ private:
 	int _psiMissAnimation, _psiMissAnimFrames;
 	int _power, _powerForAnimation;
 	bool _hidePower;
-	bool _isTerminal;//test
-	int _alterationMCDNumber; //test
-	int _alterationMCDRadius;//test
 	float _powerRangeReduction;
 	float _powerRangeThreshold;
 	int _coneSize, _noiseValue;
