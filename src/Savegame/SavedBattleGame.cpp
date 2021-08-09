@@ -670,7 +670,10 @@ YAML::Node SavedBattleGame::save() const
 	}
 	for (std::vector<BattleObject*>::const_iterator i = _battleObjects.begin(); i != _battleObjects.end(); ++i)
 	{
-		node["battleObjects"].push_back((*i)->save());
+		if ((*i)->getTile()!=NULL) //if battleObject deleted
+		{
+			node["battleObjects"].push_back((*i)->save());
+		}
 	}
 	node["tuReserved"] = (int)_tuReserved;
 	node["kneelReserved"] = _kneelReserved;

@@ -559,7 +559,20 @@ bool Tile::destroy(TilePart part, SpecialTileType type)
 		/* replace with scorched earth */
 		setMapData(MapDataSet::getScorchedEarthTile(), 1, 0, O_FLOOR);
 	}
+	deleteBattleObject();
 	return _objective;
+}
+
+/**
+ * Delete battle object in this tile (if exist)
+ */
+void Tile::deleteBattleObject()
+{
+	if (getBattleObject())
+	{
+		getBattleObject()->setTile(0);
+		_battleObject = nullptr;	
+	}
 }
 
 /**
