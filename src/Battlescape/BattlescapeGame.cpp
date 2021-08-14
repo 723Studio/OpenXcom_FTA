@@ -102,30 +102,7 @@ void BattleActionCost::clearTU()
 	*(RuleItemUseCost*)this = RuleItemUseCost();
 }
 
-template<typename TileFunc>
-void iterateTiles(SavedBattleGame* save, MapSubset gs, TileFunc func)
-{
-	const auto totalSizeX = save->getMapSizeX();
-	const auto totalSizeY = save->getMapSizeY();
-	const auto totalSizeZ = save->getMapSizeZ();
 
-	gs = MapSubset::intersection(gs, MapSubset{ totalSizeX, totalSizeY });
-	if (gs)
-	{
-		for (int z = 0; z < totalSizeZ; ++z)
-		{
-			auto rowStart = save->getTile(Position{ gs.beg_x, gs.beg_y, z });
-			for (auto stepsY = gs.size_y(); stepsY != 0; --stepsY, rowStart += totalSizeX)
-			{
-				auto curr = rowStart;
-				for (auto stepX = gs.size_x(); stepX != 0; --stepX, curr += 1)
-				{
-					func(curr);
-				}
-			}
-		}
-	}
-}
 
 /**
  * Test if action can be performed.
@@ -2086,7 +2063,7 @@ void BattlescapeGame::primaryAction(Position pos)
 					Position pos = tile->getPosition();
 					MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
 					
-					iterateTiles(_save, gs, [&](Tile* tile)
+					_save->getTileEngine()->iterateTiles(_save, gs, [&](Tile* tile)
 						{
 							tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
 							tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
