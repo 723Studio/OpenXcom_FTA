@@ -1940,19 +1940,19 @@ void BattlescapeGame::primaryAction(Position pos)
 				}
 			}
 		}
-		else if (_currentAction.type == BA_USE && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->getIsFTAGame())
+		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->getIsFTAGame())
 		{
 			auto targetUnit = _save->selectUnit(pos);
 			if (targetUnit && targetUnit->getVisible())
 			{
 				auto targetFaction = targetUnit->getFaction();
 				bool hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
-				if (_currentAction.type == BA_USE && targetFaction == FACTION_PLAYER)
+				if (_currentAction.type == BA_HACK && targetFaction == FACTION_PLAYER)
 				{
 					// no hacking allies
 					hackTargetAllowed = false;
 				}
-				else if (_currentAction.type == BA_USE && !targetUnit->canBeHacked()) 
+				else if (_currentAction.type == BA_HACK && !targetUnit->canBeHacked()) 
 				{
 					hackTargetAllowed = false;
 					_parentState->warning("STR_NOT_HACKING_TARGET");
