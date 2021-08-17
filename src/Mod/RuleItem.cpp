@@ -649,6 +649,11 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_medikitTargetImmune = node["medikitTargetImmune"].as<bool>(_medikitTargetImmune);
 	_medikitTargetMatrix = node["medikitTargetMatrix"].as<int>(_medikitTargetMatrix);
 	_medikitBackground = node["medikitBackground"].as<std::string>(_medikitBackground);
+
+	_hackingHp = node["hackingHp"].as<int>(_hackingHp);
+	_hackingTu = node["hackingTu"].as<int>(_hackingTu);
+	_hackingRange = node["hackingRange"].as<int>(_hackingRange);
+
 	_recoveryPoints = node["recoveryPoints"].as<int>(_recoveryPoints);
 	_armor = node["armor"].as<int>(_armor);
 	_turretType = node["turretType"].as<int>(_turretType);

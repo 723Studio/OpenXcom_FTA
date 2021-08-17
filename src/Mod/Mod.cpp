@@ -2917,6 +2917,11 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		_manaMissingWoundThreshold = nodeMana["woundThreshold"].as<int>(_manaMissingWoundThreshold);
 		_manaReplenishAfterMission = nodeMana["replenishAfterMission"].as<bool>(_manaReplenishAfterMission);
 	}
+
+	_hackingBaseTuCost = doc["hackingBaseTuCost"].as<int>(_hackingBaseTuCost);
+	_hackingFirewallBaseTuCost = doc["hackingFirewallBaseTuCost"].as<int>(_hackingFirewallBaseTuCost);
+	_hackingFirewallBaseHpCost = doc["hackingFirewallBaseHpCost"].as<int>(_hackingFirewallBaseHpCost);
+
 	if (const YAML::Node &nodeHealth = doc["health"])
 	{
 		_healthMissingWoundThreshold = nodeHealth["woundThreshold"].as<int>(_healthMissingWoundThreshold);
