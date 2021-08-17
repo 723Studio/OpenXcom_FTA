@@ -2047,7 +2047,7 @@ void BattlescapeGame::primaryAction(Position pos)
 					hackTargetAllowed = false;
 					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
-				// TODO: add battle object line of sight check here
+				// #FINNIKTODO: add battle object line of sight check here
 			}
 			else
 			{
