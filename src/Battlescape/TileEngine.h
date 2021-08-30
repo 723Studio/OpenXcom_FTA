@@ -285,9 +285,6 @@ public:
 	/// Update game state after script hook execution.
 	void updateGameStateAfterScript(BattleActionAttack battleActionAttack, Position pos);
 
-	//Called when hacking was succesfull, and electrical doors may be opened
-	void successfulHack(SavedBattleGame* _save, Position pos);
-
 };
 
 }

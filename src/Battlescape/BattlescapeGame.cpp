@@ -1966,7 +1966,8 @@ void BattlescapeGame::primaryAction(Position pos)
 		}
 		else if (playableUnitSelected())
 		{
-			_save->getTileEngine()->successfulHack(_save, pos);
+			BattleObject* object = _save->getTile(pos)->getBattleObject();
+			_save->getTileEngine()->hackObject(_currentAction, object);
 
 			bool isCtrlPressed = _parentState->getGame()->isCtrlPressed(true);
 			bool isShiftPressed = _parentState->getGame()->isShiftPressed(true);
