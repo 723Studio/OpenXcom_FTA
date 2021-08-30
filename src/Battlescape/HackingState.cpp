@@ -92,7 +92,8 @@ std::string toString(type t)
  * @param targetUnit Pointer to a target unit
  * @param tileEngine Pointer to a TileEngine
  */
-HackingState::HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine) : _action(action), _targetUnit(targetUnit), _tileEngine(tileEngine)
+//HackingState::HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine) : _action(action), _targetUnit(targetUnit), _tileEngine(tileEngine)
+HackingState::HackingState(BattleAction* action, Tile* targetTile, TileEngine* tileEngine) : _action(action), _targetTile(targetTile), _tileEngine(tileEngine)
 {
 	if (Options::maximizeInfoScreens)
 	{
@@ -100,6 +101,8 @@ HackingState::HackingState(BattleAction* action, BattleUnit* targetUnit, TileEng
 		Options::baseYResolution = Screen::ORIGINAL_HEIGHT;
 		_game->getScreen()->resetDisplay(false);
 	}
+	_targetUnit = _targetTile->getUnit();
+	_targetObject = _targetTile->getBattleObject();
 
 	_tuBaseCost = _game->getMod()->getHackingBaseTuCost();
 	_tuFirewallCost = _game->getMod()->getHackingFirewallBaseTuCost();
@@ -280,7 +283,14 @@ void HackingState::onNodeClick(Action* action)
 	{
 		if (_timeUnits >= _tuBaseCost)
 		{
-			_tileEngine->hackAttack(*_action, _targetUnit);
+			if (_targetUnit)
+			{
+				_tileEngine->hackAttack(*_action, _targetUnit);
+			}
+			if (_targetObject)
+			{
+				_tileEngine->hackObject(*_action, _targetObject);
+			}
 			onExitClick(0);
 		}
 		else

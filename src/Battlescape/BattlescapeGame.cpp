@@ -2008,10 +2008,14 @@ void BattlescapeGame::primaryAction(Position pos)
 		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->getIsFTAGame())
 		{
 			auto targetUnit = _save->selectUnit(pos);
+			auto battleObject = _save->getTile(pos)->getBattleObject();
+			bool hackTargetAllowed = true;
+
+			// check if there is a battle unit that can be hacked
 			if (targetUnit && targetUnit->getVisible())
 			{
 				auto targetFaction = targetUnit->getFaction();
-				bool hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
+				hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
 				if (_currentAction.type == BA_HACK && targetFaction == FACTION_PLAYER)
 				{
 					// no hacking allies
@@ -2022,27 +2026,39 @@ void BattlescapeGame::primaryAction(Position pos)
 					hackTargetAllowed = false;
 					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
-				if (hackTargetAllowed)
+				if (!_currentAction.weapon->getRules()->isLOSRequired() ||
+					(_currentAction.actor->getFaction() == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
+					std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
 				{
-					_currentAction.updateTU();
-					_currentAction.target = pos;
-					if (!_currentAction.weapon->getRules()->isLOSRequired() ||
-						(_currentAction.actor->getFaction() == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
-						std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
-					{
-						// get the sound/animation started
-						getMap()->setCursorType(CT_NORMAL);
-						//_parentState->getGame()->getCursor()->setVisible(false);
-						_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
-						statePushBack(new HackingBState(this, _currentAction, _parentState->getGame()));
-
-					}
-					else
-					{
-						_parentState->warning("STR_LINE_OF_SIGHT_REQUIRED");
-					}
+					// OK to hack (I didn't want to convert that condition to a NOT check. It's already too complicated)
 				}
+				else
+				{
+					_parentState->warning("STR_LINE_OF_SIGHT_REQUIRED");
+				}
+
 			}
+			// check if there is a battle object that can be hacked
+			if (battleObject)
+			{
+				if (!battleObject->canBeHacked())
+				{
+					hackTargetAllowed = false;
+					_parentState->warning("STR_NOT_HACKING_TARGET");
+				}
+				// TODO: add battle object line of sight check here
+			}
+
+			if (hackTargetAllowed)
+			{
+				_currentAction.updateTU();
+				_currentAction.target = pos;
+				// get the sound/animation started
+				getMap()->setCursorType(CT_NORMAL);
+				_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
+				statePushBack(new HackingBState(this, _currentAction, _parentState->getGame()));
+			}
+			
 		}
 		else if (Options::battleConfirmFireMode && (_currentAction.waypoints.empty() || pos != _currentAction.waypoints.front()))
 		{

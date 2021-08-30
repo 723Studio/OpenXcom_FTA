@@ -18,7 +18,6 @@
  */
 #include "HackingBState.h"
 #include "HackingState.h"
-#include "BattlescapeGame.h"
 #include "BattlescapeState.h"
 #include "TileEngine.h"
 #include "InfoboxState.h"
@@ -40,7 +39,7 @@ namespace OpenXcom
 	/**
 	 * Sets up a HackingBState.
 	 */
-	HackingBState::HackingBState(BattlescapeGame* parent, BattleAction action, Game* game) : BattleState(parent, action), _unit(0), _target(0), _item(0), _initialized(false), _game(game)
+	HackingBState::HackingBState(BattlescapeGame* parent, BattleAction action, Game* game) : BattleState(parent, action), _unit(0), _targetTile(0), _item(0), _initialized(false), _game(game)
 	{
 	}
 
@@ -69,7 +68,8 @@ namespace OpenXcom
 			return;
 		}
 
-		if (!_parent->getSave()->getTile(_action.target)) // invalid target position
+		_targetTile = _parent->getSave()->getTile(_action.target);
+		if (!_targetTile) // invalid target position
 		{
 			_parent->popState();
 			return;
@@ -86,14 +86,6 @@ namespace OpenXcom
 			return;
 		}
 
-		_target = _parent->getSave()->getTile(_action.target)->getUnit();
-
-		if (!_target) // invalid target
-		{
-			_parent->popState();
-			return;
-		}
-
 		if (!_action.spendTU(&_action.result)) // not enough time units
 		{
 			_parent->popState();
@@ -104,7 +96,7 @@ namespace OpenXcom
 		//Position voxel = _action.target.toVoxel() + Position(8, 8, height);
 		//_parent->statePushFront(new ExplosionBState(_parent, voxel, BattleActionAttack{ _action.type, _action.actor, _action.weapon, _action.weapon }));
 		TileEngine* tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
-		_game->pushState(new HackingState(&_action, _target, tileEngine));
+		_game->pushState(new HackingState(&_action, _targetTile, tileEngine));
 	}
 
 

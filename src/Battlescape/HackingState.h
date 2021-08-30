@@ -28,8 +28,10 @@ class HackingView;
 class Text;
 class Bar;
 class Timer;
-class BattleItem;
+//class BattleItem;
 class BattleUnit;
+class BattleObject;
+class Tile;
 class TileEngine;
 struct BattleAction;
 class HackingNode;
@@ -49,7 +51,9 @@ class HackingState : public State
 	Text* _numTimeUnits, * _numHealth;
 	Bar* _barTimeUnits, * _barHealth;
 	InteractiveSurface* _exitButton;
-	BattleUnit* _targetUnit; 
+	Tile* _targetTile;
+	BattleUnit* _targetUnit = nullptr;
+	BattleObject* _targetObject = nullptr;
 //	BattleItem* _item; // we may need it later
 	BattleAction* _action;
 	Timer* _timerAnimate;
@@ -76,7 +80,8 @@ class HackingState : public State
 	void animate();
 public:
 	/// Creates the HackingState.
-	HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine);
+	//HackingState(BattleAction* action, BattleUnit* targetUnit, TileEngine* tileEngine);
+	HackingState(BattleAction* action, Tile* targetTile, TileEngine* tileEngine);
 	~HackingState();
 	/// Handler for right-clicking anything.
 	void handle(Action* action) override;

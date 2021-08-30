@@ -81,6 +81,10 @@ public:
 	/// Sets the objects's hacking defence value.
 	void setHackingDefence(int hackingDefence) { _hackingDefence = hackingDefence; };
 	///returns a tile radius of alterations caused by hacking
+
+	/// Checks if this object can be hacked
+	bool canBeHacked() const { return !_wasHacked && _hackingDefence > 0; }
+
 	Position getPosition() { return _position; } ;
 
 	void setPosition(Position pos) { _position = pos; };

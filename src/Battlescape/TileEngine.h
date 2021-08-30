@@ -214,6 +214,8 @@ public:
 	bool meleeAttack(BattleActionAttack attack, BattleUnit *victim, int terrainMeleeTilePart = 0);
 	/// Attempts a hacking attack.
 	bool hackAttack(BattleAction& action, BattleUnit* target);
+	/// Attempts hacking a battle object
+	bool hackObject(BattleAction& action, BattleObject* object);
 
 	/// Remove the medikit from the game if consumable and empty.
 	void medikitRemoveIfEmpty(BattleAction *action);

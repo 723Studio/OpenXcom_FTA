@@ -35,8 +35,9 @@ class HackingBState : public BattleState
 {
 private:
 	Game* _game;
-	BattleUnit* _unit, * _target;
+	BattleUnit* _unit;
 	BattleItem* _item;
+	Tile* _targetTile;
 	bool _initialized;
 public:
 	/// Creates a new Hacking battle state.
