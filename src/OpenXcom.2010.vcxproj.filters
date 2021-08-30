@@ -1291,6 +1291,12 @@
     <ClCompile Include="Battlescape\HackingBState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
+    <ClCompile Include="Mod\RuleObject.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\BattleObject.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2645,6 +2651,12 @@
     </ClInclude>
     <ClInclude Include="Battlescape\HackingBState.h">
       <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleObject.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\BattleObject.h">
+      <Filter>Savegame</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

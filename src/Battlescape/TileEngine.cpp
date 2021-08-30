@@ -4346,6 +4346,12 @@ bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim, int 
 	return meleeAttackCalculate(attack, victim) > 0;
 }
 
+/**
+ *  Attempts a hacking attack action.
+ * @param action Pointer to an action.
+ * @param target Pointer to a target unit
+ * @return Whether it failed or succeeded.
+ */
 bool TileEngine::hackAttack(BattleAction& action, BattleUnit* target)
 {
 	if (!target)
@@ -4394,7 +4400,7 @@ bool TileEngine::hackAttack(BattleAction& action, BattleUnit* target)
 	if (!target)
 		return false;
 
-	// TODO: Add XP training
+	// #FINNIKTODO: Add XP training
 
 	// Award MC battle unit kill
 	BattleUnitKills killStat;
