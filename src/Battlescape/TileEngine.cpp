@@ -4211,22 +4211,20 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 	{
 		return false;
 	}
-	const int doorMCD = object->getRules()->getAlterationMCDNumber();
-	const int radius = object->getRules()->getAlterationMCDRadius();
 
 	Tile* tile = object->getTile();
-
 	if (!tile)
 	{
 		return false;
 	}
 
-	Tile* tiles[9];
-
+	const int doorMCD = object->getRules()->getAlterationMCDNumber();
+	const int radius = object->getRules()->getAlterationMCDRadius();
 	static const TilePart parts[8] = { O_WESTWALL,O_NORTHWALL,O_FLOOR,O_WESTWALL,O_NORTHWALL,O_OBJECT,O_OBJECT,O_OBJECT };
 	Position pos = tile->getPosition();
 	MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
 
+	Tile* tiles[9];
 	iterateTiles(_save, gs, [&](Tile* tile)
 		{
 			tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
@@ -4235,27 +4233,29 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 			tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
 			tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
 
-
 			for (int i = 7; i >= 0; --i)
 			{
 				if (!tiles[i] || !tiles[i]->getMapData(parts[i]))
-					continue; //skip out of map and emptiness
-
-				TilePart currentpart = parts[i], currentpart2;
-
-				int diemcd = tiles[i]->getMapData(currentpart)->getDieMCD();
-				int altmcd = tiles[i]->getMapData(currentpart)->getAltMCD();
-				if (altmcd == doorMCD)
 				{
-					if (diemcd != 0)
-						currentpart2 = tiles[i]->getMapData(currentpart)->getDataset()->getObject(diemcd)->getObjectType();
-					else
-						currentpart2 = currentpart;
-
-					tile->SwitchToAltMCD(currentpart);
+					continue; //skip out of map and emptiness
 				}
 
+				TilePart currentPart = parts[i], currentPart2;
 
+				int dieMCD = tiles[i]->getMapData(currentPart)->getDieMCD();
+				int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
+				if (altMCD == doorMCD)
+				{
+					if (dieMCD != 0)
+					{
+						currentPart2 = tiles[i]->getMapData(currentPart)->getDataset()->getObject(dieMCD)->getObjectType();
+					}		
+					else
+					{
+						currentPart2 = currentPart;
+					}
+					tile->SwitchToAltMCD(currentPart);
+				}
 			}
 		}
 	);
