@@ -42,6 +42,7 @@
 #include "../Engine/Options.h"
 #include "ProjectileFlyBState.h"
 #include "MeleeAttackBState.h"
+#include "../Savegame/BattleObject.h"
 #include "../fmath.h"
 
 namespace OpenXcom
@@ -158,6 +159,32 @@ bool calculateLineHelper(const Position& origin, const Position& target, FuncNew
 	}
 	return false;
 }
+
+template<typename TileFunc>
+void iterateTiles(SavedBattleGame* save, MapSubset gs, TileFunc func)
+{
+	const auto totalSizeX = save->getMapSizeX();
+	const auto totalSizeY = save->getMapSizeY();
+	const auto totalSizeZ = save->getMapSizeZ();
+
+	gs = MapSubset::intersection(gs, MapSubset{ totalSizeX, totalSizeY });
+	if (gs)
+	{
+		for (int z = 0; z < totalSizeZ; ++z)
+		{
+			auto rowStart = save->getTile(Position{ gs.beg_x, gs.beg_y, z });
+			for (auto stepsY = gs.size_y(); stepsY != 0; --stepsY, rowStart += totalSizeX)
+			{
+				auto curr = rowStart;
+				for (auto stepX = gs.size_x(); stepX != 0; --stepX, curr += 1)
+				{
+					func(curr);
+				}
+			}
+		}
+	}
+}
+
 
 template<typename FuncNewPosition>
 bool calculateParabolaHelper(const Position& origin, const Position& target, double curvature, const Position& delta, FuncNewPosition posFunc)
@@ -4386,7 +4413,58 @@ bool TileEngine::hackAttack(BattleAction& action, BattleUnit* target)
  */
 bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 {
-	//TODO: put object hacking code here
+	if (!object)
+	{
+		return false;
+	}
+
+	Tile* tile = object->getTile();
+	if (!tile)
+	{
+		return false;
+	}
+
+	const int doorMCD = object->getRules()->getAlterationMCDNumber();
+	const int radius = object->getRules()->getAlterationMCDRadius();
+	static const TilePart parts[8] = { O_WESTWALL,O_NORTHWALL,O_FLOOR,O_WESTWALL,O_NORTHWALL,O_OBJECT,O_OBJECT,O_OBJECT };
+	Position pos = tile->getPosition();
+	MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
+
+	Tile* tiles[9];
+	iterateTiles(_save, gs, [&](Tile* tile)
+		{
+			tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
+			tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
+			tiles[2] = tiles[3] = tiles[4] = tiles[5] = tile;
+			tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
+			tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
+
+			for (int i = 7; i >= 0; --i)
+			{
+				if (!tiles[i] || !tiles[i]->getMapData(parts[i]))
+				{
+					continue; //skip out of map and emptiness
+				}
+
+				TilePart currentPart = parts[i], currentPart2;
+
+				int dieMCD = tiles[i]->getMapData(currentPart)->getDieMCD();
+				int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
+				if (altMCD == doorMCD)
+				{
+					if (dieMCD != 0)
+					{
+						currentPart2 = tiles[i]->getMapData(currentPart)->getDataset()->getObject(dieMCD)->getObjectType();
+					}		
+					else
+					{
+						currentPart2 = currentPart;
+					}
+					tile->SwitchToAltMCD(currentPart);
+				}
+			}
+		}
+	);
 	return true;
 }
 
@@ -5537,5 +5615,4 @@ void TileEngine::updateGameStateAfterScript(BattleActionAttack battleActionAttac
 		calculateFOV(pos, 1, false);
 	}
 }
-
 }
