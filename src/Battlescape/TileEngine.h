@@ -20,7 +20,6 @@
 #include <vector>
 #include "Position.h"
 #include "BattlescapeGame.h"
-#include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/MapData.h"
 
