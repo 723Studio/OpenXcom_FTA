@@ -24,27 +24,23 @@
 namespace OpenXcom
 {
 class RuleObject;
-//class BattleUnit;
 class Tile;
 class Mod;
 class SurfaceSet;
 class Surface;
-//class ScriptWorkerBlit;
 class SavedBattleGame;
 
-//enum BattleActionType : Uint8;
 
 /**
-	* Represents a single BattleObject in the battlescape.
-	* Contains battle-related info about an object like the position, hacking defence, etc.
-	* @sa RuleObject
-	*/
+* Represents a single BattleObject in the battlescape.
+* Contains battle-related info about an object like the position, hacking defence, etc.
+* @sa RuleObject
+*/
 class BattleObject
 {
 private:
 	int _id;
 	const RuleObject* _rules;
-	//BattleUnit* _unit;
 	Tile* _tile;
 	int _hackingDefence;
 	bool _wasHacked;
@@ -52,7 +48,7 @@ private:
 
 public:
 	/// Creates a BattleObject of the specified type.
-	BattleObject(const RuleObject* rules, int* id);
+	BattleObject(const RuleObject* rules);
 	/// Cleans up the item.
 	~BattleObject();
 	/// Loads the item from YAML.
@@ -61,9 +57,6 @@ public:
 	YAML::Node save() const;
 	/// Gets the item's ruleset.
 	const RuleObject* getRules() const { return _rules; };
-
-	/// Gets the item's floor sprite.
-	//Surface* getFloorSprite(SurfaceSet* set, int animFrame, int shade) const;
 
 	/// Gets the item's tile.
 	Tile* getTile() const { return _tile; };

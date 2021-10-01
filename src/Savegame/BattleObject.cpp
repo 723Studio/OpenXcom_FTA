@@ -35,9 +35,8 @@ namespace OpenXcom
 * @param rules Pointer to ruleset.
 * @param id The id of the object.
 */
-BattleObject::BattleObject(const RuleObject* rules, int* id) : _id(*id), _rules(rules), _tile(0), _hackingDefence(0), _wasHacked(false)
+BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _wasHacked(false)
 {
-	(*id)++;
 	if (_rules)
 	{
 		_hackingDefence = rules->getHackingDefence();
@@ -79,4 +78,18 @@ YAML::Node BattleObject::save() const
 
 	return node;
 }
+
+/**
+ * Create new battle object from rules for tile;
+ */
+BattleObject* SavedBattleGame::createObjectForTile(const RuleObject* rule, Tile* tile)
+{
+	BattleObject* object = new BattleObject(rule);
+	if (tile)
+	{
+		tile->setBattleObject(object);
+	}
+	return object;
+}
+
 }

@@ -49,7 +49,7 @@ private:
 	std::string _name;
 	int _size_x, _size_y, _size_z;
 	std::vector<int> _groups, _revealedFloors;
-	std::map<std::string, std::vector<Position> > _items;
+	std::map<std::string, std::vector<Position> > _items, _objects;
 	std::vector<RandomizedItems> _randomizedItems;
 	std::map<std::string, std::pair<int, int> > _itemsFuseTimer;
 public:
@@ -73,6 +73,8 @@ public:
 	bool isFloorRevealed(int floor);
 	/// Gets the layout for any items that belong in this map block.
 	const std::map<std::string, std::vector<Position> > *getItems() const;
+	/// Gets the layout for any battle objects that that should be placen on this map block.
+	const std::map<std::string, std::vector<Position> >* getObjects() const;
 	/// Gets the layout for any randomized items that belong in this map block.
 	const std::vector<RandomizedItems> *getRandomizedItems() const;
 	/// Gets the fuse timer for any items that belong in this map block.

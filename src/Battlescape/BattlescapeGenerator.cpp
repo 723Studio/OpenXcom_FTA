@@ -31,6 +31,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
+#include "../Savegame/BattleObject.h"
 #include "../Savegame/Ufo.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/Node.h"
@@ -54,6 +55,7 @@
 #include "../Mod/MapData.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
+#include "../Mod/RuleObject.h"
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "../Mod/RuleSoldier.h"
@@ -2335,6 +2337,25 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					item->setFuseTimer(RNG::generate(prime->second.first, prime->second.second));
 				}
 			}
+		}
+	}
+
+	for (std::map<std::string, std::vector<Position> >::const_iterator i = mapblock->getObjects()->begin(); i != mapblock->getObjects()->end(); ++i)
+	{
+		
+		RuleObject* rule = _game->getMod()->getObject((*i).first, true);
+		for (std::vector<Position>::const_iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
+		{
+			if ((*j).x >= mapblock->getSizeX() || (*j).y >= mapblock->getSizeY() || (*j).z >= mapblock->getSizeZ())
+			{
+				ss << "Object " << rule->getType() << " is outside of map block " << mapblock->getName() << ", position: [";
+				ss << (*j).x << "," << (*j).y << "," << (*j).z << "], block size: [";
+				ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
+				throw Exception(ss.str());
+			}
+
+			_save->createObjectForTile(rule, _save->getTile((*j) + Position(xoff, yoff, zoff)));
+			
 		}
 	}
 

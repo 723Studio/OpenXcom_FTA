@@ -110,6 +110,7 @@ void MapBlock::load(const YAML::Node &node)
 		}
 	}
 	_items = node["items"].as<std::map<std::string, std::vector<Position> > >(_items);
+	_objects = node["objects"].as<std::map<std::string, std::vector<Position> > >(_objects);
 	_randomizedItems = node["randomizedItems"].as< std::vector<RandomizedItems> >(_randomizedItems);
 	_itemsFuseTimer = node["fuseTimers"].as<std::map<std::string, std::pair<int, int> > >(_itemsFuseTimer);
 }
@@ -183,6 +184,15 @@ bool MapBlock::isFloorRevealed(int floor)
 const std::map<std::string, std::vector<Position> > *MapBlock::getItems() const
 {
 	return &_items;
+}
+
+/**
+ * Gets the smart objects and their positioning for any items associated with this block.
+ * @return the items and their positions.
+ */
+const std::map<std::string, std::vector<Position>>* MapBlock::getObjects() const
+{
+	return &_objects;
 }
 
 /**

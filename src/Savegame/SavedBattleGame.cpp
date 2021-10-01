@@ -311,7 +311,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		std::string type = (*i)["type"].as<std::string>();
 		if (!mod->getObject(type))
 			continue;
-		object = new BattleObject(mod->getObject(type), &id);
+		object = new BattleObject(mod->getObject(type));
 		object->load(*i, mod);
 		
 		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));

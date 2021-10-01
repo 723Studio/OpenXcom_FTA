@@ -46,6 +46,7 @@ class State;
 class ItemContainer;
 class Craft;
 class RuleItem;
+class RuleObject;
 class AlienDeployment;
 class Ufo;
 class HitLog;
@@ -450,6 +451,8 @@ public:
 	BattleItem *createItemForTile(const RuleItem *rule, Tile *tile);
 	/// Create new item for tile.
 	BattleItem *createItemForTile(const std::string& type, Tile *tile);
+	/// Create new object for tile.
+	BattleObject *createObjectForTile(const RuleObject *rule, Tile *tile);
 	/// Create new temporary unit.
 	BattleUnit *createTempUnit(const Unit *rules, UnitFaction faction, int nextUnitId = -1);
 	/// Converts a unit into a unit of another type.
