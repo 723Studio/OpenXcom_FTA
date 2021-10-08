@@ -383,7 +383,7 @@ private:
 	std::vector<std::string> _supportedInventorySectionsNames;
 	std::vector<const RuleInventory*> _supportedInventorySections;
 	int _waypoints, _invWidth, _invHeight;
-	int _hackingHp, _hackingTu, _hackingRange;
+	int _hackingHp, _hackingTu;
 	int _painKiller, _heal, _stimulant;
 	BattleMediKitType _medikitType;
 	bool _medikitTargetSelf, _medikitTargetImmune;
@@ -944,8 +944,6 @@ public:
 	int getHackingHP() const { return _hackingHp; }
 	/// Gets how many hacking time units does an item have.
 	int getHackingTU() const { return _hackingTu; }
-	/// Gets the hacking range for the item.
-	int getHackingRange() const { return _hackingRange; }
 
 	/// Gets script.
 	template<typename Script>

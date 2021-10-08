@@ -5575,7 +5575,9 @@ void BattleUnit::disableIndicators()
  */
 bool BattleUnit::canBeHacked() const
 {
-	return _armor->getHackingDefense() > 0;
+	return (_armor->getHackingDefense() != 0 &&
+			getFaction() != FACTION_PLAYER &&
+			getOriginalFaction() != FACTION_PLAYER);
 }
 
 ////////////////////////////////////////////////////////////
