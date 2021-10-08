@@ -217,7 +217,7 @@ protected:
 	int openDoor(TilePart part, BattleUnit *unit = 0, BattleActionType reserve = BA_NONE, bool rClick = false);
 
 	///Switch tilepart to AltMCD, return true if successful
-	bool SwitchToAltMCD(TilePart part);
+	bool switchToAltMCD(TilePart part);
 
 	/**
 	 * Check if the ufo door is open or opening. Used for visibility/light blocking checks.

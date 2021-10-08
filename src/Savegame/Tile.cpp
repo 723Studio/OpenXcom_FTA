@@ -390,17 +390,29 @@ int Tile::openDoor(TilePart part, BattleUnit *unit, BattleActionType reserve, bo
 /**
  * Switch MCD of part tile to altMCD.
  * @param part
- * @return a value: true if successful, false if tilepart is not exist on this tile
+ * @return a value: true if successful, false if tilepart does not exist on this tile
  */
-bool Tile::SwitchToAltMCD(TilePart part)
+bool Tile::switchToAltMCD(TilePart part)
 {
 	if (!_objects[part]) return false;
-
 	
-	setMapData(_objects[part]->getDataset()->getObject(_objects[part]->getAltMCD()), _objects[part]->getAltMCD(), _mapData->SetID[part],
-		_objects[part]->getDataset()->getObject(_objects[part]->getAltMCD())->getObjectType());
-	setMapData(0, -1, -1, part);
+	int altMCD = _objects[part]->getAltMCD();
+	MapData* newDataObject = _objects[part]->getDataset()->getObject(altMCD);
+	TilePart newDataObjectType = newDataObject ? newDataObject->getObjectType() : part;
 
+	setMapData(newDataObject, altMCD, _mapData->SetID[part], newDataObjectType);
+
+	// if altMCD is of a different type e.g. other wall, remove the old tile part
+	if (newDataObjectType != part) 
+	{
+		setMapData(0, -1, -1, part);
+	}
+	// if altMCD is a UFO door, set it to a closed state (for open state set currentFrame = 1)
+	if (newDataObject && newDataObject->isUFODoor())
+	{
+		_objectsCache[newDataObjectType].currentFrame = 0;
+		updateSprite(newDataObjectType);
+	}
 	return true;
 }
 
@@ -873,7 +885,6 @@ void Tile::removeItem(BattleItem *item)
 
 void Tile::setBattleObject(BattleObject* object)
 {
-	//_battleObject->setTile(0);
 	//update with new BattleObject
 	_battleObject = object;
 	object->setTile(this);
