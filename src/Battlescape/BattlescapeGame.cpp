@@ -1995,6 +1995,10 @@ void BattlescapeGame::primaryAction(Position pos)
 			{
 				hackTargetAllowed = false;
 			}
+			else
+			{
+				hackTargetAllowed = false;
+			}
 
 			if (hackTargetAllowed)
 			{
