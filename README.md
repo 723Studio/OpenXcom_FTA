@@ -30,11 +30,11 @@ provides several exclusive game mechanics. See [project's wiki](https://github.c
 * [Installation](#installation)
 * [Mods](#mods)
 * [Directory Locations](#directory-locations)
-  * [Building on Windows](#building-on-windows)
-  * [Building on Linux](#building-on-linux)
-* [OpenApoc Coding Style](#openapoc-coding-style)
-* [How to setup OpenApoc](#how-to-setup-openapoc)
-* [Contact us](#contact-us)
+  * [Windows](#windows)
+  * [Linux](#linux)
+* [Configuration](#configuration)
+* [Development](#development)
+
 
 ## Copyright
 All rights for the original game and its resources belong to their respective owners. We do not encourage and do not support any form of illegal usage of the original game. We strongly advise to purchase the original game on GOG or other platforms. Pirate ISOs are not supported and will cause issues such as crashes and map problems with OpenXcom FTA.
