@@ -3,12 +3,38 @@
 [workflow-badge]: https://github.com/OpenXcom/OpenXcom/workflows/ci/badge.svg
 [actions-url]: https://github.com/OpenXcom/OpenXcom/actions
 
-This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
-UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
-by Microprose, licensed under the GPL and written in C++ / SDL.
+[![OpenXcom FTA issues](https://img.shields.io/github/issues-raw/723Studio/OpenXcom_FTA?color=1182c3&logo=GitHub&labelColor=282828)](https://github.com/openapoc/openapoc/issues)
+[![Openapoc Discord](https://img.shields.io/discord/699764481105854542?label=Discord&logo=discord&logoColor=ffffff&labelColor=7289DA&color=2c2f33)](https://discord.gg/epmtzH9) 
+[![Openapoc Vkontakte](https://img.shields.io/static/v1?label=VK&logo=vk&logoColor=ffffff&message=Vstupaj%20|%2097&color=282828&labelColor=2787f5)](https://vk.com/openapoc)
+[![Openapoc Vkontakte](https://img.shields.io/static/v1?label=Support&logo=PayPal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
+![Twitch Status](https://img.shields.io/twitch/status/finnik723studio?label=Twitch&style=social)
+![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCt5SsOdMgRJuFK65Z1xdkhw?label=Youtube&style=social)
 
-Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
+
+> This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
+UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
+by Microprose, that requires the original files to run, licensed under the GPL and written in C++ / SDL.
+
+> Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
 provides several exclusive game mechanics. See [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more details.
+
+<p align="center"><img src="https://i.imgur.com/RAxoVUl.png"/></p>
+
+## Table of Contents
+
+* [Copyright](#copyright)
+* [Key Features](#key-features)
+* [Installation](#installation)
+* [Contribute and FAQ](#contribute-and-faq)
+* [Building](#building)
+  * [Building on Windows](#building-on-windows)
+  * [Building on Linux](#building-on-linux)
+* [OpenApoc Coding Style](#openapoc-coding-style)
+* [How to setup OpenApoc](#how-to-setup-openapoc)
+* [Contact us](#contact-us)
+
+## Copyright
+All rights for the original game and its resources belong to their respective owners. We do not encourage and do not support any form of illegal usage of the original game. We strongly advise to purchase the original game on GOG or other platforms. Pirate ISOs are not supported and will cause issues such as crashes and map problems with OpenXcom FTA.
 
 ## Installation
 
