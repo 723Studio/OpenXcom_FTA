@@ -31,6 +31,7 @@ provides several exclusive game mechanics. See [project's wiki](https://github.c
 * [Mods](#mods)
 * [Directory Locations](#directory-locations)
   * [Windows](#windows)
+  * [Mac OS X](#mac-os-x)
   * [Linux](#linux)
 * [Configuration](#configuration)
 * [Development](#development)
