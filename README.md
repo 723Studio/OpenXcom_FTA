@@ -4,12 +4,15 @@
 [actions-url]: https://github.com/OpenXcom/OpenXcom/actions
 
 [![OpenXcom FTA issues](https://img.shields.io/github/issues-raw/723Studio/OpenXcom_FTA?color=1182c3&logo=GitHub&labelColor=282828)](https://github.com/openapoc/openapoc/issues)
-[![Openapoc Discord](https://img.shields.io/discord/699764481105854542?label=Discord&logo=discord&logoColor=ffffff&labelColor=7289DA&color=2c2f33)](https://discord.gg/epmtzH9) 
-[![Openapoc Vkontakte](https://img.shields.io/static/v1?label=VK&logo=vk&logoColor=ffffff&message=Vstupaj%20|%2097&color=282828&labelColor=2787f5)](https://vk.com/openapoc)
-[![Openapoc Vkontakte](https://img.shields.io/static/v1?label=Support&logo=PayPal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
-![Twitch Status](https://img.shields.io/twitch/status/finnik723studio?label=Twitch&style=social)
-![YouTube Channel Subscribers](https://img.shields.io/youtube/channel/subscribers/UCt5SsOdMgRJuFK65Z1xdkhw?label=Youtube&style=social)
-
+[![OpenXcom FTA Discord](https://img.shields.io/discord/699764481105854542?label=Discord&logo=discord&logoColor=ffffff&labelColor=7289DA&color=2c2f33)](https://discord.gg/epmtzH9) 
+[![OpenXcom FTA Vkontakte](https://img.shields.io/static/v1?label=VK&logo=vk&logoColor=ffffff&message=Vstupaj%20|%2097&color=282828&labelColor=2787f5)](https://vk.com/xcomfta)
+[![OpenXcom FTA Support](https://img.shields.io/static/v1?label=Support&logo=PayPal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
+<a href="https://www.youtube.com/channel/UCt5SsOdMgRJuFK65Z1xdkhw" target="_blank" rel="nofollow">
+<img alt="OpenXcom FTA YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCt5SsOdMgRJuFK65Z1xdkhw?label=Youtube&style=social">
+</a>
+<a href="https://www.twitch.tv/finnik723studio" target="_blank" rel="nofollow">
+<img alt="OpenXcom FTA Twitch Status" src="https://img.shields.io/twitch/status/finnik723studio?style=social">
+</a>
 
 > This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
 UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
