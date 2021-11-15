@@ -14,7 +14,7 @@
 <img alt="OpenXcom FTA Twitch Status" src="https://img.shields.io/twitch/status/finnik723studio?style=social">
 </a>
 
-<p align="center"><a href="https://x-comfromtheashes.tilda.ws" target="_blank" rel="nofollow"><img src="https://i.imgur.com/RAxoVUl.png"/></a></p>
+<p align="center"><a href="https://x-comfromtheashes.tilda.ws" target="_blank" rel="nofollow"><img src="https://i.imgur.com/QYyAHJj.png"/></a></p>
 
 > This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
 UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
