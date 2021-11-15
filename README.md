@@ -18,7 +18,7 @@
 
 > This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
 UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
-by Microprose, that requires the original files to run, licensed under the GPL and written in C++ / SDL.
+by Microprose, that requires the original files to run, licensed under the GPL and written in C++ / SDL. It was founded by Finnik in June 2019.
 
 > Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
 provides several exclusive game mechanics. See [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more details.
