@@ -57,7 +57,7 @@ Q: At what stage is the development of the game?
 > the game is in pre-alpha stage.
 
 Q: Where can I join the community and chat or participate in development?
-> join to our Discord channel https://discord.gg/epmtzH9.
+> join to our Discord channel https://discord.gg/epmtzH9 where you can find more then 180 fans.
 
 Q: How and where can I translate the game into my language?
 > answer.
