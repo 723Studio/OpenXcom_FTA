@@ -1,4 +1,4 @@
-# OpenXcom From the Ashes [![Workflow Status][workflow-badge]][actions-url]
+# OpenXCom: From the Ashes [![Workflow Status][workflow-badge]][actions-url]
 
 [workflow-badge]: https://github.com/OpenXcom/OpenXcom/workflows/ci/badge.svg
 [actions-url]: https://github.com/OpenXcom/OpenXcom/actions
@@ -6,13 +6,15 @@
 [![OpenXcom FTA issues](https://img.shields.io/github/issues-raw/723Studio/OpenXcom_FTA?color=1182c3&logo=GitHub&labelColor=282828)](https://github.com/openapoc/openapoc/issues)
 [![OpenXcom FTA Discord](https://img.shields.io/discord/699764481105854542?label=Discord&logo=discord&logoColor=ffffff&labelColor=7289DA&color=2c2f33)](https://discord.gg/epmtzH9) 
 [![OpenXcom FTA Vkontakte](https://img.shields.io/static/v1?label=VK&logo=vk&logoColor=ffffff&message=Vstupaj%20|%2097&color=282828&labelColor=2787f5)](https://vk.com/xcomfta)
-[![OpenXcom FTA Support](https://img.shields.io/static/v1?label=Support&logo=PayPal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
+[![OpenXcom FTA Support](https://img.shields.io/static/v1?label=Support&logo=paypal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
 <a href="https://www.youtube.com/channel/UCt5SsOdMgRJuFK65Z1xdkhw" target="_blank" rel="nofollow">
 <img alt="OpenXcom FTA YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCt5SsOdMgRJuFK65Z1xdkhw?label=Youtube&style=social">
 </a>
 <a href="https://www.twitch.tv/finnik723studio" target="_blank" rel="nofollow">
 <img alt="OpenXcom FTA Twitch Status" src="https://img.shields.io/twitch/status/finnik723studio?style=social">
 </a>
+
+<p align="center"><a href="https://x-comfromtheashes.tilda.ws" target="_blank" rel="nofollow"><img src="https://i.imgur.com/RAxoVUl.png"/></a></p>
 
 > This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
 UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
@@ -21,12 +23,13 @@ by Microprose, that requires the original files to run, licensed under the GPL a
 > Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
 provides several exclusive game mechanics. See [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more details.
 
-<p align="center"><img src="https://i.imgur.com/RAxoVUl.png"/></p>
+
 
 ## Table of Contents
 
 * [Copyright](#copyright)
-* [Key Features](#key-features)
+* [Overview and Features](#overview-and-features)
+* [FAQ](#faq)
 * [Installation](#installation)
 * [Mods](#mods)
 * [Directory Locations](#directory-locations)
@@ -39,6 +42,31 @@ provides several exclusive game mechanics. See [project's wiki](https://github.c
 
 ## Copyright
 All rights for the original game and its resources belong to their respective owners. We do not encourage and do not support any form of illegal usage of the original game. We strongly advise to purchase the original game on GOG or other platforms. Pirate ISOs are not supported and will cause issues such as crashes and map problems with OpenXcom FTA.
+
+## Overview and Features 
+The X-Com initiative failed, with alien agents infiltrating the ranks of the governments of most major powers. The agency's base is in poor condition due to lack of funding. Most of the personnel were dismissed or killed. To win, the player will have to revive X-Com literally from the ashes ...
+
+- Expand the gaming experience while maintaining the original setting and spirit of the game.
+- The mod adding new content, missions and mechanics.
+- The game has an alternative start and a prototype of the faction and diplomacy system.
+- A covert operations system and some other original features are planned.
+- ...
+
+## FAQ
+Q: At what stage is the development of the game?
+> the game is in pre-alpha stage.
+
+Q: How and where can I translate the game into my language?
+> answer.
+
+Q: I am an artist, how can I help the project?
+> answer.
+
+Q: I can help the development if I test the game, where can I post bug reports?
+> answer.
+
+Q: I have some great ideas where can I share them?
+> answer.
 
 ## Installation
 
