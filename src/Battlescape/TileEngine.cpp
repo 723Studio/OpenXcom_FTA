@@ -1085,6 +1085,7 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 	else if (unit->isOut())
 	{
 		unit->clearVisibleTiles();
+		// unit->clearVisibleBattleObjects()
 		return;
 	}
 	Position posSelf = unit->getPosition();
@@ -1092,6 +1093,7 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 	{
 		//Asked to do a full check. Or unit within event. Should update all.
 		unit->clearVisibleTiles();
+		// unit->clearVisibleBattleObjects()
 		skipNarrowArcTest = true;
 	}
 
@@ -1169,6 +1171,12 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 											unit->addToVisibleTiles(_save->getTile(posVisited));
 											_save->getTile(posVisited)->setVisible(+1);
 											_save->getTile(posVisited)->setDiscovered(true, O_FLOOR);
+
+											// TODO: Check if the tile contains a Smart Object and add it to visible objects if so.
+											if (_save->getTile(posVisited)->getBattleObject())
+											{
+												unit->addToVisibleBattleObjects(_save->getTile(posVisited)->getBattleObject());
+											}
 
 											// walls to the east or south of a visible tile, we see that too
 											Tile* t = _save->getTile(Position(posVisited.x + 1, posVisited.y, posVisited.z));
