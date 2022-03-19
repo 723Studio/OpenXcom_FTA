@@ -75,6 +75,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
+#include "../Savegame/BattleObject.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/BattleItem.h"
@@ -118,6 +119,7 @@ BattlescapeState::BattlescapeState() :
 	_indicatorGreen = _game->getMod()->getInterface("battlescape")->getElement("squadsightUnits")->color;
 	_indicatorBlue = _game->getMod()->getInterface("battlescape")->getElement("woundedUnits")->color;
 	_indicatorPurple = _game->getMod()->getInterface("battlescape")->getElement("passingOutUnits")->color;
+	_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color; 
 
 	_twoHandedRed = _game->getMod()->getInterface("battlescape")->getElement("twoHandedRed")->color;
 	_twoHandedGreen = _game->getMod()->getInterface("battlescape")->getElement("twoHandedGreen")->color;
@@ -641,6 +643,7 @@ BattlescapeState::BattlescapeState() :
 	}
 	_txtVisibleUnitTooltip[VISIBLE_MAX] = "STR_CENTER_ON_WOUNDED_FRIEND";
 	_txtVisibleUnitTooltip[VISIBLE_MAX+1] = "STR_CENTER_ON_DIZZY_FRIEND";
+	_txtVisibleUnitTooltip[VISIBLE_MAX+2] = "STR_CENTER_ON_BATTLE_OBJECT";
 
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
 	_warning->setTextColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color);
@@ -1595,27 +1598,36 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 
 	if (btnID != -1)
 	{
-		auto position = _visibleUnit[btnID]->getPosition();
-		if (position == TileEngine::invalid)
+		Position position;
+		if (_visibleBattleObject[btnID])
 		{
-			bool found = false;
-			for (auto& unit : *_save->getUnits())
+			position = _visibleBattleObject[btnID]->getPosition();
+		}
+		else
+		{
+			position = _visibleUnit[btnID]->getPosition();
+			if (position == TileEngine::invalid)
 			{
-				if (!unit->isOut())
+				bool found = false;
+				for (auto& unit : *_save->getUnits())
 				{
-					for (auto& invItem : *unit->getInventory())
+					if (!unit->isOut())
 					{
-						if (invItem->getUnit() && invItem->getUnit() == _visibleUnit[btnID])
+						for (auto& invItem : *unit->getInventory())
 						{
-							position = unit->getPosition(); // position of a unit that has the wounded unit in the inventory
-							found = true;
-							break;
+							if (invItem->getUnit() && invItem->getUnit() == _visibleUnit[btnID])
+							{
+								position = unit->getPosition(); // position of a unit that has the wounded unit in the inventory
+								found = true;
+								break;
+							}
 						}
 					}
+					if (found) break;
 				}
-				if (found) break;
 			}
 		}
+
 		_map->getCamera()->centerOnPosition(position);
 	}
 
@@ -2283,6 +2295,21 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 		}
 	}
 
+	// remember where purple indicator turns TODO: <think of color>
+	_numberOfUnitsTotal = j;
+
+	{
+		for (std::vector<BattleObject*>::iterator i = battleUnit->getVisibleBattleObjects()->begin(); i != battleUnit->getVisibleBattleObjects()->end() && j < VISIBLE_MAX; ++i)
+		{
+			_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX+2]);
+			_btnVisibleUnit[j]->setVisible(true);
+			_numVisibleUnit[j]->setVisible(true);
+			_visibleBattleObject[j] = (*i);
+			++j;
+		}
+		// TODO: show discovered battle objects that aren't visible to a unit
+	}
+
 	updateUiButton(battleUnit);
 }
 
@@ -2389,7 +2416,7 @@ void BattlescapeState::blinkVisibleUnitButtons()
 		if (_btnVisibleUnit[i]->getVisible() == true)
 		{
 			_btnVisibleUnit[i]->drawRect(0, 0, 15, 12, 15);
-			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : _indicatorPurple;
+			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : i < _numberOfUnitsTotal ? _indicatorPurple : _indicatorGray;
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
 		}
 	}

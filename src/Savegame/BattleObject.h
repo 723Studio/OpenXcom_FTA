@@ -43,7 +43,7 @@ private:
 	const RuleObject* _rules;
 	Tile* _tile;
 	int _hackingDefence;
-	bool _wasHacked;
+	bool _wasHacked, _isDiscovered;
 	Position _position;
 
 public:

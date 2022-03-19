@@ -858,7 +858,12 @@ public:
 	ArmorMoveCost getMoveCostBaseNormal() const { return _moveCostBaseNormal; }
 	/// Checks if this unit can be hacked.
 	bool canBeHacked() const;
+	/// Add battle object to visible battle objects.
 	bool addToVisibleBattleObjects(BattleObject* battleObject);
+	/// Get the list of visible battle objects.
+	std::vector<BattleObject*>* getVisibleBattleObjects();
+	/// Clear visible battle objects.
+	void clearVisibleBattleObjects();
 };
 
 } //namespace OpenXcom

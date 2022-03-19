@@ -5581,6 +5581,11 @@ bool BattleUnit::canBeHacked() const
 			getOriginalFaction() != FACTION_PLAYER);
 }
 
+/**
+ * Add this unit to the list of visible battle objects. Returns true if this is a new one.
+ * @param unit
+ * @return
+ */
 bool BattleUnit::addToVisibleBattleObjects(BattleObject* battleObject)
 {
 	for (std::vector<BattleObject*>::iterator i = _visibleBattleObjects.begin(); i != _visibleBattleObjects.end(); ++i)
@@ -5592,6 +5597,23 @@ bool BattleUnit::addToVisibleBattleObjects(BattleObject* battleObject)
 	}
 	_visibleBattleObjects.push_back(battleObject);
 	return true;
+}
+
+/**
+ * Get the pointer to the vector of visible battle objects.
+ * @return pointer to vector.
+ */
+std::vector<BattleObject*>* BattleUnit::getVisibleBattleObjects()
+{
+	return &_visibleBattleObjects;
+}
+
+/**
+ * Clear visible battle objects.
+ */
+void BattleUnit::clearVisibleBattleObjects()
+{
+	_visibleBattleObjects.clear();
 }
 
 ////////////////////////////////////////////////////////////
