@@ -123,16 +123,24 @@ protected:
 	Uint8 _animationOffset = 0;
 	Uint8 _obstacle = 0;
 	Uint8 _explosiveType = 0;
+	Sint16 _explosive = 0;
 	Sint16 _visible = 0;
 	Sint16 _TUMarker = -1;
 	Sint16 _EnergyMarker = -1;
 	Sint8 _preview = -1;
 	Uint8 _overlaps = 0;
-	Position _pos;
-	BattleUnit *_unit;
 	BattleObject* _battleObject = nullptr;
-	std::vector<BattleItem *> _inventory;
 
+public:
+	/// Creates a tile.
+	Tile(Position pos, SavedBattleGame *save);
+	/// Copy constructor.
+	Tile(Tile &&) = default;
+	/// Cleans up a tile.
+	~Tile();
+	/// Load the tile from yaml
+	void load(const YAML::Node &node);
+	/// Load the tile from binary buffer in memory
 	void loadBinary(Uint8 *buffer, Tile::SerializationKey& serializationKey);
 	/// Saves the tile to yaml
 	YAML::Node save() const;
