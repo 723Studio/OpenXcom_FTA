@@ -713,11 +713,11 @@ namespace YAML
 			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
 			rhs.melee = node["melee"].as<int>(rhs.melee);
 			rhs.mana = node["mana"].as<int>(rhs.mana);
-			rhs.mana = node["manuvering"].as<int>(rhs.manuvering);
-			rhs.mana = node["missiles"].as<int>(rhs.missiles);
-			rhs.mana = node["dogfight"].as<int>(rhs.dogfight);
-			rhs.mana = node["tracking"].as<int>(rhs.tracking);
-			rhs.mana = node["tactics"].as<int>(rhs.tactics);
+			rhs.manuvering = node["manuvering"].as<int>(rhs.manuvering);
+			rhs.missiles = node["missiles"].as<int>(rhs.missiles);
+			rhs.dogfight = node["dogfight"].as<int>(rhs.dogfight);
+			rhs.tracking = node["tracking"].as<int>(rhs.tracking);
+			rhs.tactics = node["tactics"].as<int>(rhs.tactics);
 			return true;
 		}
 	};
