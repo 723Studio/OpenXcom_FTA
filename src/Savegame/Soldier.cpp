@@ -75,6 +75,11 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.psiStrength = RNG::generate(minStats.psiStrength, maxStats.psiStrength);
 		_initialStats.melee = RNG::generate(minStats.melee, maxStats.melee);
 		_initialStats.psiSkill = minStats.psiSkill;
+		_initialStats.manuvering = RNG::generate(minStats.manuvering, maxStats.manuvering);
+		_initialStats.missiles = RNG::generate(minStats.missiles, maxStats.missiles);
+		_initialStats.dogfight = RNG::generate(minStats.dogfight, maxStats.dogfight);
+		_initialStats.tracking = RNG::generate(minStats.tracking, maxStats.tracking);
+		_initialStats.tactics = RNG::generate(minStats.tactics, maxStats.tactics);
 
 		_currentStats = _initialStats;
 
@@ -120,7 +125,17 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 			_name += " Doe";
 			_callsign = "";
 		}
+		auto role = rules->getRole();
+		if (!role == NULL)
+		{
+			addRole(role);
+		}
+		else
+		{
+			addRole(RuleSoldier::ROLE_SOLDIER);
+		}
 	}
+
 	_lookVariant = RNG::seedless(0, RuleSoldier::LookVariantMax - 1);
 }
 
@@ -1932,6 +1947,16 @@ bool Soldier::handlePendingTransformation()
 	return finished;
 }
 
+
+void Soldier::addRole(RuleSoldier::SoldierRole newRole)
+{
+	_roles.push_back(newRole);
+}
+
+bool Soldier::hasRole(RuleSoldier::SoldierRole role)
+{
+	return std::find(_roles.begin(), _roles.end(), role) != _roles.end();
+}
 
 /**
  * Calculates the stat changes a soldier undergoes from this project

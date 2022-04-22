@@ -39,6 +39,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleCraft.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/Unicode.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
@@ -319,34 +320,37 @@ void CraftSoldiersState::initList(size_t scrl)
 	auto recovery = _base->getSumRecoveryPerDay();
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if (_dynGetter != NULL)
+		if ((*i)->getRules()->getRole() == 0) //let's make it simple for now
 		{
-			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
-			std::ostringstream ss;
-			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
-		}
-		else
-		{
-			_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str());
-		}
+			if (_dynGetter != NULL)
+			{
+				// call corresponding getter
+				int dynStat = (*_dynGetter)(_game, *i);
+				std::ostringstream ss;
+				ss << dynStat;
+				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
+			}
+			else
+			{
+				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str());
+			}
 
-		Uint8 color;
-		if ((*i)->getCraft() == c)
-		{
-			color = _lstSoldiers->getSecondaryColor();
+			Uint8 color;
+			if ((*i)->getCraft() == c)
+			{
+				color = _lstSoldiers->getSecondaryColor();
+			}
+			else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0 || (*i)->hasPendingTransformation())
+			{
+				color = _otherCraftColor;
+			}
+			else
+			{
+				color = _lstSoldiers->getColor();
+			}
+			_lstSoldiers->setRowColor(row, color);
+			row++;
 		}
-		else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0 || (*i)->hasPendingTransformation())
-		{
-			color = _otherCraftColor;
-		}
-		else
-		{
-			color = _lstSoldiers->getColor();
-		}
-		_lstSoldiers->setRowColor(row, color);
-		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);

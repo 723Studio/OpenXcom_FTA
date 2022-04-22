@@ -53,28 +53,126 @@ struct UnitStats
 	/// How much more over kill can go to negative than health.
 	constexpr static int OverkillMultipler = 4;
 
-	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana;
+	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana,
+		manuvering, missiles, dogfight, tracking, tactics;
 
-	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0), strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0) {};
-	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_, int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_) : tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_), strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_) {};
-	UnitStats& operator+=(const UnitStats& stats) { tu += stats.tu; stamina += stats.stamina; health += stats.health; bravery += stats.bravery; reactions += stats.reactions; firing += stats.firing; throwing += stats.throwing; strength += stats.strength; psiStrength += stats.psiStrength; psiSkill += stats.psiSkill; melee += stats.melee; mana += stats.mana; return *this; }
-	UnitStats operator+(const UnitStats& stats) const { return UnitStats(tu + stats.tu, stamina + stats.stamina, health + stats.health, bravery + stats.bravery, reactions + stats.reactions, firing + stats.firing, throwing + stats.throwing, strength + stats.strength, psiStrength + stats.psiStrength, psiSkill + stats.psiSkill, melee + stats.melee, mana + stats.mana); }
-	UnitStats& operator-=(const UnitStats& stats) { tu -= stats.tu; stamina -= stats.stamina; health -= stats.health; bravery -= stats.bravery; reactions -= stats.reactions; firing -= stats.firing; throwing -= stats.throwing; strength -= stats.strength; psiStrength -= stats.psiStrength; psiSkill -= stats.psiSkill; melee -= stats.melee; mana -= stats.mana; return *this; }
-	UnitStats operator-(const UnitStats& stats) const { return UnitStats(tu - stats.tu, stamina - stats.stamina, health - stats.health, bravery - stats.bravery, reactions - stats.reactions, firing - stats.firing, throwing - stats.throwing, strength - stats.strength, psiStrength - stats.psiStrength, psiSkill - stats.psiSkill, melee - stats.melee, mana - stats.mana); }
-	UnitStats operator-() const { return UnitStats(-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana); }
-	void merge(const UnitStats& stats) { tu = (stats.tu ? stats.tu : tu); stamina = (stats.stamina ? stats.stamina : stamina); health = (stats.health ? stats.health : health); bravery = (stats.bravery ? stats.bravery : bravery); reactions = (stats.reactions ? stats.reactions : reactions); firing = (stats.firing ? stats.firing : firing); throwing = (stats.throwing ? stats.throwing : throwing); strength = (stats.strength ? stats.strength : strength); psiStrength = (stats.psiStrength ? stats.psiStrength : psiStrength); psiSkill = (stats.psiSkill ? stats.psiSkill : psiSkill); melee = (stats.melee ? stats.melee : melee); mana = (stats.mana ? stats.mana : mana); };
+	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
+				  strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
+				  manuvering(0), missiles(0), dogfight(0), tracking(0), tactics(0){};
+	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
+		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
+		int manuvering, int missiles, int dogfight, int tracking, int tactics):
+		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
+		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
+		manuvering(manuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), tactics(tactics){};
+	UnitStats& operator+=(const UnitStats& stats) {
+		tu += stats.tu;
+		stamina += stats.stamina;
+		health += stats.health;
+		bravery += stats.bravery;
+		reactions += stats.reactions;
+		firing += stats.firing;
+		throwing += stats.throwing;
+		strength += stats.strength;
+		psiStrength += stats.psiStrength;
+		psiSkill += stats.psiSkill;
+		melee += stats.melee;
+		mana += stats.mana;
+		manuvering += stats.manuvering;
+		missiles += stats.missiles;
+		dogfight += stats.dogfight;
+		tracking += stats.tracking;
+		tactics += stats.tactics;
+		return *this; }
+	UnitStats operator+(const UnitStats& stats) const { return UnitStats(
+		tu + stats.tu,
+		stamina + stats.stamina,
+		health + stats.health,
+		bravery + stats.bravery,
+		reactions + stats.reactions,
+		firing + stats.firing,
+		throwing + stats.throwing,
+		strength + stats.strength,
+		psiStrength + stats.psiStrength,
+		psiSkill + stats.psiSkill,
+		melee + stats.melee,
+		mana + stats.mana,
+		manuvering + stats.manuvering,
+		missiles + stats.missiles,
+		dogfight + stats.dogfight,
+		tracking + stats.tracking,
+		tactics + stats.tactics); }
+	UnitStats& operator-=(const UnitStats& stats) {
+		tu -= stats.tu;
+		stamina -= stats.stamina;
+		health -= stats.health;
+		bravery -= stats.bravery;
+		reactions -= stats.reactions;
+		firing -= stats.firing;
+		throwing -= stats.throwing;
+		strength -= stats.strength;
+		psiStrength -= stats.psiStrength;
+		psiSkill -= stats.psiSkill;
+		melee -= stats.melee;
+		mana -= stats.mana;
+		manuvering -= stats.manuvering;
+		missiles -= stats.missiles;
+		dogfight -= stats.dogfight;
+		tracking -= stats.tracking;
+		tactics -= stats.tactics;
+		return *this; }
+	UnitStats operator-(const UnitStats& stats) const { return UnitStats(
+		tu - stats.tu,
+		stamina - stats.stamina,
+		health - stats.health,
+		bravery - stats.bravery,
+		reactions - stats.reactions,
+		firing - stats.firing,
+		throwing - stats.throwing,
+		strength - stats.strength,
+		psiStrength - stats.psiStrength,
+		psiSkill - stats.psiSkill,
+		melee - stats.melee,
+		mana - stats.mana,
+		manuvering - stats.manuvering,
+		missiles - stats.missiles,
+		dogfight - stats.dogfight,
+		tracking - stats.tracking,
+		tactics - stats.tactics); }
+	UnitStats operator-() const { return UnitStats(
+		-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana,
+		-manuvering, -missiles, -dogfight, -tracking, -tactics); }
+	void merge(const UnitStats& stats) {
+		tu = (stats.tu ? stats.tu : tu);
+		stamina = (stats.stamina ? stats.stamina : stamina);
+		health = (stats.health ? stats.health : health);
+		bravery = (stats.bravery ? stats.bravery : bravery);
+		reactions = (stats.reactions ? stats.reactions : reactions);
+		firing = (stats.firing ? stats.firing : firing);
+		throwing = (stats.throwing ? stats.throwing : throwing);
+		strength = (stats.strength ? stats.strength : strength);
+		psiStrength = (stats.psiStrength ? stats.psiStrength : psiStrength);
+		psiSkill = (stats.psiSkill ? stats.psiSkill : psiSkill);
+		melee = (stats.melee ? stats.melee : melee);
+		mana = (stats.mana ? stats.mana : mana);
+		manuvering = (stats.manuvering ? stats.manuvering : manuvering);
+		missiles = (stats.missiles ? stats.missiles : missiles);
+		dogfight = (stats.dogfight ? stats.dogfight : dogfight);
+		tracking = (stats.tracking ? stats.tracking : tracking);
+		tactics = (stats.tactics ? stats.tactics : tactics);
+	};
 
 	template<typename Func>
 	static void fieldLoop(Func f)
 	{
 		constexpr static Ptr allFields[] =
 		{
-			&UnitStats::tu, &UnitStats::stamina,
-			&UnitStats::health, &UnitStats::bravery,
-			&UnitStats::reactions, &UnitStats::firing,
-			&UnitStats::throwing, &UnitStats::strength,
-			&UnitStats::psiStrength, &UnitStats::psiSkill,
-			&UnitStats::melee, &UnitStats::mana,
+			&UnitStats::tu, &UnitStats::stamina, &UnitStats::health, &UnitStats::bravery,
+			&UnitStats::reactions, &UnitStats::firing, &UnitStats::throwing, &UnitStats::strength,
+			&UnitStats::psiStrength, &UnitStats::psiSkill, &UnitStats::melee, &UnitStats::mana,
+			&UnitStats::manuvering, &UnitStats::missiles,
+			&UnitStats::dogfight, &UnitStats::tracking,
+			&UnitStats::tactics,
 		};
 
 		for (Ptr p : allFields)
@@ -229,7 +327,7 @@ struct UnitStats
 	static UnitStats obeyFixedMinimum(const UnitStats &a)
 	{
 		// minimum 1 for health, minimum 0 for other stats (note to self: it might be worth considering minimum 10 for bravery in the future)
-		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		return max(a, fixedMinimum);
 	}
 
@@ -589,6 +687,12 @@ namespace YAML
 			node["psiSkill"] = rhs.psiSkill;
 			node["melee"] = rhs.melee;
 			node["mana"] = rhs.mana;
+			node["manuvering"] = rhs.manuvering;
+			node["missiles"] = rhs.missiles;
+			node["dogfight"] = rhs.dogfight;
+			node["tracking"] = rhs.tracking;
+			node["tactics"] = rhs.tactics;
+
 			return node;
 		}
 
@@ -609,6 +713,11 @@ namespace YAML
 			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
 			rhs.melee = node["melee"].as<int>(rhs.melee);
 			rhs.mana = node["mana"].as<int>(rhs.mana);
+			rhs.mana = node["manuvering"].as<int>(rhs.manuvering);
+			rhs.mana = node["missiles"].as<int>(rhs.missiles);
+			rhs.mana = node["dogfight"].as<int>(rhs.dogfight);
+			rhs.mana = node["tracking"].as<int>(rhs.tracking);
+			rhs.mana = node["tactics"].as<int>(rhs.tactics);
 			return true;
 		}
 	};

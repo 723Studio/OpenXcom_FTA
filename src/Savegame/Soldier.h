@@ -21,6 +21,7 @@
 #include <yaml-cpp/yaml.h>
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/Script.h"
 
 namespace OpenXcom
@@ -46,6 +47,7 @@ class RuleSoldierTransformation;
 class RuleSoldierBonus;
 class Base;
 struct BaseSumDailyRecovery;
+enum RuleSoldier::SoldierRole;
 
 /**
  * Represents a soldier hired by the player.
@@ -91,6 +93,7 @@ private:
 	std::string _statString;
 	bool _corpseRecovered;
 	std::map<std::string, int> _previousTransformations, _transformationBonuses, _pendingTransformations;
+	std::vector<RuleSoldier::SoldierRole> _roles; 
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
 public:
@@ -305,6 +308,9 @@ public:
 	bool hasPendingTransformation() const { return !_pendingTransformations.empty() ;}
 	/// Gets pending transformation name
 	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
+	std::vector<RuleSoldier::SoldierRole> getRoles() const { return _roles; };
+	void addRole(RuleSoldier::SoldierRole newRole);
+	bool hasRole(RuleSoldier::SoldierRole role);
 	/// Calculates how this project changes the soldier's stats
 	UnitStats calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType);
 	/// Gets all the soldier bonuses

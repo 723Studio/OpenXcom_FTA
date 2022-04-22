@@ -33,6 +33,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "CraftInfoState.h"
 #include "SellState.h"
+#include "../Basescape/PilotsState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
 
@@ -46,9 +47,18 @@ namespace OpenXcom
  */
 CraftsState::CraftsState(Base *base) : _base(base)
 {
+	bool ftaUI = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(288, 16, 16, 176);
+	if (ftaUI)
+	{
+		_btnOk = new TextButton(148, 16, 164, 176);
+	}
+	else
+	{
+		_btnOk = new TextButton(288, 16, 16, 176);
+	}
+	_btnPilots = new TextButton(148, 16, 8, 176);
 	_txtTitle = new Text(298, 17, 16, 8);
 	_txtBase = new Text(298, 17, 16, 24);
 	_txtName = new Text(94, 9, 16, 40);
@@ -63,6 +73,7 @@ CraftsState::CraftsState(Base *base) : _base(base)
 
 	add(_window, "window", "craftSelect");
 	add(_btnOk, "button", "craftSelect");
+	add(_btnPilots, "button", "craftSelect");
 	add(_txtTitle, "text", "craftSelect");
 	add(_txtBase, "text", "craftSelect");
 	add(_txtName, "text", "craftSelect");
@@ -80,6 +91,10 @@ CraftsState::CraftsState(Base *base) : _base(base)
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftsState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftsState::btnOkClick, Options::keyCancel);
+
+	_btnPilots->setText(tr("STR_PILOTS"));
+	_btnPilots->onMouseClick((ActionHandler)&CraftsState::btnPilotsClick);
+	_btnPilots->setVisible(ftaUI);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr("STR_INTERCEPTION_CRAFT"));
@@ -144,6 +159,15 @@ void CraftsState::btnOkClick(Action *)
 		_game->pushState(new SellState(_base, 0));
 		_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("craftSelect")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("craftSelect")->getElement("errorPalette")->color));
 	}
+}
+
+/**
+ * Returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void CraftsState::btnPilotsClick(Action *action)
+{
+	_game->pushState(new PilotsState(_base));
 }
 
 /**

@@ -61,6 +61,11 @@ GET_ATTRIB_STAT_FN(mana)
 GET_ATTRIB_STAT_FN(psiStrength)
 GET_ATTRIB_STAT_FN(psiSkill)
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
@@ -77,6 +82,11 @@ GET_ATTRIB_STAT_FN(mana)
 GET_ATTRIB_STAT_FN(psiStrength)
 GET_ATTRIB_STAT_FN(psiSkill)
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
@@ -93,6 +103,11 @@ GET_ATTRIB_STAT_FN(mana)
 GET_ATTRIB_STAT_FN(psiStrength)
 GET_ATTRIB_STAT_FN(psiSkill)
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_SOLDIER_STAT_FN(attrib, camelCaseAttrib) \

@@ -40,6 +40,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleCovertOperation.h"
 #include "../Mod/RuleInterface.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/Unicode.h"
 
 namespace OpenXcom
@@ -264,54 +265,58 @@ void CovertOperationSoldiersState::initList(size_t scrl)
 	auto recovery = _base->getSumRecoveryPerDay();
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if (_dynGetter != NULL)
+		if ((*i)->getRules()->getRole() == 0) //let's make it simple for now
 		{
-			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
-			std::ostringstream ss;
-			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
-		}
-		else
-		{
-			_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str());
-		}
-
-		Uint8 color;
-		auto opSoldiers = _operation->getSoldiers();
-		bool matched = false;
-
-		auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), (*i));
-		if (iter != std::end(opSoldiers)) {
-			matched = true;
-		}
-
-		bool psiUnavailable = false;
-		if (!Options::anytimePsiTraining)
-		{
-			if ((*i)->isInPsiTraining())
+			if (_dynGetter != NULL)
 			{
-				psiUnavailable = true;
-				_lstSoldiers->setCellText(row, 2, tr("STR_IN_PSI_TRAINING_UC"));
+				// call corresponding getter
+				int dynStat = (*_dynGetter)(_game, *i);
+				std::ostringstream ss;
+				ss << dynStat;
+				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
+			}
+			else
+			{
+				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString()).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str());
+			}
+
+			Uint8 color;
+			auto opSoldiers = _operation->getSoldiers();
+			bool matched = false;
+
+			auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), (*i));
+			if (iter != std::end(opSoldiers))
+			{
+				matched = true;
+			}
+
+			bool psiUnavailable = false;
+			if (!Options::anytimePsiTraining)
+			{
+				if ((*i)->isInPsiTraining())
+				{
+					psiUnavailable = true;
+					_lstSoldiers->setCellText(row, 2, tr("STR_IN_PSI_TRAINING_UC"));
+					color = _otherCraftColor;
+				}
+			}
+
+			if (matched)
+			{
+				color = _lstSoldiers->getSecondaryColor();
+				_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+			}
+			else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0 || psiUnavailable || (*i)->hasPendingTransformation())
+			{
 				color = _otherCraftColor;
 			}
+			else
+			{
+				color = _lstSoldiers->getColor();
+			}
+			_lstSoldiers->setRowColor(row, color);
+			row++;
 		}
-
-		if (matched)
-		{
-			color = _lstSoldiers->getSecondaryColor();
-			_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
-		}
-		else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0 || psiUnavailable || (*i)->hasPendingTransformation())
-		{
-			color = _otherCraftColor;
-		}
-		else
-		{
-			color = _lstSoldiers->getColor();
-		}
-		_lstSoldiers->setRowColor(row, color);
-		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);

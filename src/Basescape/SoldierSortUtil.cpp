@@ -41,6 +41,11 @@ int OpenXcom::psiSkillStat(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
@@ -83,6 +88,11 @@ int OpenXcom::psiSkillStatBase(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
@@ -125,6 +135,11 @@ int OpenXcom::psiSkillStatPlus(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
+GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(missiles)
+GET_ATTRIB_STAT_FN(dogfight)
+GET_ATTRIB_STAT_FN(tracking)
+GET_ATTRIB_STAT_FN(tactics)
 #undef GET_ATTRIB_STAT_FN
 
 

@@ -38,6 +38,7 @@ set ( basescape_src
   Basescape/MonthlyCostsState.cpp
   Basescape/NewManufactureListState.cpp
   Basescape/NewResearchListState.cpp
+  Basescape/PilotsState.cpp
   Basescape/PlaceFacilityState.cpp
   Basescape/PlaceLiftState.cpp
   Basescape/PlaceStartFacilityState.cpp

@@ -259,6 +259,7 @@
     <ClCompile Include="Basescape\MiniBaseView.cpp" />
     <ClCompile Include="Basescape\MonthlyCostsState.cpp" />
     <ClCompile Include="Basescape\NewResearchListState.cpp" />
+    <ClCompile Include="Basescape\PilotsState.cpp" />
     <ClCompile Include="Basescape\PlaceFacilityState.cpp" />
     <ClCompile Include="Basescape\PlaceLiftState.cpp" />
     <ClCompile Include="Basescape\ManufactureStartState.cpp" />
@@ -660,6 +661,7 @@
     <ClInclude Include="Basescape\MiniBaseView.h" />
     <ClInclude Include="Basescape\MonthlyCostsState.h" />
     <ClInclude Include="Basescape\NewResearchListState.h" />
+    <ClInclude Include="Basescape\PilotsState.h" />
     <ClInclude Include="Basescape\PlaceFacilityState.h" />
     <ClInclude Include="Basescape\PlaceLiftState.h" />
     <ClInclude Include="Basescape\ManufactureStartState.h" />

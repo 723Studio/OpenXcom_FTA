@@ -22,6 +22,7 @@
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleSoldierTransformation.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
@@ -58,12 +59,14 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
+	bool ftaUI = _game->getMod()->getIsFTAGame();
 	std::vector<RuleSoldierTransformation* > availableTransformations;
 	_game->getSavedGame()->getAvailableTransformations(availableTransformations, _game->getMod(), _base);
 	bool isTransformationAvailable = availableTransformations.size() > 0;
 
 	// if both training buttons would be displayed, or if there are any transformations, switch to combobox
-	bool showCombobox = isTransformationAvailable || (isPsiBtnVisible && isTrnBtnVisible) || Options::oxceAlternateCraftEquipmentManagement;
+	bool showCombobox = isTransformationAvailable || (isPsiBtnVisible && isTrnBtnVisible) || Options::oxceAlternateCraftEquipmentManagement || ftaUI;
+
 	// 3 buttons or 2 buttons?
 	bool showThreeButtons = !showCombobox && (isPsiBtnVisible || isTrnBtnVisible);
 
@@ -140,6 +143,10 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		_btnTraining->setVisible(false);
 
 		_availableOptions.push_back("STR_SOLDIER_INFO");
+		if (ftaUI)
+		{
+			_availableOptions.push_back("STR_ALL_ROLES");
+		}
 		_availableOptions.push_back("STR_MEMORIAL");
 		_availableOptions.push_back("STR_INVENTORY");
 
@@ -195,6 +202,11 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
+	bool showPsiStats = true;
+	if (ftaUI)
+	{
+		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	}
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -208,7 +220,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -221,13 +233,16 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
 	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
 	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (showPsiStats)
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
+		if (_game->getMod()->isManaFeatureEnabled())
+		{
+			// "unlock" is checked later
+			PUSH_IN("STR_MANA_POOL", manaStat);
+		}
+		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
+		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
 
 #undef PUSH_IN
 
@@ -344,7 +359,7 @@ void SoldiersState::init()
 /**
  * Shows the soldiers in a list at specified offset/scroll.
  */
-void SoldiersState::initList(size_t scrl)
+void SoldiersState::initList(size_t scrl, bool allRoles)
 {
 	_lstSoldiers->clearList();
 
@@ -409,34 +424,37 @@ void SoldiersState::initList(size_t scrl)
 	unsigned int row = 0;
 	for (std::vector<Soldier*>::iterator i = _filteredListOfSoldiers.begin(); i != _filteredListOfSoldiers.end(); ++i)
 	{
-		std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
+		if ((*i)->getRules()->getRole() == 0 || allRoles)
+		{
+			std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
 
-		if (_dynGetter != NULL)
-		{
-			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
-			std::ostringstream ss;
-			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
-		}
-		else
-		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
-		}
+			if (_dynGetter != NULL)
+			{
+				// call corresponding getter
+				int dynStat = (*_dynGetter)(_game, *i);
+				std::ostringstream ss;
+				ss << dynStat;
+				_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
+			}
+			else
+			{
+				_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
+			}
 
-		if ((*i)->getCraft() == 0)
-		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			if ((*i)->getCraft() == 0)
+			{
+				_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			}
+			if ((*i)->getCovertOperation() != 0)
+			{
+				_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+			}
+			if ((*i)->getDeath())
+			{
+				_lstSoldiers->setRowColor(row, _txtCraft->getColor());
+			}
+			row++;
 		}
-		if ((*i)->getCovertOperation() != 0)
-		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
-		}
-		if ((*i)->getDeath())
-		{
-			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
-		}
-		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);
@@ -620,7 +638,7 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 	else
 	{
 		// "STR_SOLDIER_INFO" or any available soldier transformation
-		initList(0);
+		initList(0, selAction == "STR_ALL_ROLES");
 	}
 }
 
