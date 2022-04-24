@@ -41,7 +41,7 @@ int OpenXcom::psiSkillStat(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
-GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(maneuvering)
 GET_ATTRIB_STAT_FN(missiles)
 GET_ATTRIB_STAT_FN(dogfight)
 GET_ATTRIB_STAT_FN(tracking)
@@ -88,7 +88,7 @@ int OpenXcom::psiSkillStatBase(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
-GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(maneuvering)
 GET_ATTRIB_STAT_FN(missiles)
 GET_ATTRIB_STAT_FN(dogfight)
 GET_ATTRIB_STAT_FN(tracking)
@@ -135,7 +135,7 @@ int OpenXcom::psiSkillStatPlus(Game *game, Soldier *s)
 	return 0;
 }
 GET_ATTRIB_STAT_FN(melee)
-GET_ATTRIB_STAT_FN(manuvering)
+GET_ATTRIB_STAT_FN(maneuvering)
 GET_ATTRIB_STAT_FN(missiles)
 GET_ATTRIB_STAT_FN(dogfight)
 GET_ATTRIB_STAT_FN(tracking)
@@ -155,6 +155,15 @@ int OpenXcom::typeStat(Game *game, Soldier *s)
 	return s->getRules()->getListOrder();
 }
 GET_SOLDIER_STAT_FN(rank, Rank)
+int OpenXcom::roleStat(Game *game, Soldier *s)
+{
+	return static_cast<int>(s->getBestRoleRank().first);
+}
+int OpenXcom::roleRankStat(Game *game, Soldier *s)
+{
+	return s->getBestRoleRank().second;
+}
+
 GET_SOLDIER_STAT_FN(missions, Missions)
 GET_SOLDIER_STAT_FN(kills, Kills)
 //GET_SOLDIER_STAT_FN(woundRecovery, WoundRecovery)

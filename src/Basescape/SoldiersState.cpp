@@ -59,7 +59,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
-	bool ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->getIsFTAGame();
 	std::vector<RuleSoldierTransformation* > availableTransformations;
 	_game->getSavedGame()->getAvailableTransformations(availableTransformations, _game->getMod(), _base);
 	bool isTransformationAvailable = availableTransformations.size() > 0;
@@ -122,7 +122,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&SoldiersState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
+	//_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
 
 	_btnPsiTraining->setText(tr("STR_PSI_TRAINING"));
 	_btnPsiTraining->onMouseClick((ActionHandler)&SoldiersState::btnPsiTrainingClick);
@@ -142,10 +142,17 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		_btnPsiTraining->setVisible(false);
 		_btnTraining->setVisible(false);
 
-		_availableOptions.push_back("STR_SOLDIER_INFO");
-		if (ftaUI)
+		if (_ftaUI)
 		{
-			_availableOptions.push_back("STR_ALL_ROLES");
+			_availableOptions.push_back("STR_PERSONNEL_INFO");
+		}
+		_availableOptions.push_back("STR_SOLDIER_INFO");
+		if (_ftaUI)
+		{
+			_availableOptions.push_back("STR_PILOT_INFO");
+			_availableOptions.push_back("STR_AGENT_INFO");
+			_availableOptions.push_back("STR_SCIENTIST_INFO");
+			_availableOptions.push_back("STR_ENGINEER_INFO");
 		}
 		_availableOptions.push_back("STR_MEMORIAL");
 		_availableOptions.push_back("STR_INVENTORY");
@@ -203,7 +210,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	bool showPsiStats = true;
-	if (ftaUI)
+	if (_ftaUI)
 	{
 		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 	}
@@ -215,7 +222,16 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
+	if (_ftaUI)
+	{
+		PUSH_IN("STR_ROLE_UC", roleStat);
+		PUSH_IN("STR_RANK", roleRankStat);
+	}
+	else
+	{
+		PUSH_IN("STR_RANK", rankStat);
+	}
+	// FINNIKTODO-ROLES - add rank per roles
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
@@ -243,6 +259,16 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
 		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
 	}
+	if (_ftaUI)
+	{
+		//pilot section
+		PUSH_IN("STR_MANEUVERING", maneuveringStat);
+		PUSH_IN("STR_MISSILE_OPERATION", missilesStat);
+		PUSH_IN("STR_DOGFIGHT", dogfightStat);
+		PUSH_IN("STR_BRAVERY", braveryStat);
+		PUSH_IN("STR_TRACKING", trackingStat);
+		PUSH_IN("STR_TACTICS", tacticsStat);
+	}
 
 #undef PUSH_IN
 
@@ -251,7 +277,6 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_cbxSortBy->onChange((ActionHandler)&SoldiersState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
 	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
 	_lstSoldiers->setSelectable(true);
@@ -359,25 +384,56 @@ void SoldiersState::init()
 /**
  * Shows the soldiers in a list at specified offset/scroll.
  */
-void SoldiersState::initList(size_t scrl, bool allRoles)
+void SoldiersState::initList(size_t scrl)
 {
 	_lstSoldiers->clearList();
 
 	_filteredListOfSoldiers.clear();
+	_soldierNumbers.clear();
+	int i = 0;
 
 	std::string selAction = "STR_SOLDIER_INFO";
+	if (_ftaUI)
+	{
+		std::string selAction = "STR_PERSONNEL_INFO";
+	}
+	
 	if (!_availableOptions.empty())
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
 
 	int offset = 0;
-	if (selAction == "STR_SOLDIER_INFO")
+	if (selAction == "STR_PERSONNEL_INFO" ||
+		selAction == "STR_SOLDIER_INFO" ||
+		selAction == "STR_PILOT_INFO" ||
+		selAction == "STR_AGENT_INFO" ||
+		selAction == "STR_SCIENTIST_INFO" ||
+		selAction == "STR_ENGINEER_INFO")
 	{
-		_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
-
-		// all soldiers in the base
-		_filteredListOfSoldiers = *_base->getSoldiers();
+		if (_ftaUI)
+		{
+			offset = 20;
+			for (auto &soldier : *_base->getSoldiers())
+			{
+				if (selAction == "STR_PERSONNEL_INFO" ||
+					(soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO") ||
+					(soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
+					(soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
+					(soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
+					(soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO"))
+				{
+					_filteredListOfSoldiers.push_back(soldier);
+					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
+				}
+				i++;
+			}
+		}
+		else
+		{
+			_filteredListOfSoldiers = *_base->getSoldiers();
+			_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
+		}
 	}
 	else
 	{
@@ -398,13 +454,18 @@ void SoldiersState::initList(size_t scrl, bool allRoles)
 				if (soldier->isEligibleForTransformation(transformationRule))
 				{
 					_filteredListOfSoldiers.push_back(soldier);
+					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
 				}
+				i++;
 			}
-			for (auto& deadMan : *_game->getSavedGame()->getDeadSoldiers())
+			if (!_ftaUI) // sorry, we don't like necromancy!
 			{
-				if (deadMan->isEligibleForTransformation(transformationRule))
+				for (auto &deadMan : *_game->getSavedGame()->getDeadSoldiers())
 				{
-					_filteredListOfSoldiers.push_back(deadMan);
+					if (deadMan->isEligibleForTransformation(transformationRule))
+					{
+						_filteredListOfSoldiers.push_back(deadMan);
+					}
 				}
 			}
 		}
@@ -424,37 +485,34 @@ void SoldiersState::initList(size_t scrl, bool allRoles)
 	unsigned int row = 0;
 	for (std::vector<Soldier*>::iterator i = _filteredListOfSoldiers.begin(); i != _filteredListOfSoldiers.end(); ++i)
 	{
-		if ((*i)->getRules()->getRole() == 0 || allRoles)
+		std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
+
+		if (_dynGetter != NULL)
 		{
-			std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
-
-			if (_dynGetter != NULL)
-			{
-				// call corresponding getter
-				int dynStat = (*_dynGetter)(_game, *i);
-				std::ostringstream ss;
-				ss << dynStat;
-				_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
-			}
-			else
-			{
-				_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
-			}
-
-			if ((*i)->getCraft() == 0)
-			{
-				_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
-			}
-			if ((*i)->getCovertOperation() != 0)
-			{
-				_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
-			}
-			if ((*i)->getDeath())
-			{
-				_lstSoldiers->setRowColor(row, _txtCraft->getColor());
-			}
-			row++;
+			// call corresponding getter
+			int dynStat = (*_dynGetter)(_game, *i);
+			std::ostringstream ss;
+			ss << dynStat;
+			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
 		}
+		else
+		{
+			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
+		}
+
+		if ((*i)->getCraft() == 0)
+		{
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+		}
+		if ((*i)->getCovertOperation() != 0)
+		{
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+		}
+		if ((*i)->getDeath())
+		{
+			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
+		}
+		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);
@@ -637,8 +695,7 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 	}
 	else
 	{
-		// "STR_SOLDIER_INFO" or any available soldier transformation
-		initList(0, selAction == "STR_ALL_ROLES");
+		initList(0);
 	}
 }
 
@@ -646,26 +703,26 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 * Displays the inventory screen for the soldiers inside the base.
 * @param action Pointer to an action.
 */
-void SoldiersState::btnInventoryClick(Action *)
-{
-	if (_base->getAvailableSoldiers(true, true) > 0)
-	{
-		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
-		_game->getSavedGame()->setBattleGame(bgame);
-		bgame->setMissionType("STR_BASE_DEFENSE");
-
-		if (_game->isCtrlPressed() && _game->isAltPressed())
-		{
-			_game->getSavedGame()->setDisableSoldierEquipment(true);
-		}
-		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
-		bgen.setBase(_base);
-		bgen.runInventory(0);
-
-		_game->getScreen()->clear();
-		_game->pushState(new InventoryState(false, 0, _base, true));
-	}
-}
+//void SoldiersState::btnInventoryClick(Action *)
+//{
+//	if (_base->getAvailableSoldiers(true, true) > 0)
+//	{
+//		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
+//		_game->getSavedGame()->setBattleGame(bgame);
+//		bgame->setMissionType("STR_BASE_DEFENSE");
+//
+//		if (_game->isCtrlPressed() && _game->isAltPressed())
+//		{
+//			_game->getSavedGame()->setDisableSoldierEquipment(true);
+//		}
+//		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+//		bgen.setBase(_base);
+//		bgen.runInventory(0);
+//
+//		_game->getScreen()->clear();
+//		_game->pushState(new InventoryState(false, 0, _base, true));
+//	}
+//}
 
 /**
  * Shows the selected soldier's info.
@@ -684,9 +741,14 @@ void SoldiersState::lstSoldiersClick(Action *action)
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
-	if (selAction == "STR_SOLDIER_INFO")
+	if (selAction == "STR_PERSONNEL_INFO" ||
+		selAction == "STR_SOLDIER_INFO" ||
+		selAction == "STR_PILOT_INFO" ||
+		selAction == "STR_AGENT_INFO" ||
+		selAction == "STR_SCIENTIST_INFO" ||
+		selAction == "STR_ENGINEER_INFO")
 	{
-		_game->pushState(new SoldierInfoState(_base, _lstSoldiers->getSelectedRow()));
+		_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
 	}
 	else
 	{

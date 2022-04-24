@@ -29,6 +29,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextEdit.h"
+#include "../Interface/ComboBox.h"
 #include "../Engine/Surface.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
@@ -37,6 +38,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Menu/ErrorMessageState.h"
 #include "SellState.h"
 #include "SoldierArmorState.h"
@@ -74,6 +76,9 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 		_list = _base->getSoldiers();
 	}
 
+	_ftaUI = _game->getMod()->getIsFTAGame();
+	_localChange = false;
+
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_rank = new Surface(26, 23, 4, 4);
@@ -85,7 +90,15 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_btnBonuses = new TextButton(16, 14, 242, 33);
 	_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
 	_btnSack = new TextButton(60, 14, 260, 33);
-	_btnDiary = new TextButton(60, 14, 260, 48);
+	if (_ftaUI)
+	{
+		_btnDiary = new TextButton(60, 14, 260, 33);
+	}
+	else
+	{
+		_btnDiary = new TextButton(60, 14, 260, 48);
+	}
+	_cbxRoles = new ComboBox(this, 60, 14, 260, 48, false);
 	_txtRank = new Text(130, 9, 0, 48);
 	_txtMissions = new Text(100, 9, 130, 48);
 	_txtKills = new Text(100, 9, 200, 48);
@@ -107,16 +120,25 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_txtTimeUnits = new Text(120, 9, 6, yPos);
 	_numTimeUnits = new Text(18, 9, 131, yPos);
 	_barTimeUnits = new Bar(170, 7, 150, yPos);
+	_txtManeuvering = new Text(120, 9, 6, yPos);
+	_numManeuvering = new Text(18, 9, 131, yPos);
+	_barManeuvering = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtStamina = new Text(120, 9, 6, yPos);
 	_numStamina = new Text(18, 9, 131, yPos);
 	_barStamina = new Bar(170, 7, 150, yPos);
+	_txtMissiles = new Text(120, 9, 6, yPos);
+	_numMissiles = new Text(18, 9, 131, yPos);
+	_bartMissiles = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtHealth = new Text(120, 9, 6, yPos);
 	_numHealth = new Text(18, 9, 131, yPos);
 	_barHealth = new Bar(170, 7, 150, yPos);
+	_txtDogfight = new Text(120, 9, 6, yPos);
+	_numDogfight = new Text(18, 9, 131, yPos);
+	_barDogfight = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtBravery = new Text(120, 9, 6, yPos);
@@ -127,11 +149,17 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_txtReactions = new Text(120, 9, 6, yPos);
 	_numReactions = new Text(18, 9, 131, yPos);
 	_barReactions = new Bar(170, 7, 150, yPos);
+	_txtTracking = new Text(120, 9, 6, yPos);
+	_numTracking = new Text(18, 9, 131, yPos);
+	_barTracking = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtFiring = new Text(120, 9, 6, yPos);
 	_numFiring = new Text(18, 9, 131, yPos);
 	_barFiring = new Bar(170, 7, 150, yPos);
+	_txtTactics = new Text(120, 9, 6, yPos);
+	_numTactics = new Text(18, 9, 131, yPos);
+	_barTactics = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtThrowing = new Text(120, 9, 6, yPos);
@@ -180,6 +208,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	add(_edtSoldier, "text1", "soldierInfo");
 	add(_btnSack, "button", "soldierInfo");
 	add(_btnDiary, "button", "soldierInfo");
+	add(_cbxRoles, "button", "soldierInfo");
 	add(_txtRank, "text1", "soldierInfo");
 	add(_txtMissions, "text1", "soldierInfo");
 	add(_txtKills, "text1", "soldierInfo");
@@ -193,14 +222,23 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	add(_txtTimeUnits, "text2", "soldierInfo");
 	add(_numTimeUnits, "numbers", "soldierInfo");
 	add(_barTimeUnits, "barTUs", "soldierInfo");
+	add(_txtManeuvering, "text2", "soldierInfo");
+	add(_numManeuvering, "numbers", "soldierInfo");
+	add(_barManeuvering, "barManeuvering", "soldierInfo");
 
 	add(_txtStamina, "text2", "soldierInfo");
 	add(_numStamina, "numbers", "soldierInfo");
 	add(_barStamina, "barEnergy", "soldierInfo");
+	add(_txtMissiles, "text2", "soldierInfo");
+	add(_numMissiles, "numbers", "soldierInfo");
+	add(_bartMissiles, "bartMissiles", "soldierInfo");
 
 	add(_txtHealth, "text2", "soldierInfo");
 	add(_numHealth, "numbers", "soldierInfo");
 	add(_barHealth, "barHealth", "soldierInfo");
+	add(_txtDogfight, "text2", "soldierInfo");
+	add(_numDogfight, "numbers", "soldierInfo");
+	add(_barDogfight, "barDogfight", "soldierInfo");
 
 	add(_txtBravery, "text2", "soldierInfo");
 	add(_numBravery, "numbers", "soldierInfo");
@@ -209,10 +247,16 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	add(_txtReactions, "text2", "soldierInfo");
 	add(_numReactions, "numbers", "soldierInfo");
 	add(_barReactions, "barReactions", "soldierInfo");
+	add(_txtTracking, "text2", "soldierInfo");
+	add(_numTracking, "numbers", "soldierInfo");
+	add(_barTracking, "barTracking", "soldierInfo");
 
 	add(_txtFiring, "text2", "soldierInfo");
 	add(_numFiring, "numbers", "soldierInfo");
 	add(_barFiring, "barFiring", "soldierInfo");
+	add(_txtTactics, "text2", "soldierInfo");
+	add(_numTactics, "numbers", "soldierInfo");
+	add(_barTactics, "barTactics", "soldierInfo");
 
 	add(_txtThrowing, "text2", "soldierInfo");
 	add(_numThrowing, "numbers", "soldierInfo");
@@ -297,47 +341,66 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 
 	_btnSack->setText(tr("STR_SACK"));
 	_btnSack->onMouseClick((ActionHandler)&SoldierInfoState::btnSackClick);
+	if (_ftaUI)
+	{
+		_btnSack->setVisible(false);
+		_btnSack->setX(0); //go away!
+		_btnSack->setY(0);
+		_btnSack->setWidth(0);
+		_btnSack->setHeight(0);
+	}
 
 	_btnDiary->setText(tr("STR_DIARY"));
 	_btnDiary->onMouseClick((ActionHandler)&SoldierInfoState::btnDiaryClick);
 	_btnDiary->setVisible(Options::soldierDiaries);
 
+	_rolesList.push_back("STR_SOLDIER");
+	_rolesList.push_back("STR_PILOT");
+	_rolesList.push_back("STR_AGENT");
+	_rolesList.push_back("STR_SCIENTIST");
+	_rolesList.push_back("STR_ENGINEER");
+	_cbxRoles->setOptions(_rolesList, true);
+	_cbxRoles->setSelected(0);
+	_cbxRoles->onChange((ActionHandler)&SoldierInfoState::cbxRolesChange);
+	_cbxRoles->setVisible(_ftaUI);
+
 	_txtPsionic->setText(tr("STR_IN_PSIONIC_TRAINING"));
 
 	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
-
 	_barTimeUnits->setScale(1.0);
+	_txtManeuvering->setText(tr("STR_MANEUVERING"));
+	_barManeuvering->setScale(1.0);
 
 	_txtStamina->setText(tr("STR_STAMINA"));
-
 	_barStamina->setScale(1.0);
+	_txtMissiles->setText(tr("STR_MISSILE_OPERATION"));
+	_bartMissiles->setScale(1.0);
 
 	_txtHealth->setText(tr("STR_HEALTH"));
-
 	_barHealth->setScale(1.0);
+	_txtDogfight->setText(tr("STR_DOGFIGHT"));
+	_barDogfight->setScale(1.0);
 
 	_txtBravery->setText(tr("STR_BRAVERY"));
-
 	_barBravery->setScale(1.0);
 
 	_txtReactions->setText(tr("STR_REACTIONS"));
-
 	_barReactions->setScale(1.0);
+	_txtTracking->setText(tr("STR_TRACKING"));
+	_barTracking->setScale(1.0);
 
 	_txtFiring->setText(tr("STR_FIRING_ACCURACY"));
-
 	_barFiring->setScale(1.0);
+	_txtTactics->setText(tr("STR_TACTICS"));
+	_barTactics->setScale(1.0);
 
 	_txtThrowing->setText(tr("STR_THROWING_ACCURACY"));
-
 	_barThrowing->setScale(1.0);
 
 	_txtMelee->setText(tr("STR_MELEE_ACCURACY"));
-
 	_barMelee->setScale(1.0);
 
 	_txtStrength->setText(tr("STR_STRENGTH"));
-
 	_barStrength->setScale(1.0);
 
 	if (_game->getMod()->isManaFeatureEnabled())
@@ -347,11 +410,9 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	}
 
 	_txtPsiStrength->setText(tr("STR_PSIONIC_STRENGTH"));
-
 	_barPsiStrength->setScale(1.0);
 
 	_txtPsiSkill->setText(tr("STR_PSIONIC_SKILL"));
-
 	_barPsiSkill->setScale(1.0);
 }
 
@@ -389,8 +450,39 @@ void SoldierInfoState::init()
 	UnitStats withArmor = *_soldier->getStatsWithAllBonuses();
 	_btnBonuses->setVisible(hasBonus);
 
+	SoldierRole role = _soldier->getBestRole();
+	// here we set default display, do not do this if rendering after combobox change!
+	if (!_localChange) 
+	{
+		switch (role)
+		{
+		case OpenXcom::ROLE_SOLDIER:
+			_cbxRoles->setSelected(0);
+			break;
+		case OpenXcom::ROLE_PILOT:
+			_cbxRoles->setSelected(1);
+			break;
+		case OpenXcom::ROLE_AGENT:
+			_cbxRoles->setSelected(2);
+			break;
+		case OpenXcom::ROLE_SCIENTIST:
+			_cbxRoles->setSelected(3);
+			break;
+		case OpenXcom::ROLE_ENGINEER:
+			_cbxRoles->setSelected(4);
+			break;
+		default:
+			_cbxRoles->setSelected(0);
+			break;
+		}
+	}
+
 	SurfaceSet *texture = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
 	auto frame = texture->getFrame(_soldier->getRankSprite());
+	if (_ftaUI)
+	{
+		frame = texture->getFrame(_soldier->getRoleRankSprite(role));
+	}
 	if (frame)
 	{
 		frame->blitNShade(_rank, 0, 0);
@@ -430,12 +522,25 @@ void SoldierInfoState::init()
 	_barTimeUnits->setValue(withArmor.tu);
 	_barTimeUnits->setValue2(std::min(withArmor.tu, initial->tu));
 
+	std::ostringstream ss20;
+	ss20 << withArmor.maneuvering;
+	_numManeuvering->setText(ss20.str());
+	_barManeuvering->setMax(current->maneuvering);
+	_barManeuvering->setValue(withArmor.maneuvering);
+	_barManeuvering->setValue2(std::min(withArmor.maneuvering, initial->maneuvering));
+
 	std::ostringstream ss2;
 	ss2 << withArmor.stamina;
 	_numStamina->setText(ss2.str());
 	_barStamina->setMax(current->stamina);
 	_barStamina->setValue(withArmor.stamina);
 	_barStamina->setValue2(std::min(withArmor.stamina, initial->stamina));
+	std::ostringstream ss21;
+	ss21 << withArmor.missiles;
+	_numMissiles->setText(ss21.str());
+	_bartMissiles->setMax(current->missiles);
+	_bartMissiles->setValue(withArmor.missiles);
+	_bartMissiles->setValue2(std::min(withArmor.missiles, initial->missiles));
 
 	std::ostringstream ss3;
 	ss3 << withArmor.health;
@@ -443,6 +548,12 @@ void SoldierInfoState::init()
 	_barHealth->setMax(current->health);
 	_barHealth->setValue(withArmor.health);
 	_barHealth->setValue2(std::min(withArmor.health, initial->health));
+	std::ostringstream ss22;
+	ss22 << withArmor.dogfight;
+	_numDogfight->setText(ss22.str());
+	_barDogfight->setMax(current->dogfight);
+	_barDogfight->setValue(withArmor.dogfight);
+	_barDogfight->setValue2(std::min(withArmor.dogfight, initial->dogfight));
 
 	std::ostringstream ss4;
 	ss4 << withArmor.bravery;
@@ -457,6 +568,12 @@ void SoldierInfoState::init()
 	_barReactions->setMax(current->reactions);
 	_barReactions->setValue(withArmor.reactions);
 	_barReactions->setValue2(std::min(withArmor.reactions, initial->reactions));
+	std::ostringstream ss23;
+	ss23 << withArmor.tracking;
+	_numTracking->setText(ss23.str());
+	_barTracking->setMax(current->tracking);
+	_barTracking->setValue(withArmor.tracking);
+	_barTracking->setValue2(std::min(withArmor.tracking, initial->tracking));
 
 	std::ostringstream ss6;
 	ss6 << withArmor.firing;
@@ -464,6 +581,12 @@ void SoldierInfoState::init()
 	_barFiring->setMax(current->firing);
 	_barFiring->setValue(withArmor.firing);
 	_barFiring->setValue2(std::min(withArmor.firing, initial->firing));
+	std::ostringstream ss24;
+	ss24 << withArmor.tactics;
+	_numTactics->setText(ss24.str());
+	_barTactics->setMax(current->tactics);
+	_barTactics->setValue(withArmor.tactics);
+	_barTactics->setValue2(std::min(withArmor.tactics, initial->tactics));
 
 	std::ostringstream ss7;
 	ss7 << withArmor.throwing;
@@ -485,6 +608,130 @@ void SoldierInfoState::init()
 	_barStrength->setMax(current->strength);
 	_barStrength->setValue(withArmor.strength);
 	_barStrength->setValue2(std::min(withArmor.strength, initial->strength));
+
+	//now we should decide what stats set to show based on seleced role preview mod
+	if (_ftaUI)
+	{
+		SoldierRole selected = static_cast<SoldierRole>(_cbxRoles->getSelected());
+		if (selected == ROLE_SOLDIER)
+		{
+			_txtTimeUnits->setVisible(true);
+			_numTimeUnits->setVisible(true);
+			_barTimeUnits->setVisible(true);
+
+			_txtStamina->setVisible(true);
+			_numStamina->setVisible(true);
+			_barStamina->setVisible(true);
+
+			_txtHealth->setVisible(true);
+			_numHealth->setVisible(true);
+			_barHealth->setVisible(true);
+
+			_txtBravery->setVisible(true);
+			_numBravery->setVisible(true);
+			_barBravery->setVisible(true);
+
+			_txtReactions->setVisible(true);
+			_numReactions->setVisible(true);
+			_barReactions->setVisible(true);
+
+			_txtFiring->setVisible(true);
+			_numFiring->setVisible(true);
+			_barFiring->setVisible(true);
+
+			_txtThrowing->setVisible(true);
+			_numThrowing->setVisible(true);
+			_barThrowing->setVisible(true);
+
+			_txtMelee->setVisible(true);
+			_numMelee->setVisible(true);
+			_barMelee->setVisible(true);
+
+			_txtStrength->setVisible(true);
+			_numStrength->setVisible(true);
+			_barStrength->setVisible(true);
+
+			// now we wan't to hide stats from another roles;
+			_txtManeuvering->setVisible(false);
+			_numManeuvering->setVisible(false);
+			_barManeuvering->setVisible(false);
+
+			_txtMissiles->setVisible(false);
+			_numMissiles->setVisible(false);
+			_bartMissiles->setVisible(false);
+
+			_txtDogfight->setVisible(false);
+			_numDogfight->setVisible(false);
+			_barDogfight->setVisible(false);
+
+			_txtTracking->setVisible(false);
+			_numTracking->setVisible(false);
+			_barTracking->setVisible(false);
+
+			_txtTactics->setVisible(false);
+			_numTactics->setVisible(false);
+			_barTactics->setVisible(false);
+		}
+		else if (selected == ROLE_PILOT)
+		{
+			_txtManeuvering->setVisible(true);
+			_numManeuvering->setVisible(true);
+			_barManeuvering->setVisible(true);
+
+			_txtMissiles->setVisible(true);
+			_numMissiles->setVisible(true);
+			_bartMissiles->setVisible(true);
+
+			_txtDogfight->setVisible(true);
+			_numDogfight->setVisible(true);
+			_barDogfight->setVisible(true);
+
+			_txtBravery->setVisible(true);
+			_numBravery->setVisible(true);
+			_barBravery->setVisible(true);
+
+			_txtTracking->setVisible(true);
+			_numTracking->setVisible(true);
+			_barTracking->setVisible(true);
+
+			_txtTactics->setVisible(true);
+			_numTactics->setVisible(true);
+			_barTactics->setVisible(true);
+
+			// now we wan't to hide stats from another roles;
+			_txtTimeUnits->setVisible(false);
+			_numTimeUnits->setVisible(false);
+			_barTimeUnits->setVisible(false);
+
+			_txtStamina->setVisible(false);
+			_numStamina->setVisible(false);
+			_barStamina->setVisible(false);
+
+			_txtHealth->setVisible(false);
+			_numHealth->setVisible(false);
+			_barHealth->setVisible(false);
+
+			_txtReactions->setVisible(false);
+			_numReactions->setVisible(false);
+			_barReactions->setVisible(false);
+
+			_txtFiring->setVisible(false);
+			_numFiring->setVisible(false);
+			_barFiring->setVisible(false);
+
+			_txtThrowing->setVisible(false);
+			_numThrowing->setVisible(false);
+			_barThrowing->setVisible(false);
+
+			_txtMelee->setVisible(false);
+			_numMelee->setVisible(false);
+			_barMelee->setVisible(false);
+
+			_txtStrength->setVisible(false);
+			_numStrength->setVisible(false);
+			_barStrength->setVisible(false);
+		}
+	}
 
 	std::string wsArmor;
 	if (_soldier->getArmor() == _soldier->getRules()->getDefaultArmor())
@@ -567,6 +814,7 @@ void SoldierInfoState::init()
 
 	_txtPsionic->setVisible(_soldier->isInPsiTraining());
 
+	//we want to apply psionic visibility at the very end to overwrite preview settings
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
 		if (_game->getSavedGame()->isManaUnlocked(_game->getMod()))
@@ -648,6 +896,7 @@ void SoldierInfoState::init()
 	{
 		_txtDead->setVisible(false);
 	}
+	_localChange = false; // become ready for general screen update again.
 }
 
 /**
@@ -770,6 +1019,12 @@ void SoldierInfoState::btnSackClick(Action *)
 void SoldierInfoState::btnDiaryClick(Action *)
 {
 	_game->pushState(new SoldierDiaryOverviewState(_base, _soldierId, this));
+}
+
+void SoldierInfoState::cbxRolesChange(Action *action)
+{
+	_localChange = true;
+	init();
 }
 
 /**

@@ -54,17 +54,17 @@ struct UnitStats
 	constexpr static int OverkillMultipler = 4;
 
 	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana,
-		manuvering, missiles, dogfight, tracking, tactics;
+		maneuvering, missiles, dogfight, tracking, tactics;
 
 	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
 				  strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
-				  manuvering(0), missiles(0), dogfight(0), tracking(0), tactics(0){};
+				  maneuvering(0), missiles(0), dogfight(0), tracking(0), tactics(0){};
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
-		int manuvering, int missiles, int dogfight, int tracking, int tactics):
+		int maneuvering, int missiles, int dogfight, int tracking, int tactics):
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
-		manuvering(manuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), tactics(tactics){};
+		maneuvering(maneuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), tactics(tactics){};
 	UnitStats& operator+=(const UnitStats& stats) {
 		tu += stats.tu;
 		stamina += stats.stamina;
@@ -78,7 +78,7 @@ struct UnitStats
 		psiSkill += stats.psiSkill;
 		melee += stats.melee;
 		mana += stats.mana;
-		manuvering += stats.manuvering;
+		maneuvering += stats.maneuvering;
 		missiles += stats.missiles;
 		dogfight += stats.dogfight;
 		tracking += stats.tracking;
@@ -97,7 +97,7 @@ struct UnitStats
 		psiSkill + stats.psiSkill,
 		melee + stats.melee,
 		mana + stats.mana,
-		manuvering + stats.manuvering,
+		maneuvering + stats.maneuvering,
 		missiles + stats.missiles,
 		dogfight + stats.dogfight,
 		tracking + stats.tracking,
@@ -115,7 +115,7 @@ struct UnitStats
 		psiSkill -= stats.psiSkill;
 		melee -= stats.melee;
 		mana -= stats.mana;
-		manuvering -= stats.manuvering;
+		maneuvering -= stats.maneuvering;
 		missiles -= stats.missiles;
 		dogfight -= stats.dogfight;
 		tracking -= stats.tracking;
@@ -134,14 +134,14 @@ struct UnitStats
 		psiSkill - stats.psiSkill,
 		melee - stats.melee,
 		mana - stats.mana,
-		manuvering - stats.manuvering,
+		maneuvering - stats.maneuvering,
 		missiles - stats.missiles,
 		dogfight - stats.dogfight,
 		tracking - stats.tracking,
 		tactics - stats.tactics); }
 	UnitStats operator-() const { return UnitStats(
 		-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana,
-		-manuvering, -missiles, -dogfight, -tracking, -tactics); }
+		-maneuvering, -missiles, -dogfight, -tracking, -tactics); }
 	void merge(const UnitStats& stats) {
 		tu = (stats.tu ? stats.tu : tu);
 		stamina = (stats.stamina ? stats.stamina : stamina);
@@ -155,7 +155,7 @@ struct UnitStats
 		psiSkill = (stats.psiSkill ? stats.psiSkill : psiSkill);
 		melee = (stats.melee ? stats.melee : melee);
 		mana = (stats.mana ? stats.mana : mana);
-		manuvering = (stats.manuvering ? stats.manuvering : manuvering);
+		maneuvering = (stats.maneuvering ? stats.maneuvering : maneuvering);
 		missiles = (stats.missiles ? stats.missiles : missiles);
 		dogfight = (stats.dogfight ? stats.dogfight : dogfight);
 		tracking = (stats.tracking ? stats.tracking : tracking);
@@ -170,7 +170,7 @@ struct UnitStats
 			&UnitStats::tu, &UnitStats::stamina, &UnitStats::health, &UnitStats::bravery,
 			&UnitStats::reactions, &UnitStats::firing, &UnitStats::throwing, &UnitStats::strength,
 			&UnitStats::psiStrength, &UnitStats::psiSkill, &UnitStats::melee, &UnitStats::mana,
-			&UnitStats::manuvering, &UnitStats::missiles,
+			&UnitStats::maneuvering, &UnitStats::missiles,
 			&UnitStats::dogfight, &UnitStats::tracking,
 			&UnitStats::tactics,
 		};
@@ -687,7 +687,7 @@ namespace YAML
 			node["psiSkill"] = rhs.psiSkill;
 			node["melee"] = rhs.melee;
 			node["mana"] = rhs.mana;
-			node["manuvering"] = rhs.manuvering;
+			node["maneuvering"] = rhs.maneuvering;
 			node["missiles"] = rhs.missiles;
 			node["dogfight"] = rhs.dogfight;
 			node["tracking"] = rhs.tracking;
@@ -713,7 +713,7 @@ namespace YAML
 			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
 			rhs.melee = node["melee"].as<int>(rhs.melee);
 			rhs.mana = node["mana"].as<int>(rhs.mana);
-			rhs.manuvering = node["manuvering"].as<int>(rhs.manuvering);
+			rhs.maneuvering = node["maneuvering"].as<int>(rhs.maneuvering);
 			rhs.missiles = node["missiles"].as<int>(rhs.missiles);
 			rhs.dogfight = node["dogfight"].as<int>(rhs.dogfight);
 			rhs.tracking = node["tracking"].as<int>(rhs.tracking);

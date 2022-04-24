@@ -34,6 +34,9 @@ class RuleItem;
 class RuleSkill;
 class Armor;
 
+/// Soldier roles for FtA game
+enum SoldierRole { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4 };
+
 /**
  * Represents the creation data for an X-COM unit.
  * This info is copied to either Soldier for Geoscape or BattleUnit for Battlescape.
@@ -42,8 +45,6 @@ class Armor;
 class RuleSoldier
 {
 public:
-	/// Soldier roles for FtA game
-	enum SoldierRole { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_SCIENTIST = 2, ROLE_ENGINEER = 3 };
 	/// Number of bits for soldier gender.
 	static constexpr int LookGenderBits = 1;
 	/// Number of bits for soldier look.
@@ -64,7 +65,7 @@ public:
 
 private:
 	std::string _type;
-	SoldierRole _role;
+	std::vector<SoldierRole> _roles;
 	int _listOrder;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
@@ -91,12 +92,18 @@ private:
 	int _avatarOffsetX, _avatarOffsetY, _flagOffset;
 	bool _allowPromotion, _allowPiloting, _showTypeInInventory;
 	std::vector<StatString*> _statStrings;
-	std::vector<std::string> _rankStrings;
+	std::vector<std::string> _rankStrings, _pilotRankStrings, _agentRankStrings, _scientistRankStrings, _engineerRankStrings;
 	int _rankSprite, _rankSpriteBattlescape, _rankSpriteTiny;
+	int _pilotRankSprite, _pilotRankSpriteBattlescape, _pilotRankSpriteTiny;
+	int _agentRankSprite, _agentRankSpriteBattlescape, _agentRankSpriteTiny;
+	int _scientistRankSprite, _scientistRankSpriteBattlescape, _scientistRankSpriteTiny;
+	int _engineerRankSprite, _engineerRankSpriteBattlescape, _engineerRankSpriteTiny;
 	int _skillIconSprite;
 	std::vector<std::string> _skillNames;
 	std::vector<const RuleSkill*> _skills;
 	ScriptValues<RuleSoldier> _scriptValues;
+
+	void loadRoles(const std::vector<int> &r);
 
 	void addSoldierNamePool(const std::string &namFile);
 public:
@@ -111,7 +118,7 @@ public:
 	/// Gets the soldier's type.
 	const std::string& getType() const;
 	/// Gets the soldier's role.
-	SoldierRole getRole() const { return _role; }
+	std::vector<SoldierRole> getRoles() const { return _roles; }
 	/// Gets whether or not the soldier type should be displayed in the inventory.
 	bool getShowTypeInInventory() const { return _showTypeInInventory; }
 	/// Gets the list/sort order of the soldier's type.
@@ -216,6 +223,19 @@ public:
 	int getRankSpriteBattlescape() const;
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
+	/// Getters for FtA's roles sprite IDs.
+	int getPilotRankSprite() const { return _pilotRankSprite; };
+	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; };
+	int getPilotRankSpriteTiny() const { return _pilotRankSpriteTiny; };
+	int getAgentRankSprite() const { return _agentRankSprite; };
+	int getAgentRankSpriteBattlescape() const { return _agentRankSpriteBattlescape; };
+	int getAgentRankSpriteTiny() const { return _agentRankSpriteTiny; };
+	int getScientistRankSprite() const { return _scientistRankSprite; };
+	int getScientistSpriteBattlescape() const { return _scientistRankSpriteBattlescape; };
+	int getScientistSpriteTiny() const { return _scientistRankSpriteTiny; };
+	int getEngineerRankSprite() const { return _engineerRankSprite; };
+	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; };
+	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; };
 
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }

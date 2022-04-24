@@ -112,15 +112,7 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	_txtName->setText(tr("STR_NAME_UC"));
 
 	_txtRank->setText(tr("STR_RANK"));
-
-	if (_game->getMod()->getIsFTAGame())
-	{
-		_txtCraft->setText(tr("STR_ASSIGNMENT"));
-	}
-	else
-	{
-		_txtCraft->setText(tr("STR_CRAFT"));
-	}
+	_txtCraft->setText(tr("STR_ASSIGNMENT"));
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
@@ -139,7 +131,7 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	PUSH_IN("STR_MISSIONS2", missionsStat); //show combat flights instead #FINNIKTODO
 	PUSH_IN("STR_KILLS2", killsStat); //show shot down targets instead #FINNIKTODO
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	PUSH_IN("STR_MANUVERING", manuveringStat);
+	PUSH_IN("STR_MANEUVERING", maneuveringStat);
 	PUSH_IN("STR_MISSILE_OPERATING", missilesStat);
 	PUSH_IN("STR_DOGFIGHT", dogfightStat);
 	PUSH_IN("STR_BRAVERY", braveryStat);
@@ -281,7 +273,7 @@ void PilotsState::initList(size_t scrl)
 	unsigned int row = 0;
 	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if ((*i)->getRules()->getRole() == 1) // only licensed pilots
+		if ((*i)->getRoleRank(ROLE_PILOT) > 0) // only licensed pilots
 		{
 			std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
 

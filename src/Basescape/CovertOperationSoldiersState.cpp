@@ -265,7 +265,7 @@ void CovertOperationSoldiersState::initList(size_t scrl)
 	auto recovery = _base->getSumRecoveryPerDay();
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if ((*i)->getRules()->getRole() == 0) //let's make it simple for now
+		if ((*i)->getRoleRank(ROLE_SOLDIER) > 0) // let's make it simple for now
 		{
 			if (_dynGetter != NULL)
 			{

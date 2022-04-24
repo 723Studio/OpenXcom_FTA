@@ -43,6 +43,13 @@
 
 namespace OpenXcom
 {
+void Soldier::loadRoles(const std::map<int, int> &r)
+{
+	for (auto i : r)
+	{
+		addRole(static_cast<SoldierRole>(i.first), i.second);
+	}
+}
 
 /**
  * Initializes a new soldier, either blank or randomly generated.
@@ -75,7 +82,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.psiStrength = RNG::generate(minStats.psiStrength, maxStats.psiStrength);
 		_initialStats.melee = RNG::generate(minStats.melee, maxStats.melee);
 		_initialStats.psiSkill = minStats.psiSkill;
-		_initialStats.manuvering = RNG::generate(minStats.manuvering, maxStats.manuvering);
+		_initialStats.maneuvering = RNG::generate(minStats.maneuvering, maxStats.maneuvering);
 		_initialStats.missiles = RNG::generate(minStats.missiles, maxStats.missiles);
 		_initialStats.dogfight = RNG::generate(minStats.dogfight, maxStats.dogfight);
 		_initialStats.tracking = RNG::generate(minStats.tracking, maxStats.tracking);
@@ -125,14 +132,17 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 			_name += " Doe";
 			_callsign = "";
 		}
-		auto role = rules->getRole();
-		if (!role == NULL)
+		auto role = rules->getRoles();
+		if (!role.empty())
 		{
-			addRole(role);
+			for (auto r : role)
+			{
+				addRole(r);
+			}
 		}
 		else
 		{
-			addRole(RuleSoldier::ROLE_SOLDIER);
+			addRole(ROLE_SOLDIER);
 		}
 	}
 
@@ -197,6 +207,14 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	}
 
 	_rank = (SoldierRank)node["rank"].as<int>(_rank);
+	if (node["roles"])
+	{
+		loadRoles(node["roles"].as<std::map<int, int> >());
+	}
+	else
+	{
+		_roles.emplace(ROLE_SOLDIER, _rank);
+	}
 	_gender = (SoldierGender)node["gender"].as<int>(_gender);
 	_look = (SoldierLook)node["look"].as<int>(_look);
 	_lookVariant = node["lookVariant"].as<int>(_lookVariant);
@@ -293,6 +311,15 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 		node["callsign"] = _callsign;
 	}
 	node["nationality"] = _nationality;
+	if (!_roles.empty())
+	{
+		std::map<int, int> convert;
+		for (auto i : _roles)
+		{
+			convert.emplace(static_cast<int>(i.first), i.second);
+		}
+		node["roles"] = convert;
+	}
 	node["initialStats"] = _initialStats;
 	node["currentStats"] = _currentStats;
 	if (_dailyDogfightExperienceCache.firing > 0 || _dailyDogfightExperienceCache.reactions > 0 || _dailyDogfightExperienceCache.bravery > 0)
@@ -1947,15 +1974,116 @@ bool Soldier::handlePendingTransformation()
 	return finished;
 }
 
-
-void Soldier::addRole(RuleSoldier::SoldierRole newRole)
+int Soldier::getRoleRank(SoldierRole role)
 {
-	_roles.push_back(newRole);
+	int rank = 0;
+	for (auto i : _roles)
+	{
+		if (i.first == role)
+		{
+			rank = i.second;
+		}
+	}
+	return rank;
 }
 
-bool Soldier::hasRole(RuleSoldier::SoldierRole role)
+std::pair<SoldierRole, int> Soldier::getBestRoleRank()
 {
-	return std::find(_roles.begin(), _roles.end(), role) != _roles.end();
+	int max = INT_MIN;
+	SoldierRole role = ROLE_SOLDIER;
+	for (auto i : _roles)
+	{
+		if (i.second > max)
+		{
+			max = i.second;
+			role = i.first;
+		}
+	}
+	return std::make_pair(role, max);
+}
+
+int Soldier::getRoleRankSprite(SoldierRole role)
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSprite() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSprite() + roleRank - 1;
+		break;
+	}
+	return id;
+}
+
+int Soldier::getRoleRankSpriteBattlescape(SoldierRole role)
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSpriteBattlescape() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSpriteBattlescape() + roleRank - 1;
+		break;
+	}
+	return id;
+}
+
+int Soldier::getRoleRankSpriteTiny(SoldierRole role)
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSpriteTiny() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSpriteTiny() + roleRank - 1;
+		break;
+	}
+	return id;
 }
 
 /**

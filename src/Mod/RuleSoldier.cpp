@@ -45,7 +45,12 @@ RuleSoldier::RuleSoldier(const std::string &type) : _type(type), _role(ROLE_SOLD
 	_totalSoldierNamePoolWeight(0),
 	_avatarOffsetX(67), _avatarOffsetY(48), _flagOffset(0),
 	_allowPromotion(true), _allowPiloting(true), _showTypeInInventory(false),
-	_rankSprite(42), _rankSpriteBattlescape(20), _rankSpriteTiny(0), _skillIconSprite(1)
+	_rankSprite(42), _rankSpriteBattlescape(20), _rankSpriteTiny(0),
+	_pilotRankSprite(42), _pilotRankSpriteBattlescape(20), _pilotRankSpriteTiny(0),
+	_agentRankSprite(42), _agentRankSpriteBattlescape(20), _agentRankSpriteTiny(0),
+	_scientistRankSprite(42), _scientistRankSpriteBattlescape(20), _scientistRankSpriteTiny(0),
+	_engineerRankSprite(42), _engineerRankSpriteBattlescape(20), _engineerRankSpriteTiny(0),
+	_skillIconSprite(1)
 {
 }
 
@@ -76,7 +81,8 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 		load(parent, mod, listOrder, parsers);
 	}
 	_type = node["type"].as<std::string>(_type);
-	_role = (SoldierRole)node["role"].as<int>(_role);
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
 	// Just in case
 	if (_type == "XCOM")
 		_type = "STR_SOLDIER";
@@ -182,6 +188,23 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 	mod->loadSpriteOffset(_type, _rankSprite, node["rankSprite"], "BASEBITS.PCK");
 	mod->loadSpriteOffset(_type, _rankSpriteBattlescape, node["rankBattleSprite"], "SMOKE.PCK");
 	mod->loadSpriteOffset(_type, _rankSpriteTiny, node["rankTinySprite"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _pilotRankSprite, node["pilotRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _pilotRankSpriteBattlescape, node["pilotRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _pilotRankSpriteTiny, node["pilotRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _agentRankSprite, node["agentRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _agentRankSpriteBattlescape, node["agentRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _agentRankSpriteTiny, node["agentRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _scientistRankSprite, node["scientistRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _scientistRankSpriteBattlescape, node["scientistRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _scientistRankSpriteTiny, node["scientistRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _engineerRankSprite, node["engineerRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _engineerRankSpriteBattlescape, node["engineerRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _engineerRankSpriteTiny, node["engineerRankSpriteTiny"], "TinyRanks");
+
 	mod->loadSpriteOffset(_type, _skillIconSprite, node["skillIconSprite"], "SPICONS.DAT");
 
 	mod->loadNames(_type, _skillNames, node["skills"]);
@@ -243,6 +266,18 @@ void RuleSoldier::afterLoad(const Mod* mod)
 
 	_manaMissingWoundThreshold = mod->getManaWoundThreshold();
 	_healthMissingWoundThreshold = mod->getHealthWoundThreshold();
+}
+
+void RuleSoldier::loadRoles(const std::vector<int> &r)
+{
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
 }
 
 void RuleSoldier::addSoldierNamePool(const std::string &namFile)

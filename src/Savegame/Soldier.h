@@ -47,7 +47,6 @@ class RuleSoldierTransformation;
 class RuleSoldierBonus;
 class Base;
 struct BaseSumDailyRecovery;
-enum RuleSoldier::SoldierRole;
 
 /**
  * Represents a soldier hired by the player.
@@ -67,6 +66,7 @@ private:
 	std::string _name;
 	std::string _callsign;
 	int _id, _nationality, _improvement, _psiStrImprovement;
+	std::map<SoldierRole, int> _roles;
 	const RuleSoldier *_rules;
 	UnitStats _initialStats, _currentStats, _tmpStatsWithSoldierBonuses, _tmpStatsWithAllBonuses;
 	UnitStats _dailyDogfightExperienceCache;
@@ -93,10 +93,12 @@ private:
 	std::string _statString;
 	bool _corpseRecovered;
 	std::map<std::string, int> _previousTransformations, _transformationBonuses, _pendingTransformations;
-	std::vector<RuleSoldier::SoldierRole> _roles; 
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
-public:
+
+	void loadRoles(const std::map<int, int> &r);
+
+  public:
 	/// Creates a new soldier.
 	Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id = 0);
 	/// Cleans up the soldier.
@@ -308,9 +310,19 @@ public:
 	bool hasPendingTransformation() const { return !_pendingTransformations.empty() ;}
 	/// Gets pending transformation name
 	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
-	std::vector<RuleSoldier::SoldierRole> getRoles() const { return _roles; };
-	void addRole(RuleSoldier::SoldierRole newRole);
-	bool hasRole(RuleSoldier::SoldierRole role);
+
+	std::map<SoldierRole, int> getRoles() const { return _roles; };
+	void addRole(SoldierRole newRole, int rank = 1) { _roles[newRole] += rank; };
+	int getRoleRank(SoldierRole role);
+	std::pair<SoldierRole, int> getBestRoleRank();
+	SoldierRole getBestRole() { return getBestRoleRank().first; };
+	/// Gets a sprite version of the soldier for specific role. Used for BASEBITS.PCK.
+	int getRoleRankSprite(SoldierRole role);
+	/// Gets a sprite version of the soldier for specific role. Used for SMOKE.PCK.
+	int getRoleRankSpriteBattlescape(SoldierRole role);
+	/// Gets a sprite version of the soldier for specific role. Used for TinyRanks.
+	int getRoleRankSpriteTiny(SoldierRole role);
+
 	/// Calculates how this project changes the soldier's stats
 	UnitStats calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType);
 	/// Gets all the soldier bonuses

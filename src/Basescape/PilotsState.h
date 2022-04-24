@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include "SoldierSortUtil.h"
+#include "../Mod/RuleSoldier.h"
 #include <vector>
 
 namespace OpenXcom
@@ -31,6 +32,7 @@ class TextList;
 class ComboBox;
 class Base;
 class Soldier;
+class RuleSoldier;
 struct SortFunctor;
 
 /**
