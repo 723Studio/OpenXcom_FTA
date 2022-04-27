@@ -52,6 +52,8 @@ private:
 	Uint8 _otherCraftColor;
 	std::vector<Soldier *> _origSoldierOrder;
 	std::vector<SortFunctor *> _sortFunctors;
+	std::vector<int> _soldierNumbers;
+	bool _ftaUI, _isInterceptor;
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);

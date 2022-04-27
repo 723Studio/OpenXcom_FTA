@@ -228,7 +228,7 @@ public:
 	/// Returns the crew to their base (using transfers).
 	void evacuateCrew(const Mod *mod);
 	/// Checks if a target is detected by the craft's radar.
-	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, int bonus, bool alreadyTracked) const;
 	/// Handles craft logic.
 	bool think();
 	/// Is the craft about to take off?
@@ -281,6 +281,10 @@ public:
 	int getPilotAccuracyBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Calculates the dodge bonus based on pilot skills.
 	int getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
+	/// Calculates the tracking bonus based on pilot skills.
+	int getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
+	/// Calculates the tactics bonus based on pilot skills.
+	int getPilotTacticsBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
 	/// Calculates the approach speed modifier based on pilot skills.
 	int getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Gets the craft's vehicles of a certain type.

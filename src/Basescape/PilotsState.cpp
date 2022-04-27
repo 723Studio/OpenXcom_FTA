@@ -251,6 +251,7 @@ void PilotsState::init()
 void PilotsState::initList(size_t scrl)
 {
 	_lstPilots->clearList();
+	_soldierNumbers.clear();
 
 	_filteredListOfPilots.clear();
 
@@ -271,8 +272,11 @@ void PilotsState::initList(size_t scrl)
 
 	auto recovery = _base->getSumRecoveryPerDay();
 	unsigned int row = 0;
+	int it = 0;
 	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
+		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
+		it++;
 		if ((*i)->getRoleRank(ROLE_PILOT) > 0) // only licensed pilots
 		{
 			std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
@@ -343,7 +347,7 @@ void PilotsState::btnMemorialClick(Action *)
  */
 void PilotsState::lstSoldiersClick(Action *action)
 {
-	_game->pushState(new SoldierInfoState(_base, _lstPilots->getSelectedRow()));
+	_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstPilots->getSelectedRow())));
 }
 
 }

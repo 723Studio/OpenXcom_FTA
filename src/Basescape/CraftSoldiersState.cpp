@@ -64,6 +64,8 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		// no battlescape map available
 		hidePreview = true;
 	}
+	_isInterceptor = c->getRules()->getPilots() > 0 && !c->getRules()->getAllowLanding();
+	_ftaUI = _game->getMod()->getIsFTAGame();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -138,24 +140,45 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (_ftaUI)
 	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		PUSH_IN("STR_ROLE_UC", roleStat);
+		PUSH_IN("STR_RANK", roleRankStat);
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
+	else
+	{
+		PUSH_IN("STR_RANK", rankStat);
+	}
+	if (_ftaUI && _isInterceptor)
+	{
+		// pilot section
+		PUSH_IN("STR_MANEUVERING", maneuveringStat);
+		PUSH_IN("STR_MISSILE_OPERATION", missilesStat);
+		PUSH_IN("STR_DOGFIGHT", dogfightStat);
+		PUSH_IN("STR_BRAVERY", braveryStat);
+		PUSH_IN("STR_TRACKING", trackingStat);
+		PUSH_IN("STR_TACTICS", tacticsStat);
+	}
+	else
+	{
+		PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
+		PUSH_IN("STR_MISSIONS2", missionsStat);
+		PUSH_IN("STR_KILLS2", killsStat);
+		PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
+		if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+		{
+			PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		}
+		PUSH_IN("STR_TIME_UNITS", tuStat);
+		PUSH_IN("STR_STAMINA", staminaStat);
+		PUSH_IN("STR_HEALTH", healthStat);
+		PUSH_IN("STR_BRAVERY", braveryStat);
+		PUSH_IN("STR_REACTIONS", reactionsStat);
+		PUSH_IN("STR_FIRING_ACCURACY", firingStat);
+		PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
+		PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
+		PUSH_IN("STR_STRENGTH", strengthStat);
+	}
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
 		// "unlock" is checked later
@@ -305,6 +328,7 @@ void CraftSoldiersState::btnPreviewClick(Action *)
 void CraftSoldiersState::initList(size_t scrl)
 {
 	int row = 0;
+	_soldierNumbers.clear();
 	_lstSoldiers->clearList();
 
 	if (_dynGetter != NULL)
@@ -318,9 +342,13 @@ void CraftSoldiersState::initList(size_t scrl)
 
 	Craft *c = _base->getCrafts()->at(_craft);
 	auto recovery = _base->getSumRecoveryPerDay();
+	
+	int it = 0;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if ((*i)->getRoleRank(ROLE_SOLDIER) > 0) // let's make it simple for now
+		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
+		it++;
+		if (!_isInterceptor || (*i)->getRoleRank(ROLE_PILOT) > 0 || !_ftaUI)
 		{
 			if (_dynGetter != NULL)
 			{
@@ -532,7 +560,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		_game->pushState(new SoldierInfoState(_base, row));
+		_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(row)));
 	}
 }
 

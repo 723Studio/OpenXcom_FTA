@@ -2018,7 +2018,9 @@ void GeoscapeState::time30Minutes()
 
 				for (auto craft : *activeCrafts)
 				{
-					detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked));
+					int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
+					detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
+					//#FINNIKTODO - add tracking expirience here!
 				}
 
 				if (!alreadyTracked)

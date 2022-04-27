@@ -50,6 +50,7 @@ class PilotsState : public State
 	Base *_base;
 	std::vector<Soldier *> _origPilotOrder, _filteredListOfPilots;
 	std::vector<SortFunctor *> _sortFunctors;
+	std::vector<int> _soldierNumbers;
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);

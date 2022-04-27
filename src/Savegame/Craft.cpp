@@ -1207,7 +1207,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int bonus, bool alreadyTracked) const
 {
 	auto distance = XcomDistance(getDistance(target));
 
@@ -1232,6 +1232,7 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alread
 			else
 			{
 				detectionChance = _stats.radarChance * (100 + target->getVisibility()) / 100;
+				detectionChance += bonus;
 			}
 		}
 	}
@@ -1705,6 +1706,40 @@ int Craft::getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mo
 	return ((reactions - mod->getPilotReactionsZeroPoint()) * mod->getPilotReactionsRange()) / 100;
 }
 
+int Craft::getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
+{
+	if (pilots.empty())
+		return 0;
+
+	int tracking = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+	{
+		tracking += (*i)->getCurrentStats()->tracking;
+	}
+	tracking = tracking / pilots.size(); // average tracking of all pilots
+
+	return ((tracking - mod->getPilotTacticsZeroPoint()) * mod->getPilotTacticsRange()) / 100;
+}
+
+/**
+ * Calculates the dodge bonus based on pilot skills.
+ * @return Tactics bonus.
+ */
+int Craft::getPilotTacticsBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
+{
+	if (pilots.empty())
+		return 0;
+
+	int tactics = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+	{
+		tactics += (*i)->getCurrentStats()->tactics;
+	}
+	tactics = tactics / pilots.size(); // average tactics of all pilots
+
+	return ((tactics - mod->getPilotTacticsZeroPoint()) * mod->getPilotTacticsRange()) / 100;
+}
+
 /**
 * Calculates the approach speed modifier based on pilot skills.
 * @return Approach speed modifier.
@@ -1714,12 +1749,17 @@ int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, co
 	if (pilots.empty())
 		return 2; // vanilla
 
-	int bravery = 0;
+	int bravery = 0, bravMin = INT_MAX, bravTotal = 0;
 	for (std::vector<Soldier*>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
 	{
-		bravery += (*i)->getStatsWithSoldierBonusesOnly()->bravery;
+		bravery = (*i)->getStatsWithSoldierBonusesOnly()->bravery;
+		bravTotal += bravery;
+		bravMin = std::min(bravery, bravMin);
 	}
-	bravery = bravery / pilots.size(); // average bravery of all pilots
+	bravery = bravTotal / pilots.size(); // average bravery of all pilots
+
+	if (mod->getIsFTAGame())
+		bravery = bravMin; // for FtA we look for the lowest
 
 	if (bravery >= mod->getPilotBraveryThresholdVeryBold())
 	{

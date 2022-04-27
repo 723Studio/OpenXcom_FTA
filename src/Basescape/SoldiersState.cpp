@@ -265,7 +265,6 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		PUSH_IN("STR_MANEUVERING", maneuveringStat);
 		PUSH_IN("STR_MISSILE_OPERATION", missilesStat);
 		PUSH_IN("STR_DOGFIGHT", dogfightStat);
-		PUSH_IN("STR_BRAVERY", braveryStat);
 		PUSH_IN("STR_TRACKING", trackingStat);
 		PUSH_IN("STR_TACTICS", tacticsStat);
 	}
@@ -698,31 +697,6 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 		initList(0);
 	}
 }
-
-/**
-* Displays the inventory screen for the soldiers inside the base.
-* @param action Pointer to an action.
-*/
-//void SoldiersState::btnInventoryClick(Action *)
-//{
-//	if (_base->getAvailableSoldiers(true, true) > 0)
-//	{
-//		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
-//		_game->getSavedGame()->setBattleGame(bgame);
-//		bgame->setMissionType("STR_BASE_DEFENSE");
-//
-//		if (_game->isCtrlPressed() && _game->isAltPressed())
-//		{
-//			_game->getSavedGame()->setDisableSoldierEquipment(true);
-//		}
-//		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
-//		bgen.setBase(_base);
-//		bgen.runInventory(0);
-//
-//		_game->getScreen()->clear();
-//		_game->pushState(new InventoryState(false, 0, _base, true));
-//	}
-//}
 
 /**
  * Shows the selected soldier's info.

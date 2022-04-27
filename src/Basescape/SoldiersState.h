@@ -80,8 +80,6 @@ private:
 	void btnMemorialClick(Action *action);
 	/// Handler for changing the screen actions combo box.
 	void cbxScreenActionsChange(Action *action);
-	/// Handler for clicking the Inventory button.
-	//void btnInventoryClick(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
 	/// Handler for pressing-down a mouse-button in the list.

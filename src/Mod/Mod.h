@@ -251,7 +251,7 @@ private:
 	int _crewEmergencyEvacuationSurvivalChance, _pilotsEmergencyEvacuationSurvivalChance;
 	int _soldiersPerSergeant, _soldiersPerCaptain, _soldiersPerColonel, _soldiersPerCommander;
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
-	int _pilotBraveryThresholds[3];
+	int _pilotBraveryThresholds[3], _pilotTacticsZeroPoint, _pilotTacticsRange, _pilotTrackingZeroPoint, _pilotTrackingRange;
 	int _performanceBonusFactor;
 	bool _enableNewResearchSorting;
 	int _displayCustomCategories;
@@ -946,6 +946,14 @@ public:
 	int getPilotReactionsZeroPoint() const { return _pilotReactionsZeroPoint; }
 	/// Gets the reactions impact (as percentage of distance to zero point) on pilot's dodge ability in dogfight
 	int getPilotReactionsRange() const { return _pilotReactionsRange; }
+	/// Gets the tactics needed for no bonus/penalty
+	int getPilotTacticsZeroPoint() const { return _pilotTacticsZeroPoint; }
+	/// Gets the tactics impact (as percentage of distance to zero point) on pilot's dodge ability in dogfight
+	int getPilotTacticsRange() const { return _pilotTacticsRange; }
+	/// Gets the tracking needed for no bonus/penalty
+	int getPilotTrackingZeroPoint() const { return _pilotTrackingZeroPoint; }
+	/// Gets the tracking impact (as percentage of distance to zero point) on pilot's dodge ability in dogfight
+	int getPilotTrackingRange() const { return _pilotTrackingRange; }
 	/// Gets the pilot's bravery needed for very bold approach speed
 	int getPilotBraveryThresholdVeryBold() const { return _pilotBraveryThresholds[0]; }
 	/// Gets the pilot's bravery needed for bold approach speed
