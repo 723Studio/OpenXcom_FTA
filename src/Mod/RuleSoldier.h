@@ -37,6 +37,19 @@ class Armor;
 /// Soldier roles for FtA game
 enum SoldierRole { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4 };
 
+struct SoldierRoleRanksRequirments
+{
+	SoldierRole role;
+	std::map<int, int> requirments;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		requirments = node["requirments"].as<std::map<int, int> >(requirments);
+	}
+};
+
 /**
  * Represents the creation data for an X-COM unit.
  * This info is copied to either Soldier for Geoscape or BattleUnit for Battlescape.
@@ -69,6 +82,7 @@ private:
 	int _listOrder;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
+	std::vector<SoldierRoleRanksRequirments*> _roleExpRequirments;
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
 	std::string _armorName;
 	const Armor* _armor;
@@ -236,7 +250,8 @@ public:
 	int getEngineerRankSprite() const { return _engineerRankSprite; };
 	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; };
 	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; };
-
+	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
+	
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }
 

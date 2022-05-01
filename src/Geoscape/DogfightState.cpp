@@ -272,23 +272,23 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	// pilot modifiers
 	_pilotAccuracyBonus, _pilotDodgeBonus, _pilotApproachSpeedModifier = 0;
 	_pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery = 2, _squadTacticBonus = 0;
-	const std::vector<Soldier*> pilots = _craft->getPilotList(false);
-	for (std::vector<Soldier*>::const_iterator p = pilots.begin(); p != pilots.end(); ++p)
+	_pilots = _craft->getPilotList(false);
+	for (std::vector<Soldier*>::const_iterator p = _pilots.begin(); p != _pilots.end(); ++p)
 	{
 		(*p)->prepareStatsWithBonuses(_game->getMod()); // refresh soldier bonuses
 	}
 
-	_pilotAccuracyBonus = _craft->getPilotAccuracyBonus(pilots, _game->getMod());
-	_pilotDodgeBonus = _craft->getPilotDodgeBonus(pilots, _game->getMod());
-	_pilotApproachSpeedModifier = _craft->getPilotApproachSpeedModifier(pilots, _game->getMod());
+	_pilotAccuracyBonus = _craft->getPilotAccuracyBonus(_pilots, _game->getMod());
+	_pilotDodgeBonus = _craft->getPilotDodgeBonus(_pilots, _game->getMod());
+	_pilotApproachSpeedModifier = _craft->getPilotApproachSpeedModifier(_pilots, _game->getMod());
 
 	if (_fta)
 	{
-		if (!pilots.empty())
+		if (!_pilots.empty())
 		{
 			int maneuveringMax = 0, missilesMax = 0, dogfightMax = 0;
 			int maneuvering = 0, missiles = 0, dogfight = 0;
-			for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+			for (std::vector<Soldier *>::const_iterator i = _pilots.begin(); i != _pilots.end(); ++i)
 			{
 				maneuvering = (*i)->getStatsWithSoldierBonusesOnly()->maneuvering;
 				if (maneuvering > maneuveringMax)
@@ -329,7 +329,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	}
 
 	_craftAccelerationBonus = 2; // vanilla
-	if (!pilots.empty())
+	if (!_pilots.empty())
 	{
 		_craftAccelerationBonus = std::min(4, (_craft->getCraftStats().accel / 3) + 1);
 	}
@@ -1162,11 +1162,12 @@ void DogfightState::update()
 					int chanceToHit = (p->getAccuracy() * (100 + 300 / (5 - _ufoSize)) + 100) / 200; // vanilla xcom
 					chanceToHit -= _ufo->getCraftStats().avoidBonus;
 					chanceToHit += _craft->getCraftStats().hitBonus;
+					auto type = p->getSubType();
 					if (_fta)
 					{
-						if (p->getSubType() == CWPST_CANNON)
+						if (type == CWPST_CANNON)
 							chanceToHit += _pilotCannonAccuracyBonus;
-						if (p->getSubType() == CWPST_MISSILE)
+						if (type == CWPST_MISSILE)
 							chanceToHit += _pilotMissileAccuracyBonus;
 						chanceToHit += _squadTacticBonus;
 					}
@@ -1249,6 +1250,28 @@ void DogfightState::update()
 
 						_game->getMod()->getSound("GEO.CAT", Mod::UFO_HIT)->play();
 						p->remove();
+						int rate = p->getFireRate();
+						for (auto pilot : _pilots)
+						{
+							if (type == CWPST_CANNON)
+							{
+								int exp = pilot->getRules()->getDogfightExperience().dogfight;
+								if (RNG::percent(rate * exp / 100))
+								{
+									pilot->getDogfightExperience()->dogfight++;
+									Log(LOG_INFO) << "dogfight exp gained, now its : " << pilot->getDogfightExperience()->dogfight; //#FINNIKTODO #CLEARLOGS
+								}
+							}
+							else if (type == CWPST_MISSILE)
+							{
+								int exp = pilot->getRules()->getDogfightExperience().missiles;
+								if (RNG::percent(rate * exp / 100))
+								{
+									pilot->getDogfightExperience()->missiles++;
+									Log(LOG_INFO) << "missiles exp gained, now its : " << pilot->getDogfightExperience()->missiles; //#FINNIKTODO #CLEARLOGS
+								}
+							}
+						}
 					}
 					// Missed.
 					else
@@ -1322,6 +1345,18 @@ void DogfightState::update()
 							if (_mode == _btnCautious && _craft->getDamagePercentage() >= 50 && !_ufoIsAttacking)
 							{
 								_targetDist = STANDOFF_DIST;
+							}
+						}
+					}
+					else
+					{
+						for (auto pilot : _pilots)
+						{
+							int exp = pilot->getRules()->getDogfightExperience().maneuvering;
+							if (RNG::percent(exp))
+							{
+								pilot->getDogfightExperience()->maneuvering++;
+								Log(LOG_INFO) << "maneuvering exp gained, now its : " << pilot->getDogfightExperience()->maneuvering; //#FINNIKTODO #CLEARLOGS
 							}
 						}
 					}
@@ -1803,6 +1838,7 @@ void DogfightState::fireWeapon(int i)
 
 		CraftWeaponProjectile *p = w1->fire();
 		p->setSubType(w1->getRules()->getProjectileSubType());
+		p->setFireRate(w1->getRules()->getStandardReload());
 		p->setDirection(D_UP);
 		p->setHorizontalPosition((i % 2 ? HP_RIGHT : HP_LEFT) * (1 + 2 * (i / 2)));
 		_projectiles.push_back(p);
@@ -1883,6 +1919,16 @@ void DogfightState::handlePanic(bool damaged)
 			}
 			else
 			{
+				for (auto pilot : _pilots)
+				{
+					int exp = pilot->getRules()->getDogfightExperience().bravery;
+					if (RNG::percent(exp))
+					{
+						pilot->getDogfightExperience()->bravery ++;
+						Log(LOG_INFO) << "bravery exp gained, now its : " << pilot->getDogfightExperience()->bravery; //#FINNIKTODO #CLEARLOGS
+					}
+				}
+				
 				Log(LOG_INFO) << "Panic resisted, with _crewBravery: " << _crewBravery; //#FINNIKTODO #CLEARLOGS
 			}
 		}
@@ -2685,11 +2731,10 @@ bool DogfightState::getWaitForAltitude() const
 
 void DogfightState::awardExperienceToPilots()
 {
-	if (_firedAtLeastOnce && !_experienceAwarded && _craft && _ufo && (_ufo->isCrashed() || _ufo->isDestroyed()))
+	if (!_fta && _firedAtLeastOnce && !_experienceAwarded && _craft && _ufo && (_ufo->isCrashed() || _ufo->isDestroyed()))
 	{
 		bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
-		const std::vector<Soldier*> pilots = _craft->getPilotList(false);
-		for (std::vector<Soldier*>::const_iterator it = pilots.begin(); it != pilots.end(); ++it)
+		for (std::vector<Soldier*>::const_iterator it = _pilots.begin(); it != _pilots.end(); ++it)
 		{
 			if ((*it)->getCurrentStats()->firing < (*it)->getRules()->getStatCaps().firing)
 			{

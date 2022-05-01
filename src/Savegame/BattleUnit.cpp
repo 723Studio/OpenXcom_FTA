@@ -3973,7 +3973,7 @@ void BattleUnit::addMeleeExp()
  */
 bool BattleUnit::hasGainedAnyExperience()
 {
-	return _exp.bravery || _exp.reactions || _exp.firing || _exp.psiSkill || _exp.psiStrength || _exp.melee || _exp.throwing || _exp.mana;
+	return _exp.empty();
 }
 
 void BattleUnit::updateGeoscapeStats(Soldier *soldier) const
@@ -4018,47 +4018,11 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 
 	auto recovery = (int)RNG::generate((healthLossOriginal*0.5),(healthLossOriginal*1.5));
 
-	if (_exp.bravery && stats->bravery < caps.bravery)
-	{
-		if (_exp.bravery > RNG::generate(0,10)) stats->bravery += 10;
-	}
-	if (_exp.reactions && stats->reactions < caps.reactions)
-	{
-		stats->reactions += improveStat(_exp.reactions);
-	}
-	if (_exp.firing && stats->firing < caps.firing)
-	{
-		stats->firing += improveStat(_exp.firing);
-	}
-	if (_exp.melee && stats->melee < caps.melee)
-	{
-		stats->melee += improveStat(_exp.melee);
-	}
-	if (_exp.throwing && stats->throwing < caps.throwing)
-	{
-		stats->throwing += improveStat(_exp.throwing);
-	}
-	if (_exp.psiSkill && stats->psiSkill < caps.psiSkill)
-	{
-		stats->psiSkill += improveStat(_exp.psiSkill);
-	}
-	if (_exp.psiStrength && stats->psiStrength < caps.psiStrength)
-	{
-		stats->psiStrength += improveStat(_exp.psiStrength);
-	}
-	if (mod->isManaTrainingPrimary())
-	{
-		if (_exp.mana && stats->mana < caps.mana)
-		{
-			stats->mana += improveStat(_exp.mana);
-		}
-	}
-
 	bool hasImproved = false;
 	if (hasGainedAnyExperience())
 	{
 		hasImproved = true;
-		if (s->getRank() == RANK_ROOKIE)
+		if (s->getRank() == RANK_ROOKIE && !mod->getIsFTAGame())
 			s->promoteRank();
 		int v;
 		v = caps.tu - stats->tu;
@@ -4074,9 +4038,20 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		if (v > 0) stats->strength += RNG::generate(0, v/10 + 2);
 		v = caps.stamina - stats->stamina;
 		if (v > 0) stats->stamina += RNG::generate(0, v/10 + 2);
+
+		if (!mod->isManaTrainingPrimary())
+		{
+			_exp.mana = 0;
+		}
+		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
+		if (mod->getIsFTAGame())
+			s->rolePromoteSoldier();
 	}
 
-	statsDiff.statGrowth += *stats; // add new stat
+	
+
+	UnitStats *newStats = s->getCurrentStats();
+	statsDiff.statGrowth += *newStats; // add new stat
 
 	if (_armor->getInstantWoundRecovery())
 	{
@@ -4097,7 +4072,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	}
 
 	//after mod execution this value could change
-	statsDiff.statGrowth = *stats - statsOld.statGrowth;
+	statsDiff.statGrowth = *newStats - statsOld.statGrowth;
 
 	s->setWoundRecovery(recovery);
 	s->setManaMissing(manaLoss);
@@ -4126,14 +4101,14 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
  * @param Experience counter.
  * @return Stat increase.
  */
-int BattleUnit::improveStat(int exp) const
-{
-	if      (exp > 10) return RNG::generate(2, 6);
-	else if (exp > 5)  return RNG::generate(1, 4);
-	else if (exp > 2)  return RNG::generate(1, 3);
-	else if (exp > 0)  return RNG::generate(0, 1);
-	else               return 0;
-}
+//int BattleUnit::improveStat(int exp) const
+//{
+//	if      (exp > 10) return RNG::generate(2, 6);
+//	else if (exp > 5)  return RNG::generate(1, 4);
+//	else if (exp > 2)  return RNG::generate(1, 3);
+//	else if (exp > 0)  return RNG::generate(0, 1);
+//	else               return 0;
+//}
 
 /**
  * Get the unit's minimap sprite index. Used to display the unit on the minimap

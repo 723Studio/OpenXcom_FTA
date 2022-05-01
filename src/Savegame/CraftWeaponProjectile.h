@@ -44,6 +44,7 @@ private:
 	int _accuracy;
 	int _damage;
 	int _range;
+	int _rate;
 	bool _toBeRemoved;
 	bool _missed;
 
@@ -102,6 +103,10 @@ public:
 	int getRange() const;
 	/// Sets the speed of a missile type projectile.
 	void setSpeed(const int speed);
+	/// Sets fire rate of the weapons, that launchs the projectile (used for FtA expirience).
+	void setFireRate(const int &rate) { _rate = rate; };
+	/// Gets fire rate of the weapons, that launchs the projectile.
+	int getFireRate() const { return _rate; };
 	/// Sets how effective this projectile is against shields
 	void setShieldDamageModifier(const int &shieldDamageModifier);
 	/// Gets how effective this projectile is against shields

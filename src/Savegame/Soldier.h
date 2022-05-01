@@ -48,6 +48,31 @@ class RuleSoldierBonus;
 class Base;
 struct BaseSumDailyRecovery;
 
+struct SoldierRoleRanks
+{
+	SoldierRole role;
+	int rank;
+	int experience;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		rank = node["rank"].as<int>(rank);
+		experience = node["experience"].as<int>(experience);
+	}
+	/// Saves stats to YAML.
+	YAML::Node save()
+	{
+		YAML::Node node;
+		node["role"] = (int)role;
+		node["rank"] = (int)rank;
+		node["experience"] = (int)experience;
+
+		return node;
+	}
+};
+
 /**
  * Represents a soldier hired by the player.
  * Soldiers have a wide variety of stats that affect
@@ -66,10 +91,11 @@ private:
 	std::string _name;
 	std::string _callsign;
 	int _id, _nationality, _improvement, _psiStrImprovement;
-	std::map<SoldierRole, int> _roles;
+	//std::map<SoldierRole, int> _roles;
+	std::vector<SoldierRoleRanks*> _roles;
 	const RuleSoldier *_rules;
 	UnitStats _initialStats, _currentStats, _tmpStatsWithSoldierBonuses, _tmpStatsWithAllBonuses;
-	UnitStats _dailyDogfightExperienceCache;
+	UnitStats _dailyDogfightExperienceCache, _dogfightExperience;
 	SoldierRank _rank;
 	Craft *_craft;
 	CovertOperation* _covertOperation;
@@ -96,7 +122,7 @@ private:
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
 
-	void loadRoles(const std::map<int, int> &r);
+	int improveStat(int exp, int &rate, bool bravary = false);
 
   public:
 	/// Creates a new soldier.
@@ -311,11 +337,26 @@ private:
 	/// Gets pending transformation name
 	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
 
-	std::map<SoldierRole, int> getRoles() const { return _roles; };
-	void addRole(SoldierRole newRole, int rank = 1) { _roles[newRole] += rank; };
+	/// Gets soldier roles with ranks
+	std::vector<SoldierRoleRanks*> getRoles() const { return _roles; };
+	/// Adds role or increase rank in role
+	void addRole(SoldierRole newRole, int rank = 1);
+	/// Adds role or increase rank in role
+	void addExperience(SoldierRole role, int exp = 1);
+	/// Gets rank of role.
 	int getRoleRank(SoldierRole role);
+	/// Gets the role with highest rank and rank value.
 	std::pair<SoldierRole, int> getBestRoleRank();
+	/// Gets the role with highest rank.
 	SoldierRole getBestRole() { return getBestRoleRank().first; };
+	/// Gets a pointer to the dogfight experience values (FtA mechanic).
+	UnitStats *getDogfightExperience();
+	/// Clears dogfight experience values (FtA mechanic).
+	void clearDogfightExperience();
+	/// Calculate soldier stats improvement.
+	void improvePrimaryStats(UnitStats* exp, SoldierRole role = ROLE_SOLDIER);
+	/// Process role ranks promotions for a soldier.
+	bool rolePromoteSoldier();
 	/// Gets a sprite version of the soldier for specific role. Used for BASEBITS.PCK.
 	int getRoleRankSprite(SoldierRole role);
 	/// Gets a sprite version of the soldier for specific role. Used for SMOKE.PCK.

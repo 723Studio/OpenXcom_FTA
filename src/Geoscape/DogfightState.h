@@ -38,6 +38,7 @@ class GeoscapeState;
 class Craft;
 class Ufo;
 class CraftWeaponProjectile;
+class Soldier;
 
 /**
  * Shows a dogfight (interception) between a
@@ -56,6 +57,7 @@ private:
 	Text *_txtAmmo[RuleCraft::WeaponMax], *_txtDistance, *_txtStatus, *_txtInterceptionNumber;
 	Craft *_craft;
 	Ufo *_ufo;
+	std::vector<Soldier*> _pilots;
 	bool _ufoIsAttacking, _disableDisengage, _disableCautious, _craftIsDefenseless, _selfDestructPressed, _panicing;
 	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax], _panicTimeout;
 	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];

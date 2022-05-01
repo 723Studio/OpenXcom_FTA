@@ -24,6 +24,7 @@
 #include "../Engine/Language.h"
 #include "../Engine/Options.h"
 #include "../Engine/ScriptBind.h"
+#include "../Engine/RNG.h"
 #include "Craft.h"
 #include "../Savegame/CovertOperation.h"
 #include "EquipmentLayoutItem.h"
@@ -43,12 +44,39 @@
 
 namespace OpenXcom
 {
-void Soldier::loadRoles(const std::map<int, int> &r)
+int Soldier::improveStat(int exp, int &rate, bool bravary)
 {
-	for (auto i : r)
+	rate = 0;
+	if (bravary && exp > RNG::generate(0, 10))
 	{
-		addRole(static_cast<SoldierRole>(i.first), i.second);
+		rate = 1;
+		return 10;
 	}
+
+	if (exp > 10)
+	{
+		rate = 3;
+		return RNG::generate(2, 6);
+	}
+	else if (exp > 5)
+	{
+		rate = 2;
+		return RNG::generate(1, 4);
+	}
+	else if (exp > 2)
+	{
+		rate = 1;
+		return RNG::generate(1, 3);
+	}
+	else if (exp > 0)
+	{
+		int improve = RNG::generate(0, 1);
+		if (improve > 0)
+			rate = 1;
+		return improve;
+	}
+	else
+		return 0;
 }
 
 /**
@@ -158,6 +186,10 @@ Soldier::~Soldier()
 	{
 		delete *i;
 	}
+	for (std::vector<SoldierRoleRanks *>::iterator i = _roles.begin(); i != _roles.end(); ++i)
+	{
+		delete *i;
+	}
 	Collections::deleteAll(_personalEquipmentLayout);
 	delete _death;
 	delete _diary;
@@ -197,6 +229,7 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
 	}
 	_dailyDogfightExperienceCache = node["dailyDogfightExperienceCache"].as<UnitStats>(_dailyDogfightExperienceCache);
+	_dogfightExperience = node["dogfightExperience"].as<UnitStats>(_dogfightExperience);
 
 	// re-roll mana stats when upgrading saves
 	if (_currentStats.mana == 0 && _rules->getMaxStats().mana > 0)
@@ -207,13 +240,20 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	}
 
 	_rank = (SoldierRank)node["rank"].as<int>(_rank);
+
 	if (node["roles"])
 	{
-		loadRoles(node["roles"].as<std::map<int, int> >());
+		for (YAML::const_iterator i = node["roles"].begin(); i != node["roles"].end(); ++i)
+		{
+			SoldierRoleRanks *r = new SoldierRoleRanks;
+			r->load(*i);
+			_roles.push_back(r);
+		}
 	}
 	else
 	{
-		_roles.emplace(ROLE_SOLDIER, _rank);
+		addRole(ROLE_SOLDIER, 1);
+		Log(LOG_ERROR) << "Soldier: " << _name << " was forced to have ROLE_SOLDIER with rank 1! Check your installation, you might be using outdated game files!";
 	}
 	_gender = (SoldierGender)node["gender"].as<int>(_gender);
 	_look = (SoldierLook)node["look"].as<int>(_look);
@@ -313,18 +353,21 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	node["nationality"] = _nationality;
 	if (!_roles.empty())
 	{
-		std::map<int, int> convert;
-		for (auto i : _roles)
+		for (std::vector<SoldierRoleRanks *>::const_iterator i = _roles.begin(); i != _roles.end(); ++i)
 		{
-			convert.emplace(static_cast<int>(i.first), i.second);
+			node["roles"].push_back((*i)->save());
 		}
-		node["roles"] = convert;
 	}
 	node["initialStats"] = _initialStats;
 	node["currentStats"] = _currentStats;
 	if (_dailyDogfightExperienceCache.firing > 0 || _dailyDogfightExperienceCache.reactions > 0 || _dailyDogfightExperienceCache.bravery > 0)
 	{
 		node["dailyDogfightExperienceCache"] = _dailyDogfightExperienceCache;
+	}
+	if (_dogfightExperience.maneuvering > 0 || _dogfightExperience.dogfight > 0 || _dogfightExperience.missiles > 0 ||
+		_dogfightExperience.tracking > 0 || _dogfightExperience.tactics > 0)
+	{
+		node["dogfightExperience"] = _dogfightExperience;
 	}
 	node["rank"] = (int)_rank;
 	if (_craft != 0)
@@ -1974,16 +2017,58 @@ bool Soldier::handlePendingTransformation()
 	return finished;
 }
 
+void Soldier::addRole(SoldierRole newRole, int rank)
+{
+	bool added = false;
+	for (auto *r : _roles)
+	{
+		if (r->role == newRole)
+		{
+			r->rank += rank;
+			added = true;
+		}
+	}
+	if (!added)
+	{
+		SoldierRoleRanks *nr = new SoldierRoleRanks;
+		nr->role = newRole;
+		nr->rank = rank;
+		nr->experience = 0;
+		_roles.push_back(nr);
+	}
+}
+
+void Soldier::addExperience(SoldierRole role, int exp)
+{
+	bool added = false;
+	for (auto *r : _roles)
+	{
+		if (r->role == role)
+		{
+			r->experience += exp;
+			added = true;
+		}
+	}
+	if (!added)
+	{
+		SoldierRoleRanks *nr = new SoldierRoleRanks;
+		nr->role = role;
+		nr->rank = 0;
+		nr->experience = exp;
+		_roles.push_back(nr);
+	}
+}
+
 int Soldier::getRoleRank(SoldierRole role)
 {
 	int rank = 0;
-	for (auto i : _roles)
+	/*for (auto i : _roles)
 	{
 		if (i.first == role)
 		{
 			rank = i.second;
 		}
-	}
+	}*/
 	return rank;
 }
 
@@ -1993,10 +2078,10 @@ std::pair<SoldierRole, int> Soldier::getBestRoleRank()
 	SoldierRole role = ROLE_SOLDIER;
 	for (auto i : _roles)
 	{
-		if (i.second > max)
+		if (i->rank > max)
 		{
-			max = i.second;
-			role = i.first;
+			max = i->rank;
+			role = i->role;
 		}
 	}
 	return std::make_pair(role, max);
@@ -2292,6 +2377,151 @@ UnitStats* Soldier::getDailyDogfightExperienceCache()
 void Soldier::resetDailyDogfightExperienceCache()
 {
 	_dailyDogfightExperienceCache = UnitStats::scalar(0);
+}
+
+/**
+ * Gets a pointer to the dogfight experience (used for FtA mechanic).
+ */
+UnitStats *Soldier::getDogfightExperience()
+{
+	return &_dogfightExperience;
+}
+
+/**
+ *  Clears dogfight experience values (FtA mechanic).
+ */
+void Soldier::clearDogfightExperience()
+{
+	_dogfightExperience = UnitStats::scalar(0);
+}
+
+void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
+{
+	UnitStats *stats = getCurrentStats();
+	const UnitStats caps = getRules()->getStatCaps();
+	int rate = 0;
+
+	if (exp->bravery && stats->bravery < caps.bravery)
+	{
+		stats->bravery += improveStat(exp->bravery, rate, true);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
+			addExperience(role, 1);
+		else
+			addExperience(ROLE_SOLDIER, 1);
+	}
+	if (exp->reactions && stats->reactions < caps.reactions)
+	{
+		stats->reactions += improveStat(exp->reactions, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->firing && stats->firing < caps.firing)
+	{
+		stats->firing += improveStat(exp->firing, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->melee && stats->melee < caps.melee)
+	{
+		stats->melee += improveStat(exp->melee, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->throwing && stats->throwing < caps.throwing)
+	{
+		stats->throwing += improveStat(exp->throwing, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->psiSkill && stats->psiSkill < caps.psiSkill)
+	{
+		stats->psiSkill += improveStat(exp->psiSkill, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->psiStrength && stats->psiStrength < caps.psiStrength)
+	{
+		stats->psiStrength += improveStat(exp->psiStrength, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+	if (exp->mana && stats->mana < caps.mana)
+	{
+		stats->mana += improveStat(exp->mana, rate);
+		if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+			addExperience(role, rate);
+		else
+			addExperience(ROLE_SOLDIER, rate);
+	}
+
+	//pilot stats
+	if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
+	{
+		stats->maneuvering += improveStat(exp->maneuvering, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->missiles && stats->missiles < caps.missiles)
+	{
+		stats->missiles += improveStat(exp->missiles, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->dogfight && stats->dogfight < caps.dogfight)
+	{
+		stats->dogfight += improveStat(exp->dogfight, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->tracking && stats->tracking < caps.tracking)
+	{
+		stats->tracking += improveStat(exp->tracking, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->tactics && stats->tactics < caps.tactics)
+	{
+		stats->tactics += improveStat(exp->tactics, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+}
+
+bool Soldier::rolePromoteSoldier()
+{
+	auto req = getRules()->getRoleExpRequirments();
+	bool promoted = false;
+	for (auto role : _roles)
+	{
+		for (auto roleReq : req)
+		{
+			if (role->role == roleReq->role)
+			{
+				std::map<int, int> expMap = roleReq->requirments;
+				if (role->role >= expMap.rbegin()->first + 1)
+					break; //we dont want to promote more, than we define in rules
+				for (auto exp : expMap)
+				{
+					if (role->rank == exp.first && role->experience >= exp.second)
+					{
+						addRole(role->role, 1);
+						role->experience -= exp.second;
+						promoted = true;
+						_recentlyPromoted = true; //for promotion screen
+						break;
+					}
+				}
+			}
+		}
+	}
+	return promoted;
 }
 
 

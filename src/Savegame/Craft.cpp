@@ -1192,12 +1192,15 @@ void Craft::checkup()
 			}
 		}
 	}
-	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
 		if ((*i)->isJustSaved())
 		{
 			(*i)->setJustSaved(false);
 		}
+
+		auto stats = (*i)->getDogfightExperience();
+		(*i)->improvePrimaryStats(stats, ROLE_PILOT);
 	}
 }
 

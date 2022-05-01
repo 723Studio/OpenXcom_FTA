@@ -104,6 +104,15 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 		_trainingStatCaps.merge(node["statCaps"].as<UnitStats>(_trainingStatCaps));
 	}
 	_dogfightExperience.merge(node["dogfightExperience"].as<UnitStats>(_dogfightExperience));
+	if (node["roleExpRequirments"])
+	{
+		for (YAML::const_iterator i = node["roleExpRequirments"].begin(); i != node["roleExpRequirments"].end(); ++i)
+		{
+			SoldierRoleRanksRequirments *r = new SoldierRoleRanksRequirments;
+			r->load(*i);
+			_roleExpRequirments.push_back(r);
+		}
+	}
 	mod->loadName(_type, _armorName, node["armor"]);
 	_specWeaponName = node["specialWeapon"].as<std::string>(_specWeaponName);
 	_armorForAvatar = node["armorForAvatar"].as<std::string>(_armorForAvatar);

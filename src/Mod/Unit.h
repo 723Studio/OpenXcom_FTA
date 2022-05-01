@@ -162,6 +162,12 @@ struct UnitStats
 		tactics = (stats.tactics ? stats.tactics : tactics);
 	};
 
+	bool empty()
+	{
+		return bravery || reactions || firing || psiSkill || psiStrength ||
+			   melee || throwing || mana ||
+			   maneuvering || missiles || dogfight || tactics || tracking;
+	}
 	template<typename Func>
 	static void fieldLoop(Func f)
 	{
