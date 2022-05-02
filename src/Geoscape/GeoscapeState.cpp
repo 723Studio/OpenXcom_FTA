@@ -3037,7 +3037,7 @@ void GeoscapeState::btnFundingClick(Action *)
 	{
 		return;
 	}
-	if (Options::oxceLinks)
+	if (Options::oxceLinks || _game->getMod()->getIsFTAGame())
 	{
 		_game->pushState(new ExtendedGeoscapeLinksState(this));
 	}
