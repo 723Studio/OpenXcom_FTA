@@ -750,7 +750,7 @@ void SoldierInfoState::init()
 	{
 		_btnSack->setVisible(false);
 	}
-	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString())));
+	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString(_ftaUI))));
 
 	_txtMissions->setText(tr("STR_MISSIONS").arg(_soldier->getMissions()));
 

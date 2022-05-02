@@ -492,11 +492,11 @@ void SoldiersState::initList(size_t scrl)
 			int dynStat = (*_dynGetter)(_game, *i);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), craftString.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
+			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), craftString.c_str());
 		}
 
 		if ((*i)->getCraft() == 0)

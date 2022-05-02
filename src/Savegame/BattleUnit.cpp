@@ -75,7 +75,7 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	_name = soldier->getName(true);
 	_id = soldier->getId();
 	_type = "SOLDIER";
-	_rank = soldier->getRankString();
+	_rank = soldier->getRankString(mod->getIsFTAGame());
 	_stats = *soldier->getCurrentStats();
 	_armor = soldier->getArmor();
 	_standHeight = _armor->getStandHeight() == -1 ? soldier->getRules()->getStandHeight() : _armor->getStandHeight();
@@ -4044,8 +4044,6 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 			_exp.mana = 0;
 		}
 		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
-		if (mod->getIsFTAGame())
-			s->rolePromoteSoldier();
 	}
 
 	

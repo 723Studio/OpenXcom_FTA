@@ -24,6 +24,7 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
+#include "../Basescape/SoldierInfoState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
@@ -84,24 +85,35 @@ PromotionsState::PromotionsState()
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
+	_lstSoldiers->onMouseClick((ActionHandler)&PromotionsState::lstSoldiersClick);
+
+	bool fta = _game->getMod()->getIsFTAGame();
+	int it = 0;
 
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
+		it = 0;
 		for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
 		{
+			_soldierNumbersAtBase.push_back(std::make_pair((*i), it));
+			it++;
 			if ((*j)->isPromoted())
 			{
-				_lstSoldiers->addRow(3, (*j)->getName().c_str(), tr((*j)->getRankString()).c_str(), (*i)->getName().c_str()); //#FINNIKTODO: Change to role rank string if FtA
+				_lstSoldiers->addRow(3, (*j)->getName().c_str(), tr((*j)->getRankString(fta)).c_str(), (*i)->getName().c_str());
 			}
 		}
-		for (std::vector<Transfer*>::iterator k = (*i)->getTransfers()->begin(); k != (*i)->getTransfers()->end(); ++k) //special case for soldiers, recovered from VIPs
-		{
-			if ((*k)->getType() == TRANSFER_SOLDIER)
+		// special case for soldiers, recovered from VIPs
+		if (!fta)
+		{ //in FtA we don't have this case basically =)
+			for (std::vector<Transfer *>::iterator k = (*i)->getTransfers()->begin(); k != (*i)->getTransfers()->end(); ++k)
 			{
-				Soldier* sol = (*k)->getSoldier();
-				if (sol->isPromoted())
+				if ((*k)->getType() == TRANSFER_SOLDIER)
 				{
-					_lstSoldiers->addRow(3, sol->getName().c_str(), tr(sol->getRankString()).c_str(), (*i)->getName().c_str());
+					Soldier *sol = (*k)->getSoldier();
+					if (sol->isPromoted())
+					{
+						_lstSoldiers->addRow(3, sol->getName().c_str(), tr(sol->getRankString(fta)).c_str(), (*i)->getName().c_str());
+					}
 				}
 			}
 		}
@@ -122,6 +134,12 @@ PromotionsState::~PromotionsState()
 void PromotionsState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+void PromotionsState::lstSoldiersClick(Action *action)
+{
+	auto line = _soldierNumbersAtBase.at(_lstSoldiers->getSelectedRow());
+	_game->pushState(new SoldierInfoState(line.first, line.second));
 }
 
 }

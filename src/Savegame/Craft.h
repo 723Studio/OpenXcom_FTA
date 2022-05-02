@@ -228,13 +228,13 @@ public:
 	/// Returns the crew to their base (using transfers).
 	void evacuateCrew(const Mod *mod);
 	/// Checks if a target is detected by the craft's radar.
-	UfoDetection detect(const Ufo *target, const SavedGame *save, int bonus, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const;
 	/// Handles craft logic.
-	bool think();
+	bool think(std::string &pushState);
 	/// Is the craft about to take off?
 	bool isTakingOff() const;
 	/// Does a craft full checkup.
-	void checkup();
+	bool checkup();
 	/// Consumes the craft's fuel.
 	void consumeFuel(int escortSpeed);
 	/// Calculates the time to repair

@@ -162,7 +162,7 @@ private:
 	/// Gets the soldier's craft string.
 	std::string getCraftString(Language *lang, const BaseSumDailyRecovery& recovery) const;
 	/// Gets a string version of the soldier's rank.
-	std::string getRankString() const;
+	std::string getRankString(bool isFtA);
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.
 	int getRankSprite() const;
 	/// Gets a sprite version of the soldier's rank. Used for SMOKE.PCK.

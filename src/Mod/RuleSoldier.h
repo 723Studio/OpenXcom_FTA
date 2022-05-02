@@ -39,14 +39,27 @@ enum SoldierRole { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENT
 
 struct SoldierRoleRanksRequirments
 {
-	SoldierRole role;
+	SoldierRole role = ROLE_SOLDIER;
 	std::map<int, int> requirments;
 
 	/// Loads stats from YAML.
 	void load(const YAML::Node &node)
 	{
 		role = (SoldierRole)node["role"].as<int>(role);
-		requirments = node["requirments"].as<std::map<int, int> >(requirments);
+		requirments = node["requirments"].as<std::map<int, int>>(requirments);
+	}
+};
+
+struct SoldierRoleRanksStrings
+{
+	SoldierRole role = ROLE_SOLDIER;
+	std::map<int, std::string> strings;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		strings = node["strings"].as<std::map<int, std::string>>(strings);
 	}
 };
 
@@ -83,6 +96,7 @@ private:
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
 	std::vector<SoldierRoleRanksRequirments*> _roleExpRequirments;
+	std::vector<SoldierRoleRanksStrings*> _roleRankStrings;
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
 	std::string _armorName;
 	const Armor* _armor;
@@ -251,7 +265,8 @@ public:
 	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; };
 	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; };
 	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
-	
+	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() { return _roleRankStrings; }
+
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }
 

@@ -1092,7 +1092,7 @@ void Craft::evacuateCrew(const Mod *mod)
 /**
  * Moves the craft to its destination.
  */
-bool Craft::think()
+bool Craft::think(std::string &pushState)
 {
 	if (_takeoff == 0)
 	{
@@ -1106,7 +1106,10 @@ bool Craft::think()
 	if (reachedDestination() && _dest == (Target*)_base)
 	{
 		setInterceptionOrder(0); // just to be sure
-		checkup();
+		if (checkup())
+		{
+			pushState = "PromotionsState";
+		}
 		setDestination(0);
 		setSpeed(0);
 		_lowFuel = false;
@@ -1129,7 +1132,7 @@ bool Craft::isTakingOff() const
  * Checks the condition of all the craft's systems
  * to define its new status (eg. when arriving at base).
  */
-void Craft::checkup()
+bool Craft::checkup()
 {
 	int available = 0, full = 0;
 	for (std::vector<CraftWeapon *>::iterator i = _weapons.begin(); i != _weapons.end(); ++i)
@@ -1173,35 +1176,37 @@ void Craft::checkup()
 		_base->setEngineers(_base->getEngineers() + _engineers);
 	}
 
-	if (getSpaceAvailable() < 0)
+	// lets perform logic with soldiers checkup
+	bool promote = false;
+	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		int shortage = abs(getSpaceAvailable());
-		for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-		{
-			if (shortage < 0)
-			{
-				break;
-			}
-			else
-			{
-				if ((*i)->isJustSaved())
-				{
-					(*i)->setCraft(0);
-					shortage--;
-				}
-			}
-		}
-	}
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-	{
+		//remove just saved soldiers from craft
 		if ((*i)->isJustSaved())
 		{
+			(*i)->setCraft(0);
 			(*i)->setJustSaved(false);
 		}
 
-		auto stats = (*i)->getDogfightExperience();
-		(*i)->improvePrimaryStats(stats, ROLE_PILOT);
+		// remove non-combat "soldiers" from craft
+		if ((*i)->getCraft() == this
+			&& ((*i)->getRoleRank(ROLE_SCIENTIST) > 0 || (*i)->getRoleRank(ROLE_ENGINEER) > 0)
+			&& ((*i)->getRoleRank(ROLE_SOLDIER) == 0 && (*i)->getRoleRank(ROLE_PILOT) == 0 && (*i)->getRoleRank(ROLE_AGENT) == 0))
+		{
+			(*i)->setCraft(0); 
+		}
+
+		//promote returned pilots
+		if ((*i)->getRoleRank(ROLE_PILOT) > 0 && (*i)->getCraft() == this)
+		{
+			auto stats = (*i)->getDogfightExperience();
+			(*i)->improvePrimaryStats(stats, ROLE_PILOT);
+			if ((*i)->rolePromoteSoldier())
+			{
+				promote = true;
+			}
+		}
 	}
+	return promote;
 }
 
 /**
@@ -1210,7 +1215,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int bonus, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const
 {
 	auto distance = XcomDistance(getDistance(target));
 
@@ -1235,7 +1240,8 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int bonus, 
 			else
 			{
 				detectionChance = _stats.radarChance * (100 + target->getVisibility()) / 100;
-				detectionChance += bonus;
+				detectionChance += tracking;
+				tracking = detectionChance; //for extra output
 			}
 		}
 	}

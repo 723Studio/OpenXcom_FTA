@@ -43,6 +43,7 @@
 #include "../Mod/AlienRace.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Sound.h"
+#include "../Battlescape/PromotionsState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/CraftWeaponProjectile.h"
 #include "../Savegame/Country.h"
@@ -319,7 +320,6 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 				{
 					_squadTacticBonus += craft->getPilotTacticsBonus(craft->getPilotList(false), _game->getMod());
 				}
-
 				if (_squadTacticBonus > 0)
 				{
 					Log(LOG_INFO) << "_squadTacticBonus applied: " << _squadTacticBonus; //#FINNIKTODO #CLEARLOGS
@@ -1256,15 +1256,17 @@ void DogfightState::update()
 							if (type == CWPST_CANNON)
 							{
 								int exp = pilot->getRules()->getDogfightExperience().dogfight;
+								Log(LOG_INFO) << "dogfight exp calc with odds: " << rate << " * " << exp << " /  100 = " << rate * exp / 100; //#FINNIKTODO #CLEARLOGS
 								if (RNG::percent(rate * exp / 100))
 								{
 									pilot->getDogfightExperience()->dogfight++;
-									Log(LOG_INFO) << "dogfight exp gained, now its : " << pilot->getDogfightExperience()->dogfight; //#FINNIKTODO #CLEARLOGS
+									Log(LOG_INFO) << "dogfight exp gained, now it is: " << pilot->getDogfightExperience()->dogfight; //#FINNIKTODO #CLEARLOGS
 								}
 							}
 							else if (type == CWPST_MISSILE)
 							{
 								int exp = pilot->getRules()->getDogfightExperience().missiles;
+								Log(LOG_INFO) << "missiles exp calc with odds: " << rate << " * " << exp << " /  100 = " << rate * exp / 100; //#FINNIKTODO #CLEARLOGS
 								if (RNG::percent(rate * exp / 100))
 								{
 									pilot->getDogfightExperience()->missiles++;
@@ -1312,6 +1314,7 @@ void DogfightState::update()
 						// HK's chance to hit is halved, but craft's reload time is doubled too
 						chancetoHit = chancetoHit / 2;
 					}
+					Log(LOG_INFO) << "Ufo shooting, its chancetoHit is: " << chancetoHit << " with _pilotDodgeBonus: " << _pilotDodgeBonus; //#FINNIKTODO #CLEARLOGS
 					if (RNG::percent(chancetoHit) || _selfDestructPressed)
 					{
 						// Formula delivered by Volutar, altered by Extended version.
@@ -1514,13 +1517,18 @@ void DogfightState::update()
 			}
 
 			// Need to give the craft at least one step advantage over the hunter-killer (to be able to escape)
+			std::string pushState = "NONE";
 			if (_ufoIsAttacking)
 			{
-				bool returnedToBase = _craft->think();
+				bool returnedToBase = _craft->think(pushState);
 				if (returnedToBase)
 				{
 					_game->getSavedGame()->stopHuntingXcomCraft(_craft); // hiding in the base is good enough, obviously
 				}
+			}
+			if (pushState == "PromotionsState")
+			{
+				_game->pushState(new PromotionsState);
 			}
 		}
 		if (_ufo->isCrashed())
@@ -1928,8 +1936,6 @@ void DogfightState::handlePanic(bool damaged)
 						Log(LOG_INFO) << "bravery exp gained, now its : " << pilot->getDogfightExperience()->bravery; //#FINNIKTODO #CLEARLOGS
 					}
 				}
-				
-				Log(LOG_INFO) << "Panic resisted, with _crewBravery: " << _crewBravery; //#FINNIKTODO #CLEARLOGS
 			}
 		}
 

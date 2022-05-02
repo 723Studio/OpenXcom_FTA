@@ -840,6 +840,17 @@ void DebriefingState::init()
 	}
 	_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 
+	if (_game->getMod()->getIsFTAGame())
+	{
+		for (auto soldier : participants)
+		{
+			if (soldier->rolePromoteSoldier())
+			{
+				_promotions = true;
+			}
+		}
+	}
+
 	_game->getSavedGame()->setBattleGame(0);
 
 	if (_positiveScore)

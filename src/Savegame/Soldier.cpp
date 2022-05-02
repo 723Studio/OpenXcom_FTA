@@ -751,46 +751,69 @@ std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& 
  * the soldier's military rank.
  * @return String ID for rank.
  */
-std::string Soldier::getRankString() const
+std::string Soldier::getRankString(bool isFtA)
 {
-	const std::vector<std::string> &rankStrings = _rules->getRankStrings();
-	if (!_rules->getAllowPromotion())
+	if (isFtA)
 	{
-		// even if promotion is not allowed, we allow to use a different "Rookie" translation per soldier type
-		if (rankStrings.empty())
+		std::string rankString = "UNDEFINED";
+		for (auto ruleRole : _rules->getRoleRankStrings())
 		{
-			return "STR_RANK_NONE";
+			if (ruleRole->role == getBestRole())
+			{
+				for (auto rank : ruleRole->strings)
+				{
+					if (rank.first == getBestRoleRank().second)
+					{
+						rankString = rank.second;
+						break;
+					}
+				}
+				break;
+			}
 		}
+		return rankString;
 	}
-
-	switch (_rank)
+	else
 	{
-	case RANK_ROOKIE:
-		if (rankStrings.size() > 0)
-			return rankStrings.at(0);
-		return "STR_ROOKIE";
-	case RANK_SQUADDIE:
-		if (rankStrings.size() > 1)
-			return rankStrings.at(1);
-		return "STR_SQUADDIE";
-	case RANK_SERGEANT:
-		if (rankStrings.size() > 2)
-			return rankStrings.at(2);
-		return "STR_SERGEANT";
-	case RANK_CAPTAIN:
-		if (rankStrings.size() > 3)
-			return rankStrings.at(3);
-		return "STR_CAPTAIN";
-	case RANK_COLONEL:
-		if (rankStrings.size() > 4)
-			return rankStrings.at(4);
-		return "STR_COLONEL";
-	case RANK_COMMANDER:
-		if (rankStrings.size() > 5)
-			return rankStrings.at(5);
-		return "STR_COMMANDER";
-	default:
-		return "";
+		const std::vector<std::string> &rankStrings = _rules->getRankStrings();
+		if (!_rules->getAllowPromotion())
+		{
+			// even if promotion is not allowed, we allow to use a different "Rookie" translation per soldier type
+			if (rankStrings.empty())
+			{
+				return "STR_RANK_NONE";
+			}
+		}
+
+		switch (_rank)
+		{
+		case RANK_ROOKIE:
+			if (rankStrings.size() > 0)
+				return rankStrings.at(0);
+			return "STR_ROOKIE";
+		case RANK_SQUADDIE:
+			if (rankStrings.size() > 1)
+				return rankStrings.at(1);
+			return "STR_SQUADDIE";
+		case RANK_SERGEANT:
+			if (rankStrings.size() > 2)
+				return rankStrings.at(2);
+			return "STR_SERGEANT";
+		case RANK_CAPTAIN:
+			if (rankStrings.size() > 3)
+				return rankStrings.at(3);
+			return "STR_CAPTAIN";
+		case RANK_COLONEL:
+			if (rankStrings.size() > 4)
+				return rankStrings.at(4);
+			return "STR_COLONEL";
+		case RANK_COMMANDER:
+			if (rankStrings.size() > 5)
+				return rankStrings.at(5);
+			return "STR_COMMANDER";
+		default:
+			return "";
+		}
 	}
 }
 
@@ -2062,13 +2085,13 @@ void Soldier::addExperience(SoldierRole role, int exp)
 int Soldier::getRoleRank(SoldierRole role)
 {
 	int rank = 0;
-	/*for (auto i : _roles)
+	for (auto i : _roles)
 	{
-		if (i.first == role)
+		if (i->role == role)
 		{
-			rank = i.second;
+			rank = i->rank;
 		}
-	}*/
+	}
 	return rank;
 }
 
@@ -2485,7 +2508,8 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 	if (exp->tracking && stats->tracking < caps.tracking)
 	{
 		stats->tracking += improveStat(exp->tracking, rate);
-		addExperience(ROLE_PILOT, rate);
+		int reducedRate = RNG::generate(0, rate); // non-combat skill
+		addExperience(ROLE_PILOT, reducedRate);
 	}
 	if (exp->tactics && stats->tactics < caps.tactics)
 	{

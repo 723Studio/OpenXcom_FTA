@@ -113,6 +113,15 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 			_roleExpRequirments.push_back(r);
 		}
 	}
+	if (node["roleRankStrings"])
+	{
+		for (YAML::const_iterator i = node["roleRankStrings"].begin(); i != node["roleRankStrings"].end(); ++i)
+		{
+			SoldierRoleRanksStrings *s = new SoldierRoleRanksStrings;
+			s->load(*i);
+			_roleRankStrings.push_back(s);
+		}
+	}
 	mod->loadName(_type, _armorName, node["armor"]);
 	_specWeaponName = node["specialWeapon"].as<std::string>(_specWeaponName);
 	_armorForAvatar = node["armorForAvatar"].as<std::string>(_armorForAvatar);

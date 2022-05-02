@@ -209,9 +209,9 @@ struct BattleUnitKills
 			// Soldiers
 			if (unit->getGeoscapeSoldier())
 			{
-				if (!unit->getGeoscapeSoldier()->getRankString().empty())
+				if (!unit->getGeoscapeSoldier()->getRankString(true).empty()) //#FINNIKTODO consider solution for backwards capability
 				{
-					rank = unit->getGeoscapeSoldier()->getRankString();
+					rank = unit->getGeoscapeSoldier()->getRankString(true); //#FINNIKTODO consider solution for backwards capability
 				}
 				else
 				{
