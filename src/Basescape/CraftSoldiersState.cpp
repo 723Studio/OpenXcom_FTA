@@ -64,20 +64,31 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		// no battlescape map available
 		hidePreview = true;
 	}
-	_isInterceptor = c->getRules()->getPilots() > 0 && !c->getRules()->getAllowLanding();
+	int pilots = c->getRules()->getPilots();
+	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
+	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding() && pilots < c->getSpaceAvailable();
 	_ftaUI = _game->getMod()->getIsFTAGame();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(hidePreview ? 148 : 30, 16, hidePreview ? 164 : 274, 176);
+	_btnOk = new TextButton(hidePreview ? 148 : 38, 16, hidePreview ? 164 : 274, 176);
 	_btnPreview = new TextButton(102, 16, 164, 176);
-	_txtTitle = new Text(300, 17, 16, 7);
+	_txtTitle = new Text(_ftaUI ? 300 : 168, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
-	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+	if (_ftaUI)
+	{
+		_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
+		_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
+	}
+	else
+	{
+		_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+		_cbxScreenActions = new ComboBox(this, 0, 0, 1, 1, true); //would be hidden anyway
+	}
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
 	// Set palette
@@ -94,6 +105,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_txtUsed, "text", "craftSoldiers");
 	add(_lstSoldiers, "list", "craftSoldiers");
 	add(_cbxSortBy, "button", "craftSoldiers");
+	add(_cbxScreenActions, "button", "craftSoldiers");
 
 	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
 
@@ -113,7 +125,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview->onMouseClick((ActionHandler)&CraftSoldiersState::btnPreviewClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
@@ -193,6 +205,20 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_cbxSortBy->setSelected(0);
 	_cbxSortBy->onChange((ActionHandler)&CraftSoldiersState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
+
+	_availableOptions.clear();
+	if (_ftaUI)
+	{
+		_availableOptions.push_back("STR_ALL_ROLES");
+		_availableOptions.push_back("STR_RECOMMENDED_ROLES");
+	}
+	else
+	{
+		_cbxScreenActions->setVisible(false);
+	}
+	_cbxScreenActions->setOptions(_availableOptions, true);
+	_cbxScreenActions->setSelected(1);
+	_cbxScreenActions->onChange((ActionHandler)&CraftSoldiersState::cbxScreenActionsChange);
 
 	_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
@@ -331,6 +357,12 @@ void CraftSoldiersState::initList(size_t scrl)
 	_soldierNumbers.clear();
 	_lstSoldiers->clearList();
 
+	std::string selAction = "STR_RECOMMENDED_ROLES";
+	if (!_availableOptions.empty())
+	{
+		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
+	}
+
 	if (_dynGetter != NULL)
 	{
 		_lstSoldiers->setColumns(4, 106, 98, 60, 16);
@@ -348,7 +380,11 @@ void CraftSoldiersState::initList(size_t scrl)
 	{
 		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
 		it++;
-		if (!_isInterceptor || (*i)->getRoleRank(ROLE_PILOT) > 0 || !_ftaUI)
+		if (((*i)->getRoleRank(ROLE_SOLDIER) > 0 && !_isInterceptor) //case for dropship
+			|| (_isInterceptor && (*i)->getRoleRank(ROLE_PILOT) > 0) //case for interceptor
+			|| (_isMultipurpose && ((*i)->getRoleRank(ROLE_PILOT) > 0 || (*i)->getRoleRank(ROLE_SOLDIER) > 0)) //case for multipurpose craft
+			|| selAction == "STR_ALL_ROLES" //case we wank to see everyone
+			|| !_ftaUI)
 		{
 			if (_dynGetter != NULL)
 			{
@@ -526,18 +562,31 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
 		Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
+		auto r = c->getRules()->getRequiredRole();
 		Uint8 color = _lstSoldiers->getColor();
 		if (s->getCraft() == c)
 		{
 			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 		}
-		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0 || s->hasPendingTransformation())
+		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
+			|| s->getCovertOperation() != 0
+			|| s->hasPendingTransformation())
 		{
-			color = _otherCraftColor;
+			return;
 		}
 		else if (s->hasFullHealth())
 		{
+			if (_isInterceptor && _ftaUI && s->getRoleRank(r) == 0)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_ROLE_IS_NOT_ALLOWED_PILOTING"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				return;
+			}
+
 			auto space = c->getSpaceAvailable();
 			if (c->validateAddingSoldier(space, s))
 			{
@@ -550,7 +599,11 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			}
 			else if (space > 0)
 			{
-				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 		}
 		_lstSoldiers->setRowColor(row, color);
@@ -592,6 +645,12 @@ void CraftSoldiersState::lstSoldiersMousePress(Action *action)
 			moveSoldierDown(action, row);
 		}
 	}
+}
+
+void CraftSoldiersState::cbxScreenActionsChange(Action *action)
+{
+	_cbxSortBy->setSelected(0);
+	initList(0);
 }
 
 /**

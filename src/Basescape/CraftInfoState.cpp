@@ -69,6 +69,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_craft = _base->getCrafts()->at(_craftId);
 	_weaponNum = _craft->getRules()->getWeapons();
+	_ftaUi = _game->getMod()->getIsFTAGame();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
 
@@ -186,7 +187,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_btnPilots->setText(tr("STR_PILOTS"));
 	_btnPilots->onMouseClick((ActionHandler)&CraftInfoState::btnPilotsClick);
-	_btnPilots->setVisible(pilots);
+	_btnPilots->setVisible(pilots && !_ftaUi); //#FINNIKTODO Consider for multipurpose crafts
 
 	_edtCraft->setBig();
 	_edtCraft->setAlign(ALIGN_CENTER);

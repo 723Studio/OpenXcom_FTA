@@ -2931,7 +2931,10 @@ void GeoscapeState::btnGlobalResearchClick(Action *)
  */
 void GeoscapeState::btnDogfightExperienceClick(Action *)
 {
-	_game->pushState(new DogfightExperienceState());
+	if (!_game->getMod()->getIsFTAGame())
+	{
+		_game->pushState(new DogfightExperienceState());
+	}
 }
 
 /**
