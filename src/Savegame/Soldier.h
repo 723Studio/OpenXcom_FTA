@@ -122,6 +122,7 @@ private:
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
 
+	int generateScienceStat(int min, int max);
 	int improveStat(int exp, int &rate, bool bravary = false);
 
   public:

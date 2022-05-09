@@ -137,6 +137,18 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	PUSH_IN("STR_BRAVERY", braveryStat);
 	PUSH_IN("STR_TRACKING", trackingStat);
 	PUSH_IN("STR_TACTICS", tacticsStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
+	{
+		PUSH_IN("STR_BEAMS_OPERATION", beamsStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+	{
+		PUSH_IN("STR_SYNAPTIC_CONNECTIVITY", synapticStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+	{
+		PUSH_IN("STR_GRAVITY_MANIPULATION", gravityStat);
+	}
 
 #undef PUSH_IN
 

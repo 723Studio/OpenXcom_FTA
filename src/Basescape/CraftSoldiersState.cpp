@@ -144,6 +144,11 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
+	bool showPsiStats = true;
+	if (_ftaUI)
+	{
+		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	}
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -170,6 +175,18 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		PUSH_IN("STR_BRAVERY", braveryStat);
 		PUSH_IN("STR_TRACKING", trackingStat);
 		PUSH_IN("STR_TACTICS", tacticsStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
+		{
+			PUSH_IN("STR_BEAMS_OPERATION", beamsStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+		{
+			PUSH_IN("STR_SYNAPTIC_CONNECTIVITY", synapticStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+		{
+			PUSH_IN("STR_GRAVITY_MANIPULATION", gravityStat);
+		}
 	}
 	else
 	{
@@ -177,7 +194,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		PUSH_IN("STR_MISSIONS2", missionsStat);
 		PUSH_IN("STR_KILLS2", killsStat);
 		PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-		if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+		if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
 		{
 			PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 		}
@@ -191,13 +208,35 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
 		PUSH_IN("STR_STRENGTH", strengthStat);
 	}
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (showPsiStats)
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
+		if (_game->getMod()->isManaFeatureEnabled())
+		{
+			// "unlock" is checked later
+			PUSH_IN("STR_MANA_POOL", manaStat);
+		}
+		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
+		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+
+	// scientist section
+	PUSH_IN("STR_PHYSICS_UC", physicsStat);
+	PUSH_IN("STR_CHEMISTRY_UC", chemistryStat);
+	PUSH_IN("STR_BIOLOGY_UC", biologyStat);
+	PUSH_IN("STR_INSIGHT_UC", insightStat);
+	PUSH_IN("STR_DATA_ANALISYS_UC", dataStat);
+	PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
+	PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
+	PUSH_IN("STR_PSYCHOLOGY_UC", psychologyStat);
+	PUSH_IN("STR_DESIGNING_UC", designingStat);
+	if (showPsiStats)
+	{
+		PUSH_IN("STR_PSIONICS_UC", psionicsStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
+	{
+		PUSH_IN("STR_XENOLINGUISTICS_UC", xenolinguisticsStat);
+	}
 
 #undef PUSH_IN
 

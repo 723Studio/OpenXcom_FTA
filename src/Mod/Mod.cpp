@@ -2807,6 +2807,10 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_fontName = doc["fontName"].as<std::string>(_fontName);
 	_psiUnlockResearch = doc["psiUnlockResearch"].as<std::string>(_psiUnlockResearch);
 	_ufopaediaUnlockResearch = doc["ufopaediaUnlockResearch"].as<std::string>(_ufopaediaUnlockResearch);
+	_xenologyUnlockResearch = doc["xenologyUnlockResearch"].as<std::string>(_xenologyUnlockResearch);
+	_craftsBeamUnlockResearch = doc["craftsBeamUnlockResearch"].as<std::string>(_craftsBeamUnlockResearch);
+	_craftSynapseUnlockResearch = doc["craftSynapseUnlockResearch"].as<std::string>(_craftSynapseUnlockResearch);
+	_craftGravControlUnlockResearch = doc["craftGravControlUnlockResearch"].as<std::string>(_craftGravControlUnlockResearch);
 	_fakeUnderwaterBaseUnlockResearch = doc["fakeUnderwaterBaseUnlockResearch"].as<std::string>(_fakeUnderwaterBaseUnlockResearch);
 	_newBaseUnlockResearch = doc["newBaseUnlockResearch"].as<std::string>(_newBaseUnlockResearch);
 	_baseConstructionUnlockResearch = doc["baseConstructionUnlockResearch"].as<std::string>(_baseConstructionUnlockResearch); // Duplication in FtA, works a bit difference

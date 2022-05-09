@@ -267,6 +267,37 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		PUSH_IN("STR_DOGFIGHT", dogfightStat);
 		PUSH_IN("STR_TRACKING", trackingStat);
 		PUSH_IN("STR_TACTICS", tacticsStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
+		{
+			PUSH_IN("STR_BEAMS_OPERATION", beamsStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+		{
+			PUSH_IN("STR_SYNAPTIC_CONNECTIVITY", synapticStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+		{
+			PUSH_IN("STR_GRAVITY_MANIPULATION", gravityStat);
+		}
+		
+		// scientist section
+		PUSH_IN("STR_PHYSICS_UC", physicsStat);
+		PUSH_IN("STR_CHEMISTRY_UC", chemistryStat);
+		PUSH_IN("STR_BIOLOGY_UC", biologyStat);
+		PUSH_IN("STR_INSIGHT_UC", insightStat);
+		PUSH_IN("STR_DATA_ANALISYS_UC", dataStat);
+		PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
+		PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
+		PUSH_IN("STR_PSYCHOLOGY_UC", psychologyStat);
+		PUSH_IN("STR_DESIGNING_UC", designingStat);
+		if (showPsiStats)
+		{
+			PUSH_IN("STR_PSIONICS_UC", psionicsStat);	
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
+		{
+			PUSH_IN("STR_XENOLINGUISTICS_UC", xenolinguisticsStat);
+		}
 	}
 
 #undef PUSH_IN

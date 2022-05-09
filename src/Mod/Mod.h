@@ -269,7 +269,8 @@ private:
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
 	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _newBaseUnlockResearch;
-	std::string _ufopaediaUnlockResearch, _baseConstructionUnlockResearch;
+	std::string _ufopaediaUnlockResearch, _baseConstructionUnlockResearch, _xenologyUnlockResearch;
+	std::string _craftsBeamUnlockResearch, _craftSynapseUnlockResearch, _craftGravControlUnlockResearch;
 	std::string _hireScientistsUnlockResearch, _hireEngineersUnlockResearch;
 	RuleBaseFacilityFunctions _hireScientistsRequiresBaseFunc, _hireEngineersRequiresBaseFunc;
 
@@ -911,6 +912,18 @@ public:
 	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; } //FtA version
 	/// Gets the research topic required for using Ufopaedia.
 	const std::string& getUfopaediaUnlockResearch() const { return _ufopaediaUnlockResearch; }
+	/// Gets the research topic required for unlocking xenolinguistics stat.
+	const std::string &getXenologyUnlockResearch() const { return _xenologyUnlockResearch; }
+	/// Gets the research topic required for unlocking beam operations stat.
+	const std::string &getBeamOperationsUnlockResearch() const { return _craftsBeamUnlockResearch; }
+	/// Gets the research topic required for unlocking synapsis stat.
+	const std::string &getCraftSynapseUnlockResearch() const { return _craftSynapseUnlockResearch; }
+	/// Gets the research topic required for unlocking gravity controlling stat.
+	const std::string &getGravControlUnlockResearch() const { return _craftGravControlUnlockResearch; }
+	/// Gets the research topic required for hiring new scientists.
+	const std::string &getHireScientistsUnlockResearch() const { return _hireScientistsUnlockResearch; }
+	/// Gets the research topic required for hiring new engineers.
+	const std::string &getHireEngineersUnlockResearch() const { return _hireEngineersUnlockResearch; }
 
 	/// Gets the threshold for defining a glancing hit on a ufo during interception
 	int getUfoGlancingHitThreshold() const { return _ufoGlancingHitThreshold; }

@@ -44,6 +44,15 @@
 
 namespace OpenXcom
 {
+int Soldier::generateScienceStat(int min, int max)
+{
+	if (RNG::percent(max))
+	{
+		return RNG::generate(min, max);
+	}
+	
+	
+}
 int Soldier::improveStat(int exp, int &rate, bool bravary)
 {
 	rate = 0;
@@ -115,6 +124,21 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.dogfight = RNG::generate(minStats.dogfight, maxStats.dogfight);
 		_initialStats.tracking = RNG::generate(minStats.tracking, maxStats.tracking);
 		_initialStats.tactics = RNG::generate(minStats.tactics, maxStats.tactics);
+		_initialStats.beams = RNG::generate(minStats.beams, maxStats.beams);
+		_initialStats.synaptic = RNG::generate(minStats.synaptic, maxStats.synaptic);
+		_initialStats.gravity = RNG::generate(minStats.gravity, maxStats.gravity);
+
+		_initialStats.physics = generateScienceStat(minStats.physics, maxStats.physics);
+		_initialStats.chemistry = generateScienceStat(minStats.chemistry, maxStats.chemistry);
+		_initialStats.biology = generateScienceStat(minStats.biology, maxStats.biology);
+		_initialStats.insight = generateScienceStat(minStats.insight, maxStats.insight);
+		_initialStats.data = generateScienceStat(minStats.data, maxStats.data);
+		_initialStats.computers = generateScienceStat(minStats.computers, maxStats.computers);
+		_initialStats.materials = generateScienceStat(minStats.materials, maxStats.materials);
+		_initialStats.psychology = generateScienceStat(minStats.psychology, maxStats.psychology);
+		_initialStats.designing = generateScienceStat(minStats.designing, maxStats.designing);
+		_initialStats.psionics = generateScienceStat(minStats.psionics, maxStats.psionics);
+		_initialStats.xenolinguistics = generateScienceStat(minStats.xenolinguistics, maxStats.xenolinguistics);
 
 		_currentStats = _initialStats;
 
@@ -2515,6 +2539,78 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 	{
 		stats->tactics += improveStat(exp->tactics, rate);
 		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->beams && stats->beams < caps.beams)
+	{
+		stats->beams += improveStat(exp->beams, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->synaptic && stats->synaptic < caps.synaptic)
+	{
+		stats->synaptic += improveStat(exp->synaptic, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+	if (exp->gravity && stats->gravity < caps.gravity)
+	{
+		stats->gravity += improveStat(exp->gravity, rate);
+		addExperience(ROLE_PILOT, rate);
+	}
+
+	//science stats
+	if (exp->physics && stats->physics < caps.physics)
+	{
+		stats->physics += improveStat(exp->physics, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->chemistry && stats->chemistry < caps.chemistry)
+	{
+		stats->chemistry += improveStat(exp->chemistry, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->biology && stats->biology < caps.biology)
+	{
+		stats->biology += improveStat(exp->biology, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->insight && stats->insight < caps.insight)
+	{
+		stats->insight += improveStat(exp->insight, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->data && stats->data < caps.data)
+	{
+		stats->data += improveStat(exp->data, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->computers && stats->computers < caps.computers)
+	{
+		stats->computers += improveStat(exp->computers, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->materials && stats->materials < caps.materials)
+	{
+		stats->materials += improveStat(exp->materials, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->psychology && stats->psychology < caps.psychology)
+	{
+		stats->psychology += improveStat(exp->psychology, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->designing && stats->designing < caps.designing)
+	{
+		stats->designing += improveStat(exp->designing, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->psionics && stats->psionics < caps.psionics)
+	{
+		stats->psionics += improveStat(exp->psionics, rate);
+		addExperience(ROLE_SCIENTIST, rate);
+	}
+	if (exp->xenolinguistics && stats->xenolinguistics < caps.xenolinguistics)
+	{
+		stats->xenolinguistics += improveStat(exp->xenolinguistics, rate);
+		addExperience(ROLE_SCIENTIST, rate);
 	}
 }
 
