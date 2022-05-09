@@ -1297,6 +1297,10 @@ void OpenXcom::SoldierInfoState::hideAllStats()
 	_numHealth->setVisible(false);
 	_barHealth->setVisible(false);
 
+	_txtBravery->setVisible(false);
+	_numBravery->setVisible(false);
+	_barBravery->setVisible(false);
+
 	_txtReactions->setVisible(false);
 	_numReactions->setVisible(false);
 	_barReactions->setVisible(false);
