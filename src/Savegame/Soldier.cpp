@@ -131,14 +131,14 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.physics = generateScienceStat(minStats.physics, maxStats.physics);
 		_initialStats.chemistry = generateScienceStat(minStats.chemistry, maxStats.chemistry);
 		_initialStats.biology = generateScienceStat(minStats.biology, maxStats.biology);
-		_initialStats.insight = generateScienceStat(minStats.insight, maxStats.insight);
+		_initialStats.insight = RNG::generate(minStats.insight, maxStats.insight);
 		_initialStats.data = generateScienceStat(minStats.data, maxStats.data);
 		_initialStats.computers = generateScienceStat(minStats.computers, maxStats.computers);
 		_initialStats.materials = generateScienceStat(minStats.materials, maxStats.materials);
 		_initialStats.psychology = generateScienceStat(minStats.psychology, maxStats.psychology);
 		_initialStats.designing = generateScienceStat(minStats.designing, maxStats.designing);
-		_initialStats.psionics = generateScienceStat(minStats.psionics, maxStats.psionics);
-		_initialStats.xenolinguistics = generateScienceStat(minStats.xenolinguistics, maxStats.xenolinguistics);
+		_initialStats.psionics = RNG::generate(minStats.psionics, maxStats.psionics);
+		_initialStats.xenolinguistics = RNG::generate(minStats.xenolinguistics, maxStats.xenolinguistics);
 
 		_currentStats = _initialStats;
 
