@@ -22,6 +22,7 @@
 #include <yaml-cpp/yaml.h>
 #include "RuleBaseFacilityFunctions.h"
 #include "ModScript.h"
+#include "../Mod/Unit.h"
 
 namespace OpenXcom
 {
@@ -50,6 +51,7 @@ class RuleResearch
 	int _cost, _points;
 	std::vector<std::string> _dependenciesName, _unlocksName, _disablesName, _reenablesName, _getOneFreeName, _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
+	UnitStats _stats;
 	std::vector<const RuleResearch*> _dependencies, _unlocks, _disables, _reenables, _getOneFree, _requires;
 	bool _sequentialGetOneFree;
 	std::vector<std::pair<std::string, std::vector<std::string> > > _getOneFreeProtectedName;
@@ -106,6 +108,8 @@ public:
 	const std::vector<const RuleResearch*> &getRequirements() const;
 	/// Gets the base requirements for this ResearchProject.
 	RuleBaseFacilityFunctions getRequireBaseFunc() const { return _requiresBaseFunc; }
+	/// Get pointer to this ResearchProject's stats.
+	UnitStats *getStats() { return &_stats; };
 	/// Gets the list weight for this research item.
 	int getListOrder() const;
 	/// Gets the cutscene to play when this item is researched

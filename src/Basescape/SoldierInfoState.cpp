@@ -1269,7 +1269,7 @@ void OpenXcom::SoldierInfoState::displayPsionic(SoldierRole selected)
 
 	bool psi = _soldier->getStatsWithSoldierBonusesOnly()->psiSkill > 0
 		&& (selected == ROLE_SOLDIER || selected == ROLE_AGENT || selected == ROLE_PILOT);
-	if (psi || ((Options::psiStrengthEval || _ftaUI) && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())))
+	if (psi || ((Options::psiStrengthEval && !_ftaUI) && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())))
 	{
 		_txtPsiStrength->setVisible(true);
 		_numPsiStrength->setVisible(true);

@@ -51,6 +51,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
 	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
 	_cost = node["cost"].as<int>(_cost);
+	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	_points = node["points"].as<int>(_points);
 	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);
 	mod->loadUnorderedNames(_name, _unlocksName, node["unlocks"]);
