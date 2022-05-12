@@ -31,9 +31,11 @@ enum SoldierRank : char { RANK_ROOKIE, RANK_SQUADDIE, RANK_SERGEANT, RANK_CAPTAI
 enum SoldierGender : char { GENDER_MALE, GENDER_FEMALE };
 enum SoldierLook : char { LOOK_BLONDE, LOOK_BROWNHAIR, LOOK_ORIENTAL, LOOK_AFRICAN };
 enum ReturnToTrainings : char {NONE, MARTIAL_TRAINING, PSI_TRAINING, BOTH_TRAININGS};
+enum DutyMode: char { CRAFT, LAB, WORK};
 
 class Craft;
 class CovertOperation;
+class ResearchProject;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
@@ -99,6 +101,7 @@ private:
 	SoldierRank _rank;
 	Craft *_craft;
 	CovertOperation* _covertOperation;
+	ResearchProject *_researchProject;
 	SoldierGender _gender;
 	SoldierLook _look;
 	int _lookVariant;
@@ -155,13 +158,17 @@ private:
 	/// Sets the soldier's craft.
 	void setCraft(Craft *craft, bool resetCustomDeployment = false);
 	/// Gets the soldier's Covert Operation.
-	CovertOperation* getCovertOperation() const { return _covertOperation; };
+	CovertOperation* getCovertOperation() const { return _covertOperation; }
 	/// Sets the soldier's Covert Operation.
-	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; };
+	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
+	/// Gets the soldier's Research Project.
+	ResearchProject *getResearchProject() const { return _researchProject; }
+	/// Sets the soldier's Research Project.
+	void setResearchProject(ResearchProject *researchProject) { _researchProject = researchProject; }
 	/// Sets the soldier's craft and automatically moves the equipment (if enabled).
 	void setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattle, bool resetCustomDeployment = false);
 	/// Gets the soldier's craft string.
-	std::string getCraftString(Language *lang, const BaseSumDailyRecovery& recovery) const;
+	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
 	/// Gets a string version of the soldier's rank.
 	std::string getRankString(bool isFtA);
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.

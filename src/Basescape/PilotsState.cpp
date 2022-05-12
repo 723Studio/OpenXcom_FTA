@@ -283,27 +283,27 @@ void PilotsState::initList(size_t scrl)
 	_txtCraft->setX(_txtRank->getX() + 98 - offset);
 
 	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
 	unsigned int row = 0;
-	int it = 0;
+	unsigned int it = 0;
 	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
 		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
 		it++;
 		if ((*i)->getRoleRank(ROLE_PILOT) > 0) // only licensed pilots
 		{
-			std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
-
+			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (_dynGetter != NULL)
 			{
 				// call corresponding getter
 				int dynStat = (*_dynGetter)(_game, *i);
 				std::ostringstream ss;
 				ss << dynStat;
-				_lstPilots->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(true)).c_str(), craftString.c_str(), ss.str().c_str());
+				_lstPilots->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
 			}
 			else
 			{
-				_lstPilots->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(true)).c_str(), craftString.c_str());
+				_lstPilots->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
 			}
 
 			if ((*i)->getCraft() == 0)

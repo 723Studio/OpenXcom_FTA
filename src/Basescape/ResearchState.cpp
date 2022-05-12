@@ -47,6 +47,7 @@ namespace OpenXcom
  */
 ResearchState::ResearchState(Base *base) : _base(base)
 {
+	_ftaUi = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnNew = new TextButton(148, 16, 8, 176);
@@ -246,8 +247,33 @@ void ResearchState::fillProjectList(size_t scrl)
 		std::string wstr = tr(r->getName());
 		_lstResearch->addRow(3, wstr.c_str(), sstr.str().c_str(), tr((*iter)->getResearchProgress()).c_str());
 	}
-	_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(_base->getAvailableScientists()));
-	_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_base->getAllocatedScientists()));
+
+	if (_ftaUi)
+	{
+		unsigned int freeScientists = 0, busyScientists = 0;
+		auto recovery = _base->getSumRecoveryPerDay();
+		bool isBusy = false, isFree = false;
+		for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
+		{
+			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
+			if (!isBusy || isFree)
+			{
+				freeScientists++;
+			}
+			if (s->getResearchProject())
+			{
+				busyScientists++;
+			}
+		}
+		_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(freeScientists));
+		_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(busyScientists));
+	}
+	else
+	{
+		_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(_base->getAvailableScientists()));
+		_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_base->getAllocatedScientists()));
+	}
+
 	_txtSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories()));
 
 	if (scrl)

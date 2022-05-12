@@ -27,6 +27,7 @@
 #include "../Engine/RNG.h"
 #include "Craft.h"
 #include "../Savegame/CovertOperation.h"
+#include "../Savegame/ResearchProject.h"
 #include "EquipmentLayoutItem.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
@@ -96,9 +97,9 @@ int Soldier::improveStat(int exp, int &rate, bool bravary)
  */
 Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0),
-	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), 
-	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0),
+	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _justSaved(false),
+	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), 
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
 	_corpseRecovered(false)
 {
@@ -401,6 +402,10 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	if (_covertOperation != 0)
 	{
 		node["covertOperation"] = _covertOperation->getOperationName();
+	}
+	if (_researchProject != 0)
+	{
+		node["researchProject"] = _researchProject->getRules()->getName();
 	}
 	node["gender"] = (int)_gender;
 	node["look"] = (int)_look;
@@ -708,21 +713,26 @@ void Soldier::setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattl
  * @param lang Language to get strings from.
  * @return Full name.
  */
-std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& recovery) const
+std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode) const
 {
-	std::string s;
+	//std::string s;
+	isBusy = false;
+	isFree = false;
+	bool facility = (mode == LAB);
 	if (_death)
 	{
 		if (_death->getCause())
 		{
-			s = lang->getString("STR_KILLED_IN_ACTION", _gender);
+			return lang->getString("STR_KILLED_IN_ACTION", _gender);
 		}
 		else
 		{
-			s = lang->getString("STR_MISSING_IN_ACTION", _gender);
+			return lang->getString("STR_MISSING_IN_ACTION", _gender);
 		}
+		isBusy = true;
 	}
-	else if (isWounded())
+
+	if (isWounded())
 	{
 		std::ostringstream ss;
 		ss << lang->getString("STR_WOUNDED");
@@ -736,38 +746,81 @@ std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& 
 		{
 			ss << days;
 		}
-		s = ss.str();
+		isBusy = true;
+		return ss.str();
 	}
-	else if (_craft == 0 && _covertOperation == 0 && !hasPendingTransformation())
+
+	if (_covertOperation != 0)
 	{
-		s = lang->getString("STR_NONE_UC");
+		isBusy = true;
+		return lang->getString("STR_COVERT_OPERATION_UC");
 	}
-	else if (_craft == 0)
+
+	if (_researchProject != 0)
 	{
-		if (hasPendingTransformation())
+		if (mode == LAB)
 		{
-			std::ostringstream ss;
-			ss << lang->getString("STR_IN_TRANSFORMATION_UC");
-			ss << ">";
-			int days = 0;
-			for (auto it = _pendingTransformations.cbegin(); it != _pendingTransformations.cend(); ++it)
-			{
-				days += (*it).second;	
-			}
-			days = ceil(days / 24);
-			ss << days;
-			s = ss.str();
+			return lang->getString(_researchProject->getRules()->getName());
 		}
 		else
 		{
-			s = lang->getString("STR_COVERT_OPERATION_UC");
+			return lang->getString("STR_IN_LAB");
 		}
 	}
-	else
+
+	if (hasPendingTransformation())
 	{
-		s = _craft->getName(lang);
+		isBusy = true;
+		std::ostringstream ss;
+		ss << lang->getString("STR_IN_TRANSFORMATION_UC");
+		ss << ">";
+		int days = 0;
+		isBusy = true;
+		for (auto it = _pendingTransformations.cbegin(); it != _pendingTransformations.cend();)
+		{
+			if ((*it).second > 0)
+			{
+				days += (*it).second;
+				++it;
+			}
+		}
+		days = ceil(days / 24);
+		ss << days;
+		return ss.str();
 	}
-	return s;
+	if (_psiTraining)
+	{
+		if (!Options::anytimePsiTraining)
+		{
+			isBusy = true;
+			return lang->getString("STR_IN_PSI_TRAINING_UC");
+		}
+	}
+	if (facility)
+	{
+		if (_psiTraining)
+		{
+			return lang->getString("STR_IN_PSI_TRAINING_UC");
+		}
+		if (_training)
+		{
+			return lang->getString("STR_COMBAT_TRAINING");
+		}
+	}
+
+	
+	if (_craft)
+	{
+		if (_craft->getStatus() == "STR_OUT")
+		{
+			isBusy = true;
+			return lang->getString("STR_OUT");
+		}
+		return _craft->getName(lang);
+	}
+
+	isFree = true;
+	return lang->getString("STR_NONE_UC");
 }
 
 /**
@@ -1622,6 +1675,7 @@ void Soldier::die(SoldierDeath *death)
 	// Clean up associations
 	_craft = 0;
 	_covertOperation = 0;
+	_researchProject = 0;
 	_psiTraining = false;
 	_training = false;
 	_returnToTrainingWhenHealed = false;

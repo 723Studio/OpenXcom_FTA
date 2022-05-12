@@ -43,6 +43,7 @@ class Production;
 class Vehicle;
 class Ufo;
 class AlienMission;
+enum SoldierRole;
 
 enum UfoDetection : int;
 enum BasePlacementErrors : int
@@ -132,6 +133,7 @@ public:
 	std::vector<BaseFacility*> *getFacilities();
 	/// Gets the base's soldiers.
 	std::vector<Soldier*> *getSoldiers();
+	std::vector<Soldier*> getPersonnel(SoldierRole role) const;
 	/// Pre-calculates soldier stats with various bonuses.
 	void prepareSoldierStatsWithBonuses();
 	/// Gets the base's crafts.

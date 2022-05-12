@@ -40,7 +40,9 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtProject, *_txtScientists, *_txtProgress;
 	TextList *_lstResearch;
-public:
+	bool _ftaUi;
+
+  public:
 	/// Creates the Research state.
 	ResearchState(Base *base);
 	/// Cleans up the Research state.

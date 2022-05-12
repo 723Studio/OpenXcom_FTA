@@ -413,7 +413,7 @@ void CraftSoldiersState::initList(size_t scrl)
 
 	Craft *c = _base->getCrafts()->at(_craft);
 	auto recovery = _base->getSumRecoveryPerDay();
-	
+	bool isBusy = false, isFree = false;
 	int it = 0;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
@@ -425,17 +425,18 @@ void CraftSoldiersState::initList(size_t scrl)
 			|| selAction == "STR_ALL_ROLES" //case we wank to see everyone
 			|| !_ftaUI)
 		{
+			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (_dynGetter != NULL)
 			{
 				// call corresponding getter
 				int dynStat = (*_dynGetter)(_game, *i);
 				std::ostringstream ss;
 				ss << dynStat;
-				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
+				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 			}
 			else
 			{
-				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str());
+				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str());
 			}
 
 			Uint8 color;
@@ -443,7 +444,7 @@ void CraftSoldiersState::initList(size_t scrl)
 			{
 				color = _lstSoldiers->getSecondaryColor();
 			}
-			else if ((*i)->getCraft() != 0 || (*i)->getCovertOperation() != 0 || (*i)->hasPendingTransformation())
+			else if (isBusy || !isFree)
 			{
 				color = _otherCraftColor;
 			}
@@ -603,14 +604,16 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
 		auto r = c->getRules()->getRequiredRole();
 		Uint8 color = _lstSoldiers->getColor();
+
+		bool isBusy = false, isFree = false;
+		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree);
+
 		if (s->getCraft() == c)
 		{
 			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 		}
-		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
-			|| s->getCovertOperation() != 0
-			|| s->hasPendingTransformation())
+		else if (isBusy)
 		{
 			return;
 		}

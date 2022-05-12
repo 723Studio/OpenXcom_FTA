@@ -190,6 +190,18 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 					}
 				}
 			}
+			if (const YAML::Node &op = (*i)["researchProject"])
+			{
+				std::string researchProject = op.as<std::string>();
+				for (std::vector<ResearchProject *>::iterator j = _research.begin(); j != _research.end(); ++j)
+				{
+					if ((*j)->getRules()->getName() == researchProject)
+					{
+						s->setResearchProject((*j));
+						break;
+					}
+				}
+			}
 			_soldiers.push_back(s);
 		}
 		else
@@ -458,6 +470,19 @@ std::vector<BaseFacility*> *Base::getFacilities()
 std::vector<Soldier*> *Base::getSoldiers()
 {
 	return &_soldiers;
+}
+
+std::vector<Soldier*> Base::getPersonnel(SoldierRole role) const
+{
+	std::vector<Soldier *> result;
+	for (auto s : _soldiers)
+	{
+		if (s->getRoleRank(role) > 0)
+		{
+			result.push_back(s);
+		}
+	}
+	return result;
 }
 
 /**
