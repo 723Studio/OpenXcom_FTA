@@ -89,6 +89,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
+	_ftaUI = _game->getMod()->getIsFTAGame();
+
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_soldier = new Surface(320, 200, 0, 0);
@@ -453,7 +455,12 @@ void InventoryState::init()
 		}
 
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
-		auto frame = texture->getFrame(s->getRankSpriteBattlescape());
+		auto frame = texture->getFrame(_soldier->getRankSprite());   
+        if (_ftaUI)
+		{
+			frame = texture->getFrame(_soldier->getRoleRankSprite(role));
+		}
+
 		if (frame)
 		{
 			frame->blitNShade(_btnRank, 0, 0);
