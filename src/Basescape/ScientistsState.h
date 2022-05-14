@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include "SoldierSortUtil.h"
 #include "../Mod/RuleSoldier.h"
 #include <vector>
 
@@ -29,45 +28,43 @@ class TextButton;
 class Window;
 class Text;
 class TextList;
-class ComboBox;
 class Base;
 class Soldier;
 class RuleSoldier;
-struct SortFunctor;
+class ResearchProject;
+
 
 /**
  * Soldiers screen that lets the player
  * manage all the soldiers in a base.
  */
-class PilotsState : public State
+class ScientistsState : public State
 {
-  private:
+private:
 	TextButton *_btnOk;
 	Window *_window;
-	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft;
-	ComboBox *_cbxSortBy;
-	TextList *_lstPilots;
+	Text *_txtTitle, *_txtName, *_txtProject;
+	TextList *_lstScientist;
 	Base *_base;
-	std::vector<Soldier *> _origPilotOrder;
-	std::vector<SortFunctor *> _sortFunctors;
+	Uint8 _otherDutyColor;
+	//std::vector<Soldier *> _origPilotOrder, _filteredListOfPilots;
+	//std::vector<SortFunctor *> _sortFunctors;
 	std::vector<int> _soldierNumbers;
-	getStatFn_t _dynGetter;
+	//getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
 
-  public:
+public:
 	/// Creates the Soldiers state.
-	PilotsState(Base *base);
+	ScientistsState(Base *base);
 	/// Cleans up the Soldiers state.
-	~PilotsState();
-	/// Handler for changing the sort by combobox.
-	void cbxSortByChange(Action *action);
+	~ScientistsState();
 	/// Updates the soldier names.
 	void init() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
-	/// Handler for clicking the Soldiers list.
-	void lstPilotsClick(Action *action);
+	/// Handler for clicking the Scientists list.
+	void lstScientistsClick(Action *action);
 };
 
 }

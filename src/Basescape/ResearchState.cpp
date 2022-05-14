@@ -29,6 +29,7 @@
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/SavedGame.h"
+#include "../Basescape/ScientistsState.h"
 #include "NewResearchListState.h"
 #include "GlobalResearchState.h"
 #include "../Savegame/ResearchProject.h"
@@ -50,8 +51,17 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_ftaUi = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnNew = new TextButton(148, 16, 8, 176);
-	_btnOk = new TextButton(148, 16, 164, 176);
+	if (_ftaUi)
+	{
+		_btnOk = new TextButton(96, 16, 216, 176);
+		_btnNew = new TextButton(96, 16, 8, 176);
+	}
+	else
+	{
+		_btnOk = new TextButton(148, 16, 164, 176);
+		_btnNew = new TextButton(148, 16, 8, 176);
+	}
+	_btnScientists = new TextButton(96, 16, 112, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtAvailable = new Text(150, 9, 10, 24);
 	_txtAllocated = new Text(150, 9, 160, 24);
@@ -67,6 +77,7 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	add(_window, "window", "researchMenu");
 	add(_btnNew, "button", "researchMenu");
 	add(_btnOk, "button", "researchMenu");
+	add(_btnScientists, "button", "researchMenu");
 	add(_txtTitle, "text", "researchMenu");
 	add(_txtAvailable, "text", "researchMenu");
 	add(_txtAllocated, "text", "researchMenu");
@@ -89,6 +100,9 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ResearchState::btnOkClick, Options::keyCancel);
+
+	_btnScientists->setText(tr("STR_SCIENTISTS_LC"));
+	_btnScientists->onMouseClick((ActionHandler)&ResearchState::btnScientistsClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -129,7 +143,7 @@ void ResearchState::btnOkClick(Action *)
 }
 
 /**
- * Returns to the previous screen.
+ * Displays the list of possible ResearchProjects.
  * @param action Pointer to an action.
  */
 void ResearchState::btnNewClick(Action *)
@@ -139,7 +153,16 @@ void ResearchState::btnNewClick(Action *)
 }
 
 /**
- * Displays the list of possible ResearchProjects.
+ * Returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void ResearchState::btnScientistsClick(Action *action)
+{
+	_game->pushState(new ScientistsState(_base));
+}
+
+/**
+ * Opens state with selected Research Project
  * @param action Pointer to an action.
  */
 void ResearchState::onSelectProject(Action *)

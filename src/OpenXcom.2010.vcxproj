@@ -267,6 +267,7 @@
     <ClCompile Include="Basescape\PurchaseState.cpp" />
     <ClCompile Include="Basescape\ResearchInfoState.cpp" />
     <ClCompile Include="Basescape\ResearchState.cpp" />
+    <ClCompile Include="Basescape\ScientistsState.cpp" />
     <ClCompile Include="Basescape\SelectStartFacilityState.cpp" />
     <ClCompile Include="Basescape\SackSoldierState.cpp" />
     <ClCompile Include="Basescape\SellState.cpp" />
@@ -669,6 +670,7 @@
     <ClInclude Include="Basescape\PurchaseState.h" />
     <ClInclude Include="Basescape\ResearchInfoState.h" />
     <ClInclude Include="Basescape\ResearchState.h" />
+    <ClInclude Include="Basescape\ScientistsState.h" />
     <ClInclude Include="Basescape\SelectStartFacilityState.h" />
     <ClInclude Include="Basescape\SackSoldierState.h" />
     <ClInclude Include="Basescape\SellState.h" />

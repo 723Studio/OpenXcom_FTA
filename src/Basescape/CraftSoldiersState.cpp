@@ -417,14 +417,13 @@ void CraftSoldiersState::initList(size_t scrl)
 	int it = 0;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
-		it++;
 		if (((*i)->getRoleRank(ROLE_SOLDIER) > 0 && !_isInterceptor) //case for dropship
 			|| (_isInterceptor && (*i)->getRoleRank(ROLE_PILOT) > 0) //case for interceptor
 			|| (_isMultipurpose && ((*i)->getRoleRank(ROLE_PILOT) > 0 || (*i)->getRoleRank(ROLE_SOLDIER) > 0)) //case for multipurpose craft
 			|| selAction == "STR_ALL_ROLES" //case we wank to see everyone
 			|| !_ftaUI)
 		{
+			_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
 			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (_dynGetter != NULL)
 			{
@@ -455,6 +454,7 @@ void CraftSoldiersState::initList(size_t scrl)
 			_lstSoldiers->setRowColor(row, color);
 			row++;
 		}
+		it++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);

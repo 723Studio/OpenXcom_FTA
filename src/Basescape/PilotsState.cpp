@@ -57,26 +57,15 @@ namespace OpenXcom
  */
 PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
-	bool isTrnBtnVisible = false; // _base->getAvailableTraining() > 0; //#FINNIK TODO - consider adding pilot training or removing
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (isTrnBtnVisible)
-	{
-		_btnOk = new TextButton(148, 16, 164, 176);
-		_btnTraining = new TextButton(148, 16, 8, 176);
-	}
-	else
-	{
-		_btnOk = new TextButton(288, 16, 16, 176);
-		_btnTraining = new TextButton(148, 16, 8, 176);
-	}
-
 	_txtTitle = new Text(168, 17, 16, 8);
+	_btnOk = new TextButton(288, 16, 16, 176);
 	_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 130, 32);
-	_txtCraft = new Text(82, 9, 222, 32);
+	_txtRank = new Text(102, 9, 122, 32);
+	_txtCraft = new Text(82, 9, 214, 32);
 	_lstPilots = new TextList(288, 128, 8, 40);
 
 	// Set palette
@@ -90,7 +79,6 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	add(_txtCraft, "text2", "pilotsList");
 	add(_lstPilots, "list", "pilotsList");
 	add(_cbxSortBy, "button", "pilotsList");
-	add(_btnTraining, "button", "pilotsList");
 
 	centerAllSurfaces();
 
@@ -100,10 +88,6 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&PilotsState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&PilotsState::btnOkClick, Options::keyCancel);
-
-	_btnTraining->setText(tr("STR_PILOT_TRAINING"));
-	_btnTraining->onMouseClick((ActionHandler)&PilotsState::btnTrainingClick);
-	_btnTraining->setVisible(isTrnBtnVisible);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_LEFT);
@@ -162,7 +146,7 @@ PilotsState::PilotsState(Base *base) : _base(base), _origPilotOrder(*_base->getS
 	_lstPilots->setSelectable(true);
 	_lstPilots->setBackground(_window);
 	_lstPilots->setMargin(8);
-	_lstPilots->onMouseClick((ActionHandler)&PilotsState::lstSoldiersClick);
+	_lstPilots->onMouseClick((ActionHandler)&PilotsState::lstPilotsClick);
 }
 
 /**
@@ -265,8 +249,6 @@ void PilotsState::initList(size_t scrl)
 	_lstPilots->clearList();
 	_soldierNumbers.clear();
 
-	_filteredListOfPilots.clear();
-
 	std::string selAction = "STR_PILOT_INFO";
 
 	int offset = 0;
@@ -288,10 +270,9 @@ void PilotsState::initList(size_t scrl)
 	unsigned int it = 0;
 	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
-		it++;
 		if ((*i)->getRoleRank(ROLE_PILOT) > 0) // only licensed pilots
 		{
+			_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
 			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (_dynGetter != NULL)
 			{
@@ -320,6 +301,7 @@ void PilotsState::initList(size_t scrl)
 			}
 			row++;
 		}
+		it++;
 	}
 	if (scrl)
 		_lstPilots->scrollTo(scrl);
@@ -336,28 +318,10 @@ void PilotsState::btnOkClick(Action *)
 }
 
 /**
- * Opens the Martial Training screen.
- * @param action Pointer to an action.
- */
-void PilotsState::btnTrainingClick(Action *)
-{
-	_game->pushState(new AllocateTrainingState(_base));
-}
-
-/**
- * Opens the Memorial screen.
- * @param action Pointer to an action.
- */
-void PilotsState::btnMemorialClick(Action *)
-{
-	_game->pushState(new SoldierMemorialState);
-}
-
-/**
  * Shows the selected soldier's info.
  * @param action Pointer to an action.
  */
-void PilotsState::lstSoldiersClick(Action *action)
+void PilotsState::lstPilotsClick(Action *action)
 {
 	_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstPilots->getSelectedRow())));
 }
