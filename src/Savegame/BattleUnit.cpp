@@ -3646,14 +3646,38 @@ bool BattleUnit::reloadAmmo()
 			int slot = ruleWeapon->getSlotForAmmo(bi->getRules());
 			if (slot != -1 && !weapon->getAmmoForSlot(slot))
 			{
-				int tuTemp = (Mod::EXTENDED_ITEM_RELOAD_COST && bi->getSlot()->getType() != INV_HAND) ? bi->getSlot()->getCost(weapon->getSlot()) : 0;
-				tuTemp += ruleWeapon->getTULoad(slot);
-				if (tuTemp < tuCost)
+				bool extendedItemReloadCostLocal = false;
+				if (weapon->getRules()->getExtendedItemReloadCostLocal() != 0)
 				{
-					tuCost = tuTemp;
-					ammo = bi;
-					slotAmmo = slot;
+					if (weapon->getRules()->getExtendedItemReloadCostLocal() == 1)
+					{
+						extendedItemReloadCostLocal = true;
+					}
+					else if (weapon->getRules()->getExtendedItemReloadCostLocal() == 2)
+					{
+						extendedItemReloadCostLocal = false;
+					}
+					int tuTemp = (extendedItemReloadCostLocal && bi->getSlot()->getType() != INV_HAND) ? bi->getSlot()->getCost(weapon->getSlot()) : 0;
+					tuTemp += ruleWeapon->getTULoad(slot);
+					if (tuTemp < tuCost)
+					{
+						tuCost = tuTemp;
+						ammo = bi;
+						slotAmmo = slot;
+					}
 				}
+				else
+				{
+					int tuTemp = (Mod::EXTENDED_ITEM_RELOAD_COST && bi->getSlot()->getType() != INV_HAND) ? bi->getSlot()->getCost(weapon->getSlot()) : 0;
+					tuTemp += ruleWeapon->getTULoad(slot);
+					if (tuTemp < tuCost)
+					{
+						tuCost = tuTemp;
+						ammo = bi;
+						slotAmmo = slot;
+					}
+				}
+
 			}
 		}
 

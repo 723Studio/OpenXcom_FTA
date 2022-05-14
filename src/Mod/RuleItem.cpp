@@ -145,7 +145,7 @@ const float TilesToVexels = 16.0f;
  */
 RuleItem::RuleItem(const std::string &type) :
 	_type(type), _name(type), _vehicleUnit(nullptr), _size(0.0), _costBuy(0), _costSell(0), _costDispose(0), _transferTime(24), _weight(3), _throwRange(0), _underwaterThrowRange(0),
-	_stackSize(1),
+    _stackSize(1), _extendedItemReloadCostLocal(0),
 	_bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),
 	_hitAnimation(0), _hitAnimFrames(-1), _hitMissAnimation(-1), _hitMissAnimFrames(-1),
 	_meleeAnimation(0), _meleeAnimFrames(-1), _meleeMissAnimation(-1), _meleeMissAnimFrames(-1),
@@ -334,6 +334,12 @@ void RuleItem::loadConfAction(RuleItemAction& a, const YAML::Node& node, const s
 	}
 }
 
+/// Load ExtendedItemReloadCostLocal from yaml.
+void RuleItem::loadExtendedItemReloadCostLocal(const YAML::Node &node)
+{
+	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
+}
+
 /**
  * Load RuleItemFuseTrigger from yaml.
  */
@@ -398,6 +404,7 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_stackSize = node["stackSize"].as<int>(_stackSize);
 	_missionObjective = node["missionObjective"].as<bool>(_missionObjective);
 	_alienArtifact = node["alienArtifact"].as<bool>(_alienArtifact);
+	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
 
 	mod->loadSpriteOffset(_type, _bigSprite, node["bigSprite"], "BIGOBS.PCK");
 	mod->loadSpriteOffset(_type, _floorSprite, node["floorSprite"], "FLOOROB.PCK");

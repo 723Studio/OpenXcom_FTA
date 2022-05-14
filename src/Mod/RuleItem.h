@@ -411,6 +411,7 @@ private:
 	RuleStatBonus _damageBonus, _meleeBonus, _accuracyMulti, _meleeMulti, _throwMulti, _closeQuartersMulti;
 	ModScript::BattleItemScripts::Container _battleItemScripts;
 	ScriptValues<RuleItem> _scriptValues;
+	int _extendedItemReloadCostLocal;
 
 	/// Get final value of cost.
 	RuleItemUseCost getDefault(const RuleItemUseCost& a, const RuleItemUseCost& b) const;
@@ -447,7 +448,11 @@ public:
 	void load(const YAML::Node& node, Mod *mod, int listIndex, const ModScript& parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
+	/// Load ExtendedItemReloadCostLocal from yaml.
+	void loadExtendedItemReloadCostLocal(const YAML::Node &node);
 
+	/// Gets reload cost
+	int getExtendedItemReloadCostLocal() const { return _extendedItemReloadCostLocal; }
 	/// Gets the item's type.
 	const std::string &getType() const;
 	/// Gets the item's name.

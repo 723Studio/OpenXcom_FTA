@@ -920,10 +920,29 @@ void Inventory::mouseClick(Action *action, State *state)
 					}
 					else
 					{
+						
 						// 4. the cost of loading the weapon with the new ammo (from the offhand)
 						int tuCost = item->getRules()->getTULoad(slotAmmo);
 
-						if (Mod::EXTENDED_ITEM_RELOAD_COST && _selItem->getSlot()->getType() != INV_HAND)
+						bool extendedItemReloadCost = false;
+						if (item->getRules()->getExtendedItemReloadCostLocal() != 0)
+						{
+							if ((item->getRules()->getExtendedItemReloadCostLocal() == 1))
+							{
+								extendedItemReloadCost = true;
+							}
+							else if ((item->getRules()->getExtendedItemReloadCostLocal() == 2))
+							{
+								extendedItemReloadCost = false;
+							}
+							if (extendedItemReloadCost && _selItem->getSlot()->getType() != INV_HAND)
+							{
+								// 3. the cost of moving the new ammo from the current slot to the offhand
+								// Note: the cost for left/right hand might *NOT* be the same, but using the right hand "by definition"
+								tuCost += _selItem->getSlot()->getCost(_inventorySlotRightHand);
+							}
+						}
+						else if (Mod::EXTENDED_ITEM_RELOAD_COST && _selItem->getSlot()->getType() != INV_HAND)
 						{
 							// 3. the cost of moving the new ammo from the current slot to the offhand
 							// Note: the cost for left/right hand might *NOT* be the same, but using the right hand "by definition"
