@@ -448,8 +448,7 @@ public:
 	void load(const YAML::Node& node, Mod *mod, int listIndex, const ModScript& parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
-	/// Load ExtendedItemReloadCostLocal from yaml.
-	void loadExtendedItemReloadCostLocal(const YAML::Node &node);
+
 
 	/// Gets reload cost
 	int getExtendedItemReloadCostLocal() const { return _extendedItemReloadCostLocal; }

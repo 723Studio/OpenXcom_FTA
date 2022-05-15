@@ -333,13 +333,6 @@ void RuleItem::loadConfAction(RuleItemAction& a, const YAML::Node& node, const s
 		a.arcing = conf["arcing"].as<bool>(a.arcing);
 	}
 }
-
-/// Load ExtendedItemReloadCostLocal from yaml.
-void RuleItem::loadExtendedItemReloadCostLocal(const YAML::Node &node)
-{
-	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
-}
-
 /**
  * Load RuleItemFuseTrigger from yaml.
  */
@@ -405,6 +398,12 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_missionObjective = node["missionObjective"].as<bool>(_missionObjective);
 	_alienArtifact = node["alienArtifact"].as<bool>(_alienArtifact);
 	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
+
+	if (_extendedItemReloadCostLocal > 0)
+	{
+       bool test = false;
+	}
+		
 
 	mod->loadSpriteOffset(_type, _bigSprite, node["bigSprite"], "BIGOBS.PCK");
 	mod->loadSpriteOffset(_type, _floorSprite, node["floorSprite"], "FLOOROB.PCK");
