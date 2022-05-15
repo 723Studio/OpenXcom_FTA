@@ -36,6 +36,7 @@ class BattlescapeState;
 class BattleUnit;
 class BattlescapeButton;
 class Base;
+class Soldier;
 
 /**
  * Screen which displays soldier's inventory.
@@ -62,9 +63,10 @@ private:
 	int _mouseHoverItemFrame = 0;
 	BattleItem *_mouseHoverItem = nullptr;
 	BattleItem *_currentDamageTooltipItem = nullptr;
-	bool _reloadUnit;
+	bool _reloadUnit, _ftaUI;
 	int _globalLayoutIndex;
 	int _prev_key = 0, _key_repeats = 0;
+	Soldier *_geoscapeSoldier;
 	/// Helper method for Create Template button
 	void _createInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate);
 	/// Helper method for Apply Template button
