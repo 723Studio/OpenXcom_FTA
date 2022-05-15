@@ -40,7 +40,7 @@ class NewResearchListState : public State
 {
 private:
 	Base *_base;
-	bool _sortByCost, _ftaUI;
+	bool _sortByCost, _ftaUi;
 	TextButton *_btnOK;
 	ComboBox *_cbxSort;
 	ToggleTextButton *_btnShowOnlyNew;

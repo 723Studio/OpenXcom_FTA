@@ -33,6 +33,7 @@
 #include "../Savegame/Base.h"
 #include "../Mod/RuleResearch.h"
 #include "ResearchInfoState.h"
+#include "ResearchInfoStateFtA.h"
 #include "TechTreeViewerState.h"
 
 namespace OpenXcom
@@ -50,11 +51,11 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 		_sortByCost = !_sortByCost;
 	}
 
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->getIsFTAGame();
 
 	_screen = false;
 
-	if (!_ftaUI)
+	if (!_ftaUi)
 	{
 		_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
 		_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
@@ -88,7 +89,7 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		add(_txtName, "text", "selectNewResearch");
 		add(_txtCategories, "text", "selectNewResearch");
@@ -130,9 +131,13 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	}
 
 	_txtTitle->setAlign(ALIGN_CENTER);
+	if (_ftaUi)
+	{
+		_txtTitle->setBig();
+	}
 	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
 
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		_txtName->setText(tr("STR_NAME"));
 		_txtCategories->setText(tr("STR_CATEGORIES"));
@@ -170,7 +175,14 @@ void NewResearchListState::init()
 void NewResearchListState::onSelectProject(Action *)
 {
 	_lstScroll = _lstResearch->getScroll();
-	_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+	if (_ftaUi)
+	{
+		_game->pushState(new ResearchInfoStateFtA(_base, _projects[_lstResearch->getSelectedRow()]));
+	}
+	else
+	{
+		_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+	}
 }
 
 /**
@@ -345,7 +357,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
 		if ((*it)->getRequirements().empty())
 		{
-			if (!_ftaUI)
+			if (!_ftaUi)
 			{
 				_lstResearch->addRow(1, tr((*it)->getName()).c_str());
 			}

@@ -44,6 +44,7 @@ set ( basescape_src
   Basescape/PlaceStartFacilityState.cpp
   Basescape/PurchaseState.cpp
   Basescape/ResearchInfoState.cpp
+  Basescape/ResearchInfoStateFtA.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
   Basescape/ScientistsState.cpp

@@ -1211,6 +1211,9 @@
     <ClCompile Include="Basescape\ScientistsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2484,6 +2487,9 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ScientistsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ResearchInfoStateFtA.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>

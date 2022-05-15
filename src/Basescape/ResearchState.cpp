@@ -35,6 +35,7 @@
 #include "../Savegame/ResearchProject.h"
 #include "../Mod/RuleResearch.h"
 #include "ResearchInfoState.h"
+#include "ResearchInfoStateFtA.h"
 #include "TechTreeViewerState.h"
 #include <algorithm>
 
@@ -168,7 +169,14 @@ void ResearchState::btnScientistsClick(Action *action)
 void ResearchState::onSelectProject(Action *)
 {
 	const std::vector<ResearchProject *> & baseProjects(_base->getResearch());
-	_game->pushState(new ResearchInfoState(_base, baseProjects[_lstResearch->getSelectedRow()]));
+	if (_ftaUi)
+	{
+		_game->pushState(new ResearchInfoStateFtA(_base, baseProjects[_lstResearch->getSelectedRow()]));
+	}
+	else
+	{
+		_game->pushState(new ResearchInfoState(_base, baseProjects[_lstResearch->getSelectedRow()]));
+	}
 }
 
 /**
