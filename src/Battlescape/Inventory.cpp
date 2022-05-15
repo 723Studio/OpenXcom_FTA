@@ -920,10 +920,8 @@ void Inventory::mouseClick(Action *action, State *state)
 					}
 					else
 					{
-						
 						// 4. the cost of loading the weapon with the new ammo (from the offhand)
 						int tuCost = item->getRules()->getTULoad(slotAmmo);
-
 						bool extendedItemReloadCost = false;
 						if (item->getRules()->getExtendedItemReloadCostLocal() != 0)
 						{

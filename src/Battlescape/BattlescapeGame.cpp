@@ -2817,10 +2817,7 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 			if (slot != -1)
 			{
 				BattleActionCost cost{ unit };
-
-
 				bool extendedItemReloadCost = false;
-
 				if (weapon->getRules()->getExtendedItemReloadCostLocal() != 0)
 				{
 					if (weapon->getRules()->getExtendedItemReloadCostLocal() == 1)

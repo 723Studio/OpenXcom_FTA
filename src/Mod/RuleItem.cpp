@@ -399,11 +399,6 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, int listOrder, const ModSc
 	_alienArtifact = node["alienArtifact"].as<bool>(_alienArtifact);
 	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
 
-	if (_extendedItemReloadCostLocal > 0)
-	{
-       bool test = false;
-	}
-		
 
 	mod->loadSpriteOffset(_type, _bigSprite, node["bigSprite"], "BIGOBS.PCK");
 	mod->loadSpriteOffset(_type, _floorSprite, node["floorSprite"], "FLOOROB.PCK");
