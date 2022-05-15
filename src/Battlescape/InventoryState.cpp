@@ -453,14 +453,14 @@ void InventoryState::init()
 			// reload done
 			_reloadUnit = false;
 		}
-		SoldierRole role = _geoscapeSoldier->getBestRole();
+		SoldierRole role = s->getBestRole();
 
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
 
-		auto frame = texture->getFrame(_geoscapeSoldier->getRankSpriteBattlescape());
+		auto frame = texture->getFrame(s->getRankSpriteBattlescape());
 		if (_ftaUI)
 		{
-			frame = texture->getFrame(_geoscapeSoldier->getRoleRankSpriteBattlescape(role));
+			frame = texture->getFrame(s->getRoleRankSpriteBattlescape(role));
 		}
 
 		if (frame)
