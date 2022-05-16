@@ -2821,7 +2821,7 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 				if (weapon->getRules()->getExtendedItemReloadCostLocal() != 0)
 				{
 					if (weapon->getRules()->getExtendedItemReloadCostLocal() == 1)
-					{
+I					{
 						extendedItemReloadCost = true;
 					}
 					else if (weapon->getRules()->getExtendedItemReloadCostLocal() == 2)

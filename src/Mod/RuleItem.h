@@ -449,7 +449,6 @@ public:
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
-
 	/// Gets reload cost
 	int getExtendedItemReloadCostLocal() const { return _extendedItemReloadCostLocal; }
 	/// Gets the item's type.
