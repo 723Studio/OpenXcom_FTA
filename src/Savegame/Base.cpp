@@ -988,12 +988,12 @@ int Base::getUsedLaboratories() const
 {
 	const std::vector<ResearchProject *> & research (getResearch());
 	int usedLabSpace = 0;
-	for (std::vector<ResearchProject *>::const_iterator itResearch = research.begin();
-		 itResearch != research.end();
-		 ++itResearch)
-	{
-		usedLabSpace += (*itResearch)->getAssigned();
-	}
+		for (std::vector<ResearchProject *>::const_iterator itResearch = research.begin();
+			 itResearch != research.end();
+			 ++itResearch)
+		{
+			usedLabSpace += (*itResearch)->getAssigned();
+		}
 	return usedLabSpace;
 }
 
