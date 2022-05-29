@@ -1049,7 +1049,7 @@ struct BindValue
 template<typename T, std::string (*X)(const T*)>
 struct BindDebugDisplay
 {
-	static RetEnum func(ScriptWorkerBase& swb, const T* t)
+	static RetEnum func(ScriptWorkerBase &swb, const T *t)
 	{
 #ifdef _MSC_VER
 		constexpr auto x = X;
