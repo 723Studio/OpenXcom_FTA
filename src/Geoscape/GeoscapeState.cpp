@@ -4666,6 +4666,7 @@ void GeoscapeState::handleResearch(Base* base)
 				{
 					promotedSoldiers.push_back((*j).first);
 				}
+				(*j).first->setResearchProject(0);
 			}
 		}
 
