@@ -36,6 +36,7 @@ enum DutyMode: char { CRAFT, LAB, WORK, ASSIGN, INFO};
 class Craft;
 class CovertOperation;
 class ResearchProject;
+class Production;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
@@ -102,6 +103,7 @@ private:
 	Craft *_craft;
 	CovertOperation* _covertOperation;
 	ResearchProject *_researchProject;
+	Production *_production;
 	SoldierGender _gender;
 	SoldierLook _look;
 	int _lookVariant;
@@ -157,6 +159,8 @@ private:
 	Craft *getCraft() const;
 	/// Sets the soldier's craft.
 	void setCraft(Craft *craft, bool resetCustomDeployment = false);
+	/// Sets the soldier's craft and automatically moves the equipment (if enabled).
+	void setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattle, bool resetCustomDeployment = false);
 	/// Gets the soldier's Covert Operation.
 	CovertOperation* getCovertOperation() const { return _covertOperation; }
 	/// Sets the soldier's Covert Operation.
@@ -165,8 +169,10 @@ private:
 	ResearchProject *getResearchProject() const { return _researchProject; }
 	/// Sets the soldier's Research Project.
 	void setResearchProject(ResearchProject *researchProject) { _researchProject = researchProject; }
-	/// Sets the soldier's craft and automatically moves the equipment (if enabled).
-	void setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattle, bool resetCustomDeployment = false);
+	/// Gets the soldier's Production Project.
+	Production* getProductionProject() const { return _production; }
+	/// Sets the soldier's Production Project.
+	void setProductionProject(Production* production) { _production = production; }
 	/// Gets the soldier's craft string.
 	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
 	/// Gets a string version of the soldier's rank.
