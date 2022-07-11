@@ -21,7 +21,6 @@
 #include "../Engine/Exception.h"
 #include "../Engine/RNG.h"
 #include "../Engine/ScriptBind.h"
-#include "../Mod/RuleSoldier.h"
 #include "Mod.h"
 
 namespace OpenXcom
@@ -113,7 +112,6 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModS
 	_soldiers = node["soldiers"].as<int>(_soldiers);
 	_pilots = node["pilots"].as<int>(_pilots);
 	_vehicles = node["vehicles"].as<int>(_vehicles);
-	_requiredRole = (SoldierRole)node["requiredRole"].as<int>(_requiredRole);
 	_maxSmallSoldiers = node["maxSmallSoldiers"].as<int>(_maxSmallSoldiers);
 	_maxLargeSoldiers = node["maxLargeSoldiers"].as<int>(_maxLargeSoldiers);
 	_maxSmallVehicles = node["maxSmallVehicles"].as<int>(_maxSmallVehicles);
