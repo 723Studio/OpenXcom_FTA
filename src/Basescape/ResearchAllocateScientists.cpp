@@ -34,6 +34,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
+#include "../Savegame/ResearchProject.h"
 #include "../Basescape/ResearchInfoStateFtA.h"
 #include "ResearchAllocateScientists.h"
 #include "SoldierInfoState.h"
@@ -58,34 +59,33 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
-	_txtUsed = new Text(95, 9, 122, 24);
+	_txtFreeSpace = new Text(114, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstScientists = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("craftSoldiers");
+	setInterface("researchAllocateScientists");
 
-	add(_window, "window", "craftSoldiers");
-	add(_btnOk, "button", "craftSoldiers");
-	add(_txtTitle, "text", "craftSoldiers");
-	add(_txtName, "text", "craftSoldiers");
-	add(_txtRank, "text", "craftSoldiers");
-	add(_txtCraft, "text", "craftSoldiers");
-	add(_txtUsed, "text", "craftSoldiers");
-	add(_lstScientists, "list", "craftSoldiers");
-	add(_cbxSortBy, "button", "craftSoldiers");
+	add(_window, "window", "researchAllocateScientists");
+	add(_btnOk, "button", "researchAllocateScientists");
+	add(_txtTitle, "text", "researchAllocateScientists");
+	add(_txtName, "text", "researchAllocateScientists");
+	add(_txtRank, "text", "researchAllocateScientists");
+	add(_txtCraft, "text", "researchAllocateScientists");
+	add(_txtFreeSpace, "text", "researchAllocateScientists");
+	add(_lstScientists, "list", "researchAllocateScientists");
+	add(_cbxSortBy, "button", "researchAllocateScientists");
 
-	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("researchAllocateScientists")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "craftSoldiers");
+	setWindowBackground(_window, "researchAllocateScientists");
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchAllocateScientists::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ResearchAllocateScientists::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&ResearchAllocateScientists::btnDeassignProjectScientistsClick, Options::keyRemoveSoldiersFromCraft);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(planningProject->getResearchRules()->getName()));
@@ -109,32 +109,29 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	
+	// scientist section
+	PUSH_IN("STR_PHYSICS_UC", physicsStat);
+	PUSH_IN("STR_CHEMISTRY_UC", chemistryStat);
+	PUSH_IN("STR_BIOLOGY_UC", biologyStat);
+	PUSH_IN("STR_INSIGHT_UC", insightStat);
+	PUSH_IN("STR_DATA_ANALISIS_UC", dataStat);
+	PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
+	PUSH_IN("STR_TACTICS_UC", tacticsStat);
+	PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
+	PUSH_IN("STR_DESIGNING_UC", designingStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
 	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		PUSH_IN("STR_ALIEN_TECH_UC", alienTechStat);
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
+		PUSH_IN("STR_PSIONICS_UC", psionicsStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
+	{
+		PUSH_IN("STR_XENOLINGUISTICS_UC", xenolinguisticsStat);
+	}
 
 #undef PUSH_IN
 
@@ -307,7 +304,7 @@ void ResearchAllocateScientists::initList(size_t scrl)
 		_lstScientists->scrollTo(scrl);
 	_lstScientists->draw();
 
-	_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getScientists().size()));
+	_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(true)));
 }
 
 /**
@@ -335,7 +332,7 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
 		Soldier *s = _base->getSoldiers()->at(_scientistsNumbers.at(row));
-		Uint8 color;
+		Uint8 color = _lstScientists->getColor();
 		bool isBusy = false, isFree = false, matched = false;
 		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree, LAB);
 		auto scientists = _planningProject->getScientists();
@@ -346,9 +343,10 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 		}
 		if (matched)
 		{
-			for (int k = 0; k < _planningProject->getScientists().size(); k++)
+			_planningProject->removeScientist(s);
+			if (s->getResearchProject() && s->getResearchProject()->getRules() == _planningProject->getResearchRules())
 			{
-				_planningProject->removeScientist(s);
+				s->setProductionProject(0);
 			}
 
 			_lstScientists->setCellText(row, 2, duty);
@@ -356,10 +354,6 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 			{
 				color = _otherCraftColor;
 				
-			}
-			else
-			{
-				color = _lstScientists->getColor();
 			}
 		}
 		else if (s->hasFullHealth() && !isBusy)
@@ -370,25 +364,12 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 		}
 
 		_lstScientists->setRowColor(row, color);
-		_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getScientists().size()));
+		_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(true)));
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		_game->pushState(new SoldierInfoState(_base, _scientistsNumbers.at(row)));
 	}
-}
-
-/**
- * De-assign all soldiers from the current craft.
- * @param action Pointer to an action.
- */
-void ResearchAllocateScientists::btnDeassignProjectScientistsClick(Action *action)
-{
-	for (auto s : _planningProject->getScientists())
-	{
-		_planningProject->removeScientist(s);
-	}
-	_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getScientists().size()));
 }
 
 }

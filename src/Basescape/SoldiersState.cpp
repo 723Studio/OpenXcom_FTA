@@ -289,8 +289,11 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
 		PUSH_IN("STR_TACTICS_UC", tacticsStat);
 		PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
-		PUSH_IN("STR_PSYCHOLOGY_UC", psychologyStat);
 		PUSH_IN("STR_DESIGNING_UC", designingStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+		{
+			PUSH_IN("STR_ALIEN_TECH_UC", alienTechStat);
+		}
 		if (showPsiStats)
 		{
 			PUSH_IN("STR_PSIONICS_UC", psionicsStat);	
@@ -298,6 +301,20 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
 		{
 			PUSH_IN("STR_XENOLINGUISTICS_UC", xenolinguisticsStat);
+		}
+		// engineer section
+		PUSH_IN("STR_WEAPONRY_UC", weaponryStat);
+		PUSH_IN("STR_EXPLOSIVES_UC", explosivesStat);
+		PUSH_IN("STR_MICROELECTRONICS_UC", microelectronicsStat);
+		PUSH_IN("STR_METALLURGY_UC", metallurgyStat);
+		PUSH_IN("STR_PROCESSING_UC", processingStat);
+		PUSH_IN("STR_EFFICIENCY_UC", efficiencyStat);
+		PUSH_IN("STR_DILIGENCE_UC", diligenceStat);
+		PUSH_IN("STR_HACKING_UC", hackingStat);
+		PUSH_IN("STR_CONSTRUCTION_UC", constructionStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+		{
+			PUSH_IN("STR_REVERSE_ENGINEERING_UC", reverseEngineeringStat);
 		}
 	}
 

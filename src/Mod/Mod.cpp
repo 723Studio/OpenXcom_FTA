@@ -2808,6 +2808,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_fontName = doc["fontName"].as<std::string>(_fontName);
 	_psiUnlockResearch = doc["psiUnlockResearch"].as<std::string>(_psiUnlockResearch);
 	_ufopaediaUnlockResearch = doc["ufopaediaUnlockResearch"].as<std::string>(_ufopaediaUnlockResearch);
+	_alienTechUnlockResearch = doc["alienTechUnlockResearch"].as<std::string>(_alienTechUnlockResearch);
 	_xenologyUnlockResearch = doc["xenologyUnlockResearch"].as<std::string>(_xenologyUnlockResearch);
 	_craftsBeamUnlockResearch = doc["craftsBeamUnlockResearch"].as<std::string>(_craftsBeamUnlockResearch);
 	_craftSynapseUnlockResearch = doc["craftSynapseUnlockResearch"].as<std::string>(_craftSynapseUnlockResearch);

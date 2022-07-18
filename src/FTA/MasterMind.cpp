@@ -466,7 +466,7 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 
 /**
 * Handle calculation of base services (manufacture, labs and craft repair) performance bonus caused by loyalty score.
-* @return value of performance bonus.
+* @return value of performance bonus, normal value is 100 %.
 */
 int MasterMind::getLoyaltyPerformanceBonus()
 {

@@ -44,7 +44,7 @@ private:
 	TextList *_lstScientists;
 	ResearchProject *_project;
 	const RuleResearch *_rule;
-	std::vector<Soldier *> _scientists;
+	std::set<Soldier *> _scientists;
 	bool _newProject;
 
 	void getAssignedScientists();
@@ -74,10 +74,10 @@ public:
 	void init() override;
 
 	const RuleResearch* getResearchRules();
-	std::vector<Soldier *> getScientists() { return _scientists; };
-	void addScientist(Soldier *scientist) { _scientists.push_back(scientist); }
-	void removeScientist(Soldier *scientist);
-	void setScientists(std::vector<Soldier *> scientists) { _scientists = scientists; };
+	std::set<Soldier *> getScientists() { return _scientists; };
+	void addScientist(Soldier *scientist) { _scientists.insert(scientist); }
+	void removeScientist(Soldier* scientist) { _scientists.erase(scientist); }
+	void setScientists(std::set<Soldier *> scientists) { _scientists = scientists; };
 };
 
 }

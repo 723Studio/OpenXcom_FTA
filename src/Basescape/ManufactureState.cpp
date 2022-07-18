@@ -20,6 +20,7 @@
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
+#include "../FTA/MasterMind.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
@@ -194,20 +195,20 @@ void ManufactureState::fillProductionList(size_t scrl)
 	for (std::vector<Production *>::const_iterator iter = productions.begin(); iter != productions.end(); ++iter)
 	{
 		std::ostringstream s1;
+		size_t engineers = 0;
 		if (_ftaUi)
 		{
-			size_t count = 0;
 			for (auto e : *_base->getSoldiers())
 			{
 				if (e->getProductionProject())
 				{
 					if (e->getProductionProject() == (*iter))
 					{
-						count++;
+						engineers++;
 					}
 				}
 			}
-			s1 << count;
+			s1 << engineers;
 		}
 		else
 		{
@@ -236,10 +237,15 @@ void ManufactureState::fillProductionList(size_t scrl)
 		{
 			s4 << "∞";
 		}
-		else if ((*iter)->getAssignedEngineers() > 0)
+		else if ((*iter)->getAssignedEngineers() > 0 || engineers > 0)
 		{
 			int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
-			int numEffectiveEngineers = (*iter)->getAssignedEngineers();
+			int numEffectiveEngineers = 0;
+			numEffectiveEngineers = (*iter)->getProgress(_base,
+				_game->getSavedGame(),
+				_game->getMod(),
+				_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+			
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
 			int daysLeft = hoursLeft / 24;

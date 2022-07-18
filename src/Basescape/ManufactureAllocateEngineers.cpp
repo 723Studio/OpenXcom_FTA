@@ -38,6 +38,7 @@
 #include "../Savegame/Production.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Basescape/ManufactureInfoStateFtA.h"
+#include "../Basescape/ManufactureProductDetailsState.h"
 #include "SoldierInfoState.h"
 #include <algorithm>
 #include <climits>
@@ -46,48 +47,54 @@ namespace OpenXcom
 {
 
 /**
-	* Initializes all the elements in the CovertOperation Soldiers screen.
-	* @param base Pointer to the base to get info from.
-	* @param operation Pointer to starting (not committed) covert operation.
-	*/
+* Initializes all the elements in the CovertOperation Soldiers screen.
+* @param base Pointer to the base to get info from.
+* @param operation Pointer to starting (not committed) covert operation.
+*/
 ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, ManufactureInfoStateFtA* planningProject)
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
+	_freeSpace = _base->getFreeWorkshops(true) - _planningProject->getEngineers().size() - _planningProject->getManufactureRules()->getRequiredSpace();
+
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
+	_btnInfo = new TextButton(42, 16, 270, 8);
 	_btnOk = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
-	_txtUsed = new Text(95, 9, 122, 24);
+	_txtFreeSpace = new Text(150, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstEngineers = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("craftSoldiers");
+	setInterface("manufactureAllocateEngineers");
 
-	add(_window, "window", "craftSoldiers");
-	add(_btnOk, "button", "craftSoldiers");
-	add(_txtTitle, "text", "craftSoldiers");
-	add(_txtName, "text", "craftSoldiers");
-	add(_txtRank, "text", "craftSoldiers");
-	add(_txtCraft, "text", "craftSoldiers");
-	add(_txtUsed, "text", "craftSoldiers");
-	add(_lstEngineers, "list", "craftSoldiers");
-	add(_cbxSortBy, "button", "craftSoldiers");
+	add(_window, "window", "manufactureAllocateEngineers");
+	add(_btnOk, "button", "manufactureAllocateEngineers");
+	add(_btnInfo, "button2", "manufactureAllocateEngineers");
+	add(_txtTitle, "text", "manufactureAllocateEngineers");
+	add(_txtName, "text", "manufactureAllocateEngineers");
+	add(_txtRank, "text", "manufactureAllocateEngineers");
+	add(_txtCraft, "text", "manufactureAllocateEngineers");
+	add(_txtFreeSpace, "text", "manufactureAllocateEngineers");
+	add(_lstEngineers, "list", "manufactureAllocateEngineers");
+	add(_cbxSortBy, "button", "manufactureAllocateEngineers");
 
-	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("manufactureAllocateEngineers")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "craftSoldiers");
+	setWindowBackground(_window, "manufactureAllocateEngineers");
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ManufactureAllocateEngineers::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ManufactureAllocateEngineers::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&ManufactureAllocateEngineers::btnDeassignProjectEngineersClick, Options::keyRemoveSoldiersFromCraft);
+
+	_btnInfo->setText(tr("STR_INFO"));
+	_btnInfo->onMouseClick((ActionHandler)&ManufactureAllocateEngineers::btnInfoClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(planningProject->getManufactureRules()->getName()));
@@ -109,34 +116,20 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 sortOptions.push_back(tr(strId)); \
 _sortFunctors.push_back(new SortFunctor(_game, functor));
 
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	PUSH_IN("STR_WEAPONRY_UC", weaponryStat);
+	PUSH_IN("STR_EXPLOSIVES_UC", explosivesStat);
+	PUSH_IN("STR_MICROELECTRONICS_UC", microelectronicsStat);
+	PUSH_IN("STR_METALLURGY_UC", metallurgyStat);
+	PUSH_IN("STR_PROCESSING_UC", processingStat);
+	PUSH_IN("STR_EFFICIENCY_UC", efficiencyStat);
+	PUSH_IN("STR_DILIGENCE_UC", diligenceStat);
+	PUSH_IN("STR_HACKING_UC", hackingStat);
+	PUSH_IN("STR_CONSTRUCTION_UC", constructionStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
 	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		PUSH_IN("STR_ALIEN_TECH_UC", alienTechStat);
+		PUSH_IN("STR_REVERSE_ENGINEERING_UC", reverseEngineeringStat);
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
-	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
-	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
 
 #undef PUSH_IN
 
@@ -154,8 +147,8 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 }
 
 /**
-	* cleans up dynamic state
-	*/
+* cleans up dynamic state
+*/
 ManufactureAllocateEngineers::~ManufactureAllocateEngineers()
 {
 	for (std::vector<SortFunctor*>::iterator it = _sortFunctors.begin();
@@ -166,9 +159,9 @@ ManufactureAllocateEngineers::~ManufactureAllocateEngineers()
 }
 
 /**
-	* Sorts the soldiers list by the selected criterion
-	* @param action Pointer to an action.
-	*/
+* Sorts the soldiers list by the selected criterion
+* @param action Pointer to an action.
+*/
 void ManufactureAllocateEngineers::cbxSortByChange(Action*)
 {
 	bool ctrlPressed = _game->isCtrlPressed();
@@ -231,17 +224,23 @@ void ManufactureAllocateEngineers::cbxSortByChange(Action*)
 }
 
 /**
-	* Returns to the previous screen.
-	* @param action Pointer to an action.
-	*/
+* Returns to the previous screen.
+* @param action Pointer to an action.
+*/
 void ManufactureAllocateEngineers::btnOkClick(Action*)
 {
+	_planningProject->setAssignedEngineer();
 	_game->popState();
 }
 
+void ManufactureAllocateEngineers::btnInfoClick(Action* action)
+{
+	_game->pushState(new ManufactureProductDetailsState(_base, _planningProject->getManufactureRules()));
+}
+
 /**
-	* Shows the soldiers in a list at specified offset/scroll.
-	*/
+* Shows the soldiers in a list at specified offset/scroll.
+*/
 void ManufactureAllocateEngineers::initList(size_t scrl)
 {
 	int row = 0;
@@ -263,7 +262,7 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 	{
 		if ((*i)->getRoleRank(ROLE_ENGINEER) > 0)
 		{
-			_scientistsNumbers.push_back(it); // don't forget soldier's number on the base!
+			_engineerNumbers.push_back(it); // don't forget soldier's number on the base!
 			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (_dynGetter != NULL)
 			{
@@ -309,12 +308,12 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 		_lstEngineers->scrollTo(scrl);
 	_lstEngineers->draw();
 
-	_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getEngineers().size()));
+	_txtFreeSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE").arg(_freeSpace));
 }
 
 /**
-	* Shows the soldiers in a list.
-	*/
+* Shows the soldiers in a list.
+*/
 void ManufactureAllocateEngineers::init()
 {
 	State::init();
@@ -323,9 +322,9 @@ void ManufactureAllocateEngineers::init()
 }
 
 /**
-	* Shows the selected soldier's info.
-	* @param action Pointer to an action.
-	*/
+* Shows the selected soldier's info.
+* @param action Pointer to an action.
+*/
 void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 {
 	double mx = action->getAbsoluteXMouse();
@@ -336,7 +335,7 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 	int row = _lstEngineers->getSelectedRow();
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		Soldier* s = _base->getSoldiers()->at(_scientistsNumbers.at(row));
+		Soldier* s = _base->getSoldiers()->at(_engineerNumbers.at(row));
 		Uint8 color = _lstEngineers->getColor();
 		bool isBusy = false, isFree = false, matched = false;
 		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree, WORK);
@@ -348,9 +347,10 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 		}
 		if (matched)
 		{
-			for (int k = 0; k < _planningProject->getEngineers().size(); k++)
+			_planningProject->removeEngineer(s);
+			if (s->getProductionProject() && s->getProductionProject()->getRules() == _planningProject->getManufactureRules())
 			{
-				_planningProject->removeEngineer(s);
+				s->setProductionProject(0);
 			}
 
 			_lstEngineers->setCellText(row, 2, duty);
@@ -362,35 +362,35 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 			else
 			{
 				color = _lstEngineers->getColor();
+				_freeSpace++;
 			}
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			_lstEngineers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
-			color = _lstEngineers->getSecondaryColor();
-			_planningProject->addEngineer(s);
+			if (_freeSpace <= 0)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_WORKSPACE"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else
+			{
+				_lstEngineers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+				color = _lstEngineers->getSecondaryColor();
+				_planningProject->addEngineer(s);
+				_freeSpace--;
+			}
 		}
 
 		_lstEngineers->setRowColor(row, color);
-		_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getEngineers().size()));
+		_txtFreeSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE").arg(_freeSpace));
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		_game->pushState(new SoldierInfoState(_base, _scientistsNumbers.at(row)));
+		_game->pushState(new SoldierInfoState(_base, _engineerNumbers.at(row)));
 	}
-}
-
-/**
-	* De-assign all soldiers from the current craft.
-	* @param action Pointer to an action.
-	*/
-void ManufactureAllocateEngineers::btnDeassignProjectEngineersClick(Action* action)
-{
-	for (auto e : _planningProject->getEngineers())
-	{
-		_planningProject->removeEngineer(e);
-	}
-	_txtUsed->setText(tr("STR_ALLOCATED_TO_PROJECT").arg(_planningProject->getEngineers().size()));
 }
 
 }

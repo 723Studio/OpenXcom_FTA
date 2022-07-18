@@ -242,6 +242,7 @@ void ResearchInfoStateFtA::init()
 	fillScientistsList(0);
 }
 
+
 const RuleResearch* ResearchInfoStateFtA::getResearchRules()
 {
 	if (_newProject)
@@ -251,18 +252,6 @@ const RuleResearch* ResearchInfoStateFtA::getResearchRules()
 	else
 	{
 		return _project->getRules();
-	}
-}
-
-void ResearchInfoStateFtA::removeScientist(Soldier *scientist)
-{
-	auto iter = std::find(std::begin(_scientists), std::end(_scientists), scientist);
-	for (int k = 0; k < _scientists.size(); k++)
-	{
-		if (_scientists[k] == scientist)
-		{
-			_scientists.erase(_scientists.begin() + k);
-		}
 	}
 }
 
@@ -281,8 +270,8 @@ int ResearchInfoStateFtA::GetStatValue(Soldier &s, const std::string &desc)
 		return sStats->computers;
 	if (desc == "STR_MATERIAL_SCIENCE_SHORT")
 		return sStats->materials;
-	if (desc == "STR_PSYCHOLOGY_SHORT")
-		return sStats->psychology;
+	/*if (desc == "STR_PSYCHOLOGY_SHORT")
+		return sStats->psychology;*/
 	if (desc == "STR_DESIGNING_SHORT")
 		return sStats->designing;
 	if (desc == "STR_PSIONICS_SHORT")
@@ -320,7 +309,7 @@ void ResearchInfoStateFtA::getAssignedScientists()
 	{
 		if (s->getResearchProject() == _project )
 		{
-			_scientists.push_back(s);
+			_scientists.insert(s);
 		}
 	}
 }
@@ -454,11 +443,6 @@ std::pair<int, std::string> ResearchInfoStateFtA::getStatString(size_t position)
 	{
 		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_SHORT")));
 		ResearchStats.insert(std::make_pair(stats.materials, "STR_MATERIAL_SCIENCE_SHORT"));
-	}
-	if (stats.psychology > 0)
-	{
-		statMap.insert(std::make_pair(stats.psychology, tr("STR_PSYCHOLOGY_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.psychology, "STR_PSYCHOLOGY_SHORT"));
 	}
 	if (stats.designing > 0)
 	{

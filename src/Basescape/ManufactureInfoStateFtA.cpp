@@ -56,7 +56,7 @@ namespace OpenXcom
 ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, RuleManufacture *item) : _base(base), _item(item), _production(0)
 {
 	_newProject = true;
-	_unitsToProduce = 0;
+	_unitsToProduce = 1;
 	_producedItems = 0;
 	_infiniteProduction = false;
 	buildUi();
@@ -89,21 +89,19 @@ void ManufactureInfoStateFtA::buildUi()
 	_txtTitle = new Text(302, 17, 9, 30);
 	_btnOk = new TextButton(136, 16, 168, 155);
 	_btnStop = new TextButton(136, 16, 16, 155);
-	_txtAvailableEngineer = new Text(160, 9, 16, 50);
-	_txtAvailableSpace = new Text(160, 9, 16, 60);
-	_txtAllocatedEngineers = new Text(150, 9, 16, 70);
+	_txtAvailableEngineer = new Text(160, 9, 16, 49);
+	_txtAvailableSpace = new Text(160, 9, 16, 59);
+	_txtAllocatedEngineers = new Text(150, 9, 16, 69);
 	_txtUnitToProduce = new Text(112, 48, 168, 64);
 	_txtUnitUp = new Text(90, 9, 192, 118);
 	_txtUnitDown = new Text(90, 9, 192, 138);
 	_btnUnitUp = new ArrowButton(ARROW_BIG_UP, 13, 14, 284, 114);
 	_btnUnitDown = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 284, 136);
 	_txtTodo = new Text(40, 16, 280, 88);
-
 	_txtAvgEfficiency = new Text(143, 9, 168, 50);
 	_txtAvgDiligence = new Text(143, 9, 168, 59);
-	_btnAllocateEngineers = new TextButton(110, 16, 16, 80);
-	_txtGrade = new Text(32, 9, 132, 88);
-	_lstEngineers = new TextList(148, 57, 16, 97);
+	_btnAllocateEngineers = new TextButton(110, 16, 16, 79);
+	_lstEngineers = new TextList(116, 56, 16, 97);
 
 	_surfaceUnits = new InteractiveSurface(160, 150, 160, 25);
 	_surfaceUnits->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::handleWheelUnit, 0);
@@ -128,7 +126,6 @@ void ManufactureInfoStateFtA::buildUi()
 	add(_txtAvgEfficiency, "text", "manufactureInfo");
 	add(_txtAvgDiligence, "text", "manufactureInfo");
 	add(_btnAllocateEngineers, "button2", "manufactureInfo");
-	add(_txtGrade, "text", "manufactureInfo");
 	add(_lstEngineers, "list", "manufactureInfo");
 
 	centerAllSurfaces();
@@ -184,7 +181,6 @@ void ManufactureInfoStateFtA::buildUi()
 
 	_btnAllocateEngineers->setText(tr("STR_ALLOCATE_ENGINEERS"));
 	_btnAllocateEngineers->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::btnAllocateClick, 0);
-	_txtGrade->setText(tr("STR_GRADE_UC"));
 
 	_lstEngineers->setColumns(2, 116, 32);
 	_lstEngineers->setAlign(ALIGN_LEFT, 0);
@@ -239,35 +235,26 @@ const RuleManufacture* ManufactureInfoStateFtA::getManufactureRules()
 	}
 }
 
-void ManufactureInfoStateFtA::removeEngineer(Soldier* engineer)
-{
-	auto iter = std::find(std::begin(_engineers), std::end(_engineers), engineer);
-	for (int k = 0; k < _engineers.size(); k++)
-	{
-		if (_engineers[k] == engineer)
-		{
-			_engineers.erase(_engineers.begin() + k);
-		}
-	}
-}
-
 /**
  * Stops this Production. Returns to the previous screen.
  * @param action A pointer to an Action.
  */
 void ManufactureInfoStateFtA::btnStopClick(Action *)
 {
-	if (!_newProject && getManufactureRules()->getRefund())
+	if (!_newProject)
 	{
-		_production->refundItem(_base, _game->getSavedGame(), _game->getMod());
+		if (getManufactureRules()->getRefund())
+		{
+			_production->refundItem(_base, _game->getSavedGame(), _game->getMod());
+		}
+
+		_base->removeProduction(_production);
 	}
 
 	for (auto s : _engineers)
 	{
 		s->setProductionProject(0);
 	}
-
-	_base->removeProduction(_production);
 	exitState();
 }
 
@@ -278,17 +265,18 @@ void ManufactureInfoStateFtA::btnStopClick(Action *)
 void ManufactureInfoStateFtA::btnOkClick(Action *)
 {
 	int efficiency = 0;
-	for (auto s : _engineers)
-	{
-		efficiency += s->getCurrentStats()->efficiency;
-		s->setProductionProject(_production);
-	}
 
-	if (_newProject && !_engineers.empty())
+	if (_newProject)
 	{
 		_production = new Production(_item, 1);
 		_base->addProduction(_production);
 		_production->startItem(_base, _game->getSavedGame(), _game->getMod());
+	}
+
+	for (auto s : _engineers)
+	{
+		efficiency += s->getCurrentStats()->efficiency;
+		s->setProductionProject(_production);
 	}
 
 	if (_engineers.size() > 0)
@@ -359,7 +347,7 @@ void ManufactureInfoStateFtA::setAssignedEngineer()
 		{
 			if (s->getProductionProject() != 0 && s->getProductionProject()->getRules() == this->getManufactureRules())
 			{
-				_engineers.push_back(s);
+				_engineers.insert(s);
 			}
 			else
 			{
@@ -368,7 +356,7 @@ void ManufactureInfoStateFtA::setAssignedEngineer()
 		}
 	}
 	_txtAvailableEngineer->setText(tr("STR_ENGINEERS_AVAILABLE_UC").arg(baseEngineers));
-	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_base->getFreeWorkshops(true)));
+	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_base->getFreeWorkshops(true) - _engineers.size() - this->getManufactureRules()->getRequiredSpace()));
 
 	std::ostringstream s4;
 	s4 << ">" << Unicode::TOK_COLOR_FLIP;
@@ -386,11 +374,11 @@ void ManufactureInfoStateFtA::setAssignedEngineer()
 	_txtAvgDiligence->setText(tr("STR_AVERAGE_DILIGENCE_UC").arg(calcAvgStat(false)));
 	_txtAvgEfficiency->setText(tr("STR_AVERAGE_EFFICIENCY_UC").arg(calcAvgStat(true)));
 
-	if (_engineers.empty())
-	{
-		_txtAvgDiligence->setVisible(false);
-		_txtAvgEfficiency->setVisible(false);
-	}
+	//if (_engineers.empty())
+	//{
+	//	_txtAvgDiligence->setVisible(false);
+	//	_txtAvgEfficiency->setVisible(false);
+	//}
 }
 
 
@@ -527,11 +515,17 @@ void ManufactureInfoStateFtA::lessUnitClick(Action *action)
 	{
 		bool wasInfinite = _infiniteProduction;
 		_infiniteProduction = false;
-		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT
-		|| _unitsToProduce <= _producedItems)
-		{ // So the produced item number is increased over the planned, OR it was simply a right-click
+		if (_unitsToProduce <= _producedItems)
+		{ // So the produced item number is increased over the planned
 			_unitsToProduce += 1;
 			setAssignedEngineer();
+			return;
+		}
+		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		{
+			_unitsToProduce = _producedItems + 1;
+			setAssignedEngineer();
+			return;
 		}
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 		{

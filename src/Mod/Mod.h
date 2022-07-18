@@ -270,7 +270,7 @@ private:
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
 	std::string _fontName, _finalResearch, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _newBaseUnlockResearch;
-	std::string _ufopaediaUnlockResearch, _baseConstructionUnlockResearch, _xenologyUnlockResearch;
+	std::string _ufopaediaUnlockResearch, _baseConstructionUnlockResearch, _alienTechUnlockResearch, _xenologyUnlockResearch;
 	std::string _craftsBeamUnlockResearch, _craftSynapseUnlockResearch, _craftGravControlUnlockResearch;
 	std::string _hireScientistsUnlockResearch, _hireEngineersUnlockResearch;
 	RuleBaseFacilityFunctions _hireScientistsRequiresBaseFunc, _hireEngineersRequiresBaseFunc;
@@ -919,6 +919,8 @@ public:
 	const std::string& getBaseConstructionUnlockResearch() const { return _baseConstructionUnlockResearch; } //FtA version
 	/// Gets the research topic required for using Ufopaedia.
 	const std::string& getUfopaediaUnlockResearch() const { return _ufopaediaUnlockResearch; }
+	/// Gets the research topic required for unlocking xenolinguistics stat.
+	const std::string& getAlienTechUnlockResearch() const { return _alienTechUnlockResearch; }
 	/// Gets the research topic required for unlocking xenolinguistics stat.
 	const std::string &getXenologyUnlockResearch() const { return _xenologyUnlockResearch; }
 	/// Gets the research topic required for unlocking beam operations stat.

@@ -228,8 +228,11 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
 	PUSH_IN("STR_TACTICS_UC", tacticsStat);
 	PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
-	PUSH_IN("STR_PSYCHOLOGY_UC", psychologyStat);
 	PUSH_IN("STR_DESIGNING_UC", designingStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN("STR_ALIEN_TECH_UC", alienTechStat);
+	}
 	if (showPsiStats)
 	{
 		PUSH_IN("STR_PSIONICS_UC", psionicsStat);
@@ -237,6 +240,20 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
 	{
 		PUSH_IN("STR_XENOLINGUISTICS_UC", xenolinguisticsStat);
+	}
+	// engineer section
+	PUSH_IN("STR_WEAPONRY_UC", weaponryStat);
+	PUSH_IN("STR_EXPLOSIVES_UC", explosivesStat);
+	PUSH_IN("STR_MICROELECTRONICS_UC", microelectronicsStat);
+	PUSH_IN("STR_METALLURGY_UC", metallurgyStat);
+	PUSH_IN("STR_PROCESSING_UC", processingStat);
+	PUSH_IN("STR_EFFICIENCY_UC", efficiencyStat);
+	PUSH_IN("STR_DILIGENCE_UC", diligenceStat);
+	PUSH_IN("STR_HACKING_UC", hackingStat);
+	PUSH_IN("STR_CONSTRUCTION_UC", constructionStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN("STR_REVERSE_ENGINEERING_UC", reverseEngineeringStat);
 	}
 
 #undef PUSH_IN
@@ -250,14 +267,14 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	if (_ftaUI)
 	{
 		_availableOptions.push_back("STR_ALL_ROLES");
-		_availableOptions.push_back("STR_RECOMMENDED_ROLES");
+		//_availableOptions.push_back("STR_RECOMMENDED_ROLES");
 	}
 	else
 	{
 		_cbxScreenActions->setVisible(false);
 	}
 	_cbxScreenActions->setOptions(_availableOptions, true);
-	_cbxScreenActions->setSelected(1);
+	_cbxScreenActions->setSelected(0); //should be 1 when process fixed
 	_cbxScreenActions->onChange((ActionHandler)&CraftSoldiersState::cbxScreenActionsChange);
 
 	_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);

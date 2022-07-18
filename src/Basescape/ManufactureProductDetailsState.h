@@ -1,6 +1,6 @@
 #pragma once
 /*
- * Copyright 2010-2016 OpenXcom Developers.
+ * Copyright 2010-2022 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
  *
@@ -27,30 +27,24 @@ class RuleManufacture;
 class Window;
 class TextButton;
 class Text;
-class TextList;
 
 /**
- * Screen which displays needed elements to start productions (items/required workshop state/cost to build a unit, ...).
+ * Screen which displays detailed info about manufacturing project.
  */
-class ManufactureStartState : public State
+class ManufactureProductDetailsState : public State
 {
 private:
 	Base *_base;
-	bool _ftaUi;
-	RuleManufacture *_item;
+	const RuleManufacture *_item;
 	Window *_window;
-	TextButton *_btnCancel, *_btnStart;
+	TextButton *_btnOk;
 	Text *_txtTitle, *_txtManHour, *_txtCost, *_txtWorkSpace, *_txtReqStatsHeader, *_txtReqStats;
-	Text *_txtRequiredItemsTitle, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
-	TextList *_lstRequiredItems;
 	std::string generateStatsList();
 public:
 	/// Creates the State.
-	ManufactureStartState(Base *base, RuleManufacture *item);
-	/// Handler for the Cancel button.
-	void btnCancelClick(Action *action);
-	/// Handler for the start button.
-	void btnStartClick(Action *action);
+	ManufactureProductDetailsState(Base *base, const RuleManufacture *item);
+	/// Handler for the OK button.
+	void btnOKClick(Action *action);
 };
 
 }

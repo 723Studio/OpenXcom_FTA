@@ -55,32 +55,32 @@ struct UnitStats
 
 	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana, //soldiers
 		maneuvering, missiles, dogfight, tracking, cooperation, beams, synaptic, gravity, //pilot
-		physics, chemistry, biology, insight, data, computers, tactics, materials, psychology, designing, psionics, xenolinguistics, //scientist
-		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, robotics, hacking, construction, diligence, alienTech, reverseEngineering, //engineers
+		physics, chemistry, biology, insight, data, computers, tactics, materials, designing, psionics, xenolinguistics, //scientist
+		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, construction, diligence, alienTech, reverseEngineering, //engineers
 		stealth, perseption, charisma, deception, interrogation; //agents
 
 	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
 		strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
 		maneuvering(0), missiles(0), dogfight(0), tracking(0), cooperation(0), beams(0), synaptic(0), gravity(0),
 		physics(0), chemistry(0), biology(0), insight(0), data(0), computers(0), tactics(0), materials(0),
-		psychology(0), designing(0), psionics(0), xenolinguistics(0),
-		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), robotics(0), hacking(0), construction(0),
+		designing(0), psionics(0), xenolinguistics(0),
+		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), construction(0),
 		diligence(0), alienTech(0), reverseEngineering(0),
 		stealth(0), perseption(0), charisma(0), deception(0), interrogation(0){};
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
 		int maneuvering, int missiles, int dogfight, int tracking, int cooperation, int beams, int synaptic, int gravity,
 		int physics, int chemistry, int biology, int insight, int data, int computers, int tactics, int materials,
-		int psychology, int designing, int psionics, int xenolinguistics,
-		int weaponry, int explosives, int efficiency, int microelectronics, int metallurgy, int processing, int robotics, int hacking, int construction,
+		int designing, int psionics, int xenolinguistics,
+		int weaponry, int explosives, int efficiency, int microelectronics, int metallurgy, int processing, int hacking, int construction,
 		int diligence, int alienTech, int reverseEngineering,
 		int stealth, int perseption, int charisma, int deception, int interrogation) :
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
 		maneuvering(maneuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), cooperation(cooperation), beams(beams), synaptic(synaptic), gravity(gravity),
 		physics(physics), chemistry(chemistry), biology(biology), insight(insight), data(data), computers(computers), tactics(tactics), materials(materials),
-		psychology(psychology), designing(designing), psionics(psionics), xenolinguistics(xenolinguistics),
-		weaponry(weaponry), explosives(explosives), efficiency(efficiency), microelectronics(microelectronics), metallurgy(metallurgy), processing(processing), robotics(robotics),
+		designing(designing), psionics(psionics), xenolinguistics(xenolinguistics),
+		weaponry(weaponry), explosives(explosives), efficiency(efficiency), microelectronics(microelectronics), metallurgy(metallurgy), processing(processing),
 		hacking(hacking), construction(construction), diligence(diligence), alienTech(alienTech), reverseEngineering(reverseEngineering),
 		stealth(stealth), perseption(perseption), charisma(charisma), deception(deception), interrogation(interrogation) {};
 	UnitStats& operator+=(const UnitStats& stats) {
@@ -112,7 +112,6 @@ struct UnitStats
 		computers += stats.computers;
 		tactics += stats.tactics;
 		materials += stats.materials;
-		psychology += stats.psychology;
 		designing += stats.designing;
 		psionics += stats.psionics;
 		xenolinguistics += stats.xenolinguistics;
@@ -122,7 +121,6 @@ struct UnitStats
 		microelectronics += stats.microelectronics;
 		metallurgy += stats.metallurgy;
 		processing += stats.processing;
-		robotics += stats.robotics;
 		hacking += stats.hacking;
 		construction += stats.construction;
 		diligence += stats.diligence;
@@ -163,7 +161,6 @@ struct UnitStats
 		computers + stats.computers,
 		tactics + stats.tactics,
 		materials + stats.materials,
-		psychology + stats.psychology,
 		designing + stats.designing,
 		psionics + stats.psionics,
 		xenolinguistics + stats.xenolinguistics,
@@ -173,7 +170,6 @@ struct UnitStats
 		microelectronics + stats.microelectronics,
 		metallurgy + stats.metallurgy,
 		processing + stats.processing,
-		robotics + stats.robotics,
 		hacking + stats.hacking,
 		construction + stats.construction,
 		diligence + stats.diligence,
@@ -211,7 +207,6 @@ struct UnitStats
 		insight -= stats.insight;
 		data -= stats.data;
 		materials -= stats.materials;
-		psychology -= stats.psychology;
 		designing -= stats.designing;
 		psionics -= stats.psionics;
 		xenolinguistics -= stats.xenolinguistics;
@@ -221,7 +216,6 @@ struct UnitStats
 		microelectronics -= stats.microelectronics;
 		metallurgy -= stats.metallurgy;
 		processing -= stats.processing;
-		robotics -= stats.robotics;
 		hacking -= stats.hacking;
 		construction -= stats.construction;
 		diligence -= stats.diligence;
@@ -262,7 +256,6 @@ struct UnitStats
 		computers - stats.computers,
 		tactics - stats.tactics,
 		materials - stats.materials,
-		psychology - stats.psychology,
 		designing - stats.designing,
 		psionics - stats.psionics,
 		xenolinguistics - stats.xenolinguistics,
@@ -272,7 +265,6 @@ struct UnitStats
 		microelectronics - stats.microelectronics,
 		metallurgy - stats.metallurgy,
 		processing - stats.processing,
-		robotics - stats.robotics,
 		hacking - stats.hacking,
 		construction - stats.construction,
 		diligence - stats.diligence,
@@ -286,8 +278,8 @@ struct UnitStats
 	UnitStats operator-() const { return UnitStats(
 		-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana,
 		-maneuvering, -missiles, -dogfight, -tracking, -cooperation, -beams, -synaptic, -gravity,
-		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -psychology, -designing, -psionics, -xenolinguistics,
-		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -robotics, -hacking, -construction, -diligence, -alienTech, -reverseEngineering,
+		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -designing, -psionics, -xenolinguistics,
+		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -construction, -diligence, -alienTech, -reverseEngineering,
 		-stealth, -perseption, -charisma, -deception, -interrogation); }
 	void merge(const UnitStats& stats) {
 		tu = (stats.tu ? stats.tu : tu);
@@ -318,7 +310,6 @@ struct UnitStats
 		computers = (stats.computers ? stats.computers : computers);
 		tactics = (stats.tactics ? stats.tactics : tactics);
 		materials = (stats.materials ? stats.materials : materials);
-		psychology = (stats.psychology ? stats.psychology : psychology);
 		designing = (stats.designing ? stats.designing : designing);
 		psionics = (stats.psionics ? stats.psionics : psionics);
 		xenolinguistics = (stats.xenolinguistics ? stats.xenolinguistics : xenolinguistics);
@@ -328,7 +319,6 @@ struct UnitStats
 		microelectronics = (stats.microelectronics ? stats.microelectronics : microelectronics);
 		metallurgy = (stats.metallurgy ? stats.metallurgy : metallurgy);
 		processing = (stats.processing ? stats.processing : processing);
-		robotics = (stats.robotics ? stats.robotics : robotics);
 		hacking = (stats.hacking ? stats.hacking : hacking);
 		construction = (stats.construction ? stats.construction : construction);
 		diligence = (stats.diligence ? stats.diligence : diligence);
@@ -346,8 +336,8 @@ struct UnitStats
 		return bravery || reactions || firing || psiSkill || psiStrength || melee || throwing || mana ||
 			maneuvering || missiles || dogfight || cooperation || tracking || beams ||
 			synaptic || gravity || physics || chemistry || biology || insight || data || computers || tactics ||
-			materials || psychology || designing || psionics || xenolinguistics ||
-			weaponry || explosives || efficiency || microelectronics || metallurgy || processing || robotics ||
+			materials || designing || psionics || xenolinguistics ||
+			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
 			hacking || construction || diligence || alienTech || reverseEngineering ||
 			stealth || perseption || charisma || deception || interrogation;
 	}
@@ -362,9 +352,9 @@ struct UnitStats
 			&UnitStats::maneuvering, &UnitStats::missiles, &UnitStats::dogfight, &UnitStats::tracking,
 			&UnitStats::cooperation, &UnitStats::beams, &UnitStats::synaptic, &UnitStats::gravity,
 			&UnitStats::physics, &UnitStats::chemistry, &UnitStats::biology, &UnitStats::insight, &UnitStats::data, &UnitStats::computers,& UnitStats::tactics,
-			&UnitStats::materials, &UnitStats::psychology, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
+			&UnitStats::materials, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
 			&UnitStats::weaponry, &UnitStats::explosives, &UnitStats::efficiency, &UnitStats::microelectronics, &UnitStats::metallurgy, &UnitStats::processing,
-			&UnitStats::robotics, &UnitStats::hacking, &UnitStats::construction, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
+			&UnitStats::hacking, &UnitStats::construction, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
 			&UnitStats::stealth, &UnitStats::perseption, &UnitStats::charisma, &UnitStats::deception, &UnitStats::interrogation
 		};
 
@@ -520,7 +510,7 @@ struct UnitStats
 	static UnitStats obeyFixedMinimum(const UnitStats &a)
 	{
 		// minimum 1 for health, minimum 0 for other stats (note to self: it might be worth considering minimum 10 for bravery in the future)
-		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		return max(a, fixedMinimum);
 	}
 
@@ -896,7 +886,6 @@ namespace YAML
 			node["computers"] = rhs.computers;
 			node["tactics"] = rhs.tactics;
 			node["materials"] = rhs.materials;
-			node["psychology"] = rhs.psychology;
 			node["designing"] = rhs.designing;
 			node["psionics"] = rhs.psionics;
 			node["xenolinguistics"] = rhs.xenolinguistics;
@@ -906,7 +895,6 @@ namespace YAML
 			node["microelectronics"] = rhs.microelectronics;
 			node["metallurgy"] = rhs.metallurgy;
 			node["processing"] = rhs.processing;
-			node["robotics"] = rhs.robotics;
 			node["hacking"] = rhs.hacking;
 			node["construction"] = rhs.construction;
 			node["diligence"] = rhs.diligence;
@@ -953,7 +941,6 @@ namespace YAML
 			rhs.computers = node["computers"].as<int>(rhs.computers);
 			rhs.tactics = node["tactics"].as<int>(rhs.tactics);
 			rhs.materials = node["materials"].as<int>(rhs.materials);
-			rhs.psychology = node["psychology"].as<int>(rhs.psychology);
 			rhs.designing = node["designing"].as<int>(rhs.designing);
 			rhs.psionics = node["psionics"].as<int>(rhs.psionics);
 			rhs.xenolinguistics = node["xenolinguistics"].as<int>(rhs.xenolinguistics);
@@ -963,7 +950,6 @@ namespace YAML
 			rhs.microelectronics = node["microelectronics"].as<int>(rhs.microelectronics);
 			rhs.metallurgy = node["metallurgy"].as<int>(rhs.metallurgy);
 			rhs.processing = node["processing"].as<int>(rhs.processing);
-			rhs.robotics = node["robotics"].as<int>(rhs.robotics);
 			rhs.hacking = node["hacking"].as<int>(rhs.hacking);
 			rhs.construction = node["construction"].as<int>(rhs.construction);
 			rhs.diligence = node["diligence"].as<int>(rhs.diligence);

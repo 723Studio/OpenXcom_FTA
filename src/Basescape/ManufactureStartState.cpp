@@ -58,7 +58,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	_txtCost = new Text(290, 9, 16, 60);
 	_txtWorkSpace = new Text(290, 9, 16, 70);
 	_txtReqStatsHeader = new Text(138, 9, 168, 50);
-	_txtReqStatsList = new Text(138, 19, 168, 60);
+	_txtReqStats = new Text(138, 19, 168, 60);
 	_txtRequiredItemsTitle = new Text(290, 9, 16, 84);
 	_txtItemNameColumn = new Text(60, 16, 30, 92);
 	_txtUnitRequiredColumn = new Text(60, 16, 155, 92);
@@ -76,7 +76,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	add(_txtCost, "text", "allocateManufacture");
 	add(_txtWorkSpace, "text", "allocateManufacture");
 	add(_txtReqStatsHeader, "text", "allocateManufacture");
-	add(_txtReqStatsList, "text", "allocateManufacture");
+	add(_txtReqStats, "text", "allocateManufacture");
 	add(_btnCancel, "button", "allocateManufacture");
 
 	add(_txtRequiredItemsTitle, "text", "allocateManufacture");
@@ -102,8 +102,8 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	{
 		_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(time));
 		_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
-		_txtReqStatsList->setText(statsListString);
-		_txtReqStatsList->setWordWrap(true);
+		_txtReqStats->setText(statsListString);
+		_txtReqStats->setWordWrap(true);
 	}
 	else
 	{
@@ -113,7 +113,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 	if (!_ftaUi || statsListString.empty())
 	{
 		_txtReqStatsHeader->setVisible(false);
-		_txtReqStatsList->setVisible(false);
+		_txtReqStats->setVisible(false);
 	}
 
 	_txtCost->setText(tr("STR_COST_PER_UNIT_").arg(Unicode::formatFunding(_item->getManufactureCost())));
@@ -298,8 +298,6 @@ std::string ManufactureStartState::generateStatsList()
 		statMap.insert(std::make_pair(stats.metallurgy, tr("STR_METALLURGY_LC")));
 	if (stats.processing > 0)
 		statMap.insert(std::make_pair(stats.processing, tr("STR_PROCESSING_LC")));
-	if (stats.robotics > 0)
-		statMap.insert(std::make_pair(stats.robotics, tr("STR_ROBOTICS_LC")));
 	if (stats.hacking > 0)
 		statMap.insert(std::make_pair(stats.hacking, tr("STR_HACKING_LC")));
 	if (stats.alienTech > 0)

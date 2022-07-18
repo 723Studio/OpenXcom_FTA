@@ -4745,19 +4745,6 @@ int GeoscapeState::getResearchStepProgress(ResearchProject* project, std::map<So
 			}
 			statsN++;
 		}
-		if (projStats.psychology > 0)
-		{
-			statEffort = stats->psychology;
-			soldierEffort += (statEffort / projStats.psychology) * 24;
-			if (stats->psychology < caps.psychology
-				&& RNG::generate(0, caps.psychology) > stats->psychology
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->psychology++;
-			}
-			statsN++;
-		}
 		if (projStats.designing > 0)
 		{
 			statEffort = stats->designing;
@@ -4768,6 +4755,19 @@ int GeoscapeState::getResearchStepProgress(ResearchProject* project, std::map<So
 				&& RNG::percent(s.second))
 			{
 				s.first->getResearchExperience()->designing++;
+			}
+			statsN++;
+		}
+		if (projStats.alienTech > 0)
+		{
+			statEffort = stats->alienTech;
+			soldierEffort += (statEffort / projStats.alienTech) * 24;
+			if (stats->alienTech < caps.alienTech
+				&& RNG::generate(0, caps.alienTech) > stats->alienTech
+				&& RNG::percent(factor)
+				&& RNG::percent(s.second))
+			{
+				s.first->getResearchExperience()->alienTech++;
 			}
 			statsN++;
 		}

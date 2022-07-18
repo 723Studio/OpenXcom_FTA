@@ -417,8 +417,8 @@ std::string NewResearchListState::getProjectCategory(RuleResearch *project)
 		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_LC")));
 	if (stats.materials > 0)
 		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_LC")));
-	if (stats.psychology > 0)
-		statMap.insert(std::make_pair(stats.psychology, tr("STR_PSYCHOLOGY_LC")));
+	/*if (stats.psychology > 0)
+		statMap.insert(std::make_pair(stats.psychology, tr("STR_PSYCHOLOGY_LC")));*/
 	if (stats.physics > 0)
 		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_LC")));
 	if (stats.physics > 0)

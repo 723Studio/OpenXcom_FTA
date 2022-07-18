@@ -44,7 +44,7 @@ class ResearchAllocateScientists : public State
 private:
 	TextButton *_btnOk;
 	Window *_window;
-	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtUsed;
+	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtFreeSpace;
 	ComboBox *_cbxSortBy;
 	TextList *_lstScientists;
 	Base *_base;
@@ -70,8 +70,6 @@ public:
 	void init() override;
 	/// Handler for clicking the Soldiers list.
 	void lstScientistsClick(Action *action);
-	/// Handler for clicking the De-assign All Soldiers button.
-	void btnDeassignProjectScientistsClick(Action *action);
 };
 
 }

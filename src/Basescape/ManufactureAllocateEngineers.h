@@ -42,9 +42,9 @@ struct SortFunctor;
 class ManufactureAllocateEngineers : public State
 {
 private:
-	TextButton* _btnOk;
+	TextButton* _btnOk, *_btnInfo;
 	Window* _window;
-	Text* _txtTitle, * _txtName, * _txtRank, * _txtCraft, * _txtUsed;
+	Text* _txtTitle, * _txtName, * _txtRank, * _txtCraft, *_txtFreeSpace;
 	ComboBox* _cbxSortBy;
 	TextList* _lstEngineers;
 	Base* _base;
@@ -52,8 +52,9 @@ private:
 	Uint8 _otherCraftColor;
 	std::vector<Soldier*> _origSoldierOrder;
 	std::vector<SortFunctor*> _sortFunctors;
-	std::vector<int> _scientistsNumbers;
+	std::vector<int> _engineerNumbers;
 	getStatFn_t _dynGetter;
+	int _freeSpace;
 	/// initializes the display list based on the project soldier's list and the position to display
 	void initList(size_t scrl);
 
@@ -66,12 +67,12 @@ public:
 	void cbxSortByChange(Action* action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
+	/// Handler for clicking the INFO button.
+	void btnInfoClick(Action* action);
 	/// Updates the soldiers list.
 	void init() override;
 	/// Handler for clicking the Soldiers list.
 	void lstEngineersClick(Action* action);
-	/// Handler for clicking the De-assign All Soldiers button.
-	void btnDeassignProjectEngineersClick(Action* action);
 };
 
 }

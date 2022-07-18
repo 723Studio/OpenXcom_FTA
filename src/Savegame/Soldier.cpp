@@ -112,6 +112,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		UnitStats minStats = rules->getMinStats();
 		UnitStats maxStats = rules->getMaxStats();
 
+		//soldier
 		_initialStats.tu = RNG::generate(minStats.tu, maxStats.tu);
 		_initialStats.stamina = RNG::generate(minStats.stamina, maxStats.stamina);
 		_initialStats.health = RNG::generate(minStats.health, maxStats.health);
@@ -124,6 +125,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.psiStrength = RNG::generate(minStats.psiStrength, maxStats.psiStrength);
 		_initialStats.melee = RNG::generate(minStats.melee, maxStats.melee);
 		_initialStats.psiSkill = minStats.psiSkill;
+		//pilot
 		_initialStats.maneuvering = RNG::generate(minStats.maneuvering, maxStats.maneuvering);
 		_initialStats.missiles = RNG::generate(minStats.missiles, maxStats.missiles);
 		_initialStats.dogfight = RNG::generate(minStats.dogfight, maxStats.dogfight);
@@ -132,7 +134,13 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.beams = RNG::generate(minStats.beams, maxStats.beams);
 		_initialStats.synaptic = RNG::generate(minStats.synaptic, maxStats.synaptic);
 		_initialStats.gravity = RNG::generate(minStats.gravity, maxStats.gravity);
-
+		//agent
+		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
+		_initialStats.perseption = RNG::generate(minStats.perseption, maxStats.perseption);
+		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
+		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
+		_initialStats.interrogation = RNG::generate(minStats.interrogation, maxStats.interrogation);
+		//scientist
 		_initialStats.physics = generateScienceStat(minStats.physics, maxStats.physics);
 		_initialStats.chemistry = generateScienceStat(minStats.chemistry, maxStats.chemistry);
 		_initialStats.biology = generateScienceStat(minStats.biology, maxStats.biology);
@@ -141,10 +149,22 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.computers = generateScienceStat(minStats.computers, maxStats.computers);
 		_initialStats.tactics = generateScienceStat(minStats.tactics, maxStats.tactics);
 		_initialStats.materials = generateScienceStat(minStats.materials, maxStats.materials);
-		_initialStats.psychology = generateScienceStat(minStats.psychology, maxStats.psychology);
 		_initialStats.designing = generateScienceStat(minStats.designing, maxStats.designing);
-		_initialStats.psionics = RNG::generate(minStats.psionics, maxStats.psionics);
-		_initialStats.xenolinguistics = RNG::generate(minStats.xenolinguistics, maxStats.xenolinguistics);
+		_initialStats.alienTech = generateScienceStat(minStats.alienTech, maxStats.alienTech);
+		_initialStats.psionics = generateScienceStat(minStats.psionics, maxStats.psionics);
+		_initialStats.xenolinguistics = generateScienceStat(minStats.xenolinguistics, maxStats.xenolinguistics);
+
+		//engineer
+		_initialStats.weaponry = RNG::generate(minStats.weaponry, maxStats.weaponry);
+		_initialStats.explosives = RNG::generate(minStats.explosives, maxStats.explosives);
+		_initialStats.efficiency = RNG::generate(minStats.efficiency, maxStats.efficiency);
+		_initialStats.microelectronics = RNG::generate(minStats.microelectronics, maxStats.microelectronics);
+		_initialStats.metallurgy = RNG::generate(minStats.metallurgy, maxStats.metallurgy);
+		_initialStats.processing = RNG::generate(minStats.processing, maxStats.processing);
+		_initialStats.hacking = RNG::generate(minStats.hacking, maxStats.hacking);
+		_initialStats.construction = RNG::generate(minStats.construction, maxStats.construction);
+		_initialStats.diligence = RNG::generate(minStats.diligence, maxStats.diligence);
+		_initialStats.reverseEngineering = RNG::generate(minStats.reverseEngineering, maxStats.reverseEngineering);
 
 		_currentStats = _initialStats;
 
@@ -403,13 +423,13 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 		node["dogfightExperience"] = _dogfightExperience;
 	}
 	if (_researchExperience.physics > 0 || _researchExperience.chemistry > 0 || _researchExperience.biology > 0 ||
-		_researchExperience.insight > 0 || _researchExperience.data > 0 || _researchExperience.computers > 0 || _researchExperience.tactics > 0 || _researchExperience.materials > 0 ||
-		_researchExperience.psychology > 0 || _researchExperience.designing > 0 || _researchExperience.psionics > 0 || _researchExperience.xenolinguistics > 0)
+		_researchExperience.insight > 0 || _researchExperience.data > 0 || _researchExperience.computers > 0 || _researchExperience.tactics > 0
+		|| _researchExperience.materials > 0 || _researchExperience.designing > 0 || _researchExperience.psionics > 0 || _researchExperience.xenolinguistics > 0)
 	{
 		node["researchExperience"] = _researchExperience;
 	}
 	if (_engineerExperience.weaponry > 0 || _engineerExperience.explosives > 0 || _engineerExperience.efficiency > 0 || _engineerExperience.microelectronics > 0 ||
-		_engineerExperience.metallurgy > 0 || _engineerExperience.processing > 0 || _engineerExperience.robotics > 0 || _engineerExperience.hacking > 0 || _engineerExperience.construction > 0 ||
+		_engineerExperience.metallurgy > 0 || _engineerExperience.processing > 0 || _engineerExperience.hacking > 0 || _engineerExperience.construction > 0 ||
 		_engineerExperience.diligence > 0 || _engineerExperience.alienTech > 0 || _engineerExperience.reverseEngineering > 0)
 	{
 		node["engineerExperience"] = _engineerExperience;
@@ -2682,11 +2702,6 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 	if (exp->materials && stats->materials < caps.materials)
 	{
 		stats->materials += improveStat(exp->materials, rate);
-		addExperience(ROLE_SCIENTIST, rate);
-	}
-	if (exp->psychology && stats->psychology < caps.psychology)
-	{
-		stats->psychology += improveStat(exp->psychology, rate);
 		addExperience(ROLE_SCIENTIST, rate);
 	}
 	if (exp->designing && stats->designing < caps.designing)

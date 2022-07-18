@@ -59,7 +59,8 @@ public:
 	bool getSellItems() const { return _sell; }
 	void setSellItems (bool sell) { _sell = sell; }
 	/// Gets the hourly progress with assigned engineers and other conditions
-	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty);
+	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
+	
 	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);
 	const RuleManufacture * getRules() const;
 	void startItem(Base * b, SavedGame * g, const Mod *m) const;
