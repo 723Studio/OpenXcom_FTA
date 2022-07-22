@@ -44,7 +44,7 @@ class ManufactureAllocateEngineers : public State
 private:
 	TextButton* _btnOk, *_btnInfo;
 	Window* _window;
-	Text* _txtTitle, * _txtName, * _txtRank, * _txtCraft, *_txtFreeSpace;
+	Text* _txtTitle, * _txtName, * _txtCraft, *_txtFreeSpace;
 	ComboBox* _cbxSortBy;
 	TextList* _lstEngineers;
 	Base* _base;

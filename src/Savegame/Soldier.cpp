@@ -808,7 +808,6 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 	{
 		if (mode == LAB)
 		{
-			isBusy = true;
 			return lang->getString(_researchProject->getRules()->getName());
 		}
 		else
@@ -821,7 +820,6 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 	{
 		if (mode == WORK)
 		{
-			isBusy = true;
 			return lang->getString(_production->getRules()->getName());
 		}
 		else

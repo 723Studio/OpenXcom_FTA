@@ -64,8 +64,7 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	_btnOk = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 122, 32);
-	_txtCraft = new Text(84, 9, 220, 32);
+	_txtCraft = new Text(84, 9, 122, 32);
 	_txtFreeSpace = new Text(150, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstEngineers = new TextList(288, 128, 8, 40);
@@ -78,7 +77,6 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	add(_btnInfo, "button2", "manufactureAllocateEngineers");
 	add(_txtTitle, "text", "manufactureAllocateEngineers");
 	add(_txtName, "text", "manufactureAllocateEngineers");
-	add(_txtRank, "text", "manufactureAllocateEngineers");
 	add(_txtCraft, "text", "manufactureAllocateEngineers");
 	add(_txtFreeSpace, "text", "manufactureAllocateEngineers");
 	add(_lstEngineers, "list", "manufactureAllocateEngineers");
@@ -104,8 +102,6 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	_txtTitle->setVerticalAlign(ALIGN_MIDDLE);
 
 	_txtName->setText(tr("STR_NAME_UC"));
-
-	_txtRank->setText(tr("STR_RANK"));
 
 	_txtCraft->setText(tr("STR_ASSIGNMENT"));
 
@@ -140,7 +136,7 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 	_cbxSortBy->onChange((ActionHandler)&ManufactureAllocateEngineers::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	_lstEngineers->setColumns(3, 106, 98, 76);
+	_lstEngineers->setColumns(2, 106, 174);
 	_lstEngineers->setAlign(ALIGN_RIGHT, 3);
 	_lstEngineers->setSelectable(true);
 	_lstEngineers->setBackground(_window);
@@ -250,11 +246,11 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 
 	if (_dynGetter != NULL)
 	{
-		_lstEngineers->setColumns(4, 106, 98, 60, 16);
+		_lstEngineers->setColumns(3, 106, 158, 16);
 	}
 	else
 	{
-		_lstEngineers->setColumns(3, 106, 98, 76);
+		_lstEngineers->setColumns(2, 106, 174);
 	}
 
 	auto recovery = _base->getSumRecoveryPerDay();
@@ -265,18 +261,18 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 		if ((*i)->getRoleRank(ROLE_ENGINEER) > 0)
 		{
 			_engineerNumbers.push_back(it); // don't forget soldier's number on the base!
-			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, WORK);
 			if (_dynGetter != NULL)
 			{
 				// call corresponding getter
 				int dynStat = (*_dynGetter)(_game, *i);
 				std::ostringstream ss;
 				ss << dynStat;
-				_lstEngineers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
+				_lstEngineers->addRow(3, (*i)->getName(true, 19).c_str(), duty.c_str(), ss.str().c_str());
 			}
 			else
 			{
-				_lstEngineers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
+				_lstEngineers->addRow(2, (*i)->getName(true, 19).c_str(), duty.c_str());
 			}
 
 			Uint8 color;
@@ -291,7 +287,7 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 			if (matched)
 			{
 				color = _lstEngineers->getSecondaryColor();
-				_lstEngineers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+				_lstEngineers->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
 			}
 			else if (isBusy || !isFree)
 			{
@@ -353,19 +349,14 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 			Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
 			if (s->getProductionProject())
 			{
-				if (s->getProductionProject()->getRules() == _planningProject->getManufactureRules())
-				{
-					s->setProductionProject(0);
-					color = _lstEngineers->getColor();
-					_lstEngineers->setCellText(row, 2, tr("STR_NONE_UC"));
-					_freeSpace++;
-					Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
-				}
-				else
-				{
-					color = _otherCraftColor;
-					_lstEngineers->setCellText(row, 2, duty);
-				}
+				s->setProductionProject(0);
+			}
+
+			_lstEngineers->setCellText(row, 1, duty);
+			if (isBusy || !isFree || s->getCraft() != 0)
+			{
+				color = _otherCraftColor;
+
 			}
 			else
 			{
@@ -385,7 +376,8 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			if (_freeSpace <= 0)
+			bool noProject = s->getProductionProject() == 0;
+			if (noProject && _freeSpace <= 0)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_WORKSPACE"),
 					_palette,
@@ -395,11 +387,13 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 			}
 			else
 			{
-				_lstEngineers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+				_lstEngineers->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
 				color = _lstEngineers->getSecondaryColor();
 				_planningProject->addEngineer(s);
-				_freeSpace--;
-				Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
+				if (noProject)
+				{
+					_freeSpace--;
+				}
 			}
 		}
 
