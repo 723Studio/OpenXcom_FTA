@@ -197,7 +197,7 @@ public:
 	/// Gets the base's available laboratory space.
 	int getAvailableLaboratories() const;
 	/// Gets the base's used workshop space.
-	int getUsedWorkshops(bool fta = false) const;
+	int getUsedWorkshops(bool fta = false, Production * exclude = nullptr) const;
 	/// Gets the base's available workshop space.
 	int getAvailableWorkshops() const;
 	/// Gets the base's used hangars.
@@ -207,7 +207,7 @@ public:
 	/// Get the number of available space lab (not used by a ResearchProject)
 	int getFreeLaboratories(bool fta = false) const;
 	/// Get the number of available space lab (not used by a Production)
-	int getFreeWorkshops(bool fta = false) const;
+	int getFreeWorkshops(bool fta = false, Production * exclude = nullptr) const;
 
 	int getAllocatedScientists() const;
 	int getAllocatedEngineers() const;

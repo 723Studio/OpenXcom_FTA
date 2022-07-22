@@ -54,7 +54,7 @@ private:
 	std::vector<SortFunctor*> _sortFunctors;
 	std::vector<int> _engineerNumbers;
 	getStatFn_t _dynGetter;
-	int _freeSpace;
+	int _freeSpace, _spaceTest;
 	/// initializes the display list based on the project soldier's list and the position to display
 	void initList(size_t scrl);
 

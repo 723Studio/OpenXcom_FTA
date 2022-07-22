@@ -264,9 +264,9 @@ void ManufactureState::fillProductionList(size_t scrl)
 		auto recovery = _base->getSumRecoveryPerDay();
 		unsigned int freeEngineers = 0, busyEngineers = 0;
 		bool isBusy = false, isFree = false;
-		for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
+		for (auto s : _base->getPersonnel(ROLE_ENGINEER))
 		{
-			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
+			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, WORK);
 			if (!isBusy || isFree)
 			{
 				freeEngineers++;

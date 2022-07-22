@@ -340,23 +340,28 @@ int ManufactureInfoStateFtA::calcAvgStat(bool check)
  */
 void ManufactureInfoStateFtA::setAssignedEngineer()
 {
-	size_t baseEngineers = 0;
+	size_t freeEngineers = 0, busyEngineers = 0;
+	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
 	for (auto s : *_base->getSoldiers())
 	{
 		if (s->getRoleRank(ROLE_ENGINEER) > 0)
 		{
+			std::string duty = s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 			if (s->getProductionProject() != 0 && s->getProductionProject()->getRules() == this->getManufactureRules())
 			{
 				_engineers.insert(s);
 			}
-			else
+			else if (isBusy || !isFree)
 			{
-				baseEngineers++;
+				freeEngineers++;
 			}
+
 		}
 	}
-	_txtAvailableEngineer->setText(tr("STR_ENGINEERS_AVAILABLE_UC").arg(baseEngineers));
-	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_base->getFreeWorkshops(true) - _engineers.size() - this->getManufactureRules()->getRequiredSpace()));
+	_txtAvailableEngineer->setText(tr("STR_ENGINEERS_AVAILABLE_UC").arg(freeEngineers));
+	_workSpace = _base->getFreeWorkshops(true, _production) - _engineers.size() - this->getManufactureRules()->getRequiredSpace();
+	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_workSpace));
 
 	std::ostringstream s4;
 	s4 << ">" << Unicode::TOK_COLOR_FLIP;

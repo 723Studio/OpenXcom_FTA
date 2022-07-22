@@ -54,7 +54,9 @@ namespace OpenXcom
 ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, ManufactureInfoStateFtA* planningProject)
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
-	_freeSpace = _base->getFreeWorkshops(true) - _planningProject->getEngineers().size() - _planningProject->getManufactureRules()->getRequiredSpace();
+	_freeSpace = planningProject->getWorkspace();
+	_spaceTest = _freeSpace;
+	Log(LOG_INFO) << "<<< State init,  _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -348,21 +350,37 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 		if (matched)
 		{
 			_planningProject->removeEngineer(s);
-			if (s->getProductionProject() && s->getProductionProject()->getRules() == _planningProject->getManufactureRules())
+			Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
+			if (s->getProductionProject())
 			{
-				s->setProductionProject(0);
-			}
-
-			_lstEngineers->setCellText(row, 2, duty);
-			if (isBusy || !isFree || s->getCraft() != 0)
-			{
-				color = _otherCraftColor;
-
+				if (s->getProductionProject()->getRules() == _planningProject->getManufactureRules())
+				{
+					s->setProductionProject(0);
+					color = _lstEngineers->getColor();
+					_lstEngineers->setCellText(row, 2, tr("STR_NONE_UC"));
+					_freeSpace++;
+					Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
+				}
+				else
+				{
+					color = _otherCraftColor;
+					_lstEngineers->setCellText(row, 2, duty);
+				}
 			}
 			else
 			{
-				color = _lstEngineers->getColor();
+				_lstEngineers->setCellText(row, 2, duty);
 				_freeSpace++;
+				Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
+				if (isBusy || !isFree || s->getCraft() != 0)
+				{
+					color = _otherCraftColor;
+				}
+				else
+				{
+					color = _lstEngineers->getColor();
+				}
+
 			}
 		}
 		else if (s->hasFullHealth() && !isBusy)
@@ -381,6 +399,7 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 				color = _lstEngineers->getSecondaryColor();
 				_planningProject->addEngineer(s);
 				_freeSpace--;
+				Log(LOG_INFO) << " _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
 			}
 		}
 

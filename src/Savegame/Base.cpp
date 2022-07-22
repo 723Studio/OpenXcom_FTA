@@ -1043,11 +1043,16 @@ int Base::getAvailableLaboratories() const
  * by manufacturing projects in the base.
  * @return Storage space.
  */
-int Base::getUsedWorkshops(bool fta) const
+int Base::getUsedWorkshops(bool fta, Production* exclude) const
 {
 	int usedWorkShop = 0;
 	for (std::vector<Production*>::const_iterator iter = _productions.begin(); iter != _productions.end(); ++iter)
 	{
+		if (exclude != nullptr && (*iter) == exclude)
+		{
+			continue;
+		}
+
 		int assigned = 0;
 		if (fta)
 		{
@@ -1144,9 +1149,9 @@ int Base::getFreeLaboratories(bool fta) const
  * Return workshop space not used by a Production
  * @return workshop space not used by a Production
  */
-int Base::getFreeWorkshops(bool fta) const
+int Base::getFreeWorkshops(bool fta, Production* exclude) const
 {
-	return getAvailableWorkshops() - getUsedWorkshops(fta);
+	return getAvailableWorkshops() - getUsedWorkshops(fta, exclude);
 }
 
 /**

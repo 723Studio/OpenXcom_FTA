@@ -57,6 +57,7 @@ private:
 	TextList * _lstEngineers;
 	int _unitsToProduce;
 	int _producedItems;
+	int _workSpace;
 	bool _infiniteProduction;
 	/// Handler for the Stop button.
 	void btnStopClick (Action *action);
@@ -111,6 +112,8 @@ public:
 	void addEngineer(Soldier* engineer) { _engineers.insert(engineer); }
 	void removeEngineer(Soldier* engineer) { _engineers.erase(engineer); };
 	void setEngineers(std::set<Soldier*> engineers) { _engineers = engineers; };
+	bool isNewProject() { return _newProject; }
+	int getWorkspace() { return _workSpace; }
 };
 
 }
