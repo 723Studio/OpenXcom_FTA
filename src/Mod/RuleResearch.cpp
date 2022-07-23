@@ -25,7 +25,7 @@
 namespace OpenXcom
 {
 
-RuleResearch::RuleResearch(const std::string &name) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _sequentialGetOneFree(false),
+RuleResearch::RuleResearch(const std::string &name) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _funds(0), _sequentialGetOneFree(false),
 													  _needItem(false), _destroyItem(false), _hidden(false), _listOrder(0)
 {
 }
@@ -53,6 +53,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	_cost = node["cost"].as<int>(_cost);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	_points = node["points"].as<int>(_points);
+	_funds = node["funds"].as<int>(_funds);
 	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);
 	mod->loadUnorderedNames(_name, _unlocksName, node["unlocks"]);
 	mod->loadUnorderedNames(_name, _disablesName, node["disables"]);

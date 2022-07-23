@@ -53,7 +53,7 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_ftaUi = _game->getMod()->getIsFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (_ftaUi)
+	if (_ftaUi && false)
 	{
 		_btnOk = new TextButton(96, 16, 216, 176);
 		_btnNew = new TextButton(96, 16, 8, 176);
@@ -105,7 +105,7 @@ ResearchState::ResearchState(Base *base) : _base(base)
 
 	_btnScientists->setText(tr("STR_SCIENTISTS_LC"));
 	_btnScientists->onMouseClick((ActionHandler)&ResearchState::btnScientistsClick);
-	_btnScientists->setVisible(_ftaUi);
+	_btnScientists->setVisible(_ftaUi && false);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);

@@ -153,7 +153,7 @@ void ResearchInfoStateFtA::buildUi()
 
 	setAssignedScientists();
 
-	unsigned int x = 157;
+	unsigned int x = _txtStat1->getX();
 	unsigned int offset = 18;
 	int stat = getStatString(0).first;
 	if (stat > 0)
@@ -264,20 +264,24 @@ int ResearchInfoStateFtA::GetStatValue(Soldier &s, const std::string &desc)
 		return sStats->chemistry;
 	if (desc == "STR_BIOLOGY_SHORT")
 		return sStats->biology;
-	if (desc == "STR_DATA_ANALISYS_SHORT")
+	if (desc == "STR_DATA_ANALISIS_SHORT")
 		return sStats->data;
 	if (desc == "STR_COMPUTER_SCIENCE_SHORT")
 		return sStats->computers;
+	if (desc == "STR_TACTICS_SHORT")
+		return sStats->tactics;
 	if (desc == "STR_MATERIAL_SCIENCE_SHORT")
 		return sStats->materials;
-	/*if (desc == "STR_PSYCHOLOGY_SHORT")
-		return sStats->psychology;*/
 	if (desc == "STR_DESIGNING_SHORT")
 		return sStats->designing;
+	if (desc == "STR_ALIEN_TECH_SHORT")
+		return sStats->alienTech;
 	if (desc == "STR_PSIONICS_SHORT")
 		return sStats->psionics;
 	if (desc == "STR_XENOLINGUISTICS_SHORT")
 		return sStats->xenolinguistics;
+
+	Log(LOG_ERROR) << "Link to undefined stat: " << desc;
 	return 0;
 }
 
@@ -290,7 +294,7 @@ void ResearchInfoStateFtA::fillScientistsList(size_t scrl)
 		std::ostringstream ss;
 		ss << s->getRoleRank(ROLE_SCIENTIST);
 		size_t i = 0;
-		for (auto stat : ResearchStats)
+		for (auto stat : _researchStats)
 		{
 			stats[i++] = std::to_string(GetStatValue(*s, stat.second));
 		}
@@ -415,47 +419,57 @@ std::pair<int, std::string> ResearchInfoStateFtA::getStatString(size_t position)
 	if (stats.physics > 0)
 	{
 		statMap.insert(std::make_pair(stats.physics, tr("STR_PHYSICS_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.physics, "STR_PHYSICS_SHORT"));
+		_researchStats.insert(std::make_pair(stats.physics, "STR_PHYSICS_SHORT"));
 	}
 	if (stats.chemistry > 0)
 	{
 		statMap.insert(std::make_pair(stats.chemistry, tr("STR_CHEMISTRY_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.chemistry, "STR_CHEMISTRY_SHORT"));
+		_researchStats.insert(std::make_pair(stats.chemistry, "STR_CHEMISTRY_SHORT"));
 	}
 	if (stats.biology > 0)
 	{
 		statMap.insert(std::make_pair(stats.biology, tr("STR_BIOLOGY_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.biology, "STR_BIOLOGY_SHORT"));
+		_researchStats.insert(std::make_pair(stats.biology, "STR_BIOLOGY_SHORT"));
 	}
 	if (stats.data > 0)
 	{
-		statMap.insert(std::make_pair(stats.data, tr("STR_DATA_ANALISYS_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.data, "STR_DATA_ANALISYS_SHORT"));
+		statMap.insert(std::make_pair(stats.data, tr("STR_DATA_ANALISIS_SHORT")));
+		_researchStats.insert(std::make_pair(stats.data, "STR_DATA_ANALISIS_SHORT"));
 	}
 	if (stats.computers > 0)
 	{
 		statMap.insert(std::make_pair(stats.computers, tr("STR_COMPUTER_SCIENCE_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.computers, "STR_COMPUTER_SCIENCE_SHORT"));
+		_researchStats.insert(std::make_pair(stats.computers, "STR_COMPUTER_SCIENCE_SHORT"));
+	}
+	if (stats.tactics > 0)
+	{
+		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_SHORT")));
+		_researchStats.insert(std::make_pair(stats.tactics, "STR_TACTICS_SHORT"));
 	}
 	if (stats.materials > 0)
 	{
 		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.materials, "STR_MATERIAL_SCIENCE_SHORT"));
+		_researchStats.insert(std::make_pair(stats.materials, "STR_MATERIAL_SCIENCE_SHORT"));
 	}
 	if (stats.designing > 0)
 	{
 		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.designing, "STR_DESIGNING_SHORT"));
+		_researchStats.insert(std::make_pair(stats.designing, "STR_DESIGNING_SHORT"));
+	}
+	if (stats.alienTech > 0)
+	{
+		statMap.insert(std::make_pair(stats.alienTech, tr("STR_ALIEN_TECH_SHORT")));
+		_researchStats.insert(std::make_pair(stats.alienTech, "STR_ALIEN_TECH_SHORT"));
 	}
 	if (stats.psionics > 0)
 	{
 		statMap.insert(std::make_pair(stats.psionics, tr("STR_PSIONICS_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.psionics, "STR_PSIONICS_SHORT"));
+		_researchStats.insert(std::make_pair(stats.psionics, "STR_PSIONICS_SHORT"));
 	}
 	if (stats.xenolinguistics > 0)
 	{
 		statMap.insert(std::make_pair(stats.xenolinguistics, tr("STR_XENOLINGUISTICS_SHORT")));
-		ResearchStats.insert(std::make_pair(stats.xenolinguistics, "STR_XENOLINGUISTICS_SHORT"));
+		_researchStats.insert(std::make_pair(stats.xenolinguistics, "STR_XENOLINGUISTICS_SHORT"));
 	}
 
 	size_t pos = 0;

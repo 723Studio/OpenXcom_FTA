@@ -51,7 +51,7 @@ private:
 	void buildUi();
 	
 	std::pair<int, std::string> getStatString(size_t position);
-	std::map<int, std::string, std::greater<int> > ResearchStats;
+	std::map<int, std::string, std::greater<int> > _researchStats;
 	int GetStatValue(Soldier &s, const std::string &desc);
 
 public:

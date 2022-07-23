@@ -269,7 +269,7 @@ void ResearchAllocateScientists::initList(size_t scrl)
 		if ((*i)->getRoleRank(ROLE_SCIENTIST) > 0)
 		{
 			_scientistsNumbers.push_back(it); // don't forget soldier's number on the base!
-			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
 			if (_dynGetter != NULL)
 			{
 				// call corresponding getter
@@ -378,7 +378,7 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			bool noProject = s->getProductionProject() == 0;
+			bool noProject = s->getResearchProject() == 0;
 			if (noProject && _freeSpace <= 0)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_LABSPACE"),

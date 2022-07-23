@@ -47,9 +47,9 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 	_window = new Window(this, 168, 200, 152, 0);
 	_btnOk = new TextButton(146, 16, 163, 175);
 	_txtTitle = new Text(154, 17, 159, 7);
-	//_txtManHour = new Text(154, 9, 159, 27);
-	_txtCost = new Text(154, 9, 159, 37);
-	_txtWorkSpace = new Text(154, 9, 159, 47);
+	_txtDifficulty = new Text(154, 9, 159, 27);
+	_txtFunds = new Text(154, 9, 159, 37);
+	_txtDestroyitem = new Text(154, 9, 159, 47);
 	_txtReqStatsHeader = new Text(154, 9, 159, 59);
 	_txtReqStats = new Text(154, 19, 159, 69);
 
@@ -58,30 +58,59 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 
 	add(_window, "window", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
-	//add(_txtManHour, "text", "selectNewResearch");
-	add(_txtCost, "text", "selectNewResearch");
-	add(_txtWorkSpace, "text", "selectNewResearch");
+	add(_txtDifficulty, "text", "selectNewResearch");
+	add(_txtFunds, "text", "selectNewResearch");
+	add(_txtDestroyitem, "text", "selectNewResearch");
 	add(_txtReqStatsHeader, "text", "selectNewResearch");
 	add(_txtReqStats, "text", "selectNewResearch");
 	add(_btnOk, "button", "selectNewResearch");
 
 	centerAllSurfaces();
 
-	setWindowBackground(_window, "allocateManufacture");
+	setWindowBackground(_window, "selectNewResearch");
 
-	_txtTitle->setText(tr("STR_PRODUCTION_INFO"));
+	_txtTitle->setText(tr("STR_RESEARCH_STATE_INFO"));
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 
-	//_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(_item->getManufactureTime()));
+	
+	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(_rule->getCost())); //#FINNIKTODO add string calculation
+
+	int dY = 0;
+	if (_game->getSavedGame()->getDebugMode())
+	{
+		_txtDifficulty->setVisible(false);
+		dY = 10;
+	}
+
+	_txtFunds->setText(tr("STR_PROJECT_FUNDS").arg(_rule->getFunds()));
+	_txtFunds->setY(_txtFunds->getY() - dY);
+	if (_rule->getFunds() == 0)
+	{
+		_txtFunds->setVisible(false);
+	}
+	else
+	{
+		dY += 10;
+	}
+
+	_txtDestroyitem->setText(tr("STR_DESTROY_RESEARCHING_ITEM"));
+	_txtDestroyitem->setY(_txtDestroyitem->getY() - dY);
+	if (!_rule->destroyItem())
+	{
+		_txtDestroyitem->setVisible(false);
+	}
+	else
+	{
+		dY += 10;
+	}
+	
 	_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
+	_txtReqStatsHeader->setY(_txtReqStatsHeader->getY() - dY + 2);
 
 	_txtReqStats->setText(generateStatsList());
 	_txtReqStats->setWordWrap(true);
-
-	//_txtCost->setText(tr("STR_COST_PER_UNIT_").arg(Unicode::formatFunding(_item->getManufactureCost())));
-
-	//_txtWorkSpace->setText(tr("STR_WORK_SPACE_REQUIRED").arg(_item->getRequiredSpace()));
+	_txtReqStats->setY(_txtReqStats->getY() - dY + 2);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchProjectDetailsState::btnOKClick);
@@ -106,24 +135,26 @@ std::string ResearchProjectDetailsState::generateStatsList()
 	auto stats = _rule->getStats();
 	std::map<int, std::string> statMap;
 
-	UnitStats::getStatString(&UnitStats::tu);
-
-	if (stats.weaponry > 0)
-		statMap.insert(std::make_pair(stats.weaponry, tr("STR_WEAPONRY_LC")));
-	if (stats.explosives > 0)
-		statMap.insert(std::make_pair(stats.explosives, tr("STR_EXPLOSIVES_LC")));
-	if (stats.microelectronics > 0)
-		statMap.insert(std::make_pair(stats.microelectronics, tr("STR_MICROELECTRONICS_LC")));
-	if (stats.metallurgy > 0)
-		statMap.insert(std::make_pair(stats.metallurgy, tr("STR_METALLURGY_LC")));
-	if (stats.processing > 0)
-		statMap.insert(std::make_pair(stats.processing, tr("STR_PROCESSING_LC")));
-	if (stats.hacking > 0)
-		statMap.insert(std::make_pair(stats.hacking, tr("STR_HACKING_LC")));
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
+	if (stats.chemistry > 0)
+		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
+	if (stats.biology > 0)
+		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
+	if (stats.data > 0)
+		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
+	if (stats.computers > 0)
+		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
+	if (stats.tactics > 0)
+		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
+	if (stats.designing > 0)
+		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
 	if (stats.alienTech > 0)
-		statMap.insert(std::make_pair(stats.alienTech, tr("STR_ALIEN_TECH_LC")));
-	if (stats.reverseEngineering > 0)
-		statMap.insert(std::make_pair(stats.reverseEngineering, tr("STR_REVERSE_ENGINEERING_LC")));
+		statMap.insert(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_LC))));
+	if (stats.psionics > 0)
+		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
+	if (stats.xenolinguistics > 0)
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
 
 	if (!statMap.empty())
 	{

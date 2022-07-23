@@ -38,7 +38,7 @@ private:
 	const RuleResearch *_rule;
 	Window *_window;
 	TextButton *_btnOk;
-	Text *_txtTitle, *_txtDifficulty, *_txtCost, *_txtRequiredItem, *_txtDestroyitem, *_txtWorkSpace, *_txtReqStatsHeader, *_txtReqStats;
+	Text *_txtTitle, *_txtDifficulty, *_txtFunds, *_txtDestroyitem, *_txtReqStatsHeader, *_txtReqStats;
 	std::string generateStatsList();
 public:
 	/// Creates the State.
