@@ -798,13 +798,13 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		return ss.str();
 	}
 
-	if (_covertOperation != 0)
+	if (_covertOperation)
 	{
 		isBusy = true;
 		return lang->getString("STR_COVERT_OPERATION_UC");
 	}
 
-	if (_researchProject != 0)
+	if (_researchProject)
 	{
 		if (mode == LAB)
 		{
@@ -816,7 +816,7 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		}
 	}
 
-	if (_production != 0)
+	if (_production)
 	{
 		if (mode == WORK)
 		{

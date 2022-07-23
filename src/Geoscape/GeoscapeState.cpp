@@ -2178,6 +2178,7 @@ void GeoscapeState::time1Hour()
 		popup(new ItemsArrivingState(this));
 	}
 	// Handle Production
+	std::vector<Soldier*> promotedSoldiers;
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
 		std::map<Production*, productionProgress_e> toRemove;
@@ -2190,6 +2191,18 @@ void GeoscapeState::time1Hour()
 		{
 			if (j->second > PROGRESS_NOT_COMPLETE)
 			{
+				for (std::vector<Soldier*>::const_iterator s = (*i)->getSoldiers()->begin(); s != (*i)->getSoldiers()->end(); ++s)
+				{
+					if ((*s)->getProductionProject() == j->first)
+					{
+						(*s)->improvePrimaryStats((*s)->getEngineerExperience(), ROLE_ENGINEER);
+						if ((*s)->rolePromoteSoldier(ROLE_ENGINEER))
+						{
+							promotedSoldiers.push_back((*s));
+						}
+						(*s)->setProductionProject(0);
+					}
+				}
 				popup(new ProductionCompleteState((*i),  tr(j->first->getRules()->getName()), this, j->second, j->first));
 				(*i)->removeProduction(j->first);
 			}
@@ -2233,6 +2246,11 @@ void GeoscapeState::time1Hour()
 				}
 			}
 		}
+	}
+	//oh, and don't forget about FtA promotions!
+	if (!promotedSoldiers.empty() && _fta)
+	{
+		_game->pushState(new PromotionsState);
 	}
 
 	// Handle pending transformations

@@ -453,8 +453,7 @@ const RuleManufacture * Production::getRules() const
 
 void Production::startItem(Base * b, SavedGame * g, const Mod *m) const
 {
-
-	g->setFunds(g->getFunds() - _rules->getManufactureCost());
+	g->setFunds(g->getFunds() - ((_rules->getManufactureCost() * 100) / _efficiency));
 	for (auto& i : _rules->getRequiredItems())
 	{
 		b->getStorageItems()->removeItem(i.first, i.second);

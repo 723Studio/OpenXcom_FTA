@@ -267,7 +267,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		for (auto s : _base->getPersonnel(ROLE_ENGINEER))
 		{
 			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, WORK);
-			if (!isBusy || isFree)
+			if (!isBusy && isFree)
 			{
 				freeEngineers++;
 			}

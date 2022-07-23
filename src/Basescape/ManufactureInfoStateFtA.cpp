@@ -352,15 +352,27 @@ void ManufactureInfoStateFtA::setAssignedEngineer()
 			{
 				_engineers.insert(s);
 			}
-			else if (isBusy || !isFree)
+			else if ((!isBusy && isFree))
 			{
-				freeEngineers++;
+				if (_engineers.find(s) != _engineers.end())
+				{ }
+				else
+					freeEngineers++;
 			}
-
 		}
 	}
 	_txtAvailableEngineer->setText(tr("STR_ENGINEERS_AVAILABLE_UC").arg(freeEngineers));
-	_workSpace = _base->getFreeWorkshops(true, _production) - _engineers.size() - this->getManufactureRules()->getRequiredSpace();
+	
+	//-_engineers.size();
+	size_t teamSize = _engineers.size();
+	for (auto e : _engineers)
+	{
+		if (e->getProductionProject() && e->getProductionProject()->getRules() != this->getManufactureRules())
+		{
+			teamSize--;
+		}
+	}
+	_workSpace = _base->getFreeWorkshops(true, _production) - this->getManufactureRules()->getRequiredSpace() - teamSize;
 	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_workSpace));
 
 	std::ostringstream s4;
