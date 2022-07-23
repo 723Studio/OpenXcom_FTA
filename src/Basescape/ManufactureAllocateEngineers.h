@@ -44,7 +44,7 @@ class ManufactureAllocateEngineers : public State
 private:
 	TextButton* _btnOk, *_btnInfo;
 	Window* _window;
-	Text* _txtTitle, * _txtName, * _txtCraft, *_txtFreeSpace;
+	Text* _txtTitle, * _txtName, * _txtAssignment, *_txtFreeSpace;
 	ComboBox* _cbxSortBy;
 	TextList* _lstEngineers;
 	Base* _base;
@@ -54,7 +54,7 @@ private:
 	std::vector<SortFunctor*> _sortFunctors;
 	std::vector<int> _engineerNumbers;
 	getStatFn_t _dynGetter;
-	int _freeSpace, _spaceTest;
+	int _freeSpace;
 	/// initializes the display list based on the project soldier's list and the position to display
 	void initList(size_t scrl);
 

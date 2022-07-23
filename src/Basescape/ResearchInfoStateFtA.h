@@ -46,10 +46,10 @@ private:
 	const RuleResearch *_rule;
 	std::set<Soldier *> _scientists;
 	bool _newProject;
+	int _workSpace;
 
-	void getAssignedScientists();
 	void buildUi();
-	void setAssignedScientist();
+	
 	std::pair<int, std::string> getStatString(size_t position);
 	std::map<int, std::string, std::greater<int> > ResearchStats;
 	int GetStatValue(Soldier &s, const std::string &desc);
@@ -72,12 +72,14 @@ public:
 	void fillScientistsList(size_t scrl);
 	/// Updates the research list.
 	void init() override;
-
+	void setAssignedScientists();
 	const RuleResearch* getResearchRules();
 	std::set<Soldier *> getScientists() { return _scientists; };
 	void addScientist(Soldier *scientist) { _scientists.insert(scientist); }
 	void removeScientist(Soldier* scientist) { _scientists.erase(scientist); }
 	void setScientists(std::set<Soldier *> scientists) { _scientists = scientists; };
+	bool isNewProject() { return _newProject; }
+	int getWorkspace() { return _workSpace; }
 };
 
 }

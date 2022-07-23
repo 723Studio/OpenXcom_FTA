@@ -1226,6 +1226,9 @@
     <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2514,6 +2517,9 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ManufactureProductDetailsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ResearchProjectDetailsState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>

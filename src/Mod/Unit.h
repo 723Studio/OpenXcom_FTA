@@ -42,6 +42,8 @@ struct UnitStats
 	using Type = Sint16;
 	using Ptr = Type UnitStats::*;
 
+	enum StatStringType {STATSTR_UC, STATSTR_LC, STATSTR_SHORT};
+
 	/// Max value that is allowed to set to stat, less that max value allowed by type.
 	constexpr static int BaseStatLimit = 8000;
 
@@ -361,6 +363,85 @@ struct UnitStats
 		for (Ptr p : allFields)
 		{
 			f(p);
+		}
+	}
+
+	static std::string getStatString(Type UnitStats::* t, StatStringType type = STATSTR_UC)
+	{
+		constexpr static std::pair<Ptr, const char*> statStings[] =
+		{
+			{&UnitStats::tu, "STR_TIME_UNITS"},
+			{&UnitStats::stamina, "STR_STAMINA"},
+			{&UnitStats::health, "STR_HEALTH"},
+			{&UnitStats::bravery, "STR_BRAVERY"},
+			{&UnitStats::reactions, "STR_REACTIONS"},
+			{&UnitStats::firing, "STR_FIRING_ACCURACY"},
+			{&UnitStats::throwing, "STR_THROWING_ACCURACY"},
+			{&UnitStats::strength, "STR_STRENGTH"},
+			{&UnitStats::psiStrength, "STR_PSIONIC_STRENGTH"},
+			{&UnitStats::psiSkill, "STR_PSIONIC_SKILL"},
+			{&UnitStats::melee, "STR_MELEE_ACCURACY"},
+			{&UnitStats::mana, "STR_MANA_POOL"},
+			{&UnitStats::maneuvering, "STR_MANEUVERING"},
+			{&UnitStats::missiles, "STR_MISSILE_OPERATION"},
+			{&UnitStats::dogfight, "STR_DOGFIGHT"},
+			{&UnitStats::tracking, "STR_TRACKING"},
+			{&UnitStats::cooperation, "STR_COOPERATION"},
+			{&UnitStats::beams, "STR_BEAMS_OPERATION"},
+			{&UnitStats::synaptic, "STR_SYNAPTIC_CONNECTIVITY"},
+			{&UnitStats::gravity, "STR_GRAVITY_MANIPULATION"},
+			{&UnitStats::physics, "STR_PHYSICS"},
+			{&UnitStats::chemistry, "STR_CHEMISTRY"},
+			{&UnitStats::biology, "STR_BIOLOGY"},
+			{&UnitStats::insight, "STR_INSIGHT"},
+			{&UnitStats::data, "STR_DATA_ANALISIS"},
+			{&UnitStats::computers, "STR_COMPUTER_SCIENCE"},
+			{&UnitStats::tactics, "STR_TACTICS"},
+			{&UnitStats::materials, "STR_MATERIAL_SCIENCE"},
+			{&UnitStats::designing, "STR_DESIGNING"},
+			{&UnitStats::psionics, "STR_PSIONICS"},
+			{&UnitStats::xenolinguistics, "STR_XENOLINGUISTICS"},
+			{&UnitStats::weaponry, "STR_WEAPONRY"},
+			{&UnitStats::explosives, "STR_EXPLOSIVES"},
+			{&UnitStats::efficiency, "STR_EFFICIENCY"},
+			{&UnitStats::microelectronics, "STR_MICROELECTRONICS"},
+			{&UnitStats::metallurgy, "STR_METALLURGY"},
+			{&UnitStats::processing, "STR_PROCESSING"},
+			{&UnitStats::hacking, "STR_HACKING"},
+			{&UnitStats::construction, "STR_CONSTRUCTION"},
+			{&UnitStats::diligence, "STR_DILIGENCE"},
+			{&UnitStats::alienTech, "STR_ALIEN_TECH"},
+			{&UnitStats::reverseEngineering, "STR_REVERSE_ENGINEERING"},
+			{&UnitStats::stealth, "STR_STEALTH"},
+			{&UnitStats::perseption, "STR_PERSEPTION"},
+			{&UnitStats::charisma, "STR_CHARISMA"},
+			{&UnitStats::deception, "STR_DECEPTION"},
+			{&UnitStats::interrogation, "STR_INTERROGATION"}
+		};
+
+		for (auto& p : statStings)
+		{
+			if (t == p.first)
+			{
+				std::string suffix;
+				switch (type)
+				{
+				case OpenXcom::UnitStats::STATSTR_UC:
+					suffix = "_UC";
+					break;
+				case OpenXcom::UnitStats::STATSTR_LC:
+					suffix = "_LC";
+					break;
+				case OpenXcom::UnitStats::STATSTR_SHORT:
+					suffix = "_SHORT";
+					break;
+				default:
+					suffix = "_UC";
+					break;
+				}
+
+				return p.second + suffix;
+			}
 		}
 	}
 

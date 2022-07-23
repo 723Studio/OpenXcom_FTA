@@ -188,7 +188,7 @@ void ResearchState::onSelectProject(Action *)
 */
 void ResearchState::onOpenTechTreeViewer(Action *)
 {
-	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	if ((_game->getMod()->getIsResearchTreeDisabled() || _ftaUi) && !_game->getSavedGame()->getDebugMode())
 	{
 		return;
 	}
@@ -331,7 +331,7 @@ void ResearchState::fillProjectList(size_t scrl)
 		for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
 		{
 			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
-			if (!isBusy || isFree)
+			if (!isBusy && isFree)
 			{
 				freeScientists++;
 			}

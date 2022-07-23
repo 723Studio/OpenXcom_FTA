@@ -271,6 +271,7 @@
     <ClCompile Include="Basescape\ResearchAllocateScientists.cpp" />
     <ClCompile Include="Basescape\ResearchInfoState.cpp" />
     <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp" />
+    <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\ResearchState.cpp" />
     <ClCompile Include="Basescape\ScientistsState.cpp" />
     <ClCompile Include="Basescape\SelectStartFacilityState.cpp" />
@@ -679,6 +680,7 @@
     <ClInclude Include="Basescape\ResearchAllocateScientists.h" />
     <ClInclude Include="Basescape\ResearchInfoState.h" />
     <ClInclude Include="Basescape\ResearchInfoStateFtA.h" />
+    <ClInclude Include="Basescape\ResearchProjectDetailsState.h" />
     <ClInclude Include="Basescape\ResearchState.h" />
     <ClInclude Include="Basescape\ScientistsState.h" />
     <ClInclude Include="Basescape\SelectStartFacilityState.h" />

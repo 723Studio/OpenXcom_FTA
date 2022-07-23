@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "ManufactureProductDetailsState.h"
+#include "ResearchProjectDetailsState.h"
 #include <sstream>
 #include "../Interface/Window.h"
 #include "../Interface/TextButton.h"
@@ -40,71 +40,73 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param item The RuleManufacture to produce.
  */
-ManufactureProductDetailsState::ManufactureProductDetailsState(Base *base, const RuleManufacture *item) :  _base(base), _item(item)
+ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleResearch* rule) :  _base(base), _rule(rule)
 {
 	_screen = false;
 
 	_window = new Window(this, 168, 200, 152, 0);
 	_btnOk = new TextButton(146, 16, 163, 175);
 	_txtTitle = new Text(154, 17, 159, 7);
-	_txtManHour = new Text(154, 9, 159, 27);
+	//_txtManHour = new Text(154, 9, 159, 27);
 	_txtCost = new Text(154, 9, 159, 37);
 	_txtWorkSpace = new Text(154, 9, 159, 47);
 	_txtReqStatsHeader = new Text(154, 9, 159, 59);
 	_txtReqStats = new Text(154, 19, 159, 69);
 
 	// Set palette
-	setInterface("allocateManufacture");
+	setInterface("selectNewResearch");
 
-	add(_window, "window", "allocateManufacture");
-	add(_txtTitle, "text", "allocateManufacture");
-	add(_txtManHour, "text", "allocateManufacture");
-	add(_txtCost, "text", "allocateManufacture");
-	add(_txtWorkSpace, "text", "allocateManufacture");
-	add(_txtReqStatsHeader, "text", "allocateManufacture");
-	add(_txtReqStats, "text", "allocateManufacture");
-	add(_btnOk, "button", "allocateManufacture");
+	add(_window, "window", "selectNewResearch");
+	add(_txtTitle, "text", "selectNewResearch");
+	//add(_txtManHour, "text", "selectNewResearch");
+	add(_txtCost, "text", "selectNewResearch");
+	add(_txtWorkSpace, "text", "selectNewResearch");
+	add(_txtReqStatsHeader, "text", "selectNewResearch");
+	add(_txtReqStats, "text", "selectNewResearch");
+	add(_btnOk, "button", "selectNewResearch");
 
 	centerAllSurfaces();
 
 	setWindowBackground(_window, "allocateManufacture");
 
-	_txtTitle->setText(tr("STR_PRODUCTION_STATE_INFO"));
+	_txtTitle->setText(tr("STR_PRODUCTION_INFO"));
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 
-	_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(_item->getManufactureTime()));
+	//_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(_item->getManufactureTime()));
 	_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
 
 	_txtReqStats->setText(generateStatsList());
 	_txtReqStats->setWordWrap(true);
 
-	_txtCost->setText(tr("STR_COST_PER_UNIT_").arg(Unicode::formatFunding(_item->getManufactureCost())));
+	//_txtCost->setText(tr("STR_COST_PER_UNIT_").arg(Unicode::formatFunding(_item->getManufactureCost())));
 
-	_txtWorkSpace->setText(tr("STR_WORK_SPACE_REQUIRED").arg(_item->getRequiredSpace()));
+	//_txtWorkSpace->setText(tr("STR_WORK_SPACE_REQUIRED").arg(_item->getRequiredSpace()));
 
 	_btnOk->setText(tr("STR_OK"));
-	_btnOk->onMouseClick((ActionHandler)&ManufactureProductDetailsState::btnOKClick);
-	_btnOk->onKeyboardPress((ActionHandler)&ManufactureProductDetailsState::btnOKClick, Options::keyOk);
-	_btnOk->onKeyboardPress((ActionHandler)&ManufactureProductDetailsState::btnOKClick, Options::keyCancel);
+	_btnOk->onMouseClick((ActionHandler)&ResearchProjectDetailsState::btnOKClick);
+	_btnOk->onKeyboardPress((ActionHandler)&ResearchProjectDetailsState::btnOKClick, Options::keyOk);
+	_btnOk->onKeyboardPress((ActionHandler)&ResearchProjectDetailsState::btnOKClick, Options::keyCancel);
 }
 
 /**
  * Returns to previous screen.
  * @param action A pointer to an Action.
  */
-void ManufactureProductDetailsState::btnOKClick(Action *)
+void ResearchProjectDetailsState::btnOKClick(Action *)
 {
 	_game->popState();
 }
 
 
-std::string ManufactureProductDetailsState::generateStatsList()
+std::string ResearchProjectDetailsState::generateStatsList()
 {
 	std::ostringstream ss;
 
-	auto stats = _item->getStats();
+	auto stats = _rule->getStats();
 	std::map<int, std::string> statMap;
+
+	UnitStats::getStatString(&UnitStats::tu);
 
 	if (stats.weaponry > 0)
 		statMap.insert(std::make_pair(stats.weaponry, tr("STR_WEAPONRY_LC")));

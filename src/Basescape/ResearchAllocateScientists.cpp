@@ -37,6 +37,7 @@
 #include "../Savegame/ResearchProject.h"
 #include "../Basescape/ResearchInfoStateFtA.h"
 #include "ResearchAllocateScientists.h"
+#include "ResearchProjectDetailsState.h"
 #include "SoldierInfoState.h"
 #include <algorithm>
 #include <climits>
@@ -52,14 +53,16 @@ namespace OpenXcom
 ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoStateFtA *planningProject)
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origScientistOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
+	_freeSpace = planningProject->getWorkspace();
+
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(148, 16, 164, 176);
+	_btnInfo = new TextButton(42, 16, 270, 8);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 122, 32);
-	_txtCraft = new Text(84, 9, 220, 32);
-	_txtFreeSpace = new Text(114, 9, 16, 24);
+	_txtAssignment = new Text(84, 9, 122, 32);
+	_txtFreeSpace = new Text(150, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstScientists = new TextList(288, 128, 8, 40);
 
@@ -68,10 +71,10 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 
 	add(_window, "window", "researchAllocateScientists");
 	add(_btnOk, "button", "researchAllocateScientists");
+	add(_btnInfo, "button", "researchAllocateScientists");
 	add(_txtTitle, "text", "researchAllocateScientists");
 	add(_txtName, "text", "researchAllocateScientists");
-	add(_txtRank, "text", "researchAllocateScientists");
-	add(_txtCraft, "text", "researchAllocateScientists");
+	add(_txtAssignment, "text", "researchAllocateScientists");
 	add(_txtFreeSpace, "text", "researchAllocateScientists");
 	add(_lstScientists, "list", "researchAllocateScientists");
 	add(_cbxSortBy, "button", "researchAllocateScientists");
@@ -87,6 +90,9 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 	_btnOk->onMouseClick((ActionHandler)&ResearchAllocateScientists::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ResearchAllocateScientists::btnOkClick, Options::keyCancel);
 
+	_btnInfo->setText(tr("STR_INFO"));
+	_btnInfo->onMouseClick((ActionHandler)&ResearchAllocateScientists::btnInfoClick);
+
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(planningProject->getResearchRules()->getName()));
 	_txtTitle->setWordWrap(true);
@@ -94,9 +100,7 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
-	_txtRank->setText(tr("STR_RANK"));
-
-	_txtCraft->setText(tr("STR_ASSIGNMENT"));
+	_txtAssignment->setText(tr("STR_ASSIGNMENT"));
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
@@ -140,7 +144,7 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 	_cbxSortBy->onChange((ActionHandler)&ResearchAllocateScientists::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	_lstScientists->setColumns(3, 106, 98, 76);
+	_lstScientists->setColumns(2, 106, 174);
 	_lstScientists->setAlign(ALIGN_RIGHT, 3);
 	_lstScientists->setSelectable(true);
 	_lstScientists->setBackground(_window);
@@ -231,7 +235,13 @@ void ResearchAllocateScientists::cbxSortByChange(Action *)
  */
 void ResearchAllocateScientists::btnOkClick(Action *)
 {
+	_planningProject->setAssignedScientists();
 	_game->popState();
+}
+
+void ResearchAllocateScientists::btnInfoClick(Action* action)
+{
+	_game->pushState(new ResearchProjectDetailsState(_base, _planningProject->getResearchRules()));
 }
 
 /**
@@ -244,11 +254,11 @@ void ResearchAllocateScientists::initList(size_t scrl)
 
 	if (_dynGetter != NULL)
 	{
-		_lstScientists->setColumns(4, 106, 98, 60, 16);
+		_lstScientists->setColumns(3, 106, 158, 16);
 	}
 	else
 	{
-		_lstScientists->setColumns(3, 106, 98, 76);
+		_lstScientists->setColumns(2, 106, 174);
 	}
 
 	auto recovery = _base->getSumRecoveryPerDay();
@@ -266,14 +276,14 @@ void ResearchAllocateScientists::initList(size_t scrl)
 				int dynStat = (*_dynGetter)(_game, *i);
 				std::ostringstream ss;
 				ss << dynStat;
-				_lstScientists->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
+				_lstScientists->addRow(3, (*i)->getName(true, 19).c_str(), duty.c_str(), ss.str().c_str());
 			}
 			else
 			{
-				_lstScientists->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
+				_lstScientists->addRow(2, (*i)->getName(true, 19).c_str(), duty.c_str());
 			}
 
-			Uint8 color;
+			Uint8 color = _lstScientists->getColor();
 			bool matched = false;
 			auto scientists = _planningProject->getScientists();
 			auto iter = std::find(std::begin(scientists), std::end(scientists), (*i));
@@ -285,16 +295,13 @@ void ResearchAllocateScientists::initList(size_t scrl)
 			if (matched)
 			{
 				color = _lstScientists->getSecondaryColor();
-				_lstScientists->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+				_lstScientists->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
 			}
 			else if (isBusy || !isFree)
 			{
 				color = _otherCraftColor;
 			}
-			else
-			{
-				color = _lstScientists->getColor();
-			}
+
 			_lstScientists->setRowColor(row, color);
 			row++;
 		}
@@ -304,7 +311,7 @@ void ResearchAllocateScientists::initList(size_t scrl)
 		_lstScientists->scrollTo(scrl);
 	_lstScientists->draw();
 
-	_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(true)));
+	_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_freeSpace));
 }
 
 /**
@@ -344,27 +351,56 @@ void ResearchAllocateScientists::lstScientistsClick(Action *action)
 		if (matched)
 		{
 			_planningProject->removeScientist(s);
-			if (s->getResearchProject() && s->getResearchProject()->getRules() == _planningProject->getResearchRules())
+			if (s->getResearchProject())
 			{
-				s->setProductionProject(0);
+				if (s->getResearchProject()->getRules() == _planningProject->getResearchRules())
+				{
+					s->setResearchProject(0);
+					color = _lstScientists->getColor();
+					_lstScientists->setCellText(row, 1, tr("STR_NONE_UC"));
+					_freeSpace++;
+				}
+				else
+				{
+					color = _otherCraftColor;
+					_lstScientists->setCellText(row, 1, duty);
+				}
 			}
-
-			_lstScientists->setCellText(row, 2, duty);
-			if (isBusy || !isFree || s->getCraft() != 0)
+			else
 			{
-				color = _otherCraftColor;
-				
+				_lstScientists->setCellText(row, 1, duty);
+				_freeSpace++;
+				if (isBusy || !isFree || s->getCraft())
+				{
+					color = _otherCraftColor;
+				}
 			}
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			_lstScientists->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
-			color = _lstScientists->getSecondaryColor();
-			_planningProject->addScientist(s);
+			bool noProject = s->getProductionProject() == 0;
+			if (noProject && _freeSpace <= 0)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_LABSPACE"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else
+			{
+				_lstScientists->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
+				color = _lstScientists->getSecondaryColor();
+				_planningProject->addScientist(s);
+				if (noProject)
+				{
+					_freeSpace--;
+				}
+			}
 		}
 
 		_lstScientists->setRowColor(row, color);
-		_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(true)));
+		_txtFreeSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_freeSpace));
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{

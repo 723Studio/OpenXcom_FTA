@@ -61,8 +61,8 @@ ResearchInfoStateFtA::ResearchInfoStateFtA(Base *base, const RuleResearch *rule)
  */
 ResearchInfoStateFtA::ResearchInfoStateFtA(Base *base, ResearchProject *project) : _base(base), _project(project)
 {
-	getAssignedScientists();
 	_newProject = false;
+	//getAssignedScientists();
 	buildUi();
 }
 
@@ -125,8 +125,6 @@ void ResearchInfoStateFtA::buildUi()
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr(getResearchRules()->getName()));
 
-	setAssignedScientist();
-
 	_btnAllocate->setText(tr("STR_ALLOCATE_SCIENTISTS"));
 	_btnAllocate->onMouseClick((ActionHandler)&ResearchInfoStateFtA::btnAllocateClick);
 
@@ -152,6 +150,8 @@ void ResearchInfoStateFtA::buildUi()
 	_btnAbandon->onMouseClick((ActionHandler)&ResearchInfoStateFtA::btnAbandonClick);
 
 	_txtGrade->setText(tr("GRADE"));
+
+	setAssignedScientists();
 
 	unsigned int x = 157;
 	unsigned int offset = 18;
@@ -300,19 +300,6 @@ void ResearchInfoStateFtA::fillScientistsList(size_t scrl)
 	}
 }
 
-/**
- * Populate list of soldiers, assigned to the project
- */
-void ResearchInfoStateFtA::getAssignedScientists()
-{
-	for (auto s : *_base->getSoldiers())
-	{
-		if (s->getResearchProject() == _project )
-		{
-			_scientists.insert(s);
-		}
-	}
-}
 
 /**
  * Returns to the previous screen.
@@ -385,28 +372,39 @@ void ResearchInfoStateFtA::btnAllocateClick(Action *action)
 /**
  * Updates count of assigned/free scientists and available lab space.
  */
-void ResearchInfoStateFtA::setAssignedScientist()
+void ResearchInfoStateFtA::setAssignedScientists()
 {
-	int freeScientists = 0, involved = 0;
+	size_t freeScientists = 0;
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
 
 	for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
 	{
-		s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
-		if (!isBusy || isFree)
+		s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		if (s->getResearchProject() && s->getResearchProject()->getRules() == this->getResearchRules())
 		{
-			freeScientists++;
+			_scientists.insert(s);
 		}
-		// as we will set new scientists only on Ok button press, new assigned soldiers should be considerid with:
-		if (s->getResearchProject() == _project || std::find(_scientists.begin(), _scientists.end(), s) != _scientists.end())
+		else if (!isBusy && isFree)
 		{
-			involved++;
+			if (_scientists.find(s) != _scientists.end())
+			{ }
+			else
+				freeScientists++;
 		}
-		freeScientists -= involved;
 	}
 	_txtAvailableScientist->setText(tr("STR_SCIENTISTS_AVAILABLE_UC").arg(freeScientists));
-	_txtAvailableSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE_UC").arg(_base->getFreeLaboratories(true)));
+
+	size_t teamSize = _scientists.size();
+	for (auto s : _scientists)
+	{
+		if (s->getResearchProject() && s->getResearchProject()->getRules() != this->getResearchRules())
+		{
+			teamSize--;
+		}
+	}
+	_workSpace = _base->getFreeLaboratories(true, _project) - teamSize;
+	_txtAvailableSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE_UC").arg(_workSpace));
 }
 
 std::pair<int, std::string> ResearchInfoStateFtA::getStatString(size_t position)

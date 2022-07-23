@@ -996,11 +996,16 @@ int Base::getAvailableStores() const
  * by research projects in the base.
  * @return Laboratory space.
  */
-int Base::getUsedLaboratories(bool fta) const
+int Base::getUsedLaboratories(bool fta, ResearchProject *exclude) const
 {
 	int usedLabSpace = 0;
 	for (std::vector<ResearchProject *>::const_iterator iter = _research.begin(); iter != _research.end(); ++iter)
 	{
+		if (exclude != nullptr && (*iter) == exclude)
+		{
+			continue;
+		}
+
 		if (fta)
 		{
 			for (auto s : _soldiers)
@@ -1140,9 +1145,9 @@ int Base::getAvailableHangars() const
  * Return laboratories space not used by a ResearchProject
  * @return laboratories space not used by a ResearchProject
  */
-int Base::getFreeLaboratories(bool fta) const
+int Base::getFreeLaboratories(bool fta, ResearchProject* exclude) const
 {
-	return getAvailableLaboratories() - getUsedLaboratories(fta);
+	return getAvailableLaboratories() - getUsedLaboratories(fta, exclude);
 }
 
 /**

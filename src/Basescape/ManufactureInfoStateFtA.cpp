@@ -83,7 +83,6 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *product
 void ManufactureInfoStateFtA::buildUi()
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->getIsFTAGame();
 
 	_window = new Window(this, 320, 160, 0, 20, POPUP_BOTH);
 	_txtTitle = new Text(302, 17, 9, 30);
@@ -177,7 +176,7 @@ void ManufactureInfoStateFtA::buildUi()
 	}
 	_btnStop->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::btnStopClick);
 
-	setAssignedEngineer();
+	setAssignedEngineers();
 
 	_btnAllocateEngineers->setText(tr("STR_ALLOCATE_ENGINEERS"));
 	_btnAllocateEngineers->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::btnAllocateClick, 0);
@@ -207,7 +206,7 @@ ManufactureInfoStateFtA::~ManufactureInfoStateFtA()
 void ManufactureInfoStateFtA::init()
 {
 	State::init();
-	setAssignedEngineer();
+	setAssignedEngineers();
 	fillEngineersList(0);
 }
 
@@ -338,32 +337,28 @@ int ManufactureInfoStateFtA::calcAvgStat(bool check)
 /**
  * Updates display of assigned/available engineer/workshop space.
  */
-void ManufactureInfoStateFtA::setAssignedEngineer()
+void ManufactureInfoStateFtA::setAssignedEngineers()
 {
-	size_t freeEngineers = 0, busyEngineers = 0;
+	size_t freeEngineers = 0;
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
-	for (auto s : *_base->getSoldiers())
+	for (auto s : _base->getPersonnel(ROLE_ENGINEER))
 	{
-		if (s->getRoleRank(ROLE_ENGINEER) > 0)
+		s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		if (s->getProductionProject() && s->getProductionProject()->getRules() == this->getManufactureRules())
 		{
-			std::string duty = s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
-			if (s->getProductionProject() != 0 && s->getProductionProject()->getRules() == this->getManufactureRules())
-			{
-				_engineers.insert(s);
-			}
-			else if ((!isBusy && isFree))
-			{
-				if (_engineers.find(s) != _engineers.end())
-				{ }
-				else
-					freeEngineers++;
-			}
+			_engineers.insert(s);
+		}
+		else if (!isBusy && isFree)
+		{
+			if (_engineers.find(s) != _engineers.end())
+			{ }
+			else
+				freeEngineers++;
 		}
 	}
 	_txtAvailableEngineer->setText(tr("STR_ENGINEERS_AVAILABLE_UC").arg(freeEngineers));
-	
-	//-_engineers.size();
+
 	size_t teamSize = _engineers.size();
 	for (auto e : _engineers)
 	{
@@ -426,7 +421,7 @@ void ManufactureInfoStateFtA::moreUnit(int change)
 		if (this->getManufactureRules()->getProducedCraft())
 			change = std::min(_base->getAvailableHangars() - _base->getUsedHangars(), change);
 		_unitsToProduce = units + change;
-		setAssignedEngineer();
+		setAssignedEngineers();
 	}
 }
 
@@ -473,7 +468,7 @@ void ManufactureInfoStateFtA::moreUnitClick(Action *action)
 		else
 		{
 			_infiniteProduction = true;
-			setAssignedEngineer();
+			setAssignedEngineers();
 		}
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
@@ -496,7 +491,7 @@ void ManufactureInfoStateFtA::lessUnit(int change)
 	int units = _unitsToProduce;
 	change = std::min(units - (_producedItems + 1), change);
 	_unitsToProduce = units - change;
-	setAssignedEngineer();
+	setAssignedEngineers();
 }
 
 /**
@@ -535,13 +530,13 @@ void ManufactureInfoStateFtA::lessUnitClick(Action *action)
 		if (_unitsToProduce <= _producedItems)
 		{ // So the produced item number is increased over the planned
 			_unitsToProduce += 1;
-			setAssignedEngineer();
+			setAssignedEngineers();
 			return;
 		}
 		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 		{
 			_unitsToProduce = _producedItems + 1;
-			setAssignedEngineer();
+			setAssignedEngineers();
 			return;
 		}
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)

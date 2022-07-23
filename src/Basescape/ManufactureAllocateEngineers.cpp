@@ -55,16 +55,14 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	_freeSpace = planningProject->getWorkspace();
-	_spaceTest = _freeSpace;
-	Log(LOG_INFO) << "<<< State init,  _freeSpace :" << _freeSpace << " initial space: " << _spaceTest;
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnInfo = new TextButton(42, 16, 270, 8);
 	_btnOk = new TextButton(148, 16, 164, 176);
+	_btnInfo = new TextButton(42, 16, 270, 8);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtCraft = new Text(84, 9, 122, 32);
+	_txtAssignment = new Text(84, 9, 122, 32);
 	_txtFreeSpace = new Text(150, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstEngineers = new TextList(288, 128, 8, 40);
@@ -77,7 +75,7 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	add(_btnInfo, "button2", "manufactureAllocateEngineers");
 	add(_txtTitle, "text", "manufactureAllocateEngineers");
 	add(_txtName, "text", "manufactureAllocateEngineers");
-	add(_txtCraft, "text", "manufactureAllocateEngineers");
+	add(_txtAssignment, "text", "manufactureAllocateEngineers");
 	add(_txtFreeSpace, "text", "manufactureAllocateEngineers");
 	add(_lstEngineers, "list", "manufactureAllocateEngineers");
 	add(_cbxSortBy, "button", "manufactureAllocateEngineers");
@@ -103,7 +101,7 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
-	_txtCraft->setText(tr("STR_ASSIGNMENT"));
+	_txtAssignment->setText(tr("STR_ASSIGNMENT"));
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
@@ -113,6 +111,9 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 #define PUSH_IN(strId, functor)       \
 sortOptions.push_back(tr(strId)); \
 _sortFunctors.push_back(new SortFunctor(_game, functor));
+
+	PUSH_IN("STR_ID", idStat);
+	PUSH_IN("STR_NAME_UC", nameStat);
 
 	PUSH_IN("STR_WEAPONRY_UC", weaponryStat);
 	PUSH_IN("STR_EXPLOSIVES_UC", explosivesStat);
@@ -227,7 +228,7 @@ void ManufactureAllocateEngineers::cbxSortByChange(Action*)
 */
 void ManufactureAllocateEngineers::btnOkClick(Action*)
 {
-	_planningProject->setAssignedEngineer();
+	_planningProject->setAssignedEngineers();
 	_game->popState();
 }
 
@@ -275,7 +276,7 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 				_lstEngineers->addRow(2, (*i)->getName(true, 19).c_str(), duty.c_str());
 			}
 
-			Uint8 color;
+			Uint8 color = _lstEngineers->getColor();
 			bool matched = false;
 			auto engineers = _planningProject->getEngineers();
 			auto iter = std::find(std::begin(engineers), std::end(engineers), (*i));
@@ -293,10 +294,7 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 			{
 				color = _otherCraftColor;
 			}
-			else
-			{
-				color = _lstEngineers->getColor();
-			}
+
 			_lstEngineers->setRowColor(row, color);
 			row++;
 		}
@@ -348,28 +346,27 @@ void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
 			_planningProject->removeEngineer(s);
 			if (s->getProductionProject())
 			{
-				s->setProductionProject(0);
-			}
-
-			_lstEngineers->setCellText(row, 1, duty);
-			if (isBusy || !isFree || s->getCraft() != 0)
-			{
-				color = _otherCraftColor;
-
+				if (s->getProductionProject()->getRules() == _planningProject->getManufactureRules())
+				{
+					s->setProductionProject(0);
+					color = _lstEngineers->getColor();
+					_lstEngineers->setCellText(row, 1, tr("STR_NONE_UC"));
+					_freeSpace++;
+				}
+				else
+				{
+					color = _otherCraftColor;
+					_lstEngineers->setCellText(row, 1, duty);
+				}
 			}
 			else
 			{
 				_lstEngineers->setCellText(row, 2, duty);
 				_freeSpace++;
-				if (isBusy || !isFree || s->getCraft() != 0)
+				if (isBusy || !isFree || s->getCraft())
 				{
 					color = _otherCraftColor;
 				}
-				else
-				{
-					color = _lstEngineers->getColor();
-				}
-
 			}
 		}
 		else if (s->hasFullHealth() && !isBusy)

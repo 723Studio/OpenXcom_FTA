@@ -42,9 +42,9 @@ struct SortFunctor;
 class ResearchAllocateScientists : public State
 {
 private:
-	TextButton *_btnOk;
+	TextButton *_btnOk, *_btnInfo;
 	Window *_window;
-	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtFreeSpace;
+	Text *_txtTitle, *_txtName, *_txtAssignment, *_txtFreeSpace;
 	ComboBox *_cbxSortBy;
 	TextList *_lstScientists;
 	Base *_base;
@@ -54,6 +54,7 @@ private:
 	std::vector<SortFunctor*> _sortFunctors;
 	std::vector<int> _scientistsNumbers;
 	getStatFn_t _dynGetter;
+	int _freeSpace;
 	/// initializes the display list based on the project scientists list and the position to display
 	void initList(size_t scrl);
 
@@ -66,6 +67,8 @@ public:
 	void cbxSortByChange(Action *action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the INFO button.
+	void btnInfoClick(Action* action);
 	/// Updates the soldiers list.
 	void init() override;
 	/// Handler for clicking the Soldiers list.

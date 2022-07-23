@@ -48,6 +48,7 @@ set ( basescape_src
   Basescape/ResearchAllocateScientists.cpp
   Basescape/ResearchInfoState.cpp
   Basescape/ResearchInfoStateFtA.cpp
+  Basescape/ResearchProjectDetailsState.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
   Basescape/ScientistsState.cpp

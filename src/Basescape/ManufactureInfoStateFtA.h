@@ -45,7 +45,7 @@ private:
 	Base * _base;
 	RuleManufacture * _item;
 	Production * _production;
-	bool _ftaUi, _newProject;
+	bool _newProject;
 	std::set<Soldier *> _engineers;
 	Window * _window;
 	ArrowButton * _btnUnitUp, * _btnUnitDown;
@@ -105,7 +105,7 @@ public:
 	void init() override;
 	void fillEngineersList(size_t scrl);
 	/// Updates display of assigned/available engineers and workshop space.
-	void setAssignedEngineer();
+	void setAssignedEngineers();
 
 	const RuleManufacture* getManufactureRules();
 	std::set<Soldier*> getEngineers() { return _engineers; };
