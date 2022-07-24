@@ -39,7 +39,7 @@ struct SortFunctor;
 * Allocate Scientists screen that lets the player
 * pick the personnel to assign to the project.
  */
-class ResearchAllocateScientists : public State
+class ResearchAllocateScientistsState : public State
 {
 private:
 	TextButton *_btnOk, *_btnInfo;
@@ -60,9 +60,9 @@ private:
 
 public:
 	/// Creates the Craft Soldiers state.
-	ResearchAllocateScientists(Base *base, ResearchInfoStateFtA *planningProject);
+	ResearchAllocateScientistsState(Base *base, ResearchInfoStateFtA *planningProject);
 	/// Cleans up the Craft Soldiers state.
-	~ResearchAllocateScientists();
+	~ResearchAllocateScientistsState();
 	/// Handler for changing the sort by combo-box.
 	void cbxSortByChange(Action *action);
 	/// Handler for clicking the OK button.

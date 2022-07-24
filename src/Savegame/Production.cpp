@@ -27,6 +27,7 @@
 #include "ItemContainer.h"
 #include "Soldier.h"
 #include "Craft.h"
+#include "BaseFacility.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleCraft.h"
@@ -490,7 +491,15 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 YAML::Node Production::save() const
 {
 	YAML::Node node;
-	node["item"] = getRules()->getName();
+	if (_facility)
+	{
+		node["item"] = _facility->getRules()->getType();
+		node["facility"] = _facility->getRules()->getType();
+	}
+	else
+	{
+		node["item"] = getRules()->getName();
+	}
 	node["assigned"] = getAssignedEngineers();
 	node["spent"] = getTimeSpent();
 	node["amount"] = getAmountTotal();
@@ -501,6 +510,7 @@ YAML::Node Production::save() const
 	{
 		node["randomProductionInfo"] = _randomProductionInfo;
 	}
+
 	return node;
 }
 

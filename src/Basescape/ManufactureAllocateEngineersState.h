@@ -39,7 +39,7 @@ struct SortFunctor;
 * Allocate Engineers screen that lets the player
 * pick the personnel to assign to the project.
 */
-class ManufactureAllocateEngineers : public State
+class ManufactureAllocateEngineersState : public State
 {
 private:
 	TextButton* _btnOk, *_btnInfo;
@@ -60,9 +60,9 @@ private:
 
 public:
 	/// Creates the Craft Soldiers state.
-	ManufactureAllocateEngineers(Base* base, ManufactureInfoStateFtA* planningProject);
+	ManufactureAllocateEngineersState(Base* base, ManufactureInfoStateFtA* planningProject);
 	/// Cleans up the Craft Soldiers state.
-	~ManufactureAllocateEngineers();
+	~ManufactureAllocateEngineersState();
 	/// Handler for changing the sort by combo-box.
 	void cbxSortByChange(Action* action);
 	/// Handler for clicking the OK button.

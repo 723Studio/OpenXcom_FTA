@@ -36,7 +36,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/ResearchProject.h"
 #include "../Basescape/ResearchInfoStateFtA.h"
-#include "ResearchAllocateScientists.h"
+#include "ResearchAllocateScientistsState.h"
 #include "ResearchProjectDetailsState.h"
 #include "SoldierInfoState.h"
 #include <algorithm>
@@ -50,7 +50,7 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param operation Pointer to starting (not committed) covert operation.
  */
-ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoStateFtA *planningProject)
+ResearchAllocateScientistsState::ResearchAllocateScientistsState(Base *base, ResearchInfoStateFtA *planningProject)
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origScientistOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	_freeSpace = planningProject->getWorkspace();
@@ -67,31 +67,31 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 	_lstScientists = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("researchAllocateScientists");
+	setInterface("ResearchAllocateScientistsState");
 
-	add(_window, "window", "researchAllocateScientists");
-	add(_btnOk, "button", "researchAllocateScientists");
-	add(_btnInfo, "button", "researchAllocateScientists");
-	add(_txtTitle, "text", "researchAllocateScientists");
-	add(_txtName, "text", "researchAllocateScientists");
-	add(_txtAssignment, "text", "researchAllocateScientists");
-	add(_txtFreeSpace, "text", "researchAllocateScientists");
-	add(_lstScientists, "list", "researchAllocateScientists");
-	add(_cbxSortBy, "button", "researchAllocateScientists");
+	add(_window, "window", "ResearchAllocateScientistsState");
+	add(_btnOk, "button", "ResearchAllocateScientistsState");
+	add(_btnInfo, "button", "ResearchAllocateScientistsState");
+	add(_txtTitle, "text", "ResearchAllocateScientistsState");
+	add(_txtName, "text", "ResearchAllocateScientistsState");
+	add(_txtAssignment, "text", "ResearchAllocateScientistsState");
+	add(_txtFreeSpace, "text", "ResearchAllocateScientistsState");
+	add(_lstScientists, "list", "ResearchAllocateScientistsState");
+	add(_cbxSortBy, "button", "ResearchAllocateScientistsState");
 
-	_otherCraftColor = _game->getMod()->getInterface("researchAllocateScientists")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("ResearchAllocateScientistsState")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "researchAllocateScientists");
+	setWindowBackground(_window, "ResearchAllocateScientistsState");
 
 	_btnOk->setText(tr("STR_OK"));
-	_btnOk->onMouseClick((ActionHandler)&ResearchAllocateScientists::btnOkClick);
-	_btnOk->onKeyboardPress((ActionHandler)&ResearchAllocateScientists::btnOkClick, Options::keyCancel);
+	_btnOk->onMouseClick((ActionHandler)&ResearchAllocateScientistsState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&ResearchAllocateScientistsState::btnOkClick, Options::keyCancel);
 
 	_btnInfo->setText(tr("STR_INFO"));
-	_btnInfo->onMouseClick((ActionHandler)&ResearchAllocateScientists::btnInfoClick);
+	_btnInfo->onMouseClick((ActionHandler)&ResearchAllocateScientistsState::btnInfoClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(planningProject->getResearchRules()->getName()));
@@ -141,7 +141,7 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 
 	_cbxSortBy->setOptions(sortOptions);
 	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&ResearchAllocateScientists::cbxSortByChange);
+	_cbxSortBy->onChange((ActionHandler)&ResearchAllocateScientistsState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
 	_lstScientists->setColumns(2, 106, 174);
@@ -149,13 +149,13 @@ ResearchAllocateScientists::ResearchAllocateScientists(Base *base, ResearchInfoS
 	_lstScientists->setSelectable(true);
 	_lstScientists->setBackground(_window);
 	_lstScientists->setMargin(8);
-	_lstScientists->onMouseClick((ActionHandler)&ResearchAllocateScientists::lstScientistsClick, 0);
+	_lstScientists->onMouseClick((ActionHandler)&ResearchAllocateScientistsState::lstScientistsClick, 0);
 }
 
 /**
  * cleans up dynamic state
  */
-ResearchAllocateScientists::~ResearchAllocateScientists()
+ResearchAllocateScientistsState::~ResearchAllocateScientistsState()
 {
 	for (std::vector<SortFunctor *>::iterator it = _sortFunctors.begin();
 		 it != _sortFunctors.end(); ++it)
@@ -168,7 +168,7 @@ ResearchAllocateScientists::~ResearchAllocateScientists()
  * Sorts the soldiers list by the selected criterion
  * @param action Pointer to an action.
  */
-void ResearchAllocateScientists::cbxSortByChange(Action *)
+void ResearchAllocateScientistsState::cbxSortByChange(Action *)
 {
 	bool ctrlPressed = _game->isCtrlPressed();
 	size_t selIdx = _cbxSortBy->getSelected();
@@ -233,13 +233,13 @@ void ResearchAllocateScientists::cbxSortByChange(Action *)
  * Returns to the previous screen.
  * @param action Pointer to an action.
  */
-void ResearchAllocateScientists::btnOkClick(Action *)
+void ResearchAllocateScientistsState::btnOkClick(Action *)
 {
 	_planningProject->setAssignedScientists();
 	_game->popState();
 }
 
-void ResearchAllocateScientists::btnInfoClick(Action* action)
+void ResearchAllocateScientistsState::btnInfoClick(Action* action)
 {
 	_game->pushState(new ResearchProjectDetailsState(_base, _planningProject->getResearchRules()));
 }
@@ -247,7 +247,7 @@ void ResearchAllocateScientists::btnInfoClick(Action* action)
 /**
  * Shows the soldiers in a list at specified offset/scroll.
  */
-void ResearchAllocateScientists::initList(size_t scrl)
+void ResearchAllocateScientistsState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstScientists->clearList();
@@ -317,7 +317,7 @@ void ResearchAllocateScientists::initList(size_t scrl)
 /**
  * Shows the soldiers in a list.
  */
-void ResearchAllocateScientists::init()
+void ResearchAllocateScientistsState::init()
 {
 	State::init();
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
@@ -328,7 +328,7 @@ void ResearchAllocateScientists::init()
  * Shows the selected soldier's info.
  * @param action Pointer to an action.
  */
-void ResearchAllocateScientists::lstScientistsClick(Action *action)
+void ResearchAllocateScientistsState::lstScientistsClick(Action *action)
 {
 	double mx = action->getAbsoluteXMouse();
 	if (mx >= _lstScientists->getArrowsLeftEdge() && mx < _lstScientists->getArrowsRightEdge())

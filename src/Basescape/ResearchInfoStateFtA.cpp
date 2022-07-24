@@ -34,7 +34,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "ResearchInfoStateFtA.h"
-#include "../Basescape/ResearchAllocateScientists.h"
+#include "../Basescape/ResearchAllocateScientistsState.h"
 #include <climits>
 
 namespace OpenXcom
@@ -370,7 +370,7 @@ void ResearchInfoStateFtA::btnAbandonClick(Action *)
  */
 void ResearchInfoStateFtA::btnAllocateClick(Action *action)
 {
-	_game->pushState(new ResearchAllocateScientists(_base, this));
+	_game->pushState(new ResearchAllocateScientistsState(_base, this));
 }
 
 /**

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "ManufactureAllocateEngineers.h"
+#include "ManufactureAllocateEngineersState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -51,7 +51,7 @@ namespace OpenXcom
 * @param base Pointer to the base to get info from.
 * @param operation Pointer to starting (not committed) covert operation.
 */
-ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, ManufactureInfoStateFtA* planningProject)
+ManufactureAllocateEngineersState::ManufactureAllocateEngineersState(Base* base, ManufactureInfoStateFtA* planningProject)
 	: _base(base), _planningProject(planningProject), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	_freeSpace = planningProject->getWorkspace();
@@ -68,31 +68,31 @@ ManufactureAllocateEngineers::ManufactureAllocateEngineers(Base* base, Manufactu
 	_lstEngineers = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("manufactureAllocateEngineers");
+	setInterface("ManufactureAllocateEngineersState");
 
-	add(_window, "window", "manufactureAllocateEngineers");
-	add(_btnOk, "button", "manufactureAllocateEngineers");
-	add(_btnInfo, "button2", "manufactureAllocateEngineers");
-	add(_txtTitle, "text", "manufactureAllocateEngineers");
-	add(_txtName, "text", "manufactureAllocateEngineers");
-	add(_txtAssignment, "text", "manufactureAllocateEngineers");
-	add(_txtFreeSpace, "text", "manufactureAllocateEngineers");
-	add(_lstEngineers, "list", "manufactureAllocateEngineers");
-	add(_cbxSortBy, "button", "manufactureAllocateEngineers");
+	add(_window, "window", "ManufactureAllocateEngineersState");
+	add(_btnOk, "button", "ManufactureAllocateEngineersState");
+	add(_btnInfo, "button2", "ManufactureAllocateEngineersState");
+	add(_txtTitle, "text", "ManufactureAllocateEngineersState");
+	add(_txtName, "text", "ManufactureAllocateEngineersState");
+	add(_txtAssignment, "text", "ManufactureAllocateEngineersState");
+	add(_txtFreeSpace, "text", "ManufactureAllocateEngineersState");
+	add(_lstEngineers, "list", "ManufactureAllocateEngineersState");
+	add(_cbxSortBy, "button", "ManufactureAllocateEngineersState");
 
-	_otherCraftColor = _game->getMod()->getInterface("manufactureAllocateEngineers")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("ManufactureAllocateEngineersState")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "manufactureAllocateEngineers");
+	setWindowBackground(_window, "ManufactureAllocateEngineersState");
 
 	_btnOk->setText(tr("STR_OK"));
-	_btnOk->onMouseClick((ActionHandler)&ManufactureAllocateEngineers::btnOkClick);
-	_btnOk->onKeyboardPress((ActionHandler)&ManufactureAllocateEngineers::btnOkClick, Options::keyCancel);
+	_btnOk->onMouseClick((ActionHandler)&ManufactureAllocateEngineersState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&ManufactureAllocateEngineersState::btnOkClick, Options::keyCancel);
 
 	_btnInfo->setText(tr("STR_INFO"));
-	_btnInfo->onMouseClick((ActionHandler)&ManufactureAllocateEngineers::btnInfoClick);
+	_btnInfo->onMouseClick((ActionHandler)&ManufactureAllocateEngineersState::btnInfoClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(planningProject->getManufactureRules()->getName()));
@@ -134,7 +134,7 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 
 	_cbxSortBy->setOptions(sortOptions);
 	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&ManufactureAllocateEngineers::cbxSortByChange);
+	_cbxSortBy->onChange((ActionHandler)&ManufactureAllocateEngineersState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
 	_lstEngineers->setColumns(2, 106, 174);
@@ -142,13 +142,13 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 	_lstEngineers->setSelectable(true);
 	_lstEngineers->setBackground(_window);
 	_lstEngineers->setMargin(8);
-	_lstEngineers->onMouseClick((ActionHandler)&ManufactureAllocateEngineers::lstEngineersClick, 0);
+	_lstEngineers->onMouseClick((ActionHandler)&ManufactureAllocateEngineersState::lstEngineersClick, 0);
 }
 
 /**
 * cleans up dynamic state
 */
-ManufactureAllocateEngineers::~ManufactureAllocateEngineers()
+ManufactureAllocateEngineersState::~ManufactureAllocateEngineersState()
 {
 	for (std::vector<SortFunctor*>::iterator it = _sortFunctors.begin();
 		it != _sortFunctors.end(); ++it)
@@ -161,7 +161,7 @@ ManufactureAllocateEngineers::~ManufactureAllocateEngineers()
 * Sorts the soldiers list by the selected criterion
 * @param action Pointer to an action.
 */
-void ManufactureAllocateEngineers::cbxSortByChange(Action*)
+void ManufactureAllocateEngineersState::cbxSortByChange(Action*)
 {
 	bool ctrlPressed = _game->isCtrlPressed();
 	size_t selIdx = _cbxSortBy->getSelected();
@@ -226,13 +226,13 @@ void ManufactureAllocateEngineers::cbxSortByChange(Action*)
 * Returns to the previous screen.
 * @param action Pointer to an action.
 */
-void ManufactureAllocateEngineers::btnOkClick(Action*)
+void ManufactureAllocateEngineersState::btnOkClick(Action*)
 {
 	_planningProject->setAssignedEngineers();
 	_game->popState();
 }
 
-void ManufactureAllocateEngineers::btnInfoClick(Action* action)
+void ManufactureAllocateEngineersState::btnInfoClick(Action* action)
 {
 	_game->pushState(new ManufactureProductDetailsState(_base, _planningProject->getManufactureRules()));
 }
@@ -240,7 +240,7 @@ void ManufactureAllocateEngineers::btnInfoClick(Action* action)
 /**
 * Shows the soldiers in a list at specified offset/scroll.
 */
-void ManufactureAllocateEngineers::initList(size_t scrl)
+void ManufactureAllocateEngineersState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstEngineers->clearList();
@@ -310,7 +310,7 @@ void ManufactureAllocateEngineers::initList(size_t scrl)
 /**
 * Shows the soldiers in a list.
 */
-void ManufactureAllocateEngineers::init()
+void ManufactureAllocateEngineersState::init()
 {
 	State::init();
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
@@ -321,7 +321,7 @@ void ManufactureAllocateEngineers::init()
 * Shows the selected soldier's info.
 * @param action Pointer to an action.
 */
-void ManufactureAllocateEngineers::lstEngineersClick(Action* action)
+void ManufactureAllocateEngineersState::lstEngineersClick(Action* action)
 {
 	double mx = action->getAbsoluteXMouse();
 	if (mx >= _lstEngineers->getArrowsLeftEdge() && mx < _lstEngineers->getArrowsRightEdge())

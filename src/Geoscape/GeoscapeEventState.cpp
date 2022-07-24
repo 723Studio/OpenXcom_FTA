@@ -122,6 +122,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		}
 		_btnAnswerThree->setWidth(115);
 		[[clang::fallthrough]];
+		break;
 	case 3:
 		_btnAnswerThree->setText(tr(_customAnswers[2].title));
 		_btnAnswerThree->setVisible(true);
@@ -137,6 +138,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		_btnAnswerTwo->setY(142);
 		_txtTooltip->setY(132);
 		[[clang::fallthrough]];
+		break;
 	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
 		_btnAnswerTwo->setText(tr(_customAnswers[1].title));

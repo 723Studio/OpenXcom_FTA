@@ -28,6 +28,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Menu/ErrorMessageState.h"
@@ -50,6 +51,7 @@ namespace OpenXcom
 PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule, BaseFacility *origFac) : _base(base), _rule(rule), _origFac(origFac)
 {
 	_screen = false;
+	_ftaUi = _game->getMod()->getIsFTAGame();
 
 	// Create objects
 	_window = new Window(this, 128, 160, 192, 40);
@@ -174,7 +176,7 @@ void PlaceFacilityState::viewClick(Action *)
 		{
 			_origFac->setX(_view->getGridX());
 			_origFac->setY(_view->getGridY());
-			if (Options::allowBuildingQueue)
+			if (Options::allowBuildingQueue && !_ftaUi) // sorry, no queue for FtA game...
 			{
 				// first reset (maybe the moved facility is not queued anymore)
 				if (abs(_origFac->getBuildTime()) > _rule->getBuildTime()) _origFac->setBuildTime(_rule->getBuildTime());
@@ -289,6 +291,7 @@ void PlaceFacilityState::viewClick(Action *)
 
 			}
 
+			//Creating facility
 			BaseFacility *fac = new BaseFacility(_rule, _base);
 			fac->setX(_view->getGridX());
 			fac->setY(_view->getGridY());
@@ -301,11 +304,20 @@ void PlaceFacilityState::viewClick(Action *)
 				fac->setBuildTime(std::max(1, fac->getBuildTime() - reducedBuildTimeRounded));
 			}
 			_base->getFacilities()->push_back(fac);
+			
 			if (fac->getRules()->getPlaceSound() != Mod::NO_SOUND)
 			{
 				_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
 			}
-			if (Options::allowBuildingQueue)
+			//Making production for FtA game logic
+			if (_ftaUi)
+			{
+				Production* project = new Production(_game->getMod()->getManufacture("STR_FACILITY_CONSTRUCTION"), 1);
+				_base->addProduction(project);
+				project->setFacility(fac);
+			}
+
+			if (Options::allowBuildingQueue && !_ftaUi)
 			{
 				if (_view->isQueuedBuilding(_rule)) fac->setBuildTime(INT_MAX);
 				_view->reCalcQueuedBuildings();

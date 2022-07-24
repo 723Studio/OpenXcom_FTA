@@ -41,7 +41,7 @@
 #include "../Engine/Timer.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
-#include "../Basescape/ManufactureAllocateEngineers.h"
+#include "../Basescape/ManufactureAllocateEngineersState.h"
 #include <climits>
 
 namespace OpenXcom
@@ -296,7 +296,7 @@ void ManufactureInfoStateFtA::btnOkClick(Action *)
 
 void ManufactureInfoStateFtA::btnAllocateClick(Action* action)
 {
-	_game->pushState(new ManufactureAllocateEngineers(_base, this));
+	_game->pushState(new ManufactureAllocateEngineersState(_base, this));
 }
 
 /**

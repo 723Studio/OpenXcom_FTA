@@ -1214,10 +1214,10 @@
     <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\ResearchAllocateScientists.cpp">
+    <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\ManufactureAllocateEngineers.cpp">
+    <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\ManufactureInfoState.cpp">
@@ -1227,6 +1227,9 @@
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2507,10 +2510,10 @@
     <ClInclude Include="Basescape\ResearchInfoStateFtA.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\ResearchAllocateScientists.h">
+    <ClInclude Include="Basescape\ResearchAllocateScientistsState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\ManufactureAllocateEngineers.h">
+    <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ManufactureInfoState.h">
@@ -2520,6 +2523,9 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ResearchProjectDetailsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\FacilityAllocateEngineersState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>

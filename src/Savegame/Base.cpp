@@ -205,14 +205,39 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			if (const YAML::Node& pr = (*i)["production"])
 			{
 				std::string production = pr.as<std::string>();
+				bool set = false;
 				for (std::vector<Production*>::iterator j = _productions.begin(); j != _productions.end(); ++j)
 				{
 					if ((*j)->getRules()->getName() == production)
 					{
 						s->setProductionProject((*j));
+						set = true;
 						break;
 					}
 				}
+				if (!set)
+				{
+					Log(LOG_INFO) << "Attempt to link soldier to a facility...";
+					for (std::vector<BaseFacility*>::iterator j = _facilities.begin(); j != _facilities.end(); ++j)
+					{
+						if ((*j)->getRules()->getType() == production)
+						{
+							for (std::vector<Production*>::iterator k = _productions.begin(); k != _productions.end(); ++k)
+							{
+								if ((*k)->getFacility()->getRules()->getType() == production)
+								{
+									s->setProductionProject((*k));
+									set = true;
+									break;
+									break;
+								}
+							}
+						}
+					}
+				}
+
+				if (!set)
+					Log(LOG_ERROR) << "Failed to link soldier with production: " << production;
 			}
 			_soldiers.push_back(s);
 		}
@@ -274,6 +299,22 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		{
 			Production *p = new Production(_mod->getManufacture(item), 0);
 			p->load(*i);
+			if (const YAML::Node& fc = (*i)["facility"])
+			{
+				std::string facility = fc.as<std::string>();
+				bool set = false;
+				for (std::vector<BaseFacility*>::iterator j = _facilities.begin(); j != _facilities.end(); ++j)
+				{
+					if ((*j)->getRules()->getType() == facility)
+					{
+						p->setFacility((*j));
+						set = true;
+						break;
+					}
+				}
+				if (!set)
+					Log(LOG_ERROR) << "Failed to load manufacture " << item << " - can't find linked facility on base!";
+			}
 			_productions.push_back(p);
 		}
 		else

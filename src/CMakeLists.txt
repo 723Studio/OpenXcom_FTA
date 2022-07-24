@@ -27,6 +27,7 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/DisposeState.cpp
+  Basescape/FacilityAllocateEngineersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/ManageAlienContainmentState.cpp
