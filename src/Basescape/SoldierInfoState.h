@@ -54,7 +54,7 @@ private:
 	TextEdit *_edtSoldier;
 	ComboBox *_cbxRoles;
 	std::vector<std::string> _rolesList;
-	bool _ftaUI, _localChange;
+	bool _localChange;
 
 	Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
 	Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;

@@ -49,7 +49,6 @@ namespace OpenXcom
 ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) :  _base(base), _item(item)
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->getIsFTAGame();
 
 	_window = new Window(this, 320, 160, 0, 20);
 	_btnCancel = new TextButton(136, 16, 16, 155);

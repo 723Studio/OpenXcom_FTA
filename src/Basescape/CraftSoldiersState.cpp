@@ -67,19 +67,18 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	int pilots = c->getRules()->getPilots();
 	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
 	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding() && pilots < c->getSpaceAvailable();
-	_ftaUI = _game->getMod()->getIsFTAGame();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(hidePreview ? 148 : 38, 16, hidePreview ? 164 : 274, 176);
 	_btnPreview = new TextButton(102, 16, 164, 176);
-	_txtTitle = new Text(_ftaUI ? 300 : 168, 17, 16, 7);
+	_txtTitle = new Text(_ftaUi ? 300 : 168, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
 		_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
@@ -125,7 +124,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview->onMouseClick((ActionHandler)&CraftSoldiersState::btnPreviewClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	_txtTitle->setText(_ftaUi ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
@@ -145,7 +144,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	bool showPsiStats = true;
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 	}
@@ -157,7 +156,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		PUSH_IN("STR_ROLE_UC", roleStat);
 		PUSH_IN("STR_RANK", roleRankStat);
@@ -166,7 +165,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	{
 		PUSH_IN("STR_RANK", rankStat);
 	}
-	if (_ftaUI && _isInterceptor)
+	if (_ftaUi && _isInterceptor)
 	{
 		// pilot section
 		PUSH_IN("STR_MANEUVERING", maneuveringStat);
@@ -264,7 +263,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
 	_availableOptions.clear();
-	if (_ftaUI)
+	if (_ftaUi)
 	{
 		_availableOptions.push_back("STR_ALL_ROLES");
 		//_availableOptions.push_back("STR_RECOMMENDED_ROLES");
@@ -439,7 +438,7 @@ void CraftSoldiersState::initList(size_t scrl)
 			|| (_isInterceptor && (*i)->getRoleRank(ROLE_PILOT) > 0) //case for interceptor
 			|| (_isMultipurpose && ((*i)->getRoleRank(ROLE_PILOT) > 0 || (*i)->getRoleRank(ROLE_SOLDIER) > 0)) //case for multipurpose craft
 			|| selAction == "STR_ALL_ROLES" //case we wank to see everyone
-			|| !_ftaUI)
+			|| !_ftaUi)
 		{
 			_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
 			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
@@ -449,11 +448,11 @@ void CraftSoldiersState::initList(size_t scrl)
 				int dynStat = (*_dynGetter)(_game, *i);
 				std::ostringstream ss;
 				ss << dynStat;
-				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
+				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUi)).c_str(), duty.c_str(), ss.str().c_str());
 			}
 			else
 			{
-				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str());
+				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(_ftaUi)).c_str(), duty.c_str());
 			}
 
 			Uint8 color;
@@ -636,7 +635,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		}
 		else if (s->hasFullHealth())
 		{
-			if (_isInterceptor && _ftaUI && s->getRoleRank(ROLE_PILOT) < 1)
+			if (_isInterceptor && _ftaUi && s->getRoleRank(ROLE_PILOT) < 1)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_IS_NOT_ALLOWED_PILOTING"),
 					_palette,

@@ -36,7 +36,6 @@ class ManufactureState : public State
 {
 private:
 	Base *_base;
-	bool _ftaUi;
 	TextButton *_btnNew, *_btnOk;
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtFunds, *_txtItem, *_txtEngineers, *_txtProduced, *_txtCost, *_txtTimeLeft;
