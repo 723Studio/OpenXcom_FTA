@@ -53,7 +53,6 @@ protected:
 	std::vector<Surface*> _surfaces;
 	bool _screen;
 	bool _soundPlayed;
-	bool _ftaUi;
 	InteractiveSurface *_modal;
 	RuleInterface *_ruleInterface;
 	RuleInterface *_ruleInterfaceParent;

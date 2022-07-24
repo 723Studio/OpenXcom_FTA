@@ -53,7 +53,7 @@ private:
 	std::vector<Soldier *> _origSoldierOrder;
 	std::vector<SortFunctor *> _sortFunctors;
 	std::vector<int> _soldierNumbers;
-	bool _isInterceptor, _isMultipurpose;
+	bool _ftaUI, _isInterceptor, _isMultipurpose;
 	std::vector<std::string> _availableOptions;
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display

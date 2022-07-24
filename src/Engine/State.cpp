@@ -54,7 +54,6 @@ State::State() : _screen(true), _soundPlayed(false), _modal(0), _ruleInterface(0
 	// initialize palette to all black
 	memset(_palette, 0, sizeof(_palette));
 	_cursorColor = _game->getCursor()->getColor();
-	_ftaUi = _game->getMod()->getIsFTAGame();
 }
 
 /**

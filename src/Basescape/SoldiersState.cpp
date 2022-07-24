@@ -441,7 +441,7 @@ void SoldiersState::initList(size_t scrl)
 	int i = 0;
 
 	std::string selAction = "STR_SOLDIER_INFO";
-	if (_ftaUi)
+	if (_ftaUI)
 	{
 		std::string selAction = "STR_PERSONNEL_INFO";
 	}
@@ -459,7 +459,7 @@ void SoldiersState::initList(size_t scrl)
 		selAction == "STR_SCIENTIST_INFO" ||
 		selAction == "STR_ENGINEER_INFO")
 	{
-		if (_ftaUi)
+		if (_ftaUI)
 		{
 			offset = 20;
 			for (auto &soldier : *_base->getSoldiers())
@@ -506,7 +506,7 @@ void SoldiersState::initList(size_t scrl)
 				}
 				i++;
 			}
-			if (!_ftaUi) // sorry, we don't like necromancy!
+			if (!_ftaUI) // sorry, we don't like necromancy!
 			{
 				for (auto &deadMan : *_game->getSavedGame()->getDeadSoldiers())
 				{
@@ -541,11 +541,11 @@ void SoldiersState::initList(size_t scrl)
 			int dynStat = (*_dynGetter)(_game, *i);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUi)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUi)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
 
 		if ((*i)->getCraft() == 0)

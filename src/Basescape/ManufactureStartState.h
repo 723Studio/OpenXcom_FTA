@@ -36,6 +36,7 @@ class ManufactureStartState : public State
 {
 private:
 	Base *_base;
+	bool _ftaUi;
 	RuleManufacture *_item;
 	Window *_window;
 	TextButton *_btnCancel, *_btnStart;

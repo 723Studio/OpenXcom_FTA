@@ -50,6 +50,7 @@ private:
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
 	std::vector<std::string> _availableOptions;
+	bool _ftaUI;
 	std::vector<int> _soldierNumbers;
 	///initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
