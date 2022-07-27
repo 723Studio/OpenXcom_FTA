@@ -98,7 +98,7 @@ public:
 	void setItems(ItemContainer* items) { _items = items; };
 	/// Gets soldiers assigned for this planned operation.
 	std::vector<Soldier*> getSoldiers() { return _soldiers; };
-	void addSoldier(Soldier* soldier) { _soldiers.push_back(soldier); }
+	void addSoldier(Soldier* soldier);
 	void removeSoldier(Soldier* soldier);
 	/// Sets soldiers assigned for this planned operation.
 	void setSoldiers(std::vector<Soldier*> soldiers) { _soldiers = soldiers; };

@@ -830,4 +830,14 @@ double CovertOperationStartState::statEffectCalc(int stat, float a, float b, flo
 	return y1;
 }
 
+void CovertOperationStartState::addSoldier(Soldier *soldier)
+{
+	_soldiers.push_back(soldier);
+	auto compareRole = [](const Soldier* lhs, const Soldier* rhs)
+	{
+		return lhs->getRoles()[0]->role < rhs->getRoles()[0]->role;
+	};
+	sort(_soldiers.begin(), _soldiers.end(), compareRole);
+}
+
 }

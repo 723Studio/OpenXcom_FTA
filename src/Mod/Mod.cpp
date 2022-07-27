@@ -3554,6 +3554,12 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 				}
 			}
 		}
+		// Sort soldeirs by role
+		auto compareRole = [](const Soldier* lhs, const Soldier* rhs)
+		{
+			return lhs->getRoles()[0]->role < rhs->getRoles()[0]->role;
+		};
+		sort(base->getSoldiers()->begin(), base->getSoldiers()->end(), compareRole);
 		// Assign pilots to craft (interceptors first, transport last) and non-pilots to transports only
 		for (auto& soldier : *base->getSoldiers())
 		{
