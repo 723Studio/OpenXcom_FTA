@@ -295,30 +295,36 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 	for (YAML::const_iterator i = node["productions"].begin(); i != node["productions"].end(); ++i)
 	{
 		std::string item = (*i)["item"].as<std::string>();
+		bool set = false;
 		if (_mod->getManufacture(item))
 		{
 			Production *p = new Production(_mod->getManufacture(item), 0);
 			p->load(*i);
+			_productions.push_back(p);
+		}
+		else if (_mod->getBaseFacility(item))
+		{
 			if (const YAML::Node& fc = (*i)["facility"])
 			{
 				std::string facility = fc.as<std::string>();
-				bool set = false;
 				for (std::vector<BaseFacility*>::iterator j = _facilities.begin(); j != _facilities.end(); ++j)
 				{
 					if ((*j)->getRules()->getType() == facility)
 					{
+						Production* p = new Production(_mod->getManufacture("STR_FACILITY_CONSTRUCTION"), 1);
+						p->load(*i);
 						p->setFacility((*j));
+						_productions.push_back(p);
 						set = true;
 						break;
 					}
 				}
-				if (!set)
-					Log(LOG_ERROR) << "Failed to load manufacture " << item << " - can't find linked facility on base!";
 			}
-			_productions.push_back(p);
 		}
 		else
 		{
+			if (!set)
+				Log(LOG_ERROR) << "Failed to load manufacture " << item << " - can't find linked facility on base!";
 			_engineers += (*i)["assigned"].as<int>(0);
 			Log(LOG_ERROR) << "Failed to load manufacture " << item;
 		}

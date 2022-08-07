@@ -203,14 +203,12 @@ void ResearchInfoStateFtA::buildUi()
 		x += offset;
 	}
 
-	_txtInsight->setText(tr("STR_INSIGHT_SHORT"));
+	_txtInsight->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::insight, UnitStats::STATSTR_UC)));
 	_txtInsight->setX(x);
 
 	_lstScientists->setColumns(9, 116, 32, 18, 18, 18, 18, 18, 18, 18);
 	_lstScientists->setAlign(ALIGN_CENTER);
 	_lstScientists->setAlign(ALIGN_LEFT, 0);
-	//_lstSoldierStats->setDot(true);
-	//_lstScientists->setColumns(columns, 158, 58, 70);
 	_lstScientists->setBackground(_window);
 	//_lstScientists->setMargin(2);
 	_lstScientists->setWordWrap(true);

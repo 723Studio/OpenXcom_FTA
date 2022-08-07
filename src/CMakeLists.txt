@@ -31,6 +31,7 @@ set ( basescape_src
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/ManageAlienContainmentState.cpp
+  Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
   Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureInfoStateFtA.cpp
@@ -46,7 +47,7 @@ set ( basescape_src
   Basescape/PlaceLiftState.cpp
   Basescape/PlaceStartFacilityState.cpp
   Basescape/PurchaseState.cpp
-  Basescape/ResearchAllocateScientists.cpp
+  Basescape/ResearchAllocateScientistsState.cpp
   Basescape/ResearchInfoState.cpp
   Basescape/ResearchInfoStateFtA.cpp
   Basescape/ResearchProjectDetailsState.cpp

@@ -28,7 +28,6 @@
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
@@ -68,24 +67,24 @@ ManufactureAllocateEngineersState::ManufactureAllocateEngineersState(Base* base,
 	_lstEngineers = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("ManufactureAllocateEngineersState");
+	setInterface("manufactureAllocateEngineers");
 
-	add(_window, "window", "ManufactureAllocateEngineersState");
-	add(_btnOk, "button", "ManufactureAllocateEngineersState");
-	add(_btnInfo, "button2", "ManufactureAllocateEngineersState");
-	add(_txtTitle, "text", "ManufactureAllocateEngineersState");
-	add(_txtName, "text", "ManufactureAllocateEngineersState");
-	add(_txtAssignment, "text", "ManufactureAllocateEngineersState");
-	add(_txtFreeSpace, "text", "ManufactureAllocateEngineersState");
-	add(_lstEngineers, "list", "ManufactureAllocateEngineersState");
-	add(_cbxSortBy, "button", "ManufactureAllocateEngineersState");
+	add(_window, "window", "manufactureAllocateEngineers");
+	add(_btnOk, "button", "manufactureAllocateEngineers");
+	add(_btnInfo, "button2", "manufactureAllocateEngineers");
+	add(_txtTitle, "text", "manufactureAllocateEngineers");
+	add(_txtName, "text", "manufactureAllocateEngineers");
+	add(_txtAssignment, "text", "manufactureAllocateEngineers");
+	add(_txtFreeSpace, "text", "manufactureAllocateEngineers");
+	add(_lstEngineers, "list", "manufactureAllocateEngineers");
+	add(_cbxSortBy, "button", "manufactureAllocateEngineers");
 
-	_otherCraftColor = _game->getMod()->getInterface("ManufactureAllocateEngineersState")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("manufactureAllocateEngineers")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "ManufactureAllocateEngineersState");
+	setWindowBackground(_window, "manufactureAllocateEngineers");
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ManufactureAllocateEngineersState::btnOkClick);
@@ -115,19 +114,19 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 
-	PUSH_IN("STR_WEAPONRY_UC", weaponryStat);
-	PUSH_IN("STR_EXPLOSIVES_UC", explosivesStat);
-	PUSH_IN("STR_MICROELECTRONICS_UC", microelectronicsStat);
-	PUSH_IN("STR_METALLURGY_UC", metallurgyStat);
-	PUSH_IN("STR_PROCESSING_UC", processingStat);
-	PUSH_IN("STR_EFFICIENCY_UC", efficiencyStat);
-	PUSH_IN("STR_DILIGENCE_UC", diligenceStat);
-	PUSH_IN("STR_HACKING_UC", hackingStat);
-	PUSH_IN("STR_CONSTRUCTION_UC", constructionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::construction), constructionStat);
 	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
 	{
-		PUSH_IN("STR_ALIEN_TECH_UC", alienTechStat);
-		PUSH_IN("STR_REVERSE_ENGINEERING_UC", reverseEngineeringStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
 	}
 
 #undef PUSH_IN

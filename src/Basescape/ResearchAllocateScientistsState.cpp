@@ -27,7 +27,6 @@
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
@@ -67,24 +66,24 @@ ResearchAllocateScientistsState::ResearchAllocateScientistsState(Base *base, Res
 	_lstScientists = new TextList(288, 128, 8, 40);
 
 	// Set palette
-	setInterface("ResearchAllocateScientistsState");
+	setInterface("researchAllocateScientists");
 
-	add(_window, "window", "ResearchAllocateScientistsState");
-	add(_btnOk, "button", "ResearchAllocateScientistsState");
-	add(_btnInfo, "button", "ResearchAllocateScientistsState");
-	add(_txtTitle, "text", "ResearchAllocateScientistsState");
-	add(_txtName, "text", "ResearchAllocateScientistsState");
-	add(_txtAssignment, "text", "ResearchAllocateScientistsState");
-	add(_txtFreeSpace, "text", "ResearchAllocateScientistsState");
-	add(_lstScientists, "list", "ResearchAllocateScientistsState");
-	add(_cbxSortBy, "button", "ResearchAllocateScientistsState");
+	add(_window, "window", "researchAllocateScientists");
+	add(_btnOk, "button", "researchAllocateScientists");
+	add(_btnInfo, "button", "researchAllocateScientists");
+	add(_txtTitle, "text", "researchAllocateScientists");
+	add(_txtName, "text", "researchAllocateScientists");
+	add(_txtAssignment, "text", "researchAllocateScientists");
+	add(_txtFreeSpace, "text", "researchAllocateScientists");
+	add(_lstScientists, "list", "researchAllocateScientists");
+	add(_cbxSortBy, "button", "researchAllocateScientists");
 
-	_otherCraftColor = _game->getMod()->getInterface("ResearchAllocateScientistsState")->getElement("otherCraft")->color;
+	_otherCraftColor = _game->getMod()->getInterface("researchAllocateScientists")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "ResearchAllocateScientistsState");
+	setWindowBackground(_window, "researchAllocateScientists");
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchAllocateScientistsState::btnOkClick);

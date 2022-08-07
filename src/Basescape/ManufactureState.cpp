@@ -29,8 +29,10 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/BaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleManufacture.h"
+#include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/Production.h"
 #include "NewManufactureListState.h"
 #include "GlobalManufactureState.h"
@@ -194,6 +196,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 	_lstManufacture->clearList();
 	for (std::vector<Production *>::const_iterator iter = productions.begin(); iter != productions.end(); ++iter)
 	{
+		auto facility = (*iter)->getFacility();
 		std::ostringstream s1;
 		size_t engineers = 0;
 		if (_ftaUi)
@@ -239,24 +242,39 @@ void ManufactureState::fillProductionList(size_t scrl)
 		}
 		else if ((*iter)->getAssignedEngineers() > 0 || engineers > 0)
 		{
-			int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
-			int numEffectiveEngineers = 0;
-			numEffectiveEngineers = (*iter)->getProgress(_base,
-				_game->getSavedGame(),
-				_game->getMod(),
-				_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 			
-			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
-			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-			int daysLeft = hoursLeft / 24;
-			int hours = hoursLeft % 24;
-			s4 << daysLeft << "/" << hours;
+			if (facility)
+			{
+				s4 << "TO DO!";
+			}
+			else
+			{
+				int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
+				int numEffectiveEngineers = 0;
+				numEffectiveEngineers = (*iter)->getProgress(_base,
+					_game->getSavedGame(),
+					_game->getMod(),
+					_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+
+				// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
+				int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
+				int daysLeft = hoursLeft / 24;
+				int hours = hoursLeft % 24;
+				s4 << daysLeft << "/" << hours;
+			}
 		}
 		else
 		{
 			s4 << "-";
 		}
-		_lstManufacture->addRow(5, tr((*iter)->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
+		if (facility)
+		{
+			_lstManufacture->addRow(5, tr(facility->getRules()->getType()).c_str(), s1.str().c_str(), "", "", s4.str().c_str());
+		}
+		else
+		{
+			_lstManufacture->addRow(5, tr((*iter)->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
+		}
 	}
 
 	if (_ftaUi)
