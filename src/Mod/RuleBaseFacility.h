@@ -31,6 +31,7 @@ class Mod;
 class Base;
 class Position;
 class RuleItem;
+class RuleManufacture;
 struct VerticalLevel;
 enum BasePlacementErrors : int;
 
@@ -61,7 +62,8 @@ private:
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound, _placeSound;
 	int _ammoNeeded;
 	const RuleItem* _ammoItem;
-	std::string _ammoItemName;
+	const RuleManufacture* _project;
+	std::string _ammoItemName, _manufactureName;
 	std::string _mapName;
 	int _listOrder, _trainingRooms;
 	int _maxAllowedPerBase;
@@ -165,6 +167,8 @@ public:
 	int getAmmoNeeded() const { return _ammoNeeded; }
 	/// Gets the facility's weapon ammo item.
 	const RuleItem* getAmmoItem() const { return _ammoItem; }
+	/// Gets the facility's manufacturing project
+	const RuleManufacture* getProjectRules() const { return _project; }
 	/// Gets the facility's battlescape map name.
 	std::string getMapName() const;
 	/// Gets the facility's fire sound.

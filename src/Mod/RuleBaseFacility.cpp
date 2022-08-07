@@ -110,6 +110,7 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 
 	_ammoNeeded = node["ammoNeeded"].as<int>(_ammoNeeded);
 	_ammoItemName = node["ammoItem"].as<std::string>(_ammoItemName);
+	_manufactureName = node["manufacture"].as<std::string>(_manufactureName);
 	_mapName = node["mapName"].as<std::string>(_mapName);
 	_listOrder = node["listOrder"].as<int>(_listOrder);
 	_trainingRooms = node["trainingRooms"].as<int>(_trainingRooms);
@@ -178,6 +179,7 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 	mod->verifySoundOffset(_type, _placeSound, "GEO.CAT");
 
 	mod->linkRule(_ammoItem, _ammoItemName);
+	mod->linkRule(_project, _manufactureName);
 
 	if (!_destroyedFacilityName.empty())
 	{
