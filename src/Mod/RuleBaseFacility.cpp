@@ -20,6 +20,7 @@
 #include "RuleBaseFacility.h"
 #include "Mod.h"
 #include "MapScript.h"
+#include "RuleManufacture.h"
 #include "../Battlescape/Position.h"
 #include "../Battlescape/TileEngine.h"
 #include "../Engine/Exception.h"

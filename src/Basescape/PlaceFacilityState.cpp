@@ -35,6 +35,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
+#include "../FTA/MasterMind.h"
 #include "../Mod/RuleInterface.h"
 #include <algorithm>
 #include <climits>
@@ -325,9 +326,14 @@ void PlaceFacilityState::viewClick(Action *)
 			//Making production for FtA game logic
 			if (_ftaUi)
 			{
-				Production* project = new Production(_game->getMod()->getManufacture("STR_FACILITY_CONSTRUCTION"), 1);
+				//create project
+				auto ruleProject = fac->getRules()->getProjectRules();
+				Production* project = new Production(fac->getRules()->getProjectRules(), 1);
 				_base->addProduction(project);
 				project->setFacility(fac);
+
+				// apply project's property
+				fac->setBuildTime(ruleProject->getManufactureTime());
 				_game->pushState(new FacilityAllocateEngineersState(_base, project));
 			}
 			else

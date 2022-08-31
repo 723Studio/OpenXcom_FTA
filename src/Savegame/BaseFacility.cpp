@@ -170,7 +170,7 @@ void BaseFacility::setBuildTime(int time)
 void BaseFacility::build()
 {
 	_buildTime--;
-	if (_buildTime == 0)
+	if (_buildTime <= 0)
 		_hadPreviousFacility = false;
 }
 
