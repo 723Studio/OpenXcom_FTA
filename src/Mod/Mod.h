@@ -68,6 +68,7 @@ class RuleInventory;
 class RuleResearch;
 class RuleManufacture;
 class RuleManufactureShortcut;
+class RuleIntelProject;
 class RuleSoldierBonus;
 class RuleSoldierTransformation;
 class AlienRace;
@@ -183,6 +184,7 @@ private:
 	std::map<std::string, RuleResearch *> _research;
 	std::map<std::string, RuleManufacture *> _manufacture;
 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
+	std::map<std::string, RuleIntelProject *> _intelligence;
 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
 	std::map<std::string, RuleSoldierTransformation *> _soldierTransformation;
 	std::map<std::string, UfoTrajectory *> _ufoTrajectories;
@@ -305,7 +307,7 @@ private:
 
 	std::map<std::string, int> _ufopaediaSections;
 	std::vector<std::string> _countriesIndex, _extraGlobeLabelsIndex, _regionsIndex, _facilitiesIndex, _craftsIndex, _craftWeaponsIndex, _itemCategoriesIndex, _itemsIndex, _invsIndex, _ufosIndex;
-	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex;
+	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex, _intelligenceIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
 	std::vector<std::string> _diplomacyFactionIndex;
@@ -313,7 +315,7 @@ private:
 	std::vector<std::string> _covertOperationIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<SDL_Color> _transparencies;
-	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder;
+	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _researchListOrder,  _manufactureListOrder, _intelligenceListOrder;
 	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder;
 	std::vector<ModData> _modData;
 	ModData* _modCurrent;
@@ -623,6 +625,10 @@ public:
 		else if constexpr (std::is_same_v<T, RuleManufacture>)
 		{
 			rule = getManufacture(name, true);
+		}
+		else if constexpr (std::is_same_v<T, RuleIntelProject>)
+		{
+			rule = getIntelligence(name, true);
 		}
 		else
 		{
@@ -1028,6 +1034,10 @@ public:
 	RuleManufacture *getManufacture (const std::string &id, bool error = false) const;
 	/// Gets the list of all manufacture projects.
 	const std::vector<std::string> &getManufactureList() const;
+	/// Gets the ruleset for a specific intelligence project.
+	RuleIntelProject *getIntelligence (const std::string &id, bool error = false) const;
+	/// Gets the list of all intelligence projects.
+	const std::vector<std::string> &getIntelligenceList() const;
 	/// Gets the ruleset for a specific soldier bonus type.
 	RuleSoldierBonus *getSoldierBonus(const std::string &id, bool error = false) const;
 	/// Gets the list of all soldier bonus types.

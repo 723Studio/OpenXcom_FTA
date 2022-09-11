@@ -59,7 +59,7 @@ struct UnitStats
 		maneuvering, missiles, dogfight, tracking, cooperation, beams, synaptic, gravity, //pilot
 		physics, chemistry, biology, insight, data, computers, tactics, materials, designing, psionics, xenolinguistics, //scientist
 		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, construction, diligence, alienTech, reverseEngineering, //engineers
-		stealth, perseption, charisma, deception, interrogation; //agents
+		stealth, perseption, charisma, investigation, deception, interrogation; //agents
 
 	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
 		strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
@@ -68,7 +68,7 @@ struct UnitStats
 		designing(0), psionics(0), xenolinguistics(0),
 		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), construction(0),
 		diligence(0), alienTech(0), reverseEngineering(0),
-		stealth(0), perseption(0), charisma(0), deception(0), interrogation(0){};
+		stealth(0), perseption(0), charisma(0), investigation(0), deception(0), interrogation(0){};
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
 		int maneuvering, int missiles, int dogfight, int tracking, int cooperation, int beams, int synaptic, int gravity,
@@ -76,7 +76,7 @@ struct UnitStats
 		int designing, int psionics, int xenolinguistics,
 		int weaponry, int explosives, int efficiency, int microelectronics, int metallurgy, int processing, int hacking, int construction,
 		int diligence, int alienTech, int reverseEngineering,
-		int stealth, int perseption, int charisma, int deception, int interrogation) :
+		int stealth, int perseption, int charisma, int investigation, int deception, int interrogation) :
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
 		maneuvering(maneuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), cooperation(cooperation), beams(beams), synaptic(synaptic), gravity(gravity),
@@ -84,7 +84,7 @@ struct UnitStats
 		designing(designing), psionics(psionics), xenolinguistics(xenolinguistics),
 		weaponry(weaponry), explosives(explosives), efficiency(efficiency), microelectronics(microelectronics), metallurgy(metallurgy), processing(processing),
 		hacking(hacking), construction(construction), diligence(diligence), alienTech(alienTech), reverseEngineering(reverseEngineering),
-		stealth(stealth), perseption(perseption), charisma(charisma), deception(deception), interrogation(interrogation) {};
+		stealth(stealth), perseption(perseption), charisma(charisma), investigation(investigation), deception(deception), interrogation(interrogation) {};
 	UnitStats& operator+=(const UnitStats& stats) {
 		tu += stats.tu;
 		stamina += stats.stamina;
@@ -131,6 +131,7 @@ struct UnitStats
 		stealth += stats.stealth;
 		perseption += stats.perseption;
 		charisma += stats.charisma;
+		investigation += stats.investigation;
 		deception += stats.deception;
 		interrogation += stats.interrogation;
 		return *this; }
@@ -180,6 +181,7 @@ struct UnitStats
 		stealth + stats.stealth,
 		perseption + stats.perseption,
 		charisma + stats.charisma,
+		investigation + stats.investigation,
 		deception + stats.deception,
 		interrogation + stats.interrogation); }
 	UnitStats& operator-=(const UnitStats& stats) {
@@ -226,6 +228,7 @@ struct UnitStats
 		stealth -= stats.stealth;
 		perseption -= stats.perseption;
 		charisma -= stats.charisma;
+		investigation -= stats.investigation;
 		deception -= stats.deception;
 		interrogation -= stats.interrogation;
 		return *this;}
@@ -275,6 +278,7 @@ struct UnitStats
 		stealth - stats.stealth,
 		perseption - stats.perseption,
 		charisma - stats.charisma,
+		investigation - stats.investigation,
 		deception - stats.deception,
 		interrogation - stats.interrogation); }
 	UnitStats operator-() const { return UnitStats(
@@ -282,7 +286,7 @@ struct UnitStats
 		-maneuvering, -missiles, -dogfight, -tracking, -cooperation, -beams, -synaptic, -gravity,
 		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -designing, -psionics, -xenolinguistics,
 		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -construction, -diligence, -alienTech, -reverseEngineering,
-		-stealth, -perseption, -charisma, -deception, -interrogation); }
+		-stealth, -perseption, -charisma, -investigation, -deception, -interrogation); }
 	void merge(const UnitStats& stats) {
 		tu = (stats.tu ? stats.tu : tu);
 		stamina = (stats.stamina ? stats.stamina : stamina);
@@ -329,6 +333,7 @@ struct UnitStats
 		stealth = (stats.stealth ? stats.stealth : stealth);
 		perseption = (stats.perseption ? stats.perseption : perseption);
 		charisma = (stats.charisma ? stats.charisma : charisma);
+		investigation = (stats.investigation ? stats.investigation : investigation);
 		deception = (stats.deception ? stats.deception : deception);
 		interrogation = (stats.interrogation ? stats.interrogation : interrogation);
 	};
@@ -341,7 +346,7 @@ struct UnitStats
 			materials || designing || psionics || xenolinguistics ||
 			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
 			hacking || construction || diligence || alienTech || reverseEngineering ||
-			stealth || perseption || charisma || deception || interrogation;
+			stealth || perseption || charisma || investigation || deception || interrogation;
 	}
 	template<typename Func>
 	static void fieldLoop(Func f)
@@ -357,7 +362,7 @@ struct UnitStats
 			&UnitStats::materials, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
 			&UnitStats::weaponry, &UnitStats::explosives, &UnitStats::efficiency, &UnitStats::microelectronics, &UnitStats::metallurgy, &UnitStats::processing,
 			&UnitStats::hacking, &UnitStats::construction, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
-			&UnitStats::stealth, &UnitStats::perseption, &UnitStats::charisma, &UnitStats::deception, &UnitStats::interrogation
+			&UnitStats::stealth, &UnitStats::perseption, &UnitStats::charisma, &UnitStats::investigation, &UnitStats::deception, &UnitStats::interrogation
 		};
 
 		for (Ptr p : allFields)
@@ -415,6 +420,7 @@ struct UnitStats
 			{&UnitStats::stealth, "STR_STEALTH"},
 			{&UnitStats::perseption, "STR_PERSEPTION"},
 			{&UnitStats::charisma, "STR_CHARISMA"},
+			{&UnitStats::investigation, "STR_INVESTIGATION"},
 			{&UnitStats::deception, "STR_DECEPTION"},
 			{&UnitStats::interrogation, "STR_INTERROGATION"}
 		};
@@ -592,7 +598,7 @@ struct UnitStats
 	static UnitStats obeyFixedMinimum(const UnitStats &a)
 	{
 		// minimum 1 for health, minimum 0 for other stats (note to self: it might be worth considering minimum 10 for bravery in the future)
-		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		return max(a, fixedMinimum);
 	}
 
@@ -985,6 +991,7 @@ namespace YAML
 			node["stealth"] = rhs.stealth;
 			node["perseption"] = rhs.perseption;
 			node["charisma"] = rhs.charisma;
+			node["investigation"] = rhs.investigation;
 			node["deception"] = rhs.deception;
 			node["interrogation"] = rhs.interrogation;
 			return node;
@@ -1040,6 +1047,7 @@ namespace YAML
 			rhs.stealth = node["stealth"].as<int>(rhs.stealth);
 			rhs.perseption = node["perseption"].as<int>(rhs.perseption);
 			rhs.charisma = node["charisma"].as<int>(rhs.charisma);
+			rhs.investigation = node["investigation"].as<int>(rhs.investigation);
 			rhs.deception = node["deception"].as<int>(rhs.deception);
 			rhs.interrogation = node["interrogation"].as<int>(rhs.interrogation);
 			return true;

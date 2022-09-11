@@ -64,6 +64,9 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 		_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
 		_txtTitle = new Text(214, 16, 53, 38);
 		_lstResearch = new TextList(198, 88, 53, 54);
+		// would not be shown
+		_txtName = new Text(156, 9, 10, 47);
+		_txtCategories = new Text(156, 9, 166, 47);
 	}
 	else
 	{
@@ -141,6 +144,11 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	{
 		_txtName->setText(tr("STR_NAME"));
 		_txtCategories->setText(tr("STR_CATEGORIES"));
+	}
+	else
+	{
+		_txtName->setVisible(false);
+		_txtCategories->setVisible(false);
 	}
 
 	_lstResearch->setColumns(2, 156, 130);

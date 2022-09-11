@@ -24,6 +24,7 @@ namespace OpenXcom
 
 class RuleResearch;
 class Mod;
+class Soldier;
 
 /**
    Represent a ResearchProject
@@ -39,6 +40,7 @@ public:
 	ResearchProject(const RuleResearch * p, int c = 0);
 	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
 	bool step(int progress);
+	int getStepProgress(std::map<Soldier*, int> &assignedScientists, Mod *mod, int rating);
 	/// gets state of project.
 	bool isFinished();
 	/// set the number of scientist assigned to this ResearchProject

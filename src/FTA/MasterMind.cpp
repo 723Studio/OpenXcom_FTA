@@ -184,16 +184,15 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 
 /**
 * Process event script from different sources
-* @param engine - Game.
 * @param scripts - a vector of event script's string IDs.
 * @param source is the reason we are running process (monthly, factional, xcom).
 */
-void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scripts, ProcessorSource source)
+void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, ProcessorSource source)
 {
 	if (!scripts.empty())
 	{
-		const Mod &mod = *engine.getMod();
-		SavedGame &save = *engine.getSavedGame();
+		const Mod& mod = *_game->getMod();
+		SavedGame &save = *_game->getSavedGame();
 		AlienStrategy &strategy = save.getAlienStrategy();
 		std::set<std::string> xcomBaseCountries;
 		std::set<std::string> xcomBaseRegions;
@@ -217,9 +216,9 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 			auto ruleScript = mod.getEventScript(name);
 			int allowedProcessor = ruleScript->getAllowedProcessor();
 			// check allowed processor first!
-			if ((source == MONTHLY && allowedProcessor != 0) ||
-				(source == FACTIONAL && allowedProcessor != 1) ||
-				(source == XCOM && allowedProcessor != 2))
+			if ((source == SCRIPT_MONTHLY && allowedProcessor != 0) ||
+				(source == SCRIPT_FACTIONAL && allowedProcessor != 1) ||
+				(source == SCRIPT_XCOM && allowedProcessor != 2))
 			{
 				continue; //we should skip that!
 			}
@@ -254,7 +253,7 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 						triggerHappy = false;
 						for (auto& triggerFaction : ruleScript->getReputationRequirments())
 						{
-							for (auto& faction : engine.getSavedGame()->getDiplomacyFactions())
+							for (auto& faction : save.getDiplomacyFactions())
 							{
 								if (faction->getRules()->getName() == triggerFaction.first)
 								{
@@ -406,6 +405,126 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 			}
 		}
 	}
+}
+
+bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base)
+{
+	// let's define variables for alien mission first
+	const Mod& mod = *_game->getMod();
+	SavedGame &save = *_game->getSavedGame();
+	int month = save.getMonthsPassed();
+	bool success = true;
+	const RuleAlienMission* missionRules = mod.getAlienMission(missionName); // would work with string ID 'till OXCE make mission rules afterloading
+	if (missionRules == 0)
+	{
+		throw Exception("Error processing alien mission generation - rules for alienMission: " + missionName + " are not defined!");
+	}
+	std::string targetRegion;
+	std::string missionRace;
+	int targetZone = missionRules->getSpawnZone();
+
+	bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
+	bool targetBase = RNG::percent(missionRules->getTargetBaseOdds());
+	bool placed = false;
+	bool baseTargeted = true;
+	bool hasZone = true;
+	int tries = 0;
+		
+	while (!placed || tries < 50)
+	{
+		if (missionRules->hasRegionWeights())
+		{
+			if (tries > 35) month = 0; //lets check all regions
+			targetRegion = missionRules->generateRegion(month);
+		}
+		else //case to pick at random as alien mission rules has no region defined
+		{
+			targetRegion = mod.getRegionsList().at(RNG::generate(0, mod.getRegionsList().size() - 1));
+		}
+
+		RuleRegion* region = mod.getRegion(targetRegion, true);
+		if (!region)
+		{
+			throw Exception("Error processing alien mission named: " + missionName + ", region named: " + targetRegion + " is not defined");
+		}
+		if ((int)(region->getMissionZones().size()) > targetZone)
+		{
+			hasZone = true;
+		}
+
+		if (targetBase && base) // we should choose region that has any xcom base
+		{
+			baseTargeted = false;
+			std::string baseRegion;
+			if (tries < 2)
+			{
+				baseRegion = save.locateRegion(base->getLongitude(), base->getLatitude())->getRules()->getType();
+				if (baseRegion == targetRegion)
+				{
+					baseTargeted = true;
+				}
+			}
+			else
+			{
+				for (std::vector<Base*>::iterator i = save.getBases()->begin(); i != save.getBases()->end(); ++i)
+				{
+					baseRegion = save.locateRegion((*i)->getLongitude(), (*i)->getLatitude())->getRules()->getType();
+					if (baseRegion == targetRegion)
+					{
+						baseTargeted = true;
+					}
+				}
+			}
+		}
+		tries++;
+		if (baseTargeted && hasZone) // all checks passed!
+		{
+			placed = true;
+		}
+	}
+
+	if(!placed)
+	{
+		Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! Failed to choose right region for mission: " << missionName <<
+			". Some alien mission rules could be ignored!";
+		success = false;
+	}
+
+	missionRace = missionRules->generateRace(month);
+	if (missionRace.empty())
+	{
+		if (mod.getIsFTAGame())
+		{
+			missionRace = "STR_MIB";
+			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+				" no alien race has been set! As we run FTAGame race set to " << missionRace;
+			success = false;
+		}
+		else
+		{
+			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+				" no alien race has been set, so it will be defined at random!";
+			auto raceList = mod.getAlienRacesList();
+			int pick = RNG::generate(0, raceList.size() - 1);
+			missionRace = raceList.at(pick);
+			success = false;
+		}
+	}
+	if (mod.getAlienRace(missionRace) == 0)
+	{
+		throw Exception("Error processing alien mission named: " + missionName + ", race: " + missionRace + " is not defined");
+	}
+
+	//now we are ready to set up new alien mission
+	AlienMission* mission = new AlienMission(*missionRules);
+	mission->setRace(missionRace); 
+	mission->setId(save.getId("ALIEN_MISSIONS"));
+	mission->setRegion(targetRegion, mod);
+	mission->setMissionSiteZone(targetZone);
+	mission->start(*_game, globe, 0);
+	save.getAlienMissions().push_back(mission);
+
+	return success;
 }
 
 int MasterMind::updateLoyalty(int score, LoyaltySource source)

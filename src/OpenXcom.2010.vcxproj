@@ -521,6 +521,7 @@
     <ClCompile Include="Mod\RuleEnviroEffects.cpp" />
     <ClCompile Include="Mod\RuleEvent.cpp" />
     <ClCompile Include="Mod\RuleEventScript.cpp" />
+    <ClCompile Include="Mod\RuleIntelProject.cpp" />
     <ClCompile Include="Mod\RuleItemCategory.cpp" />
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp" />
     <ClCompile Include="Mod\RuleSkill.cpp" />
@@ -590,6 +591,7 @@
     <ClCompile Include="Savegame\GameTime.cpp" />
     <ClCompile Include="Savegame\GeoscapeEvent.cpp" />
     <ClCompile Include="Savegame\HitLog.cpp" />
+    <ClCompile Include="Savegame\IntelProject.cpp" />
     <ClCompile Include="Savegame\ItemContainer.cpp" />
     <ClCompile Include="Savegame\MovingTarget.cpp" />
     <ClCompile Include="Savegame\Production.cpp" />
@@ -949,6 +951,7 @@
     <ClInclude Include="Mod\RuleEnviroEffects.h" />
     <ClInclude Include="Mod\RuleEvent.h" />
     <ClInclude Include="Mod\RuleEventScript.h" />
+    <ClInclude Include="Mod\RuleIntelProject.h" />
     <ClInclude Include="Mod\RuleItemCategory.h" />
     <ClInclude Include="Mod\RuleManufactureShortcut.h" />
     <ClInclude Include="Mod\RuleSkill.h" />
@@ -1020,6 +1023,7 @@
     <ClInclude Include="Savegame\GameTime.h" />
     <ClInclude Include="Savegame\GeoscapeEvent.h" />
     <ClInclude Include="Savegame\HitLog.h" />
+    <ClInclude Include="Savegame\IntelProject.h" />
     <ClInclude Include="Savegame\ItemContainer.h" />
     <ClInclude Include="Savegame\MissionStatistics.h" />
     <ClInclude Include="Savegame\MovingTarget.h" />

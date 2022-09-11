@@ -42,7 +42,7 @@ private:
 	TextList *_lstResearch;
 	bool _ftaUi;
 
-  public:
+public:
 	/// Creates the Research state.
 	ResearchState(Base *base);
 	/// Cleans up the Research state.

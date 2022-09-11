@@ -341,6 +341,7 @@ set ( mod_src
   Mod/RuleEvent.cpp
   Mod/RuleEventScript.cpp
   Mod/RuleGlobe.cpp
+  Mod/RuleIntelProject.cpp
   Mod/RuleInterface.cpp
   Mod/RuleInventory.cpp
   Mod/RuleItem.cpp
@@ -389,6 +390,7 @@ set ( savegame_src
   Savegame/GameTime.cpp
   Savegame/GeoscapeEvent.cpp
   Savegame/HitLog.cpp
+  Savegame/IntelProject.cpp
   Savegame/ItemContainer.cpp
   Savegame/MissionSite.cpp
   Savegame/MovingTarget.cpp

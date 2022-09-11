@@ -1872,7 +1872,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 
 		RuleResearch *research = pair.second;
 
-		// This research topic is hidden, don't show it to the player!
+		// This research topic is hidden, don't ever show it to the player!
 		if (research->isHidden())
 		{
 			continue;

@@ -99,7 +99,7 @@ void RuleEventScript::load(const YAML::Node &node)
 	_xcomBaseInRegionTriggers = node["xcomBaseInRegionTriggers"].as<std::map<std::string, bool> >(_xcomBaseInRegionTriggers);
 	_xcomBaseInCountryTriggers = node["xcomBaseInCountryTriggers"].as<std::map<std::string, bool> >(_xcomBaseInCountryTriggers);
 	_affectsGameProgression = node["affectsGameProgression"].as<bool>(_affectsGameProgression);
-	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only
+	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only, 3 - special scripts
 	_spawnGap = node["spawnGap"].as<int>(_spawnGap);
 	_randomSpawnGap = node["randomSpawnGap"].as<int>(_randomSpawnGap);
 }

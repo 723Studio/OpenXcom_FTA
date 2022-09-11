@@ -1232,6 +1232,12 @@
     <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Mod\RuleIntelProject.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\IntelProject.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2527,6 +2533,12 @@
     </ClInclude>
     <ClInclude Include="Basescape\FacilityAllocateEngineersState.h">
       <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleIntelProject.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\IntelProject.h">
+      <Filter>Savegame</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -287,7 +287,7 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 					_eventsToProcess.push_back(s);
 				}
 			}
-			mind.eventScriptProcessor(engine, _eventsToProcess, FACTIONAL);
+			mind.eventScriptProcessor(_eventsToProcess, SCRIPT_FACTIONAL);
 		}
 	}
 }

@@ -2177,10 +2177,14 @@ void GeoscapeState::time1Hour()
 	{
 		popup(new ItemsArrivingState(this));
 	}
-	// Handle Production
 	std::vector<Soldier*> promotedSoldiers;
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
+		// Handle Research
+		if (_fta)
+			handleResearch(*i);
+
+		// Handle Production
 		std::map<Production*, productionProgress_e> toRemove;
 		for (std::vector<Production*>::const_iterator j = (*i)->getProductions().begin(); j != (*i)->getProductions().end(); ++j)
 		{
@@ -2247,6 +2251,7 @@ void GeoscapeState::time1Hour()
 			}
 		}
 	}
+
 	//oh, and don't forget about FtA promotions!
 	if (!promotedSoldiers.empty() && _fta)
 	{
@@ -2459,7 +2464,8 @@ void GeoscapeState::time1Day()
 		}
 
 		// Handle science project
-		handleResearch(base);
+		if (!_fta)
+			handleResearch(base);
 
 		// Handle soldier wounds and martial training
 		auto recovery = base->getSumRecoveryPerDay();
@@ -2538,7 +2544,7 @@ void GeoscapeState::time1Day()
 	_game->getSavedGame()->handleEventScriptTimers();
 
 	// Handle daily internal xcom events
-	_game->getMasterMind()->eventScriptProcessor(*_game, *mod->getEventScriptList(), XCOM);
+	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
 
 	//Handle daily Faction logic
 	int day = saveGame->getTime()->getDay();
@@ -3859,7 +3865,7 @@ void GeoscapeState::determineAlienMissions()
 	}
 
 	// after the mission scripts, it's time for the event scripts
-	_game->getMasterMind()->eventScriptProcessor(*_game, *mod->getEventScriptList(), MONTHLY);
+	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
 
 	// Alien base upgrades happen only AFTER the first game month
 	if (month > 0)
@@ -4454,7 +4460,7 @@ void GeoscapeState::handleResearch(Base* base)
 
 			if (assignedScientists.size() > 0)
 			{
-				progress = getResearchStepProgress(project, assignedScientists);
+				progress = project->getStepProgress(assignedScientists, _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus());
 			}
 		}
 		else
@@ -4662,192 +4668,6 @@ void GeoscapeState::handleResearch(Base* base)
 	}
 }
 
-int GeoscapeState::getResearchStepProgress(ResearchProject* project, std::map<Soldier*, int> &assignedScientists)
-{
-	int progress = 0;
-	double effort = 0, soldierEffort = 0, statEffort = 0;
-	auto rules = project->getRules();
-	auto projStats = rules->getStats();
-	int factor = _game->getMod()->getResearchTrainingFactor();
-	for (auto s : assignedScientists)
-	{
-		auto stats = s.first->getStatsWithAllBonuses();
-		auto caps = s.first->getRules()->getStatCaps();
-		unsigned int statsN = 0;
-
-		if (projStats.physics > 0)
-		{
-			statEffort = stats->physics;
-			soldierEffort += (statEffort / projStats.physics) * 24;
-			if (stats->physics < caps.physics
-				&& RNG::generate(0, caps.physics) > stats->physics
-				&& RNG::percent(factor * (projStats.physics / 100))
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->physics++;
-			}
-			statsN++;
-		}
-		if (projStats.chemistry > 0)
-		{
-			statEffort = stats->chemistry;
-			soldierEffort += (statEffort / projStats.chemistry) * 24;
-			if (stats->chemistry < caps.chemistry
-				&& RNG::generate(0, caps.chemistry) > stats->chemistry
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->chemistry++;
-			}
-			statsN++;
-		}
-		if (projStats.biology > 0)
-		{
-			statEffort = stats->biology;
-			soldierEffort += (statEffort / projStats.biology) * 24;
-			if (stats->biology < caps.biology
-				&& RNG::generate(0, caps.biology) > stats->biology
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->biology++;
-			}
-			statsN++;
-		}
-		if (projStats.data > 0)
-		{
-			statEffort = stats->data;
-			soldierEffort += (statEffort / projStats.data) * 24;
-			if (stats->data < caps.data
-				&& RNG::generate(0, caps.data) > stats->data
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->data++;
-			}
-			statsN++;
-		}
-		if (projStats.computers > 0)
-		{
-			statEffort = stats->computers;
-			soldierEffort += (statEffort / projStats.computers) * 24;
-			if (stats->computers < caps.computers
-				&& RNG::generate(0, caps.computers) > stats->computers
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->computers++;
-			}
-			statsN++;
-		}
-		if (projStats.tactics > 0)
-		{
-			statEffort = stats->tactics;
-			soldierEffort += (statEffort / projStats.tactics) * 24;
-			if (stats->tactics < caps.tactics
-				&& RNG::generate(0, caps.tactics) > stats->tactics
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->tactics++;
-			}
-			statsN++;
-		}
-		if (projStats.materials > 0)
-		{
-			statEffort = stats->materials;
-			soldierEffort += (statEffort / projStats.materials) * 24;
-			if (stats->materials < caps.materials
-				&& RNG::generate(0, caps.materials) > stats->materials
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->materials++;
-			}
-			statsN++;
-		}
-		if (projStats.designing > 0)
-		{
-			statEffort = stats->designing;
-			soldierEffort += (statEffort / projStats.designing) * 24;
-			if (stats->designing < caps.designing
-				&& RNG::generate(0, caps.designing) > stats->designing
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->designing++;
-			}
-			statsN++;
-		}
-		if (projStats.alienTech > 0)
-		{
-			statEffort = stats->alienTech;
-			soldierEffort += (statEffort / projStats.alienTech) * 24;
-			if (stats->alienTech < caps.alienTech
-				&& RNG::generate(0, caps.alienTech) > stats->alienTech
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->alienTech++;
-			}
-			statsN++;
-		}
-		if (projStats.psionics > 0)
-		{
-			statEffort = stats->psionics;
-			soldierEffort += (statEffort / projStats.psionics) * 24;
-			if (stats->psionics < caps.psionics
-				&& RNG::generate(0, caps.psionics) > stats->psionics
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->psionics++;
-			}
-			statsN++;
-		}
-		if (projStats.xenolinguistics > 0)
-		{
-			statEffort = stats->xenolinguistics;
-			soldierEffort += (statEffort / projStats.xenolinguistics) * 24;
-			if (stats->psionics < caps.xenolinguistics
-				&& RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics
-				&& RNG::percent(factor)
-				&& RNG::percent(s.second))
-			{
-				s.first->getResearchExperience()->xenolinguistics++;
-			}
-			statsN++;
-		}
-
-		if (statsN > 0)
-		{
-			soldierEffort /= statsN;
-		}
-		Log(LOG_INFO) << "Adjusted effort value: " << effort;
-
-		double insightBonus = RNG::generate(0, stats->insight);
-		soldierEffort += insightBonus / 10;
-
-		effort += soldierEffort;
-		soldierEffort = 0;
-	}
-	// If one woman can carry a baby in nine months, nine women can't do it in a month...
-	if (assignedScientists.size() > 1)
-	{
-		effort *= (100 - (19 * log(assignedScientists.size()))) / 100;
-	}
-
-	double loyaltyFactor = _game->getMasterMind()->getLoyaltyPerformanceBonus() / 100;
-	if (_game->getMasterMind()->getLoyaltyPerformanceBonus() != 100)
-	{
-		Log(LOG_INFO) << " loyaltyFactor: " << loyaltyFactor;
-	}
-	effort *= loyaltyFactor;
-	progress = static_cast<int>(ceil(effort));
-	Log(LOG_INFO) << " >>> Total hourly progress for project " << rules->getName() << ": " << progress;
-
-	return progress;
-}
 
 void GeoscapeState::cbxRegionChange(Action *)
 {

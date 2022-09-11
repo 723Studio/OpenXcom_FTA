@@ -76,6 +76,7 @@
 #include "RuleResearch.h"
 #include "RuleManufacture.h"
 #include "RuleManufactureShortcut.h"
+#include "RuleIntelProject.h"
 #include "ExtraStrings.h"
 #include "RuleInterface.h"
 #include "RuleDiplomacyFaction.h"
@@ -380,7 +381,7 @@ Mod::Mod() :
 	_defeatScore(0), _defeatFunds(0), _difficultyDemigod(false), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
 	_baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
 	_facilityListOrder(0), _craftListOrder(0), _covertOperationListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
-	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
+	_researchListOrder(0),  _manufactureListOrder(0), _intelligenceListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
 	_modCurrent(0), _statePalette(0)
 {
 	_muteMusic = new Music();
@@ -648,6 +649,10 @@ Mod::~Mod()
 		delete i->second;
 	}
 	for (std::map<std::string, RuleManufacture *>::const_iterator i = _manufacture.begin(); i != _manufacture.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RuleIntelProject *>::const_iterator i = _intelligence.begin(); i != _intelligence.end(); ++i)
 	{
 		delete i->second;
 	}
@@ -2140,6 +2145,7 @@ void Mod::loadAll()
 	afterLoadHelper("research", this, _research, &RuleResearch::afterLoad);
 	afterLoadHelper("items", this, _items, &RuleItem::afterLoad);
 	afterLoadHelper("manufacture", this, _manufacture, &RuleManufacture::afterLoad);
+	afterLoadHelper("intelligence", this, _intelligence, &RuleIntelProject::afterLoad);
 	afterLoadHelper("covertOperations", this, _covertOperations, &RuleCovertOperation::afterLoad);
 	afterLoadHelper("armors", this, _armors, &Armor::afterLoad);
 	afterLoadHelper("units", this, _units, &Unit::afterLoad);
@@ -2682,6 +2688,15 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		if (rule != 0)
 		{
 			rule->load(*i);
+		}
+	}
+	for (YAML::const_iterator i = doc["intelligence"].begin(); i != doc["intelligence"].end(); ++i)
+	{
+		RuleIntelProject *rule = loadRule(*i, &_intelligence, &_intelligenceIndex, "name");
+		if (rule != 0)
+		{
+			_intelligenceListOrder += 100;
+			rule->load(*i, this, _intelligenceListOrder);
 		}
 	}
 	for (YAML::const_iterator i = doc["soldierBonuses"].begin(); i != doc["soldierBonuses"].end(); ++i)
@@ -4242,6 +4257,25 @@ const std::vector<std::string> &Mod::getManufactureList() const
 }
 
 /**
+ * Returns the rules for the specified intelligence project.
+ * @param id Inteligence project type.
+ * @return Rules for the intelligence project.
+ */
+RuleIntelProject *Mod::getIntelligence(const std::string & id, bool error) const
+{
+	return getRule(id, "Intelligence", _intelligence, error);
+}
+
+/**
+ * Returns the list of intelligence projects.
+ * @return The list of intelligence projects.
+ */
+const std::vector<std::string> &Mod::getIntelligenceList() const
+{
+	return _intelligenceIndex;
+}
+
+/**
  * Returns the rules for the specified soldier bonus type.
  * @param id Soldier bonus type.
  * @return Rules for the soldier bonus type.
@@ -4642,6 +4676,7 @@ void Mod::sortLists()
 	std::sort(_facilitiesIndex.begin(), _facilitiesIndex.end(), compareRule<RuleBaseFacility>(this, (compareRule<RuleBaseFacility>::RuleLookup)&Mod::getBaseFacility));
 	std::sort(_researchIndex.begin(), _researchIndex.end(), compareRule<RuleResearch>(this, (compareRule<RuleResearch>::RuleLookup)&Mod::getResearch));
 	std::sort(_manufactureIndex.begin(), _manufactureIndex.end(), compareRule<RuleManufacture>(this, (compareRule<RuleManufacture>::RuleLookup)&Mod::getManufacture));
+	std::sort(_intelligenceIndex.begin(), _intelligenceIndex.end(), compareRule<RuleIntelProject>(this, (compareRule<RuleIntelProject>::RuleLookup)&Mod::getIntelligence));
 	std::sort(_soldierTransformationIndex.begin(), _soldierTransformationIndex.end(), compareRule<RuleSoldierTransformation>(this,  (compareRule<RuleSoldierTransformation>::RuleLookup)&Mod::getSoldierTransformation));
 	std::sort(_invsIndex.begin(), _invsIndex.end(), compareRule<RuleInventory>(this, (compareRule<RuleInventory>::RuleLookup)&Mod::getInventory));
 	// special cases

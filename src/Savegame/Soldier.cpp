@@ -138,6 +138,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
 		_initialStats.perseption = RNG::generate(minStats.perseption, maxStats.perseption);
 		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
+		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
 		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
 		_initialStats.interrogation = RNG::generate(minStats.interrogation, maxStats.interrogation);
 		//scientist
@@ -434,7 +435,7 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	{
 		node["engineerExperience"] = _engineerExperience;
 	}
-	if (_intelExperience.stealth > 0 || _intelExperience.perseption > 0 || _intelExperience.charisma > 0 ||
+	if (_intelExperience.stealth > 0 || _intelExperience.perseption > 0 || _intelExperience.charisma > 0 || _intelExperience.investigation > 0 ||
 		_intelExperience.deception > 0 || _intelExperience.interrogation > 0)
 	{
 		node["intelExperience"] = _intelExperience;
