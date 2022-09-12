@@ -40,7 +40,7 @@ class RuleIntelProject
 {
  private:
 	std::string _name, _description;
-	int _cost;
+	int _cost, _costIncrease;
 	IntelProjectSpecialRule _specialRule;
 	UnitStats _stats;
 	std::vector<RuleIntelStage*> _stages;
@@ -59,6 +59,8 @@ public:
 	const std::string& getDescription() const { return _description; };
 	/// Gets the base cost for making a roll for this project.
 	int getCost() const { return _cost; }
+	/// Gets the cost increase value to calculate next roll cost for this project.
+	int getCostIncrease() const { return _costIncrease; }
 	/// Gets the special rule for the intel project.
 	const IntelProjectSpecialRule getSpecialRule() const { return _specialRule; }
 	/// Get pointer to this project's stats.

@@ -141,8 +141,9 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	}
 	
 	effort *= rating / 100;
-	progress = static_cast<int>(ceil(effort));
-	Log(LOG_INFO) << " >>> Total hourly progress for project " << _rules->getName() << ": " << progress;
+	//gets total effort to daily project progress
+	progress = static_cast<int>(ceil(effort * 24));
+	Log(LOG_INFO) << " >>> Total daile progress for the intel project " << _rules->getName() << ": " << progress;
 
 	return progress;
 }
@@ -151,19 +152,20 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
  * Called every day to compute time spent on this IntelProject
  * @return true if the ResearchProject is finished
  */
-bool IntelProject::roll(Game *game, Base *base, int progress)
+bool IntelProject::roll(Game *game, const Globe& globe, Base *base, int progress, bool &finalRoll)
 {
 	SavedGame* save = game->getSavedGame();
 	Mod* mod = game->getMod();
 
 	_spent += progress;
-	bool finalRoll = false;
+	finalRoll = false;
 	bool specialRule = _rules->getSpecialRule() != INTEL_NONE;
 	_active = progress > 0 && specialRule;
 	
 	if (_spent >= _cost)
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
+		_rolls++;
 
 		std::vector<const RuleIntelStage*> rolledStages;
 		for (auto stage : getAvailableStages(save, base))
@@ -176,22 +178,41 @@ bool IntelProject::roll(Game *game, Base *base, int progress)
 
 		if (!rolledStages.empty())
 		{
-			auto pickedStage = rolledStages.at(RNG::generate(0, rolledStages.size()));
+			auto pickedStage = rolledStages.at(RNG::generate(0, rolledStages.size())); // only one stage processed at a time
+			//run all event scripts for chosen stage
 			if (!pickedStage->getEventScripts().empty())
 			{
 				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), SCRIPT_XCOM);
 			}
 
-			
+			//and create alien mission if any
+			if (!pickedStage->getSpawnedMission().empty())
+			{
+				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, base);
+			}
 
+			//update data if the project reaches its final stage and counted as completed.
 			if (pickedStage->isFinalStage())
 			{
 				_active = false;
-				return true;
+				finalRoll = true;
 			}
+
+			//update rolled stages information
+			auto it = _stageRolls.find(pickedStage->getName());
+			if (it != _stageRolls.end())
+			{
+				it->second++;
+			}
+			else
+			{
+				_stageRolls.insert(std::make_pair(pickedStage->getName(), 1));
+			}
+			
+			return true; //we finis stage rolling, this would tell the game to prepare data for the next one
 		}
 	}
-	return finalRoll;
+	return false;
 }
 
 const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* save, Base *base)

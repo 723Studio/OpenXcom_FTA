@@ -26,6 +26,7 @@ class RuleIntelProject;
 class RuleIntelStage;
 class Soldier;
 class Game;
+class Globe;
 class SavedGame;
 class Mod;
 class Base;
@@ -44,12 +45,17 @@ class IntelProject
 	int _cost;
 public:
 	IntelProject(const RuleIntelProject *rule, int cost);
-	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
+	/// Calculates daily progress.
 	int getStepProgress(std::map<Soldier*, int> &assignedAgents, Mod *mod, int rating);
-	bool roll(Game *game, Base *base, int progress);
+	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
+	bool roll(Game *game, const Globe& globe, Base *base, int progress, bool &finalRoll);
 	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save, Base *base);
-	/// get the IntelProject Mod
-	const RuleIntelProject* getRules() const { return _rules; };
+	/// getters and setters
+	const RuleIntelProject* getRules() const { return _rules; }
+	const bool getActiove() const { return _active; }
+	const int getRolls() const { return _rolls; }
+	int getCost() { return _cost; }
+	void setCost(int cost) { _cost = cost; }
 	/// load the IntelProject from YAML
 	void load(const YAML::Node& node);
 	/// save the IntelProject to YAML
