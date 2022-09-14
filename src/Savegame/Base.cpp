@@ -25,6 +25,7 @@
 #include "Craft.h"
 #include "CraftWeapon.h"
 #include "CovertOperation.h"
+#include "IntelProject.h"
 #include "SavedGame.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/Mod.h"
@@ -80,6 +81,10 @@ Base::~Base()
 		delete *i;
 	}
 	for (std::vector<CovertOperation*>::iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
+	{
+		delete* i;
+	}
+	for (std::vector<IntelProject*>::iterator i = _intelProjects.begin(); i != _intelProjects.end(); ++i)
 	{
 		delete* i;
 	}
@@ -155,6 +160,21 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		else
 		{
 			Log(LOG_ERROR) << "Failed to load covertOperation " << name;
+		}
+	}
+
+	for (YAML::const_iterator i = node["intelProjects"].begin(); i != node["intelProjects"].end(); ++i)
+	{
+		std::string name = (*i)["name"].as<std::string>();
+		if (_mod->getIntelProject(name))
+		{
+			IntelProject* p = new IntelProject(_mod->getIntelProject(name), this, 0);
+			p->load(*i);
+			_intelProjects.push_back(p);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load intelProjects " << name;
 		}
 	}
 
@@ -239,6 +259,20 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 				if (!set)
 					Log(LOG_ERROR) << "Failed to link soldier with production: " << production;
 			}
+
+			if (const YAML::Node &ip = (*i)["intelProject"])
+			{
+				std::string intelProject = ip.as<std::string>();
+				for (std::vector< IntelProject*>::iterator j = _intelProjects.begin(); j != _intelProjects.end(); ++j)
+				{
+					if ((*j)->getName() == intelProject)
+					{
+						s->setIntelProject((*j));
+						break;
+					}
+				}
+			}
+
 			_soldiers.push_back(s);
 		}
 		else
@@ -455,6 +489,10 @@ YAML::Node Base::save() const
 	{
 		node["covertOperations"].push_back((*i)->save());
 	}
+	for (std::vector<IntelProject*>::const_iterator i = _intelProjects.begin(); i != _intelProjects.end(); ++i)
+	{
+		node["intelProjects"].push_back((*i)->save());
+	}
 	node["items"] = _items->save();
 	node["scientists"] = _scientists;
 	node["engineers"] = _engineers;
@@ -556,15 +594,6 @@ void Base::prepareSoldierStatsWithBonuses()
 }
 
 /**
- * Adds operation to base's covert operations list.
- * @param operation pointer to the CovertOPeration.
- */
-void Base::addCovertOperation(CovertOperation* operation)
-{
-	this->getCovertOperations().push_back(operation);
-}
-
-/**
  * Finds and erase operation from base's covert operations list.
  * @param operation pointer to the CovertOperation.
  */
@@ -579,6 +608,24 @@ void Base::removeCovertOperation(CovertOperation* operation)
 		}
 	}
 	if (!erased) { 	Log(LOG_ERROR) << "Covert Operation named " << operation->getOperationName() << " was not deleted from base " << this->getName() << " !"; }
+}
+
+/**
+ * Finds and erase intel project from base's intel projects list.
+ * @param operation pointer to the IntelProject.
+ */
+void Base::removeIntelProject(IntelProject* project)
+{
+	bool erased = false;
+	auto iter = std::find(std::begin(_intelProjects), std::end(_intelProjects), project);
+	for (int k = 0; k < _intelProjects.size(); k++) {
+		if (_intelProjects[k] == project)
+		{
+			_intelProjects.erase(_intelProjects.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { 	Log(LOG_ERROR) << "Intelligence Project named " << project->getName() << " was not deleted from base " << this->getName() << " !"; }
 }
 
 /**
@@ -939,11 +986,6 @@ int Base::getUsedQuarters() const
 			// reserve one living space for each production project (even if it's on hold)
 			total += 1;
 		}
-	}
-	//reserve space for engeneers and scientists used in covert operations
-	for (std::vector<CovertOperation*>::const_iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
-	{
-		total += (*i)->getAssignedScientists() + (*i)->getAssignedEngineers();
 	}
 	return total;
 }

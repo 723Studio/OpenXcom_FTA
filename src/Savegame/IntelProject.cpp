@@ -27,7 +27,8 @@
 namespace OpenXcom
 {
 
-IntelProject::IntelProject(const RuleIntelProject* rule, int cost) : _rules(rule), _active(true), _rolls(0), _spent(0), _cost(cost)
+IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
+	_rules(rule), _base(base), _active(true), _rolls(0), _spent(0), _cost(cost)
 {
 }
 
@@ -152,7 +153,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
  * Called every day to compute time spent on this IntelProject
  * @return true if the ResearchProject is finished
  */
-bool IntelProject::roll(Game *game, const Globe& globe, Base *base, int progress, bool &finalRoll)
+bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &finalRoll)
 {
 	SavedGame* save = game->getSavedGame();
 	Mod* mod = game->getMod();
@@ -168,7 +169,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, Base *base, int progress
 		_rolls++;
 
 		std::vector<const RuleIntelStage*> rolledStages;
-		for (auto stage : getAvailableStages(save, base))
+		for (auto stage : getAvailableStages(save))
 		{
 			if (RNG::percent(stage->getOdds()))
 			{
@@ -188,7 +189,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, Base *base, int progress
 			//and create alien mission if any
 			if (!pickedStage->getSpawnedMission().empty())
 			{
-				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, base);
+				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, _base);
 			}
 
 			//update data if the project reaches its final stage and counted as completed.
@@ -215,7 +216,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, Base *base, int progress
 	return false;
 }
 
-const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* save, Base *base)
+const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* save)
 {
 	std::vector<const RuleIntelStage*> availableStages;
 
@@ -247,7 +248,7 @@ const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedG
 
 		if (triggerHappy) // Check for required buildings/functions in the given base
 		{
-			if ((~base->getProvidedBaseFunc({}) & stage->getRequireBaseFunc()).any())
+			if ((~_base->getProvidedBaseFunc({}) & stage->getRequireBaseFunc()).any())
 			{
 				continue; //we don't have required facility, go to the next stage.
 			}

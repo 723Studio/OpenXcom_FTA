@@ -31,12 +31,13 @@ enum SoldierRank : char { RANK_ROOKIE, RANK_SQUADDIE, RANK_SERGEANT, RANK_CAPTAI
 enum SoldierGender : char { GENDER_MALE, GENDER_FEMALE };
 enum SoldierLook : char { LOOK_BLONDE, LOOK_BROWNHAIR, LOOK_ORIENTAL, LOOK_AFRICAN };
 enum ReturnToTrainings : char {NONE, MARTIAL_TRAINING, PSI_TRAINING, BOTH_TRAININGS};
-enum DutyMode: char { CRAFT, LAB, WORK, ASSIGN, INFO};
+enum DutyMode: char { CRAFT, LAB, WORK, INTEL, ASSIGN, INFO};
 
 class Craft;
 class CovertOperation;
 class ResearchProject;
 class Production;
+class IntelProject;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
@@ -101,9 +102,10 @@ private:
 	UnitStats _dailyDogfightExperienceCache, _dogfightExperience, _researchExperience, _engineerExperience, _intelExperience;
 	SoldierRank _rank;
 	Craft *_craft;
-	CovertOperation* _covertOperation;
+	CovertOperation *_covertOperation;
 	ResearchProject *_researchProject;
 	Production *_production;
+	IntelProject* _intelProject;
 	SoldierGender _gender;
 	SoldierLook _look;
 	int _lookVariant;
@@ -165,6 +167,10 @@ private:
 	CovertOperation* getCovertOperation() const { return _covertOperation; }
 	/// Sets the soldier's Covert Operation.
 	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
+	/// Gets the soldier's Intel Project.
+	IntelProject* getIntelProject() const { return _intelProject; }
+	/// Sets the soldier's Intel Project.
+	void setIntelProject(IntelProject* project) { _intelProject = project; }
 	/// Gets the soldier's Research Project.
 	ResearchProject *getResearchProject() const { return _researchProject; }
 	/// Sets the soldier's Research Project.

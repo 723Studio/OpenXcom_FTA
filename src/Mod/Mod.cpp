@@ -4261,7 +4261,7 @@ const std::vector<std::string> &Mod::getManufactureList() const
  * @param id Inteligence project type.
  * @return Rules for the intelligence project.
  */
-RuleIntelProject *Mod::getIntelligence(const std::string & id, bool error) const
+RuleIntelProject *Mod::getIntelProject(const std::string & id, bool error) const
 {
 	return getRule(id, "Intelligence", _intelligence, error);
 }
@@ -4270,7 +4270,7 @@ RuleIntelProject *Mod::getIntelligence(const std::string & id, bool error) const
  * Returns the list of intelligence projects.
  * @return The list of intelligence projects.
  */
-const std::vector<std::string> &Mod::getIntelligenceList() const
+const std::vector<std::string> &Mod::getIntelProjectsList() const
 {
 	return _intelligenceIndex;
 }
@@ -4676,7 +4676,7 @@ void Mod::sortLists()
 	std::sort(_facilitiesIndex.begin(), _facilitiesIndex.end(), compareRule<RuleBaseFacility>(this, (compareRule<RuleBaseFacility>::RuleLookup)&Mod::getBaseFacility));
 	std::sort(_researchIndex.begin(), _researchIndex.end(), compareRule<RuleResearch>(this, (compareRule<RuleResearch>::RuleLookup)&Mod::getResearch));
 	std::sort(_manufactureIndex.begin(), _manufactureIndex.end(), compareRule<RuleManufacture>(this, (compareRule<RuleManufacture>::RuleLookup)&Mod::getManufacture));
-	std::sort(_intelligenceIndex.begin(), _intelligenceIndex.end(), compareRule<RuleIntelProject>(this, (compareRule<RuleIntelProject>::RuleLookup)&Mod::getIntelligence));
+	std::sort(_intelligenceIndex.begin(), _intelligenceIndex.end(), compareRule<RuleIntelProject>(this, (compareRule<RuleIntelProject>::RuleLookup)&Mod::getIntelProject));
 	std::sort(_soldierTransformationIndex.begin(), _soldierTransformationIndex.end(), compareRule<RuleSoldierTransformation>(this,  (compareRule<RuleSoldierTransformation>::RuleLookup)&Mod::getSoldierTransformation));
 	std::sort(_invsIndex.begin(), _invsIndex.end(), compareRule<RuleInventory>(this, (compareRule<RuleInventory>::RuleLookup)&Mod::getInventory));
 	// special cases

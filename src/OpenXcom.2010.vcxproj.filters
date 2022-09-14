@@ -1238,6 +1238,9 @@
     <ClCompile Include="Savegame\IntelProject.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
+    <ClCompile Include="Geoscape\IntelCompleteState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2539,6 +2542,9 @@
     </ClInclude>
     <ClInclude Include="Savegame\IntelProject.h">
       <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\IntelCompleteState.h">
+      <Filter>Geoscape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

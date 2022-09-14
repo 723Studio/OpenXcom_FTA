@@ -1231,7 +1231,7 @@ void DebriefingState::prepareDebriefing()
 		}
 		// in case we DON'T have a craft (base defense)
 		//FtA: we can have covert operation, so let's handle that now
-		for (std::vector<CovertOperation*>::iterator c = (*i)->getCovertOperations().begin(); c != (*i)->getCovertOperations().end(); ++c)
+		for (std::vector<CovertOperation*>::const_iterator c = (*i)->getCovertOperations().begin(); c != (*i)->getCovertOperations().end(); ++c)
 		{
 			if ((*c)->isInBattlescape())
 			{

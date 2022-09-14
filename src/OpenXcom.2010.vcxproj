@@ -414,6 +414,7 @@
     <ClCompile Include="Geoscape\FinishedCoverOperationState.cpp" />
     <ClCompile Include="Geoscape\ExtendedGeoscapeLinksState.cpp" />
     <ClCompile Include="Geoscape\GeoscapeEventState.cpp" />
+    <ClCompile Include="Geoscape\IntelCompleteState.cpp" />
     <ClCompile Include="Geoscape\MissionDetectedState.cpp" />
     <ClCompile Include="Geoscape\AllocatePsiTrainingState.cpp" />
     <ClCompile Include="Geoscape\BaseDefenseState.cpp" />
@@ -843,6 +844,7 @@
     <ClInclude Include="Geoscape\FinishedCoverOperationState.h" />
     <ClInclude Include="Geoscape\ExtendedGeoscapeLinksState.h" />
     <ClInclude Include="Geoscape\GeoscapeEventState.h" />
+    <ClInclude Include="Geoscape\IntelCompleteState.h" />
     <ClInclude Include="Geoscape\MissionDetectedState.h" />
     <ClInclude Include="Geoscape\AllocatePsiTrainingState.h" />
     <ClInclude Include="Geoscape\BaseDefenseState.h" />

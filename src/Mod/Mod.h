@@ -628,7 +628,7 @@ public:
 		}
 		else if constexpr (std::is_same_v<T, RuleIntelProject>)
 		{
-			rule = getIntelligence(name, true);
+			rule = getIntelProject(name, true);
 		}
 		else
 		{
@@ -1035,9 +1035,9 @@ public:
 	/// Gets the list of all manufacture projects.
 	const std::vector<std::string> &getManufactureList() const;
 	/// Gets the ruleset for a specific intelligence project.
-	RuleIntelProject *getIntelligence (const std::string &id, bool error = false) const;
+	RuleIntelProject *getIntelProject (const std::string &id, bool error = false) const;
 	/// Gets the list of all intelligence projects.
-	const std::vector<std::string> &getIntelligenceList() const;
+	const std::vector<std::string> &getIntelProjectsList() const;
 	/// Gets the ruleset for a specific soldier bonus type.
 	RuleSoldierBonus *getSoldierBonus(const std::string &id, bool error = false) const;
 	/// Gets the list of all soldier bonus types.

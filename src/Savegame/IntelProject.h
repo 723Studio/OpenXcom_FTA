@@ -38,19 +38,21 @@ class Base;
 class IntelProject
 {
 	const RuleIntelProject * _rules;
+	Base* _base;
 	std::map<std::string, int> _stageRolls;
 	bool _active;
 	int _spent;
 	int _rolls;
 	int _cost;
 public:
-	IntelProject(const RuleIntelProject *rule, int cost);
+	IntelProject(const RuleIntelProject *rule, Base *base, int cost = 0);
 	/// Calculates daily progress.
 	int getStepProgress(std::map<Soldier*, int> &assignedAgents, Mod *mod, int rating);
 	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
-	bool roll(Game *game, const Globe& globe, Base *base, int progress, bool &finalRoll);
-	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save, Base *base);
+	bool roll(Game *game, const Globe& globe, int progress, bool &finalRoll);
+	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save);
 	/// getters and setters
+	const std::string getName() const { return _rules->getName(); }
 	const RuleIntelProject* getRules() const { return _rules; }
 	const bool getActiove() const { return _active; }
 	const int getRolls() const { return _rolls; }

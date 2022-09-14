@@ -105,6 +105,7 @@
 #include "TrainingFinishedState.h"
 #include "../Savegame/Production.h"
 #include "../Mod/RuleManufacture.h"
+#include "../Savegame/IntelProject.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
@@ -2466,6 +2467,36 @@ void GeoscapeState::time1Day()
 		// Handle science project
 		if (!_fta)
 			handleResearch(base);
+
+		// Handle intelligence projects
+		bool intelProjectFinished = false;
+		for (auto project : base->getIntelProjects())
+		{
+			std::map<Soldier*, int> soldiers;
+			for (std::vector<Soldier*>::iterator j = base->getSoldiers()->begin(); j != base->getSoldiers()->end(); ++j)
+			{
+				if ((*j)->getIntelProject()->getName() == project->getName())
+				{
+					int roleCoef = 100;
+					if ((*j)->getRoleRank(ROLE_AGENT) < 1)
+					{
+						roleCoef = 50;
+					}
+					soldiers.emplace(std::make_pair((*j), roleCoef));
+				}
+			}
+			project->roll(_game,
+				*_globe,
+				project->getStepProgress(soldiers,
+					_game->getMod(),
+					_game->getMasterMind()->getLoyaltyPerformanceBonus()),
+				intelProjectFinished);
+
+			if (intelProjectFinished)
+			{
+				_game->pushState()
+			}
+		}
 
 		// Handle soldier wounds and martial training
 		auto recovery = base->getSumRecoveryPerDay();

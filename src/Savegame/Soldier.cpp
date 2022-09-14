@@ -29,6 +29,7 @@
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/ResearchProject.h"
 #include "../Savegame/Production.h"
+#include "../Savegame/IntelProject.h"
 #include "EquipmentLayoutItem.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
@@ -101,7 +102,7 @@ int Soldier::improveStat(int exp, int &rate, bool bravary)
  */
 Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0),
 	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _justSaved(false),
 	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), 
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
@@ -456,6 +457,10 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 	if (_production != 0)
 	{
 		node["production"] = _production->getRules()->getName();
+	}
+	if (_intelProject != 0)
+	{
+		node["intelProject"] = _intelProject->getName();
 	}
 	node["gender"] = (int)_gender;
 	node["look"] = (int)_look;
@@ -817,6 +822,7 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		}
 	}
 
+
 	if (_production)
 	{
 		if (mode == WORK)
@@ -826,6 +832,18 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		else
 		{
 			return lang->getString("STR_IN_WORKSHOP");
+		}
+	}
+
+	if (_intelProject)
+	{
+		if (mode == INTEL)
+		{
+			return lang->getString(_intelProject->getName());
+		}
+		else
+		{
+			return lang->getString("STR_INTEL");
 		}
 	}
 
@@ -1741,6 +1759,7 @@ void Soldier::die(SoldierDeath *death)
 	_covertOperation = 0;
 	_researchProject = 0;
 	_production = 0;
+	_intelProject = 0;
 	_psiTraining = false;
 	_training = false;
 	_returnToTrainingWhenHealed = false;

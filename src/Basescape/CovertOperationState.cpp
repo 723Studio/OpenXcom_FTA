@@ -146,7 +146,7 @@ void CovertOperationState::btnNewClick(Action*)
 */
 void CovertOperationState::onSelectOperation(Action*)
 {
-	std::vector<CovertOperation*>& baseProjects(_base->getCovertOperations());
+	auto baseProjects(_base->getCovertOperations());
 	CovertOperation* selectedTopic = baseProjects[_lstOperations->getSelectedRow()];
 	_game->pushState(new CovertOperationInfoState(selectedTopic));
 }
