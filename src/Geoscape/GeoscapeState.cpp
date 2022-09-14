@@ -91,6 +91,7 @@
 #include "CraftErrorState.h"
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
+#include "IntelCompleteState.h"
 #include "../Battlescape/PromotionsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/ResearchProject.h"
@@ -2494,7 +2495,7 @@ void GeoscapeState::time1Day()
 
 			if (intelProjectFinished)
 			{
-				_game->pushState()
+				_game->pushState(new IntelCompleteState(project, base));
 			}
 		}
 

@@ -263,6 +263,11 @@ const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedG
 	return availableStages;
 }
 
+const std::string IntelProject::getName() const
+{
+	return _rules->getName();
+}
+
 
 /**
  * Loads the research project from a YAML file.

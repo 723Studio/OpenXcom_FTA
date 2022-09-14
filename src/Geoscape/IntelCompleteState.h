@@ -43,6 +43,7 @@ class IntelCompleteState : public State
 public:
 	/// Creates the EndResearch state.
 	IntelCompleteState(IntelProject *project, Base *base);
+	~IntelCompleteState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Report button.

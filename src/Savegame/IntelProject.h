@@ -52,7 +52,7 @@ public:
 	bool roll(Game *game, const Globe& globe, int progress, bool &finalRoll);
 	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save);
 	/// getters and setters
-	const std::string getName() const { return _rules->getName(); }
+	const std::string getName() const;
 	const RuleIntelProject* getRules() const { return _rules; }
 	const bool getActiove() const { return _active; }
 	const int getRolls() const { return _rolls; }
