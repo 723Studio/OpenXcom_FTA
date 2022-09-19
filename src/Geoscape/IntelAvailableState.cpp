@@ -17,7 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <assert.h>
-#include "IntelCompleteState.h"
+#include "IntelAvailableState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
@@ -44,7 +44,7 @@ namespace OpenXcom
  * @param endType What ended the production.
  * @param production Pointer to the production details.
  */
-IntelCompleteState::IntelCompleteState(IntelProject *project, Base *base, GeoscapeState* state) : _project(project), _base(base), _state(state)
+IntelAvailableState::IntelAvailableState(IntelProject *project, Base *base, GeoscapeState* state) : _project(project), _base(base), _state(state)
 {
 	_screen = false;
 
@@ -55,30 +55,30 @@ IntelCompleteState::IntelCompleteState(IntelProject *project, Base *base, Geosca
 	_txtProject = new Text(230, 32, 45, 96);
 
 	// Set palette
-	setInterface("geoIntelComplete");
+	setInterface("geoIntelAvailable");
 
-	add(_window, "window", "geoIntelComplete");
-	add(_btnOk, "button", "geoIntelComplete");
-	add(_btnGotoBase, "button", "geoIntelComplete");
-	add(_txtTitle, "text1", "geoIntelComplete");
-	add(_txtProject, "text2", "geoIntelComplete");
+	add(_window, "window", "geoIntelAvailable");
+	add(_btnOk, "button", "geoIntelAvailable");
+	add(_btnGotoBase, "button", "geoIntelAvailable");
+	add(_txtTitle, "text1", "geoIntelAvailable");
+	add(_txtProject, "text2", "geoIntelAvailable");
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "geoIntelComplete");
+	setWindowBackground(_window, "geoIntelAvailable");
 
 	_btnOk->setText(tr("STR_OK"));
-	_btnOk->onMouseClick((ActionHandler)&IntelCompleteState::btnOkClick);
-	_btnOk->onKeyboardPress((ActionHandler)&IntelCompleteState::btnOkClick, Options::keyCancel);
+	_btnOk->onMouseClick((ActionHandler)&IntelAvailableState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&IntelAvailableState::btnOkClick, Options::keyCancel);
 
 	_btnGotoBase->setText(tr("STR_ALLOCATE"));
-	_btnGotoBase->onMouseClick((ActionHandler)&IntelCompleteState::btnGotoBaseClick);
-	_btnGotoBase->onKeyboardPress((ActionHandler)&IntelCompleteState::btnGotoBaseClick, Options::keyOk);
+	_btnGotoBase->onMouseClick((ActionHandler)&IntelAvailableState::btnGotoBaseClick);
+	_btnGotoBase->onKeyboardPress((ActionHandler)&IntelAvailableState::btnGotoBaseClick, Options::keyOk);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr("STR_INTEL_PROJECT_COMPLETED"));
+	_txtTitle->setText(tr("STR_INTEL_PROJECT_AVAILABLE"));
 
 	_txtProject->setAlign(ALIGN_CENTER);
 	_txtProject->setBig();
@@ -89,7 +89,7 @@ IntelCompleteState::IntelCompleteState(IntelProject *project, Base *base, Geosca
 	}
 }
 
-IntelCompleteState::~IntelCompleteState()
+IntelAvailableState::~IntelAvailableState()
 {
 }
 
@@ -97,7 +97,7 @@ IntelCompleteState::~IntelCompleteState()
  * Closes the window.
  * @param action Pointer to an action.
  */
-void IntelCompleteState::btnOkClick(Action *)
+void IntelAvailableState::btnOkClick(Action *)
 {
 	_game->popState();
 }
@@ -106,7 +106,7 @@ void IntelCompleteState::btnOkClick(Action *)
  * Goes to the base for the respective production.
  * @param action Pointer to an action.
  */
-void IntelCompleteState::btnGotoBaseClick(Action *)
+void IntelAvailableState::btnGotoBaseClick(Action *)
 {
 	_state->timerReset();
 	_game->popState();

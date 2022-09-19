@@ -73,7 +73,7 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	_btnManufacture->setText(tr("STR_MANUFACTURE"));
 	_btnManufacture->onMouseClick((ActionHandler)&CannotReequipState::btnManufactureClick);
 
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_btnPurchase->setText(tr("STR_DIPLOMACY_UC"));
 	}
@@ -156,7 +156,7 @@ void CannotReequipState::btnManufactureClick(Action *)
  */
 void CannotReequipState::btnPurchaseClick(Action *)
 {
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_game->pushState(new DiplomacyStartState(_base, false));
 	}

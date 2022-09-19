@@ -77,6 +77,7 @@
 #include "RuleManufacture.h"
 #include "RuleManufactureShortcut.h"
 #include "RuleIntelProject.h"
+#include "RulePrisoner.h"
 #include "ExtraStrings.h"
 #include "RuleInterface.h"
 #include "RuleDiplomacyFaction.h"
@@ -653,6 +654,10 @@ Mod::~Mod()
 		delete i->second;
 	}
 	for (std::map<std::string, RuleIntelProject *>::const_iterator i = _intelligence.begin(); i != _intelligence.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RulePrisoner*>::const_iterator i = _prisoners.begin(); i != _prisoners.end(); ++i)
 	{
 		delete i->second;
 	}
@@ -2146,6 +2151,7 @@ void Mod::loadAll()
 	afterLoadHelper("items", this, _items, &RuleItem::afterLoad);
 	afterLoadHelper("manufacture", this, _manufacture, &RuleManufacture::afterLoad);
 	afterLoadHelper("intelligence", this, _intelligence, &RuleIntelProject::afterLoad);
+	afterLoadHelper("prisoners", this, _prisoners, &RulePrisoner::afterLoad);
 	afterLoadHelper("covertOperations", this, _covertOperations, &RuleCovertOperation::afterLoad);
 	afterLoadHelper("armors", this, _armors, &Armor::afterLoad);
 	afterLoadHelper("units", this, _units, &Unit::afterLoad);
@@ -2697,6 +2703,14 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		{
 			_intelligenceListOrder += 100;
 			rule->load(*i, this, _intelligenceListOrder);
+		}
+	}
+	for (YAML::const_iterator i = doc["prisoners"].begin(); i != doc["prisoners"].end(); ++i)
+	{
+		RulePrisoner* rule = loadRule(*i, &_prisoners, &_prisonerIndex, "type");
+		if (rule != 0)
+		{
+			rule->load(*i);
 		}
 	}
 	for (YAML::const_iterator i = doc["soldierBonuses"].begin(); i != doc["soldierBonuses"].end(); ++i)
@@ -4273,6 +4287,25 @@ RuleIntelProject *Mod::getIntelProject(const std::string & id, bool error) const
 const std::vector<std::string> &Mod::getIntelProjectsList() const
 {
 	return _intelligenceIndex;
+}
+
+/**
+ * Returns the rules for the specified prisoner.
+ * @param id Inteligence project type.
+ * @return Rules for the intelligence project.
+ */
+RulePrisoner* Mod::getPrisonerRules(const std::string& id, bool error) const
+{
+	return getRule(id, "Prisoner", _prisoners, error);
+}
+
+/**
+ * Returns the list of prisoner rules.
+ * @return The list of prisoner rules.
+ */
+const std::vector<std::string>& Mod::getPrisonerRulesList() const
+{
+	return _prisonerIndex;
 }
 
 /**

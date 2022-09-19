@@ -31,8 +31,10 @@
 #include "../Mod/Mod.h"
 #include "ItemContainer.h"
 #include "Soldier.h"
+#include "BasePrisoner.h"
 #include "../Engine/Language.h"
 #include "../Mod/RuleItem.h"
+#include "../Mod/RulePrisoner.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleResearch.h"
@@ -85,6 +87,10 @@ Base::~Base()
 		delete* i;
 	}
 	for (std::vector<IntelProject*>::iterator i = _intelProjects.begin(); i != _intelProjects.end(); ++i)
+	{
+		delete* i;
+	}
+	for (std::vector<BasePrisoner*>::iterator i = _prisoners.begin(); i != _prisoners.end(); ++i)
 	{
 		delete* i;
 	}
@@ -176,6 +182,20 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		{
 			Log(LOG_ERROR) << "Failed to load intelProjects " << name;
 		}
+	}
+
+	for (YAML::const_iterator i = node["prisoners"].begin(); i != node["prisoners"].end(); ++i)
+	{
+		std::string id = (*i)["id"].as<std::string>();
+		std::string type = (*i)["type"].as<std::string>();
+		BasePrisoner* prisoner = new BasePrisoner(_mod, type, id);
+		prisoner->load(*i, _mod);
+		int soldierId = prisoner->getSoldierId();
+		if (soldierId >= 0)
+		{
+			prisoner->setGeoscapeSoldier(save->getSoldier(soldierId));
+		}
+		addPrisoner(prisoner);
 	}
 
 	for (YAML::const_iterator i = node["soldiers"].begin(); i != node["soldiers"].end(); ++i)
@@ -493,6 +513,10 @@ YAML::Node Base::save() const
 	{
 		node["intelProjects"].push_back((*i)->save());
 	}
+	for (std::vector<BasePrisoner*>::const_iterator i = _prisoners.begin(); i != _prisoners.end(); ++i)
+	{
+		node["prisoners"].push_back((*i)->save());
+	}
 	node["items"] = _items->save();
 	node["scientists"] = _scientists;
 	node["engineers"] = _engineers;
@@ -626,6 +650,20 @@ void Base::removeIntelProject(IntelProject* project)
 		}
 	}
 	if (!erased) { 	Log(LOG_ERROR) << "Intelligence Project named " << project->getName() << " was not deleted from base " << this->getName() << " !"; }
+}
+
+void Base::removePrisoner(BasePrisoner* prisoner)
+{
+	bool erased = false;
+	auto iter = std::find(std::begin(_prisoners), std::end(_prisoners), prisoner);
+	for (int k = 0; k < _prisoners.size(); k++) {
+		if (_prisoners[k] == prisoner)
+		{
+			_prisoners.erase(_prisoners.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { Log(LOG_ERROR) << "Base prisoner with ID " << prisoner->getId() << " was not deleted from base " << this->getName() << " !"; }
 }
 
 /**
@@ -1266,6 +1304,11 @@ int Base::getFreeContainment(int prisonType) const
 	return getAvailableContainment(prisonType) - getUsedContainment(prisonType);
 }
 
+int Base::getFreePrisonSpace(PrisonerContainType prisonType) const
+{
+	return 0;
+}
+
 /**
  * Returns the amount of scientists currently in use.
  * @return Amount of scientists.
@@ -1719,6 +1762,20 @@ int Base::getUsedContainment(int prisonType, bool onlyExternal) const
 	return total;
 }
 
+int Base::getUsedPrisonSpace(PrisonerContainType prisonType) const
+{
+	int result = 0;
+	for (auto p : _prisoners)
+	{
+		if (p->getRules()->getContainType() == prisonType)
+		{
+			result++;
+		}
+	}
+
+	return result;
+}
+
 /**
  * Returns the total amount of Containment Space
  * available in the base.
@@ -1730,6 +1787,19 @@ int Base::getAvailableContainment(int prisonType) const
 	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
 	{
 		if ((*i)->getBuildTime() == 0 && (*i)->getRules()->getPrisonType() == prisonType)
+		{
+			total += (*i)->getRules()->getAliens();
+		}
+	}
+	return total;
+}
+
+int Base::getAvailablePrisonSpace(PrisonerContainType prisonType) const
+{
+	int total = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() == 0 && (*i)->getRules()->getPrisonContainType() == prisonType)
 		{
 			total += (*i)->getRules()->getAliens();
 		}
@@ -2191,7 +2261,7 @@ void Base::destroyFacility(std::vector<BaseFacility*>::iterator facility)
 	{
 		// lab destruction: enforce lab space limits. take scientists off projects until
 		// it all evens out. research is not cancelled.
-		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories(_mod->getIsFTAGame());
+		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories(_mod->isFTAGame());
 		for (std::vector<ResearchProject*>::iterator i = _research.begin(); i != _research.end() && toRemove > 0;)
 		{
 			if ((*i)->getAssigned() >= toRemove)
@@ -2213,7 +2283,7 @@ void Base::destroyFacility(std::vector<BaseFacility*>::iterator facility)
 	{
 		// workshop destruction: similar to lab destruction, but we'll lay off engineers instead
 		// in this case, however, production IS cancelled, as it takes up space in the workshop.
-		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops(_mod->getIsFTAGame());
+		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops(_mod->isFTAGame());
 		Collections::deleteIf(_productions, _productions.size(),
 			[&](Production* p)
 			{
@@ -2556,8 +2626,8 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 	return (
 		(removed.quarters > 0 && available.quarters < getUsedQuarters()) ||
 		(removed.stores > 0 && available.stores < getUsedStores()) ||
-		(removed.laboratories > 0 && available.laboratories < getUsedLaboratories(_mod->getIsFTAGame())) ||
-		(removed.workshops > 0 && available.workshops < getUsedWorkshops(_mod->getIsFTAGame())) ||
+		(removed.laboratories > 0 && available.laboratories < getUsedLaboratories(_mod->isFTAGame())) ||
+		(removed.workshops > 0 && available.workshops < getUsedWorkshops(_mod->isFTAGame())) ||
 		(removed.hangars > 0 && available.hangars < getUsedHangars()) ||
 		(removed.psiLaboratories > 0 && available.psiLaboratories < getUsedPsiLabs()) ||
 		(removed.training > 0 && available.training < getUsedTraining()) ||

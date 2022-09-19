@@ -50,10 +50,10 @@ namespace OpenXcom
  */
 ResearchState::ResearchState(Base *base) : _base(base)
 {
-	_ftaUi = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (_ftaUi && false)
+	if (_ftaUi)
 	{
 		_btnOk = new TextButton(96, 16, 216, 176);
 		_btnNew = new TextButton(96, 16, 8, 176);
@@ -105,7 +105,7 @@ ResearchState::ResearchState(Base *base) : _base(base)
 
 	_btnScientists->setText(tr("STR_SCIENTISTS_LC"));
 	_btnScientists->onMouseClick((ActionHandler)&ResearchState::btnScientistsClick);
-	_btnScientists->setVisible(_ftaUi && false);
+	_btnScientists->setVisible(_ftaUi);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -203,7 +203,7 @@ void ResearchState::onOpenTechTreeViewer(Action *)
  */
 void ResearchState::lstResearchMousePress(Action *action)
 {
-	if (!_lstResearch->isInsideNoScrollArea(action->getAbsoluteXMouse()))
+	if (!_lstResearch->isInsideNoScrollArea(action->getAbsoluteXMouse()) || _ftaUi)
 	{
 		return;
 	}

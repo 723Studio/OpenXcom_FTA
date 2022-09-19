@@ -206,7 +206,7 @@ BattlescapeState::BattlescapeState() :
 	_btnSkills = new BattlescapeButton(32, 24, screenWidth - 32, 25); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnSkills->setVisible(false);
 
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->isFTAGame();
 
 	{
 		auto posX = (screenWidth - 32);

@@ -34,6 +34,7 @@ class RuleItem;
 class RuleManufacture;
 struct VerticalLevel;
 enum BasePlacementErrors : int;
+enum PrisonerContainType : int;
 
 /**
  * Represents a specific type of base facility.
@@ -49,6 +50,7 @@ private:
 	RuleBaseFacilityFunctions _requiresBaseFunc = 0;
 	RuleBaseFacilityFunctions _provideBaseFunc = 0;
 	RuleBaseFacilityFunctions _forbiddenBaseFunc = 0;
+	PrisonerContainType _prisonerContainType; //a FTA version of prison
 	int _spriteShape, _spriteFacility;
 	bool _connectorsDisabled;
 	int _missileAttraction;
@@ -70,7 +72,7 @@ private:
 	int _manaRecoveryPerDay = 0;
 	int _healthRecoveryPerDay = 0;
 	float _sickBayAbsoluteBonus, _sickBayRelativeBonus;
-	int _prisonType;
+	int _prisonType; // OXCE type of prison
 	int _rightClickActionType;
 	std::vector<VerticalLevel> _verticalLevels;
 	std::vector<const RuleBaseFacility*> _leavesBehindOnSell;
@@ -193,6 +195,7 @@ public:
 	float getSickBayRelativeBonus() const { return _sickBayRelativeBonus; }
 	/// Gets the prison type.
 	int getPrisonType() const;
+	const PrisonerContainType getPrisonContainType() const { return _prisonerContainType; }
 	/// Gets the action type to perform on right click.
 	int getRightClickActionType() const;
 	/// Gets the vertical levels for this facility map generation.

@@ -69,7 +69,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_craft = _base->getCrafts()->at(_craftId);
 	_weaponNum = _craft->getRules()->getWeapons();
-	_ftaUi = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->isFTAGame();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
 

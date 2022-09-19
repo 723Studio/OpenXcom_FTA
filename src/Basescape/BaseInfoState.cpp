@@ -48,7 +48,7 @@ namespace OpenXcom
  */
 BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _state(state)
 {
-	bool isFtA = _game->getMod()->getIsFTAGame();
+	bool isFtA = _game->getMod()->isFTAGame();
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_mini = new MiniBaseView(128, 16, 182, 8);

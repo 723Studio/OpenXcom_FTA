@@ -78,7 +78,7 @@ bool Production::haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const
 
 int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRating, bool prediction)
 {
-	if (!m->getIsFTAGame())
+	if (!m->isFTAGame())
 	{
 		return _engineers;
 	}

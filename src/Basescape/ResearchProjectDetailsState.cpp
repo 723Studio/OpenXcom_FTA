@@ -74,7 +74,7 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 	_txtTitle->setAlign(ALIGN_CENTER);
 
 	
-	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(_rule->getCost())); //#FINNIKTODO add string calculation
+	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(tr(_rule->getCostDescription())));
 
 	int dY = 0;
 	if (_game->getSavedGame()->getDebugMode())

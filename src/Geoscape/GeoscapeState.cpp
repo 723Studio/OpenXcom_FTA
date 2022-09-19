@@ -92,6 +92,7 @@
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
 #include "IntelCompleteState.h"
+#include "IntelAvailableState.h"
 #include "../Battlescape/PromotionsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/ResearchProject.h"
@@ -107,6 +108,7 @@
 #include "../Savegame/Production.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/IntelProject.h"
+#include "../Mod/RuleIntelProject.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
@@ -272,7 +274,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	geobord->setY(_sidebar->getY());
 	_sidebar->copy(geobord);
 	_game->getMod()->getSurface("ALTGEOBORD.SCR")->blitNShade(_bg, 0, 0);
-	_fta = _game->getMod()->getIsFTAGame();
+	_fta = _game->getMod()->isFTAGame();
 
 	_sideLine->drawRect(0, 0, _sideLine->getWidth(), _sideLine->getHeight(), 15);
 
@@ -2433,6 +2435,7 @@ void GeoscapeState::time1Day()
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
+	bool availableIntelInformed = false, completedIntelInformed = false;
 	for (Base *base : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2471,11 +2474,14 @@ void GeoscapeState::time1Day()
 
 		// Handle intelligence projects
 		bool intelProjectFinished = false;
-		for (auto project : base->getIntelProjects())
+		auto projects = base->getIntelProjects();
+		for (auto project : projects)
 		{
 			std::map<Soldier*, int> soldiers;
 			for (std::vector<Soldier*>::iterator j = base->getSoldiers()->begin(); j != base->getSoldiers()->end(); ++j)
 			{
+				if ((*j)->getIntelProject() == 0)
+					continue;
 				if ((*j)->getIntelProject()->getName() == project->getName())
 				{
 					int roleCoef = 100;
@@ -2486,16 +2492,57 @@ void GeoscapeState::time1Day()
 					soldiers.emplace(std::make_pair((*j), roleCoef));
 				}
 			}
+			std::string desc = "";
 			project->roll(_game,
 				*_globe,
 				project->getStepProgress(soldiers,
 					_game->getMod(),
-					_game->getMasterMind()->getLoyaltyPerformanceBonus()),
+					_game->getMasterMind()->getLoyaltyPerformanceBonus(), desc, false),
 				intelProjectFinished);
 
-			if (intelProjectFinished)
+			// #FINNIKTODO - special project rules processing here!
+			if (intelProjectFinished && !completedIntelInformed)
 			{
-				_game->pushState(new IntelCompleteState(project, base));
+				_game->pushState(new IntelCompleteState(project, base, this));
+				completedIntelInformed = true;
+			}
+		}
+
+		// now check if there are new projects available and add it to the base;
+		for (auto i : _game->getMod()->getIntelProjectsList())
+		{
+			auto rule = _game->getMod()->getIntelProject(i);
+			bool found = false;
+			for (auto baseProject : projects)
+			{
+				if (baseProject->getRules() == rule)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if (!found && _game->getSavedGame()->isResearched(rule->getRequiredResearch(), false))
+			{
+				//let's try to make a project
+				double minCost = rule->getCost() / 2;
+				double maxCost = rule->getCost() * 1.5;
+				IntelProject* project = new IntelProject(rule, base, RNG::generate(minCost, maxCost));
+				// there are much more conditions depending on various properies
+				if (project->getAvailableStages(_game->getSavedGame()).size() > 0)
+				{
+					// we want to auto-add the project
+					base->addIntelProject(project);
+					if (!availableIntelInformed)
+					{
+						_game->pushState(new IntelAvailableState(project, base, this));
+						availableIntelInformed = true; //show it only once for all bases
+					}
+				}
+				else
+				{
+					delete project; //sorry, not a time yet...
+				}
 			}
 		}
 
@@ -4530,7 +4577,7 @@ void GeoscapeState::handleResearch(Base* base)
 		project = nullptr;
 
 		// wait, if it's FtA, we need to train stats and promote people!
-		if (_game->getMod()->getIsFTAGame())
+		if (_game->getMod()->isFTAGame())
 		{
 			auto assignedScientists = projectData.first;
 			for (auto s : assignedScientists)

@@ -47,7 +47,7 @@ namespace OpenXcom
  */
 CraftsState::CraftsState(Base *base) : _base(base)
 {
-	bool ftaUI = _game->getMod()->getIsFTAGame();
+	bool ftaUI = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	if (ftaUI)

@@ -542,7 +542,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		missionRace = missionRules->generateRace(month);
 		if (missionRace.empty())
 		{
-			if (mod.getIsFTAGame())
+			if (mod.isFTAGame())
 			{
 				missionRace = "STR_MIB";
 				Log(LOG_ERROR) << "An error occurred during the processing of the result of a covert operation:  " << this->getOperationName() << " ! In the rules of the alien mission " << missionName <<

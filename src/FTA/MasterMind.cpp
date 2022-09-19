@@ -493,7 +493,7 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 	missionRace = missionRules->generateRace(month);
 	if (missionRace.empty())
 	{
-		if (mod.getIsFTAGame())
+		if (mod.isFTAGame())
 		{
 			missionRace = "STR_MIB";
 			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
@@ -529,7 +529,7 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 
 int MasterMind::updateLoyalty(int score, LoyaltySource source)
 {
-	if (!_game->getMod()->getIsFTAGame())
+	if (!_game->getMod()->isFTAGame())
 	{
 		return 0;
 	}
@@ -590,7 +590,7 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 int MasterMind::getLoyaltyPerformanceBonus()
 {
 	int performance = 100;
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		int loyalty = _game->getSavedGame()->getLoyalty();
 		if (loyalty > 100) // function approximation goes weird on values from 0 to 100, so we just keep it bonusless there...

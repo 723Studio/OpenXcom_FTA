@@ -53,7 +53,7 @@ namespace OpenXcom
 PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule, BaseFacility *origFac) : _base(base), _rule(rule), _origFac(origFac)
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 128, 160, 192, 40);

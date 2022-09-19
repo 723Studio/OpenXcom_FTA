@@ -61,6 +61,7 @@ class RuleTerrain;
 class MapDataSet;
 class RuleSkill;
 class RuleSoldier;
+class RulePrisoner;
 class Unit;
 class Armor;
 class ArticleDefinition;
@@ -185,6 +186,7 @@ private:
 	std::map<std::string, RuleManufacture *> _manufacture;
 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
 	std::map<std::string, RuleIntelProject *> _intelligence;
+	std::map<std::string, RulePrisoner*> _prisoners;
 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
 	std::map<std::string, RuleSoldierTransformation *> _soldierTransformation;
 	std::map<std::string, UfoTrajectory *> _ufoTrajectories;
@@ -307,7 +309,7 @@ private:
 
 	std::map<std::string, int> _ufopaediaSections;
 	std::vector<std::string> _countriesIndex, _extraGlobeLabelsIndex, _regionsIndex, _facilitiesIndex, _craftsIndex, _craftWeaponsIndex, _itemCategoriesIndex, _itemsIndex, _invsIndex, _ufosIndex;
-	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex, _intelligenceIndex;
+	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex, _intelligenceIndex, _prisonerIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
 	std::vector<std::string> _diplomacyFactionIndex;
@@ -630,6 +632,10 @@ public:
 		{
 			rule = getIntelProject(name, true);
 		}
+		else if constexpr (std::is_same_v<T, RulePrisoner>)
+		{
+			rule = getPrisonerRules(name, true);
+		}
 		else
 		{
 			static_assert(sizeof(T) == 0, "Unsupported type to link");
@@ -885,7 +891,7 @@ public:
 	/// Gets the bug hunt mode time units % parameter (default = 60).
 	int getBughuntTimeUnitsLeft() const { return _bughuntTimeUnitsLeft; }
 	/// Gets if we are playing FTA scenario.
-	bool getIsFTAGame() const { return _ftaGame; }
+	bool isFTAGame() const { return _ftaGame; }
 	/// Gets lenght of FtA game (while in alpha) in months
 	int getFTAGameLength() const { return _ftaGameLength; }
 	
@@ -1038,6 +1044,12 @@ public:
 	RuleIntelProject *getIntelProject (const std::string &id, bool error = false) const;
 	/// Gets the list of all intelligence projects.
 	const std::vector<std::string> &getIntelProjectsList() const;
+
+	/// Gets the ruleset for a specific prisoner.
+	RulePrisoner* getPrisonerRules(const std::string& id, bool error = false) const;
+	/// Gets the list of all prisoner rules.
+	const std::vector<std::string>& getPrisonerRulesList() const;
+
 	/// Gets the ruleset for a specific soldier bonus type.
 	RuleSoldierBonus *getSoldierBonus(const std::string &id, bool error = false) const;
 	/// Gets the list of all soldier bonus types.

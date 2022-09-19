@@ -67,7 +67,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	int pilots = c->getRules()->getPilots();
 	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
 	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding() && pilots < c->getSpaceAvailable();
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -131,7 +131,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 
 	_txtRank->setText(tr("STR_RANK"));
 
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_txtCraft->setText(tr("STR_ASSIGNMENT")); 
 	}

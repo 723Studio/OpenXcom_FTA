@@ -234,6 +234,7 @@
     <ClCompile Include="Basescape\CovertOperationArmorState.cpp" />
     <ClCompile Include="Basescape\CovertOperationEquipmentState.cpp" />
     <ClCompile Include="Basescape\CovertOperationInfoState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationsListState.cpp" />
     <ClCompile Include="Basescape\CovertOperationSoldiersState.cpp" />
     <ClCompile Include="Basescape\CovertOperationStartState.cpp" />
     <ClCompile Include="Basescape\CovertOperationState.cpp" />
@@ -252,6 +253,7 @@
     <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
+    <ClCompile Include="Basescape\IntelState.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\ManufactureDependenciesTreeState.cpp" />
@@ -414,6 +416,7 @@
     <ClCompile Include="Geoscape\FinishedCoverOperationState.cpp" />
     <ClCompile Include="Geoscape\ExtendedGeoscapeLinksState.cpp" />
     <ClCompile Include="Geoscape\GeoscapeEventState.cpp" />
+    <ClCompile Include="Geoscape\IntelAvailableState.cpp" />
     <ClCompile Include="Geoscape\IntelCompleteState.cpp" />
     <ClCompile Include="Geoscape\MissionDetectedState.cpp" />
     <ClCompile Include="Geoscape\AllocatePsiTrainingState.cpp" />
@@ -525,6 +528,7 @@
     <ClCompile Include="Mod\RuleIntelProject.cpp" />
     <ClCompile Include="Mod\RuleItemCategory.cpp" />
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp" />
+    <ClCompile Include="Mod\RulePrisoner.cpp" />
     <ClCompile Include="Mod\RuleSkill.cpp" />
     <ClCompile Include="Mod\RuleSoldierBonus.cpp" />
     <ClCompile Include="Mod\RuleSoldierTransformation.cpp" />
@@ -578,6 +582,7 @@
     <ClCompile Include="Savegame\AlienMission.cpp" />
     <ClCompile Include="Savegame\Base.cpp" />
     <ClCompile Include="Savegame\BaseFacility.cpp" />
+    <ClCompile Include="Savegame\BasePrisoner.cpp" />
     <ClCompile Include="Savegame\BattleItem.cpp" />
     <ClCompile Include="Savegame\BattleUnit.cpp" />
     <ClCompile Include="Savegame\Country.cpp" />
@@ -647,6 +652,7 @@
     <ClInclude Include="Basescape\CovertOperationArmorState.h" />
     <ClInclude Include="Basescape\CovertOperationEquipmentState.h" />
     <ClInclude Include="Basescape\CovertOperationInfoState.h" />
+    <ClInclude Include="Basescape\CovertOperationsListState.h" />
     <ClInclude Include="Basescape\CovertOperationSoldiersState.h" />
     <ClInclude Include="Basescape\CovertOperationStartState.h" />
     <ClInclude Include="Basescape\CovertOperationState.h" />
@@ -665,6 +671,7 @@
     <ClInclude Include="Basescape\FacilityAllocateEngineersState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
+    <ClInclude Include="Basescape\IntelState.h" />
     <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
     <ClInclude Include="Basescape\ManufactureInfoState.h" />
@@ -844,6 +851,7 @@
     <ClInclude Include="Geoscape\FinishedCoverOperationState.h" />
     <ClInclude Include="Geoscape\ExtendedGeoscapeLinksState.h" />
     <ClInclude Include="Geoscape\GeoscapeEventState.h" />
+    <ClInclude Include="Geoscape\IntelAvailableState.h" />
     <ClInclude Include="Geoscape\IntelCompleteState.h" />
     <ClInclude Include="Geoscape\MissionDetectedState.h" />
     <ClInclude Include="Geoscape\AllocatePsiTrainingState.h" />
@@ -956,6 +964,7 @@
     <ClInclude Include="Mod\RuleIntelProject.h" />
     <ClInclude Include="Mod\RuleItemCategory.h" />
     <ClInclude Include="Mod\RuleManufactureShortcut.h" />
+    <ClInclude Include="Mod\RulePrisoner.h" />
     <ClInclude Include="Mod\RuleSkill.h" />
     <ClInclude Include="Mod\RuleSoldierBonus.h" />
     <ClInclude Include="Mod\RuleSoldierTransformation.h" />
@@ -1010,6 +1019,7 @@
     <ClInclude Include="Savegame\AlienMission.h" />
     <ClInclude Include="Savegame\Base.h" />
     <ClInclude Include="Savegame\BaseFacility.h" />
+    <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Savegame\BattleItem.h" />
     <ClInclude Include="Savegame\BattleUnit.h" />
     <ClInclude Include="Savegame\BattleUnitStatistics.h" />

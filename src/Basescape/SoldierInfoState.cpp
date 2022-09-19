@@ -75,7 +75,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 		_list = _base->getSoldiers();
 	}
 
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->isFTAGame();
 	_localChange = false;
 
 	// Create objects

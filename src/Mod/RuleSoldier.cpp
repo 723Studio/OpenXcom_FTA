@@ -125,6 +125,7 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 	mod->loadName(_type, _armorName, node["armor"]);
 	_specWeaponName = node["specialWeapon"].as<std::string>(_specWeaponName);
 	_armorForAvatar = node["armorForAvatar"].as<std::string>(_armorForAvatar);
+	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
 	_avatarOffsetX = node["avatarOffsetX"].as<int>(_avatarOffsetX);
 	_avatarOffsetY = node["avatarOffsetY"].as<int>(_avatarOffsetY);
 	_flagOffset = node["flagOffset"].as<int>(_flagOffset);
@@ -248,6 +249,7 @@ void RuleSoldier::afterLoad(const Mod* mod)
 	}
 
 	mod->linkRule(_armor, _armorName);
+	mod->linkRule(_prisoner, _prisonerName);
 	mod->checkForSoftError(_armor == nullptr, _type, "Soldier type is missing the default armor", LOG_ERROR);
 
 	mod->verifySoundOffset(_type, _deathSoundMale, "BATTLE.CAT");

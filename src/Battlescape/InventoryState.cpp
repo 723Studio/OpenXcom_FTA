@@ -89,7 +89,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
@@ -620,7 +620,7 @@ void InventoryState::updateStats()
 	}
 	bool showPsiStrength = (psiSkillWithoutAnyBonuses > 0 || (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
 
-	bool ftaGame = _game->getMod()->getIsFTAGame();
+	bool ftaGame = _game->getMod()->isFTAGame();
 
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{

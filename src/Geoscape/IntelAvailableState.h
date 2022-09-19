@@ -31,10 +31,10 @@ class Base;
 class IntelProject;
 
 /**
- * Window which inform the player that a Intel Project is finished.
- * Allow him to allocate agents to another one.
+ * Window which inform the player that a Intel Project becoames available on the base.
+ * Allow him to allocate agents to it.
  */
-class IntelCompleteState : public State
+class IntelAvailableState : public State
 {
 	Window *_window;
 	Text *_txtTitle, *_txtProject;
@@ -44,8 +44,8 @@ class IntelCompleteState : public State
 	GeoscapeState* _state;
 public:
 	/// Creates the EndResearch state.
-	IntelCompleteState(IntelProject *project, Base *base, GeoscapeState* state);
-	~IntelCompleteState();
+	IntelAvailableState(IntelProject *project, Base *base, GeoscapeState* state);
+	~IntelAvailableState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Report button.

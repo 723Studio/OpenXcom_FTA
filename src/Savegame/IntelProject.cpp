@@ -27,12 +27,18 @@
 namespace OpenXcom
 {
 
+const float PROGRESS_LIMIT_POOR = 0.1f;
+const float PROGRESS_LIMIT_AVERAGE = 0.2f;
+const float PROGRESS_LIMIT_GOOD = 0.3f;
+const float PROGRESS_LIMIT_GREAT = 0.4f;
+const float PROGRESS_LIMIT_SUPERIOR = 0.5f;
+
 IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 	_rules(rule), _base(base), _active(true), _rolls(0), _spent(0), _cost(cost)
 {
 }
 
-int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating)
+int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating, std::string& description, bool estimate)
 {
 	int progress = 0;
 	double effort = 0, soldierEffort = 0, statEffort = 0;
@@ -48,7 +54,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->data;
 			soldierEffort += (statEffort / projStats.data);
-			if (stats->data < caps.data
+			if (!estimate && stats->data < caps.data
 				&& RNG::generate(0, caps.data) > stats->data
 				&& RNG::percent(factor * (projStats.data / 100))
 				&& RNG::percent(s.second))
@@ -61,7 +67,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->computers;
 			soldierEffort += (statEffort / projStats.computers);
-			if (stats->computers < caps.computers
+			if (!estimate && stats->computers < caps.computers
 				&& RNG::generate(0, caps.computers) > stats->computers
 				&& RNG::percent(factor)
 				&& RNG::percent(s.second))
@@ -74,7 +80,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->xenolinguistics;
 			soldierEffort += (statEffort / projStats.xenolinguistics);
-			if (stats->xenolinguistics < caps.xenolinguistics
+			if (!estimate && stats->xenolinguistics < caps.xenolinguistics
 				&& RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics
 				&& RNG::percent(factor)
 				&& RNG::percent(s.second))
@@ -87,7 +93,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->hacking;
 			soldierEffort += (statEffort / projStats.hacking);
-			if (stats->hacking < caps.hacking
+			if (!estimate && stats->hacking < caps.hacking
 				&& RNG::generate(0, caps.hacking) > stats->hacking
 				&& RNG::percent(factor)
 				&& RNG::percent(s.second))
@@ -100,7 +106,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->alienTech;
 			soldierEffort += (statEffort / projStats.alienTech);
-			if (stats->alienTech < caps.alienTech
+			if (!estimate && stats->alienTech < caps.alienTech
 				&& RNG::generate(0, caps.alienTech) > stats->alienTech
 				&& RNG::percent(factor)
 				&& RNG::percent(s.second))
@@ -113,7 +119,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->investigation;
 			soldierEffort += (statEffort / projStats.investigation);
-			if (stats->investigation < caps.investigation
+			if (!estimate && stats->investigation < caps.investigation
 				&& RNG::generate(0, caps.investigation) > stats->investigation
 				&& RNG::percent(factor)
 				&& RNG::percent(s.second))
@@ -130,6 +136,10 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		Log(LOG_INFO) << "Adjusted effort value: " << effort;
 
 		double insightBonus = RNG::generate(0, stats->insight / 2);
+		if (estimate)
+		{
+			insightBonus = stats->insight / 4; //just take avarage roll
+		}
 		soldierEffort += insightBonus / 10;
 
 		effort += soldierEffort;
@@ -145,6 +155,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	//gets total effort to daily project progress
 	progress = static_cast<int>(ceil(effort * 24));
 	Log(LOG_INFO) << " >>> Total daile progress for the intel project " << _rules->getName() << ": " << progress;
+	description = getState(progress);
 
 	return progress;
 }
@@ -308,36 +319,43 @@ YAML::Node IntelProject::save() const
  * Return a string describing project progress.
  * @return a string describing project progress.
  */
-std::string IntelProject::getState() const
+std::string IntelProject::getState(int progress) const
 {
-	/*float progress = (float)getSpent() / getRules()->getCost();
-	if (getAssigned() == 0)
+	std::string result = "";
+	if (progress <= 0)
 	{
-		return "STR_NONE";
-	}
-	else if (progress <= PROGRESS_LIMIT_UNKNOWN)
-	{
-		return "STR_UNKNOWN";
+		result = "STR_NONE";
 	}
 	else
 	{
-		float rating = (float)getAssigned();
-		rating /= getRules()->getCost();
+		float rating = progress / (_cost + (_rolls * getRules()->getCostIncrease()));
 		if (rating <= PROGRESS_LIMIT_POOR)
 		{
-			return "STR_POOR";
+			result = "STR_POOR";
 		}
 		else if (rating <= PROGRESS_LIMIT_AVERAGE)
 		{
-			return "STR_AVERAGE";
+			result = "STR_AVERAGE";
 		}
 		else if (rating <= PROGRESS_LIMIT_GOOD)
 		{
-			return "STR_GOOD";
+			result = "STR_GOOD";
 		}
-		return "STR_EXCELLENT";
-	}*/
-	return "";
+		else if (rating <= PROGRESS_LIMIT_GREAT)
+		{
+			result = "STR_GREAT";
+		}
+		else if (rating <= PROGRESS_LIMIT_SUPERIOR)
+		{
+			result = "STR_SUPERIOR";
+		}
+		else
+		{
+			result = "STR_EXCELLENT";
+		}
+	}
+	
+	return result;
 }
 
 }

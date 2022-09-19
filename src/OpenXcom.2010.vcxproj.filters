@@ -1241,6 +1241,19 @@
     <ClCompile Include="Geoscape\IntelCompleteState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\IntelState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationsListState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\IntelAvailableState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\BasePrisoner.cpp" />
+    <ClCompile Include="Mod\RulePrisoner.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2545,6 +2558,19 @@
     </ClInclude>
     <ClInclude Include="Geoscape\IntelCompleteState.h">
       <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\IntelState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationsListState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\IntelAvailableState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\BasePrisoner.h" />
+    <ClInclude Include="Mod\RulePrisoner.h">
+      <Filter>Mod</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

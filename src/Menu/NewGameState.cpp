@@ -136,7 +136,7 @@ NewGameState::NewGameState()
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
 
-	if (_game->getMod()->getIsFTAGame() && !_game->getMod()->getIsIronManEnabled()) // #FINNIKTODO remove on beta
+	if (_game->getMod()->isFTAGame() && !_game->getMod()->getIsIronManEnabled()) // #FINNIKTODO remove on beta
 	{
 		_btnIronman->setVisible(false);
 		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
@@ -193,7 +193,7 @@ void NewGameState::btnOkClick(Action *)
 	_game->setState(gs);
   
 	//choose the game scenario
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_game->getMasterMind()->newGameHelper(diff, gs);
 		save->setFtAGame(true);

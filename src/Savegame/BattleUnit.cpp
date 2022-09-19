@@ -37,6 +37,7 @@
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSkill.h"
@@ -68,14 +69,14 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	_exp{ }, _expTmp{ },
 	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0), _moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0),
-	_geoscapeSoldier(soldier), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
-	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false),
+	_geoscapeSoldier(soldier), _roles(0), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
+	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false), 
 	_capturable(true), _vip(false), _bannedInNextStage(false)
 {
 	_name = soldier->getName(true);
 	_id = soldier->getId();
 	_type = "SOLDIER";
-	_rank = soldier->getRankString(mod->getIsFTAGame());
+	_rank = soldier->getRankString(mod->isFTAGame());
 	_stats = *soldier->getCurrentStats();
 	_armor = soldier->getArmor();
 	_standHeight = _armor->getStandHeight() == -1 ? soldier->getRules()->getStandHeight() : _armor->getStandHeight();
@@ -440,7 +441,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
 	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT),
-	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0),  _unitRules(unit),
+	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0), _roles(0), _unitRules(unit),
 	_rankInt(0), _turretType(-1), _hidingForTurn(false), _respawn(false), _alreadyRespawned(false),
 	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false),
 	_vip(false), _bannedInNextStage(false)
@@ -456,6 +457,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_type = unit->getType();
 	_rank = unit->getRank();
 	_race = unit->getRace();
+	_roles = unit->getRoles();
 	_stats = *unit->getStats();
 	_statsRandom = *unit->getRandomStats();
 	_standHeight = _armor->getStandHeight() == -1 ? unit->getStandHeight() : _armor->getStandHeight();
@@ -712,6 +714,8 @@ void BattleUnit::load(const YAML::Node &node, const Mod *mod, const ScriptGlobal
 	_freshReinforcement = node["freshReinforcement"].as<bool>(_freshReinforcement);
 	_dontReselect = node["dontReselect"].as<bool>(_dontReselect);
 	_charging = 0;
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
 
 	if (const YAML::Node& spawn = node["spawnUnit"])
 	{
@@ -1472,7 +1476,7 @@ UnitFaction BattleUnit::getFaction() const
  * Sets geoscape soldier in case we create one for this unit in debreafing.
  * @param soldier Soldier.
  */
-void BattleUnit::setGeoscapeSoldied(Soldier* soldier)
+void BattleUnit::setGeoscapeSoldier(Soldier* soldier)
 {
 	_geoscapeSoldier = soldier;
 	// Set basic parameters as we would not need much of it stats.
@@ -3036,7 +3040,20 @@ bool BattleUnit::canStackToSlot(BattleItem* item, RuleInventory* slot, int x, in
 	{
 		return false;
 	}
-};
+}
+void BattleUnit::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
+}
+;
 
 /**
  * Fit item into inventory slot.
@@ -3110,7 +3127,7 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 			{
 				if (rule->getType() == i->getRules()->getType())
 				{
-					if (mod->getIsFTAGame() && rule->getStackSize() > 1) // FtA logic
+					if (mod->isFTAGame() && rule->getStackSize() > 1) // FtA logic
 					{
 						++tally;
 						if (allowSecondClip && rule->getBattleType() == BT_AMMO)
@@ -4022,7 +4039,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	if (hasGainedAnyExperience())
 	{
 		hasImproved = true;
-		if (s->getRank() == RANK_ROOKIE && !mod->getIsFTAGame())
+		if (s->getRank() == RANK_ROOKIE && !mod->isFTAGame())
 			s->promoteRank();
 		int v;
 		v = caps.tu - stats->tu;

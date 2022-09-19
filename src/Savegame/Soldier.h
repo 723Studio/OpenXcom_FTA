@@ -41,6 +41,7 @@ class IntelProject;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
+class BattleUnit;
 class Armor;
 class Language;
 class EquipmentLayoutItem;
@@ -95,7 +96,6 @@ private:
 	std::string _name;
 	std::string _callsign;
 	int _id, _nationality, _improvement, _psiStrImprovement;
-	//std::map<SoldierRole, int> _roles;
 	std::vector<SoldierRoleRanks*> _roles;
 	const RuleSoldier *_rules;
 	UnitStats _initialStats, _currentStats, _tmpStatsWithSoldierBonuses, _tmpStatsWithAllBonuses;
@@ -135,6 +135,7 @@ private:
   public:
 	/// Creates a new soldier.
 	Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id = 0);
+	Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id = 0);
 	/// Cleans up the soldier.
 	~Soldier();
 	/// Loads the soldier from YAML.

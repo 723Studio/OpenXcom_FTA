@@ -98,7 +98,7 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 	for (std::vector<Soldier*>::iterator s = soldiersMedalled.begin() ; s != soldiersMedalled.end(); ++s)
 	{
 		// Establish some base information
-		bool fta = _game->getMod()->getIsFTAGame();
+		bool fta = _game->getMod()->isFTAGame();
 		_lstSoldiers->addRow(
 			3,
 			(*s)->getName().c_str(),

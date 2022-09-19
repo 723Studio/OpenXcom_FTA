@@ -1964,12 +1964,12 @@ void BattlescapeGame::primaryAction(Position pos)
 		if (_currentAction.type > 2 && _save->getSelectedUnit()->getFaction() == FACTION_PLAYER && _save->getSelectedUnit()->getUndercover())
 		{
 			_save->getSelectedUnit()->setRevealed(true);
-			Log(LOG_INFO) << "Unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is revealed because action: " << _currentAction.type; //#FINNIKTODO #CLEARLOGS
+			Log(LOG_DEBUG) << "Unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is revealed because action: " << _currentAction.type; //#FINNIKTODO #CLEARLOGS
 		}
 		else if (_currentAction.type == BA_WALK && _save->getSelectedUnit()->getRevealed())
 		{
 			_save->getSelectedUnit()->setRevealed(false);
-			Log(LOG_INFO) << "We move, so unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is not revealed anymore."; //#FINNIKTODO #CLEARLOGS
+			Log(LOG_DEBUG) << "We move, so unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is not revealed anymore."; //#FINNIKTODO #CLEARLOGS
 		}
 	}
 	else

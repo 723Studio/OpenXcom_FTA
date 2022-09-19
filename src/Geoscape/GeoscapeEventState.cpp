@@ -497,7 +497,7 @@ void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
 
-	if (!_game->getMod()->getIsFTAGame())
+	if (!_game->getMod()->isFTAGame())
 	{
 		Base* base = _game->getSavedGame()->getBases()->front();
 		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())

@@ -87,7 +87,7 @@ PromotionsState::PromotionsState()
 	_lstSoldiers->setMargin(8);
 	_lstSoldiers->onMouseClick((ActionHandler)&PromotionsState::lstSoldiersClick);
 
-	bool fta = _game->getMod()->getIsFTAGame();
+	bool fta = _game->getMod()->isFTAGame();
 	int it = 0;
 
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)

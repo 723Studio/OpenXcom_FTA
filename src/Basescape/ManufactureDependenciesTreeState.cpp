@@ -42,7 +42,7 @@ namespace OpenXcom
 ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::string &selectedItem) : _selectedItem(selectedItem), _showAll(false)
 {
 	_screen = false;
-	_ftaGame = _game->getMod()->getIsFTAGame();
+	_ftaGame = _game->getMod()->isFTAGame();
 
 	_window = new Window(this, 222, 144, 49, 32);
 	_txtTitle = new Text(182, 9, 53, 42);

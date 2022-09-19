@@ -12,6 +12,7 @@ set ( basescape_src
   Basescape/CovertOperationArmorState.cpp
   Basescape/CovertOperationEquipmentState.cpp
   Basescape/CovertOperationInfoState.cpp
+  Basescape/CovertOperationsListState.cpp
   Basescape/CovertOperationSoldiersState.cpp
   Basescape/CovertOperationStartState.cpp
   Basescape/CovertOperationState.cpp
@@ -30,6 +31,7 @@ set ( basescape_src
   Basescape/FacilityAllocateEngineersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
+  Basescape/IntelState.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
@@ -221,6 +223,8 @@ set ( geoscape_src
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
+  Geoscape/IntelAvailableState.cpp
+  Geoscape/IntelCompleteState.cpp
   Geoscape/InterceptState.cpp
   Geoscape/ItemsArrivingState.cpp
   Geoscape/LowFuelState.cpp
@@ -350,6 +354,7 @@ set ( mod_src
   Mod/RuleManufactureShortcut.cpp
   Mod/RuleMissionScript.cpp
   Mod/RuleMusic.cpp
+  Mod/RulePrisoner.cpp
   Mod/RuleRegion.cpp
   Mod/RuleResearch.cpp
   Mod/RuleSkill.cpp
@@ -376,6 +381,7 @@ set ( savegame_src
   Savegame/AlienStrategy.cpp
   Savegame/Base.cpp
   Savegame/BaseFacility.cpp
+  Savegame/BasePrisoner.cpp
   Savegame/BattleItem.cpp
   Savegame/BattleUnit.cpp
   Savegame/Country.cpp

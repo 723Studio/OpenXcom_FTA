@@ -22,34 +22,37 @@
 namespace OpenXcom
 {
 
-class Game;
-class Window;
 class TextButton;
+class Window;
 class Text;
-class GeoscapeState;
+class TextList;
 class Base;
-class IntelProject;
+class TextEdit;
+class RuleCovertOperation;
 
 /**
- * Window which inform the player that a Intel Project is finished.
- * Allow him to allocate agents to another one.
+ * Window which displays list of possible covert operations.
  */
-class IntelCompleteState : public State
+class CovertOperationsListState : public State
 {
-	Window *_window;
-	Text *_txtTitle, *_txtProject;
-	TextButton *_btnGotoBase, *_btnOk;
-	IntelProject *_project;
+private:
 	Base* _base;
-	GeoscapeState* _state;
+	TextButton* _btnOK;
+	Window* _window;
+	Text* _txtTitle;
+	TextList* _lstOperations;
+	size_t _lstScroll;
+	void onSelectOperation(Action* action);
+	std::vector<RuleCovertOperation*> _operationRules;
 public:
-	/// Creates the EndResearch state.
-	IntelCompleteState(IntelProject *project, Base *base, GeoscapeState* state);
-	~IntelCompleteState();
+	/// Creates the Covert Operations List state.
+	CovertOperationsListState(Base* base);
 	/// Handler for clicking the OK button.
-	void btnOkClick(Action *action);
-	/// Handler for clicking the Report button.
-	void btnGotoBaseClick(Action *action);
+	void btnOKClick(Action* action);
+	/// Fills the ResearchProject list with possible ResearchProjects.
+	void fillOperationList();
+	/// Initializes the state.
+	void init() override;
 };
 
 }

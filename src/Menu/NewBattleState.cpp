@@ -550,7 +550,7 @@ void NewBattleState::btnOkClick(Action *)
 
 	SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
 	_game->getSavedGame()->setBattleGame(bgame);
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_game->getSavedGame()->setFtAGame(true);
 	}

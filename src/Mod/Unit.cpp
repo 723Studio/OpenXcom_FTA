@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Unit.h"
+#include "RuleSoldier.h"
 #include "../Engine/Exception.h"
 #include "../Engine/ScriptBind.h"
 #include "Mod.h"
@@ -116,6 +117,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 		_builtInWeaponsNames.push_back(node["builtInWeapons"].as<std::vector<std::string> >());
 	}
 
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
+
+	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
+
 	mod->loadSoundOffset(_type, _deathSound, node["deathSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _panicSound, node["panicSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _berserkSound, node["berserkSound"], "BATTLE.CAT");
@@ -138,7 +144,8 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
-	mod->linkRule(_altUnit, _altRecoveredUnit);	
+	mod->linkRule(_altUnit, _altRecoveredUnit);
+	mod->linkRule(_prisoner, _prisonerName);
 	if (_liveAlienName == Mod::STR_NULL)
 	{
 		_liveAlien = mod->getItem(_type, false); // this is optional default behavior
@@ -153,7 +160,7 @@ void Unit::afterLoad(const Mod* mod)
 	{
 		if (_capturable && _armor->getCorpseBattlescape().front()->isRecoverable() && _spawnUnit == nullptr)
 		{
-			if (mod->getIsFTAGame() && (_altUnit == nullptr && this->getCivilianRecoveryType().empty()))
+			if (mod->isFTAGame() && (_altUnit == nullptr && this->getCivilianRecoveryType().empty()))
 			{
 				mod->checkForSoftError(
 					_liveAlien == nullptr,
@@ -178,6 +185,19 @@ void Unit::afterLoad(const Mod* mod)
 				"This unit has a corresponding item to recover, but still isn't recoverable. Reason: (" + s + "). Consider marking the unit with 'liveAlien: \"\"'.",
 				LOG_INFO
 			);
+		}
+	}
+}
+
+void Unit::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
 		}
 	}
 }

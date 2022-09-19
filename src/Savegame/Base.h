@@ -32,6 +32,7 @@ class Soldier;
 class Craft;
 class CovertOperation;
 class IntelProject;
+class BasePrisoner;
 class ItemContainer;
 class Transfer;
 class Language;
@@ -47,6 +48,7 @@ class AlienMission;
 enum SoldierRole;
 
 enum UfoDetection : int;
+enum PrisonerContainType : int;
 enum BasePlacementErrors : int
 {
 	/// 0: ok
@@ -97,6 +99,7 @@ private:
 	std::vector<Craft*> _crafts;
 	std::vector<CovertOperation*> _covertOperations;
 	std::vector<IntelProject*> _intelProjects;
+	std::vector<BasePrisoner*> _prisoners;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
 	int _scientists, _engineers;
@@ -154,7 +157,12 @@ public:
 	void addIntelProject(IntelProject* project) { _intelProjects.push_back(project); }
 	/// Removes finished Intel Project.
 	void removeIntelProject(IntelProject* project);
-
+	/// Gets the base's prisoners.
+	const std::vector<BasePrisoner*>& getPrisoners() const { return _prisoners; }
+	/// Adds new BasePrisoner.
+	void addPrisoner(BasePrisoner* prisoner) { _prisoners.push_back(prisoner); }
+	/// Removes finished Intel Project.
+	void removePrisoner(BasePrisoner* project);
 	/// Gets the base's transfers.
 	std::vector<Transfer*> *getTransfers() { return &_transfers; }
 	/// Gets the base's transfers.
@@ -264,10 +272,13 @@ public:
 	int getFreeTrainingSpace() const;
 	/// Gets the amount of free Containment space.
 	int getFreeContainment(int prisonType) const;
+	int getFreePrisonSpace(PrisonerContainType prisonType) const;
 	/// Gets the total amount of Containment space.
 	int getAvailableContainment(int prisonType) const;
+	int getAvailablePrisonSpace(PrisonerContainType prisonType) const;
 	/// Gets the total amount of used Containment space.
 	int getUsedContainment(int prisonType, bool onlyExternal = false) const;
+	int getUsedPrisonSpace(PrisonerContainType prisonType) const;
 	/// Sets the craft's battlescape status.
 	void setInBattlescape(bool inbattle);
 	/// Gets if the craft is in battlescape.

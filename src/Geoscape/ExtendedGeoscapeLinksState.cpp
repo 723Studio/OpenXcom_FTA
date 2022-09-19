@@ -48,7 +48,7 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_window = new Window(this, 256, 180, 32, 10, POPUP_BOTH);
 	_txtTitle = new Text(220, 17, 50, 33);
 	_btnOk = new TextButton(220, 12, 50, 167);
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		dY = 26;
 	}
@@ -109,7 +109,7 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_btnOk->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick, Options::keyCancel);
 
-	_btnFunding->setText(_game->getMod()->getIsFTAGame() ? tr("STR_GRAPHS") : tr("STR_FUNDING_UC"));
+	_btnFunding->setText(_game->getMod()->isFTAGame() ? tr("STR_GRAPHS") : tr("STR_FUNDING_UC"));
 	_btnFunding->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnFundingClick);
 
 	std::string tmp = tr("STR_TECH_TREE_VIEWER");
@@ -117,7 +117,7 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_btnTechTree->setText(tmp);
 	_btnTechTree->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnTechTreeClick);
 
-	if (_game->getMod()->getIsFTAGame()) // #FINNIKTODO: temporal solution, before graphs and global covert operations states would be done
+	if (_game->getMod()->isFTAGame()) // #FINNIKTODO: temporal solution, before graphs and global covert operations states would be done
 	{
 		_btnFunding->setVisible(false);
 		_btnTechTree->setVisible(false);

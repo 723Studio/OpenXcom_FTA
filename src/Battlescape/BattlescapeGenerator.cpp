@@ -2330,7 +2330,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					throw Exception(ss.str());
 				}
 				BattleItem *item = _save->createItemForTile(rule, _save->getTile(i->position + Position(xoff, yoff, zoff)));
-				if (_game->getMod()->getIsFTAGame() && prime != primeEnd)
+				if (_game->getMod()->isFTAGame() && prime != primeEnd)
 				{
 					item->setFuseTimer(RNG::generate(prime->second.first, prime->second.second));
 				}

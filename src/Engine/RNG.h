@@ -19,6 +19,8 @@
  */
 #include <algorithm>
 #include <vector>
+#include <random>
+#include <string>
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 
@@ -74,6 +76,8 @@ namespace RNG
 	int seedless(int min, int max);
 	/// Generates a percentage chance.
 	bool percent(int value);
+	///Generates a random string of specified lenght.
+	std::string randomString(std::string::size_type length);
 	/// Shuffles a list randomly.
 	/**
 	 * Randomly changes the orders of the elements in a list.

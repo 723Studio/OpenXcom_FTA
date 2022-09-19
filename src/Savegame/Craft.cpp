@@ -1767,7 +1767,7 @@ int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, co
 	}
 	bravery = bravTotal / pilots.size(); // average bravery of all pilots
 
-	if (mod->getIsFTAGame())
+	if (mod->isFTAGame())
 		bravery = bravMin; // for FtA we look for the lowest
 
 	if (bravery >= mod->getPilotBraveryThresholdVeryBold())

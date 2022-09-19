@@ -30,6 +30,7 @@
 #include "../Savegame/ResearchProject.h"
 #include "../Savegame/Production.h"
 #include "../Savegame/IntelProject.h"
+#include "../Savegame/BattleUnit.h"
 #include "EquipmentLayoutItem.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
@@ -213,6 +214,112 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 			_callsign = "";
 		}
 		auto role = rules->getRoles();
+		if (!role.empty())
+		{
+			for (auto r : role)
+			{
+				addRole(r);
+			}
+		}
+		else
+		{
+			addRole(ROLE_SOLDIER);
+		}
+	}
+
+	_lookVariant = RNG::seedless(0, RuleSoldier::LookVariantMax - 1);
+}
+
+/**
+ * Alternative way to initialize a new soldier by converting from BattleUnit.
+ * @param unit BattleUnit data.
+ * @param id Unique soldier id for soldier generation.
+ */
+Soldier::Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id) :
+	_id(id), _nationality(0),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0),
+	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _justSaved(false),
+	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false),
+	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
+	_corpseRecovered(false)
+{
+	if (id != 0)
+	{
+		//soldier
+		_initialStats.tu = unit->getBaseStats()->tu;
+		_initialStats.stamina = unit->getBaseStats()->stamina;
+		_initialStats.health = unit->getBaseStats()->health;
+		_initialStats.mana = unit->getBaseStats()->mana;
+		_initialStats.bravery = unit->getBaseStats()->bravery;
+		_initialStats.reactions = unit->getBaseStats()->reactions;
+		_initialStats.firing = unit->getBaseStats()->firing;
+		_initialStats.throwing = unit->getBaseStats()->throwing;
+		_initialStats.strength = unit->getBaseStats()->strength;
+		_initialStats.psiStrength = unit->getBaseStats()->psiStrength;
+		_initialStats.melee = unit->getBaseStats()->melee;
+		_initialStats.psiSkill = unit->getBaseStats()->psiSkill;
+		//pilot
+		_initialStats.maneuvering = unit->getBaseStats()->maneuvering;
+		_initialStats.missiles = unit->getBaseStats()->missiles;
+		_initialStats.dogfight = unit->getBaseStats()->dogfight;
+		_initialStats.tracking = unit->getBaseStats()->tracking;
+		_initialStats.cooperation = unit->getBaseStats()->cooperation;
+		_initialStats.beams = unit->getBaseStats()->beams;
+		_initialStats.synaptic = unit->getBaseStats()->synaptic;
+		_initialStats.gravity = unit->getBaseStats()->gravity;
+		//agent
+		_initialStats.stealth = unit->getBaseStats()->stealth;
+		_initialStats.perseption = unit->getBaseStats()->perseption;
+		_initialStats.charisma = unit->getBaseStats()->charisma;
+		_initialStats.investigation = unit->getBaseStats()->investigation;
+		_initialStats.deception = unit->getBaseStats()->deception;
+		_initialStats.interrogation = unit->getBaseStats()->interrogation;
+		//scientist
+		_initialStats.physics = unit->getBaseStats()->physics;
+		_initialStats.chemistry = unit->getBaseStats()->chemistry;
+		_initialStats.biology = unit->getBaseStats()->biology;
+		_initialStats.insight = unit->getBaseStats()->insight;
+		_initialStats.data = unit->getBaseStats()->data;
+		_initialStats.computers = unit->getBaseStats()->computers;
+		_initialStats.tactics = unit->getBaseStats()->tactics;
+		_initialStats.materials = unit->getBaseStats()->materials;
+		_initialStats.designing = unit->getBaseStats()->designing;
+		_initialStats.alienTech = unit->getBaseStats()->alienTech;
+		_initialStats.psionics = unit->getBaseStats()->psionics;
+		_initialStats.xenolinguistics = unit->getBaseStats()->xenolinguistics;
+
+		//engineer
+		_initialStats.weaponry = unit->getBaseStats()->weaponry;
+		_initialStats.explosives = unit->getBaseStats()->explosives;
+		_initialStats.efficiency = unit->getBaseStats()->efficiency;
+		_initialStats.microelectronics = unit->getBaseStats()->microelectronics;
+		_initialStats.metallurgy = unit->getBaseStats()->metallurgy;
+		_initialStats.processing = unit->getBaseStats()->processing;
+		_initialStats.hacking = unit->getBaseStats()->hacking;
+		_initialStats.construction = unit->getBaseStats()->construction;
+		_initialStats.diligence = unit->getBaseStats()->diligence;
+		_initialStats.reverseEngineering = unit->getBaseStats()->reverseEngineering;
+
+		_currentStats = _initialStats;
+
+		const std::vector<SoldierNamePool*>& names = rules->getNames();
+		if (!names.empty())
+		{
+			_nationality = RNG::generate(0, names.size() - 1);
+			_name = names.at(_nationality)->genName(&_gender, rules->getFemaleFrequency());
+			_callsign = generateCallsign(rules->getNames());
+			_look = (SoldierLook)names.at(_nationality)->genLook(4); // Once we add the ability to mod in extra looks, this will need to reference the ruleset for the maximum amount of looks.
+		}
+		else
+		{
+			// No possible names, just wing it
+			_gender = (RNG::percent(rules->getFemaleFrequency()) ? GENDER_FEMALE : GENDER_MALE);
+			_look = (SoldierLook)RNG::generate(0, 3);
+			_name = (_gender == GENDER_FEMALE) ? "Jane" : "John";
+			_name += " Doe";
+			_callsign = "";
+		}
+		auto role = unit->getRoles();
 		if (!role.empty())
 		{
 			for (auto r : role)

@@ -51,7 +51,7 @@ namespace OpenXcom
  */
 ManufactureState::ManufactureState(Base *base) : _base(base)
 {
-	_ftaUi = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnNew = new TextButton(148, 16, 8, 176);

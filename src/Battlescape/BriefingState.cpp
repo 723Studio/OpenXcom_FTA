@@ -75,7 +75,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 	std::string mission = battleSave->getMissionType();
 	AlienDeployment *deployment = _game->getMod()->getDeployment(mission);
 
-	if (_game->getMod()->getIsFTAGame() &&
+	if (_game->getMod()->isFTAGame() &&
 		!_game->getSavedGame()->isResearched("STR_LOG1") &&
 		!battleSave->getAlienCustomDeploy().empty())
 	{

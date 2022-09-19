@@ -59,7 +59,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
-	_ftaUI = _game->getMod()->getIsFTAGame();
+	_ftaUI = _game->getMod()->isFTAGame();
 	std::vector<RuleSoldierTransformation* > availableTransformations;
 	_game->getSavedGame()->getAvailableTransformations(availableTransformations, _game->getMod(), _base);
 	bool isTransformationAvailable = availableTransformations.size() > 0;
@@ -196,7 +196,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 
 	_txtRank->setText(tr("STR_RANK"));
 
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_txtCraft->setText(tr("STR_ASSIGNMENT"));
 	}

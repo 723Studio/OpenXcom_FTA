@@ -39,10 +39,11 @@ enum IntelProjectSpecialRule { INTEL_NONE = 0, INTEL_UFO_TRACKING = 1, INTEL_COV
 class RuleIntelProject
 {
  private:
-	std::string _name, _description;
+	std::string _name, _description, _requiredResearchName;
 	int _cost, _costIncrease;
 	IntelProjectSpecialRule _specialRule;
 	UnitStats _stats;
+	const RuleResearch* _requiredResearch = nullptr;
 	std::vector<RuleIntelStage*> _stages;
 	int _listOrder;
 public:
@@ -52,7 +53,6 @@ public:
 	void load(const YAML::Node& node, Mod* mod, int listOrder);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
-
 	/// Gets the intel project name.
 	const std::string& getName() const { return _name; };
 	/// Gets the intel project description.
@@ -61,6 +61,8 @@ public:
 	int getCost() const { return _cost; }
 	/// Gets the cost increase value to calculate next roll cost for this project.
 	int getCostIncrease() const { return _costIncrease; }
+	/// Gets the required tech for this project.
+	const RuleResearch* getRequiredResearch() const { return _requiredResearch; }
 	/// Gets the special rule for the intel project.
 	const IntelProjectSpecialRule getSpecialRule() const { return _specialRule; }
 	/// Get pointer to this project's stats.

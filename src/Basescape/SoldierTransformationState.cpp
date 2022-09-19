@@ -326,7 +326,7 @@ void SoldierTransformationState::initTransformationData()
 	{
 		bool showMana = _game->getSavedGame()->isManaUnlocked(_game->getMod());
 
-		if (_game->getMod()->getIsFTAGame() && !showMana && !_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
+		if (_game->getMod()->isFTAGame() && !showMana && !_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 		{
 			_lstStatChanges->addRow(11, "",
 									tr("STR_TIME_UNITS_ABBREVIATION").c_str(),

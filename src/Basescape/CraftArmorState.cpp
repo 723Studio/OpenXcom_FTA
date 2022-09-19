@@ -439,7 +439,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 		{
 			if (_game->isCtrlPressed())
 			{
-				if (_game->getMod()->getIsFTAGame() && s->hasPendingTransformation())
+				if (_game->getMod()->isFTAGame() && s->hasPendingTransformation())
 				{
 					_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 				}

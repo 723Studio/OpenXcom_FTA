@@ -78,6 +78,7 @@ public:
 
 	/// Gets time needed to discover this ResearchProject.
 	int getCost() const;
+	const std::string& getCostDescription() const;
 	/// Gets the research name.
 	const std::string &getName() const;
 	/// Gets the research dependencies.

@@ -32,6 +32,7 @@ class SoldierNamePool;
 class StatString;
 class RuleItem;
 class RuleSkill;
+class RulePrisoner;
 class Armor;
 
 /// Soldier roles for FtA game
@@ -100,6 +101,8 @@ private:
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
 	std::string _armorName;
 	const Armor* _armor;
+	std::string _prisonerName;
+	const RulePrisoner* _prisoner = nullptr;
 	std::string _specWeaponName;
 	const RuleItem* _specWeapon;
 	int _monthlyBuyLimit;
@@ -187,6 +190,8 @@ public:
 	int getFloatHeight() const;
 	/// Gets the default-equipped armor.
 	Armor* getDefaultArmor() const;
+	/// Gets the prisoner type.
+	const RulePrisoner* getPrisoner() const { return _prisoner; }
 	/// Gets the armor for avatar display.
 	const std::string& getArmorForAvatar() const;
 	/// Gets the X offset used for avatar.

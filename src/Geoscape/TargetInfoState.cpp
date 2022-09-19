@@ -130,7 +130,7 @@ TargetInfoState::TargetInfoState(Target *target, Globe *globe) : _target(target)
 	{
 		_txtPenalty->setAlign(ALIGN_CENTER);
 		_txtPenalty->setText(tr("STR_DESPAWN_PENALTY").arg(_deploymentRule->getDespawnPenalty()));
-		if (_game->getMod()->getIsFTAGame())
+		if (_game->getMod()->isFTAGame())
 		{
 			_txtPenalty->setVisible(false); // just because
 		}

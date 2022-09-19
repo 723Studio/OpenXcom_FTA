@@ -251,7 +251,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_delayedRecolorDone(false)
 {
 	_screen = false;
-	_fta = _game->getMod()->getIsFTAGame();
+	_fta = _game->getMod()->isFTAGame();
 	_craft->setInDogfight(true);
 	_weaponNum = _craft->getRules()->getWeapons();
 	if (_weaponNum > RuleCraft::WeaponMax)

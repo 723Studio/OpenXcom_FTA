@@ -51,7 +51,7 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 		_sortByCost = !_sortByCost;
 	}
 
-	_ftaUi = _game->getMod()->getIsFTAGame();
+	_ftaUi = _game->getMod()->isFTAGame();
 
 	_screen = false;
 

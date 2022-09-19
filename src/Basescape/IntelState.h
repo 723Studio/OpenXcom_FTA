@@ -33,27 +33,28 @@ class Base;
 * Covert operation screen that lets the player manage
 * all the operations of a base.
 */
-class CovertOperationState : public State
+class IntelState : public State
 {
 private:
-	Base* _base;
-	TextButton* _btnNew, * _btnOk;
-	Window* _window;
-	Text* _txtTitle, * _txtSoldiersAvailable, * _txtScientistsAvailable, * _txtEngineersAvailable, * _txtOperation, * _txtChances, * _txtProgress;
-	TextList* _lstOperations;
+	Base *_base;
+	TextButton *_btnPrisonCells, *_btnOk, *_btnAgents;
+	Window *_window;
+	Text *_txtTitle, *_txtAgentsAvailable, *_txtAgentsAllocated, *_txtIntelSpace, *_txtProject, *_txtAgents, *_txtProgress; //*_txtInterrogationSpaceAvailable,
+	TextList *_lstProjects;
 public:
 	/// Creates the CovertOperation state.
-	CovertOperationState(Base* base);
+	IntelState(Base* base);
 	/// Cleans up the CovertOperation state.
-	~CovertOperationState();
+	~IntelState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
 	/// Handler for clicking the New Operation button.
-	void btnNewClick(Action* action);
-	/// Handler for clicking the CovertOperation list.
-	void onSelectOperation(Action* action);
-	/// Handler for opening the Current Global Research UI.
-	void onCurrentGlobalResearchClick(Action* action);
+	void btnPrisonClick(Action* action);
+	/// Handler for clicking the Agents button.
+	void btnAgentsClick(Action* action);
+	/// Handler for clicking the Intel Projects list.
+	void onSelectProject(Action* action);
+	void onProjectDetails(Action* action);
 	/// Fills the CovertOperation list with Base CovertOperation.
 	void fillProjectList(size_t scrl);
 	/// Updates the CovertOperation list.

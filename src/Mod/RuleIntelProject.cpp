@@ -25,7 +25,7 @@
 namespace OpenXcom
 {
 
-RuleIntelProject::RuleIntelProject(const std::string &name) : _name(name), _cost(100), _specialRule(INTEL_NONE), _listOrder(0)
+RuleIntelProject::RuleIntelProject(const std::string &name) : _name(name), _cost(100), _costIncrease(0), _specialRule(INTEL_NONE), _listOrder(0)
 {
 }
 
@@ -44,6 +44,8 @@ void RuleIntelProject::load(const YAML::Node &node, Mod* mod, int listOrder)
 	_name = node["name"].as<std::string>(_name);
 	_description = node["description"].as<std::string>(_description);
 	_cost = node["cost"].as<int>(_cost);
+	_costIncrease = node["costIncrease"].as<int>(_costIncrease);
+	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
 	_specialRule = (IntelProjectSpecialRule)node["specialRule"].as<int>(_specialRule);
 
 	if (const YAML::Node& stages = node["stages"])
@@ -72,6 +74,9 @@ void RuleIntelProject::load(const YAML::Node &node, Mod* mod, int listOrder)
  */
 void RuleIntelProject::afterLoad(const Mod* mod)
 {
+	mod->linkRule(_requiredResearch, _requiredResearchName);
+	Collections::removeAll(_requiredResearchName);
+
 	for (auto i : _stages)
 	{
 		i->afterLoad(mod);

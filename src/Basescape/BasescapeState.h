@@ -42,8 +42,11 @@ private:
 	Text *_txtFacility, *_txtLocation, *_txtFunds, *_txtLoyalty;
 	TextEdit *_edtBase;
 	TextButton *_btnNewBase, *_btnBaseInfo, *_btnSoldiers, *_btnCrafts, *_btnFacilities, *_btnResearch, *_btnManufacture, *_btnTransfer, *_btnPurchase, *_btnSell, *_btnGeoscape;
+	TextButton *_btnIntel, *_btnCovertOps, *_btnDiplomacy;
 	Base *_base;
 	Globe *_globe;
+	bool _fta;
+	void newBase();
 public:
 	/// Creates the Basescape state.
 	BasescapeState(Base *base, Globe *globe);
@@ -75,6 +78,12 @@ public:
 	void btnTransferClick(Action *action);
 	/// Handler for clicking the Geoscape button.
 	void btnGeoscapeClick(Action *action);
+	/// Handler for clicking the Intelligence button.
+	void btnIntelligenceClick(Action* action);
+	/// Handler for clicking the Covert Ops button.
+	void btnCovertOpsClick(Action* action);
+	/// Handler for clicking the Diplomacy button.
+	void btnDiplomacyClick(Action* action);
 	/// Handler for clicking the base view.
 	void viewLeftClick(Action *action);
 	/// Handler for right clicking the base view.

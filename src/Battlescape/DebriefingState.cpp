@@ -38,11 +38,13 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Mod/RulePrisoner.h"
 #include "../Mod/RuleUfo.h"
 #include "../Mod/Armor.h"
 #include "../Savegame/AlienBase.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/BasePrisoner.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/Country.h"
 #include "../Savegame/Craft.h"
@@ -90,6 +92,7 @@ namespace OpenXcom
 DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _country(0), _positiveScore(true), _destroyBase(false), _showSellButton(true), _initDone(false), _pageNumber(0), _recoveredItemObjs(0)
 {
 	_missionStatistics = new MissionStatistics();
+	_fta = _game->getMod()->isFTAGame();
 
 	Options::baseXResolution = Options::baseXGeoscape;
 	Options::baseYResolution = Options::baseYGeoscape;
@@ -110,7 +113,7 @@ DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _countr
 	_txtQuantity = new Text(60, 9, 200, 24);
 	_txtScore = new Text(55, 9, 270, 24);
 	_txtRecovery = new Text(180, 9, 16, 60);
-	if (!_game->getMod()->getIsFTAGame())
+	if (!_fta)
 	{
 		_txtRating = new Text(200, 9, 64, 180);
 		_txtLoyalty = new Text(200, 9, 64, 180);
@@ -345,7 +348,7 @@ void DebriefingState::applyVisibility()
 	bool showStats = _pageNumber == 1;
 	bool showItems = _pageNumber == 2;
 	bool showPsi = true;
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
 			_game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
@@ -357,7 +360,7 @@ void DebriefingState::applyVisibility()
 	_txtScore->setVisible(showScore);
 	_txtRecovery->setVisible(showScore);
 	_txtRating->setVisible(showScore);
-	_txtLoyalty->setVisible(showScore && _game->getMod()->getIsFTAGame());
+	_txtLoyalty->setVisible(showScore && _game->getMod()->isFTAGame());
 	_lstStats->setVisible(showScore);
 	_lstRecovery->setVisible(showScore);
 	_lstTotal->setVisible(showScore);
@@ -383,7 +386,7 @@ void DebriefingState::applyVisibility()
 
 	// Hide sell button if there are no contacts with factions yet
 	bool showSellButtonFTA = true; //for non-FTA cases
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		showSellButtonFTA = false;
 		for (std::vector<DiplomacyFaction *>::iterator i = _game->getSavedGame()->getDiplomacyFactions().begin();
@@ -565,7 +568,7 @@ void DebriefingState::init()
 
 	// update FtA Loyalty
 	int loyalty = _game->getMasterMind()->updateLoyalty(total, XCOM_BATTLESCAPE);
-	if (_game->getMod()->getIsFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
+	if (_game->getMod()->isFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
 	{
 		_txtLoyalty->setText(tr("STR_LOYALTY_UPDATE").arg(loyalty));
 	}
@@ -840,7 +843,7 @@ void DebriefingState::init()
 	}
 	_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		for (auto soldier : participants)
 		{
@@ -903,7 +906,7 @@ void DebriefingState::btnSellClick(Action *)
 {
 	if (!_destroyBase)
 	{
-		if (_game->getMod()->getIsFTAGame())
+		if (_game->getMod()->isFTAGame())
 		{
 			_game->pushState(new DiplomacyStartState(_base, false));
 		}
@@ -1096,6 +1099,7 @@ void DebriefingState::prepareDebriefing()
 	}
 
 	bool aborted = battle->isAborted();
+	_missionStatistics->aborted = aborted;
 	bool success = !aborted || battle->allObjectivesDestroyed();
 	Craft *craft = 0;
 	Base *base = 0;
@@ -1195,6 +1199,7 @@ void DebriefingState::prepareDebriefing()
 					}
 				}
 				craft = (*j);
+				_missionStatistics->craft = (*j)->getType();
 				base = (*i);
 				if (craft->getDestination() != 0)
 				{
@@ -2634,14 +2639,24 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 							addStat("STR_ALIEN_CORPSES_RECOVERED", 1, points);
 						}
 					}
-					else if (corpseUnit->getStatus() == STATUS_UNCONSCIOUS ||
-							// or it's in timeout because it's unconscious from the previous stage
-							// units can be in timeout and alive, and we assume they flee.
-							(corpseUnit->isIgnored() &&
-							corpseUnit->getHealth() > 0 &&
-							corpseUnit->getHealth() < corpseUnit->getStunlevel()))
+					else if (corpseUnit->getStatus() == STATUS_UNCONSCIOUS
+						|| (corpseUnit->isIgnored()
+							&& corpseUnit->getHealth() > 0
+							&& corpseUnit->getHealth() < corpseUnit->getStunlevel()))
 					{
-						if (corpseUnit->getOriginalFaction() == FACTION_HOSTILE)
+
+						bool capturedCiv = _fta
+							&& corpseUnit->getOriginalFaction() == FACTION_NEUTRAL
+							&& _missionStatistics->aborted
+							&& _game->getMod()->getCraft(_missionStatistics->craft);
+
+						if (_fta
+							&& (corpseUnit->getOriginalFaction() == FACTION_HOSTILE
+								|| capturedCiv))
+						{
+							recoverPrisoner(corpseUnit, base);
+						}
+						else if (corpseUnit->getOriginalFaction() == FACTION_HOSTILE) // OXCE case
 						{
 							recoverAlien(corpseUnit, base);
 						}
@@ -2654,7 +2669,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 
 				if (awardItemPoints)
 				{
-					if (rule->isAlienArtifact() || !_game->getMod()->getIsFTAGame())
+					if (rule->isAlienArtifact() || !_game->getMod()->isFTAGame())
 					{
 						addStat("STR_ALIEN_ARTIFACTS_RECOVERED", 1, points);
 					}
@@ -2741,6 +2756,109 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 					default:
 						break;
 				}
+			}
+		}
+	}
+}
+
+/**
+* Recovers a live BattleUnit from the battlescape and
+* converts it to BasePrisoner.
+* @param from Battle unit to recover.
+* @param base Base to add items to.
+*/
+void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
+{
+	auto soldier = from->getGeoscapeSoldier();
+	const RulePrisoner* rules = nullptr;
+
+	if (soldier == nullptr)
+	{
+		rules = from->getUnitRules()->getPrisoner();
+	}
+	else
+	{
+		rules = soldier->getRules()->getPrisoner();
+	}
+
+	// we check for the rules first
+	if (!rules)
+	{
+		std::ostringstream ss;
+		ss << "RulePrisoner definition is missing. Unit ID = " << from->getId();
+		ss << "; Type = " << from->getType();
+		ss << "; Status = " << from->getStatus();
+		ss << "; Faction = " << from->getFaction();
+		ss << "; Orig. faction = " << from->getOriginalFaction();
+		if (from->getSpawnUnit())
+		{
+			ss << "; Spawn unit = [" << from->getSpawnUnit()->getType() << "]";
+		}
+		ss << "; isSurrendering = " << from->isSurrendering();
+		Log(LOG_ERROR) << ss.str();
+	}
+	else
+	{
+		//now let's if we have spare prison space
+		auto type = rules->getContainType();
+		bool noContainment = base->getAvailablePrisonSpace(type) <= 0;
+		if (noContainment)
+		{
+			for (auto b : *_game->getSavedGame()->getBases())
+			{
+				if (b->getFreePrisonSpace(type) > 0)
+				{
+					noContainment = false;
+					break;
+				}
+			}
+		}
+
+		if (noContainment)
+		{
+			_containmentStateInfo[(int)type] = 1; // 1 = not available in any base
+		}
+		else
+		{
+			//now we can create a Prisoner!
+			BasePrisoner* p = new BasePrisoner(_game->getMod(), rules->getType(),RNG::randomString(8));
+			base->addPrisoner(p);
+			//Populate BasePrisoner data;
+			p->setName(from->getName(_game->getLanguage()));
+			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
+			if (soldier)
+			{
+				p->setGeoscapeSoldier(from->getGeoscapeSoldier());
+			}
+			if (!from->getRoles().empty())
+			{
+				p->setRoles(from->getRoles());
+			}
+			p->setFaction(from->getFaction());
+			p->setStats(from->getBaseStats());
+			p->setHealth(from->getHealth());
+
+			if (soldier)
+			{
+				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight);
+				p->setAggression(RNG::generate(0, 3));
+			}
+			else
+			{
+				p->setIntelligence(from->getUnitRules()->getIntelligence());
+				p->setAggression(from->getUnitRules()->getAggression());
+			}
+
+			int morale = from->getMorale() + p->getStats()->bravery * 2;
+			if (from->isSurrendering())
+			{
+				morale /= 2;
+			}
+			p->setMorale(morale);
+
+			if (base->getFreePrisonSpace(type) && _limitsEnforced > 0)
+			{
+				_containmentStateInfo[(int)type] = 2; // 2 = overfull
 			}
 		}
 	}
