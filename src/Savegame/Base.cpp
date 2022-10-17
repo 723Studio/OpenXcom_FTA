@@ -666,6 +666,30 @@ void Base::removePrisoner(BasePrisoner* prisoner)
 	if (!erased) { Log(LOG_ERROR) << "Base prisoner with ID " << prisoner->getId() << " was not deleted from base " << this->getName() << " !"; }
 }
 
+int Base::getFreeInterrogationSpace()
+{
+	int total = 0, used = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() == 0)
+		{
+			total += (*i)->getRules()->getInterrogationSpace();
+		}
+	}
+
+	for (auto p : _prisoners)
+	{
+		if (p->getState() == PRISONER_STATE_INTERROGATION
+			|| p->getState() == PRISONER_STATE_REQRUITING
+			|| p->getState() == PRISONER_STATE_REQRUITING)
+		{
+			used++;
+		}
+	}
+
+	return total - used;
+}
+
 /**
  * Returns the amount of scientists currently in the base.
  * @return Number of scientists.

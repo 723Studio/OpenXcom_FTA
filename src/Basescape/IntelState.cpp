@@ -31,14 +31,8 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
-//#include "../Basescape/ScientistsState.h"
-//#include "NewResearchListState.h"
-//#include "GlobalResearchState.h"
 #include "../Savegame/IntelProject.h"
-//#include "../Mod/RuleIntelProject.h"
-//#include "ResearchInfoState.h"
-//#include "ResearchInfoStateFtA.h"
-//#include "TechTreeViewerState.h"
+#include "../Basescape/PrisonManagementState.h"
 #include <algorithm>
 
 namespace OpenXcom
@@ -141,7 +135,7 @@ void IntelState::btnOkClick(Action *)
  */
 void IntelState::btnPrisonClick(Action *)
 {
-	//_game->pushState(new NewResearchListState(_base, sortByCost));
+	_game->pushState(new PrisonManagementState(_base));
 }
 
 /**

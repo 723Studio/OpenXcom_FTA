@@ -19,28 +19,23 @@
 #include "BasePrisoner.h"
 #include <sstream>
 #include <algorithm>
-#include "../Engine/Exception.h"
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
-#include "../Mod/RulePrisoner.h"
 
 
 namespace OpenXcom
 {
 /**
  * Initializes a BattleUnit from a Soldier
- * @param soldier Pointer to the Soldier.
- * @param depth the depth of the battlefield (used to determine movement type in case of MT_FLOAT).
+ * @param mod Mod
+ * @param type prisoner type
+ * @param id prisoner id
  */
-BasePrisoner::BasePrisoner(const Mod* mod, std::string type, std::string id) : _mod(mod), _type(type), _id(id), _soldierId(-1),
-_health(1), _intelligence(0), _aggression(0), _morale(100), _cooperation(0)
+BasePrisoner::BasePrisoner(const Mod* mod, const std::string &type, std::string id) :
+	_id(std::move(id)), _type(type), _state(PRISONER_STATE_NONE), _soldierId(-1),
+	_health(1), _intelligence(0), _aggression(0), _morale(100), _cooperation(0), _mod(mod)
 {
 	_rules = mod->getPrisonerRules(type);
-}
-
-BasePrisoner::~BasePrisoner()
-{
-
 }
 
 ///**
@@ -49,9 +44,8 @@ BasePrisoner::~BasePrisoner()
 // */
 void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 {
-	std::vector<SoldierRole> _roles;
-
 	_soldierId = node["soldierId"].as<int>(_soldierId);
+	_state = (PrisonerState)node["state"].as<int>(_state);
 	_health = node["health"].as<int>(_health);
 	_faction = (UnitFaction)node["faction"].as<int>(_faction);
 	_stats = node["stats"].as<UnitStats>(_stats);
@@ -86,6 +80,7 @@ YAML::Node BasePrisoner::save() const
 
 	node["id"] = _id;
 	node["type"] = _type;
+	node["state"] = (int)_state;
 	if (_geoscapeSoldier)
 	{
 		node["soldierId"] = _geoscapeSoldier->getId();
@@ -112,8 +107,7 @@ void BasePrisoner::loadRoles(const std::vector<int>& r)
 	_roles.clear();
 	for (auto i : r)
 	{
-		SoldierRole role = static_cast<SoldierRole>(i);
-		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		if (auto role = static_cast<SoldierRole>(i); _roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
 		{
 			_roles.push_back(role);
 		}

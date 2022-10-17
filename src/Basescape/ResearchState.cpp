@@ -254,7 +254,7 @@ void ResearchState::init()
 	State::init();
 	fillProjectList(0);
 
-	if (Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0)
+	if ((Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0) && !_ftaUi)
 	{
 		// 175 +/- 20
 		_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);

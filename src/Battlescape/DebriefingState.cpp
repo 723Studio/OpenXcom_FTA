@@ -2824,12 +2824,21 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			BasePrisoner* p = new BasePrisoner(_game->getMod(), rules->getType(),RNG::randomString(8));
 			base->addPrisoner(p);
 			//Populate BasePrisoner data;
-			p->setName(from->getName(_game->getLanguage()));
 			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
 			if (soldier)
 			{
 				p->setGeoscapeSoldier(from->getGeoscapeSoldier());
+				p->setName(from->getName(_game->getLanguage()));
+				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight);
+				p->setAggression(RNG::generate(0, 3));
 			}
+			else
+			{
+				p->setName(tr(from->getType()));
+				p->setIntelligence(from->getUnitRules()->getIntelligence());
+				p->setAggression(from->getUnitRules()->getAggression());
+			}
+
 			if (!from->getRoles().empty())
 			{
 				p->setRoles(from->getRoles());
@@ -2837,18 +2846,8 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			p->setFaction(from->getFaction());
 			p->setStats(from->getBaseStats());
 			p->setHealth(from->getHealth());
-
-			if (soldier)
-			{
-				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight);
-				p->setAggression(RNG::generate(0, 3));
-			}
-			else
-			{
-				p->setIntelligence(from->getUnitRules()->getIntelligence());
-				p->setAggression(from->getUnitRules()->getAggression());
-			}
-
+			p->setCooperation(p->getRules()->getStartingCooperation());
+			
 			int morale = from->getMorale() + p->getStats()->bravery * 2;
 			if (from->isSurrendering())
 			{

@@ -149,7 +149,7 @@ void ManufactureState::init()
 	State::init();
 	fillProductionList(0);
 
-	if (Options::oxceManufactureScrollSpeed > 0 || Options::oxceManufactureScrollSpeedWithCtrl > 0)
+	if ((Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0) && !_ftaUi)
 	{
 		// 140 +/- 20
 		_lstManufacture->setNoScrollArea(_txtAllocated->getX() - 40, _txtAllocated->getX());

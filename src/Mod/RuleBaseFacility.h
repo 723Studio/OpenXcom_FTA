@@ -67,6 +67,7 @@ private:
 	const RuleManufacture* _project;
 	std::string _ammoItemName, _manufactureName;
 	std::string _mapName;
+	int _interrogationSpace;
 	int _listOrder, _trainingRooms;
 	int _maxAllowedPerBase;
 	int _manaRecoveryPerDay = 0;
@@ -145,6 +146,7 @@ public:
 	int getPersonnel() const;
 	/// Gets the facility's alien capacity.
 	int getAliens() const;
+	int getInterrogationSpace() const { return _interrogationSpace; }
 	/// Gets the facility's craft capacity.
 	int getCrafts() const;
 	/// Gets the facility's laboratory space.

@@ -1254,6 +1254,9 @@
     <ClCompile Include="Mod\RulePrisoner.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\PrisonManagementState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2571,6 +2574,9 @@
     <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Mod\RulePrisoner.h">
       <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonManagementState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

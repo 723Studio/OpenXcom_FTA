@@ -148,6 +148,8 @@ public:
 
 	const std::string &getType() const { return _type; }
 	const PrisonerContainType getContainType() const { return _containType; }
+	int getStartingCooperation() const { return _startingCooperation; }
+	int getDamageOverTime() const { return _damageOverTime; }
 	const PrisonerInterrogationRules &getInterrogationRules() const { return *_interrogationRules; }
 	const PrisonerRecruitingRules& getRecruitingRules() const { return *_recruitingRules; }
 	const PrisonerTortureRules& getTortureRules() const { return *_tortureRules; }

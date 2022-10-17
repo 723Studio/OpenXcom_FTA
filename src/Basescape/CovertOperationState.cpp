@@ -163,16 +163,6 @@ void CovertOperationState::init()
 {
 	State::init();
 	fillProjectList(0);
-
-	if (Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0)
-	{
-		// 175 +/- 20
-		_lstOperations->setNoScrollArea(_lstOperations->getX() - 5, _txtScientistsAvailable->getX() + 35);
-	}
-	else
-	{
-		_lstOperations->setNoScrollArea(0, 0);
-	}
 }
 
 /**
