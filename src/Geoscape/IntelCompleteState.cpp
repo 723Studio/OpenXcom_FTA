@@ -27,7 +27,8 @@
 #include "../Interface/TextList.h"
 #include "GeoscapeState.h"
 #include "../Engine/Options.h"
-#include "../Basescape/BasescapeState.h"
+//#include "../Basescape/BasescapeState.h"
+#include "../Basescape/IntelState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/IntelProject.h"
 #include "../Savegame/SavedGame.h"
@@ -36,7 +37,7 @@ namespace OpenXcom
 {
 
 /**
- * Initializes all the elements in a Production Complete window.
+ * Initializes all the elements in a Inte; Complete window.
  * @param game Pointer to the core game.
  * @param base Pointer to base the production belongs to.
  * @param item Item that finished producing.
@@ -44,7 +45,8 @@ namespace OpenXcom
  * @param endType What ended the production.
  * @param production Pointer to the production details.
  */
-IntelCompleteState::IntelCompleteState(IntelProject *project, Base *base, GeoscapeState* state) : _project(project), _base(base), _state(state)
+
+IntelCompleteState::IntelCompleteState(IntelProject *project, GeoscapeState *state, Base *base) : _project(project), _state(state), _base(base)
 {
 	_screen = false;
 
@@ -110,7 +112,8 @@ void IntelCompleteState::btnGotoBaseClick(Action *)
 {
 	_state->timerReset();
 	_game->popState();
-	_game->pushState(new BasescapeState(_base, _state->getGlobe()));
+	//_game->pushState(new BasescapeState(_base, _state->getGlobe()));
+	_game->pushState(new IntelState(_base));
 }
 
 }

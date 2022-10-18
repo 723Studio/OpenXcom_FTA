@@ -28,6 +28,7 @@ class TextButton;
 class Text;
 class GeoscapeState;
 class Base;
+class GeoscapeState;
 class IntelProject;
 
 /**
@@ -44,7 +45,7 @@ class IntelCompleteState : public State
 	GeoscapeState* _state;
 public:
 	/// Creates the EndResearch state.
-	IntelCompleteState(IntelProject *project, Base *base, GeoscapeState* state);
+	IntelCompleteState(IntelProject *project, GeoscapeState *state, Base *base);
 	~IntelCompleteState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
