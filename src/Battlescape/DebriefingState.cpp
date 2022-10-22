@@ -89,7 +89,8 @@ namespace OpenXcom
  * Initializes all the elements in the Debriefing screen.
  * @param game Pointer to the core game.
  */
-DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _country(0), _positiveScore(true), _destroyBase(false), _showSellButton(true), _initDone(false), _pageNumber(0), _recoveredItemObjs(0)
+DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _country(0), _positiveScore(true), _destroyBase(false), _showSellButton(true),
+									_initDone(false), _recoveredItemObjs(0), _pageNumber(0)
 {
 	_missionStatistics = new MissionStatistics();
 	_fta = _game->getMod()->isFTAGame();
@@ -780,7 +781,7 @@ void DebriefingState::init()
 			}
 
 			// Award Martyr Medal
-			if ((*j)->getMurdererId() == (*j)->getId() && (*j)->getStatistics()->kills.size() != 0)
+			if ((*j)->getMurdererId() == (*j)->getId() && !(*j)->getStatistics()->kills.empty())
 			{
 				int martyrKills = 0; // How many aliens were killed on the same turn?
 				int martyrTurn = -1;
@@ -854,7 +855,7 @@ void DebriefingState::init()
 		}
 	}
 
-	_game->getSavedGame()->setBattleGame(0);
+	_game->getSavedGame()->setBattleGame(nullptr);
 
 	if (_positiveScore)
 	{
@@ -1054,7 +1055,7 @@ void DebriefingState::addStat(const std::string &name, int quantity, int score)
 }
 
 /**
- * Prepares debriefing: gathers Aliens, Corpses, Artefacts, UFO Components.
+ * Prepares debriefing: gathers Aliens, Corpses, Artifacts, UFO Components.
  * Adds the items to the craft.
  * Also calculates the soldiers experience, and possible promotions.
  * If aborted, only the things on the exit area are recovered.
@@ -2769,7 +2770,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 */
 void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 {
-	auto soldier = from->getGeoscapeSoldier();
+	auto const soldier = from->getGeoscapeSoldier();
 	const RulePrisoner* rules = nullptr;
 
 	if (soldier == nullptr)

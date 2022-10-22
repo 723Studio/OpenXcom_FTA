@@ -152,19 +152,19 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 		bool hasState = true;
 		switch (pState)
 		{
-		case OpenXcom::PRISONER_STATE_NONE:
+		case PRISONER_STATE_NONE:
 			hasState = false;
 			break;
-		case OpenXcom::PRISONER_STATE_CONTAINING:
+		case PRISONER_STATE_CONTAINING:
 			status << tr("STR_PRISONER_STATE_CONTAINING");
 			break;
-		case OpenXcom::PRISONER_STATE_INTERROGATION:
+		case PRISONER_STATE_INTERROGATION:
 			status << tr("STR_PRISONER_STATE_INTERROGATION");
 			break;
-		case OpenXcom::PRISONER_STATE_TORTURE:
+		case PRISONER_STATE_TORTURE:
 			status << tr("STR_PRISONER_STATE_TORTURE");
 			break;
-		case OpenXcom::PRISONER_STATE_REQRUITING:
+		case PRISONER_STATE_REQRUITING:
 			status << tr("STR_PRISONER_STATE_RECRUIT");
 			break;
 		}

@@ -34,7 +34,7 @@ const float PROGRESS_LIMIT_GREAT = 0.4f;
 const float PROGRESS_LIMIT_SUPERIOR = 0.5f;
 
 IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
-	_rules(rule), _base(base), _active(true), _rolls(0), _spent(0), _cost(cost)
+	_rules(rule), _base(base), _active(true), _spent(0), _rolls(0), _cost(cost)
 {
 }
 
@@ -138,7 +138,8 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		double insightBonus = RNG::generate(0, stats->insight / 2);
 		if (estimate)
 		{
-			insightBonus = stats->insight / 4; //just take avarage roll
+			insightBonus = stats->insight;
+			insightBonus /= 4; //just take average roll
 		}
 		soldierEffort += insightBonus / 10;
 
@@ -154,7 +155,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	effort *= rating / 100;
 	//gets total effort to daily project progress
 	progress = static_cast<int>(ceil(effort * 24));
-	Log(LOG_INFO) << " >>> Total daile progress for the intel project " << _rules->getName() << ": " << progress;
+	Log(LOG_INFO) << " >>> Total daily progress for the intel project " << _rules->getName() << ": " << progress;
 	description = getState(progress);
 
 	return progress;
