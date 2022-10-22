@@ -2822,22 +2822,28 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 		else
 		{
 			//now we can create a Prisoner!
-			BasePrisoner* p = new BasePrisoner(_game->getMod(), rules->getType(),RNG::randomString(8));
+			BasePrisoner* p = new BasePrisoner(_game->getMod(), rules->getType(), RNG::randomString(8));
 			base->addPrisoner(p);
 			//Populate BasePrisoner data;
 			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
+			int points = 0;
 			if (soldier)
 			{
 				p->setGeoscapeSoldier(from->getGeoscapeSoldier());
 				p->setName(from->getName(_game->getLanguage()));
 				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight);
 				p->setAggression(RNG::generate(0, 3));
+				if (from->getOriginalFaction() == FACTION_HOSTILE)
+				{
+					points = soldier->getRules()->getValue();
+				}
 			}
 			else
 			{
 				p->setName(tr(from->getType()));
 				p->setIntelligence(from->getUnitRules()->getIntelligence());
 				p->setAggression(from->getUnitRules()->getAggression());
+				points = from->getUnitRules()->getValue();
 			}
 
 			if (!from->getRoles().empty())
@@ -2856,7 +2862,9 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			}
 			p->setMorale(morale);
 
-			if (base->getFreePrisonSpace(type) && _limitsEnforced > 0)
+			addStat("STR_PRISONER_CAPTURED", 1, points);
+
+			if (base->getFreePrisonSpace(type) <= 0 && _limitsEnforced > 0)
 			{
 				_containmentStateInfo[(int)type] = 2; // 2 = overfull
 			}

@@ -187,7 +187,6 @@ bool percent(int value)
 std::string randomString(std::string::size_type length)
 {
 	static auto& chrs = "0123456789"
-		"abcdefghijklmnopqrstuvwxyz"
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 	thread_local static std::mt19937 rg{ std::random_device{}() };
