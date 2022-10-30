@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <map>
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
@@ -28,8 +27,6 @@ class Mod;
 class RuleResearch;
 class RuleEvent;
 class RuleSoldier;
-
-enum PrisonerContainType : int { PRISONER_ALIEN = 0, PRISONER_HUMAN, PRISONER_MONSTER };
 
 /**
 * Definition of interrogation rules for prisoner.
@@ -130,7 +127,6 @@ class RulePrisoner
 {
 private:
 	std::string _type;
-	PrisonerContainType _containType;
 	int _startingCooperation, _damageOverTime;
 	PrisonerInterrogationRules* _interrogationRules = nullptr;
 	PrisonerRecruitingRules* _recruitingRules = nullptr;
@@ -147,7 +143,6 @@ public:
 	void afterLoad(const Mod* mod);
 
 	const std::string &getType() const { return _type; }
-	const PrisonerContainType getContainType() const { return _containType; }
 	int getStartingCooperation() const { return _startingCooperation; }
 	int getDamageOverTime() const { return _damageOverTime; }
 	const PrisonerInterrogationRules &getInterrogationRules() const { return *_interrogationRules; }

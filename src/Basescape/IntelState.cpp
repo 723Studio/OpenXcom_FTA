@@ -33,7 +33,6 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/IntelProject.h"
 #include "../Basescape/PrisonManagementState.h"
-#include <algorithm>
 
 namespace OpenXcom
 {

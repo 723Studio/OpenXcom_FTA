@@ -34,13 +34,9 @@
 #include "../Savegame/Region.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/Soldier.h"
-#include "../Savegame/SoldierDiary.h"
-#include "../Savegame/BattleUnit.h"
-#include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/SavedBattleGame.h"
-#include "../Savegame/ItemContainer.h"
 #include "../Savegame/AlienBase.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCovertOperation.h"
@@ -57,7 +53,7 @@ namespace OpenXcom
 {
 CovertOperation::CovertOperation(const RuleCovertOperation* rule, Base* base, int cost, int chances) :
 	_rule(rule), _base(base), _spent(0), _cost(cost), _successChance(chances), _assignedScientists(0), _assignedEngineers(0),
-	_inBattlescape(false), _hasBattlescapeResolve(false), _over(false), _hasPsi(false), _progressEventSpawned(false), _results(0)
+	_results(0), _inBattlescape(false), _hasBattlescapeResolve(false), _over(false), _hasPsi(false), _progressEventSpawned(false)
 {
 	_items = new ItemContainer();
 	if (base != 0)
@@ -133,7 +129,7 @@ std::string CovertOperation::getOperationName()
 
 
 /**
- * Return a vector of pointers to a Soldier realisations that assigned to this operation.
+ * Return a vector of pointers to a Soldier realizations that assigned to this operation.
  * @return a vector of pointers to a Soldier class.
  */
 std::vector<Soldier*> CovertOperation::getSoldiers()
@@ -193,7 +189,7 @@ std::string CovertOperation::getTimeLeftName()
 /**
 * Handle Covert Operation daily logic.
 * @param Game game engine.
-* @param ThinkPeriod - timestep to determine think process
+* @param globe
 */
 bool CovertOperation::think(Game& engine, const Globe& globe)
 {
@@ -361,7 +357,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 
 	if (!eventName.empty())
 	{
-		bool spawnEvent = save.spawnEvent(mod.getEvent(eventName));
+		save.spawnEvent(mod.getEvent(eventName));
 	}
 
 	if (!researchList.empty())
@@ -473,7 +469,6 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		std::string missionRace;
 		int targetZone = missionRules->getSpawnZone();
 
-		bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
 		bool targetBase = RNG::percent(missionRules->getTargetBaseOdds());
 		bool placed = false;
 		bool hasBase = true;
@@ -660,17 +655,17 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	int ruleCost = this->getRules()->getCosts() / 20;
 	int effCost = 1;
 	if (ruleCost < 20)
-		effCost = ceil(ruleCost / 8);
+		effCost = (int)ceil(ruleCost / 8);
 	else if (ruleCost < 40)
-		effCost = ceil(ruleCost / 8.5);
+		effCost = (int)ceil(ruleCost / 8.5);
 	else if (ruleCost < 60)
-		effCost = ceil(ruleCost / 9.86);
+		effCost = (int)ceil(ruleCost / 9.86);
 	else if (ruleCost < 80)
-		effCost = ceil(ruleCost / 11.54);
+		effCost = (int)ceil(ruleCost / 11.54);
 	else
-		effCost = ceil(ruleCost / 12.52);
+		effCost = (int)ceil(ruleCost / 12.52);
 
-	int expRolls = effCost + ceil(danger / 10);
+	int expRolls = effCost + (int)ceil(danger / 10);
 	//limit experience gain
 	if (expRolls > 3 && expRolls <= 8)
 		expRolls = 6;
@@ -685,9 +680,9 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	expRolls += expRollsRandom; //add more random
 	//experience is reduced for fail and critical fail
 	if (!operationResult && !criticalFail)
-		expRolls = round(expRolls / 2);
+		expRolls = (int)round(expRolls / 2);
 	else if (criticalFail)
-		expRolls = round(expRolls / 3) - 2;
+		expRolls = (int)round(expRolls / 3) - 2;
 
 	//processing soldiers change before returning home
 	std::vector<Soldier*> soldiersToKill;
@@ -745,7 +740,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			if (dead)
 			{
 				//Check for divine protection
-				int protection = (*i)->getRank() - 2;
+				int protection = (int)(*i)->getRank() - 2;
 				//lets add save if we have psi. Btw, there is a place for additional perks
 				if (_hasPsi)
 				{
@@ -792,7 +787,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			bool trainingManaSec = false;
 			if (mod.isManaTrainingSecondary())
 				trainingManaSec = true;
-			for (int j = 0; j < expRolls; j++)
+			for (size_t j = 0; j < (size_t)expRolls; j++)
 			{
 				statID = RNG::generate(1, 8);  //choose stat
 				expGain = RNG::generate(1, 4); //choose how many experience it would be
@@ -912,7 +907,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			{
 				Log(LOG_INFO) << "All soldiers on covert operation named: " << this->getOperationName() << " should be dead, but soldier named: " << (*j)->getName() << " was chosen to be the last survived.";
 				int health = (*j)->getCurrentStats()->health;
-				int genDamage = RNG::generate(health * 0.5, health * 0.9);
+				int genDamage = (int)RNG::generate(health * 0.5, health * 0.9);
 				(*j)->setWoundRecovery(genDamage);
 				_results->addSoldierDamage((*j)->getName(), genDamage);
 			}

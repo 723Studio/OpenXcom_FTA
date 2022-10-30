@@ -34,7 +34,6 @@ class RuleItem;
 class RuleManufacture;
 struct VerticalLevel;
 enum BasePlacementErrors : int;
-enum PrisonerContainType : int;
 
 /**
  * Represents a specific type of base facility.
@@ -50,7 +49,7 @@ private:
 	RuleBaseFacilityFunctions _requiresBaseFunc = 0;
 	RuleBaseFacilityFunctions _provideBaseFunc = 0;
 	RuleBaseFacilityFunctions _forbiddenBaseFunc = 0;
-	PrisonerContainType _prisonerContainType; //a FTA version of prison
+	int _ftaPrisonSpace; //a FTA version of prison
 	int _spriteShape, _spriteFacility;
 	bool _connectorsDisabled;
 	int _missileAttraction;
@@ -197,7 +196,7 @@ public:
 	float getSickBayRelativeBonus() const { return _sickBayRelativeBonus; }
 	/// Gets the prison type.
 	int getPrisonType() const;
-	const PrisonerContainType getPrisonContainType() const { return _prisonerContainType; }
+	int getFtAPrisoneSpace() const { return _ftaPrisonSpace; }
 	/// Gets the action type to perform on right click.
 	int getRightClickActionType() const;
 	/// Gets the vertical levels for this facility map generation.

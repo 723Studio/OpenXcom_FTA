@@ -280,7 +280,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 	if (_ftaUi)
 	{
 		auto recovery = _base->getSumRecoveryPerDay();
-		unsigned int freeEngineers = 0, busyEngineers = 0;
+		size_t freeEngineers = 0, busyEngineers = 0;
 		bool isBusy = false, isFree = false;
 		for (auto s : _base->getPersonnel(ROLE_ENGINEER))
 		{

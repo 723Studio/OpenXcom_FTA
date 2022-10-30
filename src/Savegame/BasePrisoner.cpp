@@ -44,6 +44,7 @@ BasePrisoner::BasePrisoner(const Mod* mod, const std::string &type, std::string 
 // */
 void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 {
+	_name = node["name"].as<std::string>(_name);
 	_soldierId = node["soldierId"].as<int>(_soldierId);
 	_state = (PrisonerState)node["state"].as<int>(_state);
 	_health = node["health"].as<int>(_health);
@@ -80,6 +81,7 @@ YAML::Node BasePrisoner::save() const
 
 	node["id"] = _id;
 	node["type"] = _type;
+	node["name"] = _name;
 	node["state"] = (int)_state;
 	if (_geoscapeSoldier)
 	{
@@ -100,6 +102,15 @@ YAML::Node BasePrisoner::save() const
 	//node["roles"] = _roles;
 
 	return node;
+}
+
+std::string BasePrisoner::getNameAndId()
+{
+	std::ostringstream nameId;
+	nameId << getName();
+	nameId << " / ";
+	nameId << getId();
+	return nameId.str();
 }
 
 void BasePrisoner::loadRoles(const std::vector<int>& r)

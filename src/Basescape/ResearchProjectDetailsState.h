@@ -45,6 +45,7 @@ public:
 	ResearchProjectDetailsState(Base *base, const RuleResearch *rule);
 	/// Handler for the OK button.
 	void btnOKClick(Action *action);
+	std::string getCostDescription();
 };
 
 }

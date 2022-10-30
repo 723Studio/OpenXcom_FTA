@@ -45,10 +45,8 @@ class Production;
 class Vehicle;
 class Ufo;
 class AlienMission;
-enum SoldierRole;
-
+enum SoldierRole : int;
 enum UfoDetection : int;
-enum PrisonerContainType : int;
 enum BasePlacementErrors : int
 {
 	/// 0: ok
@@ -273,13 +271,13 @@ public:
 	int getFreeTrainingSpace() const;
 	/// Gets the amount of free Containment space.
 	int getFreeContainment(int prisonType) const;
-	int getFreePrisonSpace(PrisonerContainType prisonType) const;
+	int getFreePrisonSpace() const;
 	/// Gets the total amount of Containment space.
 	int getAvailableContainment(int prisonType) const;
-	int getAvailablePrisonSpace(PrisonerContainType prisonType) const;
+	int getAvailablePrisonSpace() const;
 	/// Gets the total amount of used Containment space.
 	int getUsedContainment(int prisonType, bool onlyExternal = false) const;
-	int getUsedPrisonSpace(PrisonerContainType prisonType) const;
+	int getUsedPrisonSpace() const { return (int)_prisoners.size(); }
 	/// Sets the craft's battlescape status.
 	void setInBattlescape(bool inbattle);
 	/// Gets if the craft is in battlescape.

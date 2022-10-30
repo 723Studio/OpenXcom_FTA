@@ -33,6 +33,8 @@ RuleResearch::RuleResearch(const std::string &name) : _name(name), _spawnedItemC
 /**
  * Loads the research project from a YAML file.
  * @param node YAML node.
+ * @param mod
+ * @param parsers
  * @param listOrder The list weight for this research.
  */
 void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parsers, int listOrder)
@@ -128,29 +130,6 @@ void RuleResearch::afterLoad(const Mod* mod)
 int RuleResearch::getCost() const
 {
 	return _cost;
-}
-
-const std::string& RuleResearch::getCostDescription() const
-{
-	auto result = "STR_IMPOSSIBLE";
-	if (_cost < 50)
-		result = "STR_TRIVIAL";
-	if (_cost < 100)
-		result = "STR_VER_EASY";
-	else if (_cost < 300)
-		result = "STR_EASY";
-	else if (_cost < 500)
-		result = "STR_MODERATE";
-	else if (_cost < 700)
-		result = "STR_AVARAGE";
-	else if (_cost < 1000)
-		result = "STR_SOPHISTICATED";
-	else if (_cost < 1500)
-		result = "STR_HARD";
-	else if (_cost < 2000)
-		result = "STR_VERY_HARD";
-
-	return result;
 }
 
 /**

@@ -38,6 +38,7 @@ class CovertOperation;
 class ResearchProject;
 class Production;
 class IntelProject;
+class BasePrisoner;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
@@ -106,6 +107,7 @@ private:
 	ResearchProject *_researchProject;
 	Production *_production;
 	IntelProject* _intelProject;
+	BasePrisoner* _prisoner;
 	SoldierGender _gender;
 	SoldierLook _look;
 	int _lookVariant;
@@ -180,8 +182,13 @@ private:
 	Production* getProductionProject() const { return _production; }
 	/// Sets the soldier's Production Project.
 	void setProductionProject(Production* production) { _production = production; }
+	/// Sets the soldier's BasePrisoner.
+	void setActivePrisoner(BasePrisoner* prisoner) { _prisoner = prisoner; }
+	/// Gets the soldier's BasePrisoner.
+	BasePrisoner* getActivePrisoner() const { return _prisoner; }
 	/// Gets the soldier's craft string.
 	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
+	void clearBaseDuty();
 	/// Gets a string version of the soldier's rank.
 	std::string getRankString(bool isFtA);
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.

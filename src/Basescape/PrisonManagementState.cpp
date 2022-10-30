@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PrisonManagementState.h"
+#include "PrisonerInfoState.h"
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -46,10 +47,11 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 	_btnOk = new TextButton(304, 16, 8, 176);
 	_txtTitle = new Text(300, 17, 10, 8);
 	_txtAvailable = new Text(150, 9, 10, 24);
+	_txtAllocated = new Text(150, 9, 160, 24);
 	_txtSpace = new Text(300, 9, 10, 34);
-	_txtPrisoner = new Text(140, 9, 10, 52);
-	_txtId = new Text(57, 9, 150, 52);
-	_txtState = new Text(103, 9, 207, 52);
+	_txtPrisoner = new Text(110, 17, 10, 44);
+	_txtAgents = new Text(106, 17, 120, 44);
+	_txtState = new Text(84, 9, 226, 44);
 	_lstPrisoners = new TextList(288, 112, 8, 62);
 
 	// Set palette
@@ -59,9 +61,10 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 	add(_btnOk, "button", "prisonManagement");
 	add(_txtTitle, "text", "prisonManagement");
 	add(_txtAvailable, "text", "prisonManagement");
+	add(_txtAllocated, "text", "prisonManagement");
 	add(_txtSpace, "text", "prisonManagement");
 	add(_txtPrisoner, "text", "prisonManagement");
-	add(_txtId, "text", "prisonManagement");
+	add(_txtAgents, "text", "prisonManagement");
 	add(_txtState, "text", "prisonManagement");
 	add(_lstPrisoners, "list", "prisonManagement");
 
@@ -80,8 +83,8 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 
 	_txtPrisoner->setText(tr("STR_PRISONER_NAME"));
 
-	_txtId->setAlign(ALIGN_CENTER);
-	_txtId->setText(tr("STR_PRISONER_ID"));
+	_txtAgents->setAlign(ALIGN_CENTER);
+	_txtAgents->setText(tr("STR_AGENTS_ALLOCATED_UC"));
 
 	_txtState->setWordWrap(true);
 	_txtState->setText(tr("STR_PRISONER_STATE"));
@@ -124,8 +127,8 @@ void PrisonManagementState::btnOkClick(Action *)
  */
 void PrisonManagementState::onSelectPrisoner(Action *)
 {
-	auto project = _base->getPrisoners()[_lstPrisoners->getSelectedRow()];
-	//_game->pushState(new ResearchInfoState(_base, project));
+	auto prisoner = _base->getPrisoners()[_lstPrisoners->getSelectedRow()];
+	_game->pushState(new PrisonerInfoState(_base, prisoner, prisoner->getRules()));
 }
 
 /**
@@ -146,14 +149,14 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 	_lstPrisoners->clearList();
 	for (auto p : _base->getPrisoners())
 	{
-		std::ostringstream status;
-		auto pState = p->getState();
+		std::ostringstream status, assigned;
+		auto pState = p->getPrisonerState();
 		bool dying = p->getRules()->getDamageOverTime() > 0 && pState != PRISONER_STATE_CONTAINING;
-		bool hasState = true;
+		bool hasActiveState = true;
 		switch (pState)
 		{
 		case PRISONER_STATE_NONE:
-			hasState = false;
+			hasActiveState = false;
 			break;
 		case PRISONER_STATE_CONTAINING:
 			status << tr("STR_PRISONER_STATE_CONTAINING");
@@ -169,7 +172,7 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 			break;
 		}
 
-		if (hasState && dying)
+		if (hasActiveState && dying)
 		{
 			status << ", ";
 			status << tr("STR_DYING_LC");
@@ -178,10 +181,38 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 		{
 			status << tr("STR_DYING");
 		}
-		
-		_lstPrisoners->addRow(3, p->getName().c_str(), p->getId().c_str(), status.str().c_str());
+
+		size_t n = 0;
+		for (auto s : *_base->getSoldiers())
+		{
+			if (s->getActivePrisoner() == p)
+			{
+				n++;
+			}
+		}
+		assigned << n;
+
+		_lstPrisoners->addRow(3, p->getNameAndId().c_str(), assigned.str().c_str() ,status.str().c_str());
 	}
 
+	auto recovery = _base->getSumRecoveryPerDay();
+	size_t freeAgents = 0, busyAgents = 0;
+	bool isBusy = false, isFree = false;
+	for (auto a : _base->getPersonnel(ROLE_AGENT))
+	{
+		a->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
+		if (!isBusy && isFree)
+		{
+			freeAgents++;
+		}
+		if (a->getActivePrisoner())
+		{
+			busyAgents++;
+		}
+	}
+
+	_txtAvailable->setText(tr("STR_AGENTS_AVAILABLE").arg(freeAgents));
+	_txtAllocated->setText(tr("STR_AGENTS_ALLOCATED").arg(busyAgents));
 	_txtSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_base->getFreeInterrogationSpace()));
 
 	if (scrl)

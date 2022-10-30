@@ -37,7 +37,7 @@ private:
 	Base *_base;
 	TextButton *_btnOk;
 	Window *_window;
-	Text *_txtTitle, * _txtSpace, *_txtAvailable, *_txtPrisoner, *_txtId, *_txtState;
+	Text *_txtTitle, * _txtSpace, *_txtAvailable, * _txtAllocated, *_txtPrisoner, *_txtAgents, *_txtState;
 	TextList *_lstPrisoners;
 
 public:

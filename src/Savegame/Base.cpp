@@ -26,6 +26,7 @@
 #include "CraftWeapon.h"
 #include "CovertOperation.h"
 #include "IntelProject.h"
+#include "BasePrisoner.h"
 #include "SavedGame.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/Mod.h"
@@ -269,7 +270,6 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 									s->setProductionProject((*k));
 									set = true;
 									break;
-									break;
 								}
 							}
 						}
@@ -288,6 +288,19 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 					if ((*j)->getName() == intelProject)
 					{
 						s->setIntelProject((*j));
+						break;
+					}
+				}
+			}
+
+			if (const YAML::Node& p = (*i)["activePrisoner"])
+			{
+				std::string prisoner = p.as<std::string>();
+				for (std::vector<BasePrisoner*>::iterator j = _prisoners.begin(); j != _prisoners.end(); ++j)
+				{
+					if ((*j)->getRules()->getType() == prisoner)
+					{
+						s->setActivePrisoner(*j);
 						break;
 					}
 				}
@@ -679,9 +692,9 @@ int Base::getFreeInterrogationSpace()
 
 	for (auto p : _prisoners)
 	{
-		if (p->getState() == PRISONER_STATE_INTERROGATION
-			|| p->getState() == PRISONER_STATE_REQRUITING
-			|| p->getState() == PRISONER_STATE_REQRUITING)
+		if (p->getPrisonerState() == PRISONER_STATE_INTERROGATION
+			|| p->getPrisonerState() == PRISONER_STATE_TORTURE
+			|| p->getPrisonerState() == PRISONER_STATE_REQRUITING)
 		{
 			used++;
 		}
@@ -1328,9 +1341,13 @@ int Base::getFreeContainment(int prisonType) const
 	return getAvailableContainment(prisonType) - getUsedContainment(prisonType);
 }
 
-int Base::getFreePrisonSpace(PrisonerContainType prisonType) const
+/**
+ * Return prison (for FtA type Base Prisoner).
+ * @return containment space not in use
+ */
+int Base::getFreePrisonSpace() const
 {
-	return 0;
+	return getAvailablePrisonSpace() - getUsedPrisonSpace();
 }
 
 /**
@@ -1786,20 +1803,6 @@ int Base::getUsedContainment(int prisonType, bool onlyExternal) const
 	return total;
 }
 
-int Base::getUsedPrisonSpace(PrisonerContainType prisonType) const
-{
-	int result = 0;
-	for (auto p : _prisoners)
-	{
-		if (p->getRules()->getContainType() == prisonType)
-		{
-			result++;
-		}
-	}
-
-	return result;
-}
-
 /**
  * Returns the total amount of Containment Space
  * available in the base.
@@ -1818,14 +1821,14 @@ int Base::getAvailableContainment(int prisonType) const
 	return total;
 }
 
-int Base::getAvailablePrisonSpace(PrisonerContainType prisonType) const
+int Base::getAvailablePrisonSpace() const
 {
 	int total = 0;
 	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
 	{
-		if ((*i)->getBuildTime() == 0 && (*i)->getRules()->getPrisonContainType() == prisonType)
+		if ((*i)->getBuildTime() == 0)
 		{
-			total += (*i)->getRules()->getAliens();
+			total += (*i)->getRules()->getFtAPrisoneSpace();
 		}
 	}
 	return total;

@@ -24,7 +24,6 @@
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
-#include "../Engine/Unicode.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Base.h"
@@ -54,27 +53,27 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 	_txtReqStats = new Text(154, 19, 159, 69);
 
 	// Set palette
-	setInterface("selectNewResearch");
+	setInterface("researchDetailsMenu");
 
-	add(_window, "window", "selectNewResearch");
-	add(_txtTitle, "text", "selectNewResearch");
-	add(_txtDifficulty, "text", "selectNewResearch");
-	add(_txtFunds, "text", "selectNewResearch");
-	add(_txtDestroyitem, "text", "selectNewResearch");
-	add(_txtReqStatsHeader, "text", "selectNewResearch");
-	add(_txtReqStats, "text", "selectNewResearch");
-	add(_btnOk, "button", "selectNewResearch");
+	add(_window, "window", "researchDetailsMenu");
+	add(_txtTitle, "text", "researchDetailsMenu");
+	add(_txtDifficulty, "text", "researchDetailsMenu");
+	add(_txtFunds, "text", "researchDetailsMenu");
+	add(_txtDestroyitem, "text", "researchDetailsMenu");
+	add(_txtReqStatsHeader, "text", "researchDetailsMenu");
+	add(_txtReqStats, "text", "researchDetailsMenu");
+	add(_btnOk, "button", "researchDetailsMenu");
 
 	centerAllSurfaces();
 
-	setWindowBackground(_window, "selectNewResearch");
+	setWindowBackground(_window, "researchDetailsMenu");
 
 	_txtTitle->setText(tr("STR_RESEARCH_STATE_INFO"));
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 
 	
-	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(tr(_rule->getCostDescription())));
+	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(tr(getCostDescription())));
 
 	int dY = 0;
 	if (_game->getSavedGame()->getDebugMode())
@@ -111,6 +110,7 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 	_txtReqStats->setText(generateStatsList());
 	_txtReqStats->setWordWrap(true);
 	_txtReqStats->setY(_txtReqStats->getY() - dY + 2);
+	_txtReqStats->setColor(_game->getMod()->getInterface("researchDetailsMenu")->getElement("text")->color2);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchProjectDetailsState::btnOKClick);
@@ -173,6 +173,29 @@ std::string ResearchProjectDetailsState::generateStatsList()
 	}
 
 	return ss.str();
+}
+
+std::string ResearchProjectDetailsState::getCostDescription()
+{
+	const int cost = _rule->getCost();
+	if (cost < 50)
+		return "STR_TRIVIAL";
+	if (cost < 100)
+		return "STR_VERY_EASY";
+	else if (cost < 300)
+		return "STR_EASY";
+	else if (cost < 500)
+		return "STR_MODERATE";
+	else if (cost < 700)
+		return "STR_AVERAGE";
+	else if (cost < 1000)
+		return "STR_SOPHISTICATED";
+	else if (cost < 1500)
+		return "STR_HARD";
+	else if (cost < 2000)
+		return "STR_VERY_HARD";
+	else
+		return "STR_IMPOSSIBLE";
 }
 
 }

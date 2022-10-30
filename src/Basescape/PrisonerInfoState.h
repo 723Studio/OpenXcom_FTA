@@ -18,8 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include <map>
 #include <set>
+#include <utility>
 
 namespace OpenXcom
 {
@@ -29,58 +29,61 @@ class TextButton;
 class Text;
 class TextList;
 class Base;
-class RuleResearch;
-class ResearchProject;
+class RulePrisoner;
+class BasePrisoner;
+enum PrisonerState : int;
 
 /**
  * Window which allows changing of the number of assigned scientist to a project.
  */
-class ResearchInfoStateFtA : public State
+class PrisonerInfoState : public State
 {
 private:
 	Base *_base;
-	TextButton *_btnOk, *_btnCancel, *_btnAllocate, *_btnAbandon;
+	TextButton *_btnOk, *_btnCancel, *_btnAllocate, *_btnTerminate, *_btnHolder;
+	TextButton *_btnInterrogate, *_btnRecruit, *_btnTorture, *_btnContain;
+	TextButton* _group;
 	Window *_window;
-	Text *_txtTitle, *_txtAvailableScientist, *_txtAvailableSpace, *_txtGrade;
-	Text *_txtStat1, *_txtStat2, *_txtStat3, *_txtStat4, *_txtStat5, *_txtStat6, *_txtInsight;
-	TextList *_lstScientists;
-	ResearchProject *_project;
-	const RuleResearch *_rule;
-	std::set<Soldier *> _scientists;
-	bool _newProject;
-	int _workSpace;
-
-	void buildUi();
+	Text *_txtTitle, *_txtAvailableAgents, *_txtAvailableSpace, *_txtActionsHeader;
+	Text* _txtHealth, * _txtMorale, * _txtCooperation, * _txtAggressiveness;
+	TextList *_lstAgents;
+	BasePrisoner *_prisoner;
+	const RulePrisoner*_rule;
+	std::set<Soldier*> _agents;
+	PrisonerState _display;
 	
-	std::pair<int, std::string> getStatString(size_t position);
-	std::map<int, std::string, std::greater<int> > _researchStats;
-	int GetStatValue(Soldier &s, const std::string &desc);
+	int _workSpace;
 
 public:
 	/// Creates the ResearchProject state.
-	ResearchInfoStateFtA(Base *base, const RuleResearch *rule);
-	ResearchInfoStateFtA(Base *base, ResearchProject *project);
+	PrisonerInfoState(Base *base, BasePrisoner *prisoner, const RulePrisoner*rule);
 	/// Cleans up the ResearchInfo state
-	~ResearchInfoStateFtA();
+	~PrisonerInfoState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Abandon button.
-	void btnAbandonClick(Action *action);
+	void btnTerminateClick(Action *action);
 	/// Handler for clicking the Allocate button.
 	void btnAllocateClick(Action *action);
+	/// Handler for clicking the Interrogate button.
+	void btnInterrogateToggle(Action* action);
+	/// Handler for clicking the Recruit button.
+	void btnRecruitToggle(Action* action);
+	/// Handler for clicking the Torture button.
+	void btnTortureToggle(Action* action);
+	/// Handler for clicking the Contain button.
+	void btnContainToggle(Action* action);
 	/// Fills the Scientists list with Assigned Scientists.
-	void fillScientistsList(size_t scrl);
+	void fillAgentsList(size_t scrl);
 	/// Updates the research list.
 	void init() override;
-	void setAssignedScientists();
-	const RuleResearch* getResearchRules();
-	std::set<Soldier *> getScientists() { return _scientists; };
-	void addScientist(Soldier *scientist) { _scientists.insert(scientist); }
-	void removeScientist(Soldier* scientist) { _scientists.erase(scientist); }
-	void setScientists(std::set<Soldier *> scientists) { _scientists = scientists; };
-	bool isNewProject() { return _newProject; }
+	void setAssignedAgents();
+	std::set<Soldier*> getAgents() { return _agents; }
+	void addAgent(Soldier * agent) { _agents.insert(agent); }
+	void removeAgent(Soldier* agent) { _agents.erase(agent); }
+	void setAgents(std::set<Soldier*> agent) { _agents = std::move(agent); }
 	int getWorkspace() { return _workSpace; }
 };
 

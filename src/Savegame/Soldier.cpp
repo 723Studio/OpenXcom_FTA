@@ -44,6 +44,7 @@
 #include "../Mod/RuleSoldierTransformation.h"
 #include "../Mod/RuleCommendations.h"
 #include "Base.h"
+#include "BasePrisoner.h"
 #include "ItemContainer.h"
 
 namespace OpenXcom
@@ -103,9 +104,9 @@ int Soldier::improveStat(int exp, int &rate, bool bravary)
  */
 Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0),
-	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _justSaved(false),
-	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), 
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
+	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
+	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
 	_corpseRecovered(false)
 {
@@ -237,9 +238,9 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
  */
 Soldier::Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0),
-	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _justSaved(false),
-	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
+	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
+	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
 	_corpseRecovered(false)
 {
@@ -882,6 +883,7 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 	bool facility = (mode == LAB || mode == ASSIGN || mode == WORK);
 	if (_death)
 	{
+		isBusy = true;
 		if (_death->getCause())
 		{
 			return lang->getString("STR_KILLED_IN_ACTION", _gender);
@@ -890,7 +892,6 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		{
 			return lang->getString("STR_MISSING_IN_ACTION", _gender);
 		}
-		isBusy = true;
 	}
 
 	if (isWounded())
@@ -954,6 +955,22 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		}
 	}
 
+	if (_prisoner)
+	{
+		if (mode == INTEL)
+		{
+			std::ostringstream ss;
+			ss << lang->getString(_prisoner->getName());
+			ss << " / ";
+			ss << _prisoner->getId();
+			return lang->getString(_prisoner->getName());
+		}
+		else
+		{
+			return lang->getString("STR_INTEL"); //#FINNIKTODO a better string
+		}
+	}
+
 	if (hasPendingTransformation())
 	{
 		isBusy = true;
@@ -970,7 +987,7 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 				++it;
 			}
 		}
-		days = ceil(days / 24);
+		days = (int)ceil(days / 24);
 		ss << days;
 		return ss.str();
 	}
@@ -1010,6 +1027,21 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 
 	isFree = true;
 	return lang->getString("STR_NONE_UC");
+}
+
+/**
+ * Clear all soldier tasks to prepare for some base duty (research project, manufacture, etc)
+ */
+void Soldier::clearBaseDuty()
+{
+	setResearchProject(nullptr);
+	setProductionProject(nullptr);
+	setIntelProject(nullptr);
+	setActivePrisoner(nullptr);
+	setPsiTraining(false);
+	setTraining(false);
+	setCraft(0);
+	setReturnToTrainingWhenHealed(false);
 }
 
 /**

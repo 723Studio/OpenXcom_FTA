@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "ResearchInfoStateFtA.h"
+#include "ResearchAllocateScientistsState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -27,15 +29,11 @@
 #include "../Interface/Window.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleResearch.h"
-#include "../Mod/RuleInterface.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/ResearchProject.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
-#include "ResearchInfoStateFtA.h"
-#include "../Basescape/ResearchAllocateScientistsState.h"
-#include <climits>
 
 namespace OpenXcom
 {
@@ -62,7 +60,6 @@ ResearchInfoStateFtA::ResearchInfoStateFtA(Base *base, const RuleResearch *rule)
 ResearchInfoStateFtA::ResearchInfoStateFtA(Base *base, ResearchProject *project) : _base(base), _project(project)
 {
 	_newProject = false;
-	//getAssignedScientists();
 	buildUi();
 }
 
@@ -134,7 +131,6 @@ void ResearchInfoStateFtA::buildUi()
 	if (_newProject)
 	{
 		_btnOk->setText(tr("STR_START_PROJECT"));
-		//_btnOk->setColor(_game->getMod()->getInterface("allocateResearch")->getElement("button1")->color);
 		_btnAbandon->setVisible(false);
 	}
 	else
@@ -153,8 +149,8 @@ void ResearchInfoStateFtA::buildUi()
 
 	setAssignedScientists();
 
-	unsigned int x = _txtStat1->getX();
-	unsigned int offset = 18;
+	int x = _txtStat1->getX();
+	const unsigned int offset = 18;
 	int stat = getStatString(0).first;
 	if (stat > 0)
 	{
@@ -203,7 +199,7 @@ void ResearchInfoStateFtA::buildUi()
 		x += offset;
 	}
 
-	_txtInsight->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::insight, UnitStats::STATSTR_UC)));
+	_txtInsight->setText(tr(UnitStats::getStatString(&UnitStats::insight, UnitStats::STATSTR_SHORT)));
 	_txtInsight->setX(x);
 
 	_lstScientists->setColumns(9, 116, 32, 18, 18, 18, 18, 18, 18, 18);
@@ -255,28 +251,29 @@ const RuleResearch* ResearchInfoStateFtA::getResearchRules()
 
 int ResearchInfoStateFtA::GetStatValue(Soldier &s, const std::string &desc)
 {
-	UnitStats *sStats = s.getCurrentStats();
-	if (desc == "STR_PHYSICS_SHORT")
+	
+	const UnitStats *sStats = s.getCurrentStats();
+	if (desc == UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT))
 		return sStats->physics;
-	if (desc == "STR_CHEMISTRY_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT))
 		return sStats->chemistry;
-	if (desc == "STR_BIOLOGY_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT))
 		return sStats->biology;
-	if (desc == "STR_DATA_ANALISIS_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT))
 		return sStats->data;
-	if (desc == "STR_COMPUTER_SCIENCE_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT))
 		return sStats->computers;
-	if (desc == "STR_TACTICS_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT))
 		return sStats->tactics;
-	if (desc == "STR_MATERIAL_SCIENCE_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT))
 		return sStats->materials;
-	if (desc == "STR_DESIGNING_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT))
 		return sStats->designing;
-	if (desc == "STR_ALIEN_TECH_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT))
 		return sStats->alienTech;
-	if (desc == "STR_PSIONICS_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT))
 		return sStats->psionics;
-	if (desc == "STR_XENOLINGUISTICS_SHORT")
+	if (desc == UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT))
 		return sStats->xenolinguistics;
 
 	Log(LOG_ERROR) << "Link to undefined stat: " << desc;
@@ -327,11 +324,8 @@ void ResearchInfoStateFtA::btnOkClick(Action *)
 
 	for (auto s : _scientists)
 	{
+		s->clearBaseDuty();
 		s->setResearchProject(_project);
-		s->setPsiTraining(false);
-		s->setTraining(false);
-		s->setCraft(0);
-		s->setReturnToTrainingWhenHealed(false); //just in case
 	}
 
 	_game->popState();
@@ -416,58 +410,58 @@ std::pair<int, std::string> ResearchInfoStateFtA::getStatString(size_t position)
 
 	if (stats.physics > 0)
 	{
-		statMap.insert(std::make_pair(stats.physics, tr("STR_PHYSICS_SHORT")));
-		_researchStats.insert(std::make_pair(stats.physics, "STR_PHYSICS_SHORT"));
+		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.physics, UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.chemistry > 0)
 	{
-		statMap.insert(std::make_pair(stats.chemistry, tr("STR_CHEMISTRY_SHORT")));
-		_researchStats.insert(std::make_pair(stats.chemistry, "STR_CHEMISTRY_SHORT"));
+		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.chemistry, UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.biology > 0)
 	{
-		statMap.insert(std::make_pair(stats.biology, tr("STR_BIOLOGY_SHORT")));
-		_researchStats.insert(std::make_pair(stats.biology, "STR_BIOLOGY_SHORT"));
+		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.biology, UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.data > 0)
 	{
-		statMap.insert(std::make_pair(stats.data, tr("STR_DATA_ANALISIS_SHORT")));
-		_researchStats.insert(std::make_pair(stats.data, "STR_DATA_ANALISIS_SHORT"));
+		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.data, UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.computers > 0)
 	{
-		statMap.insert(std::make_pair(stats.computers, tr("STR_COMPUTER_SCIENCE_SHORT")));
-		_researchStats.insert(std::make_pair(stats.computers, "STR_COMPUTER_SCIENCE_SHORT"));
+		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.computers, UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.tactics > 0)
 	{
-		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_SHORT")));
-		_researchStats.insert(std::make_pair(stats.tactics, "STR_TACTICS_SHORT"));
+		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.tactics, UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.materials > 0)
 	{
-		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_SHORT")));
-		_researchStats.insert(std::make_pair(stats.materials, "STR_MATERIAL_SCIENCE_SHORT"));
+		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.materials, UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.designing > 0)
 	{
-		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_SHORT")));
-		_researchStats.insert(std::make_pair(stats.designing, "STR_DESIGNING_SHORT"));
+		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.designing, UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.alienTech > 0)
 	{
-		statMap.insert(std::make_pair(stats.alienTech, tr("STR_ALIEN_TECH_SHORT")));
-		_researchStats.insert(std::make_pair(stats.alienTech, "STR_ALIEN_TECH_SHORT"));
+		statMap.insert(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.alienTech, UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.psionics > 0)
 	{
-		statMap.insert(std::make_pair(stats.psionics, tr("STR_PSIONICS_SHORT")));
-		_researchStats.insert(std::make_pair(stats.psionics, "STR_PSIONICS_SHORT"));
+		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.psionics, UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT)));
 	}
 	if (stats.xenolinguistics > 0)
 	{
-		statMap.insert(std::make_pair(stats.xenolinguistics, tr("STR_XENOLINGUISTICS_SHORT")));
-		_researchStats.insert(std::make_pair(stats.xenolinguistics, "STR_XENOLINGUISTICS_SHORT"));
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT))));
+		_researchStats.insert(std::make_pair(stats.xenolinguistics, UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT)));
 	}
 
 	size_t pos = 0;

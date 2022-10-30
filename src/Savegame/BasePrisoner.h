@@ -66,12 +66,12 @@ public:
 
 	//getters and setters
 	const std::string& getId() const { return _id; }
-
 	void setName(const std::string& name) { _name = name; }
 	std::string getName() const { return _name; }
+	std::string getNameAndId();
 
-	void setState(PrisonerState state) { _state = state; }
-	PrisonerState getState() const { return _state; }
+	void setPrisonerState(PrisonerState state) { _state = state; }
+	PrisonerState getPrisonerState() const { return _state; }
 
 	int getSoldierId() const { return _soldierId; }
 

@@ -277,7 +277,7 @@ void ResearchState::fillProjectList(size_t scrl)
 		std::ostringstream sstr, sspr;
 		if (_ftaUi)
 		{
-			unsigned int n = 0;
+			size_t n = 0;
 			for (auto s : *_base->getSoldiers())
 			{
 				if (s->getResearchProject() == (*iter))
@@ -326,7 +326,7 @@ void ResearchState::fillProjectList(size_t scrl)
 	if (_ftaUi)
 	{
 		auto recovery = _base->getSumRecoveryPerDay();
-		unsigned int freeScientists = 0, busyScientists = 0;
+		size_t freeScientists = 0, busyScientists = 0;
 		bool isBusy = false, isFree = false;
 		for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
 		{

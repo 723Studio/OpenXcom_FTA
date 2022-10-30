@@ -275,12 +275,15 @@ void ManufactureInfoStateFtA::btnOkClick(Action *)
 	for (auto s : _engineers)
 	{
 		efficiency += s->getCurrentStats()->efficiency;
+		s->clearBaseDuty();
 		s->setProductionProject(_production);
 	}
 
 	if (_engineers.size() > 0)
 	{
-		_production->setEfficiency(efficiency / _engineers.size());
+		double finalEff = efficiency;
+		finalEff /= _engineers.size();
+		_production->setEfficiency(static_cast<int>(finalEff));
 	}
 	else
 	{

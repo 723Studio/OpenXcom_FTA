@@ -126,7 +126,7 @@ void PrisonerContainingRules::afterLoad(const Mod* mod)
  * Creates a blank RulePrisoner.
  * @param type String defining the type.
  */
-RulePrisoner::RulePrisoner(const std::string &type) : _type(type), _containType(PRISONER_ALIEN), _startingCooperation(-300), _damageOverTime(0)
+RulePrisoner::RulePrisoner(const std::string &type) : _type(type), _startingCooperation(-300), _damageOverTime(0)
 {
 
 }
@@ -146,7 +146,6 @@ void RulePrisoner::load(const YAML::Node &node)
 		load(parent);
 	}
 
-	_containType = (PrisonerContainType)node["containType"].as<int>(_containType);
 	_startingCooperation = node["startingCooperation"].as<int>(_startingCooperation);
 	_damageOverTime = node["damageOverTime"].as<int>(_damageOverTime);
 	

@@ -270,6 +270,7 @@
     <ClCompile Include="Basescape\PlaceLiftState.cpp" />
     <ClCompile Include="Basescape\ManufactureStartState.cpp" />
     <ClCompile Include="Basescape\PlaceStartFacilityState.cpp" />
+    <ClCompile Include="Basescape\PrisonerInfoState.cpp" />
     <ClCompile Include="Basescape\PrisonManagementState.cpp" />
     <ClCompile Include="Basescape\PurchaseState.cpp" />
     <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp" />
@@ -689,6 +690,7 @@
     <ClInclude Include="Basescape\PlaceLiftState.h" />
     <ClInclude Include="Basescape\ManufactureStartState.h" />
     <ClInclude Include="Basescape\PlaceStartFacilityState.h" />
+    <ClInclude Include="Basescape\PrisonerInfoState.h" />
     <ClInclude Include="Basescape\PrisonManagementState.h" />
     <ClInclude Include="Basescape\PurchaseState.h" />
     <ClInclude Include="Basescape\ResearchAllocateScientistsState.h" />

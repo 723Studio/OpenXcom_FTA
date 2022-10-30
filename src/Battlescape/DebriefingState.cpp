@@ -2631,7 +2631,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 				}
 				else if (rule->getBattleType() == BT_CORPSE)
 				{
-					BattleUnit* corpseUnit = (*it)->getUnit();
+					BattleUnit *corpseUnit = (*it)->getUnit();
 					if (corpseUnit->getStatus() == STATUS_DEAD)
 					{
 						if (rule->isCorpseRecoverable())
@@ -2641,19 +2641,15 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 						}
 					}
 					else if (corpseUnit->getStatus() == STATUS_UNCONSCIOUS
-						|| (corpseUnit->isIgnored()
-							&& corpseUnit->getHealth() > 0
-							&& corpseUnit->getHealth() < corpseUnit->getStunlevel()))
+					         || (corpseUnit->isIgnored()
+					             && corpseUnit->getHealth() > 0
+					             && corpseUnit->getHealth() < corpseUnit->getStunlevel()))
 					{
-
-						bool capturedCiv = _fta
-							&& corpseUnit->getOriginalFaction() == FACTION_NEUTRAL
-							&& _missionStatistics->aborted
-							&& _game->getMod()->getCraft(_missionStatistics->craft);
-
-						if (_fta
-							&& (corpseUnit->getOriginalFaction() == FACTION_HOSTILE
-								|| capturedCiv))
+						bool capturedCiv = corpseUnit->getOriginalFaction() == FACTION_NEUTRAL
+						                   && _missionStatistics->aborted
+						                   && _game->getMod()->getCraft(_missionStatistics->craft);
+						//#FINNIKTODO check for possibility of making an actual prisoner!!!
+						if (_fta && (corpseUnit->getOriginalFaction() == FACTION_HOSTILE || capturedCiv))
 						{
 							recoverPrisoner(corpseUnit, base);
 						}
@@ -2801,13 +2797,12 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 	else
 	{
 		//now let's if we have spare prison space
-		auto type = rules->getContainType();
-		bool noContainment = base->getAvailablePrisonSpace(type) <= 0;
+		bool noContainment = base->getFreePrisonSpace() <= 0;
 		if (noContainment)
 		{
 			for (auto b : *_game->getSavedGame()->getBases())
 			{
-				if (b->getFreePrisonSpace(type) > 0)
+				if (b->getFreePrisonSpace() > 0)
 				{
 					noContainment = false;
 					break;
@@ -2817,7 +2812,7 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 
 		if (noContainment)
 		{
-			_containmentStateInfo[(int)type] = 1; // 1 = not available in any base
+			_containmentStateInfo[1] = 1; // 1 = not available in any base #FINNIKTODO add special about BasePrisoner space shortage
 		}
 		else
 		{
@@ -2864,10 +2859,11 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 
 			addStat("STR_PRISONER_CAPTURED", 1, points);
 
-			if (base->getFreePrisonSpace(type) <= 0 && _limitsEnforced > 0)
-			{
-				_containmentStateInfo[(int)type] = 2; // 2 = overfull
-			}
+			//#FINNIKTODO add special about BasePrisoner space shortage
+			//if (base->getFreePrisonSpace(type) <= 0 && _limitsEnforced > 0)
+			//{
+			//	_containmentStateInfo[(int)type] = 2; // 2 = overfull
+			//}
 		}
 	}
 }

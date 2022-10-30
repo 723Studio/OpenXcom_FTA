@@ -216,7 +216,7 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		effort *= (100 - (19 * log(assignedScientists.size()))) / 100;
 	}
 	
-	effort *= rating / 100;
+	effort *= (double)rating / 100;
 	progress = static_cast<int>(ceil(effort / 24));
 	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress;
 

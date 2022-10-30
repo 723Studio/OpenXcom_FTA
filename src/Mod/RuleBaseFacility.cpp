@@ -42,7 +42,7 @@ RuleBaseFacility::RuleBaseFacility(const std::string &type) :
 	_missileAttraction(100), _fakeUnderwater(-1),
 	_lift(false), _hyper(false), _mind(false), _grav(false), _mindPower(1),
 	_size(1), _buildCost(0), _refundValue(0), _buildTime(0), _monthlyCost(0),
-	_storage(0), _personnel(0), _aliens(0), _crafts(0), _prisonerContainType(PRISONER_ALIEN), _labs(0), _workshops(0), _psiLabs(0),
+	_storage(0), _personnel(0), _aliens(0), _crafts(0), _ftaPrisonSpace(0), _labs(0), _workshops(0), _psiLabs(0),
 	_sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0),
 	_defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _placeSound(-1), _ammoNeeded(1), _interrogationSpace(0), _listOrder(0),
 	_trainingRooms(0), _maxAllowedPerBase(0), _sickBayAbsoluteBonus(0.0f), _sickBayRelativeBonus(0.0f),
@@ -96,7 +96,7 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 	_personnel = node["personnel"].as<int>(_personnel);
 	_aliens = node["aliens"].as<int>(_aliens);
 	_interrogationSpace = node["interrogationSpace"].as<int>(_interrogationSpace);
-	_prisonerContainType = (PrisonerContainType)node["prisonerContainType"].as<int>(_prisonerContainType);
+	_ftaPrisonSpace = node["ftaPrisonSpace"].as<int>(_ftaPrisonSpace);
 	_crafts = node["crafts"].as<int>(_crafts);
 	_labs = node["labs"].as<int>(_labs);
 	_workshops = node["workshops"].as<int>(_workshops);
@@ -595,7 +595,7 @@ int RuleBaseFacility::getPrisonType() const
 
 /**
 * Gets the action type to perform on right click.
-* @return 0=default, 1 = prison, 2 = manufacture, 3 = research, 4 = training, 5 = psi training, 6 = soldiers, 7 = sell
+* @return 0=default, 1 = prison, 2 = manufacture, 3 = research, 4 = training, 5 = psi training, 6 = soldiers, 7 = sell, 8 = intel
 */
 int RuleBaseFacility::getRightClickActionType() const
 {

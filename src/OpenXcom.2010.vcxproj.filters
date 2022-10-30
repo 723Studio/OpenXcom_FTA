@@ -1250,11 +1250,16 @@
     <ClCompile Include="Geoscape\IntelAvailableState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
-    <ClCompile Include="Savegame\BasePrisoner.cpp" />
     <ClCompile Include="Mod\RulePrisoner.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\PrisonManagementState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\BasePrisoner.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\PrisonerInfoState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2571,11 +2576,16 @@
     <ClInclude Include="Geoscape\IntelAvailableState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
-    <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Mod\RulePrisoner.h">
       <Filter>Mod</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\PrisonManagementState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\BasePrisoner.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonerInfoState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>
