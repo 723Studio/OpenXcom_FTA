@@ -328,13 +328,21 @@ void PlaceFacilityState::viewClick(Action *)
 			{
 				//create project
 				auto ruleProject = fac->getRules()->getProjectRules();
-				Production* project = new Production(fac->getRules()->getProjectRules(), 1);
-				_base->addProduction(project);
-				project->setFacility(fac);
+				if (ruleProject == nullptr)
+				{
+					_game->pushState(new ErrorMessageState("No rule for this facility, ask devs why!", _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK13.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
+				}
+				else
+				{
+					Production* project = new Production(fac->getRules()->getProjectRules(), 1);
+					_base->addProduction(project);
+					project->setFacility(fac);
 
-				// apply project's property
-				fac->setBuildTime(ruleProject->getManufactureTime());
-				_game->pushState(new FacilityAllocateEngineersState(_base, project));
+					// apply project's property
+					fac->setBuildTime(ruleProject->getManufactureTime());
+					_game->pushState(new FacilityAllocateEngineersState(_base, project));
+				}
+				
 			}
 			else
 			{

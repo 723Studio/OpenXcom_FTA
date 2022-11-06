@@ -32,6 +32,8 @@ class ArrowButton;
 class TextButton;
 class ToggleTextButton;
 class RuleManufacture;
+class BaseFacility;
+class Surface;
 class Production;
 class Timer;
 class InteractiveSurface;
@@ -45,6 +47,8 @@ private:
 	Base * _base;
 	RuleManufacture * _item;
 	Production * _production;
+	BaseFacility* _facility;
+	Surface *_image;
 	bool _newProject;
 	std::set<Soldier *> _engineers;
 	Window * _window;

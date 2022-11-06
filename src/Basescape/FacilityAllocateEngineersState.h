@@ -18,8 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include "SoldierSortUtil.h"
 #include <vector>
+#include <set>
 
 namespace OpenXcom
 {
@@ -33,8 +33,6 @@ class Base;
 class Soldier;
 class RuleResearch;
 class Production;
-struct SortFunctor;
-
 
 /**
 * Allocate Engineers screen that lets the player
@@ -45,17 +43,14 @@ class FacilityAllocateEngineersState : public State
 private:
 	TextButton* _btnOk, *_btnInfo;
 	Window* _window;
-	Text* _txtTitle, * _txtName, * _txtAssignment;
-	ComboBox* _cbxSortBy;
+	Text* _txtTitle, * _txtName, * _txtAssignment, *_txtStat;
 	TextList* _lstEngineers;
 	Base* _base;
 	Production* _production;
 	std::set<Soldier*> _engineers;
 	Uint8 _otherCraftColor;
 	std::vector<Soldier*> _origSoldierOrder;
-	std::vector<SortFunctor*> _sortFunctors;
 	std::vector<int> _engineerNumbers;
-	getStatFn_t _dynGetter;
 	/// initializes the display list based on the project soldier's list and the position to display
 	void initList(size_t scrl);
 
@@ -64,8 +59,6 @@ public:
 	FacilityAllocateEngineersState(Base* base, Production* production);
 	/// Cleans up the Craft Soldiers state.
 	~FacilityAllocateEngineersState();
-	/// Handler for changing the sort by combo-box.
-	void cbxSortByChange(Action* action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
 	/// Handler for clicking the INFO button.

@@ -32,8 +32,12 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/RuleItem.h"
+#include "../Mod/RuleBaseFacility.h"
+#include "../Engine/Surface.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/BaseFacility.h"
 #include "../Savegame/Production.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/ItemContainer.h"
@@ -59,6 +63,7 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, RuleManufacture *it
 	_unitsToProduce = 1;
 	_producedItems = 0;
 	_infiniteProduction = false;
+	_facility = nullptr;
 	buildUi();
 }
 
@@ -71,6 +76,7 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, RuleManufacture *it
 ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *production) : _base(base), _item(0), _production(production)
 {
 	_newProject = false;
+	_facility = _production->getFacility();
 	_unitsToProduce = _production->getAmountTotal();
 	_producedItems = -_production->getAmountProduced();
 	_infiniteProduction = _production->getInfiniteAmount();
@@ -192,6 +198,60 @@ void ManufactureInfoStateFtA::buildUi()
 
 	_timerMoreUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onMoreUnit);
 	_timerLessUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onLessUnit);
+
+	if (_facility != nullptr)
+	{
+		_txtUnitToProduce->setVisible(false);
+		_txtUnitUp->setVisible(false);
+		_txtUnitDown->setVisible(false);
+		_btnUnitUp->setVisible(false);
+		_txtTodo->setVisible(false);
+		_btnUnitDown->setVisible(false);
+		_btnStop->setVisible(false);
+
+		// build preview image
+		int tile_size = 32;
+		_image = new Surface(tile_size*2, tile_size*2, 232, 16);
+		add(_image);
+
+		SurfaceSet *graphic = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
+		Surface *frame;
+		int x_offset, y_offset;
+		int x_pos, y_pos;
+		int num;
+		int facilitySize = _facility->getRules()->getSize();
+
+		if (facilitySize == 1)
+		{
+			x_offset = y_offset = tile_size/2;
+		}
+		else
+		{
+			x_offset = y_offset = 0;
+		}
+
+		num = 0;
+		y_pos = y_offset;
+		for (int y = 0; y < facilitySize; ++y)
+		{
+			x_pos = x_offset;
+			for (int x = 0; x < facilitySize; ++x)
+			{
+				frame = graphic->getFrame(_facility->getRules()->getSpriteShape() + num);
+				frame->blitNShade(_image, x_pos, y_pos);
+
+				if (facilitySize == 1)
+				{
+					frame = graphic->getFrame(_facility->getRules()->getSpriteShape() + num);
+					frame->blitNShade(_image, x_pos, y_pos);
+				}
+
+				x_pos += tile_size;
+				num++;
+			}
+			y_pos += tile_size;
+		}
+	}
 }
 
 /**

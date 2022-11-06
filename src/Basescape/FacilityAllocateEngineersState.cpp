@@ -22,7 +22,6 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
-#include "../Interface/ComboBox.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
@@ -61,7 +60,7 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtAssignment = new Text(84, 9, 122, 32);
-	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+	_txtStat = new Text(82, 9, 214, 32);
 	_lstEngineers = new TextList(288, 128, 8, 40);
 
 	// Set palette
@@ -73,8 +72,8 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 	add(_txtTitle, "text", "manufactureAllocateEngineers");
 	add(_txtName, "text", "manufactureAllocateEngineers");
 	add(_txtAssignment, "text", "manufactureAllocateEngineers");
+	add(_txtStat, "text", "manufactureAllocateEngineers");
 	add(_lstEngineers, "list", "manufactureAllocateEngineers");
-	add(_cbxSortBy, "button", "manufactureAllocateEngineers");
 
 	_otherCraftColor = _game->getMod()->getInterface("manufactureAllocateEngineers")->getElement("otherCraft")->color;
 
@@ -99,39 +98,8 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 
 	_txtAssignment->setText(tr("STR_ASSIGNMENT"));
 
-	// populate sort options
-	std::vector<std::string> sortOptions;
-	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
-	_sortFunctors.push_back(NULL);
-
-#define PUSH_IN(strId, functor)       \
-sortOptions.push_back(tr(strId)); \
-_sortFunctors.push_back(new SortFunctor(_game, functor));
-
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::construction), constructionStat);
-	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
-	{
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
-	}
-
-#undef PUSH_IN
-
-	_cbxSortBy->setOptions(sortOptions);
-	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&FacilityAllocateEngineersState::cbxSortByChange);
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
+	_txtStat->setText(tr("STR_CONSTRUCTION_UC"));
+	_txtStat->setAlign(ALIGN_RIGHT);
 
 	//_lstEngineers->setColumns(2, 106, 174);
 	_lstEngineers->setColumns(3, 106, 158, 16);
@@ -144,80 +112,10 @@ _sortFunctors.push_back(new SortFunctor(_game, functor));
 }
 
 /**
-* cleans up dynamic state
+* 
 */
 FacilityAllocateEngineersState::~FacilityAllocateEngineersState()
 {
-	for (std::vector<SortFunctor*>::iterator it = _sortFunctors.begin();
-		it != _sortFunctors.end(); ++it)
-	{
-		delete (*it);
-	}
-}
-
-/**
-* Sorts the soldiers list by the selected criterion
-* @param action Pointer to an action.
-*/
-void FacilityAllocateEngineersState::cbxSortByChange(Action*)
-{
-	bool ctrlPressed = _game->isCtrlPressed();
-	size_t selIdx = _cbxSortBy->getSelected();
-	if (selIdx == (size_t)-1)
-	{
-		return;
-	}
-
-	SortFunctor* compFunc = _sortFunctors[selIdx];
-	_dynGetter = NULL;
-	if (compFunc)
-	{
-		if (selIdx != 2)
-		{
-			_dynGetter = compFunc->getGetter();
-		}
-
-		// if CTRL is pressed, we only want to show the dynamic column, without actual sorting
-		if (!ctrlPressed)
-		{
-			if (selIdx == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						return Unicode::naturalCompare(a->getName(), b->getName());
-					});
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
-			}
-			if (_game->isShiftPressed())
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
-			}
-		}
-	}
-	else
-	{
-		// restore original ordering, ignoring (of course) those
-		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier*>::const_iterator it = _origSoldierOrder.begin();
-			it != _origSoldierOrder.end(); ++it)
-		{
-			std::vector<Soldier*>::iterator soldierIt =
-				std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
-			if (soldierIt != _base->getSoldiers()->end())
-			{
-				Soldier* s = *soldierIt;
-				_base->getSoldiers()->erase(soldierIt);
-				_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
-			}
-		}
-	}
-
-	size_t originalScrollPos = _lstEngineers->getScroll();
-	initList(originalScrollPos);
 }
 
 /**
@@ -255,15 +153,7 @@ void FacilityAllocateEngineersState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstEngineers->clearList();
-
-	if (_dynGetter != NULL)
-	{
-		_lstEngineers->setColumns(3, 106, 158, 16);
-	}
-	else
-	{
-		_lstEngineers->setColumns(2, 106, 174);
-	}
+	_lstEngineers->setColumns(3, 106, 158, 16);
 
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
@@ -274,19 +164,9 @@ void FacilityAllocateEngineersState::initList(size_t scrl)
 		{
 			_engineerNumbers.push_back(it); // don't forget soldier's number on the base!
 			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, WORK);
-
-			if (_dynGetter != NULL)
-			{
-				// call corresponding getter
-				int dynStat = (*_dynGetter)(_game, *i);
-				std::ostringstream ss;
-				ss << dynStat;
-				_lstEngineers->addRow(3, (*i)->getName(true, 19).c_str(), duty.c_str(), ss.str().c_str());
-			}
-			else
-			{
-				_lstEngineers->addRow(2, (*i)->getName(true, 19).c_str(), duty.c_str());
-			}
+			std::ostringstream ss;
+			ss << (*i)->getStatsWithAllBonuses()->construction;
+			_lstEngineers->addRow(3, (*i)->getName(true, 19).c_str(), duty.c_str(), ss.str().c_str());
 
 			Uint8 color = _lstEngineers->getColor();
 			bool matched = false;
