@@ -1262,6 +1262,9 @@
     <ClCompile Include="Basescape\PrisonerInfoState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2586,6 +2589,9 @@
       <Filter>Savegame</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\PrisonerInfoState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>

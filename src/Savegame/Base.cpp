@@ -2465,6 +2465,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 		int hangars = 0;
 		int psiLaboratories = 0;
 		int training = 0;
+		int prison = 0;
 
 		void add(const RuleBaseFacility* rule)
 		{
@@ -2479,6 +2480,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 			hangars += rule->getCrafts();
 			psiLaboratories += rule->getPsiLaboratories();
 			training += rule->getTrainingFacilities();
+			prison += rule->getFtAPrisoneSpace();
 		}
 	};
 
@@ -2658,7 +2660,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 		(removed.hangars > 0 && available.hangars < getUsedHangars()) ||
 		(removed.psiLaboratories > 0 && available.psiLaboratories < getUsedPsiLabs()) ||
 		(removed.training > 0 && available.training < getUsedTraining()) ||
-		false
+		(removed.prison > 0 && available.prison < getUsedPrisonSpace())
 	) ? BPE_Used : BPE_None;
 }
 

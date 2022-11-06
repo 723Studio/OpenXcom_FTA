@@ -267,7 +267,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		{
 			s4 << "-";
 		}
-		if (facility)
+		if (facility != nullptr)
 		{
 			_lstManufacture->addRow(5, tr(facility->getRules()->getType()).c_str(), s1.str().c_str(), "", "", s4.str().c_str());
 		}

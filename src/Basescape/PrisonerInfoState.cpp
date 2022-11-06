@@ -17,7 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PrisonerInfoState.h"
-#include "ResearchAllocateScientistsState.h"
+#include "PrisonerAllocateAgentsState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -27,9 +27,10 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
+#include "../Mod/RuleInterface.h"
+#include "../Mod/RulePrisoner.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/BasePrisoner.h"
-#include "../Savegame/ResearchProject.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 
@@ -47,6 +48,9 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 {
 	_screen = false;
 	_display = _prisoner->getPrisonerState();
+	_ableContain = true;
+	_ableInterrogate = true;
+	_ableRecruit = true;
 
 	_window = new Window(this, 320, 156, 0, 22);
 	_txtTitle = new Text(302, 17, 9, 31);
@@ -78,11 +82,17 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 	add(_btnCancel, "button1", "prisonerInfo");
 	add(_btnAllocate, "button1", "prisonerInfo");
 	add(_btnTerminate, "button2", "prisonerInfo");
+
 	add(_btnInterrogate, "button3", "prisonerInfo");
 	add(_btnRecruit, "button3", "prisonerInfo");
 	add(_btnTorture, "button3", "prisonerInfo");
 	add(_btnContain, "button3", "prisonerInfo");
 	add(_btnHolder, "button3", "prisonerInfo");
+
+	add(_txtHealth, "text", "prisonerInfo");
+	add(_txtMorale, "text", "prisonerInfo");
+	add(_txtCooperation, "text", "prisonerInfo");
+	add(_txtAggressiveness, "text", "prisonerInfo");
 
 	add(_txtTitle, "text", "prisonerInfo");
 	add(_txtAvailableAgents, "text", "prisonerInfo");
@@ -90,6 +100,8 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 	add(_lstAgents, "list", "prisonerInfo");
 
 	centerAllSurfaces();
+
+	auto disabledColor = _game->getMod()->getInterface("prisonerInfo")->getElement("buttonDisabled")->color;
 
 	// Set up objects
 	setWindowBackground(_window, "prisonerInfo");
@@ -122,14 +134,56 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 	//_lstScientists->setMargin(2);
 	_lstAgents->setWordWrap(true);
 
+	_txtHealth->setText(tr("STR_PRISONER_HEALTH").arg(_prisoner->getHealth()));
+	_txtMorale->setText(tr("STR_PRISONER_MORALE").arg(_prisoner->getMorale()));
+	_txtCooperation->setText(tr("STR_PRISONER_COOPERATION").arg(_prisoner->getCooperation()));
+	_txtAggressiveness->setText(tr("STR_PRISONER_AGGRESSION").arg(_prisoner->getAggression()));
+
+	if (_rule->getContainingRules().getReuiredResearch() != nullptr)
+	{
+		_ableContain = _game->getSavedGame()->isResearched(_rule->getContainingRules().getReuiredResearch());
+	}
+
+	if (_rule->getInterrogationRules().getReuiredResearch() != nullptr)
+	{
+		_ableInterrogate = _game->getSavedGame()->isResearched(_rule->getInterrogationRules().getReuiredResearch());
+	}
+
+	if (_rule->getRecruitingRules().getReuiredResearch() != nullptr)
+	{
+		_ableRecruit = _game->getSavedGame()->isResearched(_rule->getRecruitingRules().getReuiredResearch())
+			&& _prisoner->getMorale() > 0
+			&& _prisoner->getCooperation() > 0
+			&& _prisoner->getAggression() < 0;
+	}
+
 	_btnInterrogate->setText(tr("STR_INTERROGATE"));
 	_btnInterrogate->onMouseClick((ActionHandler)&PrisonerInfoState::btnInterrogateToggle);
+	if (!_ableInterrogate)
+	{
+		_btnInterrogate->setDisabled(true);
+		_btnInterrogate->setColor(disabledColor);
+	}
+
 	_btnRecruit->setText(tr("STR_RECRUIT"));
 	_btnRecruit->onMouseClick((ActionHandler)&PrisonerInfoState::btnRecruitToggle);
+	if (!_ableRecruit)
+	{
+		_btnRecruit->setDisabled(true);
+		_btnRecruit->setColor(disabledColor);
+	}
+
 	_btnTorture->setText(tr("STR_TORTURE"));
 	_btnTorture->onMouseClick((ActionHandler)&PrisonerInfoState::btnTortureToggle);
+
 	_btnContain->setText(tr("STR_CONTAIN"));
 	_btnContain->onMouseClick((ActionHandler)&PrisonerInfoState::btnContainToggle);
+	if (!_ableContain)
+	{
+		_btnContain->setDisabled(true);
+		_btnContain->setColor(disabledColor);
+	}
+
 	_btnHolder->setVisible(false);
 
 	if (_display == PRISONER_STATE_INTERROGATION)
@@ -181,7 +235,7 @@ void PrisonerInfoState::fillAgentsList(size_t scrl)
 	_lstAgents->clearList();
 	for (auto s : _agents)
 	{
-		_lstAgents->addRow(9, s->getName().c_str());
+		_lstAgents->addRow(1, s->getName().c_str());
 	}
 }
 
@@ -192,14 +246,31 @@ void PrisonerInfoState::fillAgentsList(size_t scrl)
  */
 void PrisonerInfoState::btnOkClick(Action *)
 {
-	for (auto s : _agents)
+	if (_agents.size() > 0)
 	{
-		s->clearBaseDuty();
-		s->setActivePrisoner(_prisoner);
+		if (_display == PRISONER_STATE_INTERROGATION || _display == PRISONER_STATE_REQRUITING || _display == PRISONER_STATE_TORTURE)
+		{
+			for (auto s : _agents)
+			{
+				s->clearBaseDuty();
+				s->setActivePrisoner(_prisoner);
+			}
+		}
+		else
+		{
+			_agents.clear();
+		}
+	}
+	else if (_ableContain)
+	{
+		_display = PRISONER_STATE_CONTAINING;
+	}
+	else
+	{
+		_display = PRISONER_STATE_NONE;
 	}
 
 	_prisoner->setPrisonerState(_display);
-
 	_game->popState();
 }
 
@@ -222,7 +293,7 @@ void PrisonerInfoState::btnTerminateClick(Action *)
 {
 	for (auto s : _agents)
 	{
-		s->setResearchProject(0);
+		s->setActivePrisoner(0);
 	}
 	_base->removePrisoner(_prisoner);
 	_game->popState();
@@ -234,7 +305,7 @@ void PrisonerInfoState::btnTerminateClick(Action *)
  */
 void PrisonerInfoState::btnAllocateClick(Action *action)
 {
-	//_game->pushState(new ResearchAllocateScientistsState(_base, this));
+	_game->pushState(new PrisonerAllocateAgentsState(_base, this));
 }
 
 /**
@@ -243,7 +314,10 @@ void PrisonerInfoState::btnAllocateClick(Action *action)
  */
 void PrisonerInfoState::btnInterrogateToggle(Action* action)
 {
-	_display = PRISONER_STATE_INTERROGATION;
+	if (_ableInterrogate)
+	{
+		_display = PRISONER_STATE_INTERROGATION;
+	}
 }
 
 /**
@@ -252,7 +326,10 @@ void PrisonerInfoState::btnInterrogateToggle(Action* action)
  */
 void PrisonerInfoState::btnRecruitToggle(Action* action)
 {
-	_display = PRISONER_STATE_REQRUITING;
+	if (_ableRecruit)
+	{
+		_display = PRISONER_STATE_REQRUITING;
+	}
 }
 
 /**
@@ -270,7 +347,10 @@ void PrisonerInfoState::btnTortureToggle(Action* action)
  */
 void PrisonerInfoState::btnContainToggle(Action* action)
 {
-	_display = PRISONER_STATE_CONTAINING;
+	if (_ableContain)
+	{
+		_display = PRISONER_STATE_CONTAINING;
+	}
 }
 
 /**
@@ -284,7 +364,7 @@ void PrisonerInfoState::setAssignedAgents()
 	for (auto a : _base->getPersonnel(ROLE_AGENT))
 	{
 		a->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
-		if (a->getActivePrisoner() && a->getActivePrisoner() != _prisoner)
+		if (a->getActivePrisoner() && a->getActivePrisoner() == _prisoner)
 		{
 			_agents.insert(a);
 		}
@@ -303,15 +383,13 @@ void PrisonerInfoState::setAssignedAgents()
 	int teamSize = (int)_agents.size();
 	for (auto s : _agents)
 	{
-		if (s->getActivePrisoner() && s->getActivePrisoner() != _prisoner)
+		if (s->getActivePrisoner() && s->getActivePrisoner() == _prisoner)
 		{
 			teamSize--;
 		}
 	}
-	_workSpace = _base->getFreeInterrogationSpace() - teamSize;
+	_workSpace = _base->getFreeInterrogationSpace() - teamSize; //#FINNIKTODO fix corner case when we edit assigned agents on ongoing prisoner, we false negative space
 	_txtAvailableSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_workSpace));
 
 }
-
-
 }

@@ -92,6 +92,12 @@ GET_ATTRIB_STAT_FN(hacking)
 GET_ATTRIB_STAT_FN(construction)
 GET_ATTRIB_STAT_FN(diligence)
 GET_ATTRIB_STAT_FN(reverseEngineering)
+GET_ATTRIB_STAT_FN(stealth)
+GET_ATTRIB_STAT_FN(perseption)
+GET_ATTRIB_STAT_FN(charisma)
+GET_ATTRIB_STAT_FN(investigation)
+GET_ATTRIB_STAT_FN(deception)
+GET_ATTRIB_STAT_FN(interrogation)
 
 #undef GET_ATTRIB_STAT_FN
 
@@ -140,6 +146,12 @@ GET_ATTRIB_STAT_FN(hacking)
 GET_ATTRIB_STAT_FN(construction)
 GET_ATTRIB_STAT_FN(diligence)
 GET_ATTRIB_STAT_FN(reverseEngineering)
+GET_ATTRIB_STAT_FN(stealth)
+GET_ATTRIB_STAT_FN(perseption)
+GET_ATTRIB_STAT_FN(charisma)
+GET_ATTRIB_STAT_FN(investigation)
+GET_ATTRIB_STAT_FN(deception)
+GET_ATTRIB_STAT_FN(interrogation)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
@@ -187,6 +199,12 @@ GET_ATTRIB_STAT_FN(hacking)
 GET_ATTRIB_STAT_FN(construction)
 GET_ATTRIB_STAT_FN(diligence)
 GET_ATTRIB_STAT_FN(reverseEngineering)
+GET_ATTRIB_STAT_FN(stealth)
+GET_ATTRIB_STAT_FN(perseption)
+GET_ATTRIB_STAT_FN(charisma)
+GET_ATTRIB_STAT_FN(investigation)
+GET_ATTRIB_STAT_FN(deception)
+GET_ATTRIB_STAT_FN(interrogation)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_SOLDIER_STAT_FN(attrib, camelCaseAttrib) \

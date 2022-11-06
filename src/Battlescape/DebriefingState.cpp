@@ -81,6 +81,7 @@
 #include "../FTA/MasterMind.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../fallthrough.h"
+#include "../Mod/AlienRace.h"
 
 namespace OpenXcom
 {
@@ -539,11 +540,11 @@ void DebriefingState::init()
 		{
 			civiliansDead += (*i)->qty;
 		}
-		if ((*i)->item == "STR_ALIENS_KILLED")
+		if ((*i)->item == "STR_ALIENS_KILLED" || (*i)->item == "STR_MONSTER_KILLED" || (*i)->item == "STR_ENEMIES_KILLED")
 		{
 			aliensKilled += (*i)->qty;
 		}
-		if ((*i)->item == "STR_LIVE_ALIENS_RECOVERED")
+		if ((*i)->item == "STR_LIVE_ALIENS_RECOVERED" || (*i)->item == "STR_LIVE_MONSTERS_RECOVERED" || (*i)->item == "STR_LIVE_ENEMIES_RECOVERED")
 		{
 			aliensStunned += (*i)->qty;
 		}
@@ -1116,9 +1117,17 @@ void DebriefingState::prepareDebriefing()
 	int vipsLost = 0;
 
 	_stats.push_back(new DebriefingStat("STR_ALIENS_KILLED", false));
+	_stats.push_back(new DebriefingStat("STR_MONSTER_KILLED", false));
+	_stats.push_back(new DebriefingStat("STR_ENEMIES_KILLED", false));
 	_stats.push_back(new DebriefingStat("STR_ALIEN_CORPSES_RECOVERED", false));
+	_stats.push_back(new DebriefingStat("STR_MONSTER_CORPSES_RECOVERED", false));
+	_stats.push_back(new DebriefingStat("STR_ENEMY_CORPSES_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_LIVE_ALIENS_RECOVERED", false));
+	_stats.push_back(new DebriefingStat("STR_LIVE_MONSTERS_RECOVERED", false));
+	_stats.push_back(new DebriefingStat("STR_LIVE_ENEMIES_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_LIVE_ALIENS_SURRENDERED", false));
+	_stats.push_back(new DebriefingStat("STR_LIVE_MONSTERS_SURRENDERED", false));
+	_stats.push_back(new DebriefingStat("STR_LIVE_ENEMIES_SURRENDERED", false));
 	_stats.push_back(new DebriefingStat("STR_ALIEN_ARTIFACTS_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_ITEMS_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_OBJECTIVE_SECURED", false));
@@ -1607,7 +1616,19 @@ void DebriefingState::prepareDebriefing()
 			}
 			else if (oldFaction == FACTION_HOSTILE && (*j)->killedBy() == FACTION_PLAYER)
 			{
-				addStat("STR_ALIENS_KILLED", 1, value);
+				auto type = _game->getMod()->getAlienRace((*j)->getUnitRules()->getRace())->getRaceType();
+				if (!_fta || type == RACE_TYPE_ALIEN)
+				{
+					addStat("STR_ALIENS_KILLED", 1, value);
+				}
+				else if (type == RACE_TYPE_MONSTER)
+				{
+					addStat("STR_MONSTER_KILLED", 1, value);
+				}
+				else
+				{
+					addStat("STR_ENEMIES_KILLED", 1, value);
+				}
 			}
 			else if (oldFaction == FACTION_PLAYER)
 			{
@@ -2632,12 +2653,24 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 				else if (rule->getBattleType() == BT_CORPSE)
 				{
 					BattleUnit *corpseUnit = (*it)->getUnit();
+					auto type = _game->getMod()->getAlienRace(corpseUnit->getUnitRules()->getRace())->getRaceType();
 					if (corpseUnit->getStatus() == STATUS_DEAD)
 					{
 						if (rule->isCorpseRecoverable())
 						{
 							addItemsToBaseStores(corpseUnit->getArmor()->getCorpseGeoscape(), base, 1, true);
-							addStat("STR_ALIEN_CORPSES_RECOVERED", 1, points);
+							if (!_fta || type == RACE_TYPE_ALIEN)
+							{
+								addStat("STR_ALIEN_CORPSES_RECOVERED", 1, points);
+							}
+							else if (type == RACE_TYPE_MONSTER)
+							{
+								addStat("STR_MONSTER_CORPSES_RECOVERED", 1, points);
+							}
+							else
+							{
+								addStat("STR_ENEMY_CORPSES_RECOVERED", 1, points);
+							}
 						}
 					}
 					else if (corpseUnit->getStatus() == STATUS_UNCONSCIOUS
@@ -2648,8 +2681,8 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 						bool capturedCiv = corpseUnit->getOriginalFaction() == FACTION_NEUTRAL
 						                   && _missionStatistics->aborted
 						                   && _game->getMod()->getCraft(_missionStatistics->craft);
-						//#FINNIKTODO check for possibility of making an actual prisoner!!!
-						if (_fta && (corpseUnit->getOriginalFaction() == FACTION_HOSTILE || capturedCiv))
+						bool canBeImprisoned = corpseUnit->getUnitRules()->getPrisoner() || corpseUnit->getGeoscapeSoldier();
+						if (_fta && canBeImprisoned && (corpseUnit->getOriginalFaction() == FACTION_HOSTILE || capturedCiv))
 						{
 							recoverPrisoner(corpseUnit, base);
 						}
@@ -2859,11 +2892,10 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 
 			addStat("STR_PRISONER_CAPTURED", 1, points);
 
-			//#FINNIKTODO add special about BasePrisoner space shortage
-			//if (base->getFreePrisonSpace(type) <= 0 && _limitsEnforced > 0)
-			//{
-			//	_containmentStateInfo[(int)type] = 2; // 2 = overfull
-			//}
+			if (base->getFreePrisonSpace() <= 0 && _limitsEnforced > 0)
+			{
+				_containmentStateInfo[-1] = 2; // -1 says its a prisoner, 2 = overfull
+			}
 		}
 	}
 }
@@ -3029,7 +3061,15 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 			{
 				if (corpseRule->isCorpseRecoverable())
 				{
-					addStat("STR_ALIEN_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+					if (_fta)
+					{
+						addStat("STR_ENEMY_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+					}
+					else
+					{
+						addStat("STR_ALIEN_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+					}
+					
 					auto corpseItem = from->getArmor()->getCorpseGeoscape();
 					addItemsToBaseStores(corpseItem, base, 1, true);
 				}
@@ -3041,19 +3081,25 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		RuleResearch *research = _game->getMod()->getResearch(ruleLiveAlienItem->getType());
 		bool surrendered = (!from->isOut() || from->isIgnored())
 			&& (from->isSurrendering() || _game->getSavedGame()->getSavedBattle()->getChronoTrigger() == FORCE_WIN_SURRENDER);
-		if (research != 0 && !_game->getSavedGame()->isResearched(research))
+
+		auto type = _game->getMod()->getAlienRace(from->getUnitRules()->getRace())->getRaceType();
+		int points = 10;
+		if (_game->getMod()->getGiveScoreAlsoForResearchedArtifacts() || research != 0 && !_game->getSavedGame()->isResearched(research))
 		{
-			// more points if it's not researched
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValue() * 2);
+			points = from->getValue() * 2;
 		}
-		else if (_game->getMod()->getGiveScoreAlsoForResearchedArtifacts())
+
+		if (!_fta || type == RACE_TYPE_ALIEN)
 		{
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValue() * 2);
+			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, points);
+		}
+		else if (type == RACE_TYPE_MONSTER)
+		{
+			addStat(surrendered ? "STR_LIVE_MONSTERS_SURRENDERED" : "STR_LIVE_MONSTERS_RECOVERED", 1, points);
 		}
 		else
 		{
-			// 10 points for recovery
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, 10);
+			addStat(surrendered ? "STR_LIVE_ENEMIES_SURRENDERED" : "STR_LIVE_ENEMIES_RECOVERED", 1, points);
 		}
 
 		addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);

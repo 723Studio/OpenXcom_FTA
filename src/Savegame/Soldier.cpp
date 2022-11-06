@@ -170,6 +170,14 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.diligence = RNG::generate(minStats.diligence, maxStats.diligence);
 		_initialStats.reverseEngineering = RNG::generate(minStats.reverseEngineering, maxStats.reverseEngineering);
 
+		//agent
+		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
+		_initialStats.perseption = RNG::generate(minStats.perseption, maxStats.perseption);
+		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
+		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
+		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
+		_initialStats.interrogation = RNG::generate(minStats.interrogation, maxStats.interrogation);
+
 		_currentStats = _initialStats;
 
 		const std::vector<SoldierNamePool*> &names = rules->getNames();
@@ -300,6 +308,14 @@ Soldier::Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id) :
 		_initialStats.construction = unit->getBaseStats()->construction;
 		_initialStats.diligence = unit->getBaseStats()->diligence;
 		_initialStats.reverseEngineering = unit->getBaseStats()->reverseEngineering;
+
+		//agent
+		_initialStats.stealth = unit->getBaseStats()->stealth;
+		_initialStats.perseption = unit->getBaseStats()->perseption;
+		_initialStats.charisma = unit->getBaseStats()->charisma;
+		_initialStats.investigation = unit->getBaseStats()->investigation;
+		_initialStats.deception = unit->getBaseStats()->deception;
+		_initialStats.interrogation = unit->getBaseStats()->interrogation;
 
 		_currentStats = _initialStats;
 

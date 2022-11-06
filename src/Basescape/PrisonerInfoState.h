@@ -51,7 +51,7 @@ private:
 	const RulePrisoner*_rule;
 	std::set<Soldier*> _agents;
 	PrisonerState _display;
-	
+	bool _ableContain, _ableRecruit, _ableInterrogate;
 	int _workSpace;
 
 public:
@@ -85,6 +85,7 @@ public:
 	void removeAgent(Soldier* agent) { _agents.erase(agent); }
 	void setAgents(std::set<Soldier*> agent) { _agents = std::move(agent); }
 	int getWorkspace() { return _workSpace; }
+	BasePrisoner* getPrisioner() { return _prisoner; }
 };
 
 }

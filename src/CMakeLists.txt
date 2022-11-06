@@ -48,6 +48,7 @@ set ( basescape_src
   Basescape/PlaceFacilityState.cpp
   Basescape/PlaceLiftState.cpp
   Basescape/PlaceStartFacilityState.cpp
+  Basescape/PrisonerAllocateAgentsState.cpp
   Basescape/PrisonerInfoState.cpp
   Basescape/PrisonManagementState.cpp
   Basescape/PurchaseState.cpp

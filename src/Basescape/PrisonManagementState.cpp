@@ -59,13 +59,13 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 
 	add(_window, "window", "prisonManagement");
 	add(_btnOk, "button", "prisonManagement");
-	add(_txtTitle, "text", "prisonManagement");
-	add(_txtAvailable, "text", "prisonManagement");
-	add(_txtAllocated, "text", "prisonManagement");
-	add(_txtSpace, "text", "prisonManagement");
-	add(_txtPrisoner, "text", "prisonManagement");
-	add(_txtAgents, "text", "prisonManagement");
-	add(_txtState, "text", "prisonManagement");
+	add(_txtTitle, "text1", "prisonManagement");
+	add(_txtAvailable, "text1", "prisonManagement");
+	add(_txtAllocated, "text1", "prisonManagement");
+	add(_txtSpace, "text1", "prisonManagement");
+	add(_txtPrisoner, "text2", "prisonManagement");
+	add(_txtAgents, "text2", "prisonManagement");
+	add(_txtState, "text2", "prisonManagement");
 	add(_lstPrisoners, "list", "prisonManagement");
 
 	centerAllSurfaces();
@@ -102,7 +102,7 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 	size_t n = 0;
 	for (auto s : *_base->getSoldiers())
 	{
-		std::string duty = s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
+		std::string duty = s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, INTEL);
 		if (s->getRoleRank(ROLE_AGENT) > 0 )
 		{
 			n++;

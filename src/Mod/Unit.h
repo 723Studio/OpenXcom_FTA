@@ -435,17 +435,14 @@ struct UnitStats
 				std::string suffix;
 				switch (type)
 				{
-				case OpenXcom::UnitStats::STATSTR_UC:
+				case STATSTR_UC:
 					suffix = "_UC";
 					break;
-				case OpenXcom::UnitStats::STATSTR_LC:
+				case STATSTR_LC:
 					suffix = "_LC";
 					break;
-				case OpenXcom::UnitStats::STATSTR_SHORT:
+				case STATSTR_SHORT:
 					suffix = "_SHORT";
-					break;
-				default:
-					suffix = "_UC";
 					break;
 				}
 
