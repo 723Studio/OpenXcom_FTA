@@ -35,9 +35,9 @@ class PrisonManagementState : public State
 {
 private:
 	Base *_base;
-	TextButton *_btnOk;
+	TextButton *_btnOk, *_btnTransfer;
 	Window *_window;
-	Text *_txtTitle, * _txtSpace, *_txtAvailable, * _txtAllocated, *_txtPrisoner, *_txtAgents, *_txtState;
+	Text *_txtTitle, *_txtInterSpace, *_txtPrisonSpace, *_txtAvailable, * _txtAllocated, *_txtPrisoner, *_txtAgents, *_txtState;
 	TextList *_lstPrisoners;
 
 public:
@@ -45,6 +45,8 @@ public:
 	PrisonManagementState(Base *base);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Transfer button.
+	void btnTransferClick(Action* action);
 	/// Handler for clicking the ResearchProject list.
 	void onSelectPrisoner(Action *action);
 	/// Fills the ResearchProject list with Base ResearchProjects.

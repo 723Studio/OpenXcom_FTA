@@ -118,7 +118,6 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		if (!_customAnswers[3].description.empty())
 		{
 			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
-			bTooltipIsPresent = true;
 		}
 		_btnAnswerThree->setWidth(115);
 		[[clang::fallthrough]];
@@ -129,7 +128,6 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		if (!_customAnswers[2].description.empty())
 		{
 			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
-			bTooltipIsPresent = true;
 		}
 		_txtMessage->setHeight(78);
 		_btnAnswerOne->setHeight(16);
@@ -377,55 +375,17 @@ void GeoscapeEventState::eventLogic()
 	}
 
 	// 6. give bonus research
-	std::vector<const RuleResearch*> possibilities;
-
-	for (auto rName : rule.getResearchList())
 	{
-		const RuleResearch *rRule = mod->getResearch(rName, true);
-		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
+		std::vector<const RuleResearch*> researches;
+		for (const auto &rName : rule.getResearchList())
 		{
-			possibilities.push_back(rRule);
+			const RuleResearch* rRule = mod->getResearch(rName, true);
+			researches.push_back(rRule);
 		}
+		std::vector<const RuleResearch*> possibilities;
+		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
-	std::vector<const RuleResearch*> topicsToCheck;
-	if (!possibilities.empty())
-	{
-		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
-		const RuleResearch *eventResearch = possibilities.at(pickResearch);
-
-		bool alreadyResearched = false;
-		std::string name = eventResearch->getLookup().empty() ? eventResearch->getName() : eventResearch->getLookup();
-		if (save->isResearched(name, false))
-		{
-			alreadyResearched = true; // we have seen the pedia article already, don't show it again
-		}
-
-		save->addFinishedResearch(eventResearch, mod, hq, true);
-		topicsToCheck.push_back(eventResearch);
-		_researchName = alreadyResearched ? "" : eventResearch->getName();
-
-		if (!eventResearch->getLookup().empty())
-		{
-			const RuleResearch* lookupResearch = mod->getResearch(eventResearch->getLookup(), true);
-			save->addFinishedResearch(lookupResearch, mod, hq, true);
-			_researchName = alreadyResearched ? "" : lookupResearch->getName();
-		}
-
-		if (auto bonus = save->selectGetOneFree(eventResearch))
-		{
-			save->addFinishedResearch(bonus, mod, hq, true);
-			topicsToCheck.push_back(bonus);
-			_bonusResearchName = bonus->getName();
-
-			if (!bonus->getLookup().empty())
-			{
-				const RuleResearch *bonusLookup = mod->getResearch(bonus->getLookup(), true);
-				save->addFinishedResearch(bonusLookup, mod, hq, true);
-				_bonusResearchName = bonusLookup->getName();
-			}
-		}
-	}
 	// 7. Add reputation
 	auto reputationScore = _eventRule.getReputationScore();
 	if (!reputationScore.empty())
@@ -444,12 +404,6 @@ void GeoscapeEventState::eventLogic()
 			}
 		}
 	}
-
-	// Side effects:
-	// 1. remove obsolete research projects from all bases
-	// 2. handle items spawned by research
-	// 3. handle events spawned by research
-	save->handlePrimaryResearchSideEffects(topicsToCheck, mod, hq);
 }
 /**
 	* Spawns custom events based on the chosen button.
@@ -458,9 +412,9 @@ void GeoscapeEventState::eventLogic()
 	*/
 void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 {
-	for (auto eventName : _customAnswers[playerChoice].spawnEvents)
+	for (const auto &eventName : _customAnswers[playerChoice].spawnEvent)
 	{
-		bool success = _game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
+		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
 	}
 
 	if (!_customAnswers[playerChoice].weightedEvents.empty())

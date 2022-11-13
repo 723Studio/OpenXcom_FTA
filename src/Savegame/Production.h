@@ -40,7 +40,7 @@ private:
 	int _engineers;
 	int _efficiency;
 	bool _sell;
-	BaseFacility* _facility;
+	BaseFacility* _facility = nullptr;
 	std::map<std::string, int> _randomProductionInfo;
 	bool haveEnoughMoneyForOneMoreUnit(SavedGame * g) const;
 	bool haveEnoughLivingSpaceForOneMoreUnit(Base * b);
@@ -54,7 +54,7 @@ public:
 	int getTimeSpent() const { return _timeSpent; }
 	void setTimeSpent (int done) { _timeSpent = done; }
 	int getAmountProduced() const;
-	int getAssignedEngineers() const { return _engineers; };
+	int getAssignedEngineers() const { return _engineers; }
 	void setAssignedEngineers (int engineers) { _engineers = engineers; }
 	int getEfficiency() const { return _efficiency; }
 	void setEfficiency(int efficiency) { _efficiency = efficiency; }

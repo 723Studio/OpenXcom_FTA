@@ -60,11 +60,10 @@ class PrisonerRecruitingRules
 private:
 	std::string _requiredResearchName;
 	std::string _spawnedSoldierRuleName;
-	int _difficulty;
-	std::string _spawnEvent;
+	int _difficulty, _eventChance;
+	std::vector<std::string> _spawnEvents;
 
 	const RuleResearch* _requiredResearch = nullptr;
-	const RuleSoldier* _spawnedSoldierRule;
 
 public:
 	PrisonerRecruitingRules();
@@ -74,16 +73,17 @@ public:
 	void afterLoad(const Mod* mod);
 
 	int getDifficulty() { return _difficulty; }
-	const std::string& getSpawnedEvent() { return _spawnEvent; }
+	int getEventChance() { return _eventChance; }
+	const std::vector<std::string>& getSpawnedEvents() { return _spawnEvents; }
 	const RuleResearch* getReuiredResearch() const { return _requiredResearch; }
-	const RuleSoldier* getSpawnedSoldierRule() const { return _spawnedSoldierRule; }
+	std::string &getSpawnedSoldier() { return _spawnedSoldierRuleName; }
 };
 
 class PrisonerTortureRules
 {
 private:
 	int _difficulty, _loyaltyChange, _moraleChange, _cooperationChange, _eventChance;
-	std::string _spawnEvent;
+	std::vector<std::string> _spawnEvents;
 
 public:
 	PrisonerTortureRules();
@@ -96,7 +96,7 @@ public:
 	int getMorale() { return _moraleChange; }
 	int getCooperation() { return _cooperationChange; }
 	int getEventChance() { return _eventChance; }
-	const std::string& getSpawnedEvent() { return _spawnEvent; }
+	const std::vector<std::string>& getSpawnedEvents() { return _spawnEvents; }
 };
 
 class PrisonerContainingRules

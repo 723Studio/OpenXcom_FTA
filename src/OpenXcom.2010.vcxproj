@@ -437,6 +437,7 @@
     <ClCompile Include="Geoscape\NewPossibleCraftState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleFacilityState.cpp" />
     <ClCompile Include="Geoscape\NewPossiblePurchaseState.cpp" />
+    <ClCompile Include="Geoscape\PrisonReportState.cpp" />
     <ClCompile Include="Geoscape\ResearchRequiredState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleManufactureState.cpp" />
     <ClCompile Include="Geoscape\PsiTrainingState.cpp" />
@@ -876,6 +877,7 @@
     <ClInclude Include="Geoscape\NewPossibleCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleFacilityState.h" />
     <ClInclude Include="Geoscape\NewPossiblePurchaseState.h" />
+    <ClInclude Include="Geoscape\PrisonReportState.h" />
     <ClInclude Include="Geoscape\ResearchRequiredState.h" />
     <ClInclude Include="Geoscape\GeoscapeCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleManufactureState.h" />

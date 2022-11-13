@@ -3506,6 +3506,14 @@ bool SavedGame::spawnEvent(const RuleEvent* eventRules)
 	return true;
 }
 
+bool SavedGame::spawnEvent(std::vector<std::string> eventNames, const Mod* mod)
+{
+	size_t pickEvent = RNG::generate(0, eventNames.size() - 1);
+	auto eventName = eventNames.at(pickEvent);
+	
+	return spawnEvent(mod->getEvent(eventName));
+}
+
 /**
  * Checks if an instant Geoscape event can be spawned.
  */

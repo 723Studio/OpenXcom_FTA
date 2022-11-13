@@ -66,9 +66,9 @@ public:
 	/// Gets the special rule for the intel project.
 	const IntelProjectSpecialRule getSpecialRule() const { return _specialRule; }
 	/// Get pointer to this project's stats.
-	UnitStats getStats() const { return _stats; };
+	UnitStats getStats() const { return _stats; }
 	/// Gets the list weight for this intel project.
-	int getListOrder() const { return _listOrder; };
+	int getListOrder() const { return _listOrder; }
 	/// Gets the list of the stages for this intel prject.
 	std::vector<RuleIntelStage*> getStages() const { return _stages; }
 };

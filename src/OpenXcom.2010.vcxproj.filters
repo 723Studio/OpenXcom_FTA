@@ -1265,6 +1265,9 @@
     <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Geoscape\PrisonReportState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2593,6 +2596,9 @@
     </ClInclude>
     <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h">
       <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\PrisonReportState.h">
+      <Filter>Geoscape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

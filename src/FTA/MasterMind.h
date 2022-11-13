@@ -20,7 +20,6 @@
 
 #include <vector>
 #include <string>
-#include <set>
 
 namespace OpenXcom
 {
@@ -33,6 +32,7 @@ class GeoscapeState;
 class Globe;
 class Base;
 class DiplomacyFaction;
+class RuleResearch;
 
 class MasterMind
 {
@@ -56,6 +56,8 @@ public:
 	int getLoyaltyPerformanceBonus();
 	/// Update reputations level based on its current reputation score.
 	bool updateReputationLvl(DiplomacyFaction* faction, bool initial = false);
+	/// Helper for research discovery
+	void helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, Base *base, std::string& researchName, std::string& bonusResearchName);
 
 };
 

@@ -81,7 +81,7 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 	add(_btnOk, "button1", "prisonerInfo");
 	add(_btnCancel, "button1", "prisonerInfo");
 	add(_btnAllocate, "button1", "prisonerInfo");
-	add(_btnTerminate, "button2", "prisonerInfo");
+	add(_btnTerminate, "button1", "prisonerInfo");
 
 	add(_btnInterrogate, "button3", "prisonerInfo");
 	add(_btnRecruit, "button3", "prisonerInfo");
@@ -317,6 +317,7 @@ void PrisonerInfoState::btnInterrogateToggle(Action* action)
 	if (_ableInterrogate)
 	{
 		_display = PRISONER_STATE_INTERROGATION;
+		setAssignedAgents();
 	}
 }
 
@@ -329,6 +330,7 @@ void PrisonerInfoState::btnRecruitToggle(Action* action)
 	if (_ableRecruit)
 	{
 		_display = PRISONER_STATE_REQRUITING;
+		setAssignedAgents();
 	}
 }
 
@@ -339,6 +341,7 @@ void PrisonerInfoState::btnRecruitToggle(Action* action)
 void PrisonerInfoState::btnTortureToggle(Action* action)
 {
 	_display = PRISONER_STATE_TORTURE;
+	setAssignedAgents();
 }
 
 /**
@@ -350,6 +353,7 @@ void PrisonerInfoState::btnContainToggle(Action* action)
 	if (_ableContain)
 	{
 		_display = PRISONER_STATE_CONTAINING;
+
 	}
 }
 
@@ -377,19 +381,16 @@ void PrisonerInfoState::setAssignedAgents()
 				freeAgents++;
 		}
 	}
+	int addition = 0;
+	if ((_display == PRISONER_STATE_INTERROGATION || _display == PRISONER_STATE_REQRUITING || _display == PRISONER_STATE_TORTURE)
+		&& (_prisoner->getPrisonerState() == PRISONER_STATE_CONTAINING || _prisoner->getPrisonerState() == PRISONER_STATE_NONE))
+	{
+		//a-ha, we are changing prisoner state!
+		addition++;
+	}
 
 	_txtAvailableAgents->setText(tr("STR_AGENTS_AVAILABLE").arg(freeAgents));
-
-	int teamSize = (int)_agents.size();
-	for (auto s : _agents)
-	{
-		if (s->getActivePrisoner() && s->getActivePrisoner() == _prisoner)
-		{
-			teamSize--;
-		}
-	}
-	_workSpace = _base->getFreeInterrogationSpace() - teamSize; //#FINNIKTODO fix corner case when we edit assigned agents on ongoing prisoner, we false negative space
-	_txtAvailableSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_workSpace));
+	_txtAvailableSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_base->getFreeInterrogationSpace() - addition));
 
 }
 }

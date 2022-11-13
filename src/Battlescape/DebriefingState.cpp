@@ -68,6 +68,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "../Basescape/ManageAlienContainmentState.h"
+#include "../Basescape/PrisonManagementState.h"
 #include "../Basescape/TransferBaseState.h"
 #include "../FTA/DiplomacyStartState.h"
 #include "../Engine/Screen.h"
@@ -976,23 +977,19 @@ void DebriefingState::btnOkClick(Action *)
 			{
 				if (soldier->getCraft() != nullptr && soldier->isWounded())
 				{
-					soldier->setCraftAndMoveEquipment(nullptr, _base, _game->getSavedGame()->getMonthsPassed() == -1);
+					soldier->setCraftAndMoveEquipment(nullptr, _base, _game->getSavedGame()->getMonthsPassed() == -1); //#FINNIKCHECK
 				}
 			}
 
 			// refresh! (we may have sold some prisoners in the meantime; directly from Debriefing)
 			for (std::map<int, int>::iterator i = _containmentStateInfo.begin(); i != _containmentStateInfo.end(); ++i)
 			{
-				if (i->second == 2)
+				if (i->second == 2 && i->first >= 0) // we don't count BasePrisoners here with i->first == -1, as we can't sell it in debriefing
 				{
 					int availableContainment = _base->getAvailableContainment(i->first);
 					int usedContainment = _base->getUsedContainment(i->first);
 					int freeContainment = availableContainment - (usedContainment * _limitsEnforced);
-					if (availableContainment > 0 && freeContainment >= 0)
-					{
-						_containmentStateInfo[i->first] = 0; // 0 = OK
-					}
-					else if (usedContainment == 0)
+					if ((availableContainment > 0 && freeContainment >= 0) || usedContainment == 0)
 					{
 						_containmentStateInfo[i->first] = 0; // 0 = OK
 					}
@@ -1001,20 +998,45 @@ void DebriefingState::btnOkClick(Action *)
 
 			for (std::map<int, int>::const_iterator i = _containmentStateInfo.begin(); i != _containmentStateInfo.end(); ++i)
 			{
-				if (i->second == 2)
+				if (i->first >= 0) //OXC(E) "alien" prisoners
 				{
-					_game->pushState(new ManageAlienContainmentState(_base, i->first, OPT_BATTLESCAPE));
-					_game->pushState(new ErrorMessageState(trAlt("STR_CONTAINMENT_EXCEEDED", i->first).arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					if (i->second == 2)
+					{
+						_game->pushState(new ManageAlienContainmentState(_base, i->first, OPT_BATTLESCAPE));
+						_game->pushState(new ErrorMessageState(trAlt("STR_CONTAINMENT_EXCEEDED", i->first).arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					}
+					else if (i->second == 1)
+					{
+						_game->pushState(new ErrorMessageState(
+							trAlt("STR_ALIEN_DIES_NO_ALIEN_CONTAINMENT_FACILITY", i->first),
+							_palette,
+							_game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color,
+							"BACK01.SCR",
+							_game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					}
 				}
-				else if (i->second == 1)
+				else //FtA BasePrisoner case
 				{
-					_game->pushState(new ErrorMessageState(
-						trAlt("STR_ALIEN_DIES_NO_ALIEN_CONTAINMENT_FACILITY", i->first),
-						_palette,
-						_game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color,
-						"BACK01.SCR",
-						_game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					if (i->second == 2) // we have to transport prisoners
+					{
+						_game->pushState(new PrisonManagementState(_base));
+						_game->pushState(new ErrorMessageState(tr("STR_PRISON_EXCEEDED").arg(_base->getName()),
+							_palette,
+							_game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color,
+							"BACK01.SCR",
+							_game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					}
+					else if (i->second == 1)
+					{
+						_game->pushState(new ErrorMessageState(
+							tr("STR_PRISONER_EXECUTED_NO_PRISON_SPACE_FACILITY"),
+							_palette,
+							_game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color,
+							"BACK01.SCR",
+							_game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
+					}
 				}
+				
 			}
 
 			if (Options::storageLimitsEnforced && _base->storesOverfull())
@@ -1128,6 +1150,7 @@ void DebriefingState::prepareDebriefing()
 	_stats.push_back(new DebriefingStat("STR_LIVE_ALIENS_SURRENDERED", false));
 	_stats.push_back(new DebriefingStat("STR_LIVE_MONSTERS_SURRENDERED", false));
 	_stats.push_back(new DebriefingStat("STR_LIVE_ENEMIES_SURRENDERED", false));
+	_stats.push_back(new DebriefingStat("STR_PRISONER_CAPTURED", false));
 	_stats.push_back(new DebriefingStat("STR_ALIEN_ARTIFACTS_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_ITEMS_RECOVERED", false));
 	_stats.push_back(new DebriefingStat("STR_OBJECTIVE_SECURED", false));
@@ -1366,13 +1389,9 @@ void DebriefingState::prepareDebriefing()
 	{
 		if ((*j)->getOriginalFaction() == FACTION_PLAYER && (*j)->getStatus() != STATUS_DEAD)
 		{
-			if ((*j)->getStatus() == STATUS_UNCONSCIOUS || (*j)->getFaction() == FACTION_HOSTILE)
+			if (((*j)->getStatus() == STATUS_UNCONSCIOUS || (*j)->getFaction() == FACTION_HOSTILE)
+				|| (*j)->isIgnored() && (*j)->getStunlevel() >= (*j)->getHealth()) // even for ignored xcom units, we need to know if they're conscious or unconscious
 			{
-				playersUnconscious++;
-			}
-			else if ((*j)->isIgnored() && (*j)->getStunlevel() >= (*j)->getHealth())
-			{
-				// even for ignored xcom units, we need to know if they're conscious or unconscious
 				playersUnconscious++;
 			}
 			else if ((*j)->isInExitArea(END_POINT))
@@ -2830,9 +2849,10 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 	else
 	{
 		//now let's if we have spare prison space
-		bool noContainment = base->getFreePrisonSpace() <= 0;
+		bool noContainment = base->getAvailablePrisonSpace() <= 0;
 		if (noContainment)
 		{
+			//#FINNIKTODO: add BasePrisoner transfers!
 			for (auto b : *_game->getSavedGame()->getBases())
 			{
 				if (b->getFreePrisonSpace() > 0)
@@ -2845,26 +2865,39 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 
 		if (noContainment)
 		{
-			_containmentStateInfo[1] = 1; // 1 = not available in any base #FINNIKTODO add special about BasePrisoner space shortage
+			_containmentStateInfo[-1] = 1;
 		}
 		else
 		{
 			//now we can create a Prisoner!
-			BasePrisoner* p = new BasePrisoner(_game->getMod(), rules->getType(), RNG::randomString(8));
+			BasePrisoner* p = new BasePrisoner(rules, base, rules->getType(), RNG::randomString(8));
 			base->addPrisoner(p);
 			//Populate BasePrisoner data;
 			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
 			int points = 0;
 			if (soldier)
 			{
-				p->setGeoscapeSoldier(from->getGeoscapeSoldier());
+				p->setGeoscapeSoldier(soldier);
 				p->setName(from->getName(_game->getLanguage()));
-				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight);
+				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight / 10);
 				p->setAggression(RNG::generate(0, 3));
 				if (from->getOriginalFaction() == FACTION_HOSTILE)
 				{
 					points = soldier->getRules()->getValue();
 				}
+
+				for (auto baseFrom : *_game->getSavedGame()->getBases())
+				{
+					auto it = std::find(baseFrom->getSoldiers()->begin(), baseFrom->getSoldiers()->end(), soldier);
+					if (it != baseFrom->getSoldiers()->end())
+					{
+						_base->getSoldiers()->push_back(soldier);
+						baseFrom->getSoldiers()->erase(it);
+						break;
+					}
+				}
+
+				soldier->setImprisoned(true);
 			}
 			else
 			{
@@ -2874,10 +2907,6 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 				points = from->getUnitRules()->getValue();
 			}
 
-			if (!from->getRoles().empty())
-			{
-				p->setRoles(from->getRoles());
-			}
 			p->setFaction(from->getFaction());
 			p->setStats(from->getBaseStats());
 			p->setHealth(from->getHealth());
@@ -2889,6 +2918,11 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 				morale /= 2;
 			}
 			p->setMorale(morale);
+			auto containReq = rules->getContainingRules().getReuiredResearch();
+			if (containReq == nullptr || _game->getSavedGame()->isResearched(rules->getContainingRules().getReuiredResearch()))
+			{
+				p->setPrisonerState(PRISONER_STATE_CONTAINING);
+			}
 
 			addStat("STR_PRISONER_CAPTURED", 1, points);
 
@@ -2949,7 +2983,11 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 			t->setSoldier(s);
 			base->getTransfers()->push_back(t);
 		}
-		else
+		else if (from->getUnitRules()->getPrisoner() != nullptr)
+		{
+			recoverPrisoner(from, base);
+		}
+		else if (!_fta)
 		{
 			RuleItem *ruleItem = _game->getMod()->getItem(type);
 			if (ruleItem != 0)
@@ -3034,7 +3072,15 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 			ss << "; Spawn unit = [" << from->getSpawnUnit()->getType() << "]";
 		}
 		ss << "; isSurrendering = " << from->isSurrendering();
-		throw Exception(ss.str());
+		if (_fta)
+		{
+			Log(LOG_ERROR) << ss.str(); // we suppose nothing extremly bad happen, just do not recover it...
+			return;
+		}
+		else
+		{
+			throw Exception(ss.str());
+		}
 	}
 
 	bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;

@@ -563,6 +563,7 @@ public:
 	void deleteRetaliationMission(AlienMission* am, Base* base);
 	/// Spawn a Geoscape event from the event rules.
 	bool spawnEvent(const RuleEvent* eventRules);
+	bool spawnEvent(std::vector<std::string> eventNames, const Mod* mod);
 	/// Checks if an instant Geoscape event can be spawned.
 	bool canSpawnInstantEvent(const RuleEvent* eventRules);
 	/// Handles research unlocked by successful/failed missions and despawned mission sites.

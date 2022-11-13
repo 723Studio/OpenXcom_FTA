@@ -106,7 +106,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 	_id(id), _nationality(0),
 	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
 	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
-	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false),
+	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false), _imprisoned(false), _returnToTrainingsWhenOperationOver(NONE),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
 	_corpseRecovered(false)
 {
@@ -248,7 +248,7 @@ Soldier::Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id) :
 	_id(id), _nationality(0),
 	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
 	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
-	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false),
+	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false), _imprisoned(false), _returnToTrainingsWhenOperationOver(NONE),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
 	_corpseRecovered(false)
 {
@@ -460,7 +460,8 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	_psiTraining = node["psiTraining"].as<bool>(_psiTraining);
 	_training = node["training"].as<bool>(_training);
 	_returnToTrainingWhenHealed = node["returnToTrainingWhenHealed"].as<bool>(_returnToTrainingWhenHealed);
-
+	_justSaved = node["justSaved"].as<bool>(_justSaved);
+	_imprisoned = node["imprisoned"].as<bool>(_imprisoned);
 	_improvement = node["improvement"].as<int>(_improvement);
 	_psiStrImprovement = node["psiStrImprovement"].as<int>(_psiStrImprovement);
 	if (const YAML::Node &layout = node["equipmentLayout"])
@@ -609,6 +610,10 @@ YAML::Node Soldier::save(const ScriptGlobal *shared) const
 		node["training"] = _training;
 	if (_returnToTrainingWhenHealed)
 		node["returnToTrainingWhenHealed"] = _returnToTrainingWhenHealed;
+	if (_justSaved)
+		node["justSaved"] = _justSaved;
+	if (_imprisoned)
+		node["imprisoned"] = _imprisoned;
 	node["improvement"] = _improvement;
 	node["psiStrImprovement"] = _psiStrImprovement;
 	if (!_equipmentLayout.empty())
@@ -896,18 +901,24 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 {
 	isBusy = false;
 	isFree = false;
-	bool facility = (mode == LAB || mode == ASSIGN || mode == WORK);
+	bool facility = (mode == LAB || mode == ASSIGN || mode == WORK || mode == INTEL);
 	if (_death)
 	{
 		isBusy = true;
 		if (_death->getCause())
 		{
-			return lang->getString("STR_KILLED_IN_ACTION", _gender);
+			return lang->getString("STR_KILLED_IN_ACTION", _gender); //#FINNIKTODO: case we torture it to death?
 		}
 		else
 		{
 			return lang->getString("STR_MISSING_IN_ACTION", _gender);
 		}
+	}
+
+	if (_imprisoned)
+	{
+		isBusy = true;
+		return lang->getString("STR_IMRISONED");
 	}
 
 	if (isWounded())

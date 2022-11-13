@@ -50,7 +50,7 @@ public:
 	IntelProject(const RuleIntelProject *rule, Base *base, int cost = 0);
 	/// Calculates daily progress.
 	int getStepProgress(std::map<Soldier*, int> &assignedAgents, Mod *mod, int rating, std::string& description, bool estimate = false);
-	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
+	/// Game logic. Called every new day.
 	bool roll(Game *game, const Globe& globe, int progress, bool &finalRoll);
 	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save);
 	/// getters and setters

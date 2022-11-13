@@ -51,8 +51,6 @@ namespace OpenXcom
 PrisonerAllocateAgentsState::PrisonerAllocateAgentsState(Base *base, PrisonerInfoState* selectedPrisoner)
 	: _base(base), _selectedPrisoner(selectedPrisoner), _otherCraftColor(0), _origAgentOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
-	_freeSpace = _selectedPrisoner->getWorkspace();
-
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(148, 16, 164, 176);
@@ -60,7 +58,6 @@ PrisonerAllocateAgentsState::PrisonerAllocateAgentsState(Base *base, PrisonerInf
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtAssignment = new Text(84, 9, 122, 32);
-	_txtFreeSpace = new Text(150, 9, 16, 24);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 	_lstAgents = new TextList(288, 128, 8, 40);
 
@@ -73,7 +70,6 @@ PrisonerAllocateAgentsState::PrisonerAllocateAgentsState(Base *base, PrisonerInf
 	add(_txtTitle, "text", "prisonerAllocateAgents");
 	add(_txtName, "text", "prisonerAllocateAgents");
 	add(_txtAssignment, "text", "prisonerAllocateAgents");
-	add(_txtFreeSpace, "text", "prisonerAllocateAgents");
 	add(_lstAgents, "list", "prisonerAllocateAgents");
 	add(_cbxSortBy, "button", "prisonerAllocateAgents");
 
@@ -301,8 +297,6 @@ void PrisonerAllocateAgentsState::initList(size_t scrl)
 	if (scrl)
 		_lstAgents->scrollTo(scrl);
 	_lstAgents->draw();
-
-	_txtFreeSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_freeSpace));
 }
 
 /**
@@ -349,7 +343,6 @@ void PrisonerAllocateAgentsState::lstAgentsClick(Action *action)
 					s->setActivePrisoner(0);
 					color = _lstAgents->getColor();
 					_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
-					_freeSpace++;
 				}
 				else
 				{
@@ -360,7 +353,6 @@ void PrisonerAllocateAgentsState::lstAgentsClick(Action *action)
 			else
 			{
 				_lstAgents->setCellText(row, 1, duty);
-				_freeSpace++;
 				if (isBusy || !isFree || s->getCraft())
 				{
 					color = _otherCraftColor;
@@ -369,29 +361,12 @@ void PrisonerAllocateAgentsState::lstAgentsClick(Action *action)
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			bool noPrisoner = s->getActivePrisoner() == 0;
-			if (noPrisoner && _freeSpace <= 0)
-			{
-				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_SPACE"),
-					_palette,
-					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
-					"BACK01.SCR",
-					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
-			}
-			else
-			{
-				_lstAgents->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
-				color = _lstAgents->getSecondaryColor();
-				_selectedPrisoner->addAgent(s);
-				if (noPrisoner)
-				{
-					_freeSpace--;
-				}
-			}
+			_lstAgents->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
+			color = _lstAgents->getSecondaryColor();
+			_selectedPrisoner->addAgent(s);
 		}
 
 		_lstAgents->setRowColor(row, color);
-		_txtFreeSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_freeSpace));
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{

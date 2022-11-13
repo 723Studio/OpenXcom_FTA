@@ -52,7 +52,6 @@ private:
 	std::set<Soldier*> _agents;
 	PrisonerState _display;
 	bool _ableContain, _ableRecruit, _ableInterrogate;
-	int _workSpace;
 
 public:
 	/// Creates the ResearchProject state.
@@ -84,7 +83,6 @@ public:
 	void addAgent(Soldier * agent) { _agents.insert(agent); }
 	void removeAgent(Soldier* agent) { _agents.erase(agent); }
 	void setAgents(std::set<Soldier*> agent) { _agents = std::move(agent); }
-	int getWorkspace() { return _workSpace; }
 	BasePrisoner* getPrisioner() { return _prisoner; }
 };
 

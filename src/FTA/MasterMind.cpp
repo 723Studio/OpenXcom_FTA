@@ -20,7 +20,6 @@
 #include "MasterMind.h"
 #include <sstream>
 #include <iomanip>
-#include <algorithm>
 #include <climits>
 #include <functional>
 #include "../Engine/RNG.h"
@@ -32,36 +31,24 @@
 #include "../Engine/Language.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleBaseFacility.h"
-#include "../Mod/RuleArcScript.h"
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
-#include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleResearch.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleAlienMission.h"
-#include "../Mod/RuleGlobe.h"
 #include "../Mod/AlienDeployment.h"
-#include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleDiplomacyFaction.h"
-#include "../Savegame/GameTime.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/BaseFacility.h"
 #include "../Savegame/DiplomacyFaction.h"
-#include "../Savegame/CovertOperation.h"
-#include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDiary.h"
-#include "../Savegame/ResearchProject.h"
-#include "../Savegame/Production.h"
-#include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/Country.h"
 #include "../Savegame/AlienStrategy.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/SavedBattleGame.h"
-#include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/FactionalContainer.h"
 #include "../Geoscape/GeoscapeState.h"
@@ -69,8 +56,6 @@
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../fmath.h"
-#include "../fallthrough.h"
-
 
 namespace OpenXcom
 {
@@ -537,39 +522,37 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 	std::string reason = "";
 	switch (source)
 	{
-	case OpenXcom::XCOM_BATTLESCAPE:
+	case XCOM_BATTLESCAPE:
 		coef = _game->getMod()->getLoyaltyCoefBattlescape();
 		reason = "XCOM_BATTLESCAPE";
 		break;
-	case OpenXcom::XCOM_DOGFIGHT:
+	case XCOM_DOGFIGHT:
 		coef = _game->getMod()->getLoyaltyCoefDogfight();
 		reason = "XCOM_DOGFIGHT";
 		break;
-	case OpenXcom::XCOM_GEOSCAPE:
+	case XCOM_GEOSCAPE:
 		coef = _game->getMod()->getLoyaltyCoefGeoscape();
 		reason = "XCOM_GEOSCAPE";
 		break;
-	case OpenXcom::XCOM_RESEARCH:
+	case XCOM_RESEARCH:
 		coef = _game->getMod()->getLoyaltyCoefResearch();
 		reason = "XCOM_RESEARCH";
 		break;
-	case OpenXcom::ALIEN_MISSION_DESPAWN:
-		coef = _game->getMod()->getLoyaltyCoefAlienMission() * (-1);
+	case ALIEN_MISSION_DESPAWN:
+		coef = -_game->getMod()->getLoyaltyCoefAlienMission();
 		reason = "ALIEN_MISSION_DESPAWN";
 		break;
-	case OpenXcom::ALIEN_UFO_ACTIVITY:
-		coef = _game->getMod()->getLoyaltyCoefUfo() * (-1);
+	case ALIEN_UFO_ACTIVITY:
+		coef = -_game->getMod()->getLoyaltyCoefUfo();
 		reason = "ALIEN_UFO_ACTIVITY";
 		break;
-	case OpenXcom::ALIEN_BASE:
-		coef = _game->getMod()->getLoyaltyCoefAlienBase() * (-1);
+	case ALIEN_BASE:
+		coef = -_game->getMod()->getLoyaltyCoefAlienBase();
 		reason = "ALIEN_BASE";
 		break;
-	case OpenXcom::ABSOLUTE_COEF:
+	case ABSOLUTE_COEF:
 		coef = 100;
 		reason = "ABSOLUTE";
-		break;
-	default:
 		break;
 	}
 
@@ -655,6 +638,73 @@ bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
 	}
 
 	return changed;
+}
+
+/**
+ * Updates nessesary data to process unlocking multiple researches.
+ * 
+ */
+void MasterMind::helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, Base* base, std::string& researchName, std::string& bonusResearchName)
+{
+	auto mod = _game->getMod();
+	auto save = _game->getSavedGame();
+
+	for (auto rRule : projects)
+	{
+		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
+		{
+			possibilities.push_back(rRule);
+		}
+	}
+
+	std::vector<const RuleResearch*> topicsToCheck;
+	if (!possibilities.empty())
+	{
+		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
+		const RuleResearch* research = possibilities.at(pickResearch);
+
+		//we also delete chosen research from possibility list for future use
+		std::vector<const RuleResearch*>::const_iterator it = std::find(possibilities.begin(), possibilities.end(), research);
+		if (it != possibilities.end())
+		{
+			possibilities.erase(it);
+		}
+		
+
+		bool alreadyResearched = false;
+		std::string name = research->getLookup().empty() ? research->getName() : research->getLookup();
+		if (save->isResearched(name, false))
+		{
+			alreadyResearched = true; // we have seen the pedia article already, don't show it again
+		}
+
+		save->addFinishedResearch(research, mod, base, true);
+		topicsToCheck.push_back(research);
+		researchName = alreadyResearched ? "" : research->getName();
+
+		if (!research->getLookup().empty())
+		{
+			const RuleResearch* lookupResearch = mod->getResearch(research->getLookup(), true);
+			save->addFinishedResearch(lookupResearch, mod, base, true);
+			researchName = alreadyResearched ? "" : lookupResearch->getName();
+		}
+
+		if (auto bonus = save->selectGetOneFree(research))
+		{
+			save->addFinishedResearch(bonus, mod, base, true);
+			topicsToCheck.push_back(bonus);
+			bonusResearchName = bonus->getName();
+
+			if (!bonus->getLookup().empty())
+			{
+				const RuleResearch* bonusLookup = mod->getResearch(bonus->getLookup(), true);
+				save->addFinishedResearch(bonusLookup, mod, base, true);
+				bonusResearchName = bonusLookup->getName();
+			}
+		}
+	}
+
+	save->handlePrimaryResearchSideEffects(topicsToCheck, mod, base);
 }
 
 }

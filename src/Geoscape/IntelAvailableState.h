@@ -31,7 +31,7 @@ class Base;
 class IntelProject;
 
 /**
- * Window which inform the player that a Intel Project becoames available on the base.
+ * Window which inform the player that a Intel Project becomes available on the base.
  * Allow him to allocate agents to it.
  */
 class IntelAvailableState : public State

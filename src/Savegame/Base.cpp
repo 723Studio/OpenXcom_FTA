@@ -189,7 +189,7 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 	{
 		std::string id = (*i)["id"].as<std::string>();
 		std::string type = (*i)["type"].as<std::string>();
-		BasePrisoner* prisoner = new BasePrisoner(_mod, type, id);
+		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
 		prisoner->load(*i, _mod);
 		int soldierId = prisoner->getSoldierId();
 		if (soldierId >= 0)
@@ -207,6 +207,10 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			Soldier *s = new Soldier(_mod->getSoldier(type), nullptr, 0 /*nationality*/);
 			s->load(*i, _mod, save, _mod->getScriptGlobal());
 			s->setCraft(0);
+			s->setCovertOperation(0);
+			s->setResearchProject(0);
+			s->setProductionProject(0);
+			s->setActivePrisoner(0);
 			if (const YAML::Node &craft = (*i)["craft"])
 			{
 				CraftId craftId = Craft::loadId(craft);

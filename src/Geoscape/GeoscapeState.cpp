@@ -122,6 +122,7 @@
 #include "../Savegame/AlienStrategy.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/GeoscapeEvent.h"
+#include "../Savegame/BasePrisoner.h"
 #include "GeoscapeEventState.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Battlescape/BattlescapeGenerator.h"
@@ -2544,6 +2545,12 @@ void GeoscapeState::time1Day()
 					delete project; //sorry, not a time yet...
 				}
 			}
+		}
+
+		// Handle prisoner
+		for (auto prisoner : base->getPrisoners())
+		{
+			prisoner->think(*_game); //that simple =) 
 		}
 
 		// Handle soldier wounds and martial training

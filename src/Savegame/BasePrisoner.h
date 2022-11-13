@@ -25,11 +25,12 @@
 
 namespace OpenXcom
 {
-
+class Game;
 class Mod;
 class RulePrisoner;
 class Armor;
 class Soldier;
+class Base;
 class BattleUnit;
 enum UnitFaction : int;
 enum PrisonerState: int {
@@ -42,27 +43,31 @@ enum PrisonerState: int {
 class BasePrisoner
 {
 private:
+	const RulePrisoner* _rule;
 	std::string _id, _type;
-	const RulePrisoner* _rules = nullptr;
 	PrisonerState _state;
 	int	_soldierId, _health;
 	UnitFaction _faction = FACTION_HOSTILE;
 	std::string _name;
 	UnitStats _stats;
 	int _intelligence, _aggression, _morale, _cooperation;
+	int _interrogationProgress, _recruitingProgress;
 	Armor *_armor = nullptr;
 	Soldier* _geoscapeSoldier = nullptr;
-	std::vector<SoldierRole> _roles;
-	const Mod* _mod;
+	std::vector<Soldier*> _agents;
+	Base* _base;
 
 	void loadRoles(const std::vector<int>& r);
 public:
 	/// Creates a BasePrisoner.
-	BasePrisoner(const Mod *mod, const std::string &type, std::string id);
+	BasePrisoner(const RulePrisoner* rule, Base* base, const std::string &type, std::string id);
 	/// Loads the unit from YAML.
 	void load(const YAML::Node &node, const Mod *mod);
 	/// Saves the unit to YAML.
 	YAML::Node save() const;
+	/// Geoscape logic
+	void think(Game& engine);
+	void die();
 
 	//getters and setters
 	const std::string& getId() const { return _id; }
@@ -75,7 +80,7 @@ public:
 
 	int getSoldierId() const { return _soldierId; }
 
-	const RulePrisoner* getRules() const { return _rules; }
+	const RulePrisoner* getRules() const { return _rule; }
 
 	void setGeoscapeSoldier(Soldier* soldier)
 	{
@@ -86,9 +91,6 @@ public:
 
 	void setArmor(Armor* armor) { _armor = armor; }
 	const Armor* getArmor() const { return _armor; }
-
-	void setRoles(std::vector<SoldierRole> roles) { _roles = std::move(roles); }
-	std::vector<SoldierRole> getRoles() const { return _roles; }
 
 	void setFaction(UnitFaction faction) { _faction = faction; }
 	UnitFaction getFaction() const { return _faction; }
@@ -105,7 +107,7 @@ public:
 	void setAggression(int aggro) { _aggression = aggro; }
 	int getAggression() const { return _aggression; }
 	
-	void setMorale(int morale) { _morale = morale; }
+	void setMorale(int morale);
 	int getMorale() const { return _morale; }
 
 	void setCooperation(int cooperation) { _cooperation = cooperation; }

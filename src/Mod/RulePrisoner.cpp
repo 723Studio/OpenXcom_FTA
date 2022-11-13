@@ -55,7 +55,7 @@ void PrisonerInterrogationRules::afterLoad(const Mod* mod)
 	Collections::removeAll(_unlockResearchNames);
 }
 
-PrisonerRecruitingRules::PrisonerRecruitingRules() : _difficulty(100)
+PrisonerRecruitingRules::PrisonerRecruitingRules() : _difficulty(100), _eventChance(0)
 {
 }
 
@@ -68,13 +68,13 @@ void PrisonerRecruitingRules::load(const YAML::Node& node)
 	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
 	_spawnedSoldierRuleName = node["spawnedSoldierRule"].as<std::string>(_spawnedSoldierRuleName);
 	_difficulty = node["difficulty"].as<int>(_difficulty);
-	_spawnEvent = node["spawnEvent"].as<std::string>(_spawnEvent);
+	_eventChance = node["eventChance"].as<int>(_eventChance);
+	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
 }
 
 void PrisonerRecruitingRules::afterLoad(const Mod* mod)
 {
 	mod->linkRule(_requiredResearch, _requiredResearchName);
-	mod->linkRule(_spawnedSoldierRule, _spawnedSoldierRuleName);
 
 	//remove not needed data
 	Collections::removeAll(_requiredResearchName);
@@ -96,7 +96,7 @@ void PrisonerTortureRules::load(const YAML::Node& node)
 	_moraleChange = node["moraleChange"].as<int>(_moraleChange);
 	_cooperationChange = node["cooperationChange"].as<int>(_cooperationChange);
 	_eventChance = node["eventChance"].as<int>(_eventChance);
-	_spawnEvent = node["spawnEvent"].as<std::string>(_spawnEvent);
+	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
 }
 
 PrisonerContainingRules::PrisonerContainingRules() : _funds(-100), _cooperationChange(0)

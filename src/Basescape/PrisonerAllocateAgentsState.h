@@ -44,7 +44,7 @@ class PrisonerAllocateAgentsState : public State
 private:
 	TextButton* _btnOk; // *_btnInfo;
 	Window *_window;
-	Text *_txtTitle, *_txtName, *_txtAssignment, *_txtFreeSpace;
+	Text *_txtTitle, *_txtName, *_txtAssignment;
 	ComboBox *_cbxSortBy;
 	TextList *_lstAgents;
 	Base *_base;
@@ -54,7 +54,6 @@ private:
 	std::vector<SortFunctor*> _sortFunctors;
 	std::vector<int> _agentsNumbers;
 	getStatFn_t _dynGetter;
-	int _freeSpace;
 	/// initializes the display list based on the project scientists list and the position to display
 	void initList(size_t scrl);
 

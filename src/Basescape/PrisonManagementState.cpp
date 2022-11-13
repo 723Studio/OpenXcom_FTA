@@ -42,13 +42,24 @@ namespace OpenXcom
  */
 PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 {
+	bool twoButtons = false; //#FINNIKTODO: add BasePrisoner transfers!
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(304, 16, 8, 176);
+	if (twoButtons)
+	{
+		_btnOk = new TextButton(148, 16, 164, 176);
+	}
+	else
+	{
+		_btnOk = new TextButton(304, 16, 8, 176);
+	}
+
+	_btnTransfer = new TextButton(148, 16, 8, 176);
 	_txtTitle = new Text(300, 17, 10, 8);
 	_txtAvailable = new Text(150, 9, 10, 24);
 	_txtAllocated = new Text(150, 9, 160, 24);
-	_txtSpace = new Text(300, 9, 10, 34);
+	_txtInterSpace = new Text(300, 9, 10, 34);
+	_txtPrisonSpace = new Text(150, 9, 160, 34);
 	_txtPrisoner = new Text(110, 17, 10, 44);
 	_txtAgents = new Text(106, 17, 120, 44);
 	_txtState = new Text(84, 9, 226, 44);
@@ -59,10 +70,12 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 
 	add(_window, "window", "prisonManagement");
 	add(_btnOk, "button", "prisonManagement");
+	add(_btnTransfer, "button", "prisonManagement");
 	add(_txtTitle, "text1", "prisonManagement");
 	add(_txtAvailable, "text1", "prisonManagement");
 	add(_txtAllocated, "text1", "prisonManagement");
-	add(_txtSpace, "text1", "prisonManagement");
+	add(_txtInterSpace, "text1", "prisonManagement");
+	add(_txtPrisonSpace, "text1", "prisonManagement");
 	add(_txtPrisoner, "text2", "prisonManagement");
 	add(_txtAgents, "text2", "prisonManagement");
 	add(_txtState, "text2", "prisonManagement");
@@ -76,6 +89,10 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&PrisonManagementState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&PrisonManagementState::btnOkClick, Options::keyCancel);
+
+	_btnTransfer->setText(tr("STR_GO_TO_TRANSFERS"));
+	_btnTransfer->onMouseClick((ActionHandler)&PrisonManagementState::btnTransferClick);
+	_btnTransfer->setVisible(twoButtons);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -119,6 +136,15 @@ PrisonManagementState::PrisonManagementState(Base *base) : _base(base)
 void PrisonManagementState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * Opens prisoner transfer state.
+ * @param action Pointer to an action.
+ */
+void PrisonManagementState::btnTransferClick(Action* action)
+{
+
 }
 
 /**
@@ -213,7 +239,10 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 
 	_txtAvailable->setText(tr("STR_AGENTS_AVAILABLE").arg(freeAgents));
 	_txtAllocated->setText(tr("STR_AGENTS_ALLOCATED").arg(busyAgents));
-	_txtSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_base->getFreeInterrogationSpace()));
+	_txtInterSpace->setText(tr("STR_FREE_INTERROGATION_SPACE").arg(_base->getFreeInterrogationSpace()));
+	int prisonSpace = _base->getFreePrisonSpace();
+	_txtPrisonSpace->setText(tr("STR_FREE_PRISON_SPACE").arg(prisonSpace));
+	_btnOk->setVisible(prisonSpace >= 0); //case we use it from debriefing
 
 	if (scrl)
 	{

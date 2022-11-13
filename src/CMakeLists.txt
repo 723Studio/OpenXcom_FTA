@@ -239,6 +239,7 @@ set ( geoscape_src
   Geoscape/NewPossibleManufactureState.cpp
   Geoscape/NewPossiblePurchaseState.cpp
   Geoscape/NewPossibleResearchState.cpp
+  Geoscape/PrisonReportState.cpp
   Geoscape/ProductionCompleteState.cpp
   Geoscape/PsiTrainingState.cpp
   Geoscape/ResearchCompleteState.cpp
