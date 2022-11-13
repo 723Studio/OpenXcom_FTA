@@ -104,24 +104,32 @@ void PrisonReportState::initUI()
 	case PRISONER_REPORT_CASE_DEATH:
 		btnName = "STR_GO_TO_BASE";
 		ss << "STR_PRISONER_DIED_PT1";
+		ss << " ";
 		ss << _prisoner->getNameAndId();
+		ss << " ";
 		ss << "STR_PRISONER_DIED_PT2";
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_CASE_INTERROGATION:
-		btnName = "STR_VIEW_REPORTS";
+		btnName = "STR_VIEW_REPORT";
 		ss << "STR_PRISONER_INTERROGATED_PT1";
+		ss << " ";
 		ss << _prisoner->getNameAndId();
+		ss << " ";
 		ss << "STR_PRISONER_INTERROGATED_PT2";
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_RECRUITING:
 		btnName = "STR_VIEW_SOLDIER";
 		ss << "STR_PRISONER_RECRUITING_PT1";
+		ss << " ";
 		ss << _prisoner->getNameAndId();
-		ss << "STR_PRISONER_INTERROGATED_PT2";
+		ss << " ";
+		ss << "STR_PRISONER_RECRUITING_PT2";
+		ss << " ";
 		ss << _prisoner->getGeoscapeSoldier();
-		ss << "STR_PRISONER_INTERROGATED_PT3";
+		ss << " ";
+		ss << "STR_PRISONER_RECRUITING_PT3";
 		desription = ss.str();
 		break;
 	}
