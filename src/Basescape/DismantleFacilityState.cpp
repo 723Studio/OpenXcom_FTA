@@ -28,6 +28,8 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
+#include "../Savegame/Soldier.h"
 #include "BaseView.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
@@ -135,6 +137,24 @@ void DismantleFacilityState::btnOkClick(Action *)
 			for (std::map<std::string, std::pair<int, int> >::const_iterator i = itemCost.begin(); i != itemCost.end(); ++i)
 			{
 				_base->getStorageItems()->addItem(i->first, i->second.second);
+			}
+		}
+
+		if (_game->getMod()->isFTAGame())
+		{
+			for (auto project : _base->getProductions())
+			{
+				if (project->getRules() == _fac->getRules()->getProjectRules())
+				{
+					for (auto s : *_base->getSoldiers())
+					{
+						if (s->getProductionProject() == project)
+						{
+							s->setProductionProject(0);
+						}
+					}
+					_base->removeProduction(project);
+				}
 			}
 		}
 

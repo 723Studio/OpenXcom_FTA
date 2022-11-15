@@ -208,10 +208,13 @@ void ManufactureInfoStateFtA::buildUi()
 		_txtTodo->setVisible(false);
 		_btnUnitDown->setVisible(false);
 		_btnStop->setVisible(false);
+		_btnOk->setX(16);
+		_btnOk->setY(155);
+		_btnOk->setWidth(288);
 
 		// build preview image
 		int tile_size = 32;
-		_image = new Surface(tile_size*2, tile_size*2, 232, 16);
+		_image = new Surface(tile_size*2, tile_size*2, 201, 77);
 		add(_image);
 
 		SurfaceSet *graphic = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
@@ -242,7 +245,7 @@ void ManufactureInfoStateFtA::buildUi()
 
 				if (facilitySize == 1)
 				{
-					frame = graphic->getFrame(_facility->getRules()->getSpriteShape() + num);
+					frame = graphic->getFrame(_facility->getRules()->getSpriteFacility() + num);
 					frame->blitNShade(_image, x_pos, y_pos);
 				}
 
