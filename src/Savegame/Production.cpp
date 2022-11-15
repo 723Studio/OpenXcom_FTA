@@ -443,7 +443,6 @@ YAML::Node Production::save() const
 	if (_facility)
 	{
 		node["item"] = _facility->getRules()->getType();
-		node["facility"] = _facility->getRules()->getType();
 	}
 	else
 	{
