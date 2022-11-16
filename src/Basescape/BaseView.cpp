@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010-2016 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
@@ -29,6 +29,7 @@
 #include "../Interface/Text.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
+#include "../Savegame/Production.h"
 #include <climits>
 
 namespace OpenXcom
@@ -522,6 +523,14 @@ void BaseView::draw()
 
 	for (std::vector<BaseFacility*>::iterator i = _base->getFacilities()->begin(); i != _base->getFacilities()->end(); ++i)
 	{
+		// Update manufacturing data
+		for (auto project : _base->getProductions())
+		{
+			if (project->getRules() == (*i)->getRules()->getProjectRules())
+			{
+				(*i)->setProductionProject(project);
+			}
+		}
 		// Draw facility graphic
 		int num = 0;
 		for (int y = (*i)->getY(); y < (*i)->getY() + (*i)->getRules()->getSize(); ++y)
@@ -569,11 +578,33 @@ void BaseView::draw()
 			text->setBig();
 			std::ostringstream ss;
 			if ((*i)->getDisabled())
+			{
 				ss << "X";
+			}
 			else
-				ss << (*i)->getBuildTime();
+			{
+				auto project = (*i)->getProductionProject();
+				if (project != nullptr)
+				{
+					if (project->getAssignedSoldiers(_base).size() == 0)
+					{
+						ss << "∞";
+					}
+					else
+					{
+						float time = (float)(*i)->getBuildTime() / 24;
+						ss << ceil(time);
+					}
+				}
+				else
+				{
+					ss << (*i)->getBuildTime();
+				}
+			}
 			if ((*i)->getIfHadPreviousFacility()) // Indicate that this facility still counts for connectivity
+			{
 				ss << "*";
+			}
 			text->setAlign(ALIGN_CENTER);
 			text->setColor(_cellColor);
 			text->setText(ss.str());

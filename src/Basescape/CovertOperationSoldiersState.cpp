@@ -19,7 +19,6 @@
 #include "CovertOperationSoldiersState.h"
 #include "CovertOperationStartState.h"
 #include <algorithm>
-#include <climits>
 #include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -31,7 +30,6 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
-#include "../Menu/ErrorMessageState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"

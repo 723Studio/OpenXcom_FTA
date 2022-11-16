@@ -21,13 +21,13 @@
 
 namespace OpenXcom
 {
-
 class RuleManufacture;
 class Base;
 class BaseFacility;
 class SavedGame;
 class Language;
 class Mod;
+class Soldier;
 enum productionProgress_e { PROGRESS_NOT_COMPLETE, PROGRESS_COMPLETE, PROGRESS_NOT_ENOUGH_MONEY, PROGRESS_NOT_ENOUGH_MATERIALS, PROGRESS_NOT_ENOUGH_LIVING_SPACE, PROGRESS_MAX, PROGRESS_CONSTRUCTION };
 
 class Production
@@ -60,10 +60,11 @@ public:
 	void setEfficiency(int efficiency) { _efficiency = efficiency; }
 	bool getSellItems() const { return _sell; }
 	void setSellItems (bool sell) { _sell = sell; }
-	/// Gets the hourly progress with assigned engineers and other conditions
+	std::vector<Soldier*> getAssignedSoldiers(Base* b);
 	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
 	void setFacility(BaseFacility* facility) { _facility = facility; }
 	BaseFacility* getFacility() { return _facility; }
+	int getTimeLeft();
 	
 	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);
 	const RuleManufacture * getRules() const;

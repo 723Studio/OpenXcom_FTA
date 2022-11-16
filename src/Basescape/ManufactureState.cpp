@@ -198,19 +198,9 @@ void ManufactureState::fillProductionList(size_t scrl)
 	{
 		auto facility = (*iter)->getFacility();
 		std::ostringstream s1;
-		size_t engineers = 0;
+		size_t engineers = (*iter)->getAssignedSoldiers(_base).size();
 		if (_ftaUi)
 		{
-			for (auto e : *_base->getSoldiers())
-			{
-				if (e->getProductionProject())
-				{
-					if (e->getProductionProject() == (*iter))
-					{
-						engineers++;
-					}
-				}
-			}
 			s1 << engineers;
 		}
 		else
@@ -242,26 +232,17 @@ void ManufactureState::fillProductionList(size_t scrl)
 		}
 		else if ((*iter)->getAssignedEngineers() > 0 || engineers > 0)
 		{
-			
-			if (facility)
-			{
-				s4 << "TO DO!";
-			}
-			else
-			{
-				int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
-				int numEffectiveEngineers = 0;
-				numEffectiveEngineers = (*iter)->getProgress(_base,
-					_game->getSavedGame(),
-					_game->getMod(),
-					_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+			int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
+			int numEffectiveEngineers = (*iter)->getProgress(_base,
+				_game->getSavedGame(),
+				_game->getMod(),
+				_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 
-				// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
-				int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-				int daysLeft = hoursLeft / 24;
-				int hours = hoursLeft % 24;
-				s4 << daysLeft << "/" << hours;
-			}
+			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
+			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
+			int daysLeft = hoursLeft / 24;
+			int hours = hoursLeft % 24;
+			s4 << daysLeft << "/" << hours;
 		}
 		else
 		{
