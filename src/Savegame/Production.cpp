@@ -77,6 +77,19 @@ bool Production::haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const
 	return true;
 }
 
+std::vector<Soldier*> Production::getAssignedSoldiers(Base* b)
+{
+	std::vector<Soldier*> assignedEngineers;
+	for (auto s : *b->getSoldiers())
+	{
+		if (s->getProductionProject() == this)
+		{
+			assignedEngineers.push_back(s);
+		}
+	}
+	return assignedEngineers;
+}
+
 int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRating, bool prediction)
 {
 	if (!m->isFTAGame())
@@ -86,14 +99,8 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 	else
 	{
 		int progress = 0;
-		std::vector<Soldier*> assignedEngineers;
-		for (auto s : *b->getSoldiers())
-		{
-			if (s->getProductionProject() == this)
-			{
-				assignedEngineers.push_back(s);
-			}
-		}
+		std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
+		
 
 		if (assignedEngineers.size() > 0)
 		{
@@ -113,9 +120,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->weaponry;
 					soldierEffort += statEffort / projStats.weaponry;
 					if (!prediction && stats->weaponry < caps.weaponry && RNG::generate(0, caps.weaponry) > stats->weaponry && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->weaponry++;
-					}
 					statsN++;
 				}
 				if (projStats.explosives > 0)
@@ -123,9 +128,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->explosives;
 					soldierEffort += statEffort / projStats.explosives;
 					if (!prediction && stats->explosives < caps.explosives && RNG::generate(0, caps.explosives) > stats->explosives && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->explosives++;
-					}
 					statsN++;
 				}
 				if (projStats.microelectronics > 0)
@@ -133,9 +136,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->microelectronics;
 					soldierEffort += statEffort / projStats.microelectronics;
 					if (!prediction && stats->microelectronics < caps.microelectronics && RNG::generate(0, caps.microelectronics) > stats->microelectronics && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->microelectronics++;
-					}
 					statsN++;
 				}
 				if (projStats.metallurgy > 0)
@@ -143,9 +144,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->metallurgy;
 					soldierEffort += statEffort / projStats.metallurgy;
 					if (!prediction && stats->metallurgy < caps.metallurgy && RNG::generate(0, caps.metallurgy) > stats->metallurgy && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->metallurgy++;
-					}
 					statsN++;
 				}
 				if (projStats.processing > 0)
@@ -153,9 +152,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->processing;
 					soldierEffort += statEffort / projStats.processing;
 					if (!prediction && stats->processing < caps.processing && RNG::generate(0, caps.processing) > stats->processing && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->processing++;
-					}
 					statsN++;
 				}
 				if (projStats.hacking > 0)
@@ -163,9 +160,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->hacking;
 					soldierEffort += statEffort / projStats.hacking;
 					if (!prediction && stats->hacking < caps.hacking && RNG::generate(0, caps.hacking) > stats->hacking && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->hacking++;
-					}
 					statsN++;
 				}
 
@@ -174,9 +169,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->construction;
 					soldierEffort += statEffort / projStats.construction;
 					if (!prediction && stats->construction < caps.construction && RNG::generate(0, caps.construction) > stats->construction && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->construction++;
-					}
 					statsN++;
 				}
 
@@ -185,9 +178,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->alienTech;
 					soldierEffort += statEffort / projStats.alienTech;
 					if (!prediction && stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->alienTech++;
-					}
 					statsN++;
 				}
 
@@ -196,9 +187,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statEffort = stats->reverseEngineering;
 					soldierEffort += statEffort / projStats.reverseEngineering;
 					if (!prediction && stats->reverseEngineering < caps.reverseEngineering && RNG::generate(0, caps.reverseEngineering) > stats->reverseEngineering && RNG::percent(factor))
-					{
 						s->getEngineerExperience()->reverseEngineering++;
-					}
 					statsN++;
 				}
 
@@ -206,35 +195,29 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				int diligence = stats->diligence;
 				double deliganceFactor = 0.5;
 				if (diligence > 10)
-				{
 					deliganceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
-				}
 
 				soldierEffort *= deliganceFactor;
 				Log(LOG_DEBUG) << "soldierEffort with diligence bonus: " << soldierEffort;
 				if (statsN > 0)
-				{
 					soldierEffort /= statsN;
-				}
 				Log(LOG_DEBUG) << "Final soldierEffort value: " << soldierEffort;
 				effort += soldierEffort;
 				Log(LOG_DEBUG) << "Project effort now has value: " << effort;
 				summEfficiency += stats->efficiency;
 			}
 			_efficiency = summEfficiency / assignedEngineers.size();
-			// If one woman can carry a baby in nine months, nine women can't do it in a month...
-			if (assignedEngineers.size() > 1)
-			{
+			
+			if (assignedEngineers.size() > 1 && _facility == nullptr)
 				effort *= (100 - 19 * log(assignedEngineers.size())) / 100;
-			}
-			Log(LOG_INFO) << "Progress after correction for size: " << effort;
+			Log(LOG_DEBUG) << "Progress after correction for size: " << effort;
 			effort = effort * loyaltyRating / 100;
 			progress = static_cast<int>(ceil(effort));
-			Log(LOG_INFO) << " >>> Total hourly progress for manufacturing project " << _rules->getName() << ": " << progress;
+			Log(LOG_DEBUG) << " >>> Total hourly progress for manufacturing project " << _rules->getName() << ": " << progress;
 		}
 		else
 		{
-			Log(LOG_INFO) << " >>> No assigned engineers for project: " << _rules->getName();
+			Log(LOG_DEBUG) << " >>> No assigned engineers for project: " << _rules->getName();
 			_efficiency = 100;
 		}
 		return progress;
@@ -244,7 +227,14 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating)
 {
 	int done = getAmountProduced();
-	_timeSpent += getProgress(b, g, m, rating);
+	int progress = getProgress(b, g, m, rating);
+	_timeSpent += progress;
+
+	if (_facility)
+	{
+		int timeLeft = _rules->getManufactureTime() - _timeSpent;
+		_facility->setBuildTime((timeLeft + progress - 1) / progress);
+	}
 
 	if (done < getAmountProduced())
 	{

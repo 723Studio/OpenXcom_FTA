@@ -43,7 +43,7 @@ class FacilityAllocateEngineersState : public State
 private:
 	TextButton* _btnOk, *_btnInfo;
 	Window* _window;
-	Text* _txtTitle, * _txtName, * _txtAssignment, *_txtStat;
+	Text* _txtTitle, * _txtName, *_txtTime, * _txtAssignment, *_txtStat;
 	TextList* _lstEngineers;
 	Base* _base;
 	Production* _production;
@@ -53,6 +53,7 @@ private:
 	std::vector<int> _engineerNumbers;
 	/// initializes the display list based on the project soldier's list and the position to display
 	void initList(size_t scrl);
+	std::string getReqTime();
 
 public:
 	/// Creates the Craft Soldiers state.

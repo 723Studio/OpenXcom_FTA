@@ -331,12 +331,11 @@ void PlaceFacilityState::viewClick(Action *)
 					Production* project = new Production(fac->getRules()->getProjectRules(), 1);
 					_base->addProduction(project);
 					project->setFacility(fac);
+					fac->setProductionProject(project);
 
 					// apply project's property
-					fac->setBuildTime(ruleProject->getManufactureTime());
 					_game->pushState(new FacilityAllocateEngineersState(_base, project));
 				}
-				
 			}
 			else
 			{

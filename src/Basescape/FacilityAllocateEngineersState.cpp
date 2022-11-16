@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2010-2022 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
@@ -37,6 +37,7 @@
 #include "../Savegame/BaseFacility.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../FTA/MasterMind.h"
 #include "SoldierInfoState.h"
 #include <algorithm>
 #include <climits>
@@ -55,9 +56,10 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(148, 16, 164, 176);
+	_btnOk = new TextButton(303, 16, 8, 176);
 	_btnInfo = new TextButton(42, 16, 270, 8);
 	_txtTitle = new Text(300, 17, 16, 7);
+	_txtTime = new Text(201, 9, 16, 22);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtAssignment = new Text(84, 9, 122, 32);
 	_txtStat = new Text(82, 9, 214, 32);
@@ -70,6 +72,7 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 	add(_btnOk, "button", "manufactureAllocateEngineers");
 	add(_btnInfo, "button2", "manufactureAllocateEngineers");
 	add(_txtTitle, "text", "manufactureAllocateEngineers");
+	add(_txtTime, "text", "manufactureAllocateEngineers");
 	add(_txtName, "text", "manufactureAllocateEngineers");
 	add(_txtAssignment, "text", "manufactureAllocateEngineers");
 	add(_txtStat, "text", "manufactureAllocateEngineers");
@@ -109,6 +112,13 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 	_lstEngineers->setMargin(8);
 	_lstEngineers->onMouseClick((ActionHandler)&FacilityAllocateEngineersState::lstEngineersClick, 0);
 
+	//setup required data
+	_production->setEfficiency(100);
+	_production->setSellItems(false);
+	_production->setAmountTotal(1);
+	_production->setInfiniteAmount(false);
+	_production->setAssignedEngineers(0);
+
 }
 
 /**
@@ -124,17 +134,16 @@ FacilityAllocateEngineersState::~FacilityAllocateEngineersState()
 */
 void FacilityAllocateEngineersState::btnOkClick(Action*)
 {
-
 	for (auto s : _engineers)
 	{
 		s->setProductionProject(_production);
 	}
-
-	_production->setEfficiency(100);
-	_production->setSellItems(false);
-	_production->setAmountTotal(1);
-	_production->setInfiniteAmount(false);
-	_production->setAssignedEngineers(0);
+	int timeLeft = _production->getRules()->getManufactureTime();
+	int numEffectiveEngineers = _production->getProgress(_base,
+		_game->getSavedGame(),
+		_game->getMod(),
+		_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+	_production->getFacility()->setBuildTime((timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers);
 
 	_game->popState();
 	// extra popState to close PlaceFacilityState
@@ -169,19 +178,7 @@ void FacilityAllocateEngineersState::initList(size_t scrl)
 			_lstEngineers->addRow(3, (*i)->getName(true, 19).c_str(), duty.c_str(), ss.str().c_str());
 
 			Uint8 color = _lstEngineers->getColor();
-			bool matched = false;
-			auto iter = std::find(std::begin(_engineers), std::end(_engineers), (*i));
-			if (iter != std::end(_engineers))
-			{
-				matched = true;
-			}
-
-			if (matched)
-			{
-				color = _lstEngineers->getSecondaryColor();
-				_lstEngineers->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
-			}
-			else if (isBusy || !isFree)
+			if (isBusy || !isFree)
 			{
 				color = _otherCraftColor;
 			}
@@ -190,11 +187,44 @@ void FacilityAllocateEngineersState::initList(size_t scrl)
 			row++;
 		}
 		it++;
+
+		_txtTime->setText(tr("STR_BUILD_TIME").arg(getReqTime()));
 	}
 	if (scrl)
 		_lstEngineers->scrollTo(scrl);
 	_lstEngineers->draw();
 
+}
+
+std::string FacilityAllocateEngineersState::getReqTime()
+{
+	std::ostringstream ss;
+	if (_engineers.size() == 0)
+	{
+		ss << "∞";
+	}
+	else
+	{
+		int progress = _production->getProgress(_base,
+			_game->getSavedGame(),
+			_game->getMod(),
+			_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+
+		if (progress > 0)
+		{
+			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
+			int hoursLeft = (_production->getRules()->getManufactureTime() + progress - 1) / progress;
+			int daysLeft = hoursLeft / 24;
+			int hours = hoursLeft % 24;
+			ss << daysLeft << " " << tr("STR_DAYS_LC") << " / " << hours << " " << tr("STR_HOURS_LC");
+		}
+		else
+		{
+			ss << "-";
+		}
+	}
+	
+	return ss.str();
 }
 
 /**
@@ -261,10 +291,11 @@ void FacilityAllocateEngineersState::lstEngineersClick(Action* action)
 			_lstEngineers->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
 			color = _lstEngineers->getSecondaryColor();
 			_engineers.insert(s);
-
+			s->setProductionProject(_production);
 		}
 
 		_lstEngineers->setRowColor(row, color);
+		_txtTime->setText(tr("STR_BUILD_TIME").arg(getReqTime()));
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{

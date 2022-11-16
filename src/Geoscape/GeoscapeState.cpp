@@ -2218,7 +2218,17 @@ void GeoscapeState::time1Hour()
 						(*s)->setProductionProject(0);
 					}
 				}
-				popup(new ProductionCompleteState((*i),  tr(j->first->getRules()->getName()), this, j->second, j->first));
+				BaseFacility *facility = (*j).first->getFacility();
+				if (facility != nullptr)
+				{
+					facility->setBuildTime(0);
+					popup(new ProductionCompleteState(*i, tr(facility->getRules()->getType()), this, PROGRESS_CONSTRUCTION));
+				}
+				else
+				{
+					popup(new ProductionCompleteState(*i, tr(j->first->getRules()->getName()), this, j->second, j->first));
+				}
+
 				(*i)->removeProduction(j->first);
 			}
 		}
@@ -2330,8 +2340,7 @@ void GeoscapeState::time1Hour()
 	{
 		for (auto operation : (*i)->getCovertOperations())
 		{
-			bool process = operation->think(*_game, *_globe);
-			if (process)
+			if (operation->think(*_game, *_globe))
 			{
 				timerReset();
 			}
