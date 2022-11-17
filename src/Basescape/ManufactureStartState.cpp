@@ -100,7 +100,7 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 
 	if (_ftaUi)
 	{
-		_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(time));
+		_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(time / 100)); // for more precise calculations we use man/hour * 100 in FtA
 		_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
 		_txtReqStats->setText(statsListString);
 		_txtReqStats->setWordWrap(true);
