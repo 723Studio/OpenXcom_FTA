@@ -233,11 +233,11 @@ void ManufactureState::fillProductionList(size_t scrl)
 		else if ((*iter)->getAssignedEngineers() > 0 || engineers > 0)
 		{
 			int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
-			int numEffectiveEngineers = (*iter)->getProgress(_base,
-				_game->getSavedGame(),
-				_game->getMod(),
-				_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
-
+			int numEffectiveEngineers = (*iter)->getAssignedEngineers();
+			if (_ftaUi)
+			{
+				numEffectiveEngineers = (*iter)->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
 			int daysLeft = hoursLeft / 24;

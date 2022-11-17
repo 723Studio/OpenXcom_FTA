@@ -129,9 +129,15 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 
 	_txtTime->setText(tr("STR_CONSTRUCTION_TIME_UC"));
 
+	int time = _rule->getBuildTime();
+	std::string units = "STR_DAY";
+	if (_ftaUi && _rule->getProjectRules())
+	{
+		time = _rule->getProjectRules()->getManufactureTime() / 24 / 100; //converse to days and adjust as FtA uses more precise calculation of manufacture cost
+		units = "STR_MAN_DAY";
+	}
 	_numTime->setBig();
-	_numTime->setText(tr("STR_DAY", _origFac != 0 ? 0 : _rule->getBuildTime()));
-
+	_numTime->setText(tr(units, _origFac != 0 ? 0 : time));
 	_txtMaintenance->setText(tr("STR_MAINTENANCE_UC"));
 
 	_numMaintenance->setBig();

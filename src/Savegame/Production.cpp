@@ -100,8 +100,6 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 	{
 		int progress = 0;
 		std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
-		
-
 		if (assignedEngineers.size() > 0)
 		{
 			double effort = 0;
@@ -194,7 +192,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				Log(LOG_DEBUG) << "Raw soldierEffort equals: " << soldierEffort;
 				int diligence = stats->diligence;
 				double deliganceFactor = 0.5;
-				if (diligence > 10)
+				if (diligence > 10 && !_facility)
 					deliganceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
 
 				soldierEffort *= deliganceFactor;
@@ -208,11 +206,11 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 			}
 			_efficiency = summEfficiency / assignedEngineers.size();
 			
-			if (assignedEngineers.size() > 1 && _facility == nullptr)
+			if (assignedEngineers.size() > 1 && !_facility)
 				effort *= (100 - 19 * log(assignedEngineers.size())) / 100;
 			Log(LOG_DEBUG) << "Progress after correction for size: " << effort;
-			effort = effort * loyaltyRating / 100;
-			progress = static_cast<int>(ceil(effort));
+			effort *= (double)loyaltyRating;
+			progress = static_cast<int>(effort);
 			Log(LOG_DEBUG) << " >>> Total hourly progress for manufacturing project " << _rules->getName() << ": " << progress;
 		}
 		else

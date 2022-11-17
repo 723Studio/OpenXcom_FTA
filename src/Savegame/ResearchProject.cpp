@@ -54,7 +54,6 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
 		double soldierEffort = 0, statEffort = 0;
-
 		if (projStats.physics > 0)
 		{
 			statEffort = stats->physics;
@@ -155,10 +154,9 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 	if (assignedScientists.size() > 1)
 		effort *= (100 - 19 * log(assignedScientists.size())) / 100;
 
-	effort *= (double)rating / 100;
-	progress = static_cast<int>(ceil(effort));
+	effort *= (double)rating;
+	progress = static_cast<int>(effort);
 	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress;
-
 	return progress;
 }
 

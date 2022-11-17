@@ -88,6 +88,7 @@ FacilityAllocateEngineersState::FacilityAllocateEngineersState(Base* base, Produ
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&FacilityAllocateEngineersState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&FacilityAllocateEngineersState::btnOkClick, Options::keyCancel);
+	_btnOk->setVisible(false);
 
 	_btnInfo->setText(tr("STR_INFO"));
 	_btnInfo->onMouseClick((ActionHandler)&FacilityAllocateEngineersState::btnInfoClick);
@@ -140,9 +141,9 @@ void FacilityAllocateEngineersState::btnOkClick(Action*)
 	}
 	int timeLeft = _production->getRules()->getManufactureTime();
 	int numEffectiveEngineers = _production->getProgress(_base,
-		_game->getSavedGame(),
-		_game->getMod(),
-		_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+	                                                     _game->getSavedGame(),
+	                                                     _game->getMod(),
+	                                                     _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 	_production->getFacility()->setBuildTime((timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers);
 
 	_game->popState();
@@ -206,9 +207,9 @@ std::string FacilityAllocateEngineersState::getReqTime()
 	else
 	{
 		int progress = _production->getProgress(_base,
-			_game->getSavedGame(),
-			_game->getMod(),
-			_game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+		                                        _game->getSavedGame(),
+		                                        _game->getMod(),
+		                                        _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 
 		if (progress > 0)
 		{
@@ -296,6 +297,8 @@ void FacilityAllocateEngineersState::lstEngineersClick(Action* action)
 
 		_lstEngineers->setRowColor(row, color);
 		_txtTime->setText(tr("STR_BUILD_TIME").arg(getReqTime()));
+
+		_btnOk->setVisible(_engineers.size() > 0);
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
