@@ -43,14 +43,15 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 {
 	_screen = false;
 	int dY = 0;
+	_ftaUi = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 256, 180, 32, 10, POPUP_BOTH);
 	_txtTitle = new Text(220, 17, 50, 33);
 	_btnOk = new TextButton(220, 12, 50, 167);
-	if (_game->getMod()->isFTAGame())
+	if (_ftaUi)
 	{
-		dY = 26;
+		dY = 13 * 4;
 	}
 	if (Options::oxceFatFingerLinks) // #FINNIKTODO check UI for that option
 	{
@@ -121,6 +122,8 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	{
 		_btnFunding->setVisible(false);
 		_btnTechTree->setVisible(false);
+		_btnGlobalProduction->setVisible(false);
+		_btnGlobalResearch->setVisible(false);
 	}
 
 	_btnGlobalResearch->setText(tr("STR_RESEARCH_OVERVIEW"));

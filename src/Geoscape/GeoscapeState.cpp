@@ -3014,7 +3014,10 @@ void GeoscapeState::btnSelectMusicTrackClick(Action *)
  */
 void GeoscapeState::btnGlobalProductionClick(Action *)
 {
-	_game->pushState(new GlobalManufactureState(false));
+	if (!_game->getMod()->isFTAGame())
+	{
+		_game->pushState(new GlobalManufactureState(false));
+	}
 }
 
 /**
@@ -3023,7 +3026,10 @@ void GeoscapeState::btnGlobalProductionClick(Action *)
  */
 void GeoscapeState::btnGlobalResearchClick(Action *)
 {
-	_game->pushState(new GlobalResearchState(false));
+	if (!_game->getMod()->isFTAGame())
+	{
+		_game->pushState(new GlobalResearchState(false));
+	}
 }
 
 /**
