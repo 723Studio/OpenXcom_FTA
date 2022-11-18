@@ -700,7 +700,15 @@ void DebriefingState::init()
 		}
 		(*deadUnit)->getGeoscapeSoldier()->getDiary()->awardPostMortemKill(postMortemKills);
 
-		SoldierRank rank = (*deadUnit)->getGeoscapeSoldier()->getRank();
+		SoldierRank rank;
+		if (_fta)
+		{
+			rank = (SoldierRank)(*deadUnit)->getGeoscapeSoldier()->getBestRoleRank().second;
+		}
+		else
+		{
+			rank = (*deadUnit)->getGeoscapeSoldier()->getRank();
+		}
 		// Rookies don't get this next award. No one likes them.
 		if (rank == RANK_ROOKIE)
 		{
@@ -738,9 +746,20 @@ void DebriefingState::init()
 		{
 			continue;
 		}
-		if ((*deadUnit)->getId() == bestScoreID[(*deadUnit)->getGeoscapeSoldier()->getRank()])
+
+		SoldierRank rank;
+		if (_fta)
 		{
-			(*deadUnit)->getGeoscapeSoldier()->getDiary()->awardBestOfRank(bestScore[(*deadUnit)->getGeoscapeSoldier()->getRank()]);
+			rank = (SoldierRank)(*deadUnit)->getGeoscapeSoldier()->getBestRoleRank().second;
+		}
+		else
+		{
+			rank = (*deadUnit)->getGeoscapeSoldier()->getRank();
+		}
+
+		if ((*deadUnit)->getId() == bestScoreID[rank])
+		{
+			(*deadUnit)->getGeoscapeSoldier()->getDiary()->awardBestOfRank(bestScore[rank]);
 		}
 		if ((*deadUnit)->getId() == bestOverallScorersID)
 		{

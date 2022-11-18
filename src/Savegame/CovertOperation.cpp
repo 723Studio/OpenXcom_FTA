@@ -740,7 +740,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			if (dead)
 			{
 				//Check for divine protection
-				int protection = (int)(*i)->getRank() - 2;
+				int protection = (*i)->getBestRoleRank().second - 2;
 				//lets add save if we have psi. Btw, there is a place for additional perks
 				if (_hasPsi)
 				{

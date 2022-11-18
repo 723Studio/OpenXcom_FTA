@@ -145,6 +145,21 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth) :
 	default:             rankbonus =  0; break;
 	}
 
+	int roleRank = soldier->getBestRoleRank().second;
+	if (roleRank > 0)
+	{
+		if (roleRank >= 5)
+			rankbonus = 10;
+		else if (roleRank == 4)
+			rankbonus = 6;
+		else if (roleRank == 3)
+			rankbonus = 3;
+		else if (roleRank == 2)
+			rankbonus = 1;
+		else
+			rankbonus = 0;
+	}
+
 	_value = soldier->getRules()->getValue() + soldier->getMissions() + rankbonus;
 
 	_tu = _stats.tu;

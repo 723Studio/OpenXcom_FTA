@@ -1501,12 +1501,18 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 {
 	int total = 0;
 	int totalSalary = 0;
+	int rank = 0;
 	for (std::vector<Transfer*>::const_iterator i = _transfers.begin(); i != _transfers.end(); ++i)
 	{
 		if ((*i)->getType() == TRANSFER_SOLDIER && (*i)->getSoldier()->getRules()->getType() == soldier)
 		{
 			total++;
-			totalSalary += (*i)->getSoldier()->getRules()->getSalaryCost((*i)->getSoldier()->getRank());
+			rank = (*i)->getSoldier()->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)(*i)->getSoldier()->getRank();
+			}
+			totalSalary += (*i)->getSoldier()->getRules()->getSalaryCost(rank);
 		}
 	}
 	for (std::vector<Soldier*>::const_iterator i = _soldiers.begin(); i != _soldiers.end(); ++i)
@@ -1514,7 +1520,12 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 		if ((*i)->getRules()->getType() == soldier)
 		{
 			total++;
-			totalSalary += (*i)->getRules()->getSalaryCost((*i)->getRank());
+			rank = (*i)->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)(*i)->getRank();
+			}
+			totalSalary += (*i)->getRules()->getSalaryCost(rank);
 		}
 	}
 	return std::make_pair(total, totalSalary);
@@ -1528,16 +1539,27 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 int Base::getPersonnelMaintenance() const
 {
 	int total = 0;
+	int rank = 0;
 	for (std::vector<Transfer*>::const_iterator i = _transfers.begin(); i != _transfers.end(); ++i)
 	{
 		if ((*i)->getType() == TRANSFER_SOLDIER)
 		{
-			total += (*i)->getSoldier()->getRules()->getSalaryCost((*i)->getSoldier()->getRank());
+			rank = (*i)->getSoldier()->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)(*i)->getSoldier()->getRank();
+			}
+			total += (*i)->getSoldier()->getRules()->getSalaryCost(rank);
 		}
 	}
 	for (std::vector<Soldier*>::const_iterator i = _soldiers.begin(); i != _soldiers.end(); ++i)
 	{
-		total += (*i)->getRules()->getSalaryCost((*i)->getRank());
+		rank = (*i)->getBestRoleRank().second;
+		if (!rank)
+		{
+			rank = (int)(*i)->getRank();
+		}
+		total += (*i)->getRules()->getSalaryCost(rank);
 	}
 	total += getTotalEngineers() * _mod->getEngineerCost();
 	total += getTotalScientists() * _mod->getScientistCost();
