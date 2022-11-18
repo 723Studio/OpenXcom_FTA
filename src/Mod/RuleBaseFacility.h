@@ -49,7 +49,6 @@ private:
 	RuleBaseFacilityFunctions _requiresBaseFunc = 0;
 	RuleBaseFacilityFunctions _provideBaseFunc = 0;
 	RuleBaseFacilityFunctions _forbiddenBaseFunc = 0;
-	int _ftaPrisonSpace; //a FTA version of prison
 	int _spriteShape, _spriteFacility;
 	bool _connectorsDisabled;
 	int _missileAttraction;
@@ -59,6 +58,7 @@ private:
 	int _size, _buildCost, _refundValue, _buildTime, _monthlyCost;
 	std::map<std::string, std::pair<int, int> > _buildCostItems;
 	int _storage, _personnel, _aliens, _crafts, _labs, _workshops, _psiLabs;
+	int _ftaPrisonSpace; //a FTA version of prison
 	int _sightRange, _sightChance;
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound, _placeSound;
 	int _ammoNeeded;
