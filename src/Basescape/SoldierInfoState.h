@@ -22,7 +22,6 @@
 
 namespace OpenXcom
 {
-
 class Base;
 class Surface;
 class TextButton;
@@ -31,7 +30,7 @@ class TextEdit;
 class ComboBox;
 class Bar;
 class Soldier;
-enum SoldierRole;
+enum SoldierRole : int;
 
 /**
  * Soldier Info screen that shows all the
@@ -62,6 +61,9 @@ private:
 	Text *_txtManeuvering, *_txtMissiles, *_txtDogfight, *_txtTracking, *_txtCooperation, *_txtBeams, *_txtSynaptic, *_txtGravity;
 	Text *_numManeuvering, *_numMissiles, *_numDogfight, *_numTracking, *_numCooperation, *_numBeams, *_numSynaptic, *_numGravity;
 	Bar *_barManeuvering, *_bartMissiles, *_barDogfight, *_barTracking, *_barCooperation, *_barBeams, *_barSynaptic, *_barGravity;
+	Text* _txtStealth, * _txtPerseption, * _txtCharisma, * _txtInvestigation, * _txtDeception, * _txtInterrogation;
+	Text* _numStealth, * _numPerseption, * _numCharisma, * _numInvestigation, * _numDeception, * _numInterrogation;
+	Bar* _barStealth, * _barPerseption, * _barCharisma, * _barInvestigation, * _barDeception, * _barInterrogation;
 	Text *_txtPhysics, *_txtChemistry, *_txtBiology, *_txtInsight, *_txtData, *_txtComputers, *_txtTactics, *_txtMaterials, *_txtDesigning, *_txtAlienTech, *_txtPsionics, *_txtXenolinguistics;
 	Text *_numPhysics, *_numChemistry, *_numBiology, *_numInsight, *_numData, *_numComputers, *_numTactics, *_numMaterials, *_numDesigning, *_numAlienTech, *_numPsionics, *_numXenolinguistics;
 	Bar *_barPhysics, *_barChemistry, *_barBiology, *_barInsight, *_barData, *_barComputers, *_barTactics, *_barMaterials, *_barDesigning, *_barAlienTech, *_barPsionics, *_barXenolinguistics;
