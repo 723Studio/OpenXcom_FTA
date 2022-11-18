@@ -54,7 +54,7 @@ namespace OpenXcom
 * @param rule RuleCovertOperation to start.
 */
 CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOperation* rule) :
-	_base(base), _rule(rule), _cost(0), _chances(0), _hasPsionics(false), _hasPsiItems(false)
+	_base(base), _rule(rule), _cost(0), _chances(0), _hasPsiItems(false), _hasPsionics(false)
 {
 	_items = new ItemContainer();
 

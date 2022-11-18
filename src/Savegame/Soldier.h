@@ -400,7 +400,7 @@ private:
 	void clearIntelExperience() { _intelExperience = UnitStats::scalar(0); }
 
 	/// Calculate soldier stats improvement.
-	void improvePrimaryStats(UnitStats* exp, SoldierRole role = ROLE_SOLDIER);
+	void improvePrimaryStats(UnitStats* exp, SoldierRole role);
 	/// Process role ranks promotions for a soldier.
 	bool rolePromoteSoldier(SoldierRole role);
 	/// Gets a sprite version of the soldier for specific role. Used for BASEBITS.PCK.

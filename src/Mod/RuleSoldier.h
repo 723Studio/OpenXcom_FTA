@@ -34,13 +34,12 @@ class RuleItem;
 class RuleSkill;
 class RulePrisoner;
 class Armor;
-
 /// Soldier roles for FtA game
-enum SoldierRole { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4 };
+enum SoldierRole { ROLE_SOLDIER, ROLE_PILOT, ROLE_AGENT, ROLE_SCIENTIST, ROLE_ENGINEER };
 
 struct SoldierRoleRanksRequirments
 {
-	SoldierRole role = ROLE_SOLDIER;
+	SoldierRole role;
 	std::map<int, int> requirments;
 
 	/// Loads stats from YAML.
@@ -53,7 +52,7 @@ struct SoldierRoleRanksRequirments
 
 struct SoldierRoleRanksStrings
 {
-	SoldierRole role = ROLE_SOLDIER;
+	SoldierRole role;
 	std::map<int, std::string> strings;
 
 	/// Loads stats from YAML.

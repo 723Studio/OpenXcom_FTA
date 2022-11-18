@@ -45,7 +45,6 @@ private:
 	Text* _txtTitle, * _txtDescription, * _txtSoldiersRequired, * _txtSoldiersAssigned, * _txtOptionalSoldiers, * _txtDuration, * _txtChances;
 	int _cost;
 	double _chances;
-	int _scientists, _engeneers;
 	bool _hasPsiItems, _hasPsionics;
 	std::vector<Soldier *> _soldiers;
 	ItemContainer* _items;
