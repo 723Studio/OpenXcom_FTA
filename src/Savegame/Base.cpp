@@ -653,8 +653,7 @@ void Base::removeCovertOperation(CovertOperation* operation)
 void Base::removeIntelProject(IntelProject* project)
 {
 	bool erased = false;
-	auto iter = std::find(std::begin(_intelProjects), std::end(_intelProjects), project);
-	for (int k = 0; k < _intelProjects.size(); k++) {
+	for (size_t k = 0; k < _intelProjects.size(); k++) {
 		if (_intelProjects[k] == project)
 		{
 			_intelProjects.erase(_intelProjects.begin() + k);
@@ -667,8 +666,7 @@ void Base::removeIntelProject(IntelProject* project)
 void Base::removePrisoner(BasePrisoner* prisoner)
 {
 	bool erased = false;
-	auto iter = std::find(std::begin(_prisoners), std::end(_prisoners), prisoner);
-	for (int k = 0; k < _prisoners.size(); k++) {
+	for (size_t k = 0; k < _prisoners.size(); k++) {
 		if (_prisoners[k] == prisoner)
 		{
 			_prisoners.erase(_prisoners.begin() + k);

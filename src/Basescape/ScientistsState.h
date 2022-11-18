@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include "../Mod/RuleSoldier.h"
 #include <vector>
 
 namespace OpenXcom
@@ -32,7 +31,6 @@ class Base;
 class Soldier;
 class RuleSoldier;
 class ResearchProject;
-
 
 /**
  * Soldiers screen that lets the player

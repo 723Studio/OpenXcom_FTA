@@ -1758,7 +1758,7 @@ int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, co
 	if (pilots.empty())
 		return 2; // vanilla
 
-	int bravery = 0, bravMin = INT_MAX, bravTotal = 0;
+	int bravery = 0, bravMin = 500, bravTotal = 0;
 	for (std::vector<Soldier*>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
 	{
 		bravery = (*i)->getStatsWithSoldierBonusesOnly()->bravery;

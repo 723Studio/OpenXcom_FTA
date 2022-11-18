@@ -21,7 +21,6 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Engine/Screen.h"
-#include "../Engine/Unicode.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
@@ -32,11 +31,9 @@
 #include "../Mod/RuleInterface.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ResearchProject.h"
-#include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "ScientistsState.h"
 #include "SoldierInfoState.h"
-#include <algorithm>
 #include <climits>
 
 namespace OpenXcom
@@ -144,7 +141,7 @@ void ScientistsState::initList(size_t scrl)
 			}
 			else
 			{
-				_lstScientist->addRow(2, (*i)->getName(true).c_str(), tr((*i)->getResearchProject()->getRules()->getName()));
+				_lstScientist->addRow(2, (*i)->getName(true).c_str(), tr((*i)->getResearchProject()->getRules()->getName()).c_str());
 				color = _lstScientist->getColor();
 			}
 
