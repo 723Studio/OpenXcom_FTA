@@ -264,48 +264,45 @@ void CovertOperationSoldiersState::initList(size_t scrl)
 	bool isBusy = false, isFree = false;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
-		if ((*i)->getRoleRank(ROLE_SOLDIER) > 0) // let's make it simple for now
+		std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		if (_dynGetter != NULL)
 		{
-			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
-			if (_dynGetter != NULL)
-			{
-				// call corresponding getter
-				int dynStat = (*_dynGetter)(_game, *i);
-				std::ostringstream ss;
-				ss << dynStat;
-				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
-			}
-			else
-			{
-				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
-			}
-
-			Uint8 color;
-			auto opSoldiers = _operation->getSoldiers();
-			bool matched = false;
-
-			auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), (*i));
-			if (iter != std::end(opSoldiers))
-			{
-				matched = true;
-			}
-
-			if (matched)
-			{
-				color = _lstSoldiers->getSecondaryColor();
-				_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
-			}
-			else if (isBusy || !isFree)
-			{
-				color = _otherCraftColor;
-			}
-			else
-			{
-				color = _lstSoldiers->getColor();
-			}
-			_lstSoldiers->setRowColor(row, color);
-			row++;
+			// call corresponding getter
+			int dynStat = (*_dynGetter)(_game, *i);
+			std::ostringstream ss;
+			ss << dynStat;
+			_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
 		}
+		else
+		{
+			_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
+		}
+
+		Uint8 color;
+		auto opSoldiers = _operation->getSoldiers();
+		bool matched = false;
+
+		auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), (*i));
+		if (iter != std::end(opSoldiers))
+		{
+			matched = true;
+		}
+
+		if (matched)
+		{
+			color = _lstSoldiers->getSecondaryColor();
+			_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+		}
+		else if (isBusy || !isFree)
+		{
+			color = _otherCraftColor;
+		}
+		else
+		{
+			color = _lstSoldiers->getColor();
+		}
+		_lstSoldiers->setRowColor(row, color);
+		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);
@@ -384,10 +381,6 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 				color = _otherCraftColor;
 			}
 		}
-		else if (isBusy || !isFree)
-		{
-			color = _otherCraftColor;
-		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
 			int space = (_operation->getRule()->getSoldierSlots() + _operation->getRule()->getOptionalSoldierSlots()) - opSoldiers.size();
@@ -408,6 +401,10 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 					color = _otherCraftColor;
 				}
 			}
+		}
+		else if (isBusy || !isFree)
+		{
+			color = _otherCraftColor;
 		}
 		else
 		{

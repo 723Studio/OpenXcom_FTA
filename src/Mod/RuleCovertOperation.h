@@ -40,7 +40,7 @@ private:
 	std::string _name, _description, _successDescription, _failureDescription, _successBackground, _failureBackground, _successMusic, _failureMusic, _successEvent,  _failureEvent, _specialRule;
 	std::vector<std::string> _requires, _canceledBy, _allowedArmor, _successResearchList, _failureResearchList;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
-	int _soldierSlots, _optionalSoldierSlots, _scientistSlots, _engineerSlots, _optionalSoldierEffect, _scientistEffect, _engineerEffect, _itemSpaceEffect, _armorEffect;
+	int _soldierSlots, _optionalSoldierSlots, _optionalSoldierEffect, _scientistEffect, _engineerEffect, _itemSpaceEffect, _armorEffect;
 	double _itemSpaceLimit;
 	int _baseChances, _costs, _successScore, _failureScore, _successLoyalty, _failureLoyalty, _successFunds, _failureFunds;
 	int  _danger, _trapChance, _progressEventChance, _concealedItemsBonus, _bonusItemsEffect;
@@ -58,77 +58,73 @@ public:
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the operation's name.
-	const std::string& getName() const { return _name; };
+	const std::string& getName() const { return _name; }
 	/// Gets the operation's description.
-	const std::string& getDescription() const { return _description; };
+	const std::string& getDescription() const { return _description; }
 	/// Gets the operation's success results description.
-	const std::string& getSuccessDescription() const { return _successDescription; };
+	const std::string& getSuccessDescription() const { return _successDescription; }
 	/// Gets the operation's failure results description.
-	const std::string& getFailureDescription() const { return _failureDescription; };
+	const std::string& getFailureDescription() const { return _failureDescription; }
 	/// Gets the operation's success results background image.
-	const std::string& getSuccessBackground() const { return _successBackground; };
+	const std::string& getSuccessBackground() const { return _successBackground; }
 	/// Gets the operation's failure results background image.
-	const std::string& getFailureBackground() const { return _failureBackground; };
+	const std::string& getFailureBackground() const { return _failureBackground; }
 	/// Gets the operation's success results background image.
-	const std::string& getSuccessMusic() const { return _successMusic; };
+	const std::string& getSuccessMusic() const { return _successMusic; }
 	/// Gets the operation's failure results background image.
-	const std::string& getFailureMusic() const { return _failureMusic; };
+	const std::string& getFailureMusic() const { return _failureMusic; }
 	/// Gets the operation's requirements.
-	const std::vector<std::string>& getRequirements() const { return _requires; };
+	const std::vector<std::string>& getRequirements() const { return _requires; }
 	/// Gets the base functions required to start operation.
 	RuleBaseFacilityFunctions getRequiresBaseFunc() const { return _requiresBaseFunc; }
 	/// Gets the research name that would make this operation impossible to run.
 	//const std::vector<std::string>& getCanceledBy() const { return _canceledBy; };
 	/// Gets the research name that would make this operation impossible to run.
-	const std::vector<std::string>& getCanceledBy() const { return _canceledBy; };
+	const std::vector<std::string>& getCanceledBy() const { return _canceledBy; }
 	/// Gets the event name that would be spawned on success operation result.
-	const std::string& getSuccessEvent() const { return _successEvent; };
+	const std::string& getSuccessEvent() const { return _successEvent; }
 	/// Gets the event name that would be spawned on failure operation result.
-	const std::string& getFailureEvent() const { return _failureEvent; };
+	const std::string& getFailureEvent() const { return _failureEvent; }
 	/// Gets the event name that would be spawned while operation is in progress.
-	const WeightedOptions& getProgressEvent() const { return _progressEvent; };
+	const WeightedOptions& getProgressEvent() const { return _progressEvent; }
 	/// Gets the operation's list of projects that would be discovered on success resolve.
-	const std::vector<std::string>& getSuccessResearchList() const { return _successResearchList; };
+	const std::vector<std::string>& getSuccessResearchList() const { return _successResearchList; }
 	/// Gets the operation's list of projects that would be discovered on failure.
-	const std::vector<std::string>& getFailureResearchList() const { return _failureResearchList; };
+	const std::vector<std::string>& getFailureResearchList() const { return _failureResearchList; }
 	/// Gets the soldiers number that required by this operations.
-	int getSoldierSlots() const { return _soldierSlots; };
+	int getSoldierSlots() const { return _soldierSlots; }
 	/// Gets the optional soldiers slots for this operations.
-	int getOptionalSoldierSlots() const { return _optionalSoldierSlots; };
-	/// Gets the optional scientist slots for this operations.
-	int getScientistSlots() const { return _scientistSlots; };
-	/// Gets the optional engineer slots for this operations.
-	int getEngineerSlots() const { return _engineerSlots; };
+	int getOptionalSoldierSlots() const { return _optionalSoldierSlots; }
 	/// Gets the optional soldiers slots effectiveness for this operations.
-	int getOptionalSoldierEffect() const { return _optionalSoldierEffect; };
+	int getOptionalSoldierEffect() const { return _optionalSoldierEffect; }
 	/// Gets the optional scientist slots effectiveness for this operations.
-	int getScientistEffect() const { return _scientistEffect; };
+	int getScientistEffect() const { return _scientistEffect; }
 	/// Gets the optional engineer slots effectiveness for this operations.
-	int getEngineerEffect() const { return _engineerEffect; };
+	int getEngineerEffect() const { return _engineerEffect; }
 	/// Gets the operation's base chances of success result.
-	int getBaseChances() const { return _baseChances; };
+	int getBaseChances() const { return _baseChances; }
 	/// Gets the operation's time costs.
-	int getCosts() const { return _costs; };
+	int getCosts() const { return _costs; }
 	/// Gets the operation's global score, that is awarded on success result.
-	int getSuccessScore() const { return _successScore; };
+	int getSuccessScore() const { return _successScore; }
 	/// Gets the operation's global score, that is awarded on failure.
-	int getFailureScore() const { return _failureScore; };
+	int getFailureScore() const { return _failureScore; }
 	/// Gets the operation's loyalty score, that is awarded on success result.
-	int getSuccessLoyalty() const { return _successLoyalty; };
+	int getSuccessLoyalty() const { return _successLoyalty; }
 	/// Gets the operation's loyalty score, that is awarded on failure.
-	int getFailureLoyalty() const { return _failureLoyalty; };
+	int getFailureLoyalty() const { return _failureLoyalty; }
 	/// Gets the operation's funds, that is awarded on success result.
-	int getSuccessFunds() const { return _successFunds; };
+	int getSuccessFunds() const { return _successFunds; }
 	/// Gets the operation's funds, that is awarded on failure.
-	int getFailureFunds() const { return _failureFunds; };
+	int getFailureFunds() const { return _failureFunds; }
 	/// Gets chance of spawning event in progress of running covert operation.
-	int getProgressEventChance() const { return _progressEventChance; };
+	int getProgressEventChance() const { return _progressEventChance; }
 	/// Gets if progress event should be repeated in progress of running covert operation.
-	bool getRepeatProgressEvent() const { return _repeatProgressEvent; };
+	bool getRepeatProgressEvent() const { return _repeatProgressEvent; }
 
 	/// Gets if required items for operation should be removed from the game.
-	bool getRemoveRequiredItemsOnSuccess() const { return _removeRequiredItemsOnSuccess; };
-	bool getRemoveRequiredItemsOnFailure() const { return _removeRequiredItemsOnFailure; };
+	bool getRemoveRequiredItemsOnSuccess() const { return _removeRequiredItemsOnSuccess; }
+	bool getRemoveRequiredItemsOnFailure() const { return _removeRequiredItemsOnFailure; }
 
 	/// Gets operation item space limit.
 	double getItemSpaceLimit() const { return _itemSpaceLimit; }
@@ -167,19 +163,19 @@ public:
 	/// Gets the operation's required item list.
 	const std::map<std::string, int> &getBonusItemList() const { return _bonusItems; }
 	/// Gets bonus for having required items for this operation.
-	int getBonusItemsEffect() const { return _bonusItemsEffect; };
+	int getBonusItemsEffect() const { return _bonusItemsEffect; }
 	/// Gets if this covert operation does not have any effects for concealed or heavy weapons.
-	bool getAllowAllEquipment() const { return _allowAllEquipment; };
+	bool getAllowAllEquipment() const { return _allowAllEquipment; }
 	/// Gets bonus for concealed-only weapons for this operation.
-	int getConcealedItemsBonus() const { return _concealedItemsBonus; }; 
+	int getConcealedItemsBonus() const { return _concealedItemsBonus; }
 	/// Gets the operation's allowed armor.
-	const std::vector<std::string>& getAllowedArmor() const { return _allowedArmor; };
+	const std::vector<std::string>& getAllowedArmor() const { return _allowedArmor; }
 	/// Gets the operation's allowed armor effect.
-	int getAllowedArmorEffect() const { return _armorEffect; };
+	int getAllowedArmorEffect() const { return _armorEffect; }
 	/// Gets the effectiveness by soldier type for this operations.
 	const std::map<std::string, int>& getSoldierTypeEffectiveness() const { return _soldierTypeEffectiveness; }
 	/// Gets the operation's special campaign rule.
-	const std::string& getSpecialRule() const { return _specialRule; };
+	const std::string& getSpecialRule() const { return _specialRule; }
 	/// Gets the operation's list order.
 	int getListOrder() const { return _listOrder; }
 };

@@ -19,10 +19,6 @@
  */
 #include "../Engine/State.h"
 #include "SoldierSortUtil.h"
-#include <vector>
-#include <map>
-#include <string>
-#include <unordered_set>
 
 namespace OpenXcom
 {
@@ -42,19 +38,17 @@ namespace OpenXcom
 	private:
 		TextButton* _btnOk;
 		Window* _window;
-		Text* _txtTitle, * _txtScientists, * _txtEngineers, * _txtDungeonLevel, * _txtProgress, * _txtSoldiers, * _txtAdditionalInfo;
+		Text* _txtTitle, * _txtDungeonLevel, * _txtProgress, * _txtSoldiers, * _txtAdditionalInfo;
 		TextList* _lstSoldiers, * _lstAdditionalInfo;
 		CovertOperation* _operation;
 		RuleCovertOperation* _rule;
 	public:
-		/// Creates the Tech Tree Viewer state.
+		/// Creates the CovertOperationInfo Viewer state.
 		CovertOperationInfoState(CovertOperation* operation);
-		/// Cleans up the Tech Tree Viewer state.
+		/// Cleans up the CovertOperationInfo Viewer state.
 		~CovertOperationInfoState();
 		/// Handler for clicking the OK button.
 		void btnOkClick(Action* action);
-		/// Handler for clicking the New button.
-		void btnTerminateClick(Action* action);
 		void lstSoldiersClick(Action* action);
 		// init class
 		void init() override;

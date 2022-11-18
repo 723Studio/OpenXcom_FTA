@@ -42,8 +42,7 @@ private:
 	RuleCovertOperation* _rule;
 	Window* _window;
 	TextButton* _btnCancel, * _btnStart, * _btnSoldiers, * _btnEquipmet, * _btnArmor;
-	TextButton* _btnAddScientist, * _btnRemoveScientist, * _btnAddEngineer, * _btnRemoveEngineer, * _btnResearchState, * _btnManufactureState;
-	Text* _txtTitle, * _txtDescription, * _txtSoldiersRequired, * _txtSoldiersAssigned, * _txtOptionalSoldiers, * _txtScientistsAssigned, * _txtEngineersAssigned, * _txtDuration, * _txtChances;
+	Text* _txtTitle, * _txtDescription, * _txtSoldiersRequired, * _txtSoldiersAssigned, * _txtOptionalSoldiers, * _txtDuration, * _txtChances;
 	int _cost;
 	double _chances;
 	int _scientists, _engeneers;
@@ -68,18 +67,6 @@ public:
 	void btnEquipmetClick(Action* action);
 	/// Handler for the Armor button.
 	void btnArmorClick(Action* action);
-	/// Handler for the AddScientist button.
-	void btnAddScientistClick(Action* action);
-	/// Handler for the RemoveScientist button.
-	void btnRemoveScientistClick(Action* action);
-	/// Handler for the ResearchState button.
-	void btnResearchStateClick(Action* action);
-	/// Handler for the AddEngineer button.
-	void btnAddEngineerClick(Action* action);
-	/// Handler for the RemoveEngineer button.
-	void btnRemoveEngineerClick(Action* action);
-	/// Handler for the ManufactureState button.
-	void btnManufactureStateClick(Action* action);
 	/// Gets string that discribed prediction of timeframe that needs to finish the operation.
 	std::string getOperationTimeString(bool mod = false);
 	/// Gets string that discribed operations odds of success.
@@ -93,25 +80,25 @@ public:
 	/// Gets operation rules
 	const RuleCovertOperation* getRule() { return _rule; }
 	/// Gets items assigned for this planned operation.
-	ItemContainer* getItems() { return _items; };
+	ItemContainer* getItems() { return _items; }
 	/// Sets item set for this planned operation.
-	void setItems(ItemContainer* items) { _items = items; };
+	void setItems(ItemContainer* items) { _items = items; }
 	/// Gets soldiers assigned for this planned operation.
-	std::vector<Soldier*> getSoldiers() { return _soldiers; };
+	std::vector<Soldier*> getSoldiers() { return _soldiers; }
 	void addSoldier(Soldier* soldier);
 	void removeSoldier(Soldier* soldier);
 	/// Sets soldiers assigned for this planned operation.
-	void setSoldiers(std::vector<Soldier*> soldiers) { _soldiers = soldiers; };
+	void setSoldiers(std::vector<Soldier*> soldiers) { _soldiers = soldiers; }
 	/// Gets if there are assigned psionic agents on this operation.
-	int getHasPsiAssigned() const { return _hasPsionics; };
+	int getHasPsiAssigned() const { return _hasPsionics; }
 	/// Sets if there are assigned psionic agents on this operation.
-	void setHasPsiAssigned(int hasPsionics) { _hasPsionics = hasPsionics; };
+	void setHasPsiAssigned(int hasPsionics) { _hasPsionics = hasPsionics; }
 	/// Gets if there is equipped psionic equipment on this operation.
-	int getHasPsiItems() const { return _hasPsiItems; };
+	int getHasPsiItems() const { return _hasPsiItems; }
 	/// Sets if there is equipped psionic equipment on this operation.
-	void setHasPsiItems(int hasPsiItems) { _hasPsiItems = hasPsiItems; };
+	void setHasPsiItems(int hasPsiItems) { _hasPsiItems = hasPsiItems; }
 	/// Gets effective value for imputed soldier stat.
-	double statEffectCalc(int stat, float a, float b, float c, float d);
+	double statEffectCalc(int stat, double a, double b, double c, double d);
 };
 
 }
