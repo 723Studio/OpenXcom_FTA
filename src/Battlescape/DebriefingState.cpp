@@ -863,9 +863,8 @@ void DebriefingState::init()
 			participants.push_back((*i)->getGeoscapeSoldier());
 		}
 	}
-	_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 
-	if (_game->getMod()->isFTAGame())
+	if (_fta)
 	{
 		for (auto soldier : participants)
 		{
@@ -874,6 +873,10 @@ void DebriefingState::init()
 				_promotions = true;
 			}
 		}
+	}
+	else
+	{
+		_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 	}
 
 	_game->getSavedGame()->setBattleGame(nullptr);

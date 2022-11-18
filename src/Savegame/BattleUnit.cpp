@@ -4078,8 +4078,6 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
 	}
 
-	
-
 	UnitStats *newStats = s->getCurrentStats();
 	statsDiff.statGrowth += *newStats; // add new stat
 

@@ -61,10 +61,18 @@ int Soldier::generateScienceStat(int min, int max)
 	}
 	
 }
-int Soldier::improveStat(int exp, int &rate, bool bravary)
+
+/**
+ * Gets possible stat inprovement
+ * @param exp - stats experience points
+ * @param rate - pointer for role rank experience calculations
+ * @param bravery - if this is a special calculation for bravery increase
+ * @return - value of stat improvement
+ */
+int Soldier::improveStat(int exp, int &rate, bool bravery)
 {
 	rate = 0;
-	if (bravary && exp > RNG::generate(0, 10))
+	if (bravery && exp > RNG::generate(0, 10))
 	{
 		rate = 1;
 		return 10;

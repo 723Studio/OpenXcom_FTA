@@ -132,7 +132,6 @@ private:
 	ScriptValues<Soldier> _scriptValues;
 
 	int generateScienceStat(int min, int max);
-	int improveStat(int exp, int &rate, bool bravary = false);
 
   public:
 	/// Creates a new soldier.
@@ -369,6 +368,8 @@ private:
 	/// Gets pending transformation name
 	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
 
+	/// Gets possible stat inprovement
+	static int improveStat(int exp, int& rate, bool bravery = false);
 	/// Gets soldier roles with ranks
 	std::vector<SoldierRoleRanks*> getRoles() const { return _roles; };
 	/// Adds role or increase rank in role
