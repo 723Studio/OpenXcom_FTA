@@ -127,7 +127,7 @@ Soldier::Soldier(RuleSoldier *rules, Armor *armor, int id) :
 		_initialStats.strength = RNG::generate(minStats.strength, maxStats.strength);
 		_initialStats.psiStrength = RNG::generate(minStats.psiStrength, maxStats.psiStrength);
 		_initialStats.melee = RNG::generate(minStats.melee, maxStats.melee);
-		_initialStats.psiSkill = minStats.psiSkill;
+		_initialStats.psiSkill = RNG::generate(minStats.psiSkill, maxStats.psiSkill);
 		//pilot
 		_initialStats.maneuvering = RNG::generate(minStats.maneuvering, maxStats.maneuvering);
 		_initialStats.missiles = RNG::generate(minStats.missiles, maxStats.missiles);
