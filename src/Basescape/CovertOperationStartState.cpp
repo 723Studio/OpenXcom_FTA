@@ -683,7 +683,7 @@ double CovertOperationStartState::getOperationOdds()
 		for (auto& solIt : _soldiers) 
 		{
 			//lets get soldier effectiveness first, if any
-			int solEffectiveness = 100;
+			double solEffectiveness = 100;
 			if (!_rule->getSoldierTypeEffectiveness().empty())
 			{
 				std::string solType = solIt->getRules()->getType();
@@ -699,7 +699,7 @@ double CovertOperationStartState::getOperationOdds()
 			}
 			_chances = _chances * (solEffectiveness / 100);
 			//lets make a bonus for having officer for field command and avg ranking
-			int rank = solIt->getRank();
+			int rank = solIt->getBestRoleRank().second;
 			if (rank > soldierMaxRank)
 			{
 				soldierMaxRank = rank;
