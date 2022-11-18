@@ -243,7 +243,10 @@ void ResearchState::lstResearchMousePress(Action *action)
  */
 void ResearchState::onCurrentGlobalResearchClick(Action *)
 {
-	_game->pushState(new GlobalResearchState(true));
+	if (!_ftaUi)
+	{
+		_game->pushState(new GlobalResearchState(true));
+	}
 }
 /**
  * Updates the research list

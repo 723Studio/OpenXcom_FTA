@@ -175,7 +175,10 @@ void ManufactureState::btnOkClick(Action *)
  */
 void ManufactureState::onCurrentGlobalProductionClick(Action *)
 {
-	_game->pushState(new GlobalManufactureState(true));
+	if (!_ftaUi)
+	{
+		_game->pushState(new GlobalManufactureState(true));
+	}
 }
 
 /**
