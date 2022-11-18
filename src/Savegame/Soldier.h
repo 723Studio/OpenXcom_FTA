@@ -189,7 +189,7 @@ private:
 	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
 	void clearBaseDuty();
 	/// Gets a string version of the soldier's rank.
-	std::string getRankString(bool isFtA);
+	const std::string getRankString(bool isFtA) const;
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.
 	int getRankSprite() const;
 	/// Gets a sprite version of the soldier's rank. Used for SMOKE.PCK.
@@ -348,9 +348,9 @@ private:
 	/// Sets whether the soldier should return to martial training automatically when fully healed.
 	void setReturnToTrainingWhenHealed(bool returnToTrainingWhenHealed);
 	/// Should the soldier return to martial training automatically when return from covert operation?
-	ReturnToTrainings getReturnToTrainingsWhenOperationOver() const { return _returnToTrainingsWhenOperationOver; };
+	ReturnToTrainings getReturnToTrainingsWhenOperationOver() const { return _returnToTrainingsWhenOperationOver; }
 	/// Sets whether the soldier should return to martial training automatically when fully healed.
-	void setReturnToTrainingWhenOperationOver(ReturnToTrainings returnToTrainingWhenOperationOver) { _returnToTrainingsWhenOperationOver = returnToTrainingWhenOperationOver; };
+	void setReturnToTrainingWhenOperationOver(ReturnToTrainings returnToTrainingWhenOperationOver) { _returnToTrainingsWhenOperationOver = returnToTrainingWhenOperationOver; }
 	/// Sets whether the soldier's body was recovered from a battle
 	void setCorpseRecovered(bool corpseRecovered);
 	/// Gets the previous transformations performed on this soldier
@@ -366,12 +366,12 @@ private:
 	/// Gets if this soldier has pending transformation
 	bool hasPendingTransformation() const { return !_pendingTransformations.empty() ;}
 	/// Gets pending transformation name
-	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
+	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; }
 
 	/// Gets possible stat inprovement
 	static int improveStat(int exp, int& rate, bool bravery = false);
 	/// Gets soldier roles with ranks
-	std::vector<SoldierRoleRanks*> getRoles() const { return _roles; };
+	std::vector<SoldierRoleRanks*> getRoles() const { return _roles; }
 	/// Adds role or increase rank in role
 	void addRole(SoldierRole newRole, int rank = 1);
 	/// Adds role or increase rank in role
@@ -379,25 +379,25 @@ private:
 	/// Gets rank of role.
 	int getRoleRank(SoldierRole role);
 	/// Gets the role with highest rank and rank value.
-	std::pair<SoldierRole, int> getBestRoleRank();
+	std::pair<SoldierRole, int> getBestRoleRank() const;
 	/// Gets the role with highest rank.
-	SoldierRole getBestRole() { return getBestRoleRank().first; };
+	SoldierRole getBestRole() const { return getBestRoleRank().first; }
 	/// Gets a pointer to the dogfight experience values (FtA mechanic).
-	UnitStats* getDogfightExperience() { return &_dogfightExperience; };
+	UnitStats* getDogfightExperience() { return &_dogfightExperience; }
 	/// Clears dogfight experience values (FtA mechanic).
-	void clearDogfightExperience() { _dogfightExperience = UnitStats::scalar(0); };
+	void clearDogfightExperience() { _dogfightExperience = UnitStats::scalar(0); }
 	/// Gets a pointer to the research experience values (FtA mechanic).
-	UnitStats* getResearchExperience() { return &_researchExperience; };
+	UnitStats* getResearchExperience() { return &_researchExperience; }
 	/// Clears research experience values (FtA mechanic).
-	void clearResearchExperience() { _researchExperience = UnitStats::scalar(0); };
+	void clearResearchExperience() { _researchExperience = UnitStats::scalar(0); }
 	/// Gets a pointer to the research experience values (FtA mechanic).
-	UnitStats* getEngineerExperience() { return &_engineerExperience; };
+	UnitStats* getEngineerExperience() { return &_engineerExperience; }
 	/// Clears engineer experience values (FtA mechanic).
-	void clearEngineerExperience() { _engineerExperience = UnitStats::scalar(0); };
+	void clearEngineerExperience() { _engineerExperience = UnitStats::scalar(0); }
 	/// Gets a pointer to the intel experience values (FtA mechanic).
-	UnitStats* getIntelExperience() { return &_intelExperience; };
+	UnitStats* getIntelExperience() { return &_intelExperience; }
 	/// Clears intel experience values (FtA mechanic).
-	void clearIntelExperience() { _intelExperience = UnitStats::scalar(0); };
+	void clearIntelExperience() { _intelExperience = UnitStats::scalar(0); }
 
 	/// Calculate soldier stats improvement.
 	void improvePrimaryStats(UnitStats* exp, SoldierRole role = ROLE_SOLDIER);

@@ -147,7 +147,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 	const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
 	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
-		RuleSoldier *rule = _game->getMod()->getSoldier(*i);
+		const RuleSoldier *rule = _game->getMod()->getSoldier(*i);
 		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
 		int stock = getFactionItemStock(rule->getType());
 		if (rule->getBuyCost() != 0

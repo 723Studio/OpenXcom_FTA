@@ -217,7 +217,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 		int i = 0;
 		for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
 		{
-			RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier((*it), false);
+			const RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier((*it), false);
 			if (soldierTypeRule && _game->getSavedGame()->isResearched(soldierTypeRule->getRequirements()))
 			{
 				if (i > 0)

@@ -3568,7 +3568,7 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 		// Generate soldiers
 		for (size_t i = 0; i < randomTypes.size(); ++i)
 		{
-			RuleSoldier* ruleSoldier = getSoldier(randomTypes[i], true);
+			const RuleSoldier* ruleSoldier = getSoldier(randomTypes[i], true);
 			int nationality = save->selectSoldierNationalityByLocation(this, ruleSoldier, nullptr); // -1 (unfortunately the first base is not placed yet)
 			Soldier *soldier = genSoldier(save, ruleSoldier, nationality);
 			base->getSoldiers()->push_back(soldier);
@@ -3915,7 +3915,7 @@ RuleSkill *Mod::getSkill(const std::string &name, bool error) const
  * @param name Unit name.
  * @return Rules for the units.
  */
-RuleSoldier *Mod::getSoldier(const std::string &name, bool error) const
+const RuleSoldier *Mod::getSoldier(const std::string &name, bool error) const
 {
 	return getRule(name, "Soldier", _soldiers, error);
 }

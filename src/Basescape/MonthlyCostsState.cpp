@@ -162,7 +162,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 		// vanilla
 		for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 		{
-			RuleSoldier *soldier = _game->getMod()->getSoldier(*i);
+			const RuleSoldier *soldier = _game->getMod()->getSoldier(*i);
 			if (soldier->getSalaryCost(0) != 0 && _game->getSavedGame()->isResearched(soldier->getRequirements()))
 			{
 				std::pair<int, int> info = _base->getSoldierCountAndSalary(*i);

@@ -653,7 +653,7 @@ void DiplomacyFaction::manageStaff()
 	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
 
-		RuleSoldier* rule = _mod->getSoldier(*i);
+		const RuleSoldier* rule = _mod->getSoldier(*i);
 		
 		if (rule->getBuyCost() != 0 && isResearched(rule->getRequirements()))
 		{

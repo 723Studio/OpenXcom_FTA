@@ -3247,7 +3247,7 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 					placed = true;
 				}
 				// if we have a stackable weapon i.e. throwing knife in one of the hands, put spare items in the inventory
-				if (!placed && mod->getIsFTAGame()
+				if (!placed && mod->isFTAGame()
 					&& item->getRules()->getStackSize() > 1
 					&&((getRightHandWeapon() && getRightHandWeapon()->getRules()->getType() == item->getRules()->getType())
 						||(getLeftHandWeapon() && getLeftHandWeapon()->getRules()->getType() == item->getRules()->getType())

@@ -289,7 +289,7 @@ void GeoscapeEventState::eventLogic()
 		}
 		else
 		{
-			RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+			const RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
 			if (ruleSoldier)
 			{
 				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
@@ -412,7 +412,7 @@ void GeoscapeEventState::eventLogic()
 	*/
 void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 {
-	for (const auto &eventName : _customAnswers[playerChoice].spawnEvent)
+	for (const auto &eventName : _customAnswers[playerChoice].spawnEvents)
 	{
 		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
 	}

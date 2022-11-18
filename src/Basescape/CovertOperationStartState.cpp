@@ -208,7 +208,7 @@ void CovertOperationStartState::init()
 	}
 
 	x = 0;
-	Surface* frame3 = texture->getFrame(39);
+	Surface* frame2 = texture->getFrame(39);
 	for (int i = 0; i < _items->getTotalQuantity(); i += 4, x += 10)
 	{
 		frame2->blitNShade(_equip, x, 0);

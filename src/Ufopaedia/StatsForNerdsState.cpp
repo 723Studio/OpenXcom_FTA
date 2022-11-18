@@ -415,7 +415,7 @@ void StatsForNerdsState::btnPreviewClick(Action *)
 		base->setName("Preview Base");
 
 		// create some 1x1 soldiers (as many as needed for the biggest craft type)
-		RuleSoldier* soldierRule = nullptr;
+		const RuleSoldier* soldierRule = nullptr;
 		Armor* defaultArmor = nullptr;
 		for (auto& soldierType : mod->getSoldiersList())
 		{

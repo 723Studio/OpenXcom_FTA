@@ -405,7 +405,7 @@ void BasePrisoner::think(Game& engine)
 					save.spawnEvent(events, &mod);
 				}
 
-				RuleSoldier *soldierRule = mod.getSoldier(rules.getSpawnedSoldier());
+				const RuleSoldier *soldierRule = mod.getSoldier(rules.getSpawnedSoldier());
 				
 				if (_geoscapeSoldier != nullptr)
 				{

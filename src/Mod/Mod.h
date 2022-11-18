@@ -719,7 +719,7 @@ public:
 	/// Gets skill rules.
 	RuleSkill *getSkill(const std::string &name, bool error = false) const;
 	/// Gets soldier unit rules.
-	RuleSoldier *getSoldier(const std::string &name, bool error = false) const;
+	const RuleSoldier *getSoldier(const std::string &name, bool error = false) const;
 	/// Gets the available soldiers.
 	const std::vector<std::string> &getSoldiersList() const;
 	/// Gets commendation rules.
@@ -945,10 +945,6 @@ public:
 	const std::string &getCraftSynapseUnlockResearch() const { return _craftSynapseUnlockResearch; }
 	/// Gets the research topic required for unlocking gravity controlling stat.
 	const std::string &getGravControlUnlockResearch() const { return _craftGravControlUnlockResearch; }
-	/// Gets the research topic required for hiring new scientists.
-	const std::string &getHireScientistsUnlockResearch() const { return _hireScientistsUnlockResearch; }
-	/// Gets the research topic required for hiring new engineers.
-	const std::string &getHireEngineersUnlockResearch() const { return _hireEngineersUnlockResearch; }
 
 	/// Gets the threshold for defining a glancing hit on a ufo during interception
 	int getUfoGlancingHitThreshold() const { return _ufoGlancingHitThreshold; }

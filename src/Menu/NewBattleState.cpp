@@ -465,7 +465,7 @@ void NewBattleState::initSave()
 	for (int i = 0; i < 30; ++i)
 	{
 		int randomType = RNG::generate(0, mod->getSoldiersList().size() - 1);
-		RuleSoldier* ruleSoldier = mod->getSoldier(mod->getSoldiersList().at(randomType), true);
+		const RuleSoldier* ruleSoldier = mod->getSoldier(mod->getSoldiersList().at(randomType), true);
 		int nationality = save->selectSoldierNationalityByLocation(mod, ruleSoldier, nullptr); // -1
 		Soldier *soldier = mod->genSoldier(save, ruleSoldier, nationality);
 

@@ -257,20 +257,20 @@ public:
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
 	/// Getters for FtA's roles sprite IDs.
-	int getPilotRankSprite() const { return _pilotRankSprite; };
-	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; };
-	int getPilotRankSpriteTiny() const { return _pilotRankSpriteTiny; };
-	int getAgentRankSprite() const { return _agentRankSprite; };
-	int getAgentRankSpriteBattlescape() const { return _agentRankSpriteBattlescape; };
-	int getAgentRankSpriteTiny() const { return _agentRankSpriteTiny; };
-	int getScientistRankSprite() const { return _scientistRankSprite; };
-	int getScientistSpriteBattlescape() const { return _scientistRankSpriteBattlescape; };
-	int getScientistSpriteTiny() const { return _scientistRankSpriteTiny; };
-	int getEngineerRankSprite() const { return _engineerRankSprite; };
-	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; };
-	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; };
+	int getPilotRankSprite() const { return _pilotRankSprite; }
+	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; }
+	int getPilotRankSpriteTiny() const { return _pilotRankSpriteTiny; }
+	int getAgentRankSprite() const { return _agentRankSprite; }
+	int getAgentRankSpriteBattlescape() const { return _agentRankSpriteBattlescape; }
+	int getAgentRankSpriteTiny() const { return _agentRankSpriteTiny; }
+	int getScientistRankSprite() const { return _scientistRankSprite; }
+	int getScientistSpriteBattlescape() const { return _scientistRankSpriteBattlescape; }
+	int getScientistSpriteTiny() const { return _scientistRankSpriteTiny; }
+	int getEngineerRankSprite() const { return _engineerRankSprite; }
+	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; }
+	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; }
 	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
-	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() { return _roleRankStrings; }
+	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() const { return _roleRankStrings; }
 
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }

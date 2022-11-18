@@ -1084,7 +1084,7 @@ void Soldier::clearBaseDuty()
  * the soldier's military rank.
  * @return String ID for rank.
  */
-std::string Soldier::getRankString(bool isFtA)
+const std::string Soldier::getRankString(bool isFtA) const
 {
 	if (isFtA)
 	{
@@ -2433,7 +2433,7 @@ int Soldier::getRoleRank(SoldierRole role)
 	return rank;
 }
 
-std::pair<SoldierRole, int> Soldier::getBestRoleRank()
+std::pair<SoldierRole, int> Soldier::getBestRoleRank() const
 {
 	int max = INT_MIN;
 	SoldierRole role = ROLE_SOLDIER;

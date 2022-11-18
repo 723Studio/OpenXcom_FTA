@@ -333,7 +333,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 				}
 				else
 				{
-					RuleSoldier *rule = m->getSoldier(spawnedPersonType);
+					const RuleSoldier *rule = m->getSoldier(spawnedPersonType);
 					if (rule != 0)
 					{
 						Transfer *t = new Transfer(24);
