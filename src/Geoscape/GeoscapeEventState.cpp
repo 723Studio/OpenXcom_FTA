@@ -416,11 +416,6 @@ void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 	{
 		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
 	}
-
-	if (!_customAnswers[playerChoice].weightedEvents.empty())
-	{
-		bool success = _game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(_customAnswers[playerChoice].weightedEvents.choose()));
-	}
 }
 /**
 	*

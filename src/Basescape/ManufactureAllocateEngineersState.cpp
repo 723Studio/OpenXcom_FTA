@@ -360,7 +360,7 @@ void ManufactureAllocateEngineersState::lstEngineersClick(Action* action)
 			}
 			else
 			{
-				_lstEngineers->setCellText(row, 2, duty);
+				_lstEngineers->setCellText(row, 1, duty); //#FINNIKCHECK
 				_freeSpace++;
 				if (isBusy || !isFree || s->getCraft())
 				{

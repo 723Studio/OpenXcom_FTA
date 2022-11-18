@@ -616,6 +616,7 @@ int CovertOperationStartState::getOperationCost()
 */
 void CovertOperationStartState::removeSoldier(Soldier* soldier)
 {
+	auto iter = std::find(std::begin(_soldiers), std::end(_soldiers), soldier); //#FINNIKCHECK
 	for (size_t k = 0; k < _soldiers.size(); k++) {
 		if (_soldiers[k] == soldier) {
 			_soldiers.erase(_soldiers.begin() + k);
