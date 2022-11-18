@@ -20,19 +20,13 @@
 #include "CovertOperationEquipmentState.h"
 #include "CovertOperationSoldiersState.h"
 #include "CovertOperationArmorState.h"
-#include "ResearchState.h"
-#include "ManufactureState.h"
-#include <sstream>
-#include <climits>
 #include <iomanip>
 #include <algorithm>
 #include <locale>
 #include "../fmath.h"
 #include "../Interface/Window.h"
 #include "../Interface/TextButton.h"
-#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Text.h"
-#include "../Interface/TextList.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
@@ -40,20 +34,16 @@
 #include "../Engine/Options.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Unicode.h"
-#include "../Engine/Logger.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleCovertOperation.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleSoldier.h"
-#include "../Mod/RuleInterface.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SavedGame.h"
-#include "../Menu/ErrorMessageState.h"
 
 namespace OpenXcom
 {
@@ -63,8 +53,8 @@ namespace OpenXcom
 * @param base Pointer to the base to get info from.
 * @param rule RuleCovertOperation to start.
 */
-CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOperation* rule) : _base(base), _rule(rule), _chances(0), _cost(0),
-																							  _scientists(0), _engeneers(0), _hasPsiItems(false), _hasPsionics(false)
+CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOperation* rule) :
+	_base(base), _rule(rule), _cost(0), _chances(0), _hasPsionics(false), _hasPsiItems(false)
 {
 	_items = new ItemContainer();
 
@@ -90,28 +80,9 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_crew = new Surface(220, 18, 77, descrDY + 19);
 	_equip = new Surface(220, 18, 77, descrDY + 37);
 
-	int secondColumnW = 304 - (2 * lablesDX + 2 * lableSpace);
-	int secondColumnX = 312 - secondColumnW;
-	int personellAssignBtnW = 62;
-	int personellAssignBtnH = 16;
-	int btnMargine = 1;
-	int btnAssignSmallW = (personellAssignBtnW - 2 * btnMargine) / 3;
-	_txtScientistsAssigned = new Text(secondColumnW, 9, secondColumnX, descrDY + 1);
-	_btnAddScientist = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW, descrDY + 11);
-	_btnRemoveScientist = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW + btnAssignSmallW + btnMargine, descrDY + 11);
-	_btnResearchState = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW + 2 * (btnAssignSmallW + btnMargine), descrDY + 11);
-
-	_txtEngineersAssigned = new Text(secondColumnW, 9, secondColumnX, descrDY + 12 + personellAssignBtnH);
-	_btnAddEngineer = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW, descrDY + 22 + personellAssignBtnH);
-	_btnRemoveEngineer = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW + btnAssignSmallW + btnMargine, descrDY + 22 + personellAssignBtnH);
-	_btnManufactureState = new TextButton(btnAssignSmallW, personellAssignBtnH, 312 - personellAssignBtnW + 2 * (btnAssignSmallW + btnMargine), descrDY + 22 + personellAssignBtnH);
-
+	
 	_txtDuration = new Text(304, 9, 8, 153);
 	_txtChances = new Text(304, 9, 8, 164);
-
-	//let's get some operation properties
-	bool hasScientists = _rule->getScientistSlots() > 0;
-	bool hasEngineers = _rule->getEngineerSlots() > 0;
 
 	setInterface("newCovertOperationsMenu");
 	add(_window, "window", "newCovertOperationsMenu");
@@ -128,16 +99,6 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	add(_btnArmor, "button", "newCovertOperationsMenu");
 	add(_crew);
 	add(_equip);
-
-	add(_txtScientistsAssigned, "text", "newCovertOperationsMenu");
-	add(_btnAddScientist, "button", "newCovertOperationsMenu");
-	add(_btnRemoveScientist, "button", "newCovertOperationsMenu");
-	add(_btnResearchState, "button", "newCovertOperationsMenu");
-
-	add(_txtEngineersAssigned, "text", "newCovertOperationsMenu");
-	add(_btnAddEngineer, "button", "newCovertOperationsMenu");
-	add(_btnRemoveEngineer, "button", "newCovertOperationsMenu");
-	add(_btnManufactureState, "button", "newCovertOperationsMenu");
 
 	add(_txtDuration, "text", "newCovertOperationsMenu");
 	add(_txtChances, "text", "newCovertOperationsMenu");
@@ -171,38 +132,8 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_btnArmor->setText(tr("STR_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&CovertOperationStartState::btnArmorClick);
 
-	_txtScientistsAssigned->setAlign(ALIGN_RIGHT);
-	_btnAddScientist->setText("+");
-	_btnAddScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnAddScientistClick, SDL_BUTTON_LEFT);
-	_btnAddScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnAddScientistClick, SDL_BUTTON_RIGHT);
-	_btnRemoveScientist->setText("-");
-	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_LEFT);
-	_btnRemoveScientist->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveScientistClick, SDL_BUTTON_RIGHT);
-	_btnResearchState->setText(tr("STR_LAB_ICON"));
-	_btnResearchState->onMouseClick((ActionHandler)&CovertOperationStartState::btnResearchStateClick);
-
-
-	_txtEngineersAssigned->setAlign(ALIGN_RIGHT);
-	_btnAddEngineer->setText("+");
-	_btnAddEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnAddEngineerClick, SDL_BUTTON_LEFT);
-	_btnAddEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnAddEngineerClick, SDL_BUTTON_RIGHT);
-	_btnRemoveEngineer->setText("-");
-	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_LEFT);
-	_btnRemoveEngineer->onMouseClick((ActionHandler)&CovertOperationStartState::btnRemoveEngineerClick, SDL_BUTTON_RIGHT);
-	_btnManufactureState->setText(tr("STR_WORKSHOP_ICON"));
-	_btnManufactureState->onMouseClick((ActionHandler)&CovertOperationStartState::btnManufactureStateClick);
-
 	_txtOptionalSoldiers->setVisible(_rule->getOptionalSoldierSlots() > 0);
 
-	_txtScientistsAssigned->setVisible(hasScientists);
-	_btnAddScientist->setVisible(hasScientists);
-	_btnRemoveScientist->setVisible(hasScientists);
-	_btnResearchState->setVisible(hasScientists);
-
-	_txtEngineersAssigned->setVisible(hasEngineers);
-	_btnAddEngineer->setVisible(hasEngineers);
-	_btnRemoveEngineer->setVisible(hasEngineers);
-	_btnManufactureState->setVisible(hasEngineers);
 
 }
 
@@ -220,22 +151,14 @@ void CovertOperationStartState::init()
 
 	_txtSoldiersAssigned->setText(tr("STR_SOLDIERS_ASSIGNED").arg(_soldiers.size()));
 
-	std::ostringstream ss;
-	ss << _scientists << "/" << _rule->getScientistSlots();
-	_txtScientistsAssigned->setText(tr("STR_SCIENTISTS_REQUIRED").arg(ss.str()));
+	bool debug = _game->getSavedGame()->getDebugMode();
 
-	std::ostringstream se;
-	se << _engeneers << "/" << _rule->getEngineerSlots();
-	_txtEngineersAssigned->setText(tr("STR_ENGINEERS_REQUIRED").arg(se.str()));
-
-	bool mod = _game->getSavedGame()->getDebugMode();
-
-	_txtDuration->setText(tr("STR_OPERATION_DURATION_UC").arg(tr(getOperationTimeString(mod))));
+	_txtDuration->setText(tr("STR_OPERATION_DURATION_UC").arg(tr(getOperationTimeString(debug))));
 	_txtDuration->setAlign(ALIGN_RIGHT);
-	_txtChances->setText(tr("STR_OPERATION_CHANCES_UC").arg(tr(getOperationOddsString(mod))));
+	_txtChances->setText(tr("STR_OPERATION_CHANCES_UC").arg(tr(getOperationOddsString(debug))));
 	_txtChances->setAlign(ALIGN_RIGHT);
 
-	_btnStart->setVisible(_soldiers.size() >= _rule->getSoldierSlots());
+	_btnStart->setVisible(_soldiers.size() >= (size_t)_rule->getSoldierSlots());
 	auto reqItems = _rule->getRequiredItemList();
 	if (!reqItems.empty())
 	{
@@ -270,8 +193,7 @@ void CovertOperationStartState::init()
 	{
 		for (auto index : (*i)->getArmor()->getCustomArmorPreviewIndex())
 		{
-			Surface* customFrame1 = customArmorPreviews->getFrame(index);
-			if (customFrame1)
+			if (Surface* customFrame1 = customArmorPreviews->getFrame(index))
 			{
 				// modded armor previews
 				customFrame1->blitNShade(_crew, x, 0);
@@ -285,11 +207,7 @@ void CovertOperationStartState::init()
 		}
 	}
 
-	Surface* frame2 = texture->getFrame(40);
-	SurfaceSet* customItemPreviews = _game->getMod()->getSurfaceSet("CustomItemPreviews");
 	x = 0;
-
-
 	Surface* frame3 = texture->getFrame(39);
 	for (int i = 0; i < _items->getTotalQuantity(); i += 4, x += 10)
 	{
@@ -309,8 +227,6 @@ void CovertOperationStartState::btnCancelClick(Action*)
 		_base->getStorageItems()->addItem(it->first, it->second);
 	}
 	_game->popState();
-	_base->setScientists(_base->getScientists() + _scientists);
-	_base->setEngineers(_base->getEngineers() + _engeneers);
 }
 
 /**
@@ -364,8 +280,7 @@ void CovertOperationStartState::btnStartClick(Action*)
 			if ((*i)->getCurrentStats()->psiSkill > 0) _hasPsionics = true; //hey, this soldier we sending has psionic skills!
 		}
 	}
-	newOperation->setAssignedScientists(_scientists);
-	newOperation->setAssignedEngineers(_engeneers);
+
 
 	if (_hasPsionics && _hasPsiItems && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{ //operation that we are about to start has psionic offensive potential
@@ -404,108 +319,6 @@ void CovertOperationStartState::btnEquipmetClick(Action* action)
 void CovertOperationStartState::btnArmorClick(Action* action)
 {
 	_game->pushState(new CovertOperationArmorState(_base, this));
-}
-
-void CovertOperationStartState::btnAddScientistClick(Action* action)
-{
-	if (_scientists >= _rule->getScientistSlots()) return;
-	int changeValue = 0;
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-	{
-		changeValue = 1;
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-	{
-		if (_rule->getScientistSlots() < _base->getScientists()) changeValue = _rule->getScientistSlots();
-		else changeValue = _base->getScientists();
-		if (changeValue + _scientists > _rule->getScientistSlots()) changeValue = _rule->getScientistSlots() - _scientists;
-	}
-	if (_base->getScientists() > 0 && _rule->getScientistSlots() > 0)
-	{
-		_base->setScientists(_base->getScientists() - changeValue);
-		_scientists = _scientists + changeValue;
-	}
-	else
-	{
-		_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_SCIENTISTS"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK05.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
-	}
-	init();
-}
-
-void CovertOperationStartState::btnRemoveScientistClick(Action* action)
-{
-	if (_scientists == 0) return;
-	int changeValue = 0;
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-	{
-		changeValue = 1;
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-	{
-		changeValue = _scientists;
-	}
-	if (_scientists > 0)
-	{
-		_scientists = _scientists - changeValue;
-		_base->setScientists(_base->getScientists() + changeValue);
-	}
-	init();
-}
-
-void CovertOperationStartState::btnResearchStateClick(Action* action)
-{
-	_game->pushState(new ResearchState(_base));
-}
-
-void CovertOperationStartState::btnAddEngineerClick(Action* action)
-{
-	if (_engeneers >= _rule->getEngineerSlots()) return;
-	int changeValue = 0;
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-	{
-		changeValue = 1;
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-	{
-		if (_rule->getEngineerSlots() < _base->getEngineers()) changeValue = _rule->getEngineerSlots();
-		else changeValue = _base->getEngineers();
-		if (changeValue + _engeneers > _rule->getScientistSlots()) changeValue = _rule->getScientistSlots() - _engeneers;
-	}
-	if (_base->getEngineers() > 0 && _rule->getEngineerSlots() > 0)
-	{
-		_base->setEngineers(_base->getEngineers() - changeValue);
-		_engeneers = _engeneers + changeValue;
-	}
-	else
-	{
-		_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_ENGINEERS"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK17.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
-	}
-	init();
-}
-
-void CovertOperationStartState::btnRemoveEngineerClick(Action* action)
-{
-	if (_engeneers == 0) return;
-	int changeValue = 0;
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-	{
-		changeValue = 1;
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-	{
-		changeValue = _engeneers;
-	}
-	if (_engeneers > 0)
-	{
-		_engeneers = _engeneers - changeValue;
-		_base->setEngineers(_base->getEngineers() + changeValue);
-	}
-	init();
-}
-
-void CovertOperationStartState::btnManufactureStateClick(Action* action)
-{
-	_game->pushState(new ManufactureState(_base));
 }
 
 
@@ -617,23 +430,9 @@ double CovertOperationStartState::getOperationOdds()
 	slots = _rule->getOptionalSoldierSlots();
 	if (slots > 0)
 	{
-		_chances = _chances - (slots * static_cast<double>(_rule->getOptionalSoldierEffect()));
+		_chances = _chances - slots * static_cast<double>(_rule->getOptionalSoldierEffect());
 		int optionalSoldiers = assignedSoldiersN - requiredSoldiers;
 		_chances = _chances + optionalSoldiers * static_cast<double>(_rule->getOptionalSoldierEffect());
-		slots = 0;
-	}
-	slots = (_rule->getScientistSlots());
-	if (slots > 0)
-	{
-		int effect = _rule->getScientistEffect();
-		_chances = _chances - (slots * effect) + (_scientists * effect);
-		slots = 0;
-	}
-	slots = (_rule->getEngineerSlots());
-	if (slots > 0)
-	{
-		int effect = _rule->getEngineerEffect();
-		_chances = _chances - (slots * effect) + (_engeneers * effect);
 		slots = 0;
 	}
 	//lets see if we need some decrease because of required items
@@ -713,17 +512,17 @@ double CovertOperationStartState::getOperationOdds()
 			double reacCalc = statEffectCalc(solIt->getStatsWithAllBonuses()->reactions, 2000, 2, 16, -9) ;
 			soldierReactions = soldierReactions + reacCalc * (solEffectiveness / 100);
 			int brav = solIt->getStatsWithAllBonuses()->bravery / 10;
-			soldierBrav = soldierBrav + (static_cast<double>(brav) * (solEffectiveness / 100)) - 3;
+			soldierBrav = soldierBrav + static_cast<double>(brav) * (solEffectiveness / 100) - 3;
 			int psi = solIt->getStatsWithAllBonuses()->psiSkill;
 			if (psi > 0 && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())) //psi offensive bonus
 			{
-				float manaFactor = 1;
+				double manaFactor = 1;
 				if (_game->getMod()->isManaFeatureEnabled())
 				{
 					int mana = solIt->getStatsWithAllBonuses()->mana;
-					manaFactor = (mana - solIt->getManaMissing()) / mana;
+					manaFactor = (double)(mana - solIt->getManaMissing()) / (double)mana;
 				}
-				soldiersPsi = ((statEffectCalc(psi, 8000, 2.2, 8, 0) + statEffectCalc(solIt->getStatsWithAllBonuses()->psiStrength, 8000, 2.2, 8, 0)) / 2) * manaFactor * (solEffectiveness / 100);
+				soldiersPsi = (statEffectCalc(psi, 8000, 2.2, 8, 0) + statEffectCalc(solIt->getStatsWithAllBonuses()->psiStrength, 8000, 2.2, 8, 0)) / 2 * manaFactor * (solEffectiveness / 100);
 			}
 			else
 			{
@@ -735,13 +534,13 @@ double CovertOperationStartState::getOperationOdds()
 			soldiersSta = soldiersSta + staCalc * (solEffectiveness / 100);
 		}
 
-		double officerEffect = -0.2321 * (pow(soldierMaxRank, 2)) + 2.5036 * soldierMaxRank + 0.0357; // cute nonlinear function for field officer + avg rank bonus
-		double rankEffect = (soldiersTotalRank / assignedSoldiersN);
-		double bravEffect = (soldierBrav / assignedSoldiersN) * 5;
-		double reactEffect = (soldierReactions / assignedSoldiersN);
-		double tuEffect = (soldiersTU / assignedSoldiersN);
-		double staEffect = (soldiersSta / assignedSoldiersN);
-		_chances += rankEffect + bravEffect + reactEffect + soldiersPsi + tuEffect + staEffect;
+		double officerEffect = -0.2321 * pow(soldierMaxRank, 2) + 2.5036 * soldierMaxRank + 0.0357; // cute nonlinear function for field officer + avg rank bonus
+		double rankEffect = (double)soldiersTotalRank / assignedSoldiersN;
+		double bravEffect = soldierBrav / assignedSoldiersN * 5;
+		double reactEffect = soldierReactions / assignedSoldiersN;
+		double tuEffect = soldiersTU / assignedSoldiersN;
+		double staEffect = soldiersSta / assignedSoldiersN;
+		_chances += rankEffect + bravEffect + reactEffect + soldiersPsi + tuEffect + staEffect + officerEffect;
 
 		// let's check if itemset has specific FTA's item categories
 		if (!_rule->getAllowAllEquipment())
@@ -768,8 +567,6 @@ double CovertOperationStartState::getOperationOdds()
 			case DIFF_SUPERHUMAN:
 				diffCoeff *= 1.5;
 				break;
-			default:
-				break;
 			}
 
 			for (std::map<std::string, int>::iterator i = _items->getContents()->begin(); i != _items->getContents()->end(); ++i)
@@ -788,7 +585,7 @@ double CovertOperationStartState::getOperationOdds()
 			{
 				itemCatEffect = -itemConcealedBonusEffect * diffCoeff;
 			}
-			itemCatEffect = itemCatEffect - ((diffCoeff * heavy * itemConcealedBonusEffect * 4) / assignedSoldiersN);
+			itemCatEffect = itemCatEffect - diffCoeff * heavy * itemConcealedBonusEffect * 4 / assignedSoldiersN;
 			_chances += itemCatEffect;
 		}
 	}
@@ -820,7 +617,7 @@ int CovertOperationStartState::getOperationCost()
 void CovertOperationStartState::removeSoldier(Soldier* soldier)
 {
 	auto iter = std::find(std::begin(_soldiers), std::end(_soldiers), soldier);
-	for (int k = 0; k < _soldiers.size(); k++) {
+	for (size_t k = 0; k < _soldiers.size(); k++) {
 		if (_soldiers[k] == soldier) {
 			_soldiers.erase(_soldiers.begin() + k);
 		}
@@ -828,7 +625,7 @@ void CovertOperationStartState::removeSoldier(Soldier* soldier)
 
 }
 
-double CovertOperationStartState::statEffectCalc(int stat, float a, float b, float c, float d)
+double CovertOperationStartState::statEffectCalc(int stat, double a, double b, double c, double d)
 {
 	double y0 = exp(pow(stat, b) / a) - 1;
 	double y1 = c * (y0/(y0 + 1)) + d;

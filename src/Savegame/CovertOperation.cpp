@@ -52,7 +52,7 @@
 namespace OpenXcom
 {
 CovertOperation::CovertOperation(const RuleCovertOperation* rule, Base* base, int cost, int chances) :
-	_rule(rule), _base(base), _spent(0), _cost(cost), _successChance(chances), _assignedScientists(0), _assignedEngineers(0),
+	_rule(rule), _base(base), _spent(0), _cost(cost), _successChance(chances),
 	_results(0), _inBattlescape(false), _hasBattlescapeResolve(false), _over(false), _hasPsi(false), _progressEventSpawned(false)
 {
 	_items = new ItemContainer();
@@ -76,8 +76,6 @@ void CovertOperation::load(const YAML::Node& node)
 	_spent = node["spent"].as<int>(_spent);
 	_cost = node["cost"].as<int>(_cost);
 	_successChance = node["successChance"].as<int>(_successChance);
-	_assignedScientists = node["assignedScientists"].as<int>(_assignedScientists);
-	_assignedEngineers = node["assignedEngineers"].as<int>(_assignedEngineers);
 	_inBattlescape = node["inBattlescape"].as<bool>(_inBattlescape);
 	_hasBattlescapeResolve = node["hasBattlescapeResolve"].as<bool>(_hasBattlescapeResolve);
 	_hasPsi =  node["hasPsi"].as<bool>(_hasPsi);
@@ -97,8 +95,6 @@ YAML::Node CovertOperation::save() const
 	node["spent"] = _spent;
 	node["cost"] = _cost;
 	node["successChance"] = _successChance;
-	node["assignedScientists"] = _assignedScientists;
-	node["assignedEngineers"] = _assignedEngineers;
 	node["hasPsi"] = _hasPsi;
 	node["inBattlescape"] = _inBattlescape;
 	node["hasBattlescapeResolve"] = _hasBattlescapeResolve;
@@ -265,11 +261,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	std::string missionName;
 	std::string deploymentName;
 	std::map<std::string, int> reputationScore;
-	//before we go process operation, let's return stuff to its base
-	int sci = this->getAssignedScientists();
-	int eng = this->getAssignedEngineers();
-	if (sci > 0) _base->setScientists(_base->getScientists() + sci);
-	if (eng > 0) _base->setEngineers(_base->getEngineers() + eng);
+
 	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //#FINNIKTODO date
 	//load results of operation
 	if (operationResult)
@@ -692,7 +684,6 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	{
 		bool dead = false;
 		int wound = 0;
-		int damage = 0;
 		++operationSoldierN;
 		UnitStats* stats = (*i)->getCurrentStats();
 		const UnitStats caps = (*i)->getRules()->getStatCaps();
@@ -701,38 +692,33 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		int healthExp = 0, braveryExp = 0, reactionsExp = 0, firingExp = 0, throwingExp = 0, meleeExp = 0, strengthExp = 0;
 		int psiSkillExp = 0, psiStrExp = 0, manaExp = 0;
 		//our dudes did something very wrong
-		if (!operationResult)
+		if (danger > 0)
 		{
+			int damage = 0;
 			int damageRolls = danger;
-			if (criticalFail)
-			{
+			if (operationResult)
+				damageRolls /= 2;
+			else if (criticalFail)
 				damageRolls *= 2;
-			}
 			for (size_t j = 0; j < danger; j++)
 			{
-				bool hit = RNG::generate(0, 99) < woundOdds;
-				if (hit)
+				if (RNG::generate(0, 99) < woundOdds)
 				{
 					bool miss = RNG::generate(0, 99) < ceil((*i)->getStatsWithAllBonuses()->reactions * 0.7);
 					if (!miss)
-					{
 						++wound;
-					}
 				}
 			}
 			if (wound > 0)
-			{
-				damage = (int)RNG::generate((wound * 8), (wound * 12));
-			}
+				damage = RNG::generate(wound * 8, wound * 12);
 			if (damage < (*i)->getCurrentStats()->health)
 			{
 				(*i)->setWoundRecovery(damage);
 				_results->addSoldierDamage((*i)->getName(), damage);
 			}
 			else
-			{
 				dead = true; //ouch, too much damage rolled!
-			}
+
 			if (!dead && criticalFail)
 			{ //OMG, Finger of Death for soldier on critical failed operation!!!
 				dead = RNG::generate(0, 99) < deathOdds + ceil(danger / 3);
@@ -743,14 +729,10 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				int protection = (*i)->getBestRoleRank().second - 2;
 				//lets add save if we have psi. Btw, there is a place for additional perks
 				if (_hasPsi)
-				{
 					protection += 3;
-				}
 				int requiredProtection = RNG::generate(1, 7 + save.getDifficultyCoefficient());
 				if (criticalFail)
-				{
 					requiredProtection += 3;
-				}
 				if (requiredProtection > protection)
 				{ //RIP...
 					soldiersToKill.push_back(*i);
@@ -759,9 +741,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				{
 					dead = false;
 					if ((*i)->getStatsWithAllBonuses()->bravery <= 20 || RNG::percent(5))
-					{
 						++braveryExp;
-					}
 				}
 			}
 		}
