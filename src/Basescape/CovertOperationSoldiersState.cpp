@@ -38,7 +38,6 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleCovertOperation.h"
 #include "../Mod/RuleInterface.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Engine/Unicode.h"
 
 namespace OpenXcom

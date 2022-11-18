@@ -24,7 +24,6 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Mod.h"
-#include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFactionEvent.h"
@@ -33,8 +32,6 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleCraft.h"
 #include "../Savegame/SavedGame.h"
-#include "../Savegame/GeoscapeEvent.h"
-#include "../Savegame/AlienStrategy.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/FactionalContainer.h"
 #include "../Savegame/FactionalResearch.h"
@@ -229,7 +226,7 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 			//spawn celebration event if faction wants it
 			if (!_rule->getDiscoverEvent().empty())
 			{
-				bool success = save.spawnEvent(engine.getMod()->getEvent(_rule->getDiscoverEvent()));
+				save.spawnEvent(engine.getMod()->getEvent(_rule->getDiscoverEvent()));
 			}
 			// update reputation level for just discovered fraction
 			mind.updateReputationLvl(this, false);
@@ -731,7 +728,7 @@ void DiplomacyFaction::manageStaff()
  * Handle balancing of Faction's power.
  * @param mod rulesets to get constant data.
  */
-int64_t DiplomacyFaction::managePower(int64_t month, int64_t baseCost)
+int64_t DiplomacyFaction::managePower(int64_t month, int64_t baseCost) //#FINNIKCHECK
 {
 	int powerHungry = _rule->getPowerHungry();
 	month += 1;

@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "CovertOperationState.h"
-#include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -29,11 +28,9 @@
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/CovertOperation.h"
-#include "../Mod/RuleCovertOperation.h"
 #include "../Basescape/CovertOperationStartState.h"
 #include "../Basescape/CovertOperationInfoState.h"
 #include "../Basescape/CovertOperationsListState.h"
-#include <algorithm>
 #include "../Engine/Logger.h"
 
 
@@ -166,7 +163,7 @@ void CovertOperationState::init()
 }
 
 /**
-* Fills the list with Base CovertOperation. Also updates count of available lab space and available personell.
+* Fills the list with Base CovertOperation. Also updates count of available lab space and available personnel.
 */
 void CovertOperationState::fillProjectList(size_t scrl)
 {

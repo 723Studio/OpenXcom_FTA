@@ -34,7 +34,6 @@ class Base;
 class Soldier;
 class RuleCovertOperation;
 class CovertOperationStartState;
-
 class Armor;
 class ArrowButton;
 

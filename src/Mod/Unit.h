@@ -74,20 +74,20 @@ struct UnitStats
 		stealth(0), perseption(0), charisma(0), investigation(0), deception(0), interrogation(0){}
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
-		int maneuvering, int missiles, int dogfight, int tracking, int cooperation, int beams, int synaptic, int gravity,
-		int physics, int chemistry, int biology, int insight, int data, int computers, int tactics, int materials,
-		int designing, int psionics, int xenolinguistics,
-		int weaponry, int explosives, int efficiency, int microelectronics, int metallurgy, int processing, int hacking, int construction,
-		int diligence, int alienTech, int reverseEngineering,
-		int stealth, int perseption, int charisma, int investigation, int deception, int interrogation) :
+		int maneuvering_, int missiles_, int dogfight_, int tracking_, int cooperation_, int beams_, int synaptic_, int gravity_,
+		int physics_, int chemistry_, int biology_, int insight_, int data_, int computers_, int tactics_, int materials_,
+		int designing_, int psionics_, int xenolinguistics_,
+		int weaponry_, int explosives_, int efficiency_, int microelectronics_, int metallurgy_, int processing_, int hacking_,
+		int construction_, int diligence_, int alienTech_, int reverseEngineering_,
+		int stealth_, int perseption_, int charisma_, int investigation_, int deception_, int interrogation_) :
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
-		maneuvering(maneuvering), missiles(missiles), dogfight(dogfight), tracking(tracking), cooperation(cooperation), beams(beams), synaptic(synaptic), gravity(gravity),
-		physics(physics), chemistry(chemistry), biology(biology), insight(insight), data(data), computers(computers), tactics(tactics), materials(materials),
-		designing(designing), psionics(psionics), xenolinguistics(xenolinguistics),
-		weaponry(weaponry), explosives(explosives), efficiency(efficiency), microelectronics(microelectronics), metallurgy(metallurgy), processing(processing),
-		hacking(hacking), construction(construction), diligence(diligence), alienTech(alienTech), reverseEngineering(reverseEngineering),
-		stealth(stealth), perseption(perseption), charisma(charisma), investigation(investigation), deception(deception), interrogation(interrogation) {};
+		maneuvering(maneuvering_), missiles(missiles_), dogfight(dogfight_), tracking(tracking_), cooperation(cooperation_), beams(beams_), synaptic(synaptic_), gravity(gravity_),
+		physics(physics_), chemistry(chemistry_), biology(biology_), insight(insight_), data(data_), computers(computers_), tactics(tactics_), materials(materials_),
+		designing(designing_), psionics(psionics_), xenolinguistics(xenolinguistics_),
+		weaponry(weaponry_), explosives(explosives_), efficiency(efficiency_), microelectronics(microelectronics_), metallurgy(metallurgy_), processing(processing_),
+		hacking(hacking_), construction(construction_), diligence(diligence_), alienTech(alienTech_), reverseEngineering(reverseEngineering_),
+		stealth(stealth_), perseption(perseption_), charisma(charisma_), investigation(investigation_), deception(deception_), interrogation(interrogation_) {}
 	UnitStats& operator+=(const UnitStats& stats) {
 		tu += stats.tu;
 		stamina += stats.stamina;

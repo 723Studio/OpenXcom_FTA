@@ -28,15 +28,11 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/CovertOperation.h"
 #include "../Mod/RuleCovertOperation.h"
 #include "../Basescape/CovertOperationStartState.h"
 #include "../Basescape/CovertOperationInfoState.h"
-#include <algorithm>
 #include "../Engine/Logger.h"
-
 #include "../Interface/TextEdit.h"
-#include "../Engine/Game.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFaction.h"
