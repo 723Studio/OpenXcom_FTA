@@ -109,8 +109,6 @@ public:
 	bool think(Game& engine, const Globe& globe);
 	/// Process soldier's actions results in covert operation
 	void backgroundSimulation(Game& engine, bool operationResult, bool criticalFail, int woundOdds, int deathOdds);
-	/// Converts the number of experience to the stat increase.
-	int improveStat(int exp) const;
 	/// Takes care to finish covert operation.
 	void finishOperation();
 };
