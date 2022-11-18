@@ -199,7 +199,7 @@ void ResearchInfoStateFtA::buildUi()
 		x += offset;
 	}
 
-	_txtInsight->setText(tr(UnitStats::getStatString(&UnitStats::insight, UnitStats::STATSTR_SHORT)));
+	_txtInsight->setText(tr(UnitStats::getStatString(&UnitStats::insight, UnitStats::STATSTR_ABBREV)));
 	_txtInsight->setX(x);
 
 	_lstScientists->setColumns(9, 116, 32, 18, 18, 18, 18, 18, 18, 18);
@@ -253,27 +253,27 @@ int ResearchInfoStateFtA::GetStatValue(Soldier &s, const std::string &desc)
 {
 	
 	const UnitStats *sStats = s.getCurrentStats();
-	if (desc == UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_ABBREV))
 		return sStats->physics;
-	if (desc == UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_ABBREV))
 		return sStats->chemistry;
-	if (desc == UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_ABBREV))
 		return sStats->biology;
-	if (desc == UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_ABBREV))
 		return sStats->data;
-	if (desc == UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_ABBREV))
 		return sStats->computers;
-	if (desc == UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_ABBREV))
 		return sStats->tactics;
-	if (desc == UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_ABBREV))
 		return sStats->materials;
-	if (desc == UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_ABBREV))
 		return sStats->designing;
-	if (desc == UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_ABBREV))
 		return sStats->alienTech;
-	if (desc == UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_ABBREV))
 		return sStats->psionics;
-	if (desc == UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT))
+	if (desc == UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_ABBREV))
 		return sStats->xenolinguistics;
 
 	Log(LOG_ERROR) << "Link to undefined stat: " << desc;
@@ -410,58 +410,58 @@ std::pair<int, std::string> ResearchInfoStateFtA::getStatString(size_t position)
 
 	if (stats.physics > 0)
 	{
-		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.physics, UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.physics, UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.chemistry > 0)
 	{
-		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.chemistry, UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.chemistry, UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.biology > 0)
 	{
-		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.biology, UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.biology, UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.data > 0)
 	{
-		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.data, UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.data, UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.computers > 0)
 	{
-		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.computers, UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.computers, UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.tactics > 0)
 	{
-		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.tactics, UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.tactics, UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.materials > 0)
 	{
-		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.materials, UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.materials, UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.designing > 0)
 	{
-		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.designing, UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.designing, UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.alienTech > 0)
 	{
-		statMap.insert(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.alienTech, UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.alienTech, UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.psionics > 0)
 	{
-		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.psionics, UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.psionics, UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_ABBREV)));
 	}
 	if (stats.xenolinguistics > 0)
 	{
-		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT))));
-		_researchStats.insert(std::make_pair(stats.xenolinguistics, UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_SHORT)));
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_ABBREV))));
+		_researchStats.insert(std::make_pair(stats.xenolinguistics, UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_ABBREV)));
 	}
 
 	size_t pos = 0;

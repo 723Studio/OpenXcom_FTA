@@ -45,7 +45,7 @@ struct UnitStats
 	using Type = Sint16;
 	using Ptr = Type UnitStats::*;
 
-	enum StatStringType {STATSTR_UC, STATSTR_LC, STATSTR_SHORT};
+	enum StatStringType {STATSTR_UC, STATSTR_LC, STATSTR_ABBREV, STATSTR_SHORT};
 
 	/// Max value that is allowed to set to stat, less that max value allowed by type.
 	constexpr static int BaseStatLimit = 8000;
@@ -71,7 +71,7 @@ struct UnitStats
 		designing(0), psionics(0), xenolinguistics(0),
 		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), construction(0),
 		diligence(0), alienTech(0), reverseEngineering(0),
-		stealth(0), perseption(0), charisma(0), investigation(0), deception(0), interrogation(0){};
+		stealth(0), perseption(0), charisma(0), investigation(0), deception(0), interrogation(0){}
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
 		int maneuvering, int missiles, int dogfight, int tracking, int cooperation, int beams, int synaptic, int gravity,
@@ -443,6 +443,9 @@ struct UnitStats
 					break;
 				case STATSTR_SHORT:
 					suffix = "_SHORT";
+					break;
+				case STATSTR_ABBREV:
+					suffix = "_ABBREV";
 					break;
 				}
 

@@ -79,6 +79,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_localChange = false;
 
 	// Create objects
+	defineStatLines();
 	_bg = new Surface(320, 200, 0, 0);
 	_rank = new Surface(26, 23, 4, 4);
 	_flag = new InteractiveSurface(40, 20, 275, 6);
@@ -107,8 +108,6 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId) : _base(base), 
 	_txtOperation = new Text(180, 9, 0, 64);
 	_txtPsionic = new Text(150, 9, 0, 66);
 	_txtDead = new Text(150, 9, 130, 33);
-
-	defineStatLines();
 
 	// Set palette
 	setInterface("soldierInfo");
@@ -610,6 +609,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtManeuvering = new Text(120, 9, 6, yPos);
 	_numManeuvering = new Text(18, 9, 131, yPos);
 	_barManeuvering = new Bar(170, 7, 150, yPos);
+	_txtStealth = new Text(120, 9, 6, yPos);
+	_numStealth = new Text(18, 9, 131, yPos);
+	_barStealth = new Bar(170, 7, 150, yPos);
 	_txtPhysics = new Text(120, 9, 6, yPos);
 	_numPhysics = new Text(18, 9, 131, yPos);
 	_barPhysics = new Bar(170, 7, 150, yPos);
@@ -624,6 +626,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtMissiles = new Text(120, 9, 6, yPos);
 	_numMissiles = new Text(18, 9, 131, yPos);
 	_bartMissiles = new Bar(170, 7, 150, yPos);
+	_txtPerseption = new Text(120, 9, 6, yPos);
+	_numPerseption = new Text(18, 9, 131, yPos);
+	_barPerseption = new Bar(170, 7, 150, yPos);
 	_txtChemistry = new Text(120, 9, 6, yPos);
 	_numChemistry = new Text(18, 9, 131, yPos);
 	_barChemistry = new Bar(170, 7, 150, yPos);
@@ -638,6 +643,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtDogfight = new Text(120, 9, 6, yPos);
 	_numDogfight = new Text(18, 9, 131, yPos);
 	_barDogfight = new Bar(170, 7, 150, yPos);
+	_txtCharisma = new Text(120, 9, 6, yPos);
+	_numCharisma = new Text(18, 9, 131, yPos);
+	_barCharisma = new Bar(170, 7, 150, yPos);
 	_txtBiology = new Text(120, 9, 6, yPos);
 	_numBiology = new Text(18, 9, 131, yPos);
 	_barBiology = new Bar(170, 7, 150, yPos);
@@ -677,6 +685,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtCooperation = new Text(120, 9, 6, yPos);
 	_numCooperation = new Text(18, 9, 131, yPos);
 	_barCooperation = new Bar(170, 7, 150, yPos);
+	_txtInvestigation = new Text(120, 9, 6, yPos);
+	_numInvestigation = new Text(18, 9, 131, yPos);
+	_barInvestigation = new Bar(170, 7, 150, yPos);
 	_txtComputers = new Text(120, 9, 6, yPos);
 	_numComputers = new Text(18, 9, 131, yPos);
 	_barComputers = new Bar(170, 7, 150, yPos);
@@ -691,6 +702,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtBeams = new Text(120, 9, 6, yPos);
 	_numBeams = new Text(18, 9, 131, yPos);
 	_barBeams = new Bar(170, 7, 150, yPos);
+	_txtDeception = new Text(120, 9, 6, yPos);
+	_numDeception = new Text(18, 9, 131, yPos);
+	_barDeception = new Bar(170, 7, 150, yPos);
 	_txtTactics = new Text(120, 9, 6, yPos);
 	_numTactics = new Text(18, 9, 131, yPos);
 	_barTactics = new Bar(170, 7, 150, yPos);
@@ -705,12 +719,15 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtSynaptic = new Text(120, 9, 6, yPos);
 	_numSynaptic = new Text(18, 9, 131, yPos);
 	_barSynaptic = new Bar(170, 7, 150, yPos);
+	_txtInterrogation = new Text(120, 9, 6, yPos);
+	_numInterrogation = new Text(18, 9, 131, yPos);
+	_barInterrogation = new Bar(170, 7, 150, yPos);
 	_txtMaterials = new Text(120, 9, 6, yPos);
 	_numMaterials = new Text(18, 9, 131, yPos);
 	_barMaterials = new Bar(170, 7, 150, yPos);
-	_txtHacking = new Text(120, 9, 6, yPos);
-	_numHacking = new Text(18, 9, 131, yPos);
-	_barHacking = new Bar(170, 7, 150, yPos);
+	_txtConstruction = new Text(120, 9, 6, yPos);
+	_numConstruction = new Text(18, 9, 131, yPos);
+	_barConstruction = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtStrength = new Text(120, 9, 6, yPos);
@@ -722,9 +739,9 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtDesigning = new Text(120, 9, 6, yPos);
 	_numDesigning = new Text(18, 9, 131, yPos);
 	_barDesigning = new Bar(170, 7, 150, yPos);
-	_txtConstruction = new Text(120, 9, 6, yPos);
-	_numConstruction = new Text(18, 9, 131, yPos);
-	_barConstruction = new Bar(170, 7, 150, yPos);
+	_txtHacking = new Text(120, 9, 6, yPos);
+	_numHacking = new Text(18, 9, 131, yPos);
+	_barHacking = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtMana = new Text(120, 9, 6, yPos);
@@ -733,7 +750,6 @@ void OpenXcom::SoldierInfoState::defineStatLines()
 	_txtAlienTech = new Text(120, 9, 6, yPos);
 	_numAlienTech = new Text(18, 9, 131, yPos);
 	_barAlienTech = new Bar(170, 7, 150, yPos);
-	
 	yPos += step;
 
 	_txtPsiStrength = new Text(120, 9, 6, yPos);
@@ -763,6 +779,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtManeuvering, "text2", "soldierInfo");
 	add(_numManeuvering, "numbers", "soldierInfo");
 	add(_barManeuvering, "barManeuvering", "soldierInfo");
+	add(_txtStealth, "text2", "soldierInfo");
+	add(_numStealth, "numbers", "soldierInfo");
+	add(_barStealth, "barStealth", "soldierInfo");
 	add(_txtPhysics, "text2", "soldierInfo");
 	add(_numPhysics, "numbers", "soldierInfo");
 	add(_barPhysics, "barPhysics", "soldierInfo");
@@ -776,6 +795,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtMissiles, "text2", "soldierInfo");
 	add(_numMissiles, "numbers", "soldierInfo");
 	add(_bartMissiles, "bartMissiles", "soldierInfo");
+	add(_txtPerseption, "text2", "soldierInfo");
+	add(_numPerseption, "numbers", "soldierInfo");
+	add(_barPerseption, "barPerseption", "soldierInfo");
 	add(_txtChemistry, "text2", "soldierInfo");
 	add(_numChemistry, "numbers", "soldierInfo");
 	add(_barChemistry, "barChemistry", "soldierInfo");
@@ -789,6 +811,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtDogfight, "text2", "soldierInfo");
 	add(_numDogfight, "numbers", "soldierInfo");
 	add(_barDogfight, "barDogfight", "soldierInfo");
+	add(_txtCharisma, "text2", "soldierInfo");
+	add(_numCharisma, "numbers", "soldierInfo");
+	add(_barCharisma, "barCharisma", "soldierInfo");
 	add(_txtBiology, "text2", "soldierInfo");
 	add(_numBiology, "numbers", "soldierInfo");
 	add(_barBiology, "barBiology", "soldierInfo");
@@ -812,6 +837,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtTracking, "text2", "soldierInfo");
 	add(_numTracking, "numbers", "soldierInfo");
 	add(_barTracking, "barTracking", "soldierInfo");
+	add(_txtInvestigation, "text2", "soldierInfo");
+	add(_numInvestigation, "numbers", "soldierInfo");
+	add(_barInvestigation, "barInvestigation", "soldierInfo");
 	add(_txtData, "text2", "soldierInfo");
 	add(_numData, "numbers", "soldierInfo");
 	add(_barData, "barData", "soldierInfo");
@@ -825,6 +853,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtCooperation, "text2", "soldierInfo");
 	add(_numCooperation, "numbers", "soldierInfo");
 	add(_barCooperation, "barCooperation", "soldierInfo");
+	add(_txtDeception, "text2", "soldierInfo");
+	add(_numDeception, "numbers", "soldierInfo");
+	add(_barDeception, "barDeception", "soldierInfo");
 	add(_txtComputers, "text2", "soldierInfo");
 	add(_numComputers, "numbers", "soldierInfo");
 	add(_barComputers, "barComputers", "soldierInfo");
@@ -838,6 +869,9 @@ void OpenXcom::SoldierInfoState::addStatLines()
 	add(_txtBeams, "text2", "soldierInfo");
 	add(_numBeams, "numbers", "soldierInfo");
 	add(_barBeams, "barBeams", "soldierInfo");
+	add(_txtInterrogation, "text2", "soldierInfo");
+	add(_numInterrogation, "numbers", "soldierInfo");
+	add(_barInterrogation, "barInterrogation", "soldierInfo");
 	add(_txtTactics, "text2", "soldierInfo");
 	add(_numTactics, "numbers", "soldierInfo");
 	add(_barTactics, "barTactics", "soldierInfo");
@@ -898,100 +932,112 @@ void OpenXcom::SoldierInfoState::addStatLines()
 
 void OpenXcom::SoldierInfoState::nameBars()
 {
-	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
+	_txtTimeUnits->setText(tr(UnitStats::getStatString(&UnitStats::tu)));
 	_barTimeUnits->setScale(1.0);
-	_txtManeuvering->setText(tr("STR_MANEUVERING"));
+	_txtManeuvering->setText(tr(UnitStats::getStatString(&UnitStats::maneuvering)));
 	_barManeuvering->setScale(1.0);
-	_txtPhysics->setText(tr("STR_PHYSICS_UC"));
+	_txtStealth->setText(tr(UnitStats::getStatString(&UnitStats::stealth)));
+	_barStealth->setScale(1.0);
+	_txtPhysics->setText(tr(UnitStats::getStatString(&UnitStats::physics)));
 	_barPhysics->setScale(1.0);
-	_txtWeaponry->setText(tr("STR_WEAPONRY_UC"));
+	_txtWeaponry->setText(tr(UnitStats::getStatString(&UnitStats::weaponry)));
 	_barWeaponry->setScale(1.0);
 
-	_txtStamina->setText(tr("STR_STAMINA"));
+	_txtStamina->setText(tr(UnitStats::getStatString(&UnitStats::stamina)));
 	_barStamina->setScale(1.0);
-	_txtMissiles->setText(tr("STR_MISSILE_OPERATION"));
+	_txtMissiles->setText(tr(UnitStats::getStatString(&UnitStats::missiles)));
 	_bartMissiles->setScale(1.0);
-	_txtChemistry->setText(tr("STR_CHEMISTRY_UC"));
+	_txtPerseption->setText(tr(UnitStats::getStatString(&UnitStats::perseption)));
+	_barPerseption->setScale(1.0);
+	_txtChemistry->setText(tr(UnitStats::getStatString(&UnitStats::chemistry)));
 	_barChemistry->setScale(1.0);
-	_txtExplosives->setText(tr("STR_EXPLOSIVES_UC"));
+	_txtExplosives->setText(tr(UnitStats::getStatString(&UnitStats::explosives)));
 	_barExplosives->setScale(1.0);
 
-	_txtHealth->setText(tr("STR_HEALTH"));
+	_txtHealth->setText(tr(UnitStats::getStatString(&UnitStats::health)));
 	_barHealth->setScale(1.0);
-	_txtDogfight->setText(tr("STR_DOGFIGHT"));
+	_txtDogfight->setText(tr(UnitStats::getStatString(&UnitStats::dogfight)));
 	_barDogfight->setScale(1.0);
-	_txtBiology->setText(tr("STR_BIOLOGY_UC"));
+	_txtCharisma->setText(tr(UnitStats::getStatString(&UnitStats::charisma)));
+	_barCharisma->setScale(1.0);
+	_txtBiology->setText(tr(UnitStats::getStatString(&UnitStats::biology)));
 	_barBiology->setScale(1.0);
-	_txtMicroelectronics->setText(tr("STR_MICROELECTRONICS_UC"));
+	_txtMicroelectronics->setText(tr(UnitStats::getStatString(&UnitStats::microelectronics)));
 	_barMicroelectronics->setScale(1.0);
 
-	_txtBravery->setText(tr("STR_BRAVERY"));
+	_txtBravery->setText(tr(UnitStats::getStatString(&UnitStats::bravery)));
 	_barBravery->setScale(1.0);
-	_txtInsight->setText(tr("STR_INSIGHT_UC"));
+	_txtInsight->setText(tr(UnitStats::getStatString(&UnitStats::insight)));
 	_barInsight->setScale(1.0);
-	_txtMetallurgy->setText(tr("STR_METALLURGY_UC"));
+	_txtMetallurgy->setText(tr(UnitStats::getStatString(&UnitStats::metallurgy)));
 	_barMetallurgy->setScale(1.0);
 
-	_txtReactions->setText(tr("STR_REACTIONS"));
+	_txtReactions->setText(tr(UnitStats::getStatString(&UnitStats::reactions)));
 	_barReactions->setScale(1.0);
-	_txtTracking->setText(tr("STR_TRACKING"));
+	_txtTracking->setText(tr(UnitStats::getStatString(&UnitStats::tracking)));
 	_barTracking->setScale(1.0);
-	_txtData->setText(tr("STR_DATA_ANALISIS_UC"));
+	_txtInvestigation->setText(tr(UnitStats::getStatString(&UnitStats::investigation)));
+	_barInvestigation->setScale(1.0);
+	_txtData->setText(tr(UnitStats::getStatString(&UnitStats::data)));
 	_barData->setScale(1.0);
-	_txtProcessing->setText(tr("STR_PROCESSING_UC"));
+	_txtProcessing->setText(tr(UnitStats::getStatString(&UnitStats::processing)));
 	_barProcessing->setScale(1.0);
 
-	_txtFiring->setText(tr("STR_FIRING_ACCURACY"));
+	_txtFiring->setText(tr(UnitStats::getStatString(&UnitStats::firing)));
 	_barFiring->setScale(1.0);
-	_txtCooperation->setText(tr("STR_COOPERATION"));
+	_txtCooperation->setText(tr(UnitStats::getStatString(&UnitStats::cooperation)));
 	_barCooperation->setScale(1.0);
-	_txtComputers->setText(tr("STR_COMPUTER_SCIENCE_UC"));
+	_txtDeception->setText(tr(UnitStats::getStatString(&UnitStats::deception)));
+	_barDeception->setScale(1.0);
+	_txtComputers->setText(tr(UnitStats::getStatString(&UnitStats::computers)));
 	_barComputers->setScale(1.0);
-	_txtEfficiency->setText(tr("STR_EFFICIENCY_UC"));
+	_txtEfficiency->setText(tr(UnitStats::getStatString(&UnitStats::efficiency)));
 	_barEfficiency->setScale(1.0);
 
-	_txtThrowing->setText(tr("STR_THROWING_ACCURACY"));
+	_txtThrowing->setText(tr(UnitStats::getStatString(&UnitStats::throwing)));
 	_barThrowing->setScale(1.0);
-	_txtBeams->setText(tr("STR_BEAMS_OPERATION"));
+	_txtBeams->setText(tr(UnitStats::getStatString(&UnitStats::beams)));
 	_barBeams->setScale(1.0);
-	_txtTactics->setText(tr("STR_TACTICS_UC"));
+	_txtInterrogation->setText(tr(UnitStats::getStatString(&UnitStats::interrogation)));
+	_barInterrogation->setScale(1.0);
+	_txtTactics->setText(tr(UnitStats::getStatString(&UnitStats::tactics)));
 	_barTactics->setScale(1.0);
-	_txtDiligence->setText(tr("STR_DILIGENCE_UC"));
+	_txtDiligence->setText(tr(UnitStats::getStatString(&UnitStats::diligence)));
 	_barDiligence->setScale(1.0);
 
-	_txtMelee->setText(tr("STR_MELEE_ACCURACY"));
+	_txtMelee->setText(tr(UnitStats::getStatString(&UnitStats::melee)));
 	_barMelee->setScale(1.0);
-	_txtSynaptic->setText(tr("STR_SYNAPTIC_CONNECTIVITY"));
+	_txtSynaptic->setText(tr(UnitStats::getStatString(&UnitStats::synaptic)));
 	_barSynaptic->setScale(1.0);
-	_txtMaterials->setText(tr("STR_MATERIAL_SCIENCE_UC"));
+	_txtMaterials->setText(tr(UnitStats::getStatString(&UnitStats::materials)));
 	_barMaterials->setScale(1.0);
-	_txtHacking->setText(tr("STR_HACKING_UC"));
+	_txtHacking->setText(tr(UnitStats::getStatString(&UnitStats::hacking)));
 	_barHacking->setScale(1.0);
 
-	_txtStrength->setText(tr("STR_STRENGTH"));
+	_txtStrength->setText(tr(UnitStats::getStatString(&UnitStats::strength)));
 	_barStrength->setScale(1.0);
-	_txtGravity->setText(tr("STR_GRAVITY_MANIPULATION"));
+	_txtGravity->setText(tr(UnitStats::getStatString(&UnitStats::gravity)));
 	_barGravity->setScale(1.0);
-	_txtDesigning->setText(tr("STR_DESIGNING_UC"));
+	_txtDesigning->setText(tr(UnitStats::getStatString(&UnitStats::designing)));
 	_barDesigning->setScale(1.0);
-	_txtConstruction->setText(tr("STR_CONSTRUCTION_UC"));
+	_txtConstruction->setText(tr(UnitStats::getStatString(&UnitStats::construction)));
 	_barConstruction->setScale(1.0);
 
-	_txtMana->setText(tr("STR_MANA_POOL"));
+	_txtMana->setText(tr(UnitStats::getStatString(&UnitStats::mana)));
 	_barMana->setScale(1.0);
-	_txtAlienTech->setText(tr("STR_ALIEN_TECH_UC"));
+	_txtAlienTech->setText(tr(UnitStats::getStatString(&UnitStats::alienTech)));
 	_barAlienTech->setScale(1.0);
 
-	_txtPsiStrength->setText(tr("STR_PSIONIC_STRENGTH"));
+	_txtPsiStrength->setText(tr(UnitStats::getStatString(&UnitStats::psiStrength)));
 	_barPsiStrength->setScale(1.0);
-	_txtPsionics->setText(tr("STR_PSIONICS_UC"));
+	_txtPsionics->setText(tr(UnitStats::getStatString(&UnitStats::psionics)));
 	_barPsionics->setScale(1.0);
-	_txtReverseEngineering->setText(tr("STR_REVERSE_ENGINEERING_UC"));
+	_txtReverseEngineering->setText(tr(UnitStats::getStatString(&UnitStats::reverseEngineering)));
 	_barReverseEngineering->setScale(1.0);
 
-	_txtPsiSkill->setText(tr("STR_PSIONIC_SKILL"));
+	_txtPsiSkill->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill)));
 	_barPsiSkill->setScale(1.0);
-	_txtXenolinguistics->setText(tr("STR_XENOLINGUISTICS_UC"));
+	_txtXenolinguistics->setText(tr(UnitStats::getStatString(&UnitStats::xenolinguistics)));
 	_barXenolinguistics->setScale(1.0);
 }
 
@@ -1025,6 +1071,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barWeaponry->setMax(current->weaponry);
 	_barWeaponry->setValue(withArmor.weaponry);
 	_barWeaponry->setValue2(std::min(withArmor.weaponry, initial->weaponry));
+	std::ostringstream ss51;
+	ss51 << withArmor.stealth;
+	_numStealth->setText(ss51.str());
+	_barStealth->setMax(current->stealth);
+	_barStealth->setValue(withArmor.stealth);
+	_barStealth->setValue2(std::min(withArmor.stealth, initial->stealth));
 
 	std::ostringstream ss2;
 	ss2 << withArmor.stamina;
@@ -1050,6 +1102,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barExplosives->setMax(current->explosives);
 	_barExplosives->setValue(withArmor.explosives);
 	_barExplosives->setValue2(std::min(withArmor.explosives, initial->explosives));
+	std::ostringstream ss52;
+	ss52 << withArmor.perseption;
+	_numPerseption->setText(ss52.str());
+	_barPerseption->setMax(current->perseption);
+	_barPerseption->setValue(withArmor.perseption);
+	_barPerseption->setValue2(std::min(withArmor.perseption, initial->perseption));
 
 	std::ostringstream ss3;
 	ss3 << withArmor.health;
@@ -1075,6 +1133,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barMicroelectronics->setMax(current->microelectronics);
 	_barMicroelectronics->setValue(withArmor.microelectronics);
 	_barMicroelectronics->setValue2(std::min(withArmor.microelectronics, initial->microelectronics));
+	std::ostringstream ss53;
+	ss53 << withArmor.charisma;
+	_numCharisma->setText(ss53.str());
+	_barCharisma->setMax(current->charisma);
+	_barCharisma->setValue(withArmor.charisma);
+	_barCharisma->setValue2(std::min(withArmor.charisma, initial->charisma));
 
 	std::ostringstream ss4;
 	ss4 << withArmor.bravery;
@@ -1119,6 +1183,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barProcessing->setMax(current->processing);
 	_barProcessing->setValue(withArmor.processing);
 	_barProcessing->setValue2(std::min(withArmor.processing, initial->processing));
+	std::ostringstream ss55;
+	ss55 << withArmor.investigation;
+	_numInvestigation->setText(ss55.str());
+	_barInvestigation->setMax(current->investigation);
+	_barInvestigation->setValue(withArmor.investigation);
+	_barInvestigation->setValue2(std::min(withArmor.investigation, initial->investigation));
 
 	std::ostringstream ss6;
 	ss6 << withArmor.firing;
@@ -1144,6 +1214,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barEfficiency->setMax(current->efficiency);
 	_barEfficiency->setValue(withArmor.efficiency);
 	_barEfficiency->setValue2(std::min(withArmor.efficiency, initial->efficiency));
+	std::ostringstream ss56;
+	ss56 << withArmor.deception;
+	_numDeception->setText(ss56.str());
+	_barDeception->setMax(current->deception);
+	_barDeception->setValue(withArmor.deception);
+	_barDeception->setValue2(std::min(withArmor.deception, initial->deception));
 
 	std::ostringstream ss7;
 	ss7 << withArmor.throwing;
@@ -1169,6 +1245,12 @@ void OpenXcom::SoldierInfoState::fillNumbers()
 	_barDiligence->setMax(current->diligence);
 	_barDiligence->setValue(withArmor.diligence);
 	_barDiligence->setValue2(std::min(withArmor.diligence, initial->diligence));
+	std::ostringstream ss57;
+	ss57 << withArmor.interrogation;
+	_numInterrogation->setText(ss57.str());
+	_barInterrogation->setMax(current->interrogation);
+	_barInterrogation->setValue(withArmor.interrogation);
+	_barInterrogation->setValue2(std::min(withArmor.interrogation, initial->interrogation));
 
 	std::ostringstream ss8;
 	ss8 << withArmor.melee;
@@ -1309,6 +1391,44 @@ void SoldierInfoState::updateVisibility()
 		_txtStrength->setVisible(true);
 		_numStrength->setVisible(true);
 		_barStrength->setVisible(true);
+	}
+	else if (selected == ROLE_AGENT)
+	{
+		_txtStealth->setVisible(true);
+		_numStealth->setVisible(true);
+		_barStealth->setVisible(true);
+
+		_txtPerseption->setVisible(true);
+		_numPerseption->setVisible(true);
+		_barPerseption->setVisible(true);
+
+		_txtCharisma->setVisible(true);
+		_numCharisma->setVisible(true);
+		_barCharisma->setVisible(true);
+
+		_txtBravery->setVisible(true);
+		_numBravery->setVisible(true);
+		_barBravery->setVisible(true);
+
+		_txtData->setVisible(true);
+		_numData->setVisible(true);
+		_barData->setVisible(true);
+
+		_txtInvestigation->setVisible(true);
+		_numInvestigation->setVisible(true);
+		_barInvestigation->setVisible(true);
+
+		_txtDeception->setVisible(true);
+		_numDeception->setVisible(true);
+		_barDeception->setVisible(true);
+
+		_txtInterrogation->setVisible(true);
+		_numInterrogation->setVisible(true);
+		_barInterrogation->setVisible(true);
+
+		_txtHacking->setVisible(true);
+		_numHacking->setVisible(true);
+		_barHacking->setVisible(true);
 	}
 	else if (selected == ROLE_PILOT)
 	{
@@ -1472,7 +1592,7 @@ void OpenXcom::SoldierInfoState::displayPsionic(SoldierRole selected)
 {
 	if (_game->getMod()->isManaFeatureEnabled()
 		&& _game->getSavedGame()->isManaUnlocked(_game->getMod())
-		&& (selected == ROLE_SOLDIER || selected == ROLE_AGENT)) 
+		&& (selected == ROLE_SOLDIER || selected == ROLE_AGENT)) //mana can be hidden for agent to free space for yet another stat...
 	{
 		_txtMana->setVisible(true);
 		_numMana->setVisible(true);
@@ -1577,6 +1697,31 @@ void OpenXcom::SoldierInfoState::hideAllStats()
 	_txtGravity->setVisible(false);
 	_numGravity->setVisible(false);
 	_barGravity->setVisible(false);
+
+	//hide agent
+	_txtStealth->setVisible(false);
+	_numStealth->setVisible(false);
+	_barStealth->setVisible(false);
+
+	_txtPerseption->setVisible(false);
+	_numPerseption->setVisible(false);
+	_barPerseption->setVisible(false);
+
+	_txtCharisma->setVisible(false);
+	_numCharisma->setVisible(false);
+	_barCharisma->setVisible(false);
+
+	_txtInvestigation->setVisible(false);
+	_numInvestigation->setVisible(false);
+	_barInvestigation->setVisible(false);
+
+	_txtDeception->setVisible(false);
+	_numDeception->setVisible(false);
+	_barDeception->setVisible(false);
+
+	_txtInterrogation->setVisible(false);
+	_numInterrogation->setVisible(false);
+	_barInterrogation->setVisible(false);
 
 	// hide science
 	_txtPhysics->setVisible(false);
