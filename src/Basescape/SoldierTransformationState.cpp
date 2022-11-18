@@ -574,6 +574,7 @@ void SoldierTransformationState::btnStartClick(Action *action)
 	}
 
 	// Here we go
+	_sourceSoldier->clearBaseDuty();
 	if (!Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
 	{
 		retire();
