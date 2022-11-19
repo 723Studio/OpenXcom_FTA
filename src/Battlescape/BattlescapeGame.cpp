@@ -1947,7 +1947,7 @@ void BattlescapeGame::primaryAction(Position pos)
 				}
 			}
 		}
-		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->getIsFTAGame())
+		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->isFTAGame())
 		{
 			auto targetUnit = _save->selectUnit(pos);
 			auto battleObject = _save->getTile(pos)->getBattleObject();
