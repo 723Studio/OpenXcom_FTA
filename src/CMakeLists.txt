@@ -108,6 +108,7 @@ set ( battlescape_src
   Battlescape/ExplosionBState.cpp
   Battlescape/ExtendedBattlescapeLinksState.cpp
   Battlescape/ExtendedInventoryLinksState.cpp
+  Battlescape/HackingBState.cpp
   Battlescape/InfoboxOKState.cpp
   Battlescape/InfoboxState.cpp
   Battlescape/Inventory.cpp
