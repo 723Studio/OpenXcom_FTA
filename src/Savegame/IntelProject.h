@@ -56,8 +56,8 @@ public:
 	/// getters and setters
 	const std::string getName() const;
 	const RuleIntelProject* getRules() const { return _rules; }
-	const bool getActive() const { return _active; }
-	const int getRolls() const { return _rolls; }
+	bool getActive() const { return _active; }
+	int getRolls() const { return _rolls; }
 	int getCost() { return _cost; }
 	void setCost(int cost) { _cost = cost; }
 	/// load the IntelProject from YAML

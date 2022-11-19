@@ -408,7 +408,7 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 	std::string missionRace;
 	int targetZone = missionRules->getSpawnZone();
 
-	bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
+	//bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
 	bool targetBase = RNG::percent(missionRules->getTargetBaseOdds());
 	bool placed = false;
 	bool baseTargeted = true;

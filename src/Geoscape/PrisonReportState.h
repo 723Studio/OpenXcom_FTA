@@ -42,10 +42,10 @@ class PrisonReportState : public State
 	Window *_window;
 	Text *_txtTitle, *_txtDescription;
 	TextButton *_btnDetails, *_btnOk;
-	const RuleResearch * _research = nullptr, * _bonus = nullptr;
+	const RuleResearch * _research, * _bonus;
 	BasePrisoner* _prisoner;
 	Base* _base;
-	Soldier* _soldier = nullptr;
+	Soldier* _soldier;
 	PrisonerReportCase _reportCase;
 public:
 	/// Creates the PrisonReportState for case of prisoner's death.

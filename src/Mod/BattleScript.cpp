@@ -22,9 +22,7 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Logger.h"
-#include "../Mod/RuleTerrain.h"
 #include <climits>
-
 
 namespace OpenXcom
 {
@@ -32,7 +30,7 @@ namespace OpenXcom
 BattleScript::BattleScript() :
 	_type(BSC_UNDEFINED), 
 	_executionChances(100), _executions(1), _maxRuns(-1), _label(0), _startTurn(0), _endTurn(-1), _unitSide(1),
-	_minLevel(0), _maxLevel(0), _packSize(1), _randomPackSize(false),
+	_packSize(1), _minLevel(0), _maxLevel(0), _randomPackSize(false),
 	_minDifficulty(0), _maxDifficulty(4), _minAlarmLevel(0), _maxAlarmLevel(INT_MAX), _variable("battleScriptVariable")
 {
 }

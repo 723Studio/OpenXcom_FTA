@@ -38,7 +38,7 @@ private:
 	int _sellPriceFactor, _buyPriceFactor, _repPriceFactor, _stockMod, _powerHungry, _scienceBaseCost;
 	int _startingReputation, _startingFunds, _startingPower;
 	std::map<std::string, int> _startingItems, _startingStaff, _staffWeights;
-	std::map<std::string, double> _wishList;
+	std::map<std::string, int> _wishList;
 	std::vector<std::string> _helpTreatyMissions, _helpTreatyEventScripts, _usualEventsScripts, _happyEvents, _angryEvents, _startingResearches, _factionalEvents;
 public:
 	/// Creates a blank RuleDiplomacyFaction.
@@ -63,9 +63,9 @@ public:
 	/// Gets the Faction's starting reputation.
 	const int& getStartingReputation() const { return _startingReputation; }
 	/// Gets the Faction's starting funds.
-	int getStartingFunds() const { return _startingFunds; };
+	int getStartingFunds() const { return _startingFunds; }
 	/// Gets the Faction's starting power.
-	int getStartingPower() const { return _startingPower; };
+	int getStartingPower() const { return _startingPower; }
 	/// Gets the set of Faction's starting items.
 	const std::map<std::string, int>& getStartingItems() const { return _startingItems; }
 	/// Gets the set of Faction's starting non-item property and personell.
@@ -77,9 +77,9 @@ public:
 	/// Gets help treaty mission scripts for the faction.
 	const std::vector<std::string>& getHelpTreatyMissions() const { return _helpTreatyMissions; }
 	/// Gets mission frequency for generating.
-	int getGenMissionFrequency() const { return _genMissionFrequency; };
+	int getGenMissionFrequency() const { return _genMissionFrequency; }
 	/// Gets time gap for help treaty missions.
-	int getHelpTreatyGap() const { return _helpTreatyGap; };
+	int getHelpTreatyGap() const { return _helpTreatyGap; }
 	/// Gets geoscape event scripts to run as help treaty list.
 	const std::vector<std::string>& getHelpTreatyEventScripts() const { return _helpTreatyEventScripts; }
 	/// Gets geoscape event scripts to run without any factional's condition.
@@ -91,16 +91,16 @@ public:
 	/// Gets internal factional events to process.
 	const std::vector<std::string>& getFactionalEvents() const { return _factionalEvents; }
 	/// Gets power hungry value.
-	int getPowerHungry() const { return _powerHungry; };
+	int getPowerHungry() const { return _powerHungry; }
 	/// Gets base cost to do science.
-	int getScienceBaseCost() const { return _scienceBaseCost; };
+	int getScienceBaseCost() const { return _scienceBaseCost; }
 
 	/// Getters for faction market data.
-	int getSellPriceFactor() const { return _sellPriceFactor; };
-	int getBuyPriceFactor() const { return _buyPriceFactor; };
-	int getRepPriceFactor() const { return _repPriceFactor; };
-	int getStockMod() const { return _stockMod; };
-	const std::map<std::string, double>& getWishList() const { return _wishList; }
+	int getSellPriceFactor() const { return _sellPriceFactor; }
+	int getBuyPriceFactor() const { return _buyPriceFactor; }
+	int getRepPriceFactor() const { return _repPriceFactor; }
+	int getStockMod() const { return _stockMod; }
+	const std::map<std::string, int>& getWishList() const { return _wishList; }
 	const std::map<std::string, int>& getStaffWeights() const { return _staffWeights; }
 
 

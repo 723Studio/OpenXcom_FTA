@@ -431,12 +431,12 @@ void DiplomacyFaction::processFactionalEvents(Game& engine)
 
 						if (!rule->getItemsToAdd().empty())
 						{
-							for (auto &i : rule->getItemsToAdd())
+							for (auto &item : rule->getItemsToAdd())
 							{
-								auto ruleItem = mod.getItem(i.first);
+								auto ruleItem = mod.getItem(item.first);
 								if (ruleItem != nullptr)
 								{
-									int val = i.second;
+									int val = item.second;
 									if (val > 0)
 									{
 										addItem(ruleItem, val);
@@ -569,12 +569,12 @@ void DiplomacyFaction::handleRestock()
 		if (isResearched(ruleItem->getRequirements()) && isResearched(ruleItem->getBuyRequirements()))
 		{
 			// calculate wanted ammount purchase things
-			int64_t toBuy = round(((*it).second / cost) * _power * _rule->getStockMod() / 1000);
+			int64_t toBuy = round((*it).second / cost * _power * _rule->getStockMod() / 1000);
 			toBuy -= _items->getItem(ruleItem);
 			// now we can purchase things
 			if (toBuy > 0 && _funds > 0)
 			{
-				_items->addItem(ruleItem, toBuy);
+				_items->addItem(ruleItem, (int)toBuy);
 				_funds -= toBuy * cost;
 				Log(LOG_INFO) << "> We buying items " << ruleItem->getType() << ": " << toBuy << ", and now it stocks: " << _items->getItem(ruleItem); //#CLEARLOGS
 			}
@@ -604,7 +604,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 			cost = 1; // extra safe if something bad would come to faction stash, it would cost at least $1
 		}
 
-		double wishWeight = 0;
+		int64_t wishWeight = 0;
 		for (auto k = _rule->getWishList().begin(); k != _rule->getWishList().end(); ++k)
 		{
 			if (k->first == (*it).first)
@@ -708,7 +708,7 @@ void DiplomacyFaction::manageStaff()
 				int64_t cost = (*j).second;
 				if (toBuy > 0 || _funds > 0)
 				{
-					_staff->addItem((*j).first, toBuy);
+					_staff->addItem((*j).first, (int)toBuy);
 					_funds -= toBuy * cost;
 					Log(LOG_DEBUG) << "Faction:  " << _rule->getName() << " is buying staff " << (*j).first << ": " << toBuy << " because of coef: " << floor(_power / weight); //#CLEARLOGS
 				}
@@ -783,10 +783,9 @@ int64_t DiplomacyFaction::managePower(int64_t month, int64_t baseCost) //#FINNIK
  * Handle managing of Faction's staff and non-item equipment.
  * @param mod rulesets to get constant data.
  */
-void DiplomacyFaction::handleResearch(Game& engine, int64_t reqFunds)
+void DiplomacyFaction::handleResearch(Game& engine, int64_t reqFunds) //#FINNIKTODO - rafactor with new soldier-based scientists logic
 {
 	SavedGame& save = *engine.getSavedGame();
-	MasterMind& mind = *engine.getMasterMind();
 
 	bool hasResearch = !_research.empty();
 
@@ -947,7 +946,10 @@ void DiplomacyFaction::handleResearch(Game& engine, int64_t reqFunds)
 			int priority = researchList.front().first;
 			bool promising = true;
 			int64_t factionCost = choice->getCost();
-			factionCost = (reqFunds * 2 / 3) - (factionCost / 24 * 10) * _rule->getScienceBaseCost(); //counts FTA is loaded, so we turn hours to days and say, that faction's research is 10 times slower, than player's
+			//counts FTA is loaded, so we turn hours to days and say, that faction's research is 10 times slower, than player's
+			factionCost = reqFunds * 2 / 3 - factionCost * 10 / 2400 * _rule->getScienceBaseCost();
+			Log(LOG_INFO) << "factionCost for research project " << _rule->getName() << " is: " << factionCost
+				<< " based on reqFunds: " << reqFunds << ", initial cost: " << choice->getCost() << " and science base cost: " << _rule->getScienceBaseCost(); //#CLEARLOGS
 
 			if (_funds > factionCost) // looks like we would manage to deal with this one.
 			{
@@ -981,8 +983,8 @@ void DiplomacyFaction::handleResearch(Game& engine, int64_t reqFunds)
 				// finally, we can start a new research project
 				FactionalResearch* newResearch = new FactionalResearch(choice, this);
 				_research.push_back(newResearch);
-				int randomCost = factionCost / 4;
-				newResearch->setTimeLeft(factionCost + RNG::generate(-randomCost, randomCost));
+				int randomCost = (double)factionCost / 4;
+				newResearch->setTimeLeft((int)factionCost + RNG::generate(-randomCost, randomCost));
 				newResearch->setPriority(priority);
 				int qty = _staff->getItem("STR_SCIENTIST");
 				qty = RNG::generate(qty * 0.5, qty * 0.9); // FINNIKTODO: think more about how many scientists faction should assign on a new project

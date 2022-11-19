@@ -450,7 +450,7 @@ void SoldiersState::initList(size_t scrl)
 	std::string selAction = "STR_SOLDIER_INFO";
 	if (_ftaUI)
 	{
-		std::string selAction = "STR_PERSONNEL_INFO";
+		selAction = "STR_PERSONNEL_INFO";
 	}
 	
 	if (!_availableOptions.empty())
@@ -539,31 +539,31 @@ void SoldiersState::initList(size_t scrl)
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
 	unsigned int row = 0;
-	for (std::vector<Soldier*>::iterator i = _filteredListOfSoldiers.begin(); i != _filteredListOfSoldiers.end(); ++i)
+	for (std::vector<Soldier*>::iterator s = _filteredListOfSoldiers.begin(); s != _filteredListOfSoldiers.end(); ++s)
 	{
-		std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		std::string duty = (*s)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
+			int dynStat = (*_dynGetter)(_game, *s);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString(_ftaUI)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, (*s)->getName(true).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
 
-		if ((*i)->getCraft() == 0)
+		if ((*s)->getCraft() == 0)
 		{
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		}
-		if ((*i)->getCovertOperation() != 0)
+		if ((*s)->getCovertOperation() != 0)
 		{
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
-		if ((*i)->getDeath())
+		if ((*s)->getDeath())
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
 		}

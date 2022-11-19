@@ -30,14 +30,7 @@
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/SavedBattleGame.h"
-#include "../Battlescape/BattlescapeGenerator.h"
-#include "../Battlescape/BriefingState.h"
-#include "../Geoscape/BaseNameState.h"
 #include "../FTA/MasterMind.h"
-#include "../Savegame/AlienBase.h"
-#include "../Savegame/DiplomacyFaction.h"
-#include "../Mod/RuleDiplomacyFaction.h"
 #include "../Engine/Logger.h"
 
 namespace OpenXcom
@@ -187,7 +180,6 @@ void NewGameState::btnOkClick(Action *)
 	save->setIronman(_btnIronman->getPressed());
 	_game->setSavedGame(save);
 	save->setGamePtr(_game);
-	const Mod* mod = _game->getMod();
 
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);

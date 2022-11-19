@@ -1699,13 +1699,13 @@ void Map::drawTerrain(Surface *surface)
 	{
 		if (item->getRules()->isMissionObjective() && item->getOwner() == 0)
 		{
-			Tile* tile = item->getTile();
-			if (!tile)
+			Tile* objTile = item->getTile();
+			if (!objTile)
 			{
 				continue; //for good
 			}
-			Position pos = tile->getPosition();
-			if (pos.z <= _camera->getViewLevel() && tile->getUnit() == 0 && tile->isDiscovered(O_FLOOR))
+			Position pos = objTile->getPosition();
+			if (pos.z <= _camera->getViewLevel() && objTile->getUnit() == 0 && objTile->isDiscovered(O_FLOOR))
 			{
 				_camera->convertMapToScreen(pos, &screenPosition);
 				screenPosition += _camera->getMapOffset();

@@ -3152,7 +3152,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 
 		auto type = _game->getMod()->getAlienRace(from->getUnitRules()->getRace())->getRaceType();
 		int points = 10;
-		if (_game->getMod()->getGiveScoreAlsoForResearchedArtifacts() || research != 0 && !_game->getSavedGame()->isResearched(research))
+		if (_game->getMod()->getGiveScoreAlsoForResearchedArtifacts() || (research != 0 && !_game->getSavedGame()->isResearched(research)))
 		{
 			points = from->getValue() * 2;
 		}

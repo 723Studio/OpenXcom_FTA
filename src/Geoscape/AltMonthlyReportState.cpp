@@ -30,18 +30,14 @@
 #include "../Menu/StatisticsState.h"
 #include "../Menu/CutsceneState.h"
 #include "PsiTrainingState.h"
-#include "TrainingState.h"
 #include "Globe.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GameTime.h"
 #include "../Savegame/Region.h"
-#include "../Savegame/Country.h"
 #include "../Savegame/DiplomacyFaction.h"
-#include "../Savegame/Base.h"
 #include "../Savegame/SoldierDiary.h"
 #include "../Mod/Mod.h"
-#include "../Mod/RuleCountry.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
@@ -56,7 +52,8 @@ namespace OpenXcom
 * @param psi Show psi training afterwards?
 * @param globe Pointer to the globe.
 */
-AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0), _loyalty(0)
+AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0),
+	_loyalty(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0)
 {
 	_globe = globe;
 	auto save = _game->getSavedGame();

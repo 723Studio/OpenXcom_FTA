@@ -155,7 +155,7 @@ void IntelState::onSelectProject(Action *)
 	const std::vector<IntelProject*> & baseProjects(_base->getIntelProjects());
 	auto project = baseProjects[_lstProjects->getSelectedRow()];
 
-	//_game->pushState(new ResearchInfoState(_base, project));
+	//_game->pushState(new ResearchInfoState(_base, project)); //#FINNIKTODO
 }
 
 /**
@@ -166,7 +166,7 @@ void IntelState::onProjectDetails(Action* action)
 {
 	const std::vector<IntelProject*>& baseProjects(_base->getIntelProjects());
 	auto selectedTopic = baseProjects[_lstProjects->getSelectedRow()]->getRules();
-	//_game->pushState(new TechTreeViewerState(selectedTopic, 0));
+	//_game->pushState(new TechTreeViewerState(selectedTopic, 0)); //#FINNIKTODO
 }
 
 /**

@@ -4515,15 +4515,13 @@ void GeoscapeState::handleResearch(Base* base)
 	// 1. gather finished research
 	std::map<Soldier*, int> assignedScientists;
 	std::vector<std::pair<std::map<Soldier*, int>, ResearchProject*>> finished;
-	int rating = _game->getMasterMind()->getLoyaltyPerformanceBonus();
 	for (ResearchProject* project : base->getResearch())
 	{
 		auto rules = project->getRules();
 		int progress = 0;
-		bool sharable = true;
-		
 		if (_fta)
 		{
+			bool sharable = true;
 			assignedScientists.clear();
 			Log(LOG_INFO) << "Calculating hourly progress for research project: " << rules->getName() << "..."; //#CLEARLOGS
 			if (rules->destroyItem()
@@ -4601,15 +4599,15 @@ void GeoscapeState::handleResearch(Base* base)
 		// wait, if it's FtA, we need to train stats and promote people!
 		if (_game->getMod()->isFTAGame())
 		{
-			auto assignedScientists = projectData.first;
-			for (auto s : assignedScientists)
+			auto scientists = projectData.first;
+			for (auto [fst, snd] : scientists)
 			{
-				s.first->improvePrimaryStats(s.first->getResearchExperience(), ROLE_SCIENTIST);
-				if (s.first->rolePromoteSoldier(ROLE_SCIENTIST))
+				fst->improvePrimaryStats(fst->getResearchExperience(), ROLE_SCIENTIST);
+				if (fst->rolePromoteSoldier(ROLE_SCIENTIST))
 				{
-					promotedSoldiers.push_back(s.first);
+					promotedSoldiers.push_back(fst);
 				}
-				s.first->setResearchProject(0);
+				fst->setResearchProject(0);
 			}
 		}
 

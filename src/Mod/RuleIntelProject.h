@@ -54,9 +54,9 @@ public:
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the intel project name.
-	const std::string& getName() const { return _name; };
+	const std::string& getName() const { return _name; }
 	/// Gets the intel project description.
-	const std::string& getDescription() const { return _description; };
+	const std::string& getDescription() const { return _description; }
 	/// Gets the base cost for making a roll for this project.
 	int getCost() const { return _cost; }
 	/// Gets the cost increase value to calculate next roll cost for this project.
@@ -64,7 +64,7 @@ public:
 	/// Gets the required tech for this project.
 	const RuleResearch* getRequiredResearch() const { return _requiredResearch; }
 	/// Gets the special rule for the intel project.
-	const IntelProjectSpecialRule getSpecialRule() const { return _specialRule; }
+	IntelProjectSpecialRule getSpecialRule() const { return _specialRule; }
 	/// Get pointer to this project's stats.
 	UnitStats getStats() const { return _stats; }
 	/// Gets the list weight for this intel project.
@@ -92,15 +92,15 @@ public:
 	void load(const YAML::Node& node, Mod* mod);
 	void afterLoad(const Mod* mod);
 	const std::string& getName() const { return _stageName; }
-	const int getOdds() const { return _odds; }
-	const int getRequireRolls() const { return _requireRolls; }
-	const int getAvailableRolls() const { return _availableRolls; }
+	int getOdds() const { return _odds; }
+	int getRequireRolls() const { return _requireRolls; }
+	int getAvailableRolls() const { return _availableRolls; }
 	const RuleResearch* getRequiredResearch() const { return _requiredResearch; }
 	const RuleResearch* getDisabledByResearch() const { return _disabledByResearch; }
 	RuleBaseFacilityFunctions getRequireBaseFunc() const { return _requiresBaseFunc; }
 	const std::string& getSpawnedMission() const { return _spawnMission; }
 	const std::vector<std::string>& getEventScripts() const { return _eventScripts; }
-	const bool isFinalStage() const { return _finalStage; }
+	bool isFinalStage() const { return _finalStage; }
 };
 
 }

@@ -55,8 +55,8 @@ PrisonReportState::PrisonReportState(const RuleResearch* research, const RuleRes
 	initUI();
 }
 
-PrisonReportState::PrisonReportState(Soldier* soldier, BasePrisoner* prisoner, Base* base) :
-		_soldier(soldier), _prisoner(prisoner), _base(base), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
+PrisonReportState::PrisonReportState(Soldier* soldier, BasePrisoner* prisoner, Base* base) : _prisoner(prisoner), _base(base),
+	_soldier(soldier), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
 {
 	initUI();
 }
@@ -169,10 +169,9 @@ void PrisonReportState::btnDetailsClick(Action *)
 	}
 	else if (_reportCase == PRISONER_REPORT_CASE_INTERROGATION)
 	{
-		std::string name;
-		std::string bonusName;
 		if (_bonus)
 		{
+			std::string bonusName;
 			if (_bonus->getLookup().empty())
 				bonusName = _bonus->getName();
 			else
@@ -181,6 +180,7 @@ void PrisonReportState::btnDetailsClick(Action *)
 		}
 		if (_research)
 		{
+			std::string name;
 			if (_research->getLookup().empty())
 				name = _research->getName();
 			else

@@ -148,11 +148,11 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
  * Initializes a brand new saved game according to the specified difficulty.
  */
 SavedGame::SavedGame() :
-	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _ftaGame(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0),
-	_battleGame(0), _previewBase(nullptr), _debug(false), _warned(false),
+	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
+	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
-	_monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false),
-	_loyalty(0), _lastMonthsLoyalty(0)
+	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _selectedBase(0), _autosales(),
+	_disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -549,7 +549,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		std::string diplomacyFactionName = (*it)["name"].as<std::string>();
 		if (mod->getDiplomacyFaction(diplomacyFactionName))
 		{
-			const RuleDiplomacyFaction &diplomacyFactionRule = *mod->getDiplomacyFaction(diplomacyFactionName);
 			DiplomacyFaction *diplomacyFaction = new DiplomacyFaction(mod, diplomacyFactionName);
 			diplomacyFaction->load(*it);
 			_diplomacyFactions.push_back(diplomacyFaction);

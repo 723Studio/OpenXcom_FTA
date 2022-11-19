@@ -27,12 +27,12 @@ namespace OpenXcom
  * Creates a blank ruleset for a certain type of craft weapon.
  * @param type String defining the type.
  */
-RuleCraftWeapon::RuleCraftWeapon(const std::string &type) :
-	_type(type), _sprite(-1), _sound(-1), _damage(0), _shieldDamageModifier(100), _range(0), _accuracy(0),
-	_reloadCautious(0), _reloadStandard(0), _reloadAggressive(0), _ammoMax(0),
-	_rearmRate(1), _projectileSpeed(0), _weaponType(0), _projectileSubType(CWPST_CANNON), _projectileType(CWPT_CANNON_ROUND),
-	_stats(), _underwaterOnly(false),
-	_tractorBeamPower(0), _hidePediaInfo(false), _statisticalBulletSaving(false)
+RuleCraftWeapon::RuleCraftWeapon(const std::string &type)
+	: _type(type), _sprite(-1), _sound(-1), _damage(0), _shieldDamageModifier(100), _range(0), _accuracy(0),
+	  _reloadCautious(0), _reloadStandard(0), _reloadAggressive(0), _ammoMax(0),
+	  _rearmRate(1), _projectileSpeed(0), _weaponType(0), _projectileType(CWPT_CANNON_ROUND), _projectileSubType(CWPST_CANNON),
+	  _stats(), _underwaterOnly(false),
+	  _tractorBeamPower(0), _hidePediaInfo(false), _statisticalBulletSaving(false)
 {
 }
 

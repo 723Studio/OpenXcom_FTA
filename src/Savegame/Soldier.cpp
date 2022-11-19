@@ -46,6 +46,7 @@
 #include "Base.h"
 #include "BasePrisoner.h"
 #include "ItemContainer.h"
+#include <climits>
 
 namespace OpenXcom
 {

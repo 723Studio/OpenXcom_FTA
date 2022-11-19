@@ -45,7 +45,6 @@
 #include "SoldierBonusState.h"
 #include "SackSoldierState.h"
 #include "../Mod/RuleInterface.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Savegame/SoldierDeath.h"
 
 namespace OpenXcom
@@ -247,11 +246,7 @@ void SoldierInfoState::init()
 	_soldier = _list->at(_soldierId);
 	_edtSoldier->setBig();
 	_edtSoldier->setText(_soldier->getName());
-	UnitStats *initial = _soldier->getInitStats();
-	UnitStats *current = _soldier->getCurrentStats();
-
 	bool hasBonus = _soldier->prepareStatsWithBonuses(_game->getMod()); // refresh all bonuses
-	UnitStats withArmor = *_soldier->getStatsWithAllBonuses();
 	_btnBonuses->setVisible(hasBonus);
 
 	SoldierRole role = _soldier->getBestRole();
@@ -274,9 +269,6 @@ void SoldierInfoState::init()
 			break;
 		case OpenXcom::ROLE_ENGINEER:
 			_cbxRoles->setSelected(4);
-			break;
-		default:
-			_cbxRoles->setSelected(0);
 			break;
 		}
 	}

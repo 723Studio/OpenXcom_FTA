@@ -126,9 +126,9 @@ void CovertOperationsListState::fillOperationList()
 		bool happy = true;
 		// we dont want to do same operations twice
 		const std::vector<std::string>& performedOperations = save->getPerformedCovertOperations();
-		for (std::vector<std::string>::const_iterator i = performedOperations.begin(); i != performedOperations.end(); ++i)
+		for (std::vector<std::string>::const_iterator j = performedOperations.begin(); j != performedOperations.end(); ++j)
 		{
-			if (rule->getName() == (*i)) happy = false;
+			if (rule->getName() == (*j)) happy = false;
 		}
 		//do we have required research...
 		if (happy && !rule->getRequirements().empty())
@@ -150,13 +150,13 @@ void CovertOperationsListState::fillOperationList()
 		//finally, reputation requirements
 		if (happy && !rule->getRequiredReputationLvlList().empty())
 		{
-			for (std::map<std::string, int>::const_iterator i = rule->getRequiredReputationLvlList().begin(); i != rule->getRequiredReputationLvlList().end(); ++i)
+			for (std::map<std::string, int>::const_iterator r = rule->getRequiredReputationLvlList().begin(); r != rule->getRequiredReputationLvlList().end(); ++r)
 			{
 				for (std::vector<DiplomacyFaction*>::iterator j = save->getDiplomacyFactions().begin(); j != save->getDiplomacyFactions().end(); ++j)
 				{
-					if ((*j)->getRules()->getName() == (*i).first)
+					if ((*j)->getRules()->getName() == (*r).first)
 					{
-						if ((*j)->getReputationLevel() < (*i).second || !(*j)->isDiscovered())
+						if ((*j)->getReputationLevel() < (*r).second || !(*j)->isDiscovered())
 						{
 							happy = false;
 						}

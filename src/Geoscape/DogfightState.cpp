@@ -242,8 +242,8 @@ const int DogfightState::_projectileBlobs[4][6][3] =
  * @param ufoIsAttacking Is UFO the aggressor?
  */
 DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool ufoIsAttacking) :
-	_state(state), _craft(craft), _ufo(ufo), _panicing(false),
-	_ufoIsAttacking(ufoIsAttacking), _disableDisengage(false), _disableCautious(false), _craftIsDefenseless(false), _selfDestructPressed(false),
+	_state(state), _craft(craft), _ufo(ufo), _ufoIsAttacking(ufoIsAttacking),
+	_disableDisengage(false), _disableCautious(false), _craftIsDefenseless(false), _selfDestructPressed(false), _panicing(false),
 	_timeout(50), _currentDist(640), _targetDist(560), _panicTimeout(1000),
 	_end(false), _endUfoHandled(false), _endCraftHandled(false), _ufoBreakingOff(false), _destroyUfo(false), _destroyCraft(false),
 	_minimized(false), _endDogfight(false), _animatingHit(false), _waitForPoly(false), _waitForAltitude(false), _ufoSize(0), _craftHeight(0), _currentCraftDamageColor(0),
@@ -271,8 +271,9 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	}
 
 	// pilot modifiers
-	_pilotAccuracyBonus, _pilotDodgeBonus, _pilotApproachSpeedModifier = 0;
-	_pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery = 2, _squadTacticBonus = 0;
+	_pilotAccuracyBonus = 0; _pilotDodgeBonus = 0; _pilotApproachSpeedModifier = 0;
+	_pilotMissileAccuracyBonus = 0; _pilotCannonAccuracyBonus = 0;
+	_crewBravery = 2; _squadTacticBonus = 0;
 	_pilots = _craft->getPilotList(false);
 	for (std::vector<Soldier*>::const_iterator p = _pilots.begin(); p != _pilots.end(); ++p)
 	{
@@ -314,11 +315,11 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 			_crewBravery = _pilotApproachSpeedModifier * 10;
 			_pilotApproachSpeedModifier = 2;
 
-			for (auto craft : _ufo->getCraftFollowers())
+			for (auto squadCraft : _ufo->getCraftFollowers())
 			{
-				if (craft->isInDogfight() && craft != _craft && !craft->isDestroyed() && !craft->getPilotList(false).empty())
+				if (squadCraft->isInDogfight() && squadCraft != _craft && !squadCraft->isDestroyed() && !squadCraft->getPilotList(false).empty())
 				{
-					_squadTacticBonus += craft->getPilotCoordinationBonus(craft->getPilotList(false), _game->getMod());
+					_squadTacticBonus += squadCraft->getPilotCoordinationBonus(squadCraft->getPilotList(false), _game->getMod());
 				}
 				if (_squadTacticBonus > 0)
 				{
@@ -708,19 +709,19 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 
 	// Set UFO size - going to be moved to Ufo class to implement simultaneous dogfights.
 	std::string ufoSize = _ufo->getRules()->getSize();
-	if (ufoSize.compare("STR_VERY_SMALL") == 0)
+	if (ufoSize == "STR_VERY_SMALL")
 	{
 		_ufoSize = 0;
 	}
-	else if (ufoSize.compare("STR_SMALL") == 0)
+	else if (ufoSize == "STR_SMALL")
 	{
 		_ufoSize = 1;
 	}
-	else if (ufoSize.compare("STR_MEDIUM_UC") == 0)
+	else if (ufoSize == "STR_MEDIUM_UC")
 	{
 		_ufoSize = 2;
 	}
-	else if (ufoSize.compare("STR_LARGE") == 0)
+	else if (ufoSize == "STR_LARGE")
 	{
 		_ufoSize = 3;
 	}
@@ -1941,7 +1942,7 @@ void DogfightState::handlePanic(bool damaged)
 
 		if (_panicing && !damaged && !_craft->isDestroyed())
 		{
-			if (_panicTimeout > 0);
+			if (_panicTimeout > 0)
 			{
 				--_panicTimeout;
 			}
