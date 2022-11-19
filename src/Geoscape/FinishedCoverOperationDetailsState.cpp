@@ -45,9 +45,8 @@ namespace OpenXcom
 	 * @param geoEvent Pointer to the event.
 	 * @param result - comes true if sucess operation, false if it was failed.
 	 */
-	FinishedCoverOperationDetailsState::FinishedCoverOperationDetailsState(CovertOperation* operation) :
-		_operation(operation), _pageNumber(0), _hasItems(false), _hasRep(false), _hasFunds(false), _hasScore(false),
-		_hasSStatus(false), _hasMessage(false), _hasMIA(false)
+	FinishedCoverOperationDetailsState::FinishedCoverOperationDetailsState(CovertOperation* operation) : _hasItems(false), _hasRep(false),
+	_hasFunds(false), _hasScore(false), _hasSStatus(false), _hasMessage(false), _hasMIA(false), _operation(operation), _pageNumber(0)
 	{
 		_screen = false;
 		_results = _operation->getResults();

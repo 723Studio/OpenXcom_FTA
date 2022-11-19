@@ -1082,7 +1082,7 @@ void SaveConverter::loadDatSoldier()
 			node["look"] = (int)load<Uint8>(sdata + _rules->getOffset("SOLDIER.DAT_LOOK"));
 			node["id"] = _save->getId("STR_SOLDIER");
 
-			Soldier *soldier = new Soldier(_mod->getSoldier(_mod->getSoldiersList().front(), true), 0);
+			Soldier *soldier = new Soldier(_mod->getSoldier(_mod->getSoldiersList().front(), true), nullptr, 0 /*nationality*/);
 			soldier->load(node, _mod, _save, _mod->getScriptGlobal());
 			if (base != 0xFFFF)
 			{
@@ -1155,8 +1155,8 @@ void SaveConverter::loadDatUp()
 			bool discovered = load<Uint8>(rdata + 0x08) == 2;
 			if (discovered)
 			{
-				std::vector<std::string> requires = article->requires;
-				for (std::vector<std::string>::const_iterator r = requires.begin(); r != requires.end(); ++r)
+				std::vector<std::string> reqs = article->_requires;
+				for (std::vector<std::string>::const_iterator r = reqs.begin(); r != reqs.end(); ++r)
 				{
 					RuleResearch *research = _mod->getResearch(*r);
 					if (research && research->getCost() == 0)

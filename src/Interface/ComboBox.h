@@ -98,7 +98,7 @@ public:
 	/// Handle arrow buttons.
 	void handle(Action *action, State *state) override;
 	/// Toggles the combo box state.
-	void toggle(bool first = false);
+	void toggle(bool first, bool listClick);
 	/// Hooks an action handler to when the slider changes.
 	void onChange(ActionHandler handler);
 	/// Hooks an action handler to moving the mouse in to the listbox when it is visible.

@@ -46,7 +46,7 @@ protected:
 	std::map<Uint8, ActionHandler> _click, _press, _release;
 	ActionHandler _in, _over, _out;
 	std::map<SDLKey, ActionHandler> _keyPress, _keyRelease;
-	bool _isHovered, _isFocused, _listButton, _tftdMode;
+	bool _isHovered, _isFocused, _listButton, _tftdMode, _isDisabled;
 
 	/// Is this mouse button pressed?
 	bool isButtonPressed(Uint8 button = 0) const;
@@ -67,6 +67,10 @@ public:
 	virtual void setFocus(bool focus, bool modal = false);
 	/// Gets the focus of this surface.
 	bool isFocused() const;
+	/// Gets the disabled status of this surface.
+	void setDisabled(bool disabled) { _isDisabled = disabled; }
+	/// Sets the disabled status of this surface.
+	bool getDisabled() { return _isDisabled; }
 	/// Unpresses the surface.
 	virtual void unpress(State *state);
 	/// Hooks an action handler to a mouse click on the surface.

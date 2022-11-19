@@ -78,6 +78,7 @@ private:
 	int _fuel, _damage, _shield, _interceptionOrder, _takeoff;
 	std::vector<CraftWeapon*> _weapons;
 	ItemContainer *_items;
+	ItemContainer *_tempSoldierItems;
 	std::vector<Vehicle*> _vehicles;
 	std::string _status;
 	bool _lowFuel, _mission, _inBattlescape, _inDogfight;
@@ -88,8 +89,8 @@ private:
 	std::vector<int> _pilots;
 	std::map<int, SoldierDeploymentData> _customSoldierDeployment;
 	std::vector<VehicleDeploymentData> _customVehicleDeployment;
-	int _skinIndex;
 	int _scientists, _engineers;
+	int _skinIndex;
 	ScriptValues<Craft> _scriptValues;
 
 	void recalcSpeedMaxRadian();
@@ -154,8 +155,12 @@ public:
 	std::vector<CraftWeapon*> *getWeapons();
 	/// Gets the craft's items.
 	ItemContainer *getItems();
+	/// Gets the craft's items equipped by the soldiers.
+	ItemContainer* getSoldierItems();
 	/// Gets the craft's vehicles.
 	std::vector<Vehicle*> *getVehicles();
+	/// Calculates (and stores) the sum of all equipment of all soldiers on the craft.
+	void calculateTotalSoldierEquipment();
 
 	/// Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
 	double getTotalItemStorageSize(const Mod* mod) const;
@@ -190,6 +195,8 @@ public:
 	void setShield(int shield);
 	/// Gets the percent shield remaining
 	int getShieldPercentage() const;
+	/// Gets whether the craft is ignored by hunter-killers.
+	bool isIgnoredByHK() const;
 	/// Gets whether the craft is running out of fuel.
 	bool getLowFuel() const;
 	/// Sets whether the craft is running out of fuel.
@@ -221,13 +228,13 @@ public:
 	/// Returns the crew to their base (using transfers).
 	void evacuateCrew(const Mod *mod);
 	/// Checks if a target is detected by the craft's radar.
-	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const;
 	/// Handles craft logic.
-	bool think();
+	bool think(std::string &pushState);
 	/// Is the craft about to take off?
 	bool isTakingOff() const;
 	/// Does a craft full checkup.
-	void checkup();
+	bool checkup();
 	/// Consumes the craft's fuel.
 	void consumeFuel(int escortSpeed);
 	/// Calculates the time to repair
@@ -252,6 +259,8 @@ public:
 	int getSpaceAvailable() const;
 	/// Gets the amount of space used inside a craft.
 	int getSpaceUsed() const;
+	/// Checks if the commander is onboard.
+	bool isCommanderOnboard();
 	/// Checks if there are only permitted soldier types onboard.
 	bool areOnlyPermittedSoldierTypesOnboard(const RuleStartingCondition* sc);
 	/// Checks if there are enough required items onboard.
@@ -272,6 +281,10 @@ public:
 	int getPilotAccuracyBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Calculates the dodge bonus based on pilot skills.
 	int getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
+	/// Calculates the tracking bonus based on pilot skills.
+	int getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
+	/// Calculates the coordination bonus based on pilot skills.
+	int getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
 	/// Calculates the approach speed modifier based on pilot skills.
 	int getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Gets the craft's vehicles of a certain type.

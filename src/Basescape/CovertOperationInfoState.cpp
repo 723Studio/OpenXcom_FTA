@@ -19,7 +19,6 @@
 #include "CovertOperationInfoState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
-#include "../Mod/Mod.h"
 #include "../Mod/RuleCovertOperation.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -27,12 +26,9 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
-#include "../Savegame/SavedGame.h"
 #include "../Savegame/CovertOperation.h"
-#include "../Savegame/Base.h"
 #include "SoldierInfoState.h"
 #include <cmath>
-#include <algorithm>
 #include <unordered_set>
 
 namespace OpenXcom
@@ -46,8 +42,8 @@ namespace OpenXcom
 		// Create objects
 		_window = new Window(this, 320, 200, 0, 0);
 		_txtTitle = new Text(304, 17, 8, 7);
-		_txtScientists = new Text(150, 9, 8, 25);
-		_txtEngineers = new Text(150, 9, 8, 35);
+		/*_txtScientists = new Text(150, 9, 8, 25);
+		_txtEngineers = new Text(150, 9, 8, 35);*/
 		_txtDungeonLevel = new Text(150, 9, 164, 25);
 		_txtProgress = new Text(150, 9, 164, 35);
 		_txtSoldiers = new Text(145, 9, 8, 45);
@@ -62,8 +58,6 @@ namespace OpenXcom
 		add(_window, "window", "covertOperationInfoState");
 		add(_txtTitle, "text", "covertOperationInfoState");
 		add(_btnOk, "button", "covertOperationInfoState");
-		add(_txtScientists, "text", "covertOperationInfoState");
-		add(_txtEngineers, "text", "covertOperationInfoState");
 		add(_txtDungeonLevel, "text", "covertOperationInfoState");
 		add(_txtProgress, "text", "covertOperationInfoState");
 		add(_txtSoldiers, "text", "covertOperationInfoState");
@@ -81,15 +75,9 @@ namespace OpenXcom
 		std::string operationName = tr(_operation->getOperationName());
 		_txtTitle->setText(operationName);
 
-		_txtScientists->setText(tr("STR_SCIENTISTS_N").arg(_operation->getAssignedScientists()));
-		_txtEngineers->setText(tr("STR_ENGINEERS_N").arg(_operation->getAssignedEngineers()));
 		_txtDungeonLevel->setText(tr("STR_DANGER_LEVEL").arg(_operation->getRules()->getDanger()));
 		_txtProgress->setText(tr("STR_OPERATION_PROGRESS").arg(ceil(_operation->getSpent() / 24)));
 
-		if (_operation->getAssignedScientists() == 0)
-			_txtScientists->setVisible(false);
-		if (_operation->getAssignedEngineers() == 0)
-			_txtEngineers->setVisible(false);
 		_txtSoldiers->setText(tr("STR_SOLDIERS_N"));
 		_lstSoldiers->setColumns(1, 148);
 		//_lstSoldiers->setSelectable(true);

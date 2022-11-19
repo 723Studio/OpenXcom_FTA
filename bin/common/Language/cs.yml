@@ -248,7 +248,6 @@ cs:
   STR_ALIEN_RACE: "Rasa"
   STR_ALIEN_TECH_LEVEL: "Technická úroveň"
   STR_RANDOMIZE: "Generovat náhodně"
-  STR_OXCE_REQUIRED_QUESTION: "Tento mod vyžaduje ke spuštění OpenXcom Extended. Povolit tento mod?"
   STR_RESTORE_DEFAULTS_QUESTION: "Opravdu chcete obnovit standardní nastavení?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Chcete zachovat současné nastavení zobrazení?"
   STR_DISPLAY_OPTIONS_REVERT: "Změny se vrátí zpět za 0:{0}"

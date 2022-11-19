@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PathfindingNode.h"
-#include <cmath>
 
 namespace OpenXcom
 {
@@ -26,7 +25,7 @@ namespace OpenXcom
  * Sets up a PathfindingNode.
  * @param pos Position.
  */
-PathfindingNode::PathfindingNode(Position pos) : _pos(pos), _checked(0), _prevNode(0), _prevDir(0), _tuGuess(0), _openentry(0)
+PathfindingNode::PathfindingNode(Position pos) : _pos(pos), _prevNode(0), _prevDir(0), _tuGuess(0), _checked(0), _openentry(0)
 {
 
 }

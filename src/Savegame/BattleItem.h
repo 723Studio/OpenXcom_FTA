@@ -52,6 +52,7 @@ private:
 	BattleUnit *_owner, *_previousOwner;
 	BattleUnit *_unit;
 	Tile *_tile;
+	int _inventoryMoveCostPercent = 0;
 	RuleInventory *_inventorySlot;
 	int _inventoryX, _inventoryY;
 	BattleItem *_ammoItem[RuleItem::AmmoSlotMax] = { };
@@ -130,6 +131,8 @@ public:
 	bool isSpecialWeapon() const { return getOwner() && !getSlot(); }
 	/// Gets the item's inventory slot.
 	RuleInventory *getSlot() const;
+	/// Gets the cost of moving item to given slot.
+	int getMoveToCost(const RuleInventory *slot) const;
 	/// Sets the item's inventory slot.
 	void setSlot(RuleInventory *slot);
 	/// Gets the item's inventory X position.

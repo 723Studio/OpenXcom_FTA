@@ -40,7 +40,6 @@
 #include "../Savegame/Ufo.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
-#include "../Savegame/ItemContainer.h"
 #include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
@@ -173,6 +172,13 @@ std::string ConfirmDestinationState::checkStartingCondition()
 		// rule doesn't exist (mod upgrades?)
 		return "";
 	}
+	if (rule->requiresCommanderOnboard() && !_crafts.front()->isCommanderOnboard())
+	{
+		if (!u || u->getStatus() == Ufo::LANDED || u->getStatus() == Ufo::CRASHED)
+		{
+			return tr("STR_STARTING_CONDITION_COMMANDER");
+		}
+	}
 
 	// Only check first selected craft
 	// The other crafts will follow the first selected craft so they will not land at the mission site
@@ -211,7 +217,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 		int i = 0;
 		for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
 		{
-			RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier((*it), false);
+			const RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier((*it), false);
 			if (soldierTypeRule && _game->getSavedGame()->isResearched(soldierTypeRule->getRequirements()))
 			{
 				if (i > 0)
@@ -249,7 +255,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 	for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
 	{
 		ArticleDefinition *article = _game->getMod()->getUfopaediaArticle((*it), false);
-		if (article && _game->getSavedGame()->isResearched(article->requires))
+		if (article && _game->getSavedGame()->isResearched(article->_requires))
 		{
 			if (i > 0)
 				ss << ", ";

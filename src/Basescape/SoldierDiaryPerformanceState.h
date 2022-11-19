@@ -31,8 +31,8 @@ class TextList;
 class Base;
 class SoldierDiaryOverviewState;
 class Surface;
-class SurfaceSet;
 class Soldier;
+class SoldierCommendations;
 
 enum SoldierDiaryDisplay { DIARY_KILLS, DIARY_MISSIONS, DIARY_COMMENDATIONS };
 
@@ -54,8 +54,8 @@ private:
 	TextList *_lstPerformance, *_lstKillTotals, *_lstMissionTotals, *_lstCommendations;
 	std::vector<std::string> _commendationsListEntry;
 	std::vector<std::string> _commendationsNames;
+	std::vector<std::pair<std::string, SoldierCommendations*> > _sortedCommendations;
 	std::vector<Surface*> _commendations, _commendationDecorations;
-	SurfaceSet *_commendationSprite, *_commendationDecoration;
 
 	SoldierDiaryDisplay _display;
 	int _lastScrollPos;

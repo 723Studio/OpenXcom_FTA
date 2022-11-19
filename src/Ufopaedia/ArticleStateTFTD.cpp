@@ -20,9 +20,7 @@
 #include "../Mod/ArticleDefinition.h"
 #include "ArticleStateTFTD.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/Surface.h"
-#include "../Engine/LocalizedText.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "../Interface/Text.h"
@@ -156,7 +154,7 @@ namespace OpenXcom
 			}
 		}
 
-		_txtInfo = new Text(defs->text_width, 150, 320 - defs->text_width, 34);
+		_txtInfo = new Text(defs->text_width, 136, 320 - defs->text_width, 34);
 		_txtTitle = new Text(284, 16, 36, 14);
 
 		add(_txtTitle);

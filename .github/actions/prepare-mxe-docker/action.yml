@@ -1,0 +1,78 @@
+name: "Prepare MXE Docker"
+description: "Gets the docker command to run mxe in docker. Builds and publishes the docker, if needed"
+
+inputs:
+  registry_username:
+    description: “Username for image registry”
+    required: true
+  registry_password:
+    description: “Password for image registry”
+    required: true
+
+outputs:
+  docker-cmd:
+    description: The docker command to use to build in mxe
+    value: ${{ steps.check-mxe-container.outputs.docker-cmd }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ inputs.registry_username }}
+        password: ${{ inputs.registry_password }}
+
+    - name: Check mxe container
+      shell: bash
+      id: check-mxe-container
+      run: |
+        export MXE_IMAGE_NAME=ghcr.io/pedroterzero/mxe
+        export MXE_IMAGE_VERSION=0.0.4
+        export MXE_IMAGE_FALLBACK_NAME=ghcr.io/${{ inputs.registry_username }}/mxe
+
+        if docker pull ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}; then
+          echo ::set-output name=exit_code::$?
+        elif docker pull ${MXE_IMAGE_FALLBACK_NAME}:${MXE_IMAGE_VERSION}; then
+          echo ::set-output name=exit_code::$?
+          echo "::set-output name=image-name::${MXE_IMAGE_FALLBACK_NAME}"
+          # echo "MXE_IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}" >> $GITHUB_ENV
+        else
+          echo ::set-output name=exit_code::$?
+          echo "::set-output name=image-name::${MXE_IMAGE_FALLBACK_NAME}"
+          # echo "MXE_IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}" >> $GITHUB_ENV
+        fi
+
+        echo "::set-output name=image-version::${MXE_IMAGE_VERSION}"
+
+        echo "::set-output name=docker-cmd::docker run -v $PWD:/app -v $HOME/.ccache:/root/.ccache \
+          -w /app --rm ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}"
+
+        # cat $GITHUB_ENV
+
+    - name: Build mxe container
+      shell: bash
+      if: steps.check-mxe-container.outputs.exit_code != 0
+      run: |
+        export MXE_IMAGE_NAME=${{ steps.check-mxe-container.outputs.image-name }}
+        export MXE_IMAGE_VERSION=${{ steps.check-mxe-container.outputs.image-version }}
+
+        cat << EOF > Dockerfile
+        FROM debian:bullseye-slim AS build
+        RUN apt update && apt-get install -y autoconf automake autopoint bash bison bzip2 flex g++ g++-multilib \
+            gettext git gperf intltool libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libssl-dev libtool-bin \
+            libxml-parser-perl lzip make openssl p7zip-full patch perl pkg-config python3 python3-mako ruby sed \
+            unzip wget xz-utils
+        RUN cd /opt && git clone https://github.com/mxe/mxe.git
+        RUN ln -s /usr/bin/python3 /usr/bin/python
+        RUN cd /opt/mxe && make MXE_PLUGIN_DIRS=plugins/gcc12 MXE_TARGETS=x86_64-w64-mingw32.static JOBS=8 gcc cmake sdl sdl_gfx sdl_mixer sdl_image yaml-cpp zlib
+
+        FROM debian:bullseye-slim
+        COPY --from=build /opt/mxe/usr /opt/mxe/usr
+        COPY --from=build /opt/mxe/.ccache /opt/mxe/.ccache
+        RUN apt-get update && apt-get install -y make ccache && rm -rf /var/lib/apt/lists/*
+        EOF
+
+        docker build . -t ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}
+        docker push ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}

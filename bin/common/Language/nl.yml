@@ -248,7 +248,6 @@ nl:
   STR_ALIEN_RACE: "Ras"
   STR_ALIEN_TECH_LEVEL: "Technologieniveau"
   STR_RANDOMIZE: "Willekeurig"
-  STR_OXCE_REQUIRED_QUESTION: "Deze mod vereist OpenXcom Extended om correct te werken. Deze mod inschakelen?"
   STR_RESTORE_DEFAULTS_QUESTION: "Weet je zeker dat je de standaardopties wil herstellen?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Wil je de huidige weergaveopties behouden?"
   STR_DISPLAY_OPTIONS_REVERT: "Wordt teruggezet in 0:{0}"

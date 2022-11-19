@@ -200,6 +200,13 @@ std::string ConfirmLandingState::checkStartingCondition()
 	}
 	if (rule != 0)
 	{
+		if (rule->requiresCommanderOnboard() && !_craft->isCommanderOnboard())
+		{
+			if (!u || u->getStatus() == Ufo::LANDED || u->getStatus() == Ufo::CRASHED)
+			{
+				return tr("STR_STARTING_CONDITION_COMMANDER");
+			}
+		}
 		if (!rule->isCraftPermitted(_craft->getRules()->getType()))
 		{
 			return tr("STR_STARTING_CONDITION_CRAFT"); // simple message without details/argument

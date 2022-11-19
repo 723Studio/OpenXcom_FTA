@@ -23,7 +23,6 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCraftWeapon.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
@@ -34,7 +33,9 @@ namespace OpenXcom
 
 	ArticleStateTFTDCraftWeapon::ArticleStateTFTDCraftWeapon(ArticleDefinitionTFTD *defs, std::shared_ptr<ArticleCommonState> state) : ArticleStateTFTD(defs, std::move(state))
 	{
-		_btnInfo->setVisible(true);
+		_txtInfo->setHeight(88);
+
+		_btnInfo->setVisible(_game->getMod()->getShowPediaInfoButton());
 
 		RuleCraftWeapon *weapon = _game->getMod()->getCraftWeapon(defs->id, true);
 

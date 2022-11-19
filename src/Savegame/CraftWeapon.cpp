@@ -24,6 +24,7 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "CraftWeaponProjectile.h"
+#include "../Engine/RNG.h"
 
 namespace OpenXcom
 {
@@ -158,18 +159,32 @@ void CraftWeapon::setDisabled(bool disabled)
 int CraftWeapon::rearm(const int available, const int clipSize)
 {
 	int ammoUsed = _rules->getRearmRate();
+	int clipsSaved = 0;
 
 	if (clipSize > 0)
 	{	// +(clipSize - 1) correction for rounding up
 		int needed = std::min(_rules->getRearmRate(), _rules->getAmmoMax() - _ammo + clipSize - 1) / clipSize;
 		ammoUsed = ((needed > available)? available : needed) * clipSize;
+
+		// statistical bullet saving
+		if (clipSize > 1 && _rules->useStatisticalBulletSaving())
+		{
+			int overusedAmmo = _ammo + ammoUsed - _rules->getAmmoMax();
+			if (overusedAmmo > 0)
+			{
+				if (RNG::generate(0, clipSize - 1) < overusedAmmo)
+				{
+					clipsSaved = 1;
+				}
+			}
+		}
 	}
 
 	setAmmo(_ammo + ammoUsed);
 
 	_rearming = _ammo < _rules->getAmmoMax();
 
-	return (clipSize <= 0)? 0 : ammoUsed / clipSize;
+	return (clipSize <= 0)? 0 : (ammoUsed / clipSize) - clipsSaved;
 }
 
 /*

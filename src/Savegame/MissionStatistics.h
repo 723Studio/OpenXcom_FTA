@@ -38,8 +38,9 @@ struct MissionStatistics
 	std::string markerName;
 	int markerId;
 	GameTime time;
-	std::string region, country, type, ufo;
+	std::string region, country, type, ufo, craft;
 	bool success;
+	bool aborted;
 	std::string rating;
 	int score;
 	std::string alienRace;
@@ -59,7 +60,9 @@ struct MissionStatistics
 		country = node["country"].as<std::string>(country);
 		type = node["type"].as<std::string>(type);
 		ufo = node["ufo"].as<std::string>(ufo);
+		craft = node["craft"].as<std::string>(craft);
 		success = node["success"].as<bool>(success);
+		aborted = node["aborted"].as<bool>(aborted);
 		score = node["score"].as<int>(score);
 		rating = node["rating"].as<std::string>(rating);
 		alienRace = node["alienRace"].as<std::string>(alienRace);
@@ -84,7 +87,9 @@ struct MissionStatistics
 		node["country"] = country;
 		node["type"] = type;
 		node["ufo"] = ufo;
+		node["craft"] = craft;
 		node["success"] = success;
+		node["aborted"] = aborted;
 		node["score"] = score;
 		node["rating"] = rating;
 		node["alienRace"] = alienRace;
@@ -180,7 +185,7 @@ struct MissionStatistics
 	}
 
 	MissionStatistics(const YAML::Node& node) : time(0, 0, 0, 0, 0, 0, 0) { load(node); }
-	MissionStatistics() : id(0), markerId(0), time(0, 0, 0, 0, 0, 0, 0), region("STR_REGION_UNKNOWN"), country("STR_UNKNOWN"), ufo("NO_UFO"), success(false), score(0), alienRace("STR_UNKNOWN"), daylight(0), valiantCrux(false), lootValue(0) { }
+	MissionStatistics() : id(0), markerId(0), time(0, 0, 0, 0, 0, 0, 0), region("STR_REGION_UNKNOWN"), country("STR_UNKNOWN"), ufo("NO_UFO"), craft("NO_CRAFT"), success(false), aborted(false), score(0), alienRace("STR_UNKNOWN"), daylight(0), valiantCrux(false), lootValue(0) { }
 	~MissionStatistics() { }
 };
 

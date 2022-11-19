@@ -302,6 +302,7 @@ public:
 	using DamageUnit = MACRO_NAMED_SCRIPT("damageUnit", DamageUnitParser);
 	using DamageSpecialUnit = MACRO_NAMED_SCRIPT("damageSpecialUnit", DamageSpecialUnitParser);
 	using HealUnit = MACRO_NAMED_SCRIPT("healUnit", HealUnitParser);
+
 	using CreateUnit = MACRO_NAMED_SCRIPT("createUnit", CreateUnitParser);
 	using NewTurnUnit = MACRO_NAMED_SCRIPT("newTurnUnit", NewTurnUnitParser);
 	using ReturnFromMissionUnit = MACRO_NAMED_SCRIPT("returnFromMissionUnit", ReturnFromMissionUnitParser);
@@ -320,8 +321,11 @@ public:
 	using SelectItemSprite = MACRO_NAMED_SCRIPT("selectItemSprite", SelectItemParser);
 
 	using ReactionWeaponAction = MACRO_NAMED_SCRIPT("reactionWeaponAction", ReactionUnitParser);
+
 	using TryPsiAttackItem = MACRO_NAMED_SCRIPT("tryPsiAttackItem", TryPsiAttackItemParser);
 	using TryMeleeAttackItem = MACRO_NAMED_SCRIPT("tryMeleeAttackItem", TryMeleeAttackItemParser);
+	using HitUnitAmmo = MACRO_NAMED_SCRIPT("hitUnitAmmo", HitUnitParser);
+	using DamageUnitAmmo = MACRO_NAMED_SCRIPT("damageUnitAmmo", DamageUnitParser);
 
 	using CreateItem = MACRO_NAMED_SCRIPT("createItem", CreateItemParser);
 	using NewTurnItem = MACRO_NAMED_SCRIPT("newTurnItem", NewTurnItemParser);
@@ -401,6 +405,7 @@ public:
 		DamageUnit,
 		DamageSpecialUnit,
 		HealUnit,
+
 		CreateUnit,
 		NewTurnUnit,
 		ReturnFromMissionUnit,
@@ -417,8 +422,11 @@ public:
 		SelectItemSprite,
 
 		ReactionWeaponAction,
+
 		TryPsiAttackItem,
 		TryMeleeAttackItem,
+		HitUnitAmmo,
+		DamageUnitAmmo,
 
 		CreateItem,
 		NewTurnItem,

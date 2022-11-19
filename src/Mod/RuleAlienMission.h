@@ -70,6 +70,10 @@ struct MissionWave
 	 * Make the UFO land on a random landing site (instead of always top left). Make the mission site spawn exactly on the landing site.
 	 */
 	bool objectiveOnTheLandingSite;
+	/**
+	 * Make the mission site spawn on an xcom base (or not at all).
+	 */
+	bool objectiveOnXcomBase;
 	/// The chance to become a hunter-killer UFO upon spawning.
 	/**
 	 * -1 (default): take the info from RuleUfo
@@ -108,7 +112,7 @@ struct MissionWave
 	int interruptPercentage;
 };
 
-enum MissionObjective { OBJECTIVE_SCORE, OBJECTIVE_INFILTRATION, OBJECTIVE_BASE, OBJECTIVE_SITE, OBJECTIVE_RETALIATION, OBJECTIVE_SUPPLY };
+enum MissionObjective { OBJECTIVE_SCORE, OBJECTIVE_INFILTRATION, OBJECTIVE_BASE, OBJECTIVE_SITE, OBJECTIVE_RETALIATION, OBJECTIVE_SUPPLY, OBJECTIVE_INSTANT_RETALIATION };
 
 /**
  * Stores fixed information about a mission type.
@@ -149,6 +153,8 @@ public:
 	bool isEndlessInfiltration() const;
 	/// Should the retaliation mission end after the first base defense or continue until all already spawned UFOs disappear?
 	bool isMultiUfoRetaliation() const { return _multiUfoRetaliation; }
+	/// Should the retaliation UFO ignore xcom base defenses?
+	bool ignoreBaseDefenses() const { return _ignoreBaseDefenses; }
 	/// Should the mission site despawn even if targeted?
 	bool despawnEvenIfTargeted() const { return _despawnEvenIfTargeted; }
 	/// Should the spawned alien base be revealed immediately?
@@ -192,6 +198,8 @@ private:
 	bool _endlessInfiltration;
 	/// Should the retaliation mission end after the first base defense or continue until all already spawned UFOs disappear?
 	bool _multiUfoRetaliation;
+	/// Should the retaliation UFO ignore xcom base defenses?
+	bool _ignoreBaseDefenses;
 	/// Should the mission site despawn even if targeted?
 	bool _despawnEvenIfTargeted;
 	/// Should the spawned alien base be revealed immediately?

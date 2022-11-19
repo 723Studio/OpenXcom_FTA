@@ -26,10 +26,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/Mod.h"
-#include "../Engine/ShaderDraw.h"
-#include "../Engine/ShaderMove.h"
 #include "../Engine/Exception.h"
-#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -48,6 +45,7 @@ UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* sav
 	_fireSurface(const_cast<Mod*>(mod)->getSurfaceSet("SMOKE.PCK")),
 	_breathSurface(const_cast<Mod*>(mod)->getSurfaceSet("BREATH-1.PCK", false)),
 	_facingArrowSurface(const_cast<Mod*>(mod)->getSurfaceSet("DETBLOB.DAT")),
+	_warnIndicator(const_cast<Mod*>(mod)->getSurface("UnitWarnedIndicator", false)),
 	_dest(dest), _save(save), _mod(mod),
 	_part(0), _animationFrame(frame), _drawingRoutine(0),
 	_helmet(helmet),
@@ -268,6 +266,15 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 		// draw unit facing indicator
 		auto tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
 		tmpSurface->blitNShade(_dest, _x, _y, 0);
+	}
+	drawUnitIcon();
+}
+
+void UnitSprite::drawUnitIcon()
+{
+	if (_unit->getUnitWarned() && _unit->getFaction() == FACTION_HOSTILE)
+	{
+		_warnIndicator->blitNShade(_dest, _x, _y, 0);
 	}
 }
 
@@ -645,16 +652,16 @@ void UnitSprite::drawRoutine1()
 {
 	Part torso{ BODYPART_TORSO }, leftArm{ BODYPART_LEFTARM }, rightArm{ BODYPART_RIGHTARM }, itemR{ BODYPART_ITEM_RIGHTHAND }, itemL{ BODYPART_ITEM_LEFTHAND };
 	// magic numbers
-	const int stand = 16, walk = 24, die = 64;
-	const int larm = 8, rarm = 0, larm2H = 67, rarm2H = 75, rarmShoot = 83, rarm1H= 91; // note that arms are switched vs "normal" sheets
-	const int yoffWalk[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // bobbing up and down
-	const int offX[8] = { 8, 10, 7, 4, -9, -11, -7, -3 }; // for the weapons
-	const int offY[8] = { -6, -3, 0, 2, 0, -4, -7, -9 }; // for the weapons
-	const int offX2[8] = { -8, 3, 7, 13, 6, -3, -5, -13 }; // for the weapons
-	const int offY2[8] = { 1, -4, -1, 0, 3, 3, 5, 0 }; // for the weapons
-	const int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
-	const int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
-	const int offXAiming = 0;
+	constexpr static int stand = 16, walk = 24, die = 64;
+	constexpr static int larm = 8, rarm = 0, larm2H = 67, rarm2H = 75, rarmShoot = 83, rarm1H= 91; // note that arms are switched vs "normal" sheets
+	constexpr static int yoffWalk[8] = {0, 0, 0, 0, 0, 0, 0, 0}; // bobbing up and down
+	constexpr static int offX[8] = { 8, 10, 7, 4, -9, -11, -7, -3 }; // for the weapons
+	constexpr static int offY[8] = { -6, -3, 0, 2, 0, -4, -7, -9 }; // for the weapons
+	constexpr static int offX2[8] = { -8, 3, 7, 13, 6, -3, -5, -13 }; // for the weapons
+	constexpr static int offY2[8] = { 1, -4, -1, 0, 3, 3, 5, 0 }; // for the weapons
+	constexpr static int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
+	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
+	constexpr static int offXAiming = 0;
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
 	{
@@ -788,12 +795,12 @@ void UnitSprite::drawRoutine1()
  */
 void UnitSprite::drawRoutine2()
 {
-	const int offX[8] = { -2, -7, -5, 0, 5, 7, 2, 0 }; // hovertank offsets
-	const int offy[8] = { -1, -3, -4, -5, -4, -3, -1, -1 }; // hovertank offsets
+	constexpr static int offX[8] = { -2, -7, -5, 0, 5, 7, 2, 0 }; // hovertank offsets
+	constexpr static int offy[8] = { -1, -3, -4, -5, -4, -3, -1, -1 }; // hovertank offsets
 
 	Part s{ BODYPART_LARGE_TORSO + _part };
 
-	const int hoverTank = _unit->getMovementType() == MT_FLY ? 32 : 0;
+	const int hoverTank = _unit->getOriginalMovementType() == MT_FLY ? 32 : 0;
 	const int turret = _unit->getTurretType();
 
 	// draw the animated propulsion below the hwp
@@ -895,14 +902,14 @@ void UnitSprite::drawRoutine4()
 {
 	Part s{ BODYPART_TORSO }, itemR{ BODYPART_ITEM_RIGHTHAND }, itemL{ BODYPART_ITEM_LEFTHAND };
 	int stand = 0, walk = 8, die = 72;
-	const int offX[8] = { 8, 10, 7, 4, -9, -11, -7, -3 }; // for the weapons
-	const int offY[8] = { -6, -3, 0, 2, 0, -4, -7, -9 }; // for the weapons
-	const int offX2[8] = { -8, 3, 5, 12, 6, -1, -5, -13 }; // for the weapons
-	const int offY2[8] = { 1, -4, -2, 0, 3, 3, 5, 0 }; // for the weapons
-	const int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
-	const int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
-	const int standConvert[8] = { 3, 2, 1, 0, 7, 6, 5, 4 }; // array for converting stand frames for some tftd civilians
-	const int offXAiming = 0;
+	constexpr static int offX[8] = { 8, 10, 7, 4, -9, -11, -7, -3 }; // for the weapons
+	constexpr static int offY[8] = { -6, -3, 0, 2, 0, -4, -7, -9 }; // for the weapons
+	constexpr static int offX2[8] = { -8, 3, 5, 12, 6, -1, -5, -13 }; // for the weapons
+	constexpr static int offY2[8] = { 1, -4, -2, 0, 3, 3, 5, 0 }; // for the weapons
+	constexpr static int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
+	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
+	constexpr static int standConvert[8] = { 3, 2, 1, 0, 7, 6, 5, 4 }; // array for converting stand frames for some tftd civilians
+	constexpr static int offXAiming = 0;
 
 	if (_drawingRoutine == 17) // tftd civilian - first set
 	{
@@ -1038,20 +1045,20 @@ void UnitSprite::drawRoutine6()
 {
 	Part torso{ BODYPART_TORSO }, legs{ BODYPART_LEGS }, leftArm{ BODYPART_LEFTARM }, rightArm{ BODYPART_RIGHTARM }, itemR{ BODYPART_ITEM_RIGHTHAND }, itemL{ BODYPART_ITEM_LEFTHAND };
 	// magic numbers
-	const int Torso = 24, legsStand = 16, die = 96;
-	const int larmStand = 0, rarmStand = 8, rarm1H = 99, larm2H = 107, rarm2H = 115, rarmShoot = 123;
-	const int legsWalk = 32;
-	const int yoffWalk[8] = {3, 3, 2, 1, 0, 0, 1, 2}; // bobbing up and down
-	const int xoffWalka[8] = {0, 0, 1, 2, 3, 3, 2, 1};
-	const int xoffWalkb[8] = {0, 0, -1, -2, -3, -3, -2, -1};
-	const int yoffStand[8] = {2, 1, 1, 0, 0, 0, 0, 0};
-	const int offX[8] = { 8, 10, 5, 2, -8, -10, -5, -2 }; // for the weapons
-	const int offY[8] = { -6, -3, 0, 0, 2, -3, -7, -9 }; // for the weapons
-	const int offX2[8] = { -8, 2, 7, 13, 7, 0, -3, -15 }; // for the weapons
-	const int offY2[8] = { 1, -4, -2, 0, 3, 3, 5, 0 }; // for the weapons
-	const int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
-	const int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
-	const int offXAiming = 0;
+	constexpr static int Torso = 24, legsStand = 16, die = 96;
+	constexpr static int larmStand = 0, rarmStand = 8, rarm1H = 99, larm2H = 107, rarm2H = 115, rarmShoot = 123;
+	constexpr static int legsWalk = 32;
+	constexpr static int yoffWalk[8] = {3, 3, 2, 1, 0, 0, 1, 2}; // bobbing up and down
+	constexpr static int xoffWalka[8] = {0, 0, 1, 2, 3, 3, 2, 1};
+	constexpr static int xoffWalkb[8] = {0, 0, -1, -2, -3, -3, -2, -1};
+	constexpr static int yoffStand[8] = {2, 1, 1, 0, 0, 0, 0, 0};
+	constexpr static int offX[8] = { 8, 10, 5, 2, -8, -10, -5, -2 }; // for the weapons
+	constexpr static int offY[8] = { -6, -3, 0, 0, 2, -3, -7, -9 }; // for the weapons
+	constexpr static int offX2[8] = { -8, 2, 7, 13, 7, 0, -3, -15 }; // for the weapons
+	constexpr static int offY2[8] = { 1, -4, -2, 0, 3, 3, 5, 0 }; // for the weapons
+	constexpr static int offX3[8] = { 0, 6, 6, 12, -4, -5, -5, -13 }; // for the left handed rifles
+	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
+	constexpr static int offXAiming = 0;
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
 	{
@@ -1221,12 +1228,12 @@ void UnitSprite::drawRoutine7()
 {
 	Part torso{ BODYPART_TORSO }, legs{ BODYPART_LEGS }, leftArm{ BODYPART_LEFTARM }, rightArm{ BODYPART_RIGHTARM };
 	// magic numbers
-	const int Torso = 24, legsStand = 16, die = 224;
-	const int larmStand = 0, rarmStand = 8;
-	const int legsWalk = 48;
-	const int larmWalk = 32;
-	const int rarmWalk = 40;
-	const int yoffWalk[8] = {1, 0, -1, 0, 1, 0, -1, 0}; // bobbing up and down
+	constexpr static int Torso = 24, legsStand = 16, die = 224;
+	constexpr static int larmStand = 0, rarmStand = 8;
+	constexpr static int legsWalk = 48;
+	constexpr static int larmWalk = 32;
+	constexpr static int rarmWalk = 40;
+	constexpr static int yoffWalk[8] = {1, 0, -1, 0, 1, 0, -1, 0}; // bobbing up and down
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
 	{
@@ -1282,8 +1289,8 @@ void UnitSprite::drawRoutine8()
 {
 	Part legs{ BODYPART_TORSO };
 	// magic numbers
-	const int Body = 0, aim = 5, die = 6;
-	const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
+	constexpr static int Body = 0, aim = 5, die = 6;
+	constexpr static int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
 
 	selectUnit(legs, Body, Pulsate[_animationFrame % 8]);
 
@@ -1308,7 +1315,7 @@ void UnitSprite::drawRoutine9()
 {
 	Part torso{ BODYPART_TORSO };
 	// magic numbers
-	const int Body = 0, die = 25;
+	constexpr static int Body = 0, die = 25;
 
 	selectUnit(torso, Body, _animationFrame % 8);
 
@@ -1328,13 +1335,14 @@ void UnitSprite::drawRoutine9()
  */
 void UnitSprite::drawRoutine11()
 {
-	const int offTurretX[8] = { -2, -6, -5, 0, 5, 6, 2, 0 }; // turret offsets
-	const int offTurretYAbove[8] = { 5, 3, 0, 0, 0, 3, 5, 4 }; // turret offsets
-	const int offTurretYBelow[8] = { -11, -13, -16, -16, -16, -13, -11, -12 }; // turret offsets
+	// magic numbers
+	constexpr static int offTurretX[8] = { -2, -6, -5, 0, 5, 6, 2, 0 }; // turret offsets
+	constexpr static int offTurretYAbove[8] = { 5, 3, 0, 0, 0, 3, 5, 4 }; // turret offsets
+	constexpr static int offTurretYBelow[8] = { -11, -13, -16, -16, -16, -13, -11, -12 }; // turret offsets
 
 	int body = 0;
 	int animFrame = _unit->getWalkingPhase() % 4;
-	if (_unit->getMovementType() == MT_FLY)
+	if (_unit->getOriginalMovementType() == MT_FLY)
 	{
 		body = 128;
 		animFrame = _animationFrame % 4;
@@ -1380,7 +1388,7 @@ void UnitSprite::drawRoutine16()
 {
 	Part s{ BODYPART_TORSO };
 	// magic numbers
-	const int die = 8;
+	constexpr static int die = 8;
 
 	selectUnit(s, 0, _animationFrame % 8);
 
@@ -1402,7 +1410,7 @@ void UnitSprite::drawRoutine19()
 {
 	Part s{ BODYPART_TORSO };
 	// magic numbers
-	const int stand = 0, move = 8, die = 16;
+	constexpr static int stand = 0, move = 8, die = 16;
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
 	{

@@ -52,7 +52,7 @@ private:
 	const BattleUnit *_unit;
 	const BattleItem *_itemR, *_itemL;
 	const SurfaceSet *_unitSurface, *_itemSurface, *_fireSurface, *_breathSurface, *_facingArrowSurface;
-	Surface *_dest;
+	Surface* _warnIndicator, *_dest;
 	const SavedBattleGame *_save;
 	const Mod *_mod;
 	int _part, _animationFrame, _drawingRoutine;
@@ -113,6 +113,8 @@ public:
 	~UnitSprite();
 	/// Draws the unit.
 	void draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool isAltPressed);
+	/// Draws special icon near the unit
+	void drawUnitIcon();
 };
 
 } //namespace OpenXcom

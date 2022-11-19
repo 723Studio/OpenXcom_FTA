@@ -451,6 +451,12 @@ void NextTurnState::handle(Action *action)
 {
 	State::handle(action);
 
+	if (_battleGame->isPreview())
+	{
+		// prevent NPE on Android/iOS
+		return;
+	}
+
 	if (_btnBriefingReinforcements->getVisible() && action->getDetails()->type == SDL_MOUSEBUTTONDOWN)
 	{
 		double mx = action->getAbsoluteXMouse();
@@ -1093,7 +1099,7 @@ bool NextTurnState::placeReinforcementNearFriend(BattleUnit *unit)
 			if (k->getFaction() == unit->getFaction() && k->getPosition() != TileEngine::invalid && k->getArmor()->getSize() >= unit->getArmor()->getSize())
 			{
 				entryPoint = k->getPosition();
-				largeUnit = (k->getArmor()->getSize() != 1);
+				largeUnit = k->isBigUnit();
 			}
 			--tries;
 		}

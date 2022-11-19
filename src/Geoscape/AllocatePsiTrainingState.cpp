@@ -34,7 +34,6 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
-#include "../Mod/Mod.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Basescape/SoldierSortUtil.h"
 #include <algorithm>
@@ -484,7 +483,6 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 	}
 
 	_sel = _lstSoldiers->getSelectedRow();
-	Soldier* selected = _base->getSoldiers()->at(_sel);
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
 		auto* s = _base->getSoldiers()->at(_sel);

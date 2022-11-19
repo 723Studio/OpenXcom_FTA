@@ -50,9 +50,11 @@ private:
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
 	std::vector<std::string> _availableOptions;
+	bool _ftaUI;
+	std::vector<int> _soldierNumbers;
 	///initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
-public:
+  public:
 	/// Creates the Soldiers state.
 	SoldiersState(Base *base);
 	/// Cleans up the Soldiers state.
@@ -78,8 +80,6 @@ public:
 	void btnMemorialClick(Action *action);
 	/// Handler for changing the screen actions combo box.
 	void cbxScreenActionsChange(Action *action);
-	/// Handler for clicking the Inventory button.
-	void btnInventoryClick(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
 	/// Handler for pressing-down a mouse-button in the list.

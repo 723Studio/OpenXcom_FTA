@@ -85,7 +85,7 @@ ComboBox::ComboBox(State *state, int width, int height, int x, int y, bool popup
 	_list->setAlign(ALIGN_CENTER);
 	_list->setScrolling(hasScroll, 0);
 
-	toggle(true);
+	toggle(true, false);
 }
 
 /**
@@ -372,7 +372,7 @@ void ComboBox::handle(Action *action, State *state)
 		(action->getAbsoluteXMouse() < getX() || action->getAbsoluteXMouse() >= getX() + getWidth() ||
 		 action->getAbsoluteYMouse() < topY || action->getAbsoluteYMouse() >= topY + getHeight() + _window->getHeight()))
 	{
-		toggle();
+		toggle(false, false);
 	}
 	if (_toggled)
 	{
@@ -399,19 +399,20 @@ void ComboBox::think()
 /**
  * Opens/closes the combo box list.
  * @param first Is it the initialization toggle?
+ * @param listClick Should the change handler be triggered? (Yes = list click; No = button click or click anywhere else)
  */
-void ComboBox::toggle(bool first)
+void ComboBox::toggle(bool first, bool listClick)
 {
 	_window->setVisible(!_window->getVisible());
 	_list->setVisible(!_list->getVisible());
 	_state->setModal(_window->getVisible() ? this : 0);
 	if (!first && !_window->getVisible())
 	{
-		_toggled = true;
+		_toggled = listClick;
 	}
 	if (_list->getVisible())
 	{
-		if (_sel < _list->getVisibleRows()/2)
+		if (_sel < _list->getVisibleRows()/2 || _sel == (size_t)-1)
 		{
 			_list->scrollTo(0);
 		}

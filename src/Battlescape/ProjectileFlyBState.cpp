@@ -22,7 +22,6 @@
 #include "Projectile.h"
 #include "TileEngine.h"
 #include "Map.h"
-#include "Pathfinding.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -968,12 +967,43 @@ void ProjectileFlyBState::projectileHitUnit(Position pos)
 		}
 		if (victim == targetVictim) // Hit our target
 		{
+			int distanceSq = _action.actor->distance3dToUnitSq(victim);
+			int distance = (int)std::ceil(sqrt(float(distanceSq)));
+			int accuracy = BattleUnit::getFiringAccuracy(BattleActionAttack::GetAferShoot(_action, _ammo), _parent->getMod());
+			// code from Map::drawTerrain(), where the crosshair accuracy is calculated
+			if (Options::battleUFOExtenderAccuracy)
+			{
+				const RuleItem* weapon = _action.weapon->getRules();
+				int upperLimit = weapon->getAimRange();
+				int lowerLimit = weapon->getMinRange();
+				if (_action.type == BA_AUTOSHOT)
+				{
+					upperLimit = weapon->getAutoRange();
+				}
+				else if (_action.type == BA_SNAPSHOT)
+				{
+					upperLimit = weapon->getSnapRange();
+				}
+				if (distance > upperLimit)
+				{
+					accuracy -= (distance - upperLimit) * weapon->getDropoff();
+				}
+				else if (distance < lowerLimit)
+				{
+					accuracy -= (lowerLimit - distance) * weapon->getDropoff();
+				}
+				if (accuracy < 0)
+				{
+					accuracy = 0;
+				}
+			}
+
 			_unit->getStatistics()->shotsLandedCounter++;
-			if (Position::distance2d(_action.actor->getPosition(), victim->getPosition()) > 30)
+			if (distance > 30)
 			{
 				_unit->getStatistics()->longDistanceHitCounter++;
 			}
-			if (BattleUnit::getFiringAccuracy(BattleActionAttack::GetAferShoot(_action, _ammo), _parent->getMod()) < Position::distance2d(_action.actor->getPosition(), victim->getPosition()))
+			if (accuracy < distance)
 			{
 				_unit->getStatistics()->lowAccuracyHitCounter++;
 			}

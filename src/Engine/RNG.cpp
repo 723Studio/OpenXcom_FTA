@@ -17,9 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RNG.h"
-#include <cmath>
 #include <time.h>
-#include <stdlib.h>
 #ifndef UINT64_MAX
 #define UINT64_MAX 0xffffffffffffffffULL
 #endif
@@ -179,6 +177,29 @@ int seedless(int min, int max)
 bool percent(int value)
 {
 	return x.percent(value);
+}
+
+/**
+ * Generates a random string, and returns the result
+ * @param length Length of desired string.
+ * @return the result of calculations.
+ */
+std::string randomString(std::string::size_type length)
+{
+	static auto& chrs = "0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	thread_local static std::mt19937 rg{ std::random_device{}() };
+	thread_local static std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
+
+	std::string s;
+
+	s.reserve(length);
+
+	while (length--)
+		s += chrs[pick(rg)];
+
+	return s;
 }
 
 }

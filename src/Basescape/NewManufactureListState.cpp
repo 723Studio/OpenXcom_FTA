@@ -263,7 +263,7 @@ void NewManufactureListState::lstProdClickMiddle(Action *)
 	_doInit = false;
 	bool ctrlPressed = _game->isCtrlPressed();
 	const RuleManufacture *selectedTopic = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
-	if (_game->getMod()->getIsFTAGame() && !ctrlPressed)
+	if (_game->getMod()->isFTAGame() && !ctrlPressed)
 	{
 		auto itemList = selectedTopic->getProducedItems();
 		if (!itemList.empty())

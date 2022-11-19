@@ -135,6 +135,7 @@ lb:
   STR_FIRING: "SCHÉISST"
   STR_HIT: "TREFFER!"
   STR_MISSED: "LAANSCHT!"
+  STR_SELL_ITEMS_SACK_PERSONNEL: "Deeler verkafen/Personal entloossen"
   STR_VALUE_OF_SALES: "WÄERT VUN DEN VERKEEF>{ALT}{0}"
   STR_FUNDS: "GELDER> {ALT}{0}"
   STR_SELL_SACK: "Verkafen/Entloossen"

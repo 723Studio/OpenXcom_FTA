@@ -18,8 +18,8 @@
  */
 #include "DismantleFacilityState.h"
 #include "../Engine/Game.h"
+#include "../Engine/Sound.h"
 #include "../Mod/Mod.h"
-#include "../Engine/Exception.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/TextButton.h"
@@ -28,6 +28,8 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
+#include "../Savegame/Soldier.h"
 #include "BaseView.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
@@ -138,6 +140,24 @@ void DismantleFacilityState::btnOkClick(Action *)
 			}
 		}
 
+		if (_game->getMod()->isFTAGame())
+		{
+			for (auto project : _base->getProductions())
+			{
+				if (project->getRules() == _fac->getRules()->getProjectRules())
+				{
+					for (auto s : *_base->getSoldiers())
+					{
+						if (s->getProductionProject() == project)
+						{
+							s->setProductionProject(0);
+						}
+					}
+					_base->removeProduction(project);
+				}
+			}
+		}
+
 		for (std::vector<BaseFacility*>::iterator i = _base->getFacilities()->begin(); i != _base->getFacilities()->end(); ++i)
 		{
 			if (*i == _fac)
@@ -147,6 +167,10 @@ void DismantleFacilityState::btnOkClick(Action *)
 				if (_fac->getBuildTime() == 0 && _fac->getRules()->getLeavesBehindOnSell().size() != 0)
 				{
 					const auto &facList = _fac->getRules()->getLeavesBehindOnSell();
+					if (facList.at(0)->getPlaceSound() != Mod::NO_SOUND)
+					{
+						_game->getMod()->getSound("GEO.CAT", facList.at(0)->getPlaceSound())->play();
+					}
 					// Make sure the size of the facilities left behind matches the one we removed
 					if (facList.at(0)->getSize() == _fac->getRules()->getSize()) // equal size facilities
 					{

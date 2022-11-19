@@ -27,7 +27,6 @@
 #include "../Engine/Logger.h"
 #include "../Mod/Mod.h"
 #include "../Engine/RNG.h"
-#include "../Engine/Unicode.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Options.h"
 #include "../Engine/CrossPlatform.h"
@@ -49,8 +48,6 @@
 #include "ItemContainer.h"
 #include "Soldier.h"
 #include "Transfer.h"
-#include "../Mod/ArticleDefinition.h"
-#include "../Mod/RuleResearch.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleCraft.h"
@@ -65,6 +62,7 @@
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Mod/SoldierNamePool.h"
 #include "BaseFacility.h"
 #include "MissionStatistics.h"
 #include "SoldierDeath.h"
@@ -149,10 +147,12 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
 /**
  * Initializes a brand new saved game according to the specified difficulty.
  */
-SavedGame::SavedGame() : _difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _ftaGame(false), _globeLon(0.0),
-						 _globeLat(0.0), _globeZoom(0), _battleGame(0), _previewBase(nullptr), _debug(false),
-						 _warned(false), _monthsPassed(-1), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false),
-						 _loyalty(0), _lastMonthsLoyalty(0)
+SavedGame::SavedGame() :
+	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
+	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
+	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
+	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _selectedBase(0), _autosales(),
+	_disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -221,7 +221,7 @@ SavedGame::~SavedGame()
 	{
 		delete *i;
 	}
-	for (int j = 0; j < MAX_EQUIPMENT_LAYOUT_TEMPLATES; ++j)
+	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
 		for (std::vector<EquipmentLayoutItem*>::iterator i = _globalEquipmentLayout[j].begin(); i != _globalEquipmentLayout[j].end(); ++i)
 		{
@@ -435,6 +435,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		_name = filename;
 	}
 	_ironman = brief["ironman"].as<bool>(_ironman);
+	_ftaGame = brief["ftaGame"].as<bool>(_ftaGame);
 
 	// Get full save data
 	YAML::Node doc = file[1];
@@ -447,7 +448,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_graphCountryToggles = doc["graphCountryToggles"].as<std::string>(_graphCountryToggles);
 	_graphFinanceToggles = doc["graphFinanceToggles"].as<std::string>(_graphFinanceToggles);
 	_loyalty = doc["loyalty"].as<int>(_loyalty);
-	_ftaGame = doc["ftaGame"].as<bool>(_ftaGame);
 	_lastMonthsLoyalty = doc["lastMonthsLoyalty"].as<int>(_lastMonthsLoyalty);
 	_funds = doc["funds"].as< std::vector<int64_t> >(_funds);
 	_maintenance = doc["maintenance"].as< std::vector<int64_t> >(_maintenance);
@@ -456,6 +456,9 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_incomes = doc["incomes"].as< std::vector<int64_t> >(_incomes);
 	_expenditures = doc["expenditures"].as< std::vector<int64_t> >(_expenditures);
 	_warned = doc["warned"].as<bool>(_warned);
+	_togglePersonalLight = doc["togglePersonalLight"].as<bool>(_togglePersonalLight);
+	_toggleNightVision = doc["toggleNightVision"].as<bool>(_toggleNightVision);
+	_toggleBrightness = doc["toggleBrightness"].as<int>(_toggleBrightness);
 	_globeLon = doc["globeLon"].as<double>(_globeLon);
 	_globeLat = doc["globeLat"].as<double>(_globeLat);
 	_globeZoom = doc["globeZoom"].as<int>(_globeZoom);
@@ -546,7 +549,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		std::string diplomacyFactionName = (*it)["name"].as<std::string>();
 		if (mod->getDiplomacyFaction(diplomacyFactionName))
 		{
-			const RuleDiplomacyFaction &diplomacyFactionRule = *mod->getDiplomacyFaction(diplomacyFactionName);
 			DiplomacyFaction *diplomacyFaction = new DiplomacyFaction(mod, diplomacyFactionName);
 			diplomacyFaction->load(*it);
 			_diplomacyFactions.push_back(diplomacyFaction);
@@ -648,6 +650,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_ufopediaRuleStatus = doc["ufopediaRuleStatus"].as< std::map<std::string, int> >(_ufopediaRuleStatus);
 	_manufactureRuleStatus = doc["manufactureRuleStatus"].as< std::map<std::string, int> >(_manufactureRuleStatus);
 	_researchRuleStatus = doc["researchRuleStatus"].as< std::map<std::string, int> >(_researchRuleStatus);
+	_monthlyPurchaseLimitLog = doc["monthlyPurchaseLimitLog"].as< std::map<std::string, int> >(_monthlyPurchaseLimitLog);
 	_hiddenPurchaseItemsMap = doc["hiddenPurchaseItems"].as< std::map<std::string, bool> >(_hiddenPurchaseItemsMap);
 	_customRuleCraftDeployments = doc["customRuleCraftDeployments"].as< std::map<std::string, RuleCraftDeployment > >(_customRuleCraftDeployments);
 
@@ -729,7 +732,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		std::string type = (*i)["type"].as<std::string>(mod->getSoldiersList().front());
 		if (mod->getSoldier(type))
 		{
-			Soldier *soldier = new Soldier(mod->getSoldier(type), 0);
+			Soldier *soldier = new Soldier(mod->getSoldier(type), nullptr, 0 /*nationality*/);
 			soldier->load(*i, mod, this, mod->getScriptGlobal());
 			_deadSoldiers.push_back(soldier);
 		}
@@ -739,7 +742,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	for (int j = 0; j < MAX_EQUIPMENT_LAYOUT_TEMPLATES; ++j)
+	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
 		std::ostringstream oss;
 		oss << "globalEquipmentLayout" << j;
@@ -849,6 +852,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	YAML::Node brief;
 	brief["name"] = _name;
 	brief["version"] = OPENXCOM_FTA_VERSION_SHORT;
+	brief["engine"] = OPENXCOM_VERSION_ENGINE;
 	std::string git_sha = OPENXCOM_FTA_VERSION_GIT;
 	if (!git_sha.empty() && git_sha[0] ==  '.')
 	{
@@ -896,6 +900,9 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["incomes"] = _incomes;
 	node["expenditures"] = _expenditures;
 	node["warned"] = _warned;
+	node["togglePersonalLight"] = _togglePersonalLight;
+	node["toggleNightVision"] = _toggleNightVision;
+	node["toggleBrightness"] = _toggleBrightness;
 	node["globeLon"] = serializeDouble(_globeLon);
 	node["globeLat"] = serializeDouble(_globeLat);
 	node["globeZoom"] = _globeZoom;
@@ -961,6 +968,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["ufopediaRuleStatus"] = _ufopediaRuleStatus;
 	node["manufactureRuleStatus"] = _manufactureRuleStatus;
 	node["researchRuleStatus"] = _researchRuleStatus;
+	node["monthlyPurchaseLimitLog"] = _monthlyPurchaseLimitLog;
 	node["hiddenPurchaseItems"] = _hiddenPurchaseItemsMap;
 	node["customRuleCraftDeployments"] = _customRuleCraftDeployments;
 	node["alienStrategy"] = _alienStrategy->save();
@@ -968,7 +976,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	{
 		node["deadSoldiers"].push_back((*i)->save(mod->getScriptGlobal()));
 	}
-	for (int j = 0; j < MAX_EQUIPMENT_LAYOUT_TEMPLATES; ++j)
+	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
 		std::ostringstream oss;
 		oss << "globalEquipmentLayout" << j;
@@ -1863,7 +1871,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 
 		RuleResearch *research = pair.second;
 
-		// This research topic is hidden, don't show it to the player!
+		// This research topic is hidden, don't ever show it to the player!
 		if (research->isHidden())
 		{
 			continue;
@@ -2380,6 +2388,26 @@ bool SavedGame::isFacilityBuilt(const std::string &facilityType) const
 }
 
 /**
+ * Returns if a certain soldier type has been hired in any base.
+ * @param soldierType soldier type ID.
+ * @return Whether it's been hired (and arrived already) or not.
+ */
+bool SavedGame::isSoldierTypeHired(const std::string& soldierType) const
+{
+	for (auto* base : _bases)
+	{
+		for (auto* soldier : *base->getSoldiers())
+		{
+			if (soldier->getRules()->getType() == soldierType)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
  * Returns pointer to the Soldier given it's unique ID.
  * @param id A soldier's unique id.
  * @return Pointer to Soldier.
@@ -2853,6 +2881,69 @@ Country* SavedGame::locateCountry(const Target& target) const
 	return locateCountry(target.getLongitude(), target.getLatitude());
 }
 
+/**
+ * Select a soldier nationality based on mod rules and location on the globe.
+ */
+int SavedGame::selectSoldierNationalityByLocation(const Mod* mod, const RuleSoldier* rule, const Target* target) const
+{
+	if (!target)
+	{
+		return -1;
+	}
+
+	if (mod->getHireByCountryOdds() > 0 && RNG::percent(mod->getHireByCountryOdds()))
+	{
+		Country* country = locateCountry(*target);
+		if (country)
+		{
+			int nationality = 0;
+			for (auto* namepool : rule->getNames())
+			{
+				// we assume there is only one such name pool (or none), thus we stop searching on the first hit
+				if (country->getRules()->getType() == namepool->getCountry())
+				{
+					return nationality;
+				}
+				++nationality;
+			}
+		}
+	}
+
+	if (mod->getHireByRegionOdds() > 0 && RNG::percent(mod->getHireByRegionOdds()))
+	{
+		Region* region = locateRegion(*target);
+		if (region)
+		{
+			// build a new name pool collection, filtered by the region
+			std::vector<std::pair<SoldierNamePool*, int> > filteredNames;
+			int totalFilteredNamePoolWeight = 0;
+			int nationality = 0;
+			for (auto* namepool : rule->getNames())
+			{
+				if (region->getRules()->getType() == namepool->getRegion())
+				{
+					filteredNames.push_back(std::make_pair(namepool, nationality));
+					totalFilteredNamePoolWeight += namepool->getGlobalWeight();
+				}
+				++nationality;
+			}
+
+			// select the nationality from the filtered pool, by weight
+			int tmp = RNG::generate(0, totalFilteredNamePoolWeight);
+			for (auto& namepoolPair : filteredNames)
+			{
+				if (tmp <= namepoolPair.first->getGlobalWeight())
+				{
+					return namepoolPair.second;
+				}
+				tmp -= namepoolPair.first->getGlobalWeight();
+			}
+		}
+	}
+
+	return -1;
+}
+
 /*
  * @return the month counter.
  */
@@ -2918,6 +3009,8 @@ void SavedGame::setGraphFinanceToggles(const std::string &value)
 void SavedGame::addMonth()
 {
 	++_monthsPassed;
+
+	_monthlyPurchaseLimitLog.clear();
 }
 
 /*
@@ -3412,6 +3505,14 @@ bool SavedGame::spawnEvent(const RuleEvent* eventRules)
 	return true;
 }
 
+bool SavedGame::spawnEvent(std::vector<std::string> eventNames, const Mod* mod)
+{
+	size_t pickEvent = RNG::generate(0, eventNames.size() - 1);
+	auto eventName = eventNames.at(pickEvent);
+	
+	return spawnEvent(mod->getEvent(eventName));
+}
+
 /**
  * Checks if an instant Geoscape event can be spawned.
  */
@@ -3547,6 +3648,15 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 		// 3l. handle spawned events
 		RuleEvent* spawnedEventRule = mod->getEvent(myResearchRule->getSpawnedEvent());
 		spawnEvent(spawnedEventRule);
+		// 3m. handle counters
+		for (auto& inc : myResearchRule->getIncreaseCounter())
+		{
+			increaseCustomCounter(inc);
+		}
+		for (auto& dec : myResearchRule->getDecreaseCounter())
+		{
+			decreaseCustomCounter(dec);
+		}
 	}
 }
 

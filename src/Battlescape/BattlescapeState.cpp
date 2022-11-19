@@ -208,6 +208,8 @@ BattlescapeState::BattlescapeState() :
 	_btnSkills = new BattlescapeButton(32, 24, screenWidth - 32, 25); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnSkills->setVisible(false);
 
+	_ftaUI = _game->getMod()->isFTAGame();
+
 	{
 		auto posX = (screenWidth - 32);
 		for (auto& pos :  _posSpecialActions)
@@ -612,11 +614,11 @@ BattlescapeState::BattlescapeState() :
 			// turn personal lights off
 			//_save->getTileEngine()->togglePersonalLighting();
 			// turn night vision on
-			_map->toggleNightVision();
+			_map->enableNightVision();
 		}
 	}
 
-	SDLKey buttons[] = {Options::keyBattleCenterEnemy1,
+	/*SDLKey buttons[] = {Options::keyBattleCenterEnemy1,
 						Options::keyBattleCenterEnemy2,
 						Options::keyBattleCenterEnemy3,
 						Options::keyBattleCenterEnemy4,
@@ -625,7 +627,7 @@ BattlescapeState::BattlescapeState() :
 						Options::keyBattleCenterEnemy7,
 						Options::keyBattleCenterEnemy8,
 						Options::keyBattleCenterEnemy9,
-						Options::keyBattleCenterEnemy10};
+						Options::keyBattleCenterEnemy10};*/
 	for (int i = 0; i < VISIBLE_MAX; ++i)
 	{
 		std::ostringstream tooltip;
@@ -1211,9 +1213,7 @@ void BattlescapeState::btnKneelClick(Action *)
 			// update any path preview when unit kneels
 			if (_battleGame->getPathfinding()->isPathPreviewed())
 			{
-				_battleGame->getPathfinding()->calculate(_battleGame->getCurrentAction()->actor, _battleGame->getCurrentAction()->target, _battleGame->getCurrentAction()->getMoveType());
-				_battleGame->getPathfinding()->removePreview();
-				_battleGame->getPathfinding()->previewPath();
+				_battleGame->getPathfinding()->refreshPath();
 			}
 		}
 	}
@@ -1842,8 +1842,7 @@ void BattlescapeState::btnReserveClick(Action *action)
 		// update any path preview
 		if (_battleGame->getPathfinding()->isPathPreviewed())
 		{
-			_battleGame->getPathfinding()->removePreview();
-			_battleGame->getPathfinding()->previewPath();
+			_battleGame->getPathfinding()->refreshPath();
 		}
 	}
 }
@@ -2090,8 +2089,13 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 		else
 		{
 			// show tiny rank (modded)
+			SoldierRole role = soldier->getBestRole();
 			SurfaceSet *texture = _game->getMod()->getSurfaceSet("TinyRanks");
 			Surface *spr = texture->getFrame(soldier->getRankSpriteTiny());
+			if (_ftaUI)
+			{
+				spr = texture->getFrame(soldier->getRoleRankSpriteTiny(role));
+			}
 			if (spr)
 			{
 				spr->blitNShade(_rankTiny, 0, 0);
@@ -3506,8 +3510,7 @@ void BattlescapeState::btnReserveKneelClick(Action *action)
 		// update any path preview
 		if (_battleGame->getPathfinding()->isPathPreviewed())
 		{
-			_battleGame->getPathfinding()->removePreview();
-			_battleGame->getPathfinding()->previewPath();
+			_battleGame->getPathfinding()->refreshPath();
 		}
 	}
 }
@@ -3589,7 +3592,7 @@ void BattlescapeState::txtTooltipInExtra(Action *action, bool leftHand, bool spe
 				// we can heal a unit that is at the same position, unconscious and healable(=woundable)
 				if ((*i)->getPosition() == selectedUnit->getPosition() && *i != selectedUnit && (*i)->getStatus() == STATUS_UNCONSCIOUS && ((*i)->isWoundable() || weaponRule->getAllowTargetImmune()) && weaponRule->getAllowTargetGround())
 				{
-					if ((*i)->getArmor()->getSize() != 1)
+					if ((*i)->isBigUnit())
 					{
 						// never EVER apply anything to 2x2 units on the ground
 						continue;

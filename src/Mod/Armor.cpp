@@ -70,7 +70,7 @@ Armor::Armor(const std::string &type) :
 	_fearImmune(defTriBool), _bleedImmune(defTriBool), _painImmune(defTriBool), _zombiImmune(defTriBool),
 	_ignoresMeleeThreat(defTriBool), _createsMeleeThreat(defTriBool),
 	_overKill(0.5f), _meleeDodgeBackPenalty(0),
-	_allowsRunning(defTriBool), _allowsStrafing(defTriBool), _allowsKneeling(defTriBool), _allowsMoving(1),
+	_allowsRunning(defTriBool), _allowsStrafing(defTriBool), _allowsSneaking(defTriBool), _allowsKneeling(defTriBool), _allowsMoving(1),
 	_isPilotArmor(false), _allowTwoMainWeapons(false), _instantWoundRecovery(false),
 	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1),
 	_hackingDefense(0)
@@ -142,6 +142,26 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 
 	_turnBeforeFirstStep = node["turnBeforeFirstStep"].as<bool>(_turnBeforeFirstStep);
 	_turnCost = node["turnCost"].as<int>(_turnCost);
+	if (const YAML::Node &move =  node["moveCost"])
+	{
+		_moveCostBase.load(move["basePercent"]);
+		_moveCostBaseFly.load(move["baseFlyPercent"]);
+		_moveCostBaseNormal.load(move["baseNormalPercent"]);
+
+		_moveCostWalk.load(move["walkPercent"]);
+		_moveCostRun.load(move["runPercent"]);
+		_moveCostStrafe.load(move["strafePercent"]);
+		_moveCostSneak.load(move["sneakPercent"]);
+
+		_moveCostFlyWalk.load(move["flyWalkPercent"]);
+		_moveCostFlyRun.load(move["flyRunPercent"]);
+		_moveCostFlyStrafe.load(move["flyStrafePercent"]);
+
+		_moveCostFlyUp.load(move["flyUpPercent"]);
+		_moveCostFlyDown.load(move["flyDownPercent"]);
+
+		_moveCostGravLift.load(move["gravLiftPercent"]);
+	}
 
 	mod->loadSoundOffset(_type, _moveSound, node["moveSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _deathSoundMale, node["deathMale"], "BATTLE.CAT");
@@ -238,6 +258,7 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	mod->loadSpriteOffset(_type, _customArmorPreviewIndex, node["customArmorPreviewIndex"], "CustomArmorPreviews");
 	loadTriBoolHelper(_allowsRunning, node["allowsRunning"]);
 	loadTriBoolHelper(_allowsStrafing, node["allowsStrafing"]);
+	loadTriBoolHelper(_allowsSneaking, node["allowsSneaking"]);
 	loadTriBoolHelper(_allowsKneeling, node["allowsKneeling"]);
 	_allowsMoving = node["allowsMoving"].as<bool>(_allowsMoving);
 	_isPilotArmor = node["isPilotArmor"].as<bool>(_isPilotArmor);
@@ -546,6 +567,39 @@ bool Armor::drawBubbles() const
 MovementType Armor::getMovementType() const
 {
 	return _movementType;
+}
+
+/**
+ * Get MovementType based on depth of battle.
+ */
+MovementType Armor::getMovementTypeByDepth(int depth) const
+{
+	if (_movementType == MT_FLOAT)
+	{
+		if (depth > 0)
+		{
+			return MT_FLY;
+		}
+		else
+		{
+			return MT_WALK;
+		}
+	}
+	else if (_movementType == MT_SINK)
+	{
+		if (depth == 0)
+		{
+			return MT_FLY;
+		}
+		else
+		{
+			return MT_WALK;
+		}
+	}
+	else
+	{
+		return _movementType;
+	}
 }
 
 /**
@@ -1053,6 +1107,15 @@ bool Armor::allowsStrafing(bool def) const
 }
 
 /**
+ * Can you sneak while wearing this armor?
+ * @return True if you are allowed to sneak.
+ */
+bool Armor::allowsSneaking(bool def) const
+{
+	return useTriBoolHelper(_allowsSneaking, def);
+}
+
+/**
  * Can you kneel while wearing this armor?
  * @return True if you are allowed to kneel.
  */
@@ -1173,6 +1236,10 @@ void Armor::ScriptRegister(ScriptParserBase* parser)
 	ar.add<&getTypeScript>("getType");
 
 	ar.add<&Armor::getDrawingRoutine>("getDrawingRoutine");
+	ar.add<&Armor::drawBubbles>("getDrawBubbles");
+	ar.add<&Armor::getDeathFrames>("getDeathFrames");
+	ar.add<&Armor::getConstantAnimation>("getConstantAnimation");
+
 	ar.add<&Armor::getVisibilityAtDark>("getVisibilityAtDark");
 	ar.add<&Armor::getVisibilityAtDay>("getVisibilityAtDay");
 	ar.add<&Armor::getPersonalLight>("getPersonalLight");
@@ -1181,6 +1248,15 @@ void Armor::ScriptRegister(ScriptParserBase* parser)
 	UnitStats::addGetStatsScript<&Armor::_stats>(ar, "Stats.");
 
 	ar.add<&getArmorValueScript>("getArmor");
+
+
+	ar.addField<&Armor::_moveCostBase, &ArmorMoveCost::TimePercent>("MoveCost.getBaseTimePercent");
+	ar.addField<&Armor::_moveCostBase, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseEnergyPercent");
+	ar.addField<&Armor::_moveCostBaseNormal, &ArmorMoveCost::TimePercent>("MoveCost.getBaseNormalTimePercent");
+	ar.addField<&Armor::_moveCostBaseNormal, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseNormalEnergyPercent");
+	ar.addField<&Armor::_moveCostBaseFly, &ArmorMoveCost::TimePercent>("MoveCost.getBaseFlyTimePercent");
+	ar.addField<&Armor::_moveCostBaseFly, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseFlyEnergyPercent");
+
 
 	ar.addScriptValue<BindBase::OnlyGet, &Armor::_scriptValues>();
 	ar.addDebugDisplay<&debugDisplayScript>();

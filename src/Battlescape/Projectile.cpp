@@ -22,8 +22,6 @@
 #include "Camera.h"
 #include "Particle.h"
 #include "Pathfinding.h"
-#include "../Engine/SurfaceSet.h"
-#include "../Engine/Surface.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/MapData.h"
@@ -455,6 +453,11 @@ bool Projectile::move()
 		{
 			_position--;
 			return false;
+		}
+		else if (_position > 1)
+		{
+			// calc avg of two voxel steps
+			_distance += 0.5f * Position::distance(_trajectory[_position], _trajectory[_position - 2]);
 		}
 		else if (_position > 0)
 		{

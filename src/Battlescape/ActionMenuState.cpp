@@ -21,7 +21,6 @@
 #include "../Engine/Options.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Action.h"
-#include "../Engine/Sound.h"
 #include "../Engine/Unicode.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
@@ -349,7 +348,7 @@ void ActionMenuState::handleAction()
 				// we can heal a unit that is at the same position, unconscious and healable(=woundable)
 				if ((*i)->getPosition() == _action->actor->getPosition() && *i != _action->actor && (*i)->getStatus() == STATUS_UNCONSCIOUS && ((*i)->isWoundable() || weapon->getAllowTargetImmune()) && weapon->getAllowTargetGround())
 				{
-					if ((*i)->getArmor()->getSize() != 1)
+					if ((*i)->isBigUnit())
 					{
 						// never EVER apply anything to 2x2 units on the ground
 						continue;

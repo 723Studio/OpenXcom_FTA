@@ -248,7 +248,7 @@ ko:
   STR_ALIEN_RACE: "종족"
   STR_ALIEN_TECH_LEVEL: "기술 수준"
   STR_RANDOMIZE: "무작위"
-  STR_OXCE_REQUIRED_QUESTION: "이 모드는 OpenXcom Extended가 있어야 제대로 실행됩니다. 이 모드를 활성화합니까?"
+  STR_OXCE_REQUIRED_QUESTION: "이 모드는 올바로 실행하기 위해 OpenXcom {0}를 요구합니다. 이 모드를 활성화합니까?"
   STR_RESTORE_DEFAULTS_QUESTION: "기본 설정으로 되돌리기를 원합니까?"
   STR_DISPLAY_OPTIONS_CONFIRM: "현재의 표시 설정을 유지하기를 원합니까?"
   STR_DISPLAY_OPTIONS_REVERT: "0:{0}으로 되돌리기"

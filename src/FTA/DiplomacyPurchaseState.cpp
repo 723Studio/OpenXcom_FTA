@@ -147,7 +147,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 	const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
 	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
-		RuleSoldier *rule = _game->getMod()->getSoldier(*i);
+		const RuleSoldier *rule = _game->getMod()->getSoldier(*i);
 		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
 		int stock = getFactionItemStock(rule->getType());
 		if (rule->getBuyCost() != 0
@@ -155,7 +155,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			&& (~providedBaseFunc & purchaseBaseFunc).none()
 			&& stock > 0)
 		{
-			TransferRow row = { TRANSFER_SOLDIER, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getSoldierCountAndSalary(rule->getType()).first, 0, 0, stock };
+			TransferRow row = { TRANSFER_SOLDIER, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getSoldierCountAndSalary(rule->getType()).first, 0, 0, stock, -4, 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -168,7 +168,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 		int stock = getFactionItemStock("STR_SCIENTIST");
 		if (stock > 0 && (_game->getMod()->getHireScientistsUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true)))
 		{
-			TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), getCostAdjustment(_game->getMod()->getHireScientistCost()), _base->getTotalScientists(), 0, 0, stock };
+			TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), getCostAdjustment(_game->getMod()->getHireScientistCost()), _base->getTotalScientists(), 0, 0, stock, -3, 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -181,7 +181,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 		int stock = getFactionItemStock("STR_ENGINEER");
 		if (stock > 0 && (_game->getMod()->getHireEngineersUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true)))
 		{
-			TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), getCostAdjustment(_game->getMod()->getHireEngineerCost()), _base->getTotalEngineers(), 0, 0, stock };
+			TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), getCostAdjustment(_game->getMod()->getHireEngineerCost()), _base->getTotalEngineers(), 0, 0, stock, -2, 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -202,7 +202,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			&& (~providedBaseFunc & purchaseBaseFunc).none()
 			&& stock > 0)
 		{
-			TransferRow row = { TRANSFER_CRAFT, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getCraftCount(rule), 0, 0, stock };
+			TransferRow row = { TRANSFER_CRAFT, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getCraftCount(rule), 0, 0, stock, -1, 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -223,7 +223,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			&& (~providedBaseFunc & purchaseBaseFunc).none()
 			&& stock > 0)
 		{
-			TransferRow row = { TRANSFER_ITEM, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getStorageItems()->getItem(rule), 0, 0, stock };
+			TransferRow row = { TRANSFER_ITEM, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getStorageItems()->getItem(rule), 0, 0, stock, rule->getListOrder(), 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -597,12 +597,13 @@ void DiplomacyPurchaseState::btnOkClick(Action *)
 			case TRANSFER_SOLDIER:
 				for (int s = 0; s < i->amount; s++)
 				{
-					RuleSoldier *rule = (RuleSoldier*)i->rule;
+					const RuleSoldier *rule = (RuleSoldier*)i->rule;
 					int time = rule->getTransferTime();
 					if (time == 0)
 						time = _game->getMod()->getPersonnelTime();
 					t = new Transfer(time);
-					t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule->getType()));
+					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), rule, _base);
+					t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality));
 					_base->getTransfers()->push_back(t);
 					_faction->getStaffContainer()->removeItem(rule->getType());
 				}
@@ -894,7 +895,6 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 
 	if (errorMessage.empty())
 	{
-		int t = getRow().cost;
 		auto row = getRow();
 		int maxByMoney = (_game->getSavedGame()->getFunds() - _total) / getRow().cost;
 		if (maxByMoney >= 0)

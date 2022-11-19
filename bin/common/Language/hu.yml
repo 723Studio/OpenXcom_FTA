@@ -248,7 +248,6 @@ hu:
   STR_ALIEN_RACE: "Faj"
   STR_ALIEN_TECH_LEVEL: "Tech. Szint"
   STR_RANDOMIZE: "Véletlenszerű"
-  STR_OXCE_REQUIRED_QUESTION: "Ezen mod futtatásához szükség van az OpenXcom Extended-re. Engedélyezed a modot?"
   STR_RESTORE_DEFAULTS_QUESTION: "Biztos, hogy vissza akarod állítani az alapbeállításokat?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Meg akarod tartani a jelenlegi megjelenítési beállításokat?"
   STR_DISPLAY_OPTIONS_REVERT: "Visszaállítás: 0:{0}"

@@ -75,7 +75,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 	std::string mission = battleSave->getMissionType();
 	AlienDeployment *deployment = _game->getMod()->getDeployment(mission);
 
-	if (_game->getMod()->getIsFTAGame() &&
+	if (_game->getMod()->isFTAGame() &&
 		!_game->getSavedGame()->isResearched("STR_LOG1") &&
 		!battleSave->getAlienCustomDeploy().empty())
 	{
@@ -217,10 +217,14 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 
 	if (!isPreview && base && mission == "STR_BASE_DEFENSE")
 	{
-		// And make sure the base is unmarked.
-		base->setRetaliationTarget(false);
-
 		auto* am = base->getRetaliationMission();
+
+		// And make sure the base is unmarked (but only for vanilla retaliations, not for instant retaliations)
+		if (am)
+		{
+			base->setRetaliationTarget(false);
+		}
+
 		if (am && am->getRules().isMultiUfoRetaliation())
 		{
 			// Remember that more UFOs may be coming

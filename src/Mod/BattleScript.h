@@ -58,13 +58,13 @@ class BattleScript
 private:
 	BattleScriptCommand _type;
 	std::vector<int> _groups, _conditionals;
-	int _executionChances, _executions, _maxRuns, _cumulativeFrequency, _label;
+	int _executionChances, _executions, _maxRuns, _label;
 	std::vector<std::string> _spawnBlocks;
 	std::vector<std::string> _itemSet, _unitSet;
 	std::map<int, BattleMessage> _message;
 	int _startTurn, _endTurn, _unitSide, _packSize, _minLevel, _maxLevel;
-	int _minDifficulty, _maxDifficulty, _minAlarmLevel, _maxAlarmLevel;
 	bool _randomPackSize;
+	int _minDifficulty, _maxDifficulty, _minAlarmLevel, _maxAlarmLevel;
 	std::vector<int> _spawnNodeRanks;
 	std::string _variable;
 public:

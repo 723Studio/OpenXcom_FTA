@@ -22,6 +22,7 @@
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/Logger.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
@@ -68,15 +69,27 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_craft = _base->getCrafts()->at(_craftId);
 	_weaponNum = _craft->getRules()->getWeapons();
+	_ftaUi = _game->getMod()->isFTAGame();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
+
+	int showNewBattle = 0;
+	if (_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->getMonthsPassed() != -1)
+	{
+		// only the first craft can be used
+		if (_craftId == 0 && _craft->getRules()->getMaxUnits() > 0 && _craft->getRules()->getAllowLanding())
+		{
+			showNewBattle = 1;
+		}
+	}
 
 	const int top = _weaponNum > 2 ? 42 : 64;
 	const int top_row = 41;
 	const int bottom = 125;
 	const int bottom_row = 17;
 	bool pilots = _craft->getRules()->getPilots() > 0;
-	_btnOk = new TextButton(pilots ? 218 : 288, 16, pilots ? 86 : 16, 176);
+	_btnOk = new TextButton((pilots ? 218 : 288) - showNewBattle * 98, 16, pilots ? 86 : 16, 176);
+	_btnNewBattle = new TextButton(92, 16, 212, 176);
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 282 : 14;
@@ -115,6 +128,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	add(_window, "window", "craftInfo");
 	add(_btnOk, "button", "craftInfo");
+	add(_btnNewBattle, "button", "craftInfo");
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		add(_btnW[i], "button", "craftInfo");
@@ -148,6 +162,10 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_btnOk->onKeyboardPress((ActionHandler)&CraftInfoState::btnOkClick, Options::keyCancel);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftInfoState::btnUfopediaClick, Options::keyGeoUfopedia);
 
+	_btnNewBattle->setText(tr("STR_NEW_BATTLE"));
+	_btnNewBattle->onMouseClick((ActionHandler)&CraftInfoState::btnNewBattleClick);
+	_btnNewBattle->setVisible(showNewBattle > 0);
+
 	for(int i = 0; i < _weaponNum; ++i)
 	{
 		const char num[] = { char('1' + i), 0 };
@@ -169,7 +187,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_btnPilots->setText(tr("STR_PILOTS"));
 	_btnPilots->onMouseClick((ActionHandler)&CraftInfoState::btnPilotsClick);
-	_btnPilots->setVisible(pilots);
+	_btnPilots->setVisible(pilots && !_ftaUi); //#FINNIKTODO Consider for multipurpose crafts
 
 	_edtCraft->setBig();
 	_edtCraft->setAlign(ALIGN_CENTER);
@@ -403,6 +421,88 @@ void CraftInfoState::btnUfopediaClick(Action *)
 	{
 		std::string articleId = _craft->getRules()->getType();
 		Ufopaedia::openArticle(_game, articleId);
+	}
+}
+
+/**
+ * Updates the New Battle file (battle.cfg) and returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void CraftInfoState::btnNewBattleClick(Action *)
+{
+	_game->popState();
+
+	size_t mission = 0;
+	size_t craft = 0;
+	size_t darkness = 0;
+	size_t terrain = 0;
+	size_t alienRace = 0;
+	size_t difficulty = 0;
+	size_t alienTech = 0;
+
+	std::string s = Options::getMasterUserFolder() + "battle.cfg";
+	if (!CrossPlatform::fileExists(s))
+	{
+		// nothing
+	}
+	else
+	{
+		try
+		{
+			YAML::Node doc = YAML::Load(*CrossPlatform::readFile(s));
+			mission = doc["mission"].as<size_t>(0);
+			//craft = doc["craft"].as<size_t>(0);
+			darkness = doc["darkness"].as<size_t>(0);
+			terrain = doc["terrain"].as<size_t>(0);
+			alienRace = doc["alienRace"].as<size_t>(0);
+			//difficulty = doc["difficulty"].as<size_t>(0);
+			alienTech = doc["alienTech"].as<size_t>(0);
+		}
+		catch (YAML::Exception& e)
+		{
+			Log(LOG_WARNING) << e.what();
+		}
+	}
+
+	// index of the craft type in the New Battle combobox
+	size_t idx = 0;
+	const std::vector<std::string>& crafts = _game->getMod()->getCraftsList();
+	for (auto& i : crafts)
+	{
+		const RuleCraft* rule = _game->getMod()->getCraft(i);
+		if (rule->getMaxUnits() > 0 && rule->getAllowLanding())
+		{
+			if (rule == _craft->getRules())
+			{
+				craft = idx;
+				break;
+			}
+			++idx;
+		}
+		else
+		{
+			// don't increase the index, these crafts are not in the New Battle combobox
+		}
+	}
+
+	// transfer also the difficulty
+	difficulty = _game->getSavedGame()->getDifficulty();
+
+	YAML::Emitter out;
+	YAML::Node node;
+	node["mission"] = mission;
+	node["craft"] = craft;
+	node["darkness"] = darkness;
+	node["terrain"] = terrain;
+	node["alienRace"] = alienRace;
+	node["difficulty"] = difficulty;
+	node["alienTech"] = alienTech;
+	node["base"] = _base->save();
+	out << node;
+
+	if (!CrossPlatform::writeFile(s, out.c_str()))
+	{
+		Log(LOG_WARNING) << "Failed to save " << s;
 	}
 }
 

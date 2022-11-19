@@ -25,7 +25,6 @@
 #include "../Mod/ArticleDefinition.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Unicode.h"
@@ -74,7 +73,7 @@ namespace OpenXcom
 			_lstInfo->setColumns(3, 70, 40, 30);
 
 
-			auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseCost& flat, const RuleItemAction *config)
+			auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseCost& flat, const RuleItemAction *config, const RuleItem* weapon)
 			{
 				if (row < 3 && cost.Time > 0 && config->ammoSlot == ammoSlot)
 				{
@@ -83,7 +82,8 @@ namespace OpenXcom
 					{
 						tu.erase(tu.end() - 1);
 					}
-					std::string label = config->shortName.empty() ? tr(name).arg(config->shots) : tr(config->shortName).arg(config->shots);
+					int range = std::min(config->range, weapon->getMaxRange());
+					std::string label = config->shortName.empty() ? tr(name).arg(config->shots).arg(range) : tr(config->shortName).arg(config->shots).arg(range);
 					_lstInfo->addRow(3,
 						label.c_str(),
 						Unicode::formatPercentage(config->accuracy).c_str(),
@@ -95,14 +95,14 @@ namespace OpenXcom
 
 			int current_row = 0;
 
-			addAttack(current_row, "STR_SHOT_TYPE_AUTO", item->getCostAuto(), item->getFlatAuto(), item->getConfigAuto());
+			addAttack(current_row, "STR_SHOT_TYPE_AUTO", item->getCostAuto(), item->getFlatAuto(), item->getConfigAuto(), item);
 
-			addAttack(current_row, "STR_SHOT_TYPE_SNAP", item->getCostSnap(), item->getFlatSnap(), item->getConfigSnap());
+			addAttack(current_row, "STR_SHOT_TYPE_SNAP", item->getCostSnap(), item->getFlatSnap(), item->getConfigSnap(), item);
 
-			addAttack(current_row, "STR_SHOT_TYPE_AIMED", item->getCostAimed(), item->getFlatAimed(), item->getConfigAimed());
+			addAttack(current_row, "STR_SHOT_TYPE_AIMED", item->getCostAimed(), item->getFlatAimed(), item->getConfigAimed(), item);
 
 			//optional melee
-			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee());
+			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee(), item);
 		}
 
 		// AMMO column
@@ -176,6 +176,9 @@ namespace OpenXcom
 				break;
 			default: break;
 		}
+
+		if (!_txtAmmoType[0]->getText().empty())
+			_txtInfo->setHeight(112);
 
 		// multi-page indicator
 		_txtArrows = new Text(32, 9, 277, 134);

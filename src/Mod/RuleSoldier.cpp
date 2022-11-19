@@ -26,7 +26,6 @@
 #include "Armor.h"
 #include "SoldierNamePool.h"
 #include "StatString.h"
-#include "../Engine/Collections.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/ScriptBind.h"
 #include "../Engine/Unicode.h"
@@ -39,12 +38,19 @@ namespace OpenXcom
  * type of soldier.
  * @param type String defining the type.
  */
-RuleSoldier::RuleSoldier(const std::string &type) : _type(type), _listOrder(0), _armor(nullptr), _specWeapon(nullptr), _costBuy(0), _costSalary(0),
+RuleSoldier::RuleSoldier(const std::string &type) : _type(type), _listOrder(0), _armor(nullptr), _specWeapon(nullptr), 
+	_monthlyBuyLimit(0), _costBuy(0), _costSalary(0),
 	_costSalarySquaddie(0), _costSalarySergeant(0), _costSalaryCaptain(0), _costSalaryColonel(0), _costSalaryCommander(0),
 	_standHeight(0), _kneelHeight(0), _floatHeight(0), _femaleFrequency(50), _value(20), _transferTime(0), _moraleLossWhenKilled(100),
+	_totalSoldierNamePoolWeight(0),
 	_avatarOffsetX(67), _avatarOffsetY(48), _flagOffset(0),
 	_allowPromotion(true), _allowPiloting(true), _showTypeInInventory(false),
-	_rankSprite(42), _rankSpriteBattlescape(20), _rankSpriteTiny(0), _skillIconSprite(1)
+	_rankSprite(42), _rankSpriteBattlescape(20), _rankSpriteTiny(0),
+	_pilotRankSprite(42), _pilotRankSpriteBattlescape(20), _pilotRankSpriteTiny(0),
+	_agentRankSprite(42), _agentRankSpriteBattlescape(20), _agentRankSpriteTiny(0),
+	_scientistRankSprite(42), _scientistRankSpriteBattlescape(20), _scientistRankSpriteTiny(0),
+	_engineerRankSprite(42), _engineerRankSpriteBattlescape(20), _engineerRankSpriteTiny(0),
+	_skillIconSprite(1)
 {
 }
 
@@ -75,6 +81,8 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 		load(parent, mod, listOrder, parsers);
 	}
 	_type = node["type"].as<std::string>(_type);
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
 	// Just in case
 	if (_type == "XCOM")
 		_type = "STR_SOLDIER";
@@ -96,14 +104,34 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 		_trainingStatCaps.merge(node["statCaps"].as<UnitStats>(_trainingStatCaps));
 	}
 	_dogfightExperience.merge(node["dogfightExperience"].as<UnitStats>(_dogfightExperience));
+	if (node["roleExpRequirments"])
+	{
+		for (YAML::const_iterator i = node["roleExpRequirments"].begin(); i != node["roleExpRequirments"].end(); ++i)
+		{
+			SoldierRoleRanksRequirments *r = new SoldierRoleRanksRequirments;
+			r->load(*i);
+			_roleExpRequirments.push_back(r);
+		}
+	}
+	if (node["roleRankStrings"])
+	{
+		for (YAML::const_iterator i = node["roleRankStrings"].begin(); i != node["roleRankStrings"].end(); ++i)
+		{
+			SoldierRoleRanksStrings *s = new SoldierRoleRanksStrings;
+			s->load(*i);
+			_roleRankStrings.push_back(s);
+		}
+	}
 	mod->loadName(_type, _armorName, node["armor"]);
 	_specWeaponName = node["specialWeapon"].as<std::string>(_specWeaponName);
 	_armorForAvatar = node["armorForAvatar"].as<std::string>(_armorForAvatar);
+	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
 	_avatarOffsetX = node["avatarOffsetX"].as<int>(_avatarOffsetX);
 	_avatarOffsetY = node["avatarOffsetY"].as<int>(_avatarOffsetY);
 	_flagOffset = node["flagOffset"].as<int>(_flagOffset);
 	_allowPromotion = node["allowPromotion"].as<bool>(_allowPromotion);
 	_allowPiloting = node["allowPiloting"].as<bool>(_allowPiloting);
+	_monthlyBuyLimit = node["monthlyBuyLimit"].as<int>(_monthlyBuyLimit);
 	_costBuy = node["costBuy"].as<int>(_costBuy);
 	_costSalary = node["costSalary"].as<int>(_costSalary);
 	_costSalarySquaddie = node["costSalarySquaddie"].as<int>(_costSalarySquaddie);
@@ -179,6 +207,23 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 	mod->loadSpriteOffset(_type, _rankSprite, node["rankSprite"], "BASEBITS.PCK");
 	mod->loadSpriteOffset(_type, _rankSpriteBattlescape, node["rankBattleSprite"], "SMOKE.PCK");
 	mod->loadSpriteOffset(_type, _rankSpriteTiny, node["rankTinySprite"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _pilotRankSprite, node["pilotRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _pilotRankSpriteBattlescape, node["pilotRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _pilotRankSpriteTiny, node["pilotRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _agentRankSprite, node["agentRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _agentRankSpriteBattlescape, node["agentRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _agentRankSpriteTiny, node["agentRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _scientistRankSprite, node["scientistRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _scientistRankSpriteBattlescape, node["scientistRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _scientistRankSpriteTiny, node["scientistRankSpriteTiny"], "TinyRanks");
+
+	mod->loadSpriteOffset(_type, _engineerRankSprite, node["engineerRankSprite"], "BASEBITS.PCK");
+	mod->loadSpriteOffset(_type, _engineerRankSpriteBattlescape, node["engineerRankSpriteBattlescape"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _engineerRankSpriteTiny, node["engineerRankSpriteTiny"], "TinyRanks");
+
 	mod->loadSpriteOffset(_type, _skillIconSprite, node["skillIconSprite"], "SPICONS.DAT");
 
 	mod->loadNames(_type, _skillNames, node["skills"]);
@@ -197,7 +242,14 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
  */
 void RuleSoldier::afterLoad(const Mod* mod)
 {
+	_totalSoldierNamePoolWeight = 0;
+	for (auto* namepool : _names)
+	{
+		_totalSoldierNamePoolWeight += namepool->getGlobalWeight();
+	}
+
 	mod->linkRule(_armor, _armorName);
+	mod->linkRule(_prisoner, _prisonerName);
 	mod->checkForSoftError(_armor == nullptr, _type, "Soldier type is missing the default armor", LOG_ERROR);
 
 	mod->verifySoundOffset(_type, _deathSoundMale, "BATTLE.CAT");
@@ -234,6 +286,19 @@ void RuleSoldier::afterLoad(const Mod* mod)
 
 	_manaMissingWoundThreshold = mod->getManaWoundThreshold();
 	_healthMissingWoundThreshold = mod->getHealthWoundThreshold();
+}
+
+void RuleSoldier::loadRoles(const std::vector<int> &r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
 }
 
 void RuleSoldier::addSoldierNamePool(const std::string &namFile)

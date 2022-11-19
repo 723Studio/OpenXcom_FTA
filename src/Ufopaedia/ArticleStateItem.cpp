@@ -25,7 +25,6 @@
 #include "../Mod/ArticleDefinition.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/Surface.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
@@ -38,7 +37,6 @@
 
 namespace OpenXcom
 {
-
 	ArticleStateItem::ArticleStateItem(ArticleDefinitionItem *defs, std::shared_ptr<ArticleCommonState> state) : ArticleState(defs->id, std::move(state))
 	{
 		RuleItem *item = _game->getMod()->getItem(defs->id, true);
@@ -64,7 +62,7 @@ namespace OpenXcom
 			bottomOffset = 9;
 		}
 
-		if (!_game->getMod()->getExtraNerdyPediaInfo())
+		if (_game->getMod()->getExtraNerdyPediaInfoType() == 0)
 		{
 			// feature turned off
 			bottomOffset = 0;
@@ -225,7 +223,7 @@ namespace OpenXcom
 			_lstInfo->setBig();
 		}
 
-		auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseCost& flat, const RuleItemAction *config)
+		auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseCost& flat, const RuleItemAction *config, const RuleItem *weapon)
 		{
 			if (row < 3 && cost.Time > 0 && config->ammoSlot == ammoSlot)
 			{
@@ -234,7 +232,8 @@ namespace OpenXcom
 				{
 					tu.erase(tu.end() - 1);
 				}
-				std::string label = config->shortName.empty() ? tr(name).arg(config->shots) : tr(config->shortName).arg(config->shots);
+				int range = std::min(config->range, weapon->getMaxRange());
+				std::string label = config->shortName.empty() ? tr(name).arg(config->shots).arg(range) : tr(config->shortName).arg(config->shots).arg(range);
 				_lstInfo->addRow(3,
 					label.c_str(),
 					Unicode::formatPercentage(config->accuracy).c_str(),
@@ -248,14 +247,14 @@ namespace OpenXcom
 		{
 			int current_row = 0;
 
-			addAttack(current_row, "STR_SHOT_TYPE_AUTO", item->getCostAuto(), item->getFlatAuto(), item->getConfigAuto());
+			addAttack(current_row, "STR_SHOT_TYPE_AUTO", item->getCostAuto(), item->getFlatAuto(), item->getConfigAuto(), item);
 
-			addAttack(current_row, "STR_SHOT_TYPE_SNAP", item->getCostSnap(), item->getFlatSnap(), item->getConfigSnap());
+			addAttack(current_row, "STR_SHOT_TYPE_SNAP", item->getCostSnap(), item->getFlatSnap(), item->getConfigSnap(), item);
 
-			addAttack(current_row, "STR_SHOT_TYPE_AIMED", item->getCostAimed(), item->getFlatAimed(), item->getConfigAimed());
+			addAttack(current_row, "STR_SHOT_TYPE_AIMED", item->getCostAimed(), item->getFlatAimed(), item->getConfigAimed(), item);
 
 			//optional melee
-			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee());
+			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee(), item);
 
 			// text_info is BELOW the info table (table can have 0-3 rows)
 			int shift = (3 - current_row) * 16;
@@ -269,7 +268,7 @@ namespace OpenXcom
 		{
 			int current_row = 0;
 
-			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee());
+			addAttack(current_row, "STR_SHOT_TYPE_MELEE", item->getCostMelee(), item->getFlatMelee(), item->getConfigMelee(), item);
 
 			// text_info is BELOW the info table (with 1 row only)
 			_txtInfo = new Text(300, 88 - bottomOffset, 8, 106);
@@ -288,28 +287,45 @@ namespace OpenXcom
 		_txtInfo->setScrollable(true);
 		_txtInfo->setText(tr(defs->getTextForPage(_state->current_page)));
 
+		//Categories, such as Concealable and Silent
+		std::vector<std::string> itemTags = getItemTags(item);
+		if (itemTags.size() > 0)
+		{
+			_txtTags = new Text(300, 10, _txtInfo->getX(), _txtInfo->getY() + _txtInfo->getTextHeight());
+			add(_txtTags);
+			_txtTags->setColor(_textColor2);
+			_txtTags->setWordWrap(true);
+			_txtTags->setScrollable(false);
+			std::string tagsFinalText = ">";
+			for (int i = 0; i < itemTags.size(); i++)
+			{
+				tagsFinalText.append(itemTags[i]);
+				if (i != itemTags.size() - 1)
+				{
+					tagsFinalText.append(", ");
+				}
+			}
+			_txtTags->setText(tagsFinalText);
+		}		
+
 		// STATS FOR NERDS extract
 		_txtAccuracyModifier = new Text(300, 9, 8, 174);
 		_txtPowerBonus = new Text(300, 17, 8, 183);
 
-		if (bottomOffset > 0)
-		{
-			if (bottomOffset >= 20)
-			{
-				add(_txtAccuracyModifier);
-			}
-			add(_txtPowerBonus);
-		}
+		add(_txtAccuracyModifier);
+		add(_txtPowerBonus);
 
 		_txtAccuracyModifier->setColor(_textColor);
 		_txtAccuracyModifier->setSecondaryColor(_listColor2);
 		_txtAccuracyModifier->setWordWrap(false);
 		_txtAccuracyModifier->setText(tr("STR_ACCURACY_MODIFIER").arg(accuracyModifier));
+		_txtAccuracyModifier->setVisible(bottomOffset >= 20);
 
 		_txtPowerBonus->setColor(_textColor);
 		_txtPowerBonus->setSecondaryColor(_listColor2);
 		_txtPowerBonus->setWordWrap(true);
 		_txtPowerBonus->setText(tr("STR_POWER_BONUS").arg(powerBonus));
+		_txtPowerBonus->setVisible(bottomOffset > 0);
 
 		// AMMO column
 		std::ostringstream ss;
@@ -468,7 +484,14 @@ namespace OpenXcom
 							ss << numberAbs << "*";
 						}
 
-						ss << tr(StatsForNerdsState::translationMap.at(item.first));
+						if (_game->getMod()->getExtraNerdyPediaInfoType() > 1)
+						{
+							ss << tr(StatsForNerdsState::shortTranslationMap.at(item.first));
+						}
+						else
+						{
+							ss << tr(StatsForNerdsState::translationMap.at(item.first));
+						}
 						if (power > 1)
 						{
 							ss << "^" << power;
@@ -479,6 +502,28 @@ namespace OpenXcom
 			}
 		}
 		return ss.str();
+	}
+
+	//This function returns a list of tags this item belongs to
+	//Those are represented as a vector of finalized strings
+	std::vector<std::string> ArticleStateItem::getItemTags(RuleItem *item)
+	{
+		std::vector<std::string> output = std::vector<std::string>();		
+		for (auto & category : item->getCategories())
+		{
+			//ADD checks for categories which are in categories array
+			if (category == "STR_CONCEALABLE")
+			{
+				output.push_back(tr("STR_CTG_CONCEALABLE"));
+				break;
+			}
+		}
+		if (item->getNoiseValue() == 0)
+		{
+			output.push_back(tr("STR_CTG_SILENT"));
+		}
+		//ADD checks for new categories, if there are any here
+		return output;
 	}
 
 	int ArticleStateItem::getDamageTypeTextColor(ItemDamageType dt)

@@ -32,7 +32,6 @@
 #include "../Savegame/Production.h"
 #include "ManufactureState.h"
 #include "TechTreeViewerState.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
@@ -248,7 +247,7 @@ void GlobalManufactureState::fillProductionList()
 
 		availableEngineers += base->getAvailableEngineers();
 		allocatedEngineers += base->getAllocatedEngineers();
-		freeWorkshops += base->getFreeWorkshops();
+		freeWorkshops += base->getFreeWorkshops(_game->getMod()->isFTAGame());
 	}
 
 	_txtAvailable->setText(tr("STR_ENGINEERS_AVAILABLE").arg(availableEngineers));

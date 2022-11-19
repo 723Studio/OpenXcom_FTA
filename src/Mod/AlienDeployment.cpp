@@ -264,6 +264,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_battleScript = node["battleScript"].as<std::string>(_battleScript);
 	_mapScript = node["script"].as<std::string>(_mapScript);
 	_mapScripts = node["mapScripts"].as<std::vector<std::string> >(_mapScripts);
+	_undercoverArmors = node["undercoverArmors"].as<std::vector<std::string> >(_undercoverArmors);
 	_alert = node["alert"].as<std::string>(_alert);
 	_alertBackground = node["alertBackground"].as<std::string>(_alertBackground);
 	_alertDescription = node["alertDescription"].as<std::string>(_alertDescription);

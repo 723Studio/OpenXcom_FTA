@@ -45,7 +45,8 @@ namespace OpenXcom
  * @param soldierInfoState Pointer to the Soldier Diary screen.
  * @param display Type of totals to display.
  */
-SoldierDiaryPerformanceState::SoldierDiaryPerformanceState(Base *base, size_t soldierId, SoldierDiaryOverviewState *soldierDiaryOverviewState, SoldierDiaryDisplay display) : _base(base), _soldierId(soldierId), _soldierDiaryOverviewState(soldierDiaryOverviewState), _display(display), _lastScrollPos(0)
+SoldierDiaryPerformanceState::SoldierDiaryPerformanceState(Base *base, size_t soldierId, SoldierDiaryOverviewState *soldierDiaryOverviewState, SoldierDiaryDisplay display) :
+	_base(base), _soldierId(soldierId), _soldierDiaryOverviewState(soldierDiaryOverviewState), _display(display), _lastScrollPos(0)
 {
 	if (_base == 0)
 	{
@@ -239,12 +240,17 @@ void SoldierDiaryPerformanceState::init()
 	_lstMissionTotals->clearList();
 	_commendationsListEntry.clear();
 	_commendationsNames.clear();
+	_sortedCommendations.clear();
 	_txtTitle->setText(_soldier->getName());
 	_lstPerformance->clearList();
 	_lstCommendations->clearList();
 	if (_display == DIARY_KILLS)
 	{
-		std::map<std::string, int> mapArray[] = { _soldier->getDiary()->getAlienRaceTotal(), _soldier->getDiary()->getAlienRankTotal(), _soldier->getDiary()->getWeaponTotal() };
+		std::map<std::string, int> mapArray[] = {
+			_soldier->getDiary()->getAlienRaceTotal(),
+			_soldier->getDiary()->getAlienRankTotal(),
+			_soldier->getDiary()->getWeaponTotal()
+		};
 		std::string titleArray[] = { "STR_NEUTRALIZATIONS_BY_RACE", "STR_NEUTRALIZATIONS_BY_RANK", "STR_NEUTRALIZATIONS_BY_WEAPON" };
 
 		for (int i = 0; i != 3; ++i)
@@ -280,7 +286,11 @@ void SoldierDiaryPerformanceState::init()
 	}
 	else if (_display == DIARY_MISSIONS)
 	{
-		std::map<std::string, int> mapArray[] = { _soldier->getDiary()->getRegionTotal(_game->getSavedGame()->getMissionStatistics()), _soldier->getDiary()->getTypeTotal(_game->getSavedGame()->getMissionStatistics()), _soldier->getDiary()->getUFOTotal(_game->getSavedGame()->getMissionStatistics()) };
+		std::map<std::string, int> mapArray[] = {
+			_soldier->getDiary()->getRegionTotal(_game->getSavedGame()->getMissionStatistics()),
+			_soldier->getDiary()->getTypeTotal(_game->getSavedGame()->getMissionStatistics()),
+			_soldier->getDiary()->getUFOTotal(_game->getSavedGame()->getMissionStatistics())
+		};
 		std::string titleArray[] = { "STR_MISSIONS_BY_LOCATION", "STR_MISSIONS_BY_TYPE", "STR_MISSIONS_BY_UFO" };
 
 		for (int i = 0; i != 3; ++i)
@@ -307,20 +317,42 @@ void SoldierDiaryPerformanceState::init()
 	}
 	else if (_display == DIARY_COMMENDATIONS && !_game->getMod()->getCommendationsList().empty())
 	{
-		for (std::vector<SoldierCommendations*>::const_iterator i = _soldier->getDiary()->getSoldierCommendations()->begin(); i != _soldier->getDiary()->getSoldierCommendations()->end(); ++i)
+		// pre-calc translations
+		for (auto* sc : *_soldier->getDiary()->getSoldierCommendations())
 		{
-		RuleCommendations *commendation = (*i)->getRule();
-		if ((*i)->getNoun() != "noNoun")
-		{
-			_lstCommendations->addRow(2, tr((*i)->getType()).arg(tr((*i)->getNoun())).c_str(), tr((*i)->getDecorationDescription()).c_str());
-			_commendationsListEntry.push_back(tr(commendation->getDescription()).arg(tr((*i)->getNoun())));
+			if (sc->getNoun() != "noNoun")
+			{
+				std::string tmp = tr(sc->getType()).arg(tr(sc->getNoun()));
+				_sortedCommendations.push_back(std::make_pair(tmp, sc));
+			}
+			else
+			{
+				std::string tmp = tr(sc->getType());
+				_sortedCommendations.push_back(std::make_pair(tmp, sc));
+			}
 		}
-		else
+		// sort by translation
+		std::stable_sort(_sortedCommendations.begin(), _sortedCommendations.end(),
+			[](const auto& lhs, const auto& rhs)
+			{
+				return Unicode::naturalCompare(lhs.first, rhs.first);
+			}
+		);
+		// fill the lists
+		for (auto& pair : _sortedCommendations)
 		{
-			_lstCommendations->addRow(2, tr((*i)->getType()).c_str(), tr((*i)->getDecorationDescription()).c_str());
-			_commendationsListEntry.push_back(tr(commendation->getDescription()));
-		}
-		_commendationsNames.push_back((*i)->getType());
+			RuleCommendations* commendation = pair.second->getRule();
+			if (pair.second->getNoun() != "noNoun")
+			{
+				_lstCommendations->addRow(2, pair.first.c_str(), tr(pair.second->getDecorationDescription()).c_str());
+				_commendationsListEntry.push_back(tr(commendation->getDescription()).arg(tr(pair.second->getNoun())));
+			}
+			else
+			{
+				_lstCommendations->addRow(2, pair.first.c_str(), tr(pair.second->getDecorationDescription()).c_str());
+				_commendationsListEntry.push_back(tr(commendation->getDescription()));
+			}
+			_commendationsNames.push_back(pair.second->getType());
 		}
 		drawSprites();
 	}
@@ -335,8 +367,8 @@ void SoldierDiaryPerformanceState::drawSprites()
 	if (_display != DIARY_COMMENDATIONS) return;
 
 	// Commendation sprites
-	_commendationSprite = _game->getMod()->getSurfaceSet("Commendations");
-	_commendationDecoration = _game->getMod()->getSurfaceSet("CommendationDecorations");
+	SurfaceSet* commendationSprite = _game->getMod()->getSurfaceSet("Commendations");
+	SurfaceSet* commendationDecoration = _game->getMod()->getSurfaceSet("CommendationDecorations");
 
 	// Clear sprites
 	for (int i = 0; i != 10; ++i)
@@ -348,9 +380,9 @@ void SoldierDiaryPerformanceState::drawSprites()
 	int vectorIterator = 0; // Where we are currently located in the vector
 	int scrollDepth = _lstCommendations->getScroll(); // So we know where to start
 
-	for (std::vector<SoldierCommendations*>::const_iterator i = _list->at(_soldierId)->getDiary()->getSoldierCommendations()->begin() ; i != _list->at(_soldierId)->getDiary()->getSoldierCommendations()->end() ; ++i)
+	for (auto& pair : _sortedCommendations)
 	{
-		RuleCommendations *commendation = (*i)->getRule();
+		RuleCommendations *commendation = pair.second->getRule();
 		// Skip commendations that are not visible in the textlist
 		if ( vectorIterator < scrollDepth || vectorIterator - scrollDepth >= (int)_commendations.size())
 		{
@@ -359,15 +391,15 @@ void SoldierDiaryPerformanceState::drawSprites()
 		}
 
 		int _sprite = commendation->getSprite();
-		int _decorationSprite = (*i)->getDecorationLevelInt();
+		int _decorationSprite = pair.second->getDecorationLevelInt();
 
 		// Handle commendation sprites
-		_commendationSprite->getFrame(_sprite)->blitNShade(_commendations[vectorIterator - scrollDepth], 0, 0);
+		commendationSprite->getFrame(_sprite)->blitNShade(_commendations[vectorIterator - scrollDepth], 0, 0);
 
 		// Handle commendation decoration sprites
 		if (_decorationSprite != 0)
 		{
-			_commendationDecoration->getFrame(_decorationSprite)->blitNShade(_commendationDecorations[vectorIterator - scrollDepth], 0, 0);
+			commendationDecoration->getFrame(_decorationSprite)->blitNShade(_commendationDecorations[vectorIterator - scrollDepth], 0, 0);
 		}
 
 		vectorIterator++;

@@ -285,8 +285,14 @@ void BaseDefenseState::btnOkClick(Action *)
 	{
 		_base->cleanupDefenses(true);
 
+		// instant retaliation mission only spawns one UFO and then ends
+		if (_ufo->getMission()->getRules().getObjective() == OBJECTIVE_INSTANT_RETALIATION)
+		{
+			_ufo->getMission()->setInterrupted(true);
+		}
+
 		// aliens are not stupid and should stop trying eventually
-		if (RNG::percent(_game->getMod()->getChanceToStopRetaliation()))
+		if (_ufo->getMission()->getRules().getObjective() == OBJECTIVE_RETALIATION && RNG::percent(_game->getMod()->getChanceToStopRetaliation()))
 		{
 			// unmark base...
 			_base->setRetaliationTarget(false);

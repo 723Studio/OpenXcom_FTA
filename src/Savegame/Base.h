@@ -31,6 +31,8 @@ class RuleCraft;
 class Soldier;
 class Craft;
 class CovertOperation;
+class IntelProject;
+class BasePrisoner;
 class ItemContainer;
 class Transfer;
 class Language;
@@ -43,7 +45,7 @@ class Production;
 class Vehicle;
 class Ufo;
 class AlienMission;
-
+enum SoldierRole : int;
 enum UfoDetection : int;
 enum BasePlacementErrors : int
 {
@@ -94,6 +96,8 @@ private:
 	std::vector<Soldier*> _soldiers;
 	std::vector<Craft*> _crafts;
 	std::vector<CovertOperation*> _covertOperations;
+	std::vector<IntelProject*> _intelProjects;
+	std::vector<BasePrisoner*> _prisoners;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
 	int _scientists, _engineers;
@@ -132,6 +136,7 @@ public:
 	std::vector<BaseFacility*> *getFacilities();
 	/// Gets the base's soldiers.
 	std::vector<Soldier*> *getSoldiers();
+	std::vector<Soldier*> getPersonnel(SoldierRole role) const;
 	/// Pre-calculates soldier stats with various bonuses.
 	void prepareSoldierStatsWithBonuses();
 	/// Gets the base's crafts.
@@ -139,13 +144,24 @@ public:
 	/// Gets the base's crafts.
 	const std::vector<Craft*> *getCrafts() const { return &_crafts; }
 	/// Gets the base's covert operations.
-	std::vector<CovertOperation*> &getCovertOperations() {	return _covertOperations; }
-	/// Gets the base's covert operations.
 	const std::vector<CovertOperation*> &getCovertOperations() const { return _covertOperations; }
-	/// Adds new ongoing Covert Operation
-	void addCovertOperation(CovertOperation * operation);
-	/// Removes finished Covert Operation
+	/// Adds new ongoing Covert Operation.
+	void addCovertOperation(CovertOperation* operation) { _covertOperations.push_back(operation); }
+	/// Removes finished Covert Operation.
 	void removeCovertOperation(CovertOperation* operation);
+	/// Gets the base's Intel projects.
+	const std::vector<IntelProject*> &getIntelProjects() const { return _intelProjects; }
+	/// Adds new ongoing Intel Project.
+	void addIntelProject(IntelProject* project) { _intelProjects.push_back(project); }
+	/// Removes finished Intel Project.
+	void removeIntelProject(IntelProject* project);
+	/// Gets the base's prisoners.
+	const std::vector<BasePrisoner*>& getPrisoners() const { return _prisoners; }
+	/// Adds new BasePrisoner.
+	void addPrisoner(BasePrisoner* prisoner) { _prisoners.push_back(prisoner); }
+	/// Removes finished Intel Project.
+	void removePrisoner(BasePrisoner* project);
+	int getFreeInterrogationSpace();
 	/// Gets the base's transfers.
 	std::vector<Transfer*> *getTransfers() { return &_transfers; }
 	/// Gets the base's transfers.
@@ -191,11 +207,11 @@ public:
 	/// Gets the base's available storage space.
 	int getAvailableStores() const;
 	/// Gets the base's used laboratory space.
-	int getUsedLaboratories() const;
+	int getUsedLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
 	/// Gets the base's available laboratory space.
 	int getAvailableLaboratories() const;
 	/// Gets the base's used workshop space.
-	int getUsedWorkshops() const;
+	int getUsedWorkshops(bool fta = false, Production *exclude = nullptr) const;
 	/// Gets the base's available workshop space.
 	int getAvailableWorkshops() const;
 	/// Gets the base's used hangars.
@@ -203,12 +219,11 @@ public:
 	/// Gets the base's available hangars.
 	int getAvailableHangars() const;
 	/// Get the number of available space lab (not used by a ResearchProject)
-	int getFreeLaboratories() const;
+	int getFreeLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
 	/// Get the number of available space lab (not used by a Production)
-	int getFreeWorkshops() const;
+	int getFreeWorkshops(bool fta = false, Production *exclude = nullptr) const;
 
 	int getAllocatedScientists() const;
-
 	int getAllocatedEngineers() const;
 	/// Gets the base's defense value.
 	int getDefenseValue() const;
@@ -256,10 +271,13 @@ public:
 	int getFreeTrainingSpace() const;
 	/// Gets the amount of free Containment space.
 	int getFreeContainment(int prisonType) const;
+	int getFreePrisonSpace() const;
 	/// Gets the total amount of Containment space.
 	int getAvailableContainment(int prisonType) const;
+	int getAvailablePrisonSpace() const;
 	/// Gets the total amount of used Containment space.
 	int getUsedContainment(int prisonType, bool onlyExternal = false) const;
+	int getUsedPrisonSpace() const { return (int)_prisoners.size(); }
 	/// Sets the craft's battlescape status.
 	void setInBattlescape(bool inbattle);
 	/// Gets if the craft is in battlescape.

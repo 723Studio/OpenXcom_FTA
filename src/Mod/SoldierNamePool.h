@@ -36,6 +36,8 @@ private:
 	std::vector<std::string> _maleFirst, _femaleFirst, _maleLast, _femaleLast, _maleCallsign, _femaleCallsign;
 	std::vector<int> _lookWeights;
 	int _totalWeight, _femaleFrequency;
+	int _globalWeight;
+	std::string _country, _region;
 public:
 	/// Creates a blank pool.
 	SoldierNamePool();
@@ -49,6 +51,12 @@ public:
 	std::string genCallsign(const SoldierGender gender) const;
 	/// Generates an int representing the index of the soldier's look, when passed the maximum index value.
 	size_t genLook(size_t numLooks);
+	/// Gets a global weight of this name pool.
+	int getGlobalWeight() const { return _globalWeight; }
+	/// Gets the country assigned to this name pool.
+	const std::string& getCountry() const { return _country; }
+	/// Gets the region assigned to this name pool.
+	const std::string& getRegion() const { return _region; }
 };
 
 }

@@ -27,7 +27,7 @@ class TextButton;
 class Window;
 class Text;
 class RuleEvent;
-class CustomAnswer;
+struct CustomAnswer;
 
 /**
  * Displays info about a custom Geoscape event.

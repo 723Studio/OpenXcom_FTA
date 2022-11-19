@@ -111,6 +111,7 @@ private:
 	std::string _nextStage, _race, _mapScript, _battleScript, _extendedObjectiveType;
 	std::vector<std::string> _mapScripts;
 	std::vector<std::string> _randomRaces;
+	std::vector<std::string> _undercoverArmors;
 	bool _finalDestination, _isAlienBase, _isHidden, _isHiddenAlienBase;
 	int _fakeUnderwaterSpawnChance;
 	std::string _winCutscene, _loseCutscene, _abortCutscene;
@@ -229,6 +230,8 @@ public:
 	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); };
 	/// Gets geoscape event rule name to spawn after failure mission.
 	std::string chooseFailureEvent() const { return _failureEvents.choose(); };
+	/// Gets the the list of undercover armor types for the mission to make concealed units.
+	std::vector<std::string> getUndercoverArmors() const { return _undercoverArmors; };
 	/// Gets the alert message for this mission type.
 	std::string getAlertMessage() const;
 	/// Gets the alert background for this mission type.

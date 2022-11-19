@@ -18,6 +18,8 @@
  */
 #include "ResearchProject.h"
 #include "../Mod/RuleResearch.h"
+#include "../Mod/Mod.h"
+#include "../Savegame/Soldier.h"
 
 namespace OpenXcom
 {
@@ -26,27 +28,136 @@ const float PROGRESS_LIMIT_POOR = 0.07f;
 const float PROGRESS_LIMIT_AVERAGE = 0.13f;
 const float PROGRESS_LIMIT_GOOD = 0.25f;
 
-ResearchProject::ResearchProject(RuleResearch * p, int c) : _project(p), _assigned(0), _spent(0), _cost(c)
+ResearchProject::ResearchProject(const RuleResearch * p, int c) : _project(p), _assigned(0), _spent(0), _cost(c)
 {
 }
 
 /**
- * Called every day to compute time spent on this ResearchProject
+ * Called every day (every hour in FtA) to compute time spent on this ResearchProject
  * @return true if the ResearchProject is finished
  */
-bool ResearchProject::step(int bonus)
+bool ResearchProject::step(int progress)
 {
-	int progress = _assigned;
-	if (bonus > 0)
-	{
-		progress *= 2;
-	}
-	else if (bonus < 0)
-	{
-		progress = 0;
-	}
 	_spent += progress;
 	return isFinished();
+}
+
+int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists, Mod* mod, int rating)
+{
+	int progress = 0;
+	double effort = 0;
+	auto projStats = _project->getStats();
+	int factor = mod->getResearchTrainingFactor();
+	for (auto s : assignedScientists)
+	{
+		auto stats = s.first->getStatsWithAllBonuses();
+		auto caps = s.first->getRules()->getStatCaps();
+		unsigned int statsN = 0;
+		double soldierEffort = 0, statEffort = 0;
+		if (projStats.physics > 0)
+		{
+			statEffort = stats->physics;
+			soldierEffort += statEffort / projStats.physics;
+			if (stats->physics < caps.physics && RNG::generate(0, caps.physics) > stats->physics && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->physics++;
+			statsN++;
+		}
+		if (projStats.chemistry > 0)
+		{
+			statEffort = stats->chemistry;
+			soldierEffort += statEffort / projStats.chemistry;
+			if (stats->chemistry < caps.chemistry && RNG::generate(0, caps.chemistry) > stats->chemistry && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->chemistry++;
+			statsN++;
+		}
+		if (projStats.biology > 0)
+		{
+			statEffort = stats->biology;
+			soldierEffort += statEffort / projStats.biology;
+			if (stats->biology < caps.biology && RNG::generate(0, caps.biology) > stats->biology && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->biology++;
+			statsN++;
+		}
+		if (projStats.data > 0)
+		{
+			statEffort = stats->data;
+			soldierEffort += statEffort / projStats.data;
+			if (stats->data < caps.data && RNG::generate(0, caps.data) > stats->data && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->data++;
+			statsN++;
+		}
+		if (projStats.computers > 0)
+		{
+			statEffort = stats->computers;
+			soldierEffort += statEffort / projStats.computers;
+			if (stats->computers < caps.computers && RNG::generate(0, caps.computers) > stats->computers && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->computers++;
+			statsN++;
+		}
+		if (projStats.tactics > 0)
+		{
+			statEffort = stats->tactics;
+			soldierEffort += statEffort / projStats.tactics;
+			if (stats->tactics < caps.tactics && RNG::generate(0, caps.tactics) > stats->tactics && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->tactics++;
+			statsN++;
+		}
+		if (projStats.materials > 0)
+		{
+			statEffort = stats->materials;
+			soldierEffort += statEffort / projStats.materials;
+			if (stats->materials < caps.materials && RNG::generate(0, caps.materials) > stats->materials && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->materials++;
+			statsN++;
+		}
+		if (projStats.designing > 0)
+		{
+			statEffort = stats->designing;
+			soldierEffort += statEffort / projStats.designing;
+			if (stats->designing < caps.designing && RNG::generate(0, caps.designing) > stats->designing && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->designing++;
+			statsN++;
+		}
+		if (projStats.alienTech > 0)
+		{
+			statEffort = stats->alienTech;
+			soldierEffort += statEffort / projStats.alienTech;
+			if (stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->alienTech++;
+			statsN++;
+		}
+		if (projStats.psionics > 0)
+		{
+			statEffort = stats->psionics;
+			soldierEffort += statEffort / projStats.psionics;
+			if (stats->psionics < caps.psionics && RNG::generate(0, caps.psionics) > stats->psionics && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->psionics++;
+			statsN++;
+		}
+		if (projStats.xenolinguistics > 0)
+		{
+			statEffort = stats->xenolinguistics;
+			soldierEffort += statEffort / projStats.xenolinguistics;
+			if (stats->psionics < caps.xenolinguistics && RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->xenolinguistics++;
+			statsN++;
+		}
+
+		if (statsN > 0)
+			soldierEffort /= statsN;
+		double insightBonus = RNG::generate(0, stats->insight);
+		soldierEffort += insightBonus / 20;
+		effort += soldierEffort;
+		Log(LOG_INFO) << "Scientist effort value: " << effort;
+	}
+	// If one woman can carry a baby in nine months, nine women can't do it in a month...
+	if (assignedScientists.size() > 1)
+		effort *= (100 - 19 * log(assignedScientists.size())) / 100;
+
+	effort *= (double)rating;
+	progress = static_cast<int>(effort);
+	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress;
+	return progress;
 }
 
 /**

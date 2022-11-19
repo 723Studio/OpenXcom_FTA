@@ -20,7 +20,6 @@
 #include "MasterMind.h"
 #include <sstream>
 #include <iomanip>
-#include <algorithm>
 #include <climits>
 #include <functional>
 #include "../Engine/RNG.h"
@@ -32,36 +31,24 @@
 #include "../Engine/Language.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleBaseFacility.h"
-#include "../Mod/RuleArcScript.h"
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
-#include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleResearch.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleAlienMission.h"
-#include "../Mod/RuleGlobe.h"
 #include "../Mod/AlienDeployment.h"
-#include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleDiplomacyFaction.h"
-#include "../Savegame/GameTime.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/BaseFacility.h"
 #include "../Savegame/DiplomacyFaction.h"
-#include "../Savegame/CovertOperation.h"
-#include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDiary.h"
-#include "../Savegame/ResearchProject.h"
-#include "../Savegame/Production.h"
-#include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/Country.h"
 #include "../Savegame/AlienStrategy.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/SavedBattleGame.h"
-#include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/FactionalContainer.h"
 #include "../Geoscape/GeoscapeState.h"
@@ -69,8 +56,6 @@
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../fmath.h"
-#include "../fallthrough.h"
-
 
 namespace OpenXcom
 {
@@ -184,16 +169,15 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 
 /**
 * Process event script from different sources
-* @param engine - Game.
 * @param scripts - a vector of event script's string IDs.
 * @param source is the reason we are running process (monthly, factional, xcom).
 */
-void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scripts, ProcessorSource source)
+void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, ProcessorSource source)
 {
 	if (!scripts.empty())
 	{
-		const Mod &mod = *engine.getMod();
-		SavedGame &save = *engine.getSavedGame();
+		const Mod& mod = *_game->getMod();
+		SavedGame &save = *_game->getSavedGame();
 		AlienStrategy &strategy = save.getAlienStrategy();
 		std::set<std::string> xcomBaseCountries;
 		std::set<std::string> xcomBaseRegions;
@@ -217,9 +201,9 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 			auto ruleScript = mod.getEventScript(name);
 			int allowedProcessor = ruleScript->getAllowedProcessor();
 			// check allowed processor first!
-			if ((source == MONTHLY && allowedProcessor != 0) ||
-				(source == FACTIONAL && allowedProcessor != 1) ||
-				(source == XCOM && allowedProcessor != 2))
+			if ((source == SCRIPT_MONTHLY && allowedProcessor != 0) ||
+				(source == SCRIPT_FACTIONAL && allowedProcessor != 1) ||
+				(source == SCRIPT_XCOM && allowedProcessor != 2))
 			{
 				continue; //we should skip that!
 			}
@@ -254,7 +238,7 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 						triggerHappy = false;
 						for (auto& triggerFaction : ruleScript->getReputationRequirments())
 						{
-							for (auto& faction : engine.getSavedGame()->getDiplomacyFactions())
+							for (auto& faction : save.getDiplomacyFactions())
 							{
 								if (faction->getRules()->getName() == triggerFaction.first)
 								{
@@ -408,9 +392,129 @@ void MasterMind::eventScriptProcessor(Game& engine, std::vector<std::string> scr
 	}
 }
 
+bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base)
+{
+	// let's define variables for alien mission first
+	const Mod& mod = *_game->getMod();
+	SavedGame &save = *_game->getSavedGame();
+	int month = save.getMonthsPassed();
+	bool success = true;
+	const RuleAlienMission* missionRules = mod.getAlienMission(missionName); // would work with string ID 'till OXCE make mission rules afterloading
+	if (missionRules == 0)
+	{
+		throw Exception("Error processing alien mission generation - rules for alienMission: " + missionName + " are not defined!");
+	}
+	std::string targetRegion;
+	std::string missionRace;
+	int targetZone = missionRules->getSpawnZone();
+
+	//bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
+	bool targetBase = RNG::percent(missionRules->getTargetBaseOdds());
+	bool placed = false;
+	bool baseTargeted = true;
+	bool hasZone = true;
+	int tries = 0;
+		
+	while (!placed || tries < 50)
+	{
+		if (missionRules->hasRegionWeights())
+		{
+			if (tries > 35) month = 0; //lets check all regions
+			targetRegion = missionRules->generateRegion(month);
+		}
+		else //case to pick at random as alien mission rules has no region defined
+		{
+			targetRegion = mod.getRegionsList().at(RNG::generate(0, mod.getRegionsList().size() - 1));
+		}
+
+		RuleRegion* region = mod.getRegion(targetRegion, true);
+		if (!region)
+		{
+			throw Exception("Error processing alien mission named: " + missionName + ", region named: " + targetRegion + " is not defined");
+		}
+		if ((int)(region->getMissionZones().size()) > targetZone)
+		{
+			hasZone = true;
+		}
+
+		if (targetBase && base) // we should choose region that has any xcom base
+		{
+			baseTargeted = false;
+			std::string baseRegion;
+			if (tries < 2)
+			{
+				baseRegion = save.locateRegion(base->getLongitude(), base->getLatitude())->getRules()->getType();
+				if (baseRegion == targetRegion)
+				{
+					baseTargeted = true;
+				}
+			}
+			else
+			{
+				for (std::vector<Base*>::iterator i = save.getBases()->begin(); i != save.getBases()->end(); ++i)
+				{
+					baseRegion = save.locateRegion((*i)->getLongitude(), (*i)->getLatitude())->getRules()->getType();
+					if (baseRegion == targetRegion)
+					{
+						baseTargeted = true;
+					}
+				}
+			}
+		}
+		tries++;
+		if (baseTargeted && hasZone) // all checks passed!
+		{
+			placed = true;
+		}
+	}
+
+	if(!placed)
+	{
+		Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! Failed to choose right region for mission: " << missionName <<
+			". Some alien mission rules could be ignored!";
+		success = false;
+	}
+
+	missionRace = missionRules->generateRace(month);
+	if (missionRace.empty())
+	{
+		if (mod.isFTAGame())
+		{
+			missionRace = "STR_MIB";
+			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+				" no alien race has been set! As we run FTAGame race set to " << missionRace;
+			success = false;
+		}
+		else
+		{
+			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+				" no alien race has been set, so it will be defined at random!";
+			auto raceList = mod.getAlienRacesList();
+			int pick = RNG::generate(0, raceList.size() - 1);
+			missionRace = raceList.at(pick);
+			success = false;
+		}
+	}
+	if (mod.getAlienRace(missionRace) == 0)
+	{
+		throw Exception("Error processing alien mission named: " + missionName + ", race: " + missionRace + " is not defined");
+	}
+
+	//now we are ready to set up new alien mission
+	AlienMission* mission = new AlienMission(*missionRules);
+	mission->setRace(missionRace); 
+	mission->setId(save.getId("ALIEN_MISSIONS"));
+	mission->setRegion(targetRegion, mod);
+	mission->setMissionSiteZone(targetZone);
+	mission->start(*_game, globe, 0);
+	save.getAlienMissions().push_back(mission);
+
+	return success;
+}
+
 int MasterMind::updateLoyalty(int score, LoyaltySource source)
 {
-	if (!_game->getMod()->getIsFTAGame())
+	if (!_game->getMod()->isFTAGame())
 	{
 		return 0;
 	}
@@ -418,39 +522,37 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 	std::string reason = "";
 	switch (source)
 	{
-	case OpenXcom::XCOM_BATTLESCAPE:
+	case XCOM_BATTLESCAPE:
 		coef = _game->getMod()->getLoyaltyCoefBattlescape();
 		reason = "XCOM_BATTLESCAPE";
 		break;
-	case OpenXcom::XCOM_DOGFIGHT:
+	case XCOM_DOGFIGHT:
 		coef = _game->getMod()->getLoyaltyCoefDogfight();
 		reason = "XCOM_DOGFIGHT";
 		break;
-	case OpenXcom::XCOM_GEOSCAPE:
+	case XCOM_GEOSCAPE:
 		coef = _game->getMod()->getLoyaltyCoefGeoscape();
 		reason = "XCOM_GEOSCAPE";
 		break;
-	case OpenXcom::XCOM_RESEARCH:
+	case XCOM_RESEARCH:
 		coef = _game->getMod()->getLoyaltyCoefResearch();
 		reason = "XCOM_RESEARCH";
 		break;
-	case OpenXcom::ALIEN_MISSION_DESPAWN:
-		coef = _game->getMod()->getLoyaltyCoefAlienMission() * (-1);
+	case ALIEN_MISSION_DESPAWN:
+		coef = -_game->getMod()->getLoyaltyCoefAlienMission();
 		reason = "ALIEN_MISSION_DESPAWN";
 		break;
-	case OpenXcom::ALIEN_UFO_ACTIVITY:
-		coef = _game->getMod()->getLoyaltyCoefUfo() * (-1);
+	case ALIEN_UFO_ACTIVITY:
+		coef = -_game->getMod()->getLoyaltyCoefUfo();
 		reason = "ALIEN_UFO_ACTIVITY";
 		break;
-	case OpenXcom::ALIEN_BASE:
-		coef = _game->getMod()->getLoyaltyCoefAlienBase() * (-1);
+	case ALIEN_BASE:
+		coef = -_game->getMod()->getLoyaltyCoefAlienBase();
 		reason = "ALIEN_BASE";
 		break;
-	case OpenXcom::ABSOLUTE_COEF:
+	case ABSOLUTE_COEF:
 		coef = 100;
 		reason = "ABSOLUTE";
-		break;
-	default:
 		break;
 	}
 
@@ -466,21 +568,21 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 
 /**
 * Handle calculation of base services (manufacture, labs and craft repair) performance bonus caused by loyalty score.
-* @return value of performance bonus.
+* @return value of performance bonus, normal value is 100 %.
 */
 int MasterMind::getLoyaltyPerformanceBonus()
 {
 	int performance = 100;
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		int loyalty = _game->getSavedGame()->getLoyalty();
-		if (loyalty > 100)
+		if (loyalty > 100) // function approximation goes weird on values from 0 to 100, so we just keep it bonusless there...
 		{
-			double ln = log(fabs(loyalty));
+			double ln = log(std::abs(loyalty));
 			int bonus = ceil(-9.79 + (2.23 * ln));
 			performance += bonus;
 		}
-		if (loyalty < 0)
+		else if (loyalty < 0)
 		{
 			int penalty = ceil(0.271 * pow(-loyalty, 0.537));
 			performance -= penalty;
@@ -536,6 +638,73 @@ bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
 	}
 
 	return changed;
+}
+
+/**
+ * Updates nessesary data to process unlocking multiple researches.
+ * 
+ */
+void MasterMind::helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, Base* base, std::string& researchName, std::string& bonusResearchName)
+{
+	auto mod = _game->getMod();
+	auto save = _game->getSavedGame();
+
+	for (auto rRule : projects)
+	{
+		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
+		{
+			possibilities.push_back(rRule);
+		}
+	}
+
+	std::vector<const RuleResearch*> topicsToCheck;
+	if (!possibilities.empty())
+	{
+		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
+		const RuleResearch* research = possibilities.at(pickResearch);
+
+		//we also delete chosen research from possibility list for future use
+		std::vector<const RuleResearch*>::const_iterator it = std::find(possibilities.begin(), possibilities.end(), research);
+		if (it != possibilities.end())
+		{
+			possibilities.erase(it);
+		}
+		
+
+		bool alreadyResearched = false;
+		std::string name = research->getLookup().empty() ? research->getName() : research->getLookup();
+		if (save->isResearched(name, false))
+		{
+			alreadyResearched = true; // we have seen the pedia article already, don't show it again
+		}
+
+		save->addFinishedResearch(research, mod, base, true);
+		topicsToCheck.push_back(research);
+		researchName = alreadyResearched ? "" : research->getName();
+
+		if (!research->getLookup().empty())
+		{
+			const RuleResearch* lookupResearch = mod->getResearch(research->getLookup(), true);
+			save->addFinishedResearch(lookupResearch, mod, base, true);
+			researchName = alreadyResearched ? "" : lookupResearch->getName();
+		}
+
+		if (auto bonus = save->selectGetOneFree(research))
+		{
+			save->addFinishedResearch(bonus, mod, base, true);
+			topicsToCheck.push_back(bonus);
+			bonusResearchName = bonus->getName();
+
+			if (!bonus->getLookup().empty())
+			{
+				const RuleResearch* bonusLookup = mod->getResearch(bonus->getLookup(), true);
+				save->addFinishedResearch(bonusLookup, mod, base, true);
+				bonusResearchName = bonusLookup->getName();
+			}
+		}
+	}
+
+	save->handlePrimaryResearchSideEffects(topicsToCheck, mod, base);
 }
 
 }

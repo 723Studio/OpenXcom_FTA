@@ -122,7 +122,7 @@ void BriefingLightState::checkStartingCondition(AlienDeployment *deployment)
 			for (std::vector<std::string>::const_iterator it = list.begin(); it != list.end(); ++it)
 			{
 				ArticleDefinition* article = _game->getMod()->getUfopaediaArticle((*it), false);
-				if (article && _game->getSavedGame()->isResearched(article->requires))
+				if (article && _game->getSavedGame()->isResearched(article->_requires))
 				{
 					std::string translation = tr(*it);
 					armorNameList.push_back(translation);

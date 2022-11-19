@@ -60,32 +60,4 @@ public:
 	void init() override;
 };
 
-class TextEdit;
-class RuleCovertOperation;
-
-/**
- * Window which displays list of possible covert operations.
- */
-class CovertOperationsListState : public State
-{
-private:
-	Base* _base;
-	TextButton* _btnOK;
-	Window* _window;
-	Text* _txtTitle;
-	TextList* _lstOperations;
-	size_t _lstScroll;
-	void onSelectOperation(Action* action);
-	std::vector<RuleCovertOperation*> _operationRules;
-public:
-	/// Creates the Covert Operations List state.
-	CovertOperationsListState(Base* base);
-	/// Handler for clicking the OK button.
-	void btnOKClick(Action* action);
-	/// Fills the ResearchProject list with possible ResearchProjects.
-	void fillOperationList();
-	/// Initializes the state.
-	void init() override;
-};
-
 }

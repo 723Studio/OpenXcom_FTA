@@ -1049,9 +1049,14 @@ struct BindValue
 template<typename T, std::string (*X)(const T*)>
 struct BindDebugDisplay
 {
-	static RetEnum func(ScriptWorkerBase& swb, const T* t)
+	static RetEnum func(ScriptWorkerBase &swb, const T *t)
 	{
+#ifdef _MSC_VER
+		constexpr auto x = X;
+		auto f = [&] { return x(t); };
+#else
 		auto f = [&]{ return X(t); };
+#endif
 		swb.log_buffer_add(&f);
 		return RetContinue;
 	}
@@ -1236,18 +1241,28 @@ struct Bind : BindBase
 	}
 
 	template<int T::*X>
-	void addField(const std::string& get, const std::string& set = "")
+	void addField(const std::string& get)
 	{
 		addCustomFunc<helper::BindPropGet<T, X>>(getName(get), "Get int field of " + prefix);
-		if (!set.empty())
-		{
-			addCustomFunc<helper::BindPropSet<T, X>>(getName(set), "Set int field of " + prefix);
-		}
 	}
+
+	template<int T::*X>
+	void addField(const std::string& get, const std::string& set)
+	{
+		addCustomFunc<helper::BindPropGet<T, X>>(getName(get), "Get int field of " + prefix);
+		addCustomFunc<helper::BindPropSet<T, X>>(getName(set), "Set int field of " + prefix);
+	}
+
 	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
 	void addField(const std::string& get)
 	{
 		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get inner field of " + prefix);
+	}
+	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
+	void addField(const std::string& get, const std::string& set)
+	{
+		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get inner field of " + prefix);
+		addCustomFunc<helper::BindPropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(set), "Set inner field of " + prefix);
 	}
 
 	template<typename TagValues = ScriptValues<T>, typename Parent = typename TagValues::Parent*>

@@ -199,28 +199,12 @@ void DiplomacySellState::delayedInit()
 	_cbxSortBy->onChange((ActionHandler)&DiplomacySellState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-
-
-	//for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-	//{
-	//	if (_debriefingState) break;
-	//	if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
-	//	{
-	//		TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), 0, 1, 0, 0 };
-	//		_items.push_back(row);
-	//		std::string cat = getCategory(_items.size() - 1);
-	//		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//		{
-	//			_cats.push_back(cat);
-	//		}
-	//	}
-	//}
 	for (std::vector<Craft*>::iterator i = _base->getCrafts()->begin(); i != _base->getCrafts()->end(); ++i)
 	{
 		if (_debriefingState) break;
 		if ((*i)->getStatus() != "STR_OUT")
 		{
-			TransferRow row = {TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()), getCostAdjustment((*i)->getRules()->getSellCost()), 1, 0, 0, -3, 0, 0, (*i)->getRules()->getSellCost()};
+			TransferRow row = {TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()), getCostAdjustment((*i)->getRules()->getSellCost()), 1, 0, 0, 0, -3, 0, 0, (*i)->getRules()->getSellCost()};
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -229,26 +213,7 @@ void DiplomacySellState::delayedInit()
 			}
 		}
 	}
-	//if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	//{
-	//	TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0 };
-	//	_items.push_back(row);
-	//	std::string cat = getCategory(_items.size() - 1);
-	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//	{
-	//		_cats.push_back(cat);
-	//	}
-	//}
-	//if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	//{
-	//	TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0 };
-	//	_items.push_back(row);
-	//	std::string cat = getCategory(_items.size() - 1);
-	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//	{
-	//		_cats.push_back(cat);
-	//	}
-	//}
+
 	const std::vector<std::string>& items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -282,7 +247,7 @@ void DiplomacySellState::delayedInit()
 		}
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
-			TransferRow row = {TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCost()};
+			TransferRow row = {TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCost()};
 			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
 			{
 				row.amount = qty;
@@ -649,7 +614,7 @@ void DiplomacySellState::btnOkClick(Action*)
 		}
 	};
 
-	auto cleanUpCraft = [&](Craft* craft, const RuleItem* rule, int toRemove) -> int
+	auto cleanUpCraft = [&](Craft* craft2, const RuleItem* rule, int toRemove) -> int
 	{
 		struct S
 		{
@@ -679,7 +644,7 @@ void DiplomacySellState::btnOkClick(Action*)
 			}
 		};
 
-		for (auto*& w : *craft->getWeapons())
+		for (auto*& w : *craft2->getWeapons())
 		{
 			if (w != nullptr)
 			{
@@ -699,7 +664,7 @@ void DiplomacySellState::btnOkClick(Action*)
 		}
 
 		Collections::deleteIf(
-			*craft->getVehicles(),
+			*craft2->getVehicles(),
 			[&](Vehicle* v)
 			{
 				auto clipType = v->getRules()->getVehicleClipAmmo();
@@ -1066,8 +1031,6 @@ void DiplomacySellState::changeByValue(int change, int dir)
 {
 	if (dir > 0)
 	{
-		int i = getRow().qtySrc;
-		int y = getRow().amount;
 		if (change <= 0 || getRow().qtySrc <= getRow().amount)
 		{
 			return;
@@ -1094,9 +1057,6 @@ void DiplomacySellState::changeByValue(int change, int dir)
 	_total += increase;
 
 	std::string errorMessage;
-	auto test = getRow().cost;
-	auto testA = _total + test;
-	auto testB = _faction->getFunds();
 	if (_total > _faction->getFunds())
 	{
 		errorMessage = tr("STR_NOT_ENOUGH_MONEY_FACTION");
@@ -1208,8 +1168,6 @@ void DiplomacySellState::cbxSortByChange(Action *action)
 
 	size_t selSorting = _cbxSortBy->getSelected();
 	const std::string selectedSorting = _sortingTypes[selSorting];
-
-	bool categoryFilterEnabled = (selectedSorting != "STR_ALL_ITEMS");
 
 	if (selectedSorting == "STR_BY_TOTAL_SIZE")
 	{

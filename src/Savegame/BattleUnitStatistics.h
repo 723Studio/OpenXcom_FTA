@@ -85,6 +85,7 @@ struct BattleUnitKills
 	YAML::Node save() const
 	{
 		YAML::Node node;
+		node.SetStyle(YAML::EmitterStyle::Flow);
 		if (!name.empty())
 			node["name"] = name;
 		if (!type.empty())
@@ -208,9 +209,9 @@ struct BattleUnitKills
 			// Soldiers
 			if (unit->getGeoscapeSoldier())
 			{
-				if (!unit->getGeoscapeSoldier()->getRankString().empty())
+				if (!unit->getGeoscapeSoldier()->getRankString(true).empty()) //#FINNIKTODO consider solution for backwards capability
 				{
-					rank = unit->getGeoscapeSoldier()->getRankString();
+					rank = unit->getGeoscapeSoldier()->getRankString(true); //#FINNIKTODO consider solution for backwards capability
 				}
 				else
 				{
@@ -392,7 +393,7 @@ struct BattleUnitStatistics
 	YAML::Node save() const
 	{
 		YAML::Node node;
-		node["wasUnconcious"] = wasUnconcious;
+		if (wasUnconcious) node["wasUnconcious"] = wasUnconcious;
 		if (!kills.empty())
 		{
 			for (std::vector<BattleUnitKills*>::const_iterator i = kills.begin(); i != kills.end(); ++i)

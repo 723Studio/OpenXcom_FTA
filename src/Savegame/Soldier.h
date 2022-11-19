@@ -21,6 +21,7 @@
 #include <yaml-cpp/yaml.h>
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/Script.h"
 
 namespace OpenXcom
@@ -30,12 +31,18 @@ enum SoldierRank : char { RANK_ROOKIE, RANK_SQUADDIE, RANK_SERGEANT, RANK_CAPTAI
 enum SoldierGender : char { GENDER_MALE, GENDER_FEMALE };
 enum SoldierLook : char { LOOK_BLONDE, LOOK_BROWNHAIR, LOOK_ORIENTAL, LOOK_AFRICAN };
 enum ReturnToTrainings : char {NONE, MARTIAL_TRAINING, PSI_TRAINING, BOTH_TRAININGS};
+enum DutyMode: char { CRAFT, LAB, WORK, INTEL, ASSIGN, INFO};
 
 class Craft;
 class CovertOperation;
+class ResearchProject;
+class Production;
+class IntelProject;
+class BasePrisoner;
 class SoldierNamePool;
 class Mod;
 class RuleSoldier;
+class BattleUnit;
 class Armor;
 class Language;
 class EquipmentLayoutItem;
@@ -46,6 +53,31 @@ class RuleSoldierTransformation;
 class RuleSoldierBonus;
 class Base;
 struct BaseSumDailyRecovery;
+
+struct SoldierRoleRanks
+{
+	SoldierRole role;
+	int rank;
+	int experience;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		rank = node["rank"].as<int>(rank);
+		experience = node["experience"].as<int>(experience);
+	}
+	/// Saves stats to YAML.
+	YAML::Node save()
+	{
+		YAML::Node node;
+		node["role"] = (int)role;
+		node["rank"] = (int)rank;
+		node["experience"] = (int)experience;
+
+		return node;
+	}
+};
 
 /**
  * Represents a soldier hired by the player.
@@ -65,12 +97,17 @@ private:
 	std::string _name;
 	std::string _callsign;
 	int _id, _nationality, _improvement, _psiStrImprovement;
-	RuleSoldier *_rules;
+	std::vector<SoldierRoleRanks*> _roles;
+	const RuleSoldier *_rules;
 	UnitStats _initialStats, _currentStats, _tmpStatsWithSoldierBonuses, _tmpStatsWithAllBonuses;
-	UnitStats _dailyDogfightExperienceCache;
+	UnitStats _dailyDogfightExperienceCache, _dogfightExperience, _researchExperience, _engineerExperience, _intelExperience;
 	SoldierRank _rank;
 	Craft *_craft;
-	CovertOperation* _covertOperation;
+	CovertOperation *_covertOperation;
+	ResearchProject *_researchProject;
+	Production *_production;
+	IntelProject* _intelProject;
+	BasePrisoner* _prisoner;
 	SoldierGender _gender;
 	SoldierLook _look;
 	int _lookVariant;
@@ -78,7 +115,7 @@ private:
 	int _healthMissing = 0; // amount of health missing until full health recovery, this is less serious than wound recovery.
 	int _manaMissing = 0;   // amount of mana missing until full mana recovery
 	float _recovery = 0.0;  // amount of hospital attention soldier needs... used to calculate recovery time
-	bool _recentlyPromoted, _psiTraining, _training, _returnToTrainingWhenHealed, _justSaved;
+	bool _recentlyPromoted, _psiTraining, _training, _returnToTrainingWhenHealed, _justSaved, _imprisoned;
 	ReturnToTrainings _returnToTrainingsWhenOperationOver;
 	Armor *_armor;
 	Armor *_replacedArmor;
@@ -93,9 +130,13 @@ private:
 	std::map<std::string, int> _previousTransformations, _transformationBonuses, _pendingTransformations;
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
-public:
+
+	int generateScienceStat(int min, int max);
+
+  public:
 	/// Creates a new soldier.
-	Soldier(RuleSoldier *rules, Armor *armor, int id = 0);
+	Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id = 0);
+	Soldier(RuleSoldier* rules, Armor* armor, BattleUnit* unit, int id = 0);
 	/// Cleans up the soldier.
 	~Soldier();
 	/// Loads the soldier from YAML.
@@ -106,6 +147,8 @@ public:
 	std::string getName(bool statstring = false, unsigned int maxLength = 20) const;
 	/// Sets the soldier's name.
 	void setName(const std::string &name);
+	/// Generates a new name based on nationality.
+	void genName();
 	/// Gets the soldier's callsign.
 	std::string getCallsign(unsigned int maxLength = 20) const;
 	/// Sets the soldier's callsign.
@@ -120,14 +163,33 @@ public:
 	Craft *getCraft() const;
 	/// Sets the soldier's craft.
 	void setCraft(Craft *craft, bool resetCustomDeployment = false);
+	/// Sets the soldier's craft and automatically moves the equipment (if enabled).
+	void setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattle, bool resetCustomDeployment = false);
 	/// Gets the soldier's Covert Operation.
-	CovertOperation* getCovertOperation() const { return _covertOperation; };
+	CovertOperation* getCovertOperation() const { return _covertOperation; }
 	/// Sets the soldier's Covert Operation.
-	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; };
+	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
+	/// Gets the soldier's Intel Project.
+	IntelProject* getIntelProject() const { return _intelProject; }
+	/// Sets the soldier's Intel Project.
+	void setIntelProject(IntelProject* project) { _intelProject = project; }
+	/// Gets the soldier's Research Project.
+	ResearchProject *getResearchProject() const { return _researchProject; }
+	/// Sets the soldier's Research Project.
+	void setResearchProject(ResearchProject *researchProject) { _researchProject = researchProject; }
+	/// Gets the soldier's Production Project.
+	Production* getProductionProject() const { return _production; }
+	/// Sets the soldier's Production Project.
+	void setProductionProject(Production* production) { _production = production; }
+	/// Sets the soldier's BasePrisoner.
+	void setActivePrisoner(BasePrisoner* prisoner) { _prisoner = prisoner; }
+	/// Gets the soldier's BasePrisoner.
+	BasePrisoner* getActivePrisoner() const { return _prisoner; }
 	/// Gets the soldier's craft string.
-	std::string getCraftString(Language *lang, const BaseSumDailyRecovery& recovery) const;
+	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
+	void clearBaseDuty();
 	/// Gets a string version of the soldier's rank.
-	std::string getRankString() const;
+	const std::string getRankString(bool isFtA) const;
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.
 	int getRankSprite() const;
 	/// Gets a sprite version of the soldier's rank. Used for SMOKE.PCK.
@@ -157,7 +219,7 @@ public:
 	/// Sets the soldier's look sub type.
 	void setLookVariant(int lookVariant);
 	/// Gets soldier rules.
-	RuleSoldier *getRules() const;
+	const RuleSoldier *getRules() const;
 	/// Gets the soldier's unique ID.
 	int getId() const;
 	/// Add a mission to the counter.
@@ -274,17 +336,21 @@ public:
 	/// Set the training status
 	void setTraining(bool training);
 	/// Returns whether the soldier was just saved
-	bool isJustSaved() { return _justSaved; };
+	bool isJustSaved() { return _justSaved; }
 	/// Set the "Just saved" status - we recover this soldier on battlescape, but not deliverid him/her to the base yet
-	void setJustSaved(bool saved) { _justSaved = saved; };
+	void setJustSaved(bool saved) { _justSaved = saved; }
+	/// Returns whether the soldier was imprisoned
+	bool isImprisoned() { return _imprisoned; }
+	/// Set the "Imprisoned" status - we block all soldier activities
+	void setImprisoned(bool imprisoned) { _imprisoned = imprisoned; }
 	/// Should the soldier return to martial training automatically when fully healed?
 	bool getReturnToTrainingWhenHealed() const;
 	/// Sets whether the soldier should return to martial training automatically when fully healed.
 	void setReturnToTrainingWhenHealed(bool returnToTrainingWhenHealed);
 	/// Should the soldier return to martial training automatically when return from covert operation?
-	ReturnToTrainings getReturnToTrainingsWhenOperationOver() const { return _returnToTrainingsWhenOperationOver; };
+	ReturnToTrainings getReturnToTrainingsWhenOperationOver() const { return _returnToTrainingsWhenOperationOver; }
 	/// Sets whether the soldier should return to martial training automatically when fully healed.
-	void setReturnToTrainingWhenOperationOver(ReturnToTrainings returnToTrainingWhenOperationOver) { _returnToTrainingsWhenOperationOver = returnToTrainingWhenOperationOver; };
+	void setReturnToTrainingWhenOperationOver(ReturnToTrainings returnToTrainingWhenOperationOver) { _returnToTrainingsWhenOperationOver = returnToTrainingWhenOperationOver; }
 	/// Sets whether the soldier's body was recovered from a battle
 	void setCorpseRecovered(bool corpseRecovered);
 	/// Gets the previous transformations performed on this soldier
@@ -300,7 +366,50 @@ public:
 	/// Gets if this soldier has pending transformation
 	bool hasPendingTransformation() const { return !_pendingTransformations.empty() ;}
 	/// Gets pending transformation name
-	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; };
+	const std::string &getPendingTransformation() const { return _pendingTransformations.begin()->first; }
+
+	/// Gets possible stat inprovement
+	static int improveStat(int exp, int& rate, bool bravery = false);
+	/// Gets soldier roles with ranks
+	std::vector<SoldierRoleRanks*> getRoles() const { return _roles; }
+	/// Adds role or increase rank in role
+	void addRole(SoldierRole newRole, int rank = 1);
+	/// Adds role or increase rank in role
+	void addExperience(SoldierRole role, int exp = 1);
+	/// Gets rank of role.
+	int getRoleRank(SoldierRole role);
+	/// Gets the role with highest rank and rank value.
+	std::pair<SoldierRole, int> getBestRoleRank() const;
+	/// Gets the role with highest rank.
+	SoldierRole getBestRole() const { return getBestRoleRank().first; }
+	/// Gets a pointer to the dogfight experience values (FtA mechanic).
+	UnitStats* getDogfightExperience() { return &_dogfightExperience; }
+	/// Clears dogfight experience values (FtA mechanic).
+	void clearDogfightExperience() { _dogfightExperience = UnitStats::scalar(0); }
+	/// Gets a pointer to the research experience values (FtA mechanic).
+	UnitStats* getResearchExperience() { return &_researchExperience; }
+	/// Clears research experience values (FtA mechanic).
+	void clearResearchExperience() { _researchExperience = UnitStats::scalar(0); }
+	/// Gets a pointer to the research experience values (FtA mechanic).
+	UnitStats* getEngineerExperience() { return &_engineerExperience; }
+	/// Clears engineer experience values (FtA mechanic).
+	void clearEngineerExperience() { _engineerExperience = UnitStats::scalar(0); }
+	/// Gets a pointer to the intel experience values (FtA mechanic).
+	UnitStats* getIntelExperience() { return &_intelExperience; }
+	/// Clears intel experience values (FtA mechanic).
+	void clearIntelExperience() { _intelExperience = UnitStats::scalar(0); }
+
+	/// Calculate soldier stats improvement.
+	void improvePrimaryStats(UnitStats* exp, SoldierRole role);
+	/// Process role ranks promotions for a soldier.
+	bool rolePromoteSoldier(SoldierRole role);
+	/// Gets a sprite version of the soldier for specific role. Used for BASEBITS.PCK.
+	int getRoleRankSprite(SoldierRole role);
+	/// Gets a sprite version of the soldier for specific role. Used for SMOKE.PCK.
+	int getRoleRankSpriteBattlescape(SoldierRole role);
+	/// Gets a sprite version of the soldier for specific role. Used for TinyRanks.
+	int getRoleRankSpriteTiny(SoldierRole role);
+
 	/// Calculates how this project changes the soldier's stats
 	UnitStats calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType);
 	/// Gets all the soldier bonuses
@@ -318,6 +427,8 @@ public:
 
 private:
 	std::string generateCallsign(const std::vector<SoldierNamePool*> &names);
+	/// Automatically move equipment between the craft and the base when assigning/deassigning/reassigning soldiers.
+	void autoMoveEquipment(Craft* craft, Base* base, int toBase);
 
 };
 

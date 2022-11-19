@@ -22,14 +22,15 @@
 
 namespace OpenXcom
 {
-
 class Base;
 class Surface;
 class TextButton;
 class Text;
 class TextEdit;
+class ComboBox;
 class Bar;
 class Soldier;
+enum SoldierRole : int;
 
 /**
  * Soldier Info screen that shows all the
@@ -42,6 +43,7 @@ private:
 	size_t _soldierId;
 	Soldier *_soldier;
 	std::vector<Soldier*> *_list;
+	SoldierRole _role;
 
 	Surface *_bg, *_rank;
 	InteractiveSurface *_flag;
@@ -49,12 +51,34 @@ private:
 	Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead, *_txtOperation;
 	Text *_txtStuns;
 	TextEdit *_edtSoldier;
+	ComboBox *_cbxRoles;
+	std::vector<std::string> _rolesList;
+	bool _ftaUI, _localChange;
 
 	Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
 	Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;
 	Bar *_barTimeUnits, *_barStamina, *_barHealth, *_barBravery, *_barReactions, *_barFiring, *_barThrowing, *_barMelee, *_barStrength, *_barPsiStrength, *_barPsiSkill, *_barMana;
+	Text *_txtManeuvering, *_txtMissiles, *_txtDogfight, *_txtTracking, *_txtCooperation, *_txtBeams, *_txtSynaptic, *_txtGravity;
+	Text *_numManeuvering, *_numMissiles, *_numDogfight, *_numTracking, *_numCooperation, *_numBeams, *_numSynaptic, *_numGravity;
+	Bar *_barManeuvering, *_bartMissiles, *_barDogfight, *_barTracking, *_barCooperation, *_barBeams, *_barSynaptic, *_barGravity;
+	Text* _txtStealth, * _txtPerseption, * _txtCharisma, * _txtInvestigation, * _txtDeception, * _txtInterrogation;
+	Text* _numStealth, * _numPerseption, * _numCharisma, * _numInvestigation, * _numDeception, * _numInterrogation;
+	Bar* _barStealth, * _barPerseption, * _barCharisma, * _barInvestigation, * _barDeception, * _barInterrogation;
+	Text *_txtPhysics, *_txtChemistry, *_txtBiology, *_txtInsight, *_txtData, *_txtComputers, *_txtTactics, *_txtMaterials, *_txtDesigning, *_txtAlienTech, *_txtPsionics, *_txtXenolinguistics;
+	Text *_numPhysics, *_numChemistry, *_numBiology, *_numInsight, *_numData, *_numComputers, *_numTactics, *_numMaterials, *_numDesigning, *_numAlienTech, *_numPsionics, *_numXenolinguistics;
+	Bar *_barPhysics, *_barChemistry, *_barBiology, *_barInsight, *_barData, *_barComputers, *_barTactics, *_barMaterials, *_barDesigning, *_barAlienTech, *_barPsionics, *_barXenolinguistics;
+	Text *_txtWeaponry, *_txtExplosives, *_txtMicroelectronics, *_txtMetallurgy, *_txtProcessing, *_txtEfficiency, *_txtDiligence, *_txtHacking, *_txtConstruction, *_txtReverseEngineering;
+	Text *_numWeaponry, *_numExplosives, *_numMicroelectronics, *_numMetallurgy, *_numProcessing, *_numEfficiency, *_numDiligence, *_numHacking, *_numConstruction, *_numReverseEngineering;
+	Bar *_barWeaponry, *_barExplosives, *_barMicroelectronics, *_barMetallurgy, *_barProcessing, *_barEfficiency, *_barDiligence, *_barHacking, *_barConstruction, *_barReverseEngineering;
+	void defineStatLines();
+	void addStatLines();
+	void nameBars();
+	void updateVisibility();
+	void hideAllStats();
+	void fillNumbers();
+	void displayPsionic(SoldierRole selected);
 
-public:
+  public:
 	/// Creates the Soldier Info state.
 	SoldierInfoState(Base *base, size_t soldierId);
 	/// Cleans up the Soldier Info state.
@@ -81,6 +105,8 @@ public:
 	void btnSackClick(Action *action);
 	/// Handler for clicking the Diary button.
 	void btnDiaryClick(Action *action);
+	/// Handler for changing the roles actions combo box.
+	void cbxRolesChange(Action *action);
 	/// Handler for clicking the flag.
 	void btnFlagClick(Action *action);
 };

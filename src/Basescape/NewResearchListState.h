@@ -40,19 +40,20 @@ class NewResearchListState : public State
 {
 private:
 	Base *_base;
-	bool _sortByCost;
+	bool _sortByCost, _ftaUi;
 	TextButton *_btnOK;
 	ComboBox *_cbxSort;
 	ToggleTextButton *_btnShowOnlyNew;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
-	Text *_txtTitle;
+	Text *_txtTitle, *_txtName, *_txtCategories;
 	TextList *_lstResearch;
 	size_t _lstScroll;
 	Uint8 _colorNormal, _colorNew;
 	void onSelectProject(Action *action);
 	void onToggleProjectStatus(Action *action);
 	void onOpenTechTreeViewer(Action *action);
+	std::string getProjectCategory(RuleResearch *project);
 	std::vector<RuleResearch *> _projects;
 public:
 	/// Creates the New research list state.

@@ -248,7 +248,6 @@ bg:
   STR_ALIEN_RACE: "Вид"
   STR_ALIEN_TECH_LEVEL: "Технологично ниво"
   STR_RANDOMIZE: "Случаен избор"
-  STR_OXCE_REQUIRED_QUESTION: "Тази модификация изисква OpenXcom Extended за да работи правилно. Включи?"
   STR_RESTORE_DEFAULTS_QUESTION: "Сигурни ли сте, че искате да върнете оригиналните настройки?"
   STR_DISPLAY_OPTIONS_CONFIRM: "ИСКАТЕ ЛИ ДА ЗАПАМЕТИТЕ НАСТРОЙКИТЕ ЗА ДИСПЛЕЯ?"
   STR_DISPLAY_OPTIONS_REVERT: "Връщане след 0:{0}"

@@ -20,7 +20,6 @@
 #include "BattleItem.h"
 #include "BattleUnit.h"
 #include "Tile.h"
-#include "SavedGame.h"
 #include "SavedBattleGame.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
@@ -47,6 +46,7 @@ BattleItem::BattleItem(const RuleItem *rules, int *id) : _id(*id), _rules(rules)
 	(*id)++;
 	if (_rules)
 	{
+		_inventoryMoveCostPercent = _rules->getInventoryMoveCostPercent();
 		_confMelee = _rules->getConfigMelee();
 		setAmmoQuantity(_rules->getClipSize());
 		if (_rules->getBattleType() == BT_MEDIKIT)
@@ -102,6 +102,10 @@ BattleItem::~BattleItem()
  */
 void BattleItem::load(const YAML::Node &node, Mod *mod, const ScriptGlobal *shared)
 {
+	if (const YAML::Node& cost = node["inventoryMoveCost"])
+	{
+		_inventoryMoveCostPercent = cost["basePercent"].as<int>(_inventoryMoveCostPercent);
+	}
 	std::string slot = node["inventoryslot"].as<std::string>("NULL");
 	if (slot != "NULL")
 	{
@@ -149,14 +153,24 @@ YAML::Node BattleItem::save(const ScriptGlobal *shared) const
 	if (_unit)
 		node["unit"] = _unit->getId();
 
+	if (_inventoryMoveCostPercent != _rules->getInventoryMoveCostPercent())
+	{
+		node["inventoryMoveCost"]["basePercent"] = _inventoryMoveCostPercent;
+	}
 	if (_inventorySlot)
+	{
 		node["inventoryslot"] = _inventorySlot->getId();
-	node["inventoryX"] = _inventoryX;
-	node["inventoryY"] = _inventoryY;
+		if (_inventorySlot->getType() == INV_SLOT) // only for slot items this matter, for hands and ground it can be `0` for both
+		{
+			node["inventoryX"] = _inventoryX;
+			node["inventoryY"] = _inventoryY;
+		}
+	}
 
 	if (_tile)
 		node["position"] = _tile->getPosition();
-	node["ammoqty"] = _ammoQuantity;
+	if (_ammoQuantity)
+		node["ammoqty"] = _ammoQuantity;
 	if (_ammoItem[0])
 	{
 		node["ammoItem"] = _ammoItem[0]->getId();
@@ -169,6 +183,7 @@ YAML::Node BattleItem::save(const ScriptGlobal *shared) const
 		},
 		[&](BattleItem *i)
 		{
+			node["ammoItemSlots"].SetStyle(YAML::EmitterStyle::Flow); // called multiple times but prevent creating empty `ammoItemSlots: ~`
 			node["ammoItemSlots"].push_back(i ? i->getId() : -1);
 		}
 	);
@@ -559,6 +574,30 @@ void BattleItem::moveToOwner(BattleUnit *owner)
 RuleInventory *BattleItem::getSlot() const
 {
 	return _inventorySlot;
+}
+
+/**
+ * Gets the cost of moving item to given slot.
+ */
+int BattleItem::getMoveToCost(const RuleInventory *slot) const
+{
+	auto cost = _inventorySlot->getCost(slot);
+	if (cost == 0)
+	{
+		// if move was free it stay free, required to prevent paying cost of move only for clicking on item in inventory
+		return 0;
+	}
+	else if (_inventorySlot->getType() == INV_HAND && slot->getType() == INV_GROUND)
+	{
+		// this special case has two roles:
+		// * right now dropping ammo when reloading only uses default move cost, manually dropping should have same cost.
+		// * conceptually you should be able to relese grip and item should fall down, "hard to grab, easy to drop"
+		return cost;
+	}
+	else
+	{
+		return std::max(1, cost * _inventoryMoveCostPercent / 100);
+	}
 }
 
 /**
@@ -1345,6 +1384,22 @@ struct getRuleInventorySlotScript
 	}
 };
 
+struct getRuleInventoryMoveToCostScript
+{
+	static RetEnum func(const BattleItem *weapon, int& cost, const RuleInventory *inv)
+	{
+		if (weapon && weapon->getSlot() && inv)
+		{
+			cost = weapon->getMoveToCost(inv);
+		}
+		else
+		{
+			cost = 0;
+		}
+		return RetContinue;
+	}
+};
+
 std::string debugDisplayScript(const BattleItem* bt)
 {
 	if (bt)
@@ -1461,7 +1516,11 @@ void BattleItem::ScriptRegister(ScriptParserBase* parser)
 	bi.addFunc<getAmmoForSlotConstScript>("getAmmoForSlot");
 	bi.addFunc<getAmmoForActionScript>("getAmmoForAction");
 	bi.addFunc<getAmmoForActionConstScript>("getAmmoForAction");
+
 	bi.addFunc<getRuleInventorySlotScript>("getSlot");
+	bi.addFunc<getRuleInventoryMoveToCostScript>("getMoveToCost", "cost of moving item from slot in first arg to slot from last arg");
+	bi.addField<&BattleItem::_inventoryMoveCostPercent>("InventoryMoveCost.getBaseTimePercent", "InventoryMoveCost.setBaseTimePercent");
+
 	bi.addPair<BattleUnit, &BattleItem::getPreviousOwner, &BattleItem::getPreviousOwner>("getPreviousOwner");
 	bi.addPair<BattleUnit, &BattleItem::getOwner, &BattleItem::getOwner>("getOwner");
 	bi.add<&BattleItem::getId>("getId");

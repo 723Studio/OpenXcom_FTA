@@ -24,7 +24,6 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Engine/Screen.h"
-#include "../Interface/ComboBox.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextEdit.h"
@@ -327,7 +326,7 @@ void SoldierTransformationState::initTransformationData()
 	{
 		bool showMana = _game->getSavedGame()->isManaUnlocked(_game->getMod());
 
-		if (_game->getMod()->getIsFTAGame() && !showMana && !_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
+		if (_game->getMod()->isFTAGame() && !showMana && !_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 		{
 			_lstStatChanges->addRow(11, "",
 									tr("STR_TIME_UNITS_ABBREVIATION").c_str(),
@@ -574,6 +573,7 @@ void SoldierTransformationState::btnStartClick(Action *action)
 	}
 
 	// Here we go
+	_sourceSoldier->clearBaseDuty();
 	if (!Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
 	{
 		retire();
@@ -594,7 +594,7 @@ void SoldierTransformationState::performTransformation()
 	if (_transformationRule->isCreatingClone())
 	{
 		int newId = _game->getSavedGame()->getId("STR_SOLDIER");
-		RuleSoldier *newSoldierType = _game->getMod()->getSoldier(_sourceSoldier->getRules()->getType());
+		const RuleSoldier *newSoldierType = _game->getMod()->getSoldier(_sourceSoldier->getRules()->getType());
 		if (!Mod::isEmptyRuleName(_transformationRule->getProducedSoldierType()))
 		{
 			newSoldierType = _game->getMod()->getSoldier(_transformationRule->getProducedSoldierType());
@@ -602,6 +602,7 @@ void SoldierTransformationState::performTransformation()
 		destinationSoldier = new Soldier(
 			newSoldierType,
 			newSoldierType->getDefaultArmor(),
+			_sourceSoldier->getNationality(), // try to preserve nationality if possible
 			newId);
 
 		// copy stuff that is not influenced by transformation ruleset

@@ -41,7 +41,7 @@ private:
 	Text *_txtScrollSpeed, *_txtFireSpeed, *_txtXcomSpeed, *_txtAlienSpeed;
 	Slider *_slrScrollSpeed, *_slrFireSpeed, *_slrXcomSpeed, *_slrAlienSpeed;
 	Text *_txtPathPreview;
-	ToggleTextButton *_btnArrows, *_btnTuCost;
+	ToggleTextButton *_btnArrows, *_btnTuCost, *_btnEnergyCost;
 	Text *_txtOptions;
 	ToggleTextButton *_btnTooltips, *_btnDeaths;
 public:

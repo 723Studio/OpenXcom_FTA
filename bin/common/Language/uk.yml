@@ -248,7 +248,7 @@ uk:
   STR_ALIEN_RACE: "Раса"
   STR_ALIEN_TECH_LEVEL: "Технічний рівень"
   STR_RANDOMIZE: "Випадково"
-  STR_OXCE_REQUIRED_QUESTION: "Для коректної роботи цього моду потрібен OpenXcom Extended. Ввімкнути мод?"
+  STR_OXCE_REQUIRED_QUESTION: "Для коректної роботи цього моду потрібен OpenXcom {0}. Ввімкнути мод?"
   STR_RESTORE_DEFAULTS_QUESTION: "Ви дійсно хочете відновити налаштування по замовчуванню?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Ви бажаєте зберегти поточні налаштування екрану?"
   STR_DISPLAY_OPTIONS_REVERT: "Повернення налаштувань через 0:{0}"

@@ -22,6 +22,7 @@
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleSoldierTransformation.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
@@ -58,12 +59,14 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
+	_ftaUI = _game->getMod()->isFTAGame();
 	std::vector<RuleSoldierTransformation* > availableTransformations;
 	_game->getSavedGame()->getAvailableTransformations(availableTransformations, _game->getMod(), _base);
 	bool isTransformationAvailable = availableTransformations.size() > 0;
 
 	// if both training buttons would be displayed, or if there are any transformations, switch to combobox
-	bool showCombobox = isTransformationAvailable || (isPsiBtnVisible && isTrnBtnVisible);
+	bool showCombobox = isTransformationAvailable || (isPsiBtnVisible && isTrnBtnVisible) || Options::oxceAlternateCraftEquipmentManagement || _ftaUI;
+
 	// 3 buttons or 2 buttons?
 	bool showThreeButtons = !showCombobox && (isPsiBtnVisible || isTrnBtnVisible);
 
@@ -119,7 +122,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&SoldiersState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
+	//_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
 
 	_btnPsiTraining->setText(tr("STR_PSI_TRAINING"));
 	_btnPsiTraining->onMouseClick((ActionHandler)&SoldiersState::btnPsiTrainingClick);
@@ -139,8 +142,20 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 		_btnPsiTraining->setVisible(false);
 		_btnTraining->setVisible(false);
 
+		if (_ftaUI)
+		{
+			_availableOptions.push_back("STR_PERSONNEL_INFO");
+		}
 		_availableOptions.push_back("STR_SOLDIER_INFO");
+		if (_ftaUI)
+		{
+			_availableOptions.push_back("STR_PILOT_INFO");
+			_availableOptions.push_back("STR_AGENT_INFO");
+			_availableOptions.push_back("STR_SCIENTIST_INFO");
+			_availableOptions.push_back("STR_ENGINEER_INFO");
+		}
 		_availableOptions.push_back("STR_MEMORIAL");
+		_availableOptions.push_back("STR_INVENTORY");
 
 		if (isPsiBtnVisible)
 			_availableOptions.push_back("STR_PSI_TRAINING");
@@ -181,7 +196,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 
 	_txtRank->setText(tr("STR_RANK"));
 
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_txtCraft->setText(tr("STR_ASSIGNMENT"));
 	}
@@ -194,6 +209,11 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
+	bool showPsiStats = true;
+	if (_ftaUI)
+	{
+		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	}
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -202,31 +222,108 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
+	if (_ftaUI)
+	{
+		PUSH_IN("STR_ROLE_UC", roleStat);
+		PUSH_IN("STR_RANK", roleRankStat);
+	}
+	else
+	{
+		PUSH_IN("STR_RANK", rankStat);
+	}
+	// FINNIKTODO-ROLES - add rank per roles
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tu), tuStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stamina), staminaStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::health), healthStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::bravery), braveryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reactions), reactionsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::firing), firingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStat);
+	if (showPsiStats)
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
+		if (_game->getMod()->isManaFeatureEnabled())
+		{
+			// "unlock" is checked later
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
+		}
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	if (_ftaUI)
+	{
+		//pilot section
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::maneuvering), maneuveringStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::missiles), missilesStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::dogfight), dogfightStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tracking), trackingStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::cooperation), cooperationStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::beams), beamsStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::synaptic), synapticStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::gravity), gravityStat);
+		}
+		
+		// scientist section
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::physics), physicsStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::chemistry), chemistryStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::biology), biologyStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::insight), insightStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::data), dataStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::computers), computersStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tactics), tacticsStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::materials), materialsStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::designing), designingStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
+		}
+		if (showPsiStats)
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psionics), psionicsStat);
+		}
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getXenologyUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::xenolinguistics), xenolinguisticsStat);
+		}
+		// engineer section
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::construction), constructionStat);
+		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+		{
+			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
+		}
+		// agent section
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stealth), stealthStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::perseption), perseptionStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::charisma), charismaStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::deception), deceptionStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::interrogation), interrogationStat);
+	}
 
 #undef PUSH_IN
 
@@ -235,7 +332,6 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_cbxSortBy->onChange((ActionHandler)&SoldiersState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
 	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
 	_lstSoldiers->setSelectable(true);
@@ -348,20 +444,51 @@ void SoldiersState::initList(size_t scrl)
 	_lstSoldiers->clearList();
 
 	_filteredListOfSoldiers.clear();
+	_soldierNumbers.clear();
+	int i = 0;
 
 	std::string selAction = "STR_SOLDIER_INFO";
+	if (_ftaUI)
+	{
+		selAction = "STR_PERSONNEL_INFO";
+	}
+	
 	if (!_availableOptions.empty())
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
 
 	int offset = 0;
-	if (selAction == "STR_SOLDIER_INFO")
+	if (selAction == "STR_PERSONNEL_INFO" ||
+		selAction == "STR_SOLDIER_INFO" ||
+		selAction == "STR_PILOT_INFO" ||
+		selAction == "STR_AGENT_INFO" ||
+		selAction == "STR_SCIENTIST_INFO" ||
+		selAction == "STR_ENGINEER_INFO")
 	{
-		_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
-
-		// all soldiers in the base
-		_filteredListOfSoldiers = *_base->getSoldiers();
+		if (_ftaUI)
+		{
+			offset = 20;
+			for (auto &soldier : *_base->getSoldiers())
+			{
+				if (selAction == "STR_PERSONNEL_INFO" ||
+					(soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO") ||
+					(soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
+					(soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
+					(soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
+					(soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO"))
+				{
+					_filteredListOfSoldiers.push_back(soldier);
+					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
+				}
+				i++;
+			}
+		}
+		else
+		{
+			_filteredListOfSoldiers = *_base->getSoldiers();
+			_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
+		}
 	}
 	else
 	{
@@ -382,13 +509,18 @@ void SoldiersState::initList(size_t scrl)
 				if (soldier->isEligibleForTransformation(transformationRule))
 				{
 					_filteredListOfSoldiers.push_back(soldier);
+					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
 				}
+				i++;
 			}
-			for (auto& deadMan : *_game->getSavedGame()->getDeadSoldiers())
+			if (!_ftaUI) // sorry, we don't like necromancy!
 			{
-				if (deadMan->isEligibleForTransformation(transformationRule))
+				for (auto &deadMan : *_game->getSavedGame()->getDeadSoldiers())
 				{
-					_filteredListOfSoldiers.push_back(deadMan);
+					if (deadMan->isEligibleForTransformation(transformationRule))
+					{
+						_filteredListOfSoldiers.push_back(deadMan);
+					}
 				}
 			}
 		}
@@ -405,33 +537,33 @@ void SoldiersState::initList(size_t scrl)
 	_txtCraft->setX(_txtRank->getX() + 98 - offset);
 
 	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
 	unsigned int row = 0;
-	for (std::vector<Soldier*>::iterator i = _filteredListOfSoldiers.begin(); i != _filteredListOfSoldiers.end(); ++i)
+	for (std::vector<Soldier*>::iterator s = _filteredListOfSoldiers.begin(); s != _filteredListOfSoldiers.end(); ++s)
 	{
-		std::string craftString = (*i)->getCraftString(_game->getLanguage(), recovery);
-
+		std::string duty = (*s)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
+			int dynStat = (*_dynGetter)(_game, *s);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), tr((*i)->getRankString()).c_str(), craftString.c_str());
+			_lstSoldiers->addRow(3, (*s)->getName(true).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
 
-		if ((*i)->getCraft() == 0)
+		if ((*s)->getCraft() == 0)
 		{
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		}
-		if ((*i)->getCovertOperation() != 0)
+		if ((*s)->getCovertOperation() != 0)
 		{
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
-		if ((*i)->getDeath())
+		if ((*s)->getDeath())
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
 		}
@@ -597,6 +729,11 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 		_cbxScreenActions->setSelected(0);
 		_game->pushState(new SoldierMemorialState);
 	}
+	else if (selAction == "STR_INVENTORY")
+	{
+		_cbxScreenActions->setSelected(0);
+		//btnInventoryClick(nullptr); #FINNIKCHECK
+	}
 	else if (selAction == "STR_PSI_TRAINING")
 	{
 		_cbxScreenActions->setSelected(0);
@@ -613,33 +750,8 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 	}
 	else
 	{
-		// "STR_SOLDIER_INFO" or any available soldier transformation
+		_cbxSortBy->setSelected(0);
 		initList(0);
-	}
-}
-
-/**
-* Displays the inventory screen for the soldiers inside the base.
-* @param action Pointer to an action.
-*/
-void SoldiersState::btnInventoryClick(Action *)
-{
-	if (_base->getAvailableSoldiers(true, true) > 0)
-	{
-		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
-		_game->getSavedGame()->setBattleGame(bgame);
-		bgame->setMissionType("STR_BASE_DEFENSE");
-
-		if (_game->isCtrlPressed() && _game->isAltPressed())
-		{
-			_game->getSavedGame()->setDisableSoldierEquipment(true);
-		}
-		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
-		bgen.setBase(_base);
-		bgen.runInventory(0);
-
-		_game->getScreen()->clear();
-		_game->pushState(new InventoryState(false, 0, _base, true));
 	}
 }
 
@@ -660,9 +772,14 @@ void SoldiersState::lstSoldiersClick(Action *action)
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
-	if (selAction == "STR_SOLDIER_INFO")
+	if (selAction == "STR_PERSONNEL_INFO" ||
+		selAction == "STR_SOLDIER_INFO" ||
+		selAction == "STR_PILOT_INFO" ||
+		selAction == "STR_AGENT_INFO" ||
+		selAction == "STR_SCIENTIST_INFO" ||
+		selAction == "STR_ENGINEER_INFO")
 	{
-		_game->pushState(new SoldierInfoState(_base, _lstSoldiers->getSelectedRow()));
+		_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
 	}
 	else
 	{

@@ -170,7 +170,7 @@ private:
 	int _weapons, _soldiers, _pilots, _vehicles;
 	int _maxSmallSoldiers, _maxLargeSoldiers, _maxSmallVehicles, _maxLargeVehicles;
 	int _maxSmallUnits, _maxLargeUnits, _maxSoldiers, _maxVehicles;
-	int _costBuy, _costRent, _costSell, _costDispose;
+	int  _monthlyBuyLimit, _costBuy, _costRent, _costSell, _costDispose;
 	char _weaponTypes[WeaponMax][WeaponTypeMax];
 	std::string _refuelItem;
 	std::string _weaponStrings[WeaponMax];
@@ -246,6 +246,9 @@ public:
 	int getMaxSoldiers() const { return _maxSoldiers; }
 	/// Gets the craft's maximum supported number of vehicles (small + large).
 	int getMaxVehicles() const { return _maxVehicles; }
+	/// Gets the craft's monthly buy limit.
+	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
+	/// Gets the craft's role requirments for piloting.
 	/// Gets the craft's cost.
 	int getBuyCost() const;
 	/// Gets the craft's rent for a month.

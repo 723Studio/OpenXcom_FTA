@@ -65,6 +65,7 @@ void GameTime::load(const YAML::Node &node)
 YAML::Node GameTime::save() const
 {
 	YAML::Node node;
+	node.SetStyle(YAML::EmitterStyle::Flow);
 	node["second"] = _second;
 	node["minute"] = _minute;
 	node["hour"] = _hour;

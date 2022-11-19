@@ -20,7 +20,6 @@
 #include "NewResearchListState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
@@ -34,6 +33,7 @@
 #include "../Savegame/Base.h"
 #include "../Mod/RuleResearch.h"
 #include "ResearchInfoState.h"
+#include "ResearchInfoStateFtA.h"
 #include "TechTreeViewerState.h"
 
 namespace OpenXcom
@@ -51,15 +51,36 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 		_sortByCost = !_sortByCost;
 	}
 
+	_ftaUi = _game->getMod()->isFTAGame();
+
 	_screen = false;
 
-	_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
-	_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
-	_btnOK = new TextButton(103, 16, 164, 146);
-	_cbxSort = new ComboBox(this, 103, 16, 53, 146);
-	_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
-	_txtTitle = new Text(214, 16, 53, 38);
-	_lstResearch = new TextList(198, 88, 53, 54);
+	if (!_ftaUi)
+	{
+		_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
+		_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
+		_btnOK = new TextButton(103, 16, 164, 146);
+		_cbxSort = new ComboBox(this, 103, 16, 53, 146);
+		_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
+		_txtTitle = new Text(214, 16, 53, 38);
+		_lstResearch = new TextList(198, 88, 53, 54);
+		// would not be shown
+		_txtName = new Text(156, 9, 10, 47);
+		_txtCategories = new Text(156, 9, 166, 47);
+	}
+	else
+	{
+		_window = new Window(this, 320, 156, 0, 22, POPUP_BOTH);
+		_btnQuickSearch = new TextEdit(this, 48, 9, 80, 37);
+		_btnOK = new TextButton(148, 16, 164, 154);
+		_cbxSort = new ComboBox(this, 148, 16, 8, 154);
+		_btnShowOnlyNew = new ToggleTextButton(148, 16, 8, 154);
+		_txtTitle = new Text(320, 17, 0, 30);
+		_lstResearch = new TextList(288, 88, 8, 56);
+		_txtName = new Text(156, 9, 10, 47);
+		_txtCategories = new Text(156, 9, 166, 47);
+	}
+
 
 	// Set palette
 	setInterface("selectNewResearch");
@@ -71,6 +92,11 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
+	if (_ftaUi)
+	{
+		add(_txtName, "text", "selectNewResearch");
+		add(_txtCategories, "text", "selectNewResearch");
+	}
 
 	_colorNormal = _lstResearch->getColor();
 	_colorNew = Options::oxceHighlightNewTopicsHidden ? _lstResearch->getSecondaryColor() : _colorNormal;
@@ -108,13 +134,31 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	}
 
 	_txtTitle->setAlign(ALIGN_CENTER);
+	if (_ftaUi)
+	{
+		_txtTitle->setBig();
+	}
 	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
 
-	_lstResearch->setColumns(1, 190);
+	if (_ftaUi)
+	{
+		_txtName->setText(tr("STR_NAME"));
+		_txtCategories->setText(tr("STR_CATEGORIES"));
+	}
+	else
+	{
+		_txtName->setVisible(false);
+		_txtCategories->setVisible(false);
+	}
+
+	_lstResearch->setColumns(2, 156, 130);
 	_lstResearch->setSelectable(true);
 	_lstResearch->setBackground(_window);
-	_lstResearch->setMargin(8);
-	_lstResearch->setAlign(ALIGN_CENTER);
+	_lstResearch->setMargin(2);
+	if (!_ftaUi)
+	{
+		_lstResearch->setAlign(ALIGN_CENTER);
+	}
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onSelectProject, SDL_BUTTON_LEFT);
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onToggleProjectStatus, SDL_BUTTON_RIGHT);
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onOpenTechTreeViewer, SDL_BUTTON_MIDDLE);
@@ -142,7 +186,14 @@ void NewResearchListState::init()
 void NewResearchListState::onSelectProject(Action *)
 {
 	_lstScroll = _lstResearch->getScroll();
-	_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+	if (_ftaUi)
+	{
+		_game->pushState(new ResearchInfoStateFtA(_base, _projects[_lstResearch->getSelectedRow()]));
+	}
+	else
+	{
+		_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+	}
 }
 
 /**
@@ -317,7 +368,15 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
 		if ((*it)->getRequirements().empty())
 		{
-			_lstResearch->addRow(1, tr((*it)->getName()).c_str());
+			if (!_ftaUi)
+			{
+				_lstResearch->addRow(1, tr((*it)->getName()).c_str());
+			}
+			else
+			{
+				_lstResearch->addRow(2, tr((*it)->getName()).c_str(), getProjectCategory(*it).c_str());
+			}
+			
 			if (markAllAsSeen)
 			{
 				// mark all (new) research items as normal
@@ -344,6 +403,59 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		_lstResearch->scrollTo(_lstScroll);
 		_lstScroll = 0;
 	}
+}
+
+std::string NewResearchListState::getProjectCategory(RuleResearch *project)
+{
+	std::string cat = "";
+	auto stats = project->getStats();
+	std::map<int, std::string> statMap;
+
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.physics, tr("STR_PHYSICS_LC")));
+	if (stats.chemistry > 0)
+		statMap.insert(std::make_pair(stats.chemistry, tr("STR_CHEMISTRY_LC")));
+	if (stats.biology > 0)
+		statMap.insert(std::make_pair(stats.biology, tr("STR_BIOLOGY_LC")));
+	if (stats.data > 0)
+		statMap.insert(std::make_pair(stats.data, tr("STR_DATA_ANALISIS_LC")));
+	if (stats.computers > 0)
+		statMap.insert(std::make_pair(stats.computers, tr("STR_COMPUTER_SCIENCE_LC")));
+	if (stats.tactics > 0)
+		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_LC")));
+	if (stats.materials > 0)
+		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_LC")));
+	/*if (stats.psychology > 0)
+		statMap.insert(std::make_pair(stats.psychology, tr("STR_PSYCHOLOGY_LC")));*/
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_LC")));
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.psionics, tr("STR_PSIONICS_LC")));
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr("STR_XENOLINGUISTICS_LC")));
+
+	size_t i = 0;
+	std::ostringstream ss;
+	for (auto it = statMap.begin(); it != statMap.end(); ++it)
+	{
+		if (i > 0)
+		{
+			ss << ", ";
+		}
+		ss << (*it).second;
+		i++;
+		if (i > 1)
+		{
+			break;
+		}
+	}
+
+	if (!ss.str().empty())
+	{
+		cat = ss.str();
+	}
+
+	return cat;
 }
 
 }

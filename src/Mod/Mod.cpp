@@ -21,11 +21,9 @@
 #include <algorithm>
 #include <sstream>
 #include <climits>
-#include <unordered_map>
 #include <cassert>
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
-#include "../Engine/SDL2Helpers.h"
 #include "../Engine/Palette.h"
 #include "../Engine/Font.h"
 #include "../Engine/Surface.h"
@@ -78,6 +76,8 @@
 #include "RuleResearch.h"
 #include "RuleManufacture.h"
 #include "RuleManufactureShortcut.h"
+#include "RuleIntelProject.h"
+#include "RulePrisoner.h"
 #include "ExtraStrings.h"
 #include "RuleInterface.h"
 #include "RuleDiplomacyFaction.h"
@@ -350,41 +350,40 @@ public:
 /**
  * Creates an empty mod.
  */
-Mod::Mod() :
-	_inventoryOverlapsPaperdoll(false),
-	_maxViewDistance(20), _maxDarknessToSeeUnits(9), _maxStaticLightDistance(16), _maxDynamicLightDistance(24), _enhancedLighting(0),
-	_costHireEngineer(0), _costHireScientist(0),
-	_costEngineer(0), _costScientist(0), _timePersonnel(0), _initialFunding(0),
-	_aiUseDelayBlaster(3), _aiUseDelayFirearm(0), _aiUseDelayGrenade(3), _aiUseDelayMelee(0), _aiUseDelayPsionic(0),
-	_aiFireChoiceIntelCoeff(5), _aiFireChoiceAggroCoeff(5), _aiExtendedFireModeChoice(false), _aiRespectMaxRange(false), _aiDestroyBaseFacilities(false),
-	_aiPickUpWeaponsMoreActively(false), _aiPickUpWeaponsMoreActivelyCiv(false),
-	_maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100), _minReactionAccuracy(0), _chanceToStopRetaliation(0), _lessAliensDuringBaseDefense(false),
-	_allowCountriesToCancelAlienPact(false), _buildInfiltrationBaseCloseToTheCountry(false), _allowAlienBasesOnWrongTextures(true),
-	_kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
-	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0),
-	_noLOSAccuracyPenaltyGlobal(-1),
-	_surrenderMode(0), _reputationBreakthroughValue(500),
-	_ftaGame(false), _ftaGameLength(3), _ironManEnabled(true), _researchTreeDisabled(false), _defaultFactionPowerCost(300000),
-	_coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000),
-	_bughuntMinTurn(999), _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60),
-	_manaEnabled(false), _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
-	_hackingBaseTuCost(10), _hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(10),
-	_loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"),
-	_ufoGlancingHitThreshold(0), _ufoBeamWidthParameter(1000),
-	_escortRange(20), _drawEnemyRadarCircles(1), _escortsJoinFightAgainstHK(true), _hunterKillerFastRetarget(true),
-	_crewEmergencyEvacuationSurvivalChance(100), _pilotsEmergencyEvacuationSurvivalChance(100),
-	_soldiersPerSergeant(5), _soldiersPerCaptain(11), _soldiersPerColonel(23), _soldiersPerCommander(30),
-	_pilotAccuracyZeroPoint(55), _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60),
-	_performanceBonusFactor(0), _enableNewResearchSorting(false), _displayCustomCategories(0), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false),
-	_alienInventoryOffsetX(80), _alienInventoryOffsetBigUnit(32),
-	_hidePediaInfoButton(false), _extraNerdyPediaInfo(false),
-	_giveScoreAlsoForResearchedArtifacts(false), _statisticalBulletConservation(false), _stunningImprovesMorale(false),
-	_tuRecoveryWakeUpNewTurn(100), _shortRadarRange(0), _buildTimeReductionScaling(100),
-	_defeatScore(0), _defeatFunds(0), _difficultyDemigod(false), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
-	_baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
-	_facilityListOrder(0), _craftListOrder(0), _covertOperationListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
-	_researchListOrder(0),  _manufactureListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
-	_modCurrent(0), _statePalette(0)
+Mod::Mod()
+	: _inventoryOverlapsPaperdoll(false),
+	  _maxViewDistance(20), _maxDarknessToSeeUnits(9), _maxStaticLightDistance(16), _maxDynamicLightDistance(24), _enhancedLighting(0),
+	  _costHireEngineer(0), _costHireScientist(0),
+	  _costEngineer(0), _costScientist(0), _timePersonnel(0), _hireByCountryOdds(0), _hireByRegionOdds(0), _initialFunding(0),
+	  _aiUseDelayBlaster(3), _aiUseDelayFirearm(0), _aiUseDelayGrenade(3), _aiUseDelayMelee(0), _aiUseDelayPsionic(0),
+	  _aiFireChoiceIntelCoeff(5), _aiFireChoiceAggroCoeff(5), _aiExtendedFireModeChoice(false), _aiRespectMaxRange(false), _aiDestroyBaseFacilities(false),
+	  _aiPickUpWeaponsMoreActively(false), _aiPickUpWeaponsMoreActivelyCiv(false),
+	  _maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100), _minReactionAccuracy(0), _researchTrainingFactor(100), _engineeringTrainingFactor(100), _intelTrainingFactor(100),
+	  _chanceToStopRetaliation(0), _lessAliensDuringBaseDefense(false),
+	  _allowCountriesToCancelAlienPact(false), _buildInfiltrationBaseCloseToTheCountry(false), _allowAlienBasesOnWrongTextures(true),
+	  _ftaGame(false), _ftaGameLength(3),
+	  _ironManEnabled(true), _researchTreeDisabled(false), _defaultFactionPowerCost(300000), _kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
+	  _enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12),  _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0), _noLOSAccuracyPenaltyGlobal(-1), _surrenderMode(0),
+	  _coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000), _performanceCap(0), _performanceFactor(0), _bughuntMinTurn(999),
+	  _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60), _manaEnabled(false),
+	  _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true), _loseMoney("loseGame"),
+    _hackingBaseTuCost(10), _hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(10),
+	  _loseRating("loseGame"), _loseDefeat("loseGame"), _ufoGlancingHitThreshold(0),
+	  _ufoBeamWidthParameter(1000), _escortRange(20),
+	  _drawEnemyRadarCircles(1), _escortsJoinFightAgainstHK(true), _hunterKillerFastRetarget(true), _crewEmergencyEvacuationSurvivalChance(100),
+	  _pilotsEmergencyEvacuationSurvivalChance(100), _soldiersPerSergeant(5),
+	  _soldiersPerCaptain(11), _soldiersPerColonel(23), _soldiersPerCommander(30), _pilotAccuracyZeroPoint(55),
+	  _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60), _pilotCooperationZeroPoint(20), _pilotCooperationRange(20), _pilotTrackingZeroPoint(40), _pilotTrackingRange(50), _performanceBonusFactor(0),
+	  _enableNewResearchSorting(false), _displayCustomCategories(0), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false), _alienInventoryOffsetX(80),
+	  _alienInventoryOffsetBigUnit(32), _hidePediaInfoButton(false),
+	  _extraNerdyPediaInfoType(0), _giveScoreAlsoForResearchedArtifacts(false),
+	  _statisticalBulletConservation(false), _stunningImprovesMorale(false), _tuRecoveryWakeUpNewTurn(100),
+	  _shortRadarRange(0), _buildTimeReductionScaling(100), _defeatScore(0),
+	  _defeatFunds(0), _reputationBreakthroughValue(500), _difficultyDemigod(false), _startingTime(6, 1, 1, 1999, 12, 0, 0), _startingDifficulty(0),
+	  _baseDefenseMapFromLocation(0), _disableUnderwaterSounds(false), _enableUnitResponseSounds(false), _pediaReplaceCraftFuelWithRangeType(-1),
+	  _facilityListOrder(0), _craftListOrder(0), _covertOperationListOrder(0), _itemCategoryListOrder(0), _itemListOrder(0),
+	  _researchListOrder(0), _manufactureListOrder(0), _intelligenceListOrder(0), _soldierBonusListOrder(0), _transformationListOrder(0), _ufopaediaListOrder(0), _invListOrder(0), _soldierListOrder(0),
+	  _modCurrent(0), _statePalette(0)
 {
 	_muteMusic = new Music();
 	_muteSound = new Sound();
@@ -502,11 +501,13 @@ Mod::Mod() :
 
 	_converter = new RuleConverter();
 	_statAdjustment.resize(MaxDifficultyLevels);
-	_statAdjustment[0].aimAndArmorMultiplier = 0.5;
+	_statAdjustment[0].aimMultiplier = 0.5;
+	_statAdjustment[0].armorMultiplier = 0.5;
 	_statAdjustment[0].growthMultiplier = 0;
 	for (size_t i = 1; i != MaxDifficultyLevels; ++i)
 	{
-		_statAdjustment[i].aimAndArmorMultiplier = 1.0;
+		_statAdjustment[i].aimMultiplier = 1.0;
+		_statAdjustment[i].armorMultiplier = 1.0;
 		_statAdjustment[i].growthMultiplier = (int)i;
 	}
 
@@ -649,6 +650,14 @@ Mod::~Mod()
 		delete i->second;
 	}
 	for (std::map<std::string, RuleManufacture *>::const_iterator i = _manufacture.begin(); i != _manufacture.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RuleIntelProject *>::const_iterator i = _intelligence.begin(); i != _intelligence.end(); ++i)
+	{
+		delete i->second;
+	}
+	for (std::map<std::string, RulePrisoner*>::const_iterator i = _prisoners.begin(); i != _prisoners.end(); ++i)
 	{
 		delete i->second;
 	}
@@ -1097,6 +1106,12 @@ void Mod::verifySpriteOffset(const std::string &parent, const std::vector<int>& 
  */
 void Mod::verifySoundOffset(const std::string &parent, const int& sound, const std::string &set) const
 {
+	if (Options::mute)
+	{
+		// when mute is set not sound data is loaded and we can't check for correct data
+		return;
+	}
+
 	auto* s = getSoundSet(set);
 
 	checkForSoftError(sound != Mod::NO_SOUND && s->getSound(sound) == nullptr, parent, "Wrong index " + std::to_string(sound) + " for sound set " + set, LOG_ERROR);
@@ -1107,6 +1122,12 @@ void Mod::verifySoundOffset(const std::string &parent, const int& sound, const s
  */
 void Mod::verifySoundOffset(const std::string &parent, const std::vector<int>& sounds, const std::string &set) const
 {
+	if (Options::mute)
+	{
+		// when mute is set not sound data is loaded and we can't check for correct data
+		return;
+	}
+
 	auto* s = getSoundSet(set);
 
 	for (auto sound : sounds)
@@ -2132,11 +2153,14 @@ void Mod::loadAll()
 	afterLoadHelper("research", this, _research, &RuleResearch::afterLoad);
 	afterLoadHelper("items", this, _items, &RuleItem::afterLoad);
 	afterLoadHelper("manufacture", this, _manufacture, &RuleManufacture::afterLoad);
+	afterLoadHelper("intelligence", this, _intelligence, &RuleIntelProject::afterLoad);
+	afterLoadHelper("prisoners", this, _prisoners, &RulePrisoner::afterLoad);
 	afterLoadHelper("covertOperations", this, _covertOperations, &RuleCovertOperation::afterLoad);
 	afterLoadHelper("armors", this, _armors, &Armor::afterLoad);
 	afterLoadHelper("units", this, _units, &Unit::afterLoad);
 	afterLoadHelper("soldiers", this, _soldiers, &RuleSoldier::afterLoad);
 	afterLoadHelper("facilities", this, _facilities, &RuleBaseFacility::afterLoad);
+	afterLoadHelper("startingConditions", this, _startingConditions, &RuleStartingCondition::afterLoad);
 	afterLoadHelper("enviroEffects", this, _enviroEffects, &RuleEnviroEffects::afterLoad);
 	afterLoadHelper("commendations", this, _commendations, &RuleCommendations::afterLoad);
 	afterLoadHelper("skills", this, _skills, &RuleSkill::afterLoad);
@@ -2248,6 +2272,7 @@ void Mod::loadAll()
 		_fixedUserOptions.erase("maximizeInfoScreens"); // FIXME: make proper categorisations in the next release
 		_fixedUserOptions.erase("oxceModValidationLevel");
 		_fixedUserOptions.erase("oxceAutoNightVisionThreshold");
+		_fixedUserOptions.erase("oxceAlternateCraftEquipmentManagement");
 
 		const std::vector<OptionInfo> &options = Options::getOptionInfo();
 		for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)
@@ -2258,6 +2283,16 @@ void Mod::loadAll()
 			}
 		}
 		Options::save();
+	}
+
+	// additional validation of options not visible in the GUI
+	{
+		if (Options::oxceMaxEquipmentLayoutTemplates < 10 ||
+			Options::oxceMaxEquipmentLayoutTemplates > SavedGame::MAX_EQUIPMENT_LAYOUT_TEMPLATES ||
+			Options::oxceMaxEquipmentLayoutTemplates % 10 != 0)
+		{
+			Options::oxceMaxEquipmentLayoutTemplates = 20;
+		}
 	}
 
 	Log(LOG_INFO) << "Loading ended.";
@@ -2664,6 +2699,23 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 			rule->load(*i);
 		}
 	}
+	for (YAML::const_iterator i = doc["intelligence"].begin(); i != doc["intelligence"].end(); ++i)
+	{
+		RuleIntelProject *rule = loadRule(*i, &_intelligence, &_intelligenceIndex, "name");
+		if (rule != 0)
+		{
+			_intelligenceListOrder += 100;
+			rule->load(*i, this, _intelligenceListOrder);
+		}
+	}
+	for (YAML::const_iterator i = doc["prisoners"].begin(); i != doc["prisoners"].end(); ++i)
+	{
+		RulePrisoner* rule = loadRule(*i, &_prisoners, &_prisonerIndex, "type");
+		if (rule != 0)
+		{
+			rule->load(*i);
+		}
+	}
 	for (YAML::const_iterator i = doc["soldierBonuses"].begin(); i != doc["soldierBonuses"].end(); ++i)
 	{
 		RuleSoldierBonus *rule = loadRule(*i, &_soldierBonus, &_soldierBonusIndex, "name");
@@ -2781,16 +2833,25 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_costEngineer = doc["costEngineer"].as<int>(_costEngineer);
 	_costScientist = doc["costScientist"].as<int>(_costScientist);
 	_timePersonnel = doc["timePersonnel"].as<int>(_timePersonnel);
+	_hireByCountryOdds = doc["hireByCountryOdds"].as<int>(_hireByCountryOdds);
+	_hireByRegionOdds = doc["hireByRegionOdds"].as<int>(_hireByRegionOdds);
 	_initialFunding = doc["initialFunding"].as<int>(_initialFunding);
 	_alienFuel = doc["alienFuel"].as<std::pair<std::string, int> >(_alienFuel);
 	_fontName = doc["fontName"].as<std::string>(_fontName);
 	_psiUnlockResearch = doc["psiUnlockResearch"].as<std::string>(_psiUnlockResearch);
 	_ufopaediaUnlockResearch = doc["ufopaediaUnlockResearch"].as<std::string>(_ufopaediaUnlockResearch);
+	_alienTechUnlockResearch = doc["alienTechUnlockResearch"].as<std::string>(_alienTechUnlockResearch);
+	_xenologyUnlockResearch = doc["xenologyUnlockResearch"].as<std::string>(_xenologyUnlockResearch);
+	_craftsBeamUnlockResearch = doc["craftsBeamUnlockResearch"].as<std::string>(_craftsBeamUnlockResearch);
+	_craftSynapseUnlockResearch = doc["craftSynapseUnlockResearch"].as<std::string>(_craftSynapseUnlockResearch);
+	_craftGravControlUnlockResearch = doc["craftGravControlUnlockResearch"].as<std::string>(_craftGravControlUnlockResearch);
 	_fakeUnderwaterBaseUnlockResearch = doc["fakeUnderwaterBaseUnlockResearch"].as<std::string>(_fakeUnderwaterBaseUnlockResearch);
 	_newBaseUnlockResearch = doc["newBaseUnlockResearch"].as<std::string>(_newBaseUnlockResearch);
 	_baseConstructionUnlockResearch = doc["baseConstructionUnlockResearch"].as<std::string>(_baseConstructionUnlockResearch); // Duplication in FtA, works a bit difference
 	_hireScientistsUnlockResearch = doc["hireScientistsUnlockResearch"].as<std::string>(_hireScientistsUnlockResearch);
 	_hireEngineersUnlockResearch = doc["hireEngineersUnlockResearch"].as<std::string>(_hireEngineersUnlockResearch);
+	loadBaseFunction("mod", _hireScientistsRequiresBaseFunc, doc["hireScientistsRequiresBaseFunc"]);
+	loadBaseFunction("mod", _hireEngineersRequiresBaseFunc, doc["hireEngineersRequiresBaseFunc"]);
 	_destroyedFacility = doc["destroyedFacility"].as<std::string>(_destroyedFacility);
 
 	_aiUseDelayGrenade = doc["turnAIUseGrenade"].as<int>(_aiUseDelayGrenade);
@@ -2815,6 +2876,9 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_tooMuchSmokeThreshold = doc["tooMuchSmokeThreshold"].as<int>(_tooMuchSmokeThreshold);
 	_customTrainingFactor = doc["customTrainingFactor"].as<int>(_customTrainingFactor);
 	_minReactionAccuracy = doc["minReactionAccuracy"].as<int>(_minReactionAccuracy);
+	_researchTrainingFactor = doc["researchTrainingFactor"].as<int>(_researchTrainingFactor);
+	_engineeringTrainingFactor = doc["engineeringTrainingFactor"].as<int>(_engineeringTrainingFactor);
+	_intelTrainingFactor = doc["intelTrainingFactor"].as<int>(_intelTrainingFactor);
 	_chanceToStopRetaliation = doc["chanceToStopRetaliation"].as<int>(_chanceToStopRetaliation);
 	_lessAliensDuringBaseDefense = doc["lessAliensDuringBaseDefense"].as<bool>(_lessAliensDuringBaseDefense);
 	_allowCountriesToCancelAlienPact = doc["allowCountriesToCancelAlienPact"].as<bool>(_allowCountriesToCancelAlienPact);
@@ -2910,6 +2974,10 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_pilotAccuracyRange = doc["pilotAccuracyRange"].as<int>(_pilotAccuracyRange);
 	_pilotReactionsZeroPoint = doc["pilotReactionsZeroPoint"].as<int>(_pilotReactionsZeroPoint);
 	_pilotReactionsRange = doc["pilotReactionsRange"].as<int>(_pilotReactionsRange);
+	_pilotCooperationZeroPoint = doc["pilotCooperationZeroPoint"].as<int>(_pilotCooperationZeroPoint);
+	_pilotCooperationRange = doc["pilotCooperationRange"].as<int>(_pilotCooperationRange);
+	_pilotTrackingZeroPoint = doc["pilotTrackingZeroPoint"].as<int>(_pilotTrackingZeroPoint);
+	_pilotTrackingRange = doc["pilotTrackingRange"].as<int>(_pilotTrackingRange);
 	if (doc["pilotBraveryThresholds"])
 	{
 		int index = 0;
@@ -2928,7 +2996,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_alienInventoryOffsetX = doc["alienInventoryOffsetX"].as<int>(_alienInventoryOffsetX);
 	_alienInventoryOffsetBigUnit = doc["alienInventoryOffsetBigUnit"].as<int>(_alienInventoryOffsetBigUnit);
 	_hidePediaInfoButton = doc["hidePediaInfoButton"].as<bool>(_hidePediaInfoButton);
-	_extraNerdyPediaInfo = doc["extraNerdyPediaInfo"].as<bool>(_extraNerdyPediaInfo);
+	_extraNerdyPediaInfoType = doc["extraNerdyPediaInfoType"].as<int>(_extraNerdyPediaInfoType);
 	_giveScoreAlsoForResearchedArtifacts = doc["giveScoreAlsoForResearchedArtifacts"].as<bool>(_giveScoreAlsoForResearchedArtifacts);
 	_statisticalBulletConservation = doc["statisticalBulletConservation"].as<bool>(_statisticalBulletConservation);
 	_stunningImprovesMorale = doc["stunningImprovesMorale"].as<bool>(_stunningImprovesMorale);
@@ -3294,7 +3362,20 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	size_t count = 0;
 	for (YAML::const_iterator i = doc["aimAndArmorMultipliers"].begin(); i != doc["aimAndArmorMultipliers"].end() && count < MaxDifficultyLevels; ++i)
 	{
-		_statAdjustment[count].aimAndArmorMultiplier = (*i).as<double>(_statAdjustment[count].aimAndArmorMultiplier);
+		_statAdjustment[count].aimMultiplier = (*i).as<double>(_statAdjustment[count].aimMultiplier);
+		_statAdjustment[count].armorMultiplier = (*i).as<double>(_statAdjustment[count].armorMultiplier);
+		++count;
+	}
+	count = 0;
+	for (YAML::const_iterator i = doc["aimMultipliers"].begin(); i != doc["aimMultipliers"].end() && count < MaxDifficultyLevels; ++i)
+	{
+		_statAdjustment[count].aimMultiplier = (*i).as<double>(_statAdjustment[count].aimMultiplier);
+		++count;
+	}
+	count = 0;
+	for (YAML::const_iterator i = doc["armorMultipliers"].begin(); i != doc["armorMultipliers"].end() && count < MaxDifficultyLevels; ++i)
+	{
+		_statAdjustment[count].armorMultiplier = (*i).as<double>(_statAdjustment[count].armorMultiplier);
 		++count;
 	}
 	if (doc["statGrowthMultipliers"])
@@ -3503,7 +3584,9 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 		// Generate soldiers
 		for (size_t i = 0; i < randomTypes.size(); ++i)
 		{
-			Soldier *soldier = genSoldier(save, randomTypes[i]);
+			const RuleSoldier* ruleSoldier = getSoldier(randomTypes[i], true);
+			int nationality = save->selectSoldierNationalityByLocation(this, ruleSoldier, nullptr); // -1 (unfortunately the first base is not placed yet)
+			Soldier *soldier = genSoldier(save, ruleSoldier, nationality);
 			base->getSoldiers()->push_back(soldier);
 			// Award soldier a special 'original eight' commendation
 			if (_commendations.find("STR_MEDAL_ORIGINAL8_NAME") != _commendations.end())
@@ -3516,44 +3599,80 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 				}
 			}
 		}
+		// Sort soldeirs by role
+		auto compareRole = [](const Soldier* lhs, const Soldier* rhs)
+		{
+			return lhs->getRoles()[0]->role < rhs->getRoles()[0]->role;
+		};
+		sort(base->getSoldiers()->begin(), base->getSoldiers()->end(), compareRole);
 		// Assign pilots to craft (interceptors first, transport last) and non-pilots to transports only
 		for (auto& soldier : *base->getSoldiers())
 		{
 			if (soldier->getArmor()->getSize() > 1)
 			{
 				// "Large soldiers" just stay in the base
+				continue;
 			}
-			else if (soldier->getRules()->getAllowPiloting())
+			
+			if (_ftaGame)
 			{
-				Craft *found = 0;
-				for (auto& craft : *base->getCrafts())
+				if (soldier->getRoleRank(ROLE_PILOT) > 0)
 				{
-					if (!found && craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+					for (auto& craft : *base->getCrafts())
 					{
-						// Remember transporter as fall-back, but search further for interceptors
-						found = craft;
-					}
-					if (!craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getPilots())
-					{
-						// Fill interceptors with minimum amount of pilots necessary
-						found = craft;
+						if (!craft->getRules()->getAllowLanding()
+							&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+						{
+							soldier->setCraft(craft);
+						}
 					}
 				}
-				soldier->setCraft(found);
-			}
-			else
-			{
-				Craft *found = 0;
-				for (auto& craft : *base->getCrafts())
+				else if (soldier->getRoleRank(ROLE_SOLDIER) > 0)
 				{
-					if (craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+					for (auto& craft : *base->getCrafts())
 					{
-						// First available transporter will do
-						found = craft;
-						break;
+						if (craft->getRules()->getAllowLanding()
+							&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+						{
+							soldier->setCraft(craft);
+						}
 					}
 				}
-				soldier->setCraft(found);
+			}
+			else //OXC(E) logic
+			{
+				if (soldier->getRules()->getAllowPiloting())
+				{
+					Craft* found = 0;
+					for (auto& craft : *base->getCrafts())
+					{
+						if (!found && craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+						{
+							// Remember transporter as fall-back, but search further for interceptors
+							found = craft;
+						}
+						if (!craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getPilots())
+						{
+							// Fill interceptors with minimum amount of pilots necessary
+							found = craft;
+						}
+					}
+					soldier->setCraft(found);
+				}
+				else
+				{
+					Craft* found = 0;
+					for (auto& craft : *base->getCrafts())
+					{
+						if (craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits())
+						{
+							// First available transporter will do
+							found = craft;
+							break;
+						}
+					}
+					soldier->setCraft(found);
+				}
 			}
 		}
 	}
@@ -3812,7 +3931,7 @@ RuleSkill *Mod::getSkill(const std::string &name, bool error) const
  * @param name Unit name.
  * @return Rules for the units.
  */
-RuleSoldier *Mod::getSoldier(const std::string &name, bool error) const
+const RuleSoldier *Mod::getSoldier(const std::string &name, bool error) const
 {
 	return getRule(name, "Soldier", _soldiers, error);
 }
@@ -4165,6 +4284,44 @@ RuleManufacture *Mod::getManufacture (const std::string &id, bool error) const
 const std::vector<std::string> &Mod::getManufactureList() const
 {
 	return _manufactureIndex;
+}
+
+/**
+ * Returns the rules for the specified intelligence project.
+ * @param id Inteligence project type.
+ * @return Rules for the intelligence project.
+ */
+RuleIntelProject *Mod::getIntelProject(const std::string & id, bool error) const
+{
+	return getRule(id, "Intelligence", _intelligence, error);
+}
+
+/**
+ * Returns the list of intelligence projects.
+ * @return The list of intelligence projects.
+ */
+const std::vector<std::string> &Mod::getIntelProjectsList() const
+{
+	return _intelligenceIndex;
+}
+
+/**
+ * Returns the rules for the specified prisoner.
+ * @param id Inteligence project type.
+ * @return Rules for the intelligence project.
+ */
+RulePrisoner* Mod::getPrisonerRules(const std::string& id, bool error) const
+{
+	return getRule(id, "Prisoner", _prisoners, error);
+}
+
+/**
+ * Returns the list of prisoner rules.
+ * @return The list of prisoner rules.
+ */
+const std::vector<std::string>& Mod::getPrisonerRulesList() const
+{
+	return _prisonerIndex;
 }
 
 /**
@@ -4568,6 +4725,7 @@ void Mod::sortLists()
 	std::sort(_facilitiesIndex.begin(), _facilitiesIndex.end(), compareRule<RuleBaseFacility>(this, (compareRule<RuleBaseFacility>::RuleLookup)&Mod::getBaseFacility));
 	std::sort(_researchIndex.begin(), _researchIndex.end(), compareRule<RuleResearch>(this, (compareRule<RuleResearch>::RuleLookup)&Mod::getResearch));
 	std::sort(_manufactureIndex.begin(), _manufactureIndex.end(), compareRule<RuleManufacture>(this, (compareRule<RuleManufacture>::RuleLookup)&Mod::getManufacture));
+	std::sort(_intelligenceIndex.begin(), _intelligenceIndex.end(), compareRule<RuleIntelProject>(this, (compareRule<RuleIntelProject>::RuleLookup)&Mod::getIntelProject));
 	std::sort(_soldierTransformationIndex.begin(), _soldierTransformationIndex.end(), compareRule<RuleSoldierTransformation>(this,  (compareRule<RuleSoldierTransformation>::RuleLookup)&Mod::getSoldierTransformation));
 	std::sort(_invsIndex.begin(), _invsIndex.end(), compareRule<RuleInventory>(this, (compareRule<RuleInventory>::RuleLookup)&Mod::getInventory));
 	// special cases
@@ -4594,14 +4752,10 @@ const std::vector<std::string> &Mod::getPsiRequirements() const
  * @param type The soldier type to generate.
  * @return Newly generated soldier.
  */
-Soldier *Mod::genSoldier(SavedGame *save, std::string type) const
+Soldier *Mod::genSoldier(SavedGame *save, const RuleSoldier* ruleSoldier, int nationality) const
 {
 	Soldier *soldier = 0;
 	int newId = save->getId("STR_SOLDIER");
-	if (isEmptyRuleName(type))
-	{
-		type = _soldiersIndex.front();
-	}
 
 	// Check for duplicates
 	// Original X-COM gives up after 10 tries so might as well do the same here
@@ -4609,7 +4763,7 @@ Soldier *Mod::genSoldier(SavedGame *save, std::string type) const
 	for (int tries = 0; tries < 10 && duplicate; ++tries)
 	{
 		delete soldier;
-		soldier = new Soldier(getSoldier(type, true), getSoldier(type, true)->getDefaultArmor(), newId);
+		soldier = new Soldier(ruleSoldier, ruleSoldier->getDefaultArmor(), nationality, newId);
 		duplicate = false;
 		for (std::vector<Base*>::iterator i = save->getBases()->begin(); i != save->getBases()->end() && !duplicate; ++i)
 		{
@@ -5649,7 +5803,7 @@ void Mod::loadExtraResources()
 			Music *music = 0;
 			for (size_t j = 0; j < ARRAYLEN(priority) && music == 0; ++j)
 			{
-				music = loadMusic(priority[j], (*i).first, (*i).second->getCatPos(), (*i).second->getNormalization(), adlibcat, aintrocat, gmcat);
+				music = loadMusic(priority[j], (*i).second, adlibcat, aintrocat, gmcat);
 			}
 			if (music)
 			{
@@ -5938,20 +6092,19 @@ void Mod::modResources()
 /**
  * Loads the specified music file format.
  * @param fmt Format of the music.
- * @param file Filename of the music.
- * @param track Track number of the music, if stored in a CAT.
- * @param volume Volume modifier of the music, if stored in a CAT.
+ * @param rule Parameters of the music.
  * @param adlibcat Pointer to ADLIB.CAT if available.
  * @param aintrocat Pointer to AINTRO.CAT if available.
  * @param gmcat Pointer to GM.CAT if available.
  * @return Pointer to the music file, or NULL if it couldn't be loaded.
  */
-Music *Mod::loadMusic(MusicFormat fmt, const std::string &file, size_t track, float volume, CatFile *adlibcat, CatFile *aintrocat, GMCatFile *gmcat) const
+Music* Mod::loadMusic(MusicFormat fmt, RuleMusic* rule, CatFile* adlibcat, CatFile* aintrocat, GMCatFile* gmcat) const
 {
 	/* MUSIC_AUTO, MUSIC_FLAC, MUSIC_OGG, MUSIC_MP3, MUSIC_MOD, MUSIC_WAV, MUSIC_ADLIB, MUSIC_GM, MUSIC_MIDI */
 	static const std::string exts[] = { "", ".flac", ".ogg", ".mp3", ".mod", ".wav", "", "", ".mid" };
 	Music *music = 0;
 	auto soundContents = FileMap::getVFolderContents("SOUND");
+	size_t track = rule->getCatPos();
 	try
 	{
 		// Try Adlib music
@@ -5961,7 +6114,7 @@ Music *Mod::loadMusic(MusicFormat fmt, const std::string &file, size_t track, fl
 			{
 				if (track < adlibcat->size())
 				{
-					music = new AdlibMusic(volume);
+					music = new AdlibMusic(rule->getNormalization());
 					music->load(adlibcat->getRWops(track));
 				}
 				// separate intro music
@@ -5970,7 +6123,7 @@ Music *Mod::loadMusic(MusicFormat fmt, const std::string &file, size_t track, fl
 					track -= adlibcat->size();
 					if (track < aintrocat->size())
 					{
-						music = new AdlibMusic(volume);
+						music = new AdlibMusic(rule->getNormalization());
 						music->load(aintrocat->getRWops(track));
 					}
 					else
@@ -5993,7 +6146,7 @@ Music *Mod::loadMusic(MusicFormat fmt, const std::string &file, size_t track, fl
 		// Try digital tracks
 		else
 		{
-			std::string fname = file + exts[fmt];
+			std::string fname = rule->getName() + exts[fmt];
 			std::transform(fname.begin(), fname.end(), fname.begin(), ::tolower);
 
 			if (soundContents.find(fname) != soundContents.end())

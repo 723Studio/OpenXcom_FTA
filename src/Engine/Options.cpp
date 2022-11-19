@@ -31,6 +31,7 @@
 #include "Exception.h"
 #include "Logger.h"
 #include "CrossPlatform.h"
+#include "../Menu/ModConfirmExtendedState.h"
 #include "FileMap.h"
 #include "Screen.h"
 
@@ -217,6 +218,7 @@ void create()
 #else
 	_info.push_back(OptionInfo("oxceLinks", &oxceLinks, false, "STR_OXCE_LINKS", "STR_OXCE"));
 #endif
+	_info.push_back(OptionInfo("oxceAlternateCraftEquipmentManagement", &oxceAlternateCraftEquipmentManagement, false, "STR_ALTERNATE_CRAFT_EQUIPMENT_MANAGEMENT", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_OXCE"));
@@ -232,13 +234,18 @@ void create()
 #else
 	_info.push_back(OptionInfo("oxceFatFingerLinks", &oxceFatFingerLinks, false));
 #endif
+	_info.push_back(OptionInfo("oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
 	_info.push_back(OptionInfo("oxceHighlightNewTopicsHidden", &oxceHighlightNewTopicsHidden, true));
 	_info.push_back(OptionInfo("oxceInterceptGuiMaintenanceTimeHidden", &oxceInterceptGuiMaintenanceTimeHidden, 2));
 	_info.push_back(OptionInfo("oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true));
 	_info.push_back(OptionInfo("oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true));
 	_info.push_back(OptionInfo("oxceEnablePaletteFlickerFix", &oxceEnablePaletteFlickerFix, false));
+	_info.push_back(OptionInfo("oxceMaxEquipmentLayoutTemplates", &oxceMaxEquipmentLayoutTemplates, 20));
 	_info.push_back(OptionInfo("oxcePersonalLayoutIncludingArmor", &oxcePersonalLayoutIncludingArmor, true));
 	_info.push_back(OptionInfo("oxceManufactureFilterSuppliesOK", &oxceManufactureFilterSuppliesOK, false));
+	_info.push_back(OptionInfo("oxceTogglePersonalLightType", &oxceTogglePersonalLightType, 1)); // per battle
+	_info.push_back(OptionInfo("oxceToggleNightVisionType", &oxceToggleNightVisionType, 1));     // per battle
+	_info.push_back(OptionInfo("oxceToggleBrightnessType", &oxceToggleBrightnessType, 0));       // not persisted
 	_info.push_back(OptionInfo("oxceModValidationLevel", &oxceModValidationLevel, (int)LOG_WARNING));
 
 	_info.push_back(OptionInfo("oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
@@ -622,7 +629,7 @@ bool init()
 	updateOptions();
 
 	// set up the logging reportingLevel
-#ifdef _DEBUG
+#ifndef NDEBUG
 	Logger::reportingLevel() = LOG_DEBUG;
 #else
 	Logger::reportingLevel() = LOG_INFO;
@@ -840,15 +847,30 @@ void updateMods()
 	refreshMods();
 
 	// check active mods that don't meet the enforced OXCE requirements
+	auto masterInf = getActiveMasterInfo();
 	auto activeModsList = getActiveMods();
 	bool forceQuit = false;
 	for (auto modInf : activeModsList)
 	{
-		if (!modInf->isEnforcedVersionOk())
+		if (ModConfirmExtendedState::isModNotValid(modInf, masterInf))
 		{
-			forceQuit = true;
 			Log(LOG_ERROR) << "- " << modInf->getId() << " v" << modInf->getVersion();
-			Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXCE v" << modInf->getEnforcedExtendedVersion();
+			if (!modInf->isEngineOk())
+			{
+				forceQuit = true;
+				if (modInf->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+				{
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require OXC " << modInf->getRequiredExtendedEngine() << " engine to run";
+				}
+				else
+				{
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
+				}
+			}
+			if (!modInf->isParentMasterOk(masterInf))
+			{
+				Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require version " << modInf->getRequiredMasterVersion() << " of master mod to run (current one is " << masterInf->getVersion() << ")";
+			}
 		}
 	}
 	if (forceQuit)
@@ -864,11 +886,6 @@ void updateMods()
 	for (auto modInf : activeMods)
 	{
 		Log(LOG_INFO) << "- " << modInf->getId() << " v" << modInf->getVersion();
-		if (!modInf->isVersionOk())
-		{
-			// report active mods that don't meet the recommended OXCE requirements
-			Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' requires at least OXCE v" << modInf->getRequiredExtendedVersion();
-		}
 	}
 }
 
@@ -897,6 +914,14 @@ bool isPasswordCorrect()
 std::string getActiveMaster()
 {
 	return _masterMod;
+}
+
+/**
+ * Gets the master mod info.
+ */
+const ModInfo* getActiveMasterInfo()
+{
+	return &_modInfos.at(_masterMod);
 }
 
 bool getLoadLastSave()

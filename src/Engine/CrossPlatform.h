@@ -21,6 +21,7 @@
 #include <SDL.h>
 #include <string>
 #include <vector>
+#include <array>
 #include <memory>
 
 namespace OpenXcom
@@ -120,8 +121,12 @@ namespace CrossPlatform
 	bool testInternetConnection(const std::string& url);
 	/// Downloads a file from a given URL to the filesystem.
 	bool downloadFile(const std::string& url, const std::string& filename);
+	/// Parse string with version number.
+	std::array<int, 4> parseVersion(const std::string& newVersion);
 	/// Is the given version number higher than the current version number?
 	bool isHigherThanCurrentVersion(const std::string& newVersion);
+	/// Is the given version number higher than the given version number?
+	bool isHigherThanCurrentVersion(const std::array<int, 4>& newVersion, const int (&ver)[4]);
 	/// Gets the path to the executable file.
 	std::string getExeFolder();
 	/// Gets the file name of the executable file.

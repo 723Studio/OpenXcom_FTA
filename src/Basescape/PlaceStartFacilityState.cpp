@@ -18,7 +18,7 @@
  */
 #include "PlaceStartFacilityState.h"
 #include "../Engine/Game.h"
-#include "../Engine/LocalizedText.h"
+#include "../Engine/Sound.h"
 #include "../Interface/Text.h"
 #include "BaseView.h"
 #include "../Savegame/Base.h"
@@ -71,6 +71,10 @@ void PlaceStartFacilityState::viewClick(Action *)
 		fac->setX(_view->getGridX());
 		fac->setY(_view->getGridY());
 		_base->getFacilities()->push_back(fac);
+		if (fac->getRules()->getPlaceSound() != Mod::NO_SOUND)
+		{
+			_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
+		}
 		_game->popState();
 		_select->facilityBuilt();
 	}

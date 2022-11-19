@@ -42,7 +42,7 @@ namespace OpenXcom
  */
 MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 {
-	bool isFta = _game->getMod()->getIsFTAGame();
+	bool isFta = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(300, 20, 10, 170);
@@ -130,7 +130,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
 	{
 		RuleCraft *craft = _game->getMod()->getCraft(*i);
-		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->getIsFTAGame()))
+		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->isFTAGame()))
 		{
 			auto count = _base->getCraftCount(craft);
 			if (count > 0 || craft->forceShowInMonthlyCosts())
@@ -162,7 +162,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 		// vanilla
 		for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 		{
-			RuleSoldier *soldier = _game->getMod()->getSoldier(*i);
+			const RuleSoldier *soldier = _game->getMod()->getSoldier(*i);
 			if (soldier->getSalaryCost(0) != 0 && _game->getSavedGame()->isResearched(soldier->getRequirements()))
 			{
 				std::pair<int, int> info = _base->getSoldierCountAndSalary(*i);

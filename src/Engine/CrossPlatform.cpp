@@ -30,6 +30,7 @@
 #include <time.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include "Logger.h"
 #include "Exception.h"
 #include "Options.h"
@@ -1651,41 +1652,62 @@ bool downloadFile(const std::string& url, const std::string& filename)
 }
 
 /**
+ * Parse string with version number.
+ */
+std::array<int, 4> parseVersion(const std::string& newVersion)
+{
+	std::array<int, 4> newOxceVersion = {};
+
+	std::string each;
+	char split_char = '.';
+	std::istringstream ss(newVersion);
+	std::size_t j = 0;
+	while (std::getline(ss, each, split_char)) {
+		if (j == newOxceVersion.size())
+		{
+			break;
+		}
+
+		try {
+			int i = std::stoi(each);
+			newOxceVersion[j] = i;
+		}
+		catch (...) {
+
+		}
+		++j;
+	}
+	return newOxceVersion;
+}
+
+/**
  * Is the given version number higher than the current version number?
  * @param newVersion Version to compare.
  * @return True if given version is higher than current version.
  */
 bool isHigherThanCurrentVersion(const std::string& newVersion)
 {
+	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_VERSION_NUMBER });
+}
+
+/**
+ * Is the given version number higher than the given version number?
+ * @param newVersion Version to compare.
+ * @param ver Given available version.
+ * @return True if given version is higher than given version.
+ */
+bool isHigherThanCurrentVersion(const std::array<int, 4>& newOxceVersion, const int (&ver)[4])
+{
 	bool isHigher = false;
 
-	std::vector<int> newOxceVersion;
-	std::string each;
-	char split_char = '.';
-	std::istringstream ss(newVersion);
-	while (std::getline(ss, each, split_char)) {
-		try {
-			int i = std::stoi(each);
-			newOxceVersion.push_back(i);
-		}
-		catch (...) {
-			newOxceVersion.push_back(0);
-		}
-	}
-	std::vector<int> currentOxceVersion = { OPENXCOM_VERSION_NUMBER };
-	int diff = currentOxceVersion.size() - newOxceVersion.size();
-	for (int j = 0; j < diff; ++j)
+	for (size_t k = 0; k < std::size(ver); ++k)
 	{
-		newOxceVersion.push_back(0);
-	}
-	for (size_t k = 0; k < currentOxceVersion.size(); ++k)
-	{
-		if (newOxceVersion[k] > currentOxceVersion[k])
+		if (newOxceVersion[k] > ver[k])
 		{
 			isHigher = true;
 			break;
 		}
-		else if (newOxceVersion[k] < currentOxceVersion[k])
+		else if (newOxceVersion[k] < ver[k])
 		{
 			break;
 		}
@@ -1751,6 +1773,41 @@ void startUpdateProcess()
 #endif
 }
 
-}
 
+
+#ifdef OXCE_AUTO_TEST
+
+static auto dummy = ([]
+{
+	auto create = [](int i, int j, int k, int l)
+	{
+		return std::array<int, 4>{{i, j, k, l}};
+	};
+
+	assert(parseVersion("0.0.0.0") == create(0, 0, 0, 0));
+	assert(parseVersion("1.0.0.0") == create(1, 0, 0, 0));
+	assert(parseVersion("1.2.0.0") == create(1, 2, 0, 0));
+	assert(parseVersion("1.2.3.4") == create(1, 2, 3, 4));
+	assert(parseVersion("1.2.3.4.5") == create(1, 2, 3, 4));
+	assert(parseVersion("1.2.3") == create(1, 2, 3, 0));
+	assert(parseVersion("1.2") == create(1, 2, 0, 0));
+	assert(parseVersion("1.A.2") == create(1, 0, 2, 0));
+	assert(parseVersion(".2") == create(0, 2, 0, 0));
+
+
+	assert(isHigherThanCurrentVersion(create(1, 2, 0, 0), {1, 1, 0, 0}));
+	assert(isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 2, 0, 4}));
+	assert(isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 2, 1, 2}));
+	assert(!isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 2, 1, 3}));
+	assert(!isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 2, 1, 4}));
+	assert(!isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 2, 2, 2}));
+	assert(!isHigherThanCurrentVersion(create(1, 2, 1, 3), {1, 3, 1, 2}));
+
+	return 0;
+})();
+#endif
+
+
+
+}
 }

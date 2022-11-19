@@ -248,7 +248,6 @@ fi:
   STR_ALIEN_RACE: "Laji"
   STR_ALIEN_TECH_LEVEL: "Teknologiataso"
   STR_RANDOMIZE: "Satunnaista"
-  STR_OXCE_REQUIRED_QUESTION: "OpenXcom Extended vaaditaan, jotta modi toimisi kunnolla. Kytketäänkö modi päälle?"
   STR_RESTORE_DEFAULTS_QUESTION: "Oletko varma, että haluat palauttaa oletusasetukset?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Haluatko säilyttää nykyiset näyttöasetukset?"
   STR_DISPLAY_OPTIONS_REVERT: "Palautukseen 0:{0}"

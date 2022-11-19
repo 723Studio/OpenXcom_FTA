@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Unit.h"
+#include "RuleSoldier.h"
 #include "../Engine/Exception.h"
 #include "../Engine/ScriptBind.h"
 #include "Mod.h"
@@ -32,7 +33,7 @@ namespace OpenXcom
 Unit::Unit(const std::string &type) :
 	_type(type), _liveAlienName(Mod::STR_NULL), _showFullNameInAlienInventory(-1), _armor(nullptr), _standHeight(0), _kneelHeight(0), _floatHeight(0), _value(0),
 	_moraleLossWhenKilled(100), _moveSound(-1), _intelligence(0), _aggression(0),
-	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _livingWeapon(false),
+	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
 	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
 	_canPanic(true), _canBeMindControlled(true), _berserkChance(33)
@@ -101,7 +102,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
 	_capturable = node["capturable"].as<bool>(_capturable);
 	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
-	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType); //FtA way to define special units
+	_specialObjective = (SpecialObjective)node["specialObjective"].as<int>(_specialObjective); //FtA way to define special units
 	_vip = node["vip"].as<bool>(_vip); //OXCE variant
 	_cosmetic = node["cosmetic"].as<bool>(_cosmetic);
 	_ignoredByAI = node["ignoredByAI"].as<bool>(_ignoredByAI);
@@ -115,6 +116,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	{
 		_builtInWeaponsNames.push_back(node["builtInWeapons"].as<std::vector<std::string> >());
 	}
+
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
+
+	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
 
 	mod->loadSoundOffset(_type, _deathSound, node["deathSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _panicSound, node["panicSound"], "BATTLE.CAT");
@@ -138,7 +144,8 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
-	mod->linkRule(_altUnit, _altRecoveredUnit);	
+	mod->linkRule(_altUnit, _altRecoveredUnit);
+	mod->linkRule(_prisoner, _prisonerName);
 	if (_liveAlienName == Mod::STR_NULL)
 	{
 		_liveAlien = mod->getItem(_type, false); // this is optional default behavior
@@ -153,12 +160,14 @@ void Unit::afterLoad(const Mod* mod)
 	{
 		if (_capturable && _armor->getCorpseBattlescape().front()->isRecoverable() && _spawnUnit == nullptr)
 		{
-			mod->checkForSoftError(
-				_liveAlien == nullptr,
-				_type,
-				"This unit can be recovered (in theory), but there is no corresponding item to recover.",
-				LOG_INFO
-			);
+			if (mod->isFTAGame() && (_altUnit == nullptr && this->getCivilianRecoveryType().empty()))
+			{
+				mod->checkForSoftError(
+					_liveAlien == nullptr,
+					_type,
+					"This unit can be recovered (in theory), but there is no corresponding item to recover.",
+					LOG_INFO);
+			}
 		}
 		else
 		{
@@ -176,6 +185,19 @@ void Unit::afterLoad(const Mod* mod)
 				"This unit has a corresponding item to recover, but still isn't recoverable. Reason: (" + s + "). Consider marking the unit with 'liveAlien: \"\"'.",
 				LOG_INFO
 			);
+		}
+	}
+}
+
+void Unit::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
 		}
 	}
 }

@@ -248,7 +248,7 @@ lb:
   STR_ALIEN_RACE: "Rass"
   STR_ALIEN_TECH_LEVEL: "Tech-Level"
   STR_RANDOMIZE: "Zoufälleg"
-  STR_OXCE_REQUIRED_QUESTION: "Dëse Mod brauch OpenXcom Extended fir korrekt ze lafen. Mod uschalten?"
+  STR_OXCE_REQUIRED_QUESTION: "Dëse Mod brauch OpenXcom {0} fir korrekt ze lafen. Mod uschalten?"
   STR_RESTORE_DEFAULTS_QUESTION: "Sécher, dass d'Standardoptioune solle geluede ginn?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Sollen déi aktuell Displayoptioune bäibehale ginn?"
   STR_DISPLAY_OPTIONS_REVERT: "Zrécksetzen an: 0:{0}"

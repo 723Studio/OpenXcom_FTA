@@ -3139,7 +3139,7 @@ void ScriptParserBase::logScriptMetadata(bool haveEvents, const std::string& gro
 ScriptParserEventsBase::ScriptParserEventsBase(ScriptGlobal* shared, const std::string& name) : ScriptParserBase(shared, name)
 {
 	_events.reserve(EventsMax);
-	_eventsData.push_back({ 0, {} });
+	_eventsData.push_back({ 0, {}, {} });
 }
 
 /**
@@ -3419,18 +3419,23 @@ void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shar
  */
 void ScriptValuesBase::saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName) const
 {
+	bool haveData = false;
 	YAML::Node tags;
 	for (size_t i = 1; i <= values.size(); ++i)
 	{
 		if (int v = getBase(i))
 		{
+			haveData = true;
 			auto temp = YAML::Node{};
 			auto data = shared->getTagValueData(type, i);
 			shared->getTagValueTypeData(data.valueType).save(shared, v, temp);
 			tags[data.name.substr(data.name.find('.') + 1u).toString()] = temp;
 		}
 	}
-	node[nodeName] = tags;
+	if (haveData)
+	{
+		node[nodeName] = tags;
+	}
 }
 
 ////////////////////////////////////////////////////////////

@@ -83,9 +83,11 @@ es-ES:
   STR_CONSTRUCTION_TIME_UC: "TIEMPO DE CONSTRUCCIÓN>"
   STR_DAY:
     one: "{N} día"
+    many: "{N} días"
     other: "{N} días"
   STR_HOUR:
     one: "{N} hora"
+    many: "{N} horas"
     other: "{N} horas"
   STR_MAINTENANCE_UC: "MANTENIMIENTO>"
   STR_OK: "OK"
@@ -1010,15 +1012,19 @@ es-ES:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "UT's reservadas para arrodillarse y disparar"
   STR_UNITS_IN_CRAFT:
     one: "{N} Unidad en Nave X-Com"
+    many: "{N} Unidades en Nave X-Com"
     other: "{N} Unidades en Nave X-Com"
   STR_UNITS_OUTSIDE:
     one: "{N} Unidad dejada fuera"
+    many: "{N} Unidades abandonadas"
     other: "{N} Unidades abandonadas"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} Unidad en la Entrada"
+    many: "{N} Unidades en la Entrada"
     other: "{N} Unidades en la Entrada"
   STR_UNITS_IN_EXIT:
     one: "{N} Unidad en la Meta de Salida"
+    many: "{N} Unidades en la Meta de Salida"
     other: "{N} Unidades en la Meta de Salida"
   STR_ABORT_MISSION_QUESTION: "¿Cancelar la misión?"
   STR_CORPSE: "Cadáver"
@@ -1065,6 +1071,7 @@ es-ES:
   STR_ALL_ITEMS: "Todos los objetos"
   STR_NO_MORE_EQUIPMENT_ALLOWED:
     one: "¡NO SE LE PERMITE MAS EQUIPO A BORDO!{SMALLLINE}Sólo se le permite llevar un máximo de {N} objeto en esta nave."
+    many: "¡NO SE LE PERMITE MAS EQUIPO A BORDO!{SMALLLINE}Sólo se le permite llevar un máximo de {N} objetos en esta nave."
     other: "¡NO SE LE PERMITE MAS EQUIPO A BORDO!{SMALLLINE}Sólo se le permite llevar un máximo de {N} objetos en esta nave."
   STR_CONTROL_CENTER_DESTROYED: "{SMALLLINE}CENTRO DE CONTROL DESTRUIDO{NEWLINE}Diríjase a la entrada y aborte."
   STR_XCOM_BASE_CANNOT_BE_BUILT: "Instalaciones X-Com no se pueden construir bajo el agua"

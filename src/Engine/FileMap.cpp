@@ -851,7 +851,7 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 		}
 	}
 	if (!mapped_anything) { // well, nothing found. say so.
-		Log(LOG_ERROR) << log_ctx << "external resources not found.";
+		Log(LOG_INFO) << log_ctx << "external resources not found.";
 	}
 	return mapped_anything;
 }
@@ -907,6 +907,7 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 	// check if this is maybe a zip of a single mod (metadata.yml at the top level)
 	if (mz_zip_reader_locate_file_v2(mzip, "metadata.yml", NULL, 0, NULL)) {
 		Log(LOG_VERBOSE) << log_ctx << "retrying as a single-mod .zip";
+		// FIXME: this doesn't seem to work at all... do we support this?
 		mapZippedMod(mzip, fullpath, "");
 		return;
 	}
@@ -914,15 +915,18 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 	for (mz_uint fi = 0; fi < filecount; ++fi) {
 		mz_zip_archive_file_stat fistat;
 		mz_zip_reader_file_stat(mzip, fi, &fistat);
+		if (fistat.m_is_encrypted || !fistat.m_is_supported) { continue; }
+		if (!fistat.m_is_directory) { continue; } // skip files, we're only interested in toplevel dirs.
 		std::string prefix = fistat.m_filename;
 		if (!sanitizeZipEntryName(prefix)) {
 			Log(LOG_WARNING) << "Bogus dirname " << hexDumpBogusData(prefix) << " in " << fullpath << ", ignoring.";
 			continue;
 		}
-		if (fistat.m_is_encrypted || !fistat.m_is_supported) { continue; }
-		if (!fistat.m_is_directory) { continue; } // skip files, we're only interested in toplevel dirs.
 		auto slashpos = prefix.find_first_of("/"); // miniz returns dirnames with trailing slashes
 		if (slashpos != prefix.size() - 1) { continue; } // not top-level: skip.
+		// FIXME: if Microsoft Windows "Send to > Compressed (zipped) folder" is used to create the ZIP archive,
+		// this will never be called, because the top-level directory is NOT on the file list... yes, seriously, I'm not kidding!
+		// Do we want to handle this somehow or do we just call it unsupported?
 		mapZippedMod(mzip, fullpath, prefix);
 	}
 }

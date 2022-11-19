@@ -24,10 +24,8 @@
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/Surface.h"
 #include "../Engine/LocalizedText.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/Text.h"
@@ -80,9 +78,6 @@ namespace OpenXcom
 		_txtTitle->setBig();
 		_txtTitle->setText(tr(defs->getTitleForPage(_state->current_page)));
 
-		_image = new Surface(320, 200, 0, 0);
-		add(_image);
-
 		if (customArmorSprite)
 		{
 			// blit on the background, so that text and button are always visible
@@ -91,7 +86,7 @@ namespace OpenXcom
 		else if (armor->hasLayersDefinition())
 		{
 			// dummy default soldier (M0)
-			Soldier *s = new Soldier(_game->getMod()->getSoldier(_game->getMod()->getSoldiersList().front(), true), armor, 0);
+			Soldier *s = new Soldier(_game->getMod()->getSoldier(_game->getMod()->getSoldiersList().front(), true), armor, 0 /*nationality*/, 0 /*id*/);
 			s->setGender(GENDER_MALE);
 			s->setLook(LOOK_BLONDE);
 			s->setLookVariant(0);
@@ -99,8 +94,10 @@ namespace OpenXcom
 			for (const auto& layer : s->getArmorLayers())
 			{
 				auto surf = _game->getMod()->getSurface(layer, true);
-				surf->blitNShade(_image, 0, 0);
+				surf->blitNShade(_bg, 0, 0);
 			}
+			delete s;
+			s = nullptr;
 		}
 		else
 		{
@@ -114,7 +111,7 @@ namespace OpenXcom
 			{
 				look = armor->getSpriteInventory();
 			}
-			_game->getMod()->getSurface(look, true)->blitNShade(_image, 0, 0);
+			_game->getMod()->getSurface(look, true)->blitNShade(_bg, 0, 0);
 		}
 
 
@@ -151,7 +148,7 @@ namespace OpenXcom
 			int percentage = (int)Round(armor->getDamageModifier(dt) * 100.0f);
 			std::string damage = getDamageTypeText(dt);
 			bool unlocked = true;
-			if (_game->getMod()->getIsFTAGame())
+			if (_game->getMod()->isFTAGame())
 			{
 				if (!_game->getSavedGame()->isResearched(damage))
 				{

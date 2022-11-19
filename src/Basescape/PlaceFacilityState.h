@@ -25,6 +25,7 @@ namespace OpenXcom
 class Base;
 class BaseFacility;
 class RuleBaseFacility;
+class Production;
 class BaseView;
 class TextButton;
 class Window;
@@ -45,6 +46,7 @@ protected:
 	TextButton *_btnCancel;
 	Window *_window;
 	Text *_txtFacility, *_txtCost, *_numCost, *_numResources, *_txtTime, *_numTime, *_txtMaintenance, *_numMaintenance;
+	bool _ftaUi;
 public:
 	/// Creates the Place Facility state.
 	PlaceFacilityState(Base *base, const RuleBaseFacility *rule, BaseFacility *origFac = 0);

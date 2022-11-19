@@ -35,7 +35,6 @@
 #include "../Savegame/Craft.h"
 #include "../Mod/Armor.h"
 #include "SoldierArmorState.h"
-#include "../Savegame/SavedGame.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
@@ -269,19 +268,21 @@ void CraftArmorState::initList(size_t scrl)
 
 	Craft *c = _base->getCrafts()->at(_craft);
 	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
+		std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
 			int dynStat = (*_dynGetter)(_game, *i);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), tr((*i)->getArmor()->getType()).c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), tr((*i)->getArmor()->getType()).c_str());
+			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str());
 		}
 
 		Uint8 color;
@@ -438,7 +439,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 		{
 			if (_game->isCtrlPressed())
 			{
-				if (_game->getMod()->getIsFTAGame() && s->hasPendingTransformation())
+				if (_game->getMod()->isFTAGame() && s->hasPendingTransformation())
 				{
 					_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 				}
@@ -447,7 +448,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 					Craft *c = _base->getCrafts()->at(_craft);
 					if (s->getCraft() == c)
 					{
-						s->setCraft(c, true);
+						s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 						_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 1, c->getName(_game->getLanguage()));
 						_lstSoldiers->setRowColor(_lstSoldiers->getSelectedRow(), _lstSoldiers->getSecondaryColor());
 					}

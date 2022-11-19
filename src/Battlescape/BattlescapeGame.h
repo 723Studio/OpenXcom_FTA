@@ -19,7 +19,6 @@
  */
 #include "Position.h"
 #include "../Mod/RuleItem.h"
-#include <SDL.h>
 #include <string>
 #include <list>
 #include <vector>
@@ -43,7 +42,7 @@ class RuleSkill;
 class BattleScript;
 class RuleTerrain;
 
-enum BattleActionMove : char { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2, BAM_MISSILE = 3 };
+enum BattleActionMove : char { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2, BAM_SNEAK = 3, BAM_MISSILE = 4 };
 
 struct BattleActionCost : RuleItemUseCost
 {
@@ -78,7 +77,10 @@ struct BattleAction : BattleActionCost
 	bool targeting;
 	int value;
 	std::string result;
-	bool strafe, run, ignoreSpottedEnemies;
+	bool strafe = false;
+	bool run = false;
+	bool sneak = false;
+	bool ignoreSpottedEnemies = false;
 	bool kneel = false;
 	int diff;
 	int autoShotCounter;
@@ -92,12 +94,12 @@ struct BattleAction : BattleActionCost
 	int terrainMeleeTilePart = 0; // terrain melee
 
 	/// Default constructor
-	BattleAction() : target(-1, -1, -1), targeting(false), value(0), strafe(false), run(false), ignoreSpottedEnemies(false), diff(0), autoShotCounter(0), cameraPosition(0, 0, -1), desperate(false), finalFacing(-1), finalAction(false), number(0), sprayTargeting(false) { }
+	BattleAction() : target(-1, -1, -1), targeting(false), value(0), diff(0), autoShotCounter(0), cameraPosition(0, 0, -1), desperate(false), finalFacing(-1), finalAction(false), number(0), sprayTargeting(false) { }
 
 	/// Get move type
 	BattleActionMove getMoveType() const
 	{
-		return strafe ? BAM_STRAFE : run ? BAM_RUN : BAM_NORMAL;
+		return strafe ? BAM_STRAFE : run ? BAM_RUN : sneak ? BAM_SNEAK : BAM_NORMAL;
 	}
 };
 
@@ -318,6 +320,8 @@ public:
 	void playUnitResponseSound(BattleUnit *unit, int type);
 	/// Returns if we need to proceed battle and there would be more battle scripts to be processed.
 	bool scriptsToProcess();
+	/// Process weapon firing sound.
+	void processWeaponNoise();
 	/// Sets up a mission complete notification.
 	void missionComplete();
 	std::list<BattleState*> getStates();

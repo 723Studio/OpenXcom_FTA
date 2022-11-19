@@ -31,6 +31,7 @@ class Mod;
 class Base;
 class Position;
 class RuleItem;
+class RuleManufacture;
 struct VerticalLevel;
 enum BasePlacementErrors : int;
 
@@ -57,18 +58,21 @@ private:
 	int _size, _buildCost, _refundValue, _buildTime, _monthlyCost;
 	std::map<std::string, std::pair<int, int> > _buildCostItems;
 	int _storage, _personnel, _aliens, _crafts, _labs, _workshops, _psiLabs;
+	int _ftaPrisonSpace; //a FTA version of prison
 	int _sightRange, _sightChance;
-	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound;
+	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound, _placeSound;
 	int _ammoNeeded;
 	const RuleItem* _ammoItem;
-	std::string _ammoItemName;
+	const RuleManufacture* _project;
+	std::string _ammoItemName, _manufactureName;
 	std::string _mapName;
+	int _interrogationSpace;
 	int _listOrder, _trainingRooms;
 	int _maxAllowedPerBase;
 	int _manaRecoveryPerDay = 0;
 	int _healthRecoveryPerDay = 0;
 	float _sickBayAbsoluteBonus, _sickBayRelativeBonus;
-	int _prisonType;
+	int _prisonType; // OXCE type of prison
 	int _rightClickActionType;
 	std::vector<VerticalLevel> _verticalLevels;
 	std::vector<const RuleBaseFacility*> _leavesBehindOnSell;
@@ -141,6 +145,7 @@ public:
 	int getPersonnel() const;
 	/// Gets the facility's alien capacity.
 	int getAliens() const;
+	int getInterrogationSpace() const { return _interrogationSpace; }
 	/// Gets the facility's craft capacity.
 	int getCrafts() const;
 	/// Gets the facility's laboratory space.
@@ -165,12 +170,16 @@ public:
 	int getAmmoNeeded() const { return _ammoNeeded; }
 	/// Gets the facility's weapon ammo item.
 	const RuleItem* getAmmoItem() const { return _ammoItem; }
+	/// Gets the facility's manufacturing project
+	const RuleManufacture* getProjectRules() const { return _project; }
 	/// Gets the facility's battlescape map name.
 	std::string getMapName() const;
 	/// Gets the facility's fire sound.
 	int getFireSound() const;
 	/// Gets the facility's hit sound.
 	int getHitSound() const;
+	/// Gets the facility's place sound.
+	int getPlaceSound() const { return _placeSound; }
 	/// Gets the facility's list weight.
 	int getListOrder() const;
 	/// Gets the facility's training capacity.
@@ -187,6 +196,7 @@ public:
 	float getSickBayRelativeBonus() const { return _sickBayRelativeBonus; }
 	/// Gets the prison type.
 	int getPrisonType() const;
+	int getFtAPrisoneSpace() const { return _ftaPrisonSpace; }
 	/// Gets the action type to perform on right click.
 	int getRightClickActionType() const;
 	/// Gets the vertical levels for this facility map generation.

@@ -36,15 +36,16 @@ private:
 	int _firstMonth, _lastMonth, _executionOdds, _minDifficulty, _maxDifficulty;
 	int _minScore, _maxScore;
 	int _minLoyalty, _maxLoyalty;
+	int64_t _minFunds, _maxFunds;
 	int _allowedProcessor;
 	int _spawnGap, _randomSpawnGap;
-	int64_t _minFunds, _maxFunds;
 	std::string _missionVarName, _missionMarkerName;
 	int _counterMin, _counterMax;
 	std::map<std::string, int> _requiredReputation;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _soldierTypeTriggers;
 	std::map<std::string, bool> _xcomBaseInRegionTriggers;
 	std::map<std::string, bool> _xcomBaseInCountryTriggers;
 	bool _affectsGameProgression;
@@ -105,6 +106,8 @@ public:
 	const std::map<std::string, bool> &getItemTriggers() const { return _itemTriggers; }
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const { return _facilityTriggers; }
+	/// Gets the soldier type triggers that may apply to this command.
+	const std::map<std::string, bool> &getSoldierTypeTriggers() const { return _soldierTypeTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const { return _xcomBaseInRegionTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.

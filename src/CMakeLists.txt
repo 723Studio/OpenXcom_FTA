@@ -12,6 +12,7 @@ set ( basescape_src
   Basescape/CovertOperationArmorState.cpp
   Basescape/CovertOperationEquipmentState.cpp
   Basescape/CovertOperationInfoState.cpp
+  Basescape/CovertOperationsListState.cpp
   Basescape/CovertOperationSoldiersState.cpp
   Basescape/CovertOperationStartState.cpp
   Basescape/CovertOperationState.cpp
@@ -27,24 +28,37 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/DisposeState.cpp
+  Basescape/FacilityAllocateEngineersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
+  Basescape/IntelState.cpp
   Basescape/ManageAlienContainmentState.cpp
+  Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
   Basescape/ManufactureInfoState.cpp
+  Basescape/ManufactureInfoStateFtA.cpp
+  Basescape/ManufactureProductDetailsState
   Basescape/ManufactureStartState.cpp
   Basescape/ManufactureState.cpp
   Basescape/MiniBaseView.cpp
   Basescape/MonthlyCostsState.cpp
   Basescape/NewManufactureListState.cpp
   Basescape/NewResearchListState.cpp
+  Basescape/PilotsState.cpp
   Basescape/PlaceFacilityState.cpp
   Basescape/PlaceLiftState.cpp
   Basescape/PlaceStartFacilityState.cpp
+  Basescape/PrisonerAllocateAgentsState.cpp
+  Basescape/PrisonerInfoState.cpp
+  Basescape/PrisonManagementState.cpp
   Basescape/PurchaseState.cpp
+  Basescape/ResearchAllocateScientistsState.cpp
   Basescape/ResearchInfoState.cpp
+  Basescape/ResearchInfoStateFtA.cpp
+  Basescape/ResearchProjectDetailsState.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
+  Basescape/ScientistsState.cpp
   Basescape/SelectStartFacilityState.cpp
   Basescape/SellState.cpp
   Basescape/SoldierArmorState.cpp
@@ -212,6 +226,8 @@ set ( geoscape_src
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
+  Geoscape/IntelAvailableState.cpp
+  Geoscape/IntelCompleteState.cpp
   Geoscape/InterceptState.cpp
   Geoscape/ItemsArrivingState.cpp
   Geoscape/LowFuelState.cpp
@@ -223,6 +239,7 @@ set ( geoscape_src
   Geoscape/NewPossibleManufactureState.cpp
   Geoscape/NewPossiblePurchaseState.cpp
   Geoscape/NewPossibleResearchState.cpp
+  Geoscape/PrisonReportState.cpp
   Geoscape/ProductionCompleteState.cpp
   Geoscape/PsiTrainingState.cpp
   Geoscape/ResearchCompleteState.cpp
@@ -332,6 +349,7 @@ set ( mod_src
   Mod/RuleEvent.cpp
   Mod/RuleEventScript.cpp
   Mod/RuleGlobe.cpp
+  Mod/RuleIntelProject.cpp
   Mod/RuleInterface.cpp
   Mod/RuleInventory.cpp
   Mod/RuleItem.cpp
@@ -341,6 +359,7 @@ set ( mod_src
   Mod/RuleMissionScript.cpp
   Mod/RuleMusic.cpp
   Mod/RuleObject.cpp
+  Mod/RulePrisoner.cpp
   Mod/RuleRegion.cpp
   Mod/RuleResearch.cpp
   Mod/RuleSkill.cpp
@@ -367,6 +386,7 @@ set ( savegame_src
   Savegame/AlienStrategy.cpp
   Savegame/Base.cpp
   Savegame/BaseFacility.cpp
+  Savegame/BasePrisoner.cpp
   Savegame/BattleItem.cpp
   Savegame/BattleObject.cpp
   Savegame/BattleUnit.cpp
@@ -382,6 +402,7 @@ set ( savegame_src
   Savegame/GameTime.cpp
   Savegame/GeoscapeEvent.cpp
   Savegame/HitLog.cpp
+  Savegame/IntelProject.cpp
   Savegame/ItemContainer.cpp
   Savegame/MissionSite.cpp
   Savegame/MovingTarget.cpp

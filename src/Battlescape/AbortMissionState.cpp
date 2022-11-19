@@ -20,7 +20,6 @@
 #include <vector>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/LocalizedText.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
@@ -124,6 +123,12 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	_inEntrance = tally.inEntrance;
 	_inExit = tally.inExit;
 	_outside = tally.inField;
+
+	if (!exit && _inExit > 0)
+	{
+		// FIXME: better would be to correctly decide already at the top (how??), but for now this will do...
+		exit = true;
+	}
 
 	// Set up objects
 	_window->setHighContrast(true);

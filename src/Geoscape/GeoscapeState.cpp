@@ -91,6 +91,9 @@
 #include "CraftErrorState.h"
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
+#include "IntelCompleteState.h"
+#include "IntelAvailableState.h"
+#include "../Battlescape/PromotionsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/ResearchProject.h"
 #include "ResearchCompleteState.h"
@@ -104,6 +107,8 @@
 #include "TrainingFinishedState.h"
 #include "../Savegame/Production.h"
 #include "../Mod/RuleManufacture.h"
+#include "../Savegame/IntelProject.h"
+#include "../Mod/RuleIntelProject.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
@@ -117,6 +122,7 @@
 #include "../Savegame/AlienStrategy.h"
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/GeoscapeEvent.h"
+#include "../Savegame/BasePrisoner.h"
 #include "GeoscapeEventState.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Battlescape/BattlescapeGenerator.h"
@@ -269,7 +275,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	geobord->setY(_sidebar->getY());
 	_sidebar->copy(geobord);
 	_game->getMod()->getSurface("ALTGEOBORD.SCR")->blitNShade(_bg, 0, 0);
-	bool fta = _game->getMod()->getIsFTAGame();
+	_fta = _game->getMod()->isFTAGame();
 
 	_sideLine->drawRect(0, 0, _sideLine->getWidth(), _sideLine->getHeight(), 15);
 
@@ -292,9 +298,9 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_btnBases->setGeoscapeButton(true);
 
 	_btnGraphs->initText(_game->getMod()->getFont("FONT_GEO_BIG"), _game->getMod()->getFont("FONT_GEO_SMALL"), _game->getLanguage());
-	_btnGraphs->setText(fta ? tr("STR_DIPLOMACY_UC") : tr("STR_GRAPHS"));
+	_btnGraphs->setText(_fta ? tr("STR_DIPLOMACY_UC") : tr("STR_GRAPHS"));
 	_btnGraphs->onMouseClick((ActionHandler)&GeoscapeState::btnGraphsClick);
-	if (fta)
+	if (_fta)
 	{
 		_btnGraphs->onKeyboardPress((ActionHandler)&GeoscapeState::btnGraphsClick, Options::keyDiplomacy);
 	}
@@ -317,7 +323,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_btnOptions->setGeoscapeButton(true);
 
 	_btnFunding->initText(_game->getMod()->getFont("FONT_GEO_BIG"), _game->getMod()->getFont("FONT_GEO_SMALL"), _game->getLanguage());
-	if (Options::oxceLinks || fta)
+	if (Options::oxceLinks || _fta)
 	{
 		_btnFunding->setText(tr("STR_EXTENDED_UC"));
 	}
@@ -547,19 +553,7 @@ void GeoscapeState::handle(Action *action)
 		// "ctrl-d" - enable debug mode
 		if (Options::debug && action->getDetails()->key.keysym.sym == SDLK_d && _game->isCtrlPressed())
 		{
-			_game->getSavedGame()->setDebugMode();
-			if (_game->getSavedGame()->getDebugMode())
-			{
-				_txtDebug->setText("DEBUG MODE");
-			}
-			else
-			{
-				_txtDebug->setText("");
-			}
-			_cbxRegion->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType >= 1);
-			_cbxZone->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
-			_cbxArea->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
-			_cbxCountry->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 0);
+			btnDebugClick(nullptr);
 		}
 		if (Options::debug && _game->getSavedGame()->getDebugMode() && _game->isCtrlPressed())
 		{
@@ -627,7 +621,7 @@ void GeoscapeState::handle(Action *action)
 			// "ctrl-6"
 			if (action->getDetails()->key.keysym.sym == SDLK_6)
 			{
-				if (!_game->getMod()->getIsFTAGame())
+				if (!_fta)
 				{
 					_txtDebug->setText("XCOM/ALIEN ACTIVITY FOR THIS MONTH RESET");
 					size_t invertedEntry = _game->getSavedGame()->getFundsList().size() - 1;
@@ -644,8 +638,8 @@ void GeoscapeState::handle(Action *action)
 				}
 				else
 				{
-					_txtDebug->setText("PEOPLE ARE LOYAL NOW: LOYALTY = 1000");
-					_game->getSavedGame()->setLoyalty(1000);
+					_txtDebug->setText("PEOPLE ARE LOYAL NOW: ADDED 1000 LOYALTY");
+					_game->getSavedGame()->setLoyalty(_game->getSavedGame()->getLoyalty() + 1000);
 				}
 				
 			}
@@ -1016,7 +1010,7 @@ void GeoscapeState::time5Seconds()
 							int secondaryTargets = 0;
 							for (auto craft : *activeCrafts)
 							{
-								if (!craft->getMissionComplete() && craft != c)
+								if (!craft->isIgnoredByHK() && craft != c)
 								{
 									// craft is close enough and has at least one loaded weapon
 									if (craft->getNumWeapons(true) > 0 && craft->getDistance(c) < Nautical(_game->getMod()->getEscortRange()))
@@ -1079,7 +1073,7 @@ void GeoscapeState::time5Seconds()
 					(*i)->setDestination(0);
 					base->setupDefenses(mission);
 					timerReset();
-					if (!base->getDefenses()->empty())
+					if (!base->getDefenses()->empty() && !(*i)->getMission()->getRules().ignoreBaseDefenses())
 					{
 						popup(new BaseDefenseState(base, *i, this));
 						return; // don't allow multiple simultaneous attacks in the same game tick
@@ -1225,13 +1219,18 @@ void GeoscapeState::time5Seconds()
 				}
 			}
 
+			std::string pushState = "NONE";
 			if (!ufoIsAttacking)
 			{
-				bool returnedToBase = (*j)->think();
+				bool returnedToBase = (*j)->think(pushState);
 				if (returnedToBase)
 				{
 					_game->getSavedGame()->stopHuntingXcomCraft((*j)); // hiding in the base is good enough, obviously
 				}
+			}
+			if (pushState == "PromotionsState")
+			{
+				_game->pushState(new PromotionsState);
 			}
 
 			// Handle craft shield recharge
@@ -1305,7 +1304,7 @@ void GeoscapeState::time5Seconds()
 								int secondaryTargets = 0;
 								for (auto craft : *activeCrafts)
 								{
-									if (!craft->getMissionComplete() && craft != (*j))
+									if (!craft->isIgnoredByHK() && craft != (*j))
 									{
 										// craft is close enough and has at least one loaded weapon
 										if (craft->getNumWeapons(true) > 0 && craft->getDistance((*j)) < Nautical(_game->getMod()->getEscortRange()))
@@ -1630,7 +1629,7 @@ void GeoscapeState::ufoHuntingAndEscorting()
 			{
 				originalTarget = (*ufo)->getTargetedXcomCraft();
 			}
-			if (originalTarget && !originalTarget->getMissionComplete())
+			if (originalTarget && !originalTarget->isIgnoredByHK())
 			{
 				if ((*ufo)->insideRadarRange(originalTarget))
 				{
@@ -1642,7 +1641,7 @@ void GeoscapeState::ufoHuntingAndEscorting()
 			// look for more attractive target
 			for (auto craft : *activeCrafts)
 			{
-				if (!craft->getMissionComplete() && !craft->getRules()->isUndetectable())
+				if (!craft->isIgnoredByHK() && !craft->getRules()->isUndetectable())
 				{
 					int tmpAttraction = craft->getHunterKillerAttraction((*ufo)->getHuntMode());
 					if (tmpAttraction < newAttraction && (*ufo)->insideRadarRange(craft))
@@ -1976,6 +1975,12 @@ void GeoscapeState::time30Minutes()
 	// Handle UFO detection and give aliens points
 	for (auto ufo : *_game->getSavedGame()->getUfos())
 	{
+		// instant retaliation missions are ignored (UFOs shouldn't be detected)
+		if (ufo->getMission()->getRules().getObjective() == OBJECTIVE_INSTANT_RETALIATION)
+		{
+			continue;
+		}
+
 		int points = ufo->getRules()->getMissionScore(); //one point per UFO in-flight per half hour
 		switch (ufo->getStatus())
 		{
@@ -1988,6 +1993,7 @@ void GeoscapeState::time30Minutes()
 			{
 				if (region->getRules()->insideRegion(ufo->getLongitude(), ufo->getLatitude()))
 				{
+					// #FINNIKTODO loyalty change here?
 					region->addActivityAlien(points);
 					break;
 				}
@@ -2024,7 +2030,16 @@ void GeoscapeState::time30Minutes()
 
 				for (auto craft : *activeCrafts)
 				{
-					detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked));
+					int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
+					detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
+					if (!alreadyTracked && detected == DETECTION_RADAR && tracking < 100)
+					{
+						int exp = RNG::generate(1, static_cast<int>(ceil((100 - tracking) / 20)));
+						for (auto s : craft->getPilotList(false))
+						{
+							s->getDogfightExperience()->tracking += exp;
+						}
+					}
 				}
 
 				if (!alreadyTracked)
@@ -2121,15 +2136,6 @@ void GeoscapeState::time30Minutes()
  */
 void GeoscapeState::time1Hour()
 {
-	//Handle 1-hour research FtA process
-	if (_game->getMod()->getIsFTAGame())
-	{
-		for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
-		{
-			handleResearch(*i);
-		}
-	}
-
 	// Handle craft maintenance
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
@@ -2176,29 +2182,47 @@ void GeoscapeState::time1Hour()
 	{
 		popup(new ItemsArrivingState(this));
 	}
-	// Handle Production
+	std::vector<Soldier*> promotedSoldiers;
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
 	{
+		// Handle Research
+		if (_fta)
+			handleResearch(*i);
+
+		// Handle Production
 		std::map<Production*, productionProgress_e> toRemove;
 		for (std::vector<Production*>::const_iterator j = (*i)->getProductions().begin(); j != (*i)->getProductions().end(); ++j)
 		{
 			int rating = _game->getMasterMind()->getLoyaltyPerformanceBonus();
-			int bonus = 0;
-			if (rating > 100 && RNG::percent(rating - 100))
-			{
-				bonus = 1;
-			}
-			if (rating < 100 && RNG::percent(100 - rating))
-			{
-				bonus = -1;
-			}
-			toRemove[(*j)] = (*j)->step((*i), _game->getSavedGame(), _game->getMod(), _game->getLanguage(), bonus);
+			toRemove[(*j)] = (*j)->step((*i), _game->getSavedGame(), _game->getMod(), _game->getLanguage(), rating);
 		}
 		for (std::map<Production*, productionProgress_e>::iterator j = toRemove.begin(); j != toRemove.end(); ++j)
 		{
 			if (j->second > PROGRESS_NOT_COMPLETE)
 			{
-				popup(new ProductionCompleteState((*i),  tr(j->first->getRules()->getName()), this, j->second, j->first));
+				for (std::vector<Soldier*>::const_iterator s = (*i)->getSoldiers()->begin(); s != (*i)->getSoldiers()->end(); ++s)
+				{
+					if ((*s)->getProductionProject() == j->first)
+					{
+						(*s)->improvePrimaryStats((*s)->getEngineerExperience(), ROLE_ENGINEER);
+						if ((*s)->rolePromoteSoldier(ROLE_ENGINEER))
+						{
+							promotedSoldiers.push_back((*s));
+						}
+						(*s)->setProductionProject(0);
+					}
+				}
+				BaseFacility *facility = (*j).first->getFacility();
+				if (facility != nullptr)
+				{
+					facility->setBuildTime(0);
+					popup(new ProductionCompleteState(*i, tr(facility->getRules()->getType()), this, PROGRESS_CONSTRUCTION));
+				}
+				else
+				{
+					popup(new ProductionCompleteState(*i, tr(j->first->getRules()->getName()), this, j->second, j->first));
+				}
+
 				(*i)->removeProduction(j->first);
 			}
 		}
@@ -2241,6 +2265,12 @@ void GeoscapeState::time1Hour()
 				}
 			}
 		}
+	}
+
+	//oh, and don't forget about FtA promotions!
+	if (!promotedSoldiers.empty() && _fta)
+	{
+		_game->pushState(new PromotionsState);
 	}
 
 	// Handle pending transformations
@@ -2304,8 +2334,7 @@ void GeoscapeState::time1Hour()
 	{
 		for (auto operation : (*i)->getCovertOperations())
 		{
-			bool process = operation->think(*_game, *_globe);
-			if (process)
+			if (operation->think(*_game, *_globe))
 			{
 				timerReset();
 			}
@@ -2416,39 +2445,121 @@ void GeoscapeState::time1Day()
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
+	bool availableIntelInformed = false, completedIntelInformed = false;
 	for (Base *base : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
-		std::map<const RuleBaseFacility*, int> finishedFacilities;
-		for (BaseFacility *facility : *base->getFacilities())
+		if (!_fta)
 		{
-			if (facility->getBuildTime() > 0)
+			std::map<const RuleBaseFacility*, int> finishedFacilities;
+			for (BaseFacility* facility : *base->getFacilities())
 			{
-				facility->build();
-				if (facility->getBuildTime() == 0)
+				if (facility->getBuildTime() > 0)
 				{
-					finishedFacilities[facility->getRules()] += 1;
+					facility->build();
+					if (facility->getBuildTime() == 0)
+					{
+						finishedFacilities[facility->getRules()] += 1;
+					}
 				}
 			}
-		}
-		for (auto& f : finishedFacilities)
-		{
-			if (f.second > 1)
+			for (auto& f : finishedFacilities)
 			{
-				std::ostringstream ssf;
-				ssf << tr(f.first->getType()) << " (x" << f.second << ")";
-				popup(new ProductionCompleteState(base, ssf.str(), this, PROGRESS_CONSTRUCTION));
-			}
-			else
-			{
-				popup(new ProductionCompleteState(base, tr(f.first->getType()), this, PROGRESS_CONSTRUCTION));
+				if (f.second > 1)
+				{
+					std::ostringstream ssf;
+					ssf << tr(f.first->getType()) << " (x" << f.second << ")";
+					popup(new ProductionCompleteState(base, ssf.str(), this, PROGRESS_CONSTRUCTION));
+				}
+				else
+				{
+					popup(new ProductionCompleteState(base, tr(f.first->getType()), this, PROGRESS_CONSTRUCTION));
+				}
 			}
 		}
 
 		// Handle science project
-		if (!_game->getMod()->getIsFTAGame())
-		{
+		if (!_fta)
 			handleResearch(base);
+
+		// Handle intelligence projects
+		bool intelProjectFinished = false;
+		auto projects = base->getIntelProjects();
+		for (auto project : projects)
+		{
+			std::map<Soldier*, int> soldiers;
+			for (std::vector<Soldier*>::iterator j = base->getSoldiers()->begin(); j != base->getSoldiers()->end(); ++j)
+			{
+				if ((*j)->getIntelProject() == 0)
+					continue;
+				if ((*j)->getIntelProject()->getName() == project->getName())
+				{
+					int roleCoef = 100;
+					if ((*j)->getRoleRank(ROLE_AGENT) < 1)
+					{
+						roleCoef = 50;
+					}
+					soldiers.emplace(std::make_pair((*j), roleCoef));
+				}
+			}
+			std::string desc = "";
+			project->roll(_game,
+				*_globe,
+				project->getStepProgress(soldiers,
+					_game->getMod(),
+					_game->getMasterMind()->getLoyaltyPerformanceBonus(), desc, false),
+				intelProjectFinished);
+
+			// #FINNIKTODO - special project rules processing here!
+			if (intelProjectFinished && !completedIntelInformed)
+			{
+				_game->pushState(new IntelCompleteState(project, this, base));
+				completedIntelInformed = true;
+			}
+		}
+
+		// now check if there are new projects available and add it to the base;
+		for (auto i : _game->getMod()->getIntelProjectsList())
+		{
+			auto rule = _game->getMod()->getIntelProject(i);
+			bool found = false;
+			for (auto baseProject : projects)
+			{
+				if (baseProject->getRules() == rule)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			if (!found && _game->getSavedGame()->isResearched(rule->getRequiredResearch(), false))
+			{
+				//let's try to make a project
+				double minCost = rule->getCost() / 2;
+				double maxCost = rule->getCost() * 1.5;
+				IntelProject* project = new IntelProject(rule, base, RNG::generate(minCost, maxCost));
+				// there are much more conditions depending on various properies
+				if (project->getAvailableStages(_game->getSavedGame()).size() > 0)
+				{
+					// we want to auto-add the project
+					base->addIntelProject(project);
+					if (!availableIntelInformed)
+					{
+						_game->pushState(new IntelAvailableState(project, base, this));
+						availableIntelInformed = true; //show it only once for all bases
+					}
+				}
+				else
+				{
+					delete project; //sorry, not a time yet...
+				}
+			}
+		}
+
+		// Handle prisoner
+		for (auto prisoner : base->getPrisoners())
+		{
+			prisoner->think(*_game); //that simple =) 
 		}
 
 		// Handle soldier wounds and martial training
@@ -2528,7 +2639,7 @@ void GeoscapeState::time1Day()
 	_game->getSavedGame()->handleEventScriptTimers();
 
 	// Handle daily internal xcom events
-	_game->getMasterMind()->eventScriptProcessor(*_game, *mod->getEventScriptList(), XCOM);
+	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
 
 	//Handle daily Faction logic
 	int day = saveGame->getTime()->getDay();
@@ -2687,7 +2798,7 @@ void GeoscapeState::time1Day()
 	}
 
 	// pay attention to your maintenance player!
-	if (_game->getSavedGame()->getTime()->isLastDayOfMonth() && !_game->getMod()->getIsFTAGame()) //not for FtA for now, sorry #FINNIKTODO
+	if (_game->getSavedGame()->getTime()->isLastDayOfMonth() && !_fta) // not for FtA for now, sorry #FINNIKTODO
 	{
 		int month = _game->getSavedGame()->getMonthsPassed();
 		int currentScore = _game->getSavedGame()->getCurrentScore(month + 1);
@@ -2748,7 +2859,7 @@ void GeoscapeState::time1Month()
 
 	// Handle funding
 	timerReset();
-	if (_game->getMod()->getIsFTAGame())
+	if (_fta)
 	{
 		if (_game->getSavedGame()->getMonthsPassed() > _game->getMod()->getFTAGameLength())
 		{
@@ -2903,7 +3014,10 @@ void GeoscapeState::btnSelectMusicTrackClick(Action *)
  */
 void GeoscapeState::btnGlobalProductionClick(Action *)
 {
-	_game->pushState(new GlobalManufactureState(false));
+	if (!_game->getMod()->isFTAGame())
+	{
+		_game->pushState(new GlobalManufactureState(false));
+	}
 }
 
 /**
@@ -2912,7 +3026,10 @@ void GeoscapeState::btnGlobalProductionClick(Action *)
  */
 void GeoscapeState::btnGlobalResearchClick(Action *)
 {
-	_game->pushState(new GlobalResearchState(false));
+	if (!_game->getMod()->isFTAGame())
+	{
+		_game->pushState(new GlobalResearchState(false));
+	}
 }
 
 /**
@@ -2921,7 +3038,31 @@ void GeoscapeState::btnGlobalResearchClick(Action *)
  */
 void GeoscapeState::btnDogfightExperienceClick(Action *)
 {
-	_game->pushState(new DogfightExperienceState());
+	if (_fta)
+	{
+		_game->pushState(new DogfightExperienceState());
+	}
+}
+
+/**
+ * Toggles debug mode.
+ * @param action Pointer to an action.
+ */
+void GeoscapeState::btnDebugClick(Action *)
+{
+	_game->getSavedGame()->setDebugMode();
+	if (_game->getSavedGame()->getDebugMode())
+	{
+		_txtDebug->setText("DEBUG MODE");
+	}
+	else
+	{
+		_txtDebug->setText("");
+	}
+	_cbxRegion->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType >= 1);
+	_cbxZone->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
+	_cbxArea->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
+	_cbxCountry->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 0);
 }
 
 /**
@@ -2955,7 +3096,7 @@ void GeoscapeState::btnGraphsClick(Action *)
 	{
 		return;
 	}
-	if (_game->getMod()->getIsFTAGame())
+	if (_fta)
 	{
 		_game->pushState(new DiplomacyStartState(0, true));
 	}
@@ -3006,7 +3147,7 @@ void GeoscapeState::btnFundingClick(Action *)
 	{
 		return;
 	}
-	if (Options::oxceLinks)
+	if (Options::oxceLinks || _fta)
 	{
 		_game->pushState(new ExtendedGeoscapeLinksState(this));
 	}
@@ -3357,6 +3498,12 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 
 	// Whatever happens in the base defense, the UFO has finished its duty
 	ufo->setStatus(Ufo::DESTROYED);
+
+	// instant retaliation mission only spawns one UFO and then ends
+	if (ufo->getMission()->getRules().getObjective() == OBJECTIVE_INSTANT_RETALIATION)
+	{
+		ufo->getMission()->setInterrupted(true);
+	}
 
 	if (ufo->getRules()->getMissilePower() != 0)
 	{
@@ -3819,7 +3966,7 @@ void GeoscapeState::determineAlienMissions()
 	}
 
 	// after the mission scripts, it's time for the event scripts
-	_game->getMasterMind()->eventScriptProcessor(*_game, *mod->getEventScriptList(), MONTHLY);
+	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
 
 	// Alien base upgrades happen only AFTER the first game month
 	if (month > 0)
@@ -4366,23 +4513,69 @@ void GeoscapeState::handleResearch(Base* base)
 	Mod* mod = _game->getMod();
 
 	// 1. gather finished research
-	std::vector<ResearchProject*> finished;
+	std::map<Soldier*, int> assignedScientists;
+	std::vector<std::pair<std::map<Soldier*, int>, ResearchProject*>> finished;
 	for (ResearchProject* project : base->getResearch())
 	{
-		int rating = _game->getMasterMind()->getLoyaltyPerformanceBonus();
-		int bonus = 0;
-		if (rating > 100 && RNG::percent(rating - 100))
+		auto rules = project->getRules();
+		int progress = 0;
+		if (_fta)
 		{
-			bonus = 1;
+			bool sharable = true;
+			assignedScientists.clear();
+			Log(LOG_INFO) << "Calculating hourly progress for research project: " << rules->getName() << "..."; //#CLEARLOGS
+			if (rules->destroyItem()
+				|| !rules->getGetOneFree().empty()
+				|| !rules->getSpawnedEvent().empty()
+				|| !rules->getSpawnedItem().empty()
+				|| !rules->getSpawnedItemList().empty())
+			{
+				sharable = false;
+			}
+
+			for (auto b : *_game->getSavedGame()->getBases())
+			{
+				if (b == base) // case for base we are looking
+				{
+					for (auto s : *base->getSoldiers())
+					{
+						if (s->getResearchProject() == project)
+						{
+							assignedScientists.insert(std::make_pair(s, 100));
+						}
+					}
+				}
+				else if (sharable) // extra case for sharable projects
+				{
+					for (auto s : *b->getSoldiers())
+					{
+						if (s->getResearchProject()->getRules()->getName() == project->getRules()->getName()) // check by string id
+						{
+							assignedScientists.insert(std::make_pair(s, 50));
+						}
+					}
+				}
+			}
+
+			if (assignedScientists.size() > 0)
+			{
+				progress = project->getStepProgress(assignedScientists, _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus());
+			}
 		}
-		if (rating < 100 && RNG::percent(100 - rating))
+		else
 		{
-			bonus = -1;
+			progress = project->getAssigned();
 		}
-		if (project->step(bonus))
+			
+		if (project->step(progress))
 		{
-			finished.push_back(project);
+			finished.push_back(std::make_pair(assignedScientists, project));
 		}
+		else
+		{
+			Log(LOG_INFO) << "After step calculation we have  " << project->getCost() - project->getSpent() << " points left.";
+		}
+		
 	}
 	// 2. remember available research before adding new finished research
 	std::vector<RuleResearch*> before;
@@ -4392,14 +4585,31 @@ void GeoscapeState::handleResearch(Base* base)
 	}
 
 	// 3. add finished research, including lookups and getonefrees (up to 4x)
-	for (ResearchProject *project : finished)
+	std::vector<Soldier*> promotedSoldiers;
+	for (auto projectData : finished)
 	{
+		ResearchProject* project = projectData.second;
 		const RuleResearch *bonus = 0;
 		const RuleResearch *research = project->getRules();
 
 		// 3a. remove finished research from the base where it was researched
 		base->removeResearch(project);
 		project = nullptr;
+
+		// wait, if it's FtA, we need to train stats and promote people!
+		if (_game->getMod()->isFTAGame())
+		{
+			auto scientists = projectData.first;
+			for (auto [fst, snd] : scientists)
+			{
+				fst->improvePrimaryStats(fst->getResearchExperience(), ROLE_SCIENTIST);
+				if (fst->rolePromoteSoldier(ROLE_SCIENTIST))
+				{
+					promotedSoldiers.push_back(fst);
+				}
+				fst->setResearchProject(0);
+			}
+		}
 
 		// 3b. handle interrogation
 		if (Options::retainCorpses && research->needItem() && research->destroyItem())
@@ -4462,6 +4672,7 @@ void GeoscapeState::handleResearch(Base* base)
 		popup(new ResearchCompleteState(newResearch, bonus, research));
 		// 3f. reset timer
 		timerReset();
+
 		// 3g. warning if weapon is researched before its clip
 		if (newResearch)
 		{
@@ -4548,7 +4759,14 @@ void GeoscapeState::handleResearch(Base* base)
 		// 3. handle events spawned by research
 		saveGame->handlePrimaryResearchSideEffects(topicsToCheck, _game->getMod(), base);
 	}
+
+	//oh, and don't forget about FtA promotions!
+	if (!promotedSoldiers.empty() && _fta)
+	{
+		_game->pushState(new PromotionsState);
+	}
 }
+
 
 void GeoscapeState::cbxRegionChange(Action *)
 {

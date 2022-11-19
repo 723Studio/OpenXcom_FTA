@@ -20,11 +20,11 @@
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/ModInfo.h"
-#include "../Engine/Options.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Mod/Mod.h"
+#include "../version.h"
 #include "ModListState.h"
 
 namespace OpenXcom
@@ -33,10 +33,9 @@ namespace OpenXcom
 	/**
 	 * Initializes all the elements in the Confirm OXCE screen.
 	 * @param state Pointer to the Options|Mod state.
-	 * @param isMaster Are we enabling a standard mod or a master mod?
-	 * @param masterModInfo Info about OXCE version required and/or enforced.
+	 * @param modInfo What exactly mod caused this question?
 	 */
-	ModConfirmExtendedState::ModConfirmExtendedState(ModListState *state, bool isMaster, const ModInfo* masterModInfo) : _state(state), _isMaster(isMaster)
+	ModConfirmExtendedState::ModConfirmExtendedState(ModListState *state, const ModInfo *modInfo, const ModInfo *masterInfo) : _state(state), _isMaster(modInfo->isMaster())
 	{
 		_screen = false;
 
@@ -61,20 +60,29 @@ namespace OpenXcom
 
 		_btnYes->setText(tr("STR_YES"));
 		_btnYes->onMouseClick((ActionHandler)&ModConfirmExtendedState::btnYesClick);
-		std::string ver = masterModInfo->getRequiredExtendedVersion();
-		if (!masterModInfo->isEnforcedVersionOk())
+		if (!modInfo->isEngineOk())
 		{
 			_btnYes->setVisible(false);
-			ver = masterModInfo->getEnforcedExtendedVersion();
 		}
 
-		_btnNo->setText(tr("STR_NO"));
+		_btnNo->setText(tr("STR_CANCEL"));
 		_btnNo->onMouseClick((ActionHandler)&ModConfirmExtendedState::btnNoClick);
 
 		_txtTitle->setAlign(ALIGN_CENTER);
 		_txtTitle->setBig();
 		_txtTitle->setWordWrap(true);
-		_txtTitle->setText(tr("STR_VERSION_REQUIRED_QUESTION").arg(ver));
+		if (masterInfo && !modInfo->isParentMasterOk(masterInfo))
+		{
+			_txtTitle->setText(tr("STR_MASTER_MOD_VERSION_REQUIRED_QUESTION").arg(modInfo->getRequiredMasterVersion()).arg(masterInfo->getVersion()));
+		}
+		else if (modInfo->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+		{
+			_txtTitle->setText(tr("STR_OXCE_REQUIRED_QUESTION").arg(modInfo->getRequiredExtendedEngine()));
+		}
+		else
+		{
+			_txtTitle->setText(tr("STR_VERSION_REQUIRED_QUESTION").arg(modInfo->getRequiredExtendedVersion()));
+		}
 	}
 
 	/**
@@ -117,4 +125,43 @@ namespace OpenXcom
 		}
 	}
 
+	/**
+	 * Check if master mod is not valid.
+	 */
+	bool ModConfirmExtendedState::isMasterNotValid(const ModInfo *masterInfo)
+	{
+		return !masterInfo->isEngineOk();
+	}
+
+	/**
+	 * Check if mod is not valid.
+	 */
+	bool ModConfirmExtendedState::isModNotValid(const ModInfo *modInfo, const ModInfo *masterInfo)
+	{
+		return !modInfo->isMaster() && // skip checking master mod
+			(!modInfo->isEngineOk() || !modInfo->isParentMasterOk(masterInfo));
+	}
+
+
+	bool ModConfirmExtendedState::tryShowMasterNotValidConfirmationState(ModListState *state, const ModInfo *masterInfo)
+	{
+		if (isMasterNotValid(masterInfo))
+		{
+			_game->pushState(new ModConfirmExtendedState(state, masterInfo));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool ModConfirmExtendedState::tryShowModNotValidConfirmationState(ModListState *state, const ModInfo *modInfo, const ModInfo *masterInfo)
+	{
+		if (isModNotValid(modInfo, masterInfo))
+		{
+			_game->pushState(new ModConfirmExtendedState(state, modInfo, masterInfo));
+			return true;
+		}
+
+		return false;
+	}
 }

@@ -43,7 +43,6 @@ namespace OpenXcom
 		void addStat(const std::string &label, const std::string &stat);
 
 		int _row;
-		Surface *_image;
 		Text *_txtTitle;
 		TextList *_lstInfo;
 		Text *_txtInfo;

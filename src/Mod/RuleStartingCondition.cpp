@@ -32,7 +32,7 @@ namespace OpenXcom
  * Creates a blank ruleset for a certain type of Starting Condition.
  * @param type String defining the type.
  */
-RuleStartingCondition::RuleStartingCondition(const std::string& type) : _type(type), _destroyRequiredItems(false)
+RuleStartingCondition::RuleStartingCondition(const std::string& type) : _type(type), _destroyRequiredItems(false), _requireCommanderOnboard(false)
 {
 }
 
@@ -57,6 +57,7 @@ void RuleStartingCondition::load(const YAML::Node& node, Mod *mod)
 	mod->loadUnorderedNamesToNamesToInt(_type, _defaultArmor, node["defaultArmor"]);
 	mod->loadUnorderedNames(_type, _allowedArmors, node["allowedArmors"]);
 	mod->loadUnorderedNames(_type, _forbiddenArmors, node["forbiddenArmors"]);
+	mod->loadUnorderedNames(_type, _forbiddenArmorsInNextStageName, node["forbiddenArmorsInNextStage"]);
 	mod->loadUnorderedNames(_type, _allowedVehicles, node["allowedVehicles"]);
 	mod->loadUnorderedNames(_type, _forbiddenVehicles, node["forbiddenVehicles"]);
 	mod->loadUnorderedNames(_type, _allowedItems, node["allowedItems"]);
@@ -68,13 +69,33 @@ void RuleStartingCondition::load(const YAML::Node& node, Mod *mod)
 	mod->loadUnorderedNames(_type, _allowedSoldierTypes, node["allowedSoldierTypes"]);
 	mod->loadUnorderedNames(_type, _forbiddenSoldierTypes, node["forbiddenSoldierTypes"]);
 	mod->loadUnorderedNamesToInt(_type, _requiredItems, node["requiredItems"]);
+	mod->loadUnorderedNamesToNames(_type, _craftTransformationsName, node["craftTransformations"]);
 	_destroyRequiredItems = node["destroyRequiredItems"].as<bool>(_destroyRequiredItems);
+	_requireCommanderOnboard = node["requireCommanderOnboard"].as<bool>(_requireCommanderOnboard);
 
 	if (node["environmentalConditions"] || node["paletteTransformations"] || node["armorTransformations"]
 		|| node["mapBackgroundColor"] || node["inventoryShockIndicator"] || node["mapShockIndicator"])
 	{
 		Log(LOG_ERROR) << "There are invalid/obsolete attributes in starting condition " << _type << ". Please review the ruleset.";
 	}
+}
+
+/**
+ * Cross link with other rules.
+ */
+void RuleStartingCondition::afterLoad(const Mod* mod)
+{
+	mod->linkRule(_forbiddenArmorsInNextStage, _forbiddenArmorsInNextStageName);
+
+	for (auto& pair : _craftTransformationsName)
+	{
+		auto src = mod->getCraft(pair.first, true);
+		auto dest = mod->getCraft(pair.second, true);
+		_craftTransformations[src] = dest;
+	}
+
+	//remove not needed data
+	Collections::removeAll(_craftTransformationsName);
 }
 
 /**
@@ -147,6 +168,26 @@ std::string RuleStartingCondition::getArmorReplacement(const std::string& soldie
 	}
 
 	return "";
+}
+
+/**
+ * Gets the replacement craft.
+ * @param sourceCraft Existing/old craft type.
+ * @param mapScriptCraft Fallback craft type defined by map script (can be null).
+ * @return Replacement craft type (or nullptr if no replacement is needed).
+ */
+const RuleCraft* RuleStartingCondition::getCraftReplacement(const RuleCraft* sourceCraft, const RuleCraft* mapScriptCraft) const
+{
+	if (!_craftTransformations.empty())
+	{
+		auto i = _craftTransformations.find(sourceCraft);
+		if (i != _craftTransformations.end())
+		{
+			return i->second;
+		}
+	}
+
+	return mapScriptCraft;
 }
 
 /**

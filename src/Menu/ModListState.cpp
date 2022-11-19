@@ -158,7 +158,7 @@ ModListState::~ModListState()
 
 std::string ModListState::makeTooltip(const ModInfo &modInfo)
 {
-	return tr("STR_MODS_TOOLTIP").arg(modInfo.getVersion()).arg(modInfo.getAuthor()).arg(modInfo.getDescription());
+	return tr("STR_MODS_TOOLTIP").arg(modInfo.getVersionDisplay()).arg(modInfo.getAuthor()).arg(modInfo.getDescription());
 }
 
 void ModListState::cbxMasterHover(Action *)
@@ -171,12 +171,9 @@ void ModListState::cbxMasterChange(Action *)
 	const ModInfo *masterModInfo = _masters[_cbxMasters->getSelected()];
 
 	// when changing a master mod, check if it requires OXCE
+	if (ModConfirmExtendedState::tryShowMasterNotValidConfirmationState(this, masterModInfo))
 	{
-		if (!masterModInfo->isVersionOk())
-		{
-			_game->pushState(new ModConfirmExtendedState(this, true, masterModInfo));
-			return;
-		}
+		return;
 	}
 
 	changeMasterMod();
@@ -260,9 +257,10 @@ void ModListState::lstModsClick(Action *action)
 	if (!mod.second)
 	{
 		const ModInfo *modInfo = &Options::getModInfos().at(mod.first);
-		if (!modInfo->isVersionOk())
+		const ModInfo *masterInfo = _masters[_cbxMasters->getSelected()];
+
+		if (ModConfirmExtendedState::tryShowModNotValidConfirmationState(this, modInfo, masterInfo))
 		{
-			_game->pushState(new ModConfirmExtendedState(this, false, modInfo));
 			return;
 		}
 	}

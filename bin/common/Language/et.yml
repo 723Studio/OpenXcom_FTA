@@ -248,7 +248,6 @@ et:
   STR_ALIEN_RACE: "Rass"
   STR_ALIEN_TECH_LEVEL: "Tehnotase"
   STR_RANDOMIZE: "Juhuslikusta"
-  STR_OXCE_REQUIRED_QUESTION: "Selle modi jooksutamiseks on vaja OpenXcom Extendedit. Luba see mod?"
   STR_RESTORE_DEFAULTS_QUESTION: "Olete kindel, et soovite taastada algsed sätted?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Soovid säilitada olemasolevaid ekraanisätteid?"
   STR_DISPLAY_OPTIONS_REVERT: "Tagasi pöördumine 0:{0}"

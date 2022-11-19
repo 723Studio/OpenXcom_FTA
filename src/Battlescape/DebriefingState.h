@@ -66,7 +66,7 @@ private:
 	RuleEvent *_eventToSpawn;
 	Region *_region;
 	Country *_country;
-	Base *_base;
+	Base *_base{};
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
 	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer;
@@ -80,10 +80,12 @@ private:
 	std::vector<ReequipStat> _missingItems;
 	std::map<const RuleItem*, int> _rounds, _roundsPainKiller, _roundsStimulant, _roundsHeal, _recoveredItems;
 	Uint8 _ammoColor;
+	/// 0 = score, 1 = stat improvement, 2 = recovered items
+	int _pageNumber;
 	std::map<int, RecoveryItem*> _recoveryStats;
-	bool _positiveScore, _destroyBase, _promotions, _showSellButton, _initDone;
+	bool _positiveScore, _destroyBase, _promotions{}, _showSellButton, _initDone, _fta;
 	std::map<int, int>  _containmentStateInfo;
-	int _totalEvacObjs, _savedEvacObjs, _recoveredItemObjs;
+	int _totalEvacObjs{}, _savedEvacObjs{}, _recoveredItemObjs;
 	int _limitsEnforced;
 	MissionStatistics *_missionStatistics;
 	std::vector<Soldier*> _soldiersCommended, _deadSoldiersCommended;
@@ -96,16 +98,16 @@ private:
 	void addItemsToBaseStores(const std::string &itemType, Base *base, int quantity, bool considerTransformations);
 	/// Recovers items from the battlescape.
 	void recoverItems(std::vector<BattleItem*> *from, Base *base);
+	/// FTA method to recover prosners instead of items.
+	void recoverPrisoner(BattleUnit* from, Base* base);
 	/// Recovers a civilian from the battlescape.
-	void recoverCivilian(BattleUnit *from, Base *base);
+	void recoverCivilian(BattleUnit *from, Base *base, Craft* craft);
 	/// Recovers an alien from the battlescape.
 	void recoverAlien(BattleUnit *from, Base *base);
 	/// Handle friendly non X-COM unit  (VIP) recovery from the battlescape.
 	bool handleVipRecovery(BattleUnit *unit, Base *base, Craft *craft, bool result);
 	/// Reequips a craft after a mission.
 	void reequipCraft(Base *base, Craft *craft, bool vehicleItemsCanBeDestroyed);
-	/// 0 = score, 1 = stat improvement, 2 = recovered items
-	int _pageNumber;
 	/// Sets the visibility according to the _pageNumber
 	void applyVisibility();
 	/// Creates a string for the soldier stats table from a stat difference value

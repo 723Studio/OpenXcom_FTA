@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include <list>
+#include <map>
 
 namespace OpenXcom
 {
@@ -35,6 +36,8 @@ class Craft;
 class Ufo;
 class MissionSite;
 class Base;
+class ResearchProject;
+class Soldier;
 class RuleMissionScript;
 
 /**
@@ -53,7 +56,7 @@ private:
 	InteractiveSurface *_btnRotateLeft, *_btnRotateRight, *_btnRotateUp, *_btnRotateDown, *_btnZoomIn, *_btnZoomOut;
 	Text *_txtFunds, *_txtHour, *_txtHourSep, *_txtMin, *_txtMinSep, *_txtSec, *_txtWeekday, *_txtDay, *_txtMonth, *_txtYear;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
-	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
+	bool _pause, _zoomInEffectDone, _zoomOutEffectDone, _fta;
 	Text *_txtDebug;
 	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea, *_cbxCountry;
 	Text *_txtSlacking;
@@ -123,6 +126,8 @@ public:
 	void btnGlobalResearchClick(Action *action);
 	/// Handler for clicking the [DogfightExperience] key.
 	void btnDogfightExperienceClick(Action *action);
+	/// Handler for clicking the [Debug] key.
+	void btnDebugClick(Action *action);
 	/// Handler for clicking the Bases button.
 	void btnBasesClick(Action *action);
 	/// Handler for clicking the Graph button.

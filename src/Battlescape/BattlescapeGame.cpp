@@ -434,6 +434,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			else
 			{
 				statePushBack(new ProjectileFlyBState(this, action));
+				processWeaponNoise();
 			}
 		}
 	}
@@ -748,7 +749,17 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 		}
 		if (attack.damage_item)
 		{
-			tempAmmo = attack.damage_item->getRules()->getName();
+			// If the secondary melee data is used, represent this by setting the ammo to "__GUNBUTT".
+			// Note: BT_MELEE items use their normal attack data rather than 'melee' data. So their 'ammo' should be the weapon itself.
+			// (The following condition should match what is used in ExplosionBState::init to choose the damage power and type.)
+			if (attack.type == BA_HIT && attack.damage_item->getRules()->getBattleType() != BT_MELEE)
+			{
+				tempAmmo = "__GUNBUTT";
+			}
+			else
+			{
+				tempAmmo = attack.damage_item->getRules()->getName();
+			}
 		}
 	}
 
@@ -887,7 +898,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 					int winnerMod = _save->getFactionMoraleModifier(victim->getOriginalFaction() == FACTION_HOSTILE);
 					for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
 					{
-						if (!(*i)->isOut() && (*i)->getArmor()->getSize() == 1)
+						if (!(*i)->isOut() && (*i)->isSmallUnit())
 						{
 							// the losing squad all get a morale loss
 							if ((*i)->getOriginalFaction() == victim->getOriginalFaction())
@@ -965,7 +976,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 
 						for (auto winner : *_save->getUnits())
 						{
-							if (!winner->isOut() && winner->getArmor()->getSize() == 1 && winner->getOriginalFaction() == murderer->getOriginalFaction())
+							if (!winner->isOut() && winner->isSmallUnit() && winner->getOriginalFaction() == murderer->getOriginalFaction())
 							{
 								// the winning squad gets a morale increase (the losing squad is NOT affected)
 								winner->moraleChange(10);
@@ -977,6 +988,14 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 				victim->getStatistics()->wasUnconcious = true;
 				noSound = true;
 				statePushNext(new UnitDieBState(this, (*j), getMod()->getDamageType(DT_NONE), noSound)); // no damage type used there
+			}
+			else
+			{
+				// piggyback of cleanup after script that change move type
+				if ((*j)->haveNoFloorBelow() && (*j)->getMovementType() != MT_FLY)
+				{
+					_save->addFallingUnit(*j);
+				}
 			}
 		}
 	}
@@ -1027,6 +1046,36 @@ bool BattlescapeGame::scriptsToProcess()
 		}
 	}
 	return false;
+}
+
+void BattlescapeGame::processWeaponNoise()
+{
+	if (!_save->isStealthMission())
+		return;
+
+	int noise = _currentAction.weapon->getRules()->getNoiseValue();;
+	if (_currentAction.type == BA_AUTOSHOT)
+	{
+		noise *= _currentAction.weapon->getRules()->getConfigAuto()->shots;
+	}
+
+	if (noise > 0)
+	{
+		auto units = _parentState->getBattleGame()->getSave()->getUnits();
+		for (BattleUnit* unit : *units)
+		{
+			if (unit->getFaction() == FACTION_HOSTILE && !unit->getUnitWarned()
+				&& !unit->isOut())
+			{
+				if (noise >= std::ceil(Position::distance(unit->getPosition(), _currentAction.actor->getPosition()) / 15))
+				{
+					unit->setUnitWarned(true);
+					Log(LOG_INFO) << "Unit is warned because firing sound."; //#FINNIKTODO #CLEARLOGS
+					continue;
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -1751,7 +1800,6 @@ bool BattlescapeGame::isBusy() const
 void BattlescapeGame::primaryAction(Position pos)
 {
 	bool bPreviewed = Options::battleNewPreviewPath != PATH_NONE;
-	bool fired = false;
 
 	getMap()->resetObstacles();
 
@@ -1810,6 +1858,7 @@ void BattlescapeGame::primaryAction(Position pos)
 				_parentState->getGame()->getCursor()->setVisible(false);
 				_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
 				_states.push_back(new ProjectileFlyBState(this, _currentAction));
+				processWeaponNoise();
 				statePushFront(new UnitTurnBState(this, _currentAction));
 				_currentAction.sprayTargeting = false;
 				_currentAction.waypoints.clear();
@@ -1979,46 +2028,20 @@ void BattlescapeGame::primaryAction(Position pos)
 			_parentState->getGame()->getCursor()->setVisible(false);
 			_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
 			_states.push_back(new ProjectileFlyBState(this, _currentAction));
+			processWeaponNoise();
 			statePushFront(new UnitTurnBState(this, _currentAction)); // first of all turn towards the target
-			fired = true;
 		}
 
-		//extra handling for not silent weapons
-		if ((_currentAction.type == BA_AUTOSHOT || _currentAction.type == BA_SNAPSHOT || _currentAction.type == BA_AIMEDSHOT) &&
-			_parentState->getGame()->getMod()->getIsFTAGame() &&
-			fired)
+		// handle undercover actions
+		if (_currentAction.type > 2 && _save->getSelectedUnit()->getFaction() == FACTION_PLAYER && _save->getSelectedUnit()->getUndercover())
 		{
-			int noise = _currentAction.weapon->getRules()->getNoiseValue();
-			if (_currentAction.type == BA_AUTOSHOT)
-			{
-				noise *= _currentAction.weapon->getRules()->getConfigAuto()->shots;
-			}
-
-			if (noise > 0)
-			{
-				auto units = _parentState->getBattleGame()->getSave()->getUnits();
-				for (BattleUnit *unit : *units)
-				{
-					if (noise >= 3) // super loud sounds alarm whole map
-					{
-						unit->setAlarmed(true);
-						continue;
-					}
-					auto shooterPos = _currentAction.actor->getPosition();
-					auto unitPos = unit->getPosition();
-					int dist = std::ceil(Position::distance(unitPos, shooterPos));
-					if (noise >= 2 && dist < 30)
-					{
-						unit->setAlarmed(true);
-						continue;
-					}
-					if (noise >= 1 && dist < 20)
-					{
-						unit->setAlarmed(true);
-						continue;
-					}
-				}
-			}
+			_save->getSelectedUnit()->setRevealed(true);
+			Log(LOG_DEBUG) << "Unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is revealed because action: " << _currentAction.type; //#FINNIKTODO #CLEARLOGS
+		}
+		else if (_currentAction.type == BA_WALK && _save->getSelectedUnit()->getRevealed())
+		{
+			_save->getSelectedUnit()->setRevealed(false);
+			Log(LOG_DEBUG) << "We move, so unit " << _save->getSelectedUnit()->getGeoscapeSoldier()->getName() << " is not revealed anymore."; //#FINNIKTODO #CLEARLOGS
 		}
 	}
 	else
@@ -2045,16 +2068,19 @@ void BattlescapeGame::primaryAction(Position pos)
 		else if (playableUnitSelected())
 		{
 			bool isCtrlPressed = Options::strafe && _save->isCtrlPressed(true);
+			bool isAltPressed = Options::strafe && _save->isAltPressed(true);
 			bool isShiftPressed = _save->isShiftPressed(true);
 
-			if (bPreviewed &&
-				(_currentAction.target != pos || (_save->getPathfinding()->isModifierUsed() != isCtrlPressed)))
+			if (bPreviewed && (
+				_currentAction.target != pos ||
+				_save->getPathfinding()->isModifierCtrlUsed() != isCtrlPressed ||
+				_save->getPathfinding()->isModifierAltUsed() != isAltPressed))
 			{
 				_save->getPathfinding()->removePreview();
 			}
 			_currentAction.target = pos;
 
-			// what would be a good way to expose this option?
+			// #FINNIKTODO: expose option
 			bool previewLoS = true;
 			if (previewLoS)
 			{
@@ -2075,19 +2101,25 @@ void BattlescapeGame::primaryAction(Position pos)
 
 			_currentAction.strafe = false;
 			_currentAction.run = false;
+			_currentAction.sneak = false;
+
 			if (isCtrlPressed)
 			{
 				if (_save->getPathfinding()->getPath().size() > 1)
 				{
-					_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->getArmor()->getSize() == 1);
+					_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->isSmallUnit());
 				}
 				else
 				{
-					_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->getArmor()->getSize() == 1);
+					_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->isSmallUnit());
 				}
 			}
+			else if (isAltPressed)
+			{
+				_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
+			}
 
-			//recalucate path after setting new move types
+			// recalculate path after setting new move types
 			if (BAM_NORMAL != _currentAction.getMoveType())
 			{
 				_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, _currentAction.getMoveType());
@@ -2139,6 +2171,7 @@ void BattlescapeGame::launchAction()
 	_parentState->getGame()->getCursor()->setVisible(false);
 	_currentAction.cameraPosition = getMap()->getCamera()->getMapOffset();
 	_states.push_back(new ProjectileFlyBState(this, _currentAction));
+	processWeaponNoise();
 	statePushFront(new UnitTurnBState(this, _currentAction)); // first of all turn towards the target
 }
 
@@ -2460,7 +2493,7 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 		bool vip = false;
 		if ((*unit)->getUnitRules() != 0)
 		{
-			vip = (*unit)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+			vip = (*unit)->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP;
 		}
 		if (!vip)
 		{
@@ -2509,7 +2542,8 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 			_save->getEnviroEffects(),
 			type->getArmor(),
 			nullptr,
-			getDepth());
+			getDepth(),
+			_save->getStartingCondition());
 
 		// just bare minimum, this unit will never be used for anything except recovery (not even for scoring)
 		newUnit->setTile(nullptr, _save);
@@ -2890,7 +2924,23 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 			if (slot != -1)
 			{
 				BattleActionCost cost{ unit };
-				cost.Time += Mod::EXTENDED_ITEM_RELOAD_COST ? i->getSlot()->getCost(weapon->getSlot()) : 0;
+				bool extendedItemReloadCost = false;
+				if (weapon->getRules()->getExtendedItemReloadCostLocal() != 0)
+				{
+					if (weapon->getRules()->getExtendedItemReloadCostLocal() == 1)
+					{
+						extendedItemReloadCost = true;
+					}
+					else if (weapon->getRules()->getExtendedItemReloadCostLocal() == 2)
+					{
+						extendedItemReloadCost = false;
+					}
+					cost.Time += extendedItemReloadCost ? i->getSlot()->getCost(weapon->getSlot()) : 0;
+				}
+				else
+				{
+					cost.Time += Mod::EXTENDED_ITEM_RELOAD_COST ? i->getSlot()->getCost(weapon->getSlot()) : 0;
+				}
 				cost.Time += weapon->getRules()->getTULoad(slot);
 				if (cost.haveTU() && !weapon->getAmmoForSlot(slot))
 				{
@@ -2906,7 +2956,7 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 	auto equipItem = [&unit](RuleInventory *slot, BattleItem* i)
 	{
 		BattleActionCost cost{ unit };
-		cost.Time += i->getSlot()->getCost(slot);
+		cost.Time += i->getMoveToCost(slot);
 		if (cost.haveTU() && unit->fitItemToInventory(slot, i))
 		{
 			cost.spendTU();
@@ -3029,10 +3079,10 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 		//TODO: add handling of stunned units for display purposes in AbortMissionState
 		if (!(*j)->isOut() && (!(*j)->isOutThresholdExceed() || ((*j)->getUnitRules() && (*j)->getUnitRules()->getSpawnUnit())))
 		{
-			bool vip = false;
+			bool ftaVIP = false;
 			if ((*j)->getGeoscapeSoldier() == 0)
 			{
-				vip = (*j)->getUnitRules()->getSpecialObjectiveType() == "STR_FRIENDLY_VIP";
+				ftaVIP = (*j)->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP && (*j)->getOriginalFaction() == FACTION_PLAYER;
 			}
 			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
 			{
@@ -3049,9 +3099,9 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 					tally.liveAliens++;
 				}
 			}
-			else if ((*j)->getOriginalFaction() == FACTION_PLAYER || vip)
+			else if ((*j)->getOriginalFaction() == FACTION_PLAYER || ftaVIP)
 			{
-				if ((*j)->isSummonedPlayerUnit() && !vip) //a little mess with merging OXCE and FtA VIPs =(
+				if ((*j)->isSummonedPlayerUnit() && !ftaVIP) // a little mess with merging OXCE and FtA VIPs =(
 				{
 					if ((*j)->isVIP())
 					{
@@ -3063,7 +3113,15 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 						}
 						else if ((*j)->isInExitArea(END_POINT))
 						{
-							tally.vipInExit++;
+							if ((*j)->isBannedInNextStage())
+							{
+								// this guy would (theoretically) go into timeout
+								tally.vipInField++;
+							}
+							else
+							{
+								tally.vipInExit++;
+							}
 						}
 						else
 						{
@@ -3079,7 +3137,15 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 				}
 				else if ((*j)->isInExitArea(END_POINT))
 				{
-					tally.inExit++;
+					if ((*j)->isBannedInNextStage())
+					{
+						// this guy will go into timeout
+						tally.inField++;
+					}
+					else
+					{
+						tally.inExit++;
+					}
 				}
 				else
 				{
@@ -3412,8 +3478,6 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 {
 	// create an array to track command success/failure
 	std::map<int, bool> conditionals;
-	int mapsize_x = _save->getMapSizeX();
-	int mapsize_y = _save->getMapSizeY();
 
 	for (std::vector<BattleScript*>::const_iterator i = script->begin(); i != script->end(); ++i)
 	{
@@ -3454,7 +3518,6 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 		{
 			throw Exception("Battle script processor encountered an error: multiple commands are sharing the same label.");
 		}
-		bool& success = conditionals[command->getLabel()] = false;
 
 		// if this command runs conditionally on the failures or successes of previous commands
 		if (!command->getConditionals()->empty())
@@ -3486,7 +3549,6 @@ void BattlescapeGame::processBattleScripts(const std::vector<BattleScript*>* scr
 		// if there's a chance a command won't execute by design, take that into account here.
 		if (RNG::percent(command->getChancesOfExecution()))
 		{
-			auto blocks = _save->getMapDataSets();
 			// each command can be attempted multiple times, as randomization within the rects may occur
 			for (int j = 0; j < command->getExecutions(); ++j)
 			{
@@ -3656,7 +3718,7 @@ bool OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command)
 	auto units = command->getUnitSet();
 	if (units.empty())
 	{
-		throw Exception("BattleScript generator encountered an error: no units defined for: " + command->getType());
+		throw Exception("BattleScript generator encountered an error: no units defined");
 	}
 	int zMin = command->getMinLevel();
 	int zMax = command->getMaxLevel();
@@ -3749,10 +3811,10 @@ bool OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command)
 				unitRule,
 				faction,
 				_save->getUnits()->back()->getId() + 1,
-				faction != FACTION_PLAYER ? _save->getEnviroEffects() : nullptr,
-				unitRule->getArmor(),
+				faction != FACTION_PLAYER ? _save->getEnviroEffects() : nullptr, unitRule->getArmor(),
 				faction == FACTION_HOSTILE ? getMod()->getStatAdjustment(_parentState->getGame()->getSavedGame()->getDifficulty()) : nullptr,
-				getDepth());
+				getDepth(),
+				_save->getStartingCondition());
 
 			if (faction == FACTION_PLAYER)
 			{

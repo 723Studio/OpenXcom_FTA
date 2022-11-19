@@ -37,6 +37,7 @@ class MissionSite;
 struct MissionArea;
 class AlienDeployment;
 class Country;
+class Base;
 
 /**
  * Represents an ongoing alien mission.
@@ -117,6 +118,8 @@ public:
 	/// Keep track of the city/whatever that we're going to target.
 	void setMissionSiteZone(int zone);
 private:
+	/// Selects an xcom base in a given region.
+	Base* selectXcomBase(SavedGame& game, const RuleRegion& regionRules);
 	/// Spawns a UFO, based on mission rules.
 	Ufo *spawnUfo(SavedGame &game, const Mod &mod, const Globe &globe, const MissionWave &wave, const UfoTrajectory &trajectory);
 	/// Spawn an alien base

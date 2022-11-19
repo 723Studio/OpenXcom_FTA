@@ -225,7 +225,8 @@ void SoldierMemorialState::fillMemorialList()
 		saveDay << death->getTime()->getDayString(_game->getLanguage());
 		saveMonth << tr(death->getTime()->getMonthString());
 		saveYear << death->getTime()->getYear();
-		_lstSoldiers->addRow(5, (*i)->getName().c_str(), tr((*i)->getRankString()).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
+		bool fta = _game->getMod()->isFTAGame();
+		_lstSoldiers->addRow(5, (*i)->getName().c_str(), tr((*i)->getRankString(fta)).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
 		_indices.push_back(index);
 	}
 }

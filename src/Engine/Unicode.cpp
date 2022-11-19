@@ -20,11 +20,11 @@
 #include <sstream>
 #include <locale>
 #include <stdexcept>
-#include <algorithm>
 #include <cstring>
 #include <assert.h>
 #include "Logger.h"
 #include "Exception.h"
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -33,6 +33,11 @@
 #include <windows.h>
 #include <shlwapi.h>
 #else
+
+#if defined(__CYGWIN__)
+#include <algorithm>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

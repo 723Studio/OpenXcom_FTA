@@ -34,7 +34,6 @@ class Base;
 class Soldier;
 class RuleCovertOperation;
 class CovertOperationStartState;
-
 class Armor;
 class ArrowButton;
 
@@ -56,8 +55,8 @@ private:
 	TextList* _lstSoldiers;
 
 	Base* _base;
-	size_t _savedScrollPosition;
 	CovertOperationStartState* _operation;
+	size_t _savedScrollPosition;
 	std::vector<Soldier*> _origSoldierOrder;
 	std::vector<SortFunctor*> _sortFunctors;
 	getStatFn_t _dynGetter;

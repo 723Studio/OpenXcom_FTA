@@ -35,7 +35,7 @@ class Base;
 class CraftsState : public State
 {
 private:
-	TextButton *_btnOk;
+	TextButton *_btnOk, *_btnPilots;
 	Window *_window;
 	Text *_txtTitle, *_txtBase, *_txtName, *_txtStatus, *_txtWeapon, *_txtCrew, *_txtHwp;
 	TextList *_lstCrafts;
@@ -49,6 +49,8 @@ public:
 	void init() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Pilots button.
+	void btnPilotsClick(Action *action);
 	/// Handler for clicking the Crafts list.
 	void lstCraftsClick(Action *action);
 };

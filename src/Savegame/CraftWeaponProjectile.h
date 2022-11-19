@@ -24,6 +24,7 @@ class Surface;
 // Do not change the order of these enums because they are related to blob order.
 enum CraftWeaponProjectileType { CWPT_STINGRAY_MISSILE, CWPT_AVALANCHE_MISSILE, CWPT_CANNON_ROUND, CWPT_FUSION_BALL, CWPT_LASER_BEAM, CWPT_PLASMA_BEAM };
 enum CraftWeaponProjectileGlobalType { CWPGT_MISSILE, CWPGT_BEAM };
+enum CraftWeaponProjectileSubType {CWPST_CANNON, CWPST_MISSILE };
 enum Directions { D_NONE, D_UP, D_DOWN };
 const int HP_LEFT = -1;
 const int HP_CENTER = 0;
@@ -34,6 +35,7 @@ class CraftWeaponProjectile
 private:
 	CraftWeaponProjectileType _type;
 	CraftWeaponProjectileGlobalType _globalType;
+	CraftWeaponProjectileSubType _subType;
 	int _speed;
 	int _direction;
 	int _currentPosition; // relative to interceptor, apparently, which is a problem when the interceptor disengages while projectile is in flight
@@ -42,6 +44,7 @@ private:
 	int _accuracy;
 	int _damage;
 	int _range;
+	int _rate;
 	bool _toBeRemoved;
 	bool _missed;
 
@@ -58,6 +61,10 @@ public:
 	CraftWeaponProjectileType getType() const;
 	/// Returns projectile global type.
 	CraftWeaponProjectileGlobalType getGlobalType() const;
+	/// Returns projectile subtype, used for FtA logic.
+	CraftWeaponProjectileSubType getSubType() const { return _subType; };
+	/// Sets projectile subtype, used for FtA logic.
+	void setSubType(const CraftWeaponProjectileSubType subType) { _subType = subType; }
 	/// Sets projectile direction. This determines it's initial position.
 	void setDirection(const int &directon);
 	/// Gets projectile direction.
@@ -96,6 +103,10 @@ public:
 	int getRange() const;
 	/// Sets the speed of a missile type projectile.
 	void setSpeed(const int speed);
+	/// Sets fire rate of the weapons, that launchs the projectile (used for FtA expirience).
+	void setFireRate(const int &rate) { _rate = rate; };
+	/// Gets fire rate of the weapons, that launchs the projectile.
+	int getFireRate() const { return _rate; };
 	/// Sets how effective this projectile is against shields
 	void setShieldDamageModifier(const int &shieldDamageModifier);
 	/// Gets how effective this projectile is against shields

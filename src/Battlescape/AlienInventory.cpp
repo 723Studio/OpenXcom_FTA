@@ -22,7 +22,6 @@
 #include "../Engine/Font.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
-#include "../Engine/Options.h"
 #include "../Engine/Screen.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/Timer.h"
@@ -30,7 +29,6 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleInterface.h"
-#include "../Mod/Armor.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedGame.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -96,7 +94,7 @@ void AlienInventory::setSelectedUnit(BattleUnit *unit)
 {
 	_selUnit = unit;
 	_dynamicOffset = 0;
-	if (unit && unit->getArmor()->getSize() > 1)
+	if (unit && unit->isBigUnit())
 	{
 		_dynamicOffset = _game->getMod()->getAlienInventoryOffsetBigUnit();
 	}

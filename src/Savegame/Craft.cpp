@@ -29,6 +29,7 @@
 #include "SavedGame.h"
 #include "ItemContainer.h"
 #include "Soldier.h"
+#include "EquipmentLayoutItem.h"
 #include "Transfer.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
@@ -95,6 +96,7 @@ Craft::Craft(const RuleCraft *rules, Base *base, int id) : MovingTarget(),
 {
 	_stats = rules->getStats();
 	_items = new ItemContainer();
+	_tempSoldierItems = new ItemContainer();
 	if (id != 0)
 	{
 		_id = id;
@@ -128,6 +130,7 @@ Craft::~Craft()
 		delete *i;
 	}
 	delete _items;
+	delete _tempSoldierItems;
 	for (std::vector<Vehicle*>::iterator i = _vehicles.begin(); i != _vehicles.end(); ++i)
 	{
 		delete *i;
@@ -642,6 +645,15 @@ ItemContainer *Craft::getItems()
 }
 
 /**
+ * Returns the list of items in the craft equipped by the soldiers.
+ * @return Pointer to the item list.
+ */
+ItemContainer* Craft::getSoldierItems()
+{
+	return _tempSoldierItems;
+}
+
+/**
  * Returns the list of vehicles currently equipped
  * in the craft.
  * @return Pointer to vehicle list.
@@ -649,6 +661,38 @@ ItemContainer *Craft::getItems()
 std::vector<Vehicle*> *Craft::getVehicles()
 {
 	return &_vehicles;
+}
+
+/**
+ * Calculates (and stores) the sum of all equipment of all soldiers on the craft.
+ */
+void Craft::calculateTotalSoldierEquipment()
+{
+	_tempSoldierItems->getContents()->clear();
+
+	for (auto* soldier : *_base->getSoldiers())
+	{
+		if (soldier->getCraft() == this)
+		{
+			for (auto* invItem : *soldier->getEquipmentLayout())
+			{
+				// ignore fixed weapons...
+				if (!invItem->isFixed())
+				{
+					_tempSoldierItems->addItem(invItem->getItemType());
+				}
+				// ...but not their ammo
+				for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+				{
+					const std::string& invItemAmmo = invItem->getAmmoItemForSlot(slot);
+					if (invItemAmmo != "NONE")
+					{
+						_tempSoldierItems->addItem(invItemAmmo);
+					}
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -877,6 +921,16 @@ int Craft::getShieldPercentage() const
 }
 
 /**
+ * Returns whether the craft is ignored by hunter-killers.
+ * (is returning from a mission or is low on fuel).
+ * @return True if it's ignored, false otherwise.
+ */
+bool Craft::isIgnoredByHK() const
+{
+	return getMissionComplete() || getLowFuel();
+}
+
+/**
  * Returns whether the craft is currently low on fuel
  * (only has enough to head back to base).
  * @return True if it's low, false otherwise.
@@ -1038,7 +1092,7 @@ void Craft::evacuateCrew(const Mod *mod)
 /**
  * Moves the craft to its destination.
  */
-bool Craft::think()
+bool Craft::think(std::string &pushState)
 {
 	if (_takeoff == 0)
 	{
@@ -1052,7 +1106,10 @@ bool Craft::think()
 	if (reachedDestination() && _dest == (Target*)_base)
 	{
 		setInterceptionOrder(0); // just to be sure
-		checkup();
+		if (checkup())
+		{
+			pushState = "PromotionsState";
+		}
 		setDestination(0);
 		setSpeed(0);
 		_lowFuel = false;
@@ -1075,7 +1132,7 @@ bool Craft::isTakingOff() const
  * Checks the condition of all the craft's systems
  * to define its new status (eg. when arriving at base).
  */
-void Craft::checkup()
+bool Craft::checkup()
 {
 	int available = 0, full = 0;
 	for (std::vector<CraftWeapon *>::iterator i = _weapons.begin(); i != _weapons.end(); ++i)
@@ -1119,32 +1176,37 @@ void Craft::checkup()
 		_base->setEngineers(_base->getEngineers() + _engineers);
 	}
 
-	if (getSpaceAvailable() < 0)
-	{
-		int shortage = abs(getSpaceAvailable());
-		for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-		{
-			if (shortage < 0)
-			{
-				break;
-			}
-			else
-			{
-				if ((*i)->isJustSaved())
-				{
-					(*i)->setCraft(0);
-					shortage--;
-				}
-			}
-		}
-	}
+	// lets perform logic with soldiers checkup
+	bool promote = false;
 	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
+		//remove just saved soldiers from craft
 		if ((*i)->isJustSaved())
 		{
+			(*i)->setCraft(0);
 			(*i)->setJustSaved(false);
 		}
+
+		// remove non-combat "soldiers" from craft
+		if ((*i)->getCraft() == this
+			&& ((*i)->getRoleRank(ROLE_SCIENTIST) > 0 || (*i)->getRoleRank(ROLE_ENGINEER) > 0)
+			&& ((*i)->getRoleRank(ROLE_SOLDIER) == 0 && (*i)->getRoleRank(ROLE_PILOT) == 0 && (*i)->getRoleRank(ROLE_AGENT) == 0))
+		{
+			(*i)->setCraft(0); 
+		}
+
+		//promote returned pilots
+		if ((*i)->getRoleRank(ROLE_PILOT) > 0 && (*i)->getCraft() == this)
+		{
+			auto stats = (*i)->getDogfightExperience();
+			(*i)->improvePrimaryStats(stats, ROLE_PILOT);
+			if ((*i)->rolePromoteSoldier(ROLE_PILOT))
+			{
+				promote = true;
+			}
+		}
 	}
+	return promote;
 }
 
 /**
@@ -1153,7 +1215,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const
 {
 	auto distance = XcomDistance(getDistance(target));
 
@@ -1178,6 +1240,8 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alread
 			else
 			{
 				detectionChance = _stats.radarChance * (100 + target->getVisibility()) / 100;
+				detectionChance += tracking;
+				tracking = detectionChance; //for extra output
 			}
 		}
 	}
@@ -1431,6 +1495,22 @@ int Craft::getSpaceUsed() const
 }
 
 /**
+ * Checks if the commander is onboard.
+ * @return True if the commander is onboard.
+ */
+bool Craft::isCommanderOnboard()
+{
+	for (Soldier* s : *_base->getSoldiers())
+	{
+		if (s->getCraft() == this && s->getRank() == RANK_COMMANDER)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Checks if there are only permitted soldier types onboard.
  * @return True if all soldiers onboard are permitted.
  */
@@ -1635,6 +1715,40 @@ int Craft::getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mo
 	return ((reactions - mod->getPilotReactionsZeroPoint()) * mod->getPilotReactionsRange()) / 100;
 }
 
+int Craft::getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
+{
+	if (pilots.empty())
+		return 0;
+
+	int tracking = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+	{
+		tracking += (*i)->getCurrentStats()->tracking;
+	}
+	tracking = tracking / pilots.size(); // average tracking of all pilots
+
+	return ((tracking - mod->getPilotTrackingZeroPoint()) * mod->getPilotTrackingRange()) / 100;
+}
+
+/**
+ * Calculates the dodge bonus based on pilot skills.
+ * @return cooperation bonus.
+ */
+int Craft::getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
+{
+	if (pilots.empty())
+		return 0;
+
+	int cooperation = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+	{
+		cooperation += (*i)->getCurrentStats()->cooperation;
+	}
+	cooperation = cooperation / pilots.size(); // average cooperation of all pilots
+
+	return ((cooperation - mod->getPilotCoordinationZeroPoint()) * mod->getPilotCoordinationRange()) / 100;
+}
+
 /**
 * Calculates the approach speed modifier based on pilot skills.
 * @return Approach speed modifier.
@@ -1644,12 +1758,17 @@ int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, co
 	if (pilots.empty())
 		return 2; // vanilla
 
-	int bravery = 0;
+	int bravery = 0, bravMin = 500, bravTotal = 0;
 	for (std::vector<Soldier*>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
 	{
-		bravery += (*i)->getStatsWithSoldierBonusesOnly()->bravery;
+		bravery = (*i)->getStatsWithSoldierBonusesOnly()->bravery;
+		bravTotal += bravery;
+		bravMin = std::min(bravery, bravMin);
 	}
-	bravery = bravery / pilots.size(); // average bravery of all pilots
+	bravery = bravTotal / pilots.size(); // average bravery of all pilots
+
+	if (mod->isFTAGame())
+		bravery = bravMin; // for FtA we look for the lowest
 
 	if (bravery >= mod->getPilotBraveryThresholdVeryBold())
 	{

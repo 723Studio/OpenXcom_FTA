@@ -28,12 +28,7 @@ namespace OpenXcom
  */
 PathfindingOpenSet::~PathfindingOpenSet()
 {
-	while (!_queue.empty())
-	{
-		OpenSetEntry *entry = _queue.top();
-		_queue.pop();
-		delete entry;
-	}
+
 }
 
 /**
@@ -41,11 +36,9 @@ PathfindingOpenSet::~PathfindingOpenSet()
  */
 void PathfindingOpenSet::removeDiscarded()
 {
-	while (!_queue.empty() && !_queue.top()->_node)
+	while (!_queue.empty() && _queue.top()._node->_openentry != _queue.top()._openentry)
 	{
-		OpenSetEntry *entry = _queue.top();
 		_queue.pop();
-		delete entry;
 	}
 }
 
@@ -57,10 +50,9 @@ void PathfindingOpenSet::removeDiscarded()
 PathfindingNode *PathfindingOpenSet::pop()
 {
 	assert(!empty());
-	OpenSetEntry *entry = _queue.top();
-	PathfindingNode *nd = entry->_node;
+
+	PathfindingNode *nd = _queue.top()._node;
 	_queue.pop();
-	delete entry;
 	nd->_openentry = 0;
 
 	// Discarded entries might be visible now.
@@ -76,12 +68,12 @@ PathfindingNode *PathfindingOpenSet::pop()
  */
 void PathfindingOpenSet::push(PathfindingNode *node)
 {
-	OpenSetEntry *entry = new OpenSetEntry;
-	entry->_node = node;
-	entry->_cost = node->getTUCost(false).time + node->getTUGuess();
-	if (node->_openentry)
-		node->_openentry->_node = 0;
-	node->_openentry = entry;
+	assert(node->_openentry != 255u);
+
+	OpenSetEntry entry = {};
+	entry._node = node;
+	entry._cost = node->getTUCost(false).time * 4 + node->getTUGuess(); //HACK: this is not real cost, more rough approximation for algorithm, as bonus `getTUGuess` work more like gravity/potential than normal cost.
+	entry._openentry = ++node->_openentry; // next unique number, used to check if old recode is still valid.
 	_queue.push(entry);
 }
 

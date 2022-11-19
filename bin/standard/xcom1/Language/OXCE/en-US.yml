@@ -23,5 +23,6 @@ en-US:
   GMGEO1: "Geoscape Track #1"
   GMGEO2: "Geoscape Track #2"
   GMTACTIC: "Battlescape Track"
+  GMINTER: "Dogfight Track"
 #==================================================================================================================
   STR_SHOT_TYPE_AUTO: "Auto (x{0})"

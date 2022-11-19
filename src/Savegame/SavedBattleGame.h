@@ -36,6 +36,7 @@ class BattlescapeGame;
 class Position;
 class Pathfinding;
 class TileEngine;
+class RuleStartingCondition;
 class RuleEnviroEffects;
 class BattleItem;
 class BattleObject;
@@ -92,6 +93,7 @@ private:
 	std::vector< std::vector<int> > _reinforcementsBlocks;
 	std::vector< std::vector<std::string> > _flattenedMapTerrainNames;
 	std::vector< std::vector<std::string> > _flattenedMapBlockNames;
+	const RuleStartingCondition *_startingCondition;
 	const RuleEnviroEffects *_enviroEffects;
 	bool _ecEnabledFriendly, _ecEnabledHostile, _ecEnabledNeutral;
 	int _globalShade;
@@ -101,6 +103,7 @@ private:
 	bool _nameDisplay;
 	bool _debugMode, _bughuntMode;
 	bool _aborted;
+	bool _stealthMission;
 	bool _baseCraftInventory = false;
 	int _itemId;
 	EscapeType _vipEscapeType;
@@ -124,6 +127,8 @@ private:
 	ChronoTrigger _chronoTrigger;
 	int _alarmLvl;
 	bool _beforeGame;
+	bool _togglePersonalLight, _toggleNightVision;
+	int _toggleBrightness;
 	std::string _hiddenMovementBackground;
 	std::map<std::string, int> _battleScriptVars;
 	HitLog *_hitLog;
@@ -173,6 +178,10 @@ public:
 	int findBattleScriptVariable(const std::string& varName);
 	/// Increments battleScript variable with value.
 	void updateBattleScriptVariable(const std::string& varName, int val = 0);
+	/// Sets the starting conditions.
+	void setStartingCondition(const RuleStartingCondition* sc) { _startingCondition = sc; }
+	/// Gets the starting conditions.
+	const RuleStartingCondition* getStartingCondition() const { return _startingCondition; }
 	/// Applies the enviro effects.
 	void applyEnviroEffects(const RuleEnviroEffects* enviroEffects);
 	/// Gets the enviro effects.
@@ -225,13 +234,13 @@ public:
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
 	/// Gets terrain size x.
-	int getMapSizeX() const;
+	int getMapSizeX() const { return _mapsize_x; }
 	/// Gets terrain size y.
-	int getMapSizeY() const;
+	int getMapSizeY() const { return _mapsize_y; }
 	/// Gets terrain size z.
-	int getMapSizeZ() const;
+	int getMapSizeZ() const { return _mapsize_z; }
 	/// Gets terrain x*y*z
-	int getMapSizeXYZ() const;
+	int getMapSizeXYZ() const { return _mapsize_x * _mapsize_y * _mapsize_z; }
 
 	/// Is this just a craft or base deployment preview?
 	bool isPreview() const { return _isPreview; }
@@ -496,6 +505,8 @@ public:
 
 	/// Is CTRL pressed?
 	bool isCtrlPressed(bool considerTouchButtons = false) const;
+	/// Is ALT pressed?
+	bool isAltPressed(bool considerTouchButtons = false) const;
 	/// Is SHIFT pressed?
 	bool isShiftPressed(bool considerTouchButtons = false) const;
 
@@ -568,6 +579,9 @@ public:
 	void resetCurrentAmbienceDelay();
 	/// Play a random ambient sound.
 	void playRandomAmbientSound();
+	/// Gets if this battle is a stealth mission.
+	bool isStealthMission() const { return _stealthMission; }
+	void defineStealth();
 	// gets ruleset.
 	const Mod *getMod() const;
 	/// gets the list of items we're guaranteed.
@@ -624,6 +638,20 @@ public:
 	void setCheatTurn(int turn);
 	/// Check whether the battle has actually commenced or not.
 	bool isBeforeGame() const;
+
+	/// gets personal light toggle
+	bool getTogglePersonalLight() const { return _togglePersonalLight; }
+	/// sets personal light toggle
+	void setTogglePersonalLight(bool togglePersonalLight) { _togglePersonalLight = togglePersonalLight; }
+	/// gets night vision toggle
+	bool getToggleNightVision() const { return _toggleNightVision; }
+	/// sets night vision toggle
+	void setToggleNightVision(bool toggleNightVision) { _toggleNightVision = toggleNightVision; }
+	/// gets brightness toggle
+	int getToggleBrightness() const { return _toggleBrightness; }
+	/// sets brightness toggle
+	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+
 	/// Randomly chooses hidden movement background.
 	void setRandomHiddenMovementBackground(const Mod *mod);
 	/// Gets the hidden movement background ID.

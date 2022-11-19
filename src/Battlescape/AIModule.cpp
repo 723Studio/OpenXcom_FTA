@@ -24,7 +24,6 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "TileEngine.h"
-#include "Map.h"
 #include "BattlescapeState.h"
 #include "../Savegame/Tile.h"
 #include "Pathfinding.h"
@@ -121,6 +120,7 @@ YAML::Node AIModule::save() const
 		toNodeID = _toNode->getID();
 
 	YAML::Node node;
+	node.SetStyle(YAML::EmitterStyle::Flow);
 	node["fromNode"] = fromNodeID;
 	node["toNode"] = toNodeID;
 	node["AIMode"] = _AIMode;
@@ -250,12 +250,6 @@ void AIModule::think(BattleAction *action)
 			break;
 		}
 		Log(LOG_INFO) << "Currently using " << AIMode << " behaviour";
-	}
-
-	if (_visibleEnemies) // || _knownEnemies #FINNIKTODO: Consider
-	{
-		Log(LOG_INFO) << "Unit has " << _visibleEnemies << "/" << _knownEnemies << " known enemies visible, its is now alarmed!";
-		_unit->setAlarmed(true);
 	}
 
 	if (_unit->isLeeroyJenkins())
@@ -594,7 +588,7 @@ void AIModule::setupPatrol()
 		}
 
 		// in base defense missions, the smaller aliens walk towards target nodes - or if there, shoot objects around them
-		else if (_unit->getArmor()->getSize() == 1)
+		else if (_unit->getArmor()->getSize() == 1 && _unit->getOriginalFaction() == FACTION_HOSTILE)
 		{
 			// can i shoot an object?
 			if (_fromNode->isTarget() &&
@@ -602,6 +596,7 @@ void AIModule::setupPatrol()
 				_attackAction.weapon->getRules()->getAccuracySnap() &&
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT) &&
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT)->getRules()->getDamageType()->isDirect() &&
+				_save->canUseWeapon(_attackAction.weapon, _unit, false, BA_SNAPSHOT) &&
 				_save->getModuleMap()[_fromNode->getPosition().x / 10][_fromNode->getPosition().y / 10].second > 0)
 			{
 				// scan this room for objects to destroy
@@ -926,7 +921,7 @@ void AIModule::setupEscape()
 	while (tries < 150 && !coverFound)
 	{
 		_escapeAction.target = _unit->getPosition(); // start looking in a direction away from the enemy
-		_escapeAction.run = _unit->getArmor()->allowsRunning(false) && (tries & 1); //half trys
+		_escapeAction.run = _unit->getArmor()->allowsRunning(false) && (tries & 1); // every odd try, i.e. roughly 50%
 
 		if (!_save->getTile(_escapeAction.target))
 		{
@@ -2687,6 +2682,7 @@ bool AIModule::validTarget(BattleUnit *target, bool assessDanger, bool includeCi
 	if (target->isOut() ||
 		(assessDanger && target->getTile()->getDangerous()) ||
 		(target->getFaction() != FACTION_PLAYER && target->isIgnoredByAI()) ||
+		(target->getUndercover() && !_unit->getUnitWarned()) ||
 		(target->getFaction() == _unit->getFaction() && !target->isTreatedByAI()))
 	{
 		return false;

@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "OptionsBattlescapeState.h"
-#include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Text.h"
@@ -59,7 +58,8 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 
 	_txtPathPreview = new Text(114, 9, 94, 100);
 	_btnArrows = new ToggleTextButton(104, 16, 94, 110);
-	_btnTuCost = new ToggleTextButton(104, 16, 94, 128);
+	_btnTuCost = new ToggleTextButton(58, 16, 94, 128);
+	_btnEnergyCost = new ToggleTextButton(44, 16, 154, 128);
 
 	_txtOptions = new Text(114, 9, 206, 100);
 	_btnTooltips = new ToggleTextButton(104, 16, 206, 110);
@@ -83,6 +83,7 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 	add(_txtPathPreview, "text", "battlescapeMenu");
 	add(_btnArrows, "button", "battlescapeMenu");
 	add(_btnTuCost, "button", "battlescapeMenu");
+	add(_btnEnergyCost, "button", "battlescapeMenu");
 
 	add(_txtOptions, "text", "battlescapeMenu");
 	add(_btnTooltips, "button", "battlescapeMenu");
@@ -174,6 +175,13 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 	_btnTuCost->setTooltip("STR_PATH_TIME_UNIT_COST_DESC");
 	_btnTuCost->onMouseIn((ActionHandler)&OptionsBattlescapeState::txtTooltipIn);
 	_btnTuCost->onMouseOut((ActionHandler)&OptionsBattlescapeState::txtTooltipOut);
+
+	_btnEnergyCost->setText(tr("STR_PATH_ENERGY_COST"));
+	_btnEnergyCost->setPressed((Options::battleNewPreviewPath & PATH_ENERGY_COST) != 0);
+	_btnEnergyCost->onMouseClick((ActionHandler)&OptionsBattlescapeState::btnPathPreviewClick);
+	_btnEnergyCost->setTooltip("STR_PATH_ENERGY_COST_DESC");
+	_btnEnergyCost->onMouseIn((ActionHandler)&OptionsBattlescapeState::txtTooltipIn);
+	_btnEnergyCost->onMouseOut((ActionHandler)&OptionsBattlescapeState::txtTooltipOut);
 
 	_txtOptions->setText(tr("STR_USER_INTERFACE_OPTIONS"));
 
@@ -268,6 +276,10 @@ void OptionsBattlescapeState::btnPathPreviewClick(Action *)
 	if (_btnTuCost->getPressed())
 	{
 		mode |= PATH_TU_COST;
+	}
+	if (_btnEnergyCost->getPressed())
+	{
+		mode |= PATH_ENERGY_COST;
 	}
 	Options::battleNewPreviewPath = (PathPreview)mode;
 }

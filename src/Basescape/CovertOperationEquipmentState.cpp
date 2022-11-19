@@ -18,17 +18,14 @@
  */
 #include "CovertOperationEquipmentState.h"
 #include "CovertOperationStartState.h"
-#include "CovertOperationSoldiersState.h"
 #include <climits>
 #include <sstream>
 #include <algorithm>
 #include <locale>
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/Timer.h"
-#include "../Engine/Collections.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -40,20 +37,12 @@
 #include "../Interface/TextList.h"
 #include "../Mod/Armor.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/Craft.h"
 #include "../Mod/RuleCovertOperation.h"
-#include "../Mod/RuleCraft.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Mod/RuleItemCategory.h"
 #include "../Mod/RuleItem.h"
-#include "../Savegame/Vehicle.h"
 #include "../Savegame/SavedGame.h"
-#include "../Savegame/CovertOperation.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Battlescape/CannotReequipState.h"
-#include "../Battlescape/DebriefingState.h"
-#include "../Battlescape/InventoryState.h"
-#include "../Battlescape/BattlescapeGenerator.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -66,7 +55,7 @@ namespace OpenXcom
 * @param base Pointer to the base to get info from.
 * @param operation Pointer to starting (not comitted) covert operation.
 */
-CovertOperationEquipmentState::CovertOperationEquipmentState(Base* base, CovertOperationStartState* operation) : _lstScroll(0), _sel(0), _operation(operation), _base(base), _totalItems(0), _ammoColor(0), _reload(true)
+CovertOperationEquipmentState::CovertOperationEquipmentState(Base* base, CovertOperationStartState* operation) : _lstScroll(0), _sel(0), _base(base), _operation(operation), _totalItems(0), _ammoColor(0), _reload(true)
 {
 	_rule = operation->getRule();
 	bool hasSoldiers = false; // operation->getSoldiers().size() > 0; //#FINNIKTODO

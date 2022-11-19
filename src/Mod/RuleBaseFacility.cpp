@@ -36,9 +36,13 @@ namespace OpenXcom
  * @param type String defining the type.
  */
 RuleBaseFacility::RuleBaseFacility(const std::string &type) :
-	_type(type), _spriteShape(-1), _spriteFacility(-1), _connectorsDisabled(false), _missileAttraction(100), _fakeUnderwater(-1), _lift(false), _hyper(false), _mind(false), _grav(false), _mindPower(1),
-	_size(1), _buildCost(0), _refundValue(0), _buildTime(0), _monthlyCost(0), _storage(0), _personnel(0), _aliens(0), _crafts(0),
-	_labs(0), _workshops(0), _psiLabs(0), _sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0), _defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _ammoNeeded(1), _listOrder(0),
+	_type(type), _spriteShape(-1), _spriteFacility(-1), _connectorsDisabled(false),
+	_missileAttraction(100), _fakeUnderwater(-1),
+	_lift(false), _hyper(false), _mind(false), _grav(false), _mindPower(1),
+	_size(1), _buildCost(0), _refundValue(0), _buildTime(0), _monthlyCost(0),
+	_storage(0), _personnel(0), _aliens(0), _crafts(0), _labs(0), _workshops(0), _psiLabs(0), _ftaPrisonSpace(0),
+	_sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0),
+	_defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _placeSound(-1), _ammoNeeded(1), _interrogationSpace(0), _listOrder(0),
 	_trainingRooms(0), _maxAllowedPerBase(0), _sickBayAbsoluteBonus(0.0f), _sickBayRelativeBonus(0.0f),
 	_prisonType(0), _rightClickActionType(0), _verticalLevels(), _removalTime(0), _canBeBuiltOver(false), _destroyedFacility(0)
 {
@@ -89,6 +93,8 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 	_storage = node["storage"].as<int>(_storage);
 	_personnel = node["personnel"].as<int>(_personnel);
 	_aliens = node["aliens"].as<int>(_aliens);
+	_interrogationSpace = node["interrogationSpace"].as<int>(_interrogationSpace);
+	_ftaPrisonSpace = node["ftaPrisonSpace"].as<int>(_ftaPrisonSpace);
 	_crafts = node["crafts"].as<int>(_crafts);
 	_labs = node["labs"].as<int>(_labs);
 	_workshops = node["workshops"].as<int>(_workshops);
@@ -102,9 +108,11 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 
 	mod->loadSoundOffset(_type, _fireSound, node["fireSound"], "GEO.CAT");
 	mod->loadSoundOffset(_type, _hitSound, node["hitSound"], "GEO.CAT");
+	mod->loadSoundOffset(_type, _placeSound, node["placeSound"], "GEO.CAT");
 
 	_ammoNeeded = node["ammoNeeded"].as<int>(_ammoNeeded);
 	_ammoItemName = node["ammoItem"].as<std::string>(_ammoItemName);
+	_manufactureName = node["manufacture"].as<std::string>(_manufactureName);
 	_mapName = node["mapName"].as<std::string>(_mapName);
 	_listOrder = node["listOrder"].as<int>(_listOrder);
 	_trainingRooms = node["trainingRooms"].as<int>(_trainingRooms);
@@ -170,8 +178,10 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 	mod->verifySpriteOffset(_type, _spriteFacility, "BASEBITS.PCK");
 	mod->verifySoundOffset(_type, _fireSound, "GEO.CAT");
 	mod->verifySoundOffset(_type, _hitSound, "GEO.CAT");
+	mod->verifySoundOffset(_type, _placeSound, "GEO.CAT");
 
 	mod->linkRule(_ammoItem, _ammoItemName);
+	mod->linkRule(_project, _manufactureName);
 
 	if (!_destroyedFacilityName.empty())
 	{
@@ -583,7 +593,7 @@ int RuleBaseFacility::getPrisonType() const
 
 /**
 * Gets the action type to perform on right click.
-* @return 0=default, 1 = prison, 2 = manufacture, 3 = research, 4 = training, 5 = psi training, 6 = soldiers, 7 = sell
+* @return 0=default, 1 = prison, 2 = manufacture, 3 = research, 4 = training, 5 = psi training, 6 = soldiers, 7 = sell, 8 = intel
 */
 int RuleBaseFacility::getRightClickActionType() const
 {
