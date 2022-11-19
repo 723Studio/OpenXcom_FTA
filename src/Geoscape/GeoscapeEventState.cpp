@@ -120,7 +120,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
 		}
 		_btnAnswerThree->setWidth(115);
-		[[clang::fallthrough]];
+		//[[clang::fallthrough]];
 		break;
 	case 3:
 		_btnAnswerThree->setText(tr(_customAnswers[2].title));
@@ -135,7 +135,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		_btnAnswerOne->setY(142);
 		_btnAnswerTwo->setY(142);
 		_txtTooltip->setY(132);
-		[[clang::fallthrough]];
+		//[[clang::fallthrough]];
 		break;
 	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
