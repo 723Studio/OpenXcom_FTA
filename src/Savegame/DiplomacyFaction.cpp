@@ -594,7 +594,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 	for (auto it = _items->getContents()->begin(); it != _items->getContents()->end(); ++it)
 	{
 		RuleItem* ruleItem = _mod->getItem((*it).first);
-		int64_t cost = ruleItem->getBuyCost(); //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
+		auto cost = ruleItem->getBuyCost(); //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
 		if (!cost)
 		{
 			cost = ruleItem->getSellCost(); //well, in case we can't buy it, this would be ok too =)
@@ -604,7 +604,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 			cost = 1; // extra safe if something bad would come to faction stash, it would cost at least $1
 		}
 
-		int64_t wishWeight = 0;
+		int wishWeight = 0;
 		for (auto k = _rule->getWishList().begin(); k != _rule->getWishList().end(); ++k)
 		{
 			if (k->first == (*it).first)
@@ -614,7 +614,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 			}
 		}
 		// calculate desired ammount of that item
-		int64_t toSell = round((wishWeight / cost) * _power * _rule->getStockMod() / 1000);
+		int toSell = round((wishWeight / cost) * _power * _rule->getStockMod() / 1000);
 		toSell = _items->getItem(ruleItem) - toSell;
 		if (toSell > 0)
 		{
@@ -643,7 +643,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
  */
 void DiplomacyFaction::manageStaff()
 {
-	std::map<std::string, double> buyList;
+	std::map<std::string, int> buyList;
 
 	// handle soldiers
 	const std::vector<std::string>& soldiers = _mod->getSoldiersList();
