@@ -104,8 +104,6 @@ private:
 	void recoverCivilian(BattleUnit *from, Base *base, Craft* craft);
 	/// Recovers an alien from the battlescape.
 	void recoverAlien(BattleUnit *from, Base *base);
-	/// Handle friendly non X-COM unit  (VIP) recovery from the battlescape.
-	bool handleVipRecovery(BattleUnit *unit, Base *base, Craft *craft, bool result);
 	/// Reequips a craft after a mission.
 	void reequipCraft(Base *base, Craft *craft, bool vehicleItemsCanBeDestroyed);
 	/// Sets the visibility according to the _pageNumber

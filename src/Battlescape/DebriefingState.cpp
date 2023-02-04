@@ -1209,9 +1209,11 @@ void DebriefingState::prepareDebriefing()
 	_stats.push_back(new DebriefingStat("STR_VIP_KILLED_BY_ALIENS", false));
 	_stats.push_back(new DebriefingStat("STR_VIP_KILLED_BY_XCOM_OPERATIVES", false));
 	_stats.push_back(new DebriefingStat("STR_ENEMY_VIP_TERMINATED", false));
+	_stats.push_back(new DebriefingStat("STR_SOLDIER_JOINED_XCOM", false));
+	_stats.push_back(new DebriefingStat("STR_PILOT_JOINED_XCOM", false));
+	_stats.push_back(new DebriefingStat("STR_AGENT_JOINED_XCOM", false));
 	_stats.push_back(new DebriefingStat("STR_SCIENTIST_JOINED_XCOM", false));
 	_stats.push_back(new DebriefingStat("STR_ENGINEER_JOINED_XCOM", false));
-	_stats.push_back(new DebriefingStat("STR_SOLDIER_JOINED_XCOM", false));
 	_stats.push_back(new DebriefingStat("STR_VIP_LOST", false));
 	_stats.push_back(new DebriefingStat("STR_XCOM_OPERATIVES_KILLED", false));
 	//_stats.push_back(new DebriefingStat("STR_XCOM_OPERATIVES_RETIRED_THROUGH_INJURY", false));
@@ -1737,75 +1739,91 @@ void DebriefingState::prepareDebriefing()
 					|| !aborted
 					|| (aborted && (*j)->isInExitArea(END_POINT)))
 				{ // so game is not aborted or aborted and unit is on exit area
-					bool notOver = true; //this is to check is there will be a geoscape soldier spawned to increase it's stats based on BattleUnit experience
 					if (evacObj && soldier == nullptr) //first, we check if the unit can be transformed to some basescape entity
 					{
 						addStat("STR_VIP_SAVED", 1, value);
-						notOver = handleVipRecovery((*j), base, craft, true);
 						vipsSaved++;
 					}
-					
-					if (notOver)
+
+					else if (soldier && soldier->isJustSaved())
 					{
-						if (soldier && soldier->isJustSaved())
+						addStat("STR_VIP_SAVED", 1, value);
+						if (!(*j)->wasFriendlyFired())
 						{
-							addStat("STR_VIP_SAVED", 1, value);
-							if (!(*j)->wasFriendlyFired())
-							{
+							auto role = soldier->getBestRole();
+							switch (role) {
+							case ROLE_SOLDIER:
 								addStat("STR_SOLDIER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
+							case ROLE_PILOT:
+								addStat("STR_PILOT_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
+							case ROLE_AGENT:
+								addStat("STR_AGENT_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
+							case ROLE_SCIENTIST:
+								addStat("STR_SCIENTIST_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
+							case ROLE_ENGINEER:
+								addStat("STR_ENGINEER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
+							case ROLE_NONE:
+								break;
+							default: ;
 							}
-							else // we remove soldiers becuase hostile player actions to counter stunning abuse.
-							{
-								auto it = std::find(base->getSoldiers()->begin(), base->getSoldiers()->end(), soldier);
-								base->getSoldiers()->erase(it);
-								delete soldier;
-								continue;
-							}
 						}
-
-						StatAdjustment statIncrease;
-						(*j)->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
-						if ((*j)->getGeoscapeSoldier())
+						else // we remove soldiers becuase hostile player actions to counter stunning abuse.
 						{
-							_soldierStats.push_back(std::pair<Soldier*, UnitStats>((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+							auto it = std::find(base->getSoldiers()->begin(), base->getSoldiers()->end(), soldier);
+							base->getSoldiers()->erase(it);
+							delete soldier;
+							continue;
 						}
-						playersInExitArea++;
 
-						recoverItems((*j)->getInventory(), base);
+					}
 
-						if (soldier != 0)
+					StatAdjustment statIncrease;
+					(*j)->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
+					if ((*j)->getGeoscapeSoldier())
+					{
+						_soldierStats.push_back(std::pair<Soldier*, UnitStats>((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+					}
+					playersInExitArea++;
+
+					recoverItems((*j)->getInventory(), base);
+
+					if (soldier != 0)
+					{
+						// calculate new statString
+						soldier->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
+					}
+					else
+					{ // non soldier player = tank
+						addItemsToBaseStores((*j)->getType(), base, 1, false);
+
+						auto unloadWeapon = [&](BattleItem* weapon)
 						{
-							// calculate new statString
-							soldier->calcStatString(_game->getMod()->getStatStrings(), (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
-						}
-						else
-						{ // non soldier player = tank
-							addItemsToBaseStores((*j)->getType(), base, 1, false);
-
-							auto unloadWeapon = [&](BattleItem* weapon)
+							if (weapon)
 							{
-								if (weapon)
+								const RuleItem* primaryRule = weapon->getRules();
+								const BattleItem* ammoItem = weapon->getAmmoForSlot(0);
+								const auto* compatible = primaryRule->getVehicleClipAmmo();
+								if (primaryRule->getVehicleUnit() && compatible && ammoItem != 0 && ammoItem->getAmmoQuantity() > 0)
 								{
-									const RuleItem* primaryRule = weapon->getRules();
-									const BattleItem* ammoItem = weapon->getAmmoForSlot(0);
-									const auto* compatible = primaryRule->getVehicleClipAmmo();
-									if (primaryRule->getVehicleUnit() && compatible && ammoItem != 0 && ammoItem->getAmmoQuantity() > 0)
+									int total = ammoItem->getAmmoQuantity();
+
+									if (primaryRule->getClipSize()) // meaning this tank can store multiple clips
 									{
-										int total = ammoItem->getAmmoQuantity();
-
-										if (primaryRule->getClipSize()) // meaning this tank can store multiple clips
-										{
-											total /= ammoItem->getRules()->getClipSize();
-										}
-
-										addItemsToBaseStores(compatible, base, total, false);
+										total /= ammoItem->getRules()->getClipSize();
 									}
-								}
-							};
 
-							unloadWeapon((*j)->getRightHandWeapon());
-							unloadWeapon((*j)->getLeftHandWeapon());
-						}
+									addItemsToBaseStores(compatible, base, total, false);
+								}
+							}
+						};
+
+						unloadWeapon((*j)->getRightHandWeapon());
+						unloadWeapon((*j)->getLeftHandWeapon());
 					}
 				}
 				else
@@ -3195,50 +3213,6 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 			_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 2; // 2 = overfull
 		}
 	}
-}
-/**
- * Handle friendly non X-COM unit recovery from the battlescape.
- * @param from Battle unit to recover.
- * @param base Base to add items to.
- * @param result Case of recovery (unit dead/lost or recovered)
- * @return true if new geoscape soldier was created
- */
-bool DebriefingState::handleVipRecovery(BattleUnit *unit, Base *base, Craft *craft, bool result)
-{
-	bool created = false;
-	if (result && !unit->wasFriendlyFired()) //unit recovered safely and without direct harm
-	{
-		auto rules = unit->getUnitRules();
-		std::string type = rules->getCivilianRecoveryType();
-		if (type == "STR_SCIENTIST")
-		{
-			craft->setScientists(craft->getScientists() + 1);
-			addStat("STR_SCIENTIST_JOINED_XCOM", 1, rules->getValue() / 3);
-		}
-		else if (type == "STR_ENGINEER")
-		{
-			craft->setEngineers(craft->getEngineers() + 1);
-			addStat("STR_ENGINEER_JOINED_XCOM", 1, rules->getValue() / 3);
-		}
-		else
-		{
-			const RuleSoldier* ruleSoldier = _game->getMod()->getSoldier(type);
-			if (ruleSoldier != 0)
-			{
-				int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, _base);
-				Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
-				unit->setGeoscapeSoldier(s);
-				UnitStats *stats = unit->getBaseStats();
-				s->setBothStats(stats);
-				s->setJustSaved(true);
-				created = true;
-				base->getSoldiers()->push_back(s);
-				s->setCraft(craft);
-				addStat("STR_SOLDIER_JOINED_XCOM", 1, rules->getValue() / 3);
-			}
-		}
-	}
-	return created;
 }
 
 /**
