@@ -55,7 +55,6 @@ void RuleDiplomacyFaction::load(const YAML::Node &node)
 	_happyEvents = node["happyEvents"].as<std::vector<std::string>>(_happyEvents);
 	_angryEvents = node["angryEvents"].as<std::vector<std::string>>(_angryEvents);
 
-
 	_factionalEvents = node["factionalEvents"].as<std::vector<std::string>>(_factionalEvents);
 	_sellPriceFactor = node["sellPriceFactor"].as<int>(_sellPriceFactor);
 	_buyPriceFactor = node["buyPriceFactor"].as<int>(_buyPriceFactor);

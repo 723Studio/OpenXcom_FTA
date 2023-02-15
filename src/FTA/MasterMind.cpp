@@ -50,12 +50,12 @@
 #include "../Savegame/AlienMission.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/ItemContainer.h"
-#include "../Savegame/FactionalContainer.h"
 #include "../Geoscape/GeoscapeState.h"
 #include "../Geoscape/Globe.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../fmath.h"
+#include "../Savegame/SoldierPool.h"
 
 namespace OpenXcom
 {
@@ -141,9 +141,23 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 					" ; no item ruleset defined!");
 			}
 		}
-		for (auto &staff : factionRules->getStartingStaff())
+
+		std::vector<std::string> randomTypes;
+		auto randomSoldiers = factionRules->getStartingStaff();
+		for (std::map<std::string, int>::iterator j = randomSoldiers.begin(); j != randomSoldiers.end(); ++j)
 		{
-			faction->getStaffContainer()->addItem(staff.first, staff.second);
+			for (int s = 0; s < j->second; ++s)
+			{
+				randomTypes.push_back(j->first);
+			}
+		}
+		// Generate soldiers
+		for (size_t k = 0; k < randomTypes.size(); ++k)
+		{
+			const RuleSoldier* ruleSoldier = mod->getSoldier(randomTypes[k], true);
+			int nationality = save->selectSoldierNationalityByLocation(mod, ruleSoldier, nullptr); //diplomacy factions are purely international
+			Soldier* soldier = mod->genSoldier(save, ruleSoldier, nationality);
+			faction->getStaffPool()->addSoldier(soldier);
 		}
 
 		// finish faction initialization process
@@ -152,7 +166,7 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 
 	//adjust funding
 	int funds = mod->getInitialFunding();
-	funds = funds * 1000 + static_cast<int>(RNG::generate(-1258, 6365)); 
+	funds = funds * 1000 + RNG::generate(-1258, 6365); 
 	save->setFunds(funds);
 
 	//start base defense mission

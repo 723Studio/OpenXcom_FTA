@@ -413,6 +413,7 @@
     <ClCompile Include="Engine\Timer.cpp" />
     <ClCompile Include="Engine\Unicode.cpp" />
     <ClCompile Include="Engine\Zoom.cpp" />
+    <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp" />
     <ClCompile Include="FTA\DiplomacyPurchaseState.cpp" />
     <ClCompile Include="FTA\DiplomacySellState.cpp" />
     <ClCompile Include="FTA\DiplomacyStartState.cpp" />
@@ -608,7 +609,6 @@
     <ClCompile Include="Savegame\CraftWeaponProjectile.cpp" />
     <ClCompile Include="Savegame\DiplomacyFaction.cpp" />
     <ClCompile Include="Savegame\EquipmentLayoutItem.cpp" />
-    <ClCompile Include="Savegame\FactionalContainer.cpp" />
     <ClCompile Include="Savegame\FactionalResearch.cpp" />
     <ClCompile Include="Savegame\GameTime.cpp" />
     <ClCompile Include="Savegame\GeoscapeEvent.cpp" />
@@ -628,6 +628,7 @@
     <ClCompile Include="Savegame\SoldierAvatar.cpp" />
     <ClCompile Include="Savegame\SoldierDeath.cpp" />
     <ClCompile Include="Savegame\SoldierDiary.cpp" />
+    <ClCompile Include="Savegame\SoldierPool.cpp" />
     <ClCompile Include="Savegame\Target.cpp" />
     <ClCompile Include="Savegame\MissionSite.cpp" />
     <ClCompile Include="Savegame\Tile.cpp" />
@@ -863,6 +864,7 @@
     <ClInclude Include="Engine\Zoom.h" />
     <ClInclude Include="fallthrough.h" />
     <ClInclude Include="fmath.h" />
+    <ClInclude Include="FTA\DiplomacyHirePersonnelState.h" />
     <ClInclude Include="FTA\DiplomacyPurchaseState.h" />
     <ClInclude Include="FTA\DiplomacySellState.h" />
     <ClInclude Include="FTA\DiplomacyStartState.h" />
@@ -1062,7 +1064,6 @@
     <ClInclude Include="Savegame\CraftWeaponProjectile.h" />
     <ClInclude Include="Savegame\DiplomacyFaction.h" />
     <ClInclude Include="Savegame\EquipmentLayoutItem.h" />
-    <ClInclude Include="Savegame\FactionalContainer.h" />
     <ClInclude Include="Savegame\FactionalResearch.h" />
     <ClInclude Include="Savegame\GameTime.h" />
     <ClInclude Include="Savegame\GeoscapeEvent.h" />
@@ -1083,6 +1084,7 @@
     <ClInclude Include="Savegame\SoldierAvatar.h" />
     <ClInclude Include="Savegame\SoldierDeath.h" />
     <ClInclude Include="Savegame\SoldierDiary.h" />
+    <ClInclude Include="Savegame\SoldierPool.h" />
     <ClInclude Include="Savegame\Target.h" />
     <ClInclude Include="Savegame\MissionSite.h" />
     <ClInclude Include="Savegame\Tile.h" />

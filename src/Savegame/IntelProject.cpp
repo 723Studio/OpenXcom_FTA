@@ -269,7 +269,7 @@ void IntelProject::load(const YAML::Node& node)
 YAML::Node IntelProject::save() const
 {
 	YAML::Node node;
-	node["project"] = getRules()->getName();
+	node["name"] = getRules()->getName();
 	if (!_stageRolls.empty())
 	{
 		node["stageRolls"] = _stageRolls;

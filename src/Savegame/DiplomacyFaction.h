@@ -1,6 +1,6 @@
 #pragma once
 /*
- * Copyright 2010-2019 OpenXcom Developers.
+ * Copyright 2010-2023 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
  *
@@ -45,9 +45,9 @@ class RuleSoldier;
 class RuleCraft;
 class RuleItem;
 class ItemContainer;
-class FactionalContainer;
 class FactionalResearch;
 class RuleDiplomacyFactionEvent;
+class SoldierPool;
 
 /**
  * Represents a custom Diplomacy Faction, spawned at the game start and waiting to be discovered.
@@ -68,7 +68,7 @@ private:
 	std::vector<RuleMissionScript*> _availableMissionScripts;
 	std::vector<std::string> _unlockedResearches;
 	ItemContainer* _items, *_secretItems;
-	FactionalContainer* _staff;
+	SoldierPool* _staffPool;
 	std::vector<FactionalResearch*> _research;
 
 	/// Handle daily reputation change and immidiate reaction to it.
@@ -84,7 +84,7 @@ private:
 	/// Handle managing of Faction's staff and non-item equipment.
 	void manageStaff();
 	/// Process Faction's power management and returns required funds for further use.
-	int64_t managePower(int64_t month, int64_t baseCost);
+	int64_t managePower(int month, int64_t baseCost);
 	/// Handle researching.
 	void handleResearch(Game& engine, int64_t reqFunds);
 	/// Get if research article is unlocked by faction.
@@ -99,60 +99,57 @@ public:
 	/// Cleans up the Faction info.
 	~DiplomacyFaction();
 	/// Loads the Faction from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::Node &node, SavedGame *save);
 	/// Saves the Faction to YAML.
 	YAML::Node save() const;
 	/// Gets the Faction's ruleset.
-	const RuleDiplomacyFaction* getRules() const { return _rule; };
+	const RuleDiplomacyFaction* getRules() const { return _rule; }
 	/// Gets current player's reputation in this Faction.
 	int getReputationScore() const { return _reputationScore; }
 	/// Sets current player's reputation in this Faction.
-	void setReputationScore(int reputation) { _reputationScore = reputation; };
+	void setReputationScore(int reputation) { _reputationScore = reputation; }
 	/// Updates reputation score based on incoming value and handle simple reaction to it.
 	void updateReputationScore(int change);
 	/// Gets corrent reputation level.
-	int getReputationLevel() const { return _reputationLvL;};
+	int getReputationLevel() const { return _reputationLvL;}
 	/// Gets corrent reputation level name.
-	std::string getReputationName() const { return _reputationName; };
+	std::string getReputationName() const { return _reputationName; }
 	/// Sets new reputation level of the faction.
-	void setReputationLevel(int level) { _reputationLvL = level; };
+	void setReputationLevel(int level) { _reputationLvL = level; }
 	/// Sets new reputation level of the faction.
-	void setReputationName(const std::string& reputationName) { _reputationName = reputationName; };
+	void setReputationName(const std::string& reputationName) { _reputationName = reputationName; }
 	/// Adds research projet's name to a faction's list of unlocked researches.
-	void unlockResearch(const std::string& research) { _unlockedResearches.push_back(research); };
+	void unlockResearch(const std::string& research) { _unlockedResearches.push_back(research); }
 	/// Removes research projet's name to a faction's list of unlocked researches.
 	void disableResearch(const std::string& research);
 	/// Gets the faction power value.
-	int getPower() const { return _power; };
+	int getPower() const { return _power; }
 	/// Sets a new power value for the faction.
-	void setPower(int power) { _power = power; };
+	void setPower(int power) { _power = power; }
 	/// Gets the faction's funds.
-	int getFunds() const { return _funds; };
+	int64_t getFunds() const { return _funds; }
 	/// Sets a new value for the faction's funds.
-	void setFunds(int funds) { _funds = funds; };
+	void setFunds(int64_t funds) { _funds = funds; }
 	/// Is this Faction was discovered?
 	bool isDiscovered() const { return _discovered; }
 	/// Sets Faction's discovered status.
-	void setDiscovered(bool status) { _discovered = status; };
+	void setDiscovered(bool status) { _discovered = status; }
 	/// Was this Faction discovered this month?
 	bool isThisMonthDiscovered() const { return _thisMonthDiscovered; }
 	/// Sets Faction's this month discovered status.
-	void setThisMonthDiscovered(bool status) { _thisMonthDiscovered = status; };
+	void setThisMonthDiscovered(bool status) { _thisMonthDiscovered = status; }
 	/// Was this Faction discovered this month?
 	bool isThisMonthRepLvlChanged() const { return _repLvlChanged; }
 	/// Sets Faction's this month discovered status.
-	void setThisMonthRepLvlChanged(bool status) { _repLvlChanged = status; };
+	void setThisMonthRepLvlChanged(bool status) { _repLvlChanged = status; }
 	/// Get mission script commands that pass all checks to generate alien mission for that faction.
-	const std::vector<RuleMissionScript*>& getAvalibleMissionScripts() const { return _availableMissionScripts; };
+	const std::vector<RuleMissionScript*>& getAvalibleMissionScripts() const { return _availableMissionScripts; }
 
 	/// Public manipulators to factional stores.
-	ItemContainer* getPublicItems() const { return _items; };
+	ItemContainer* getPublicItems() const { return _items; }
 	void addItem(const RuleItem* item, int qty = 1);
 	void removeItem(const RuleItem* item, int qty = 1);
-
-
-	/// Gets Faction's personell and non-item properties.
-	FactionalContainer* getStaffContainer() { return _staff; };
+	SoldierPool* getStaffPool() const { return _staffPool; }
 
 	/// The main handler of Faction logic.
 	void think(Game& engine, ThinkPeriod = TIMESTEP_DAILY);

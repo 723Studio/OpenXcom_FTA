@@ -228,6 +228,8 @@ private:
 	void addKillCount(int count);
 	/// Add a stun to the counter.
 	void addStunCount(int count);
+	/// Gets the soldier's hire value.
+	int getHireValue() const;
 	/// Get pointer to initial stats.
 	UnitStats *getInitStats();
 	/// Get pointer to current stats.

@@ -202,6 +202,7 @@ set ( engine_src
 )
 
 set ( fta_src
+  FTA/DiplomacyHirePersonnelState.cpp
   FTA/DiplomacyPurchaseState.cpp
   FTA/DiplomacySellState.cpp
   FTA/DiplomacyStartState.cpp
@@ -407,7 +408,6 @@ set ( savegame_src
   Savegame/CraftWeaponProjectile.cpp
   Savegame/DiplomacyFaction.cpp
   Savegame/EquipmentLayoutItem.cpp
-  Savegame/FactionalContainer.cpp
   Savegame/FactionalResearch.cpp
   Savegame/GameTime.cpp
   Savegame/GeoscapeEvent.cpp
@@ -428,6 +428,7 @@ set ( savegame_src
   Savegame/SoldierAvatar.cpp
   Savegame/SoldierDeath.cpp
   Savegame/SoldierDiary.cpp
+  Savegame/SoldierPool.cpp
   Savegame/Target.cpp
   Savegame/Tile.cpp
   Savegame/Transfer.cpp

@@ -1187,9 +1187,6 @@
     <ClCompile Include="Geoscape\TransformationFinishedState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
-    <ClCompile Include="Savegame\FactionalContainer.cpp">
-      <Filter>Savegame</Filter>
-    </ClCompile>
     <ClCompile Include="Savegame\FactionalResearch.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
@@ -1303,6 +1300,12 @@
     </ClCompile>
     <ClCompile Include="Basescape\SoldierTransformationStatsState.cpp">
       <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\SoldierPool.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp">
+      <Filter>FTA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2555,9 +2558,6 @@
     <ClInclude Include="Geoscape\TransformationFinishedState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
-    <ClInclude Include="Savegame\FactionalContainer.h">
-      <Filter>Savegame</Filter>
-    </ClInclude>
     <ClInclude Include="Savegame\FactionalResearch.h">
       <Filter>Savegame</Filter>
     </ClInclude>
@@ -2671,6 +2671,12 @@
     </ClInclude>
     <ClInclude Include="Basescape\SoldierTransformationStatsState.h">
       <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\SoldierPool.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacyHirePersonnelState.h">
+      <Filter>FTA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

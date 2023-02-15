@@ -35,14 +35,12 @@
 #include "../Interface/TextList.h"
 #include "../Interface/ComboBox.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Savegame/BaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/Vehicle.h"
 #include "../Savegame/ItemContainer.h"
-#include "../Savegame/FactionalContainer.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleCraft.h"
@@ -51,7 +49,6 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/Unicode.h"
 #include "../Mod/RuleInterface.h"
 #include "../Battlescape/DebriefingState.h"
@@ -99,7 +96,6 @@ void DiplomacySellState::delayedInit()
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 10, 13);
-	//_btnOk = new TextButton(overfull? 288:148, 16, overfull? 16:8, 176);
 	_btnOk = new TextButton(148, 16, 8, 176);
 	_btnCancel = new TextButton(148, 16, 164, 176);
 	_btnTransfer = new TextButton(148, 16, 164, 176);
@@ -695,37 +691,37 @@ void DiplomacySellState::btnOkClick(Action*)
 		{
 			switch (i->type)
 			{
-			case TRANSFER_SOLDIER:
-				soldier = (Soldier*)i->rule;
-				for (std::vector<Soldier*>::iterator s = _base->getSoldiers()->begin(); s != _base->getSoldiers()->end(); ++s)
-				{
-					if (*s == soldier)
-					{
-						if ((*s)->getArmor()->getStoreItem())
-						{
-							_base->getStorageItems()->addItem((*s)->getArmor()->getStoreItem()->getType());
-						}
-						_base->getSoldiers()->erase(s);
-						_faction->getStaffContainer()->addItem((*s)->getRules()->getType());
-						break;
-					}
-				}
-				delete soldier;
-				break;
-			case TRANSFER_CRAFT:
-				craft = (Craft*)i->rule;
-				_base->removeCraft(craft, true);
-				_faction->getStaffContainer()->addItem(craft->getRules()->getType());
-				delete craft;
-				break;
-			case TRANSFER_SCIENTIST:
-				_base->setScientists(_base->getScientists() - i->amount);
-				_faction->getStaffContainer()->addItem("STR_SCIENTIST", i->amount);
-				break;
-			case TRANSFER_ENGINEER:
-				_base->setEngineers(_base->getEngineers() - i->amount);
-				_faction->getStaffContainer()->addItem("STR_ENGINEER", i->amount);
-				break;
+			//case TRANSFER_SOLDIER:
+			//	soldier = (Soldier*)i->rule;
+			//	for (std::vector<Soldier*>::iterator s = _base->getSoldiers()->begin(); s != _base->getSoldiers()->end(); ++s)
+			//	{
+			//		if (*s == soldier)
+			//		{
+			//			if ((*s)->getArmor()->getStoreItem())
+			//			{
+			//				_base->getStorageItems()->addItem((*s)->getArmor()->getStoreItem()->getType());
+			//			}
+			//			_base->getSoldiers()->erase(s);
+			//			_faction->getStaffContainer()->addItem((*s)->getRules()->getType());
+			//			break;
+			//		}
+			//	}
+			//	delete soldier;
+			//	break;
+			//case TRANSFER_CRAFT:
+			//	craft = (Craft*)i->rule;
+			//	_base->removeCraft(craft, true);
+			//	_faction->getStaffContainer()->addItem(craft->getRules()->getType());
+			//	delete craft;
+			//	break;
+			//case TRANSFER_SCIENTIST:
+			//	_base->setScientists(_base->getScientists() - i->amount);
+			//	_faction->getStaffContainer()->addItem("STR_SCIENTIST", i->amount);
+			//	break;
+			//case TRANSFER_ENGINEER:
+			//	_base->setEngineers(_base->getEngineers() - i->amount);
+			//	_faction->getStaffContainer()->addItem("STR_ENGINEER", i->amount);
+			//	break;
 			case TRANSFER_ITEM:
 				RuleItem* item = (RuleItem*)i->rule;
 				{

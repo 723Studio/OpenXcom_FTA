@@ -34,7 +34,7 @@ class Base;
 /**
 * Enumeration for the type of trading operation.
 */
-enum TradeOperation { OPERATION_BUYING, OPERATION_SELLING };
+enum TradeOperation { OPERATION_BUYING, OPERATION_SELLING, OPERATION_HIRING };
 
 /**
  * Diplomacy main screen that shows diplomacy cards

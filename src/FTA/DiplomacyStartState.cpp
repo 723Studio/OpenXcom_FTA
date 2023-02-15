@@ -17,16 +17,13 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "DiplomacyStartState.h"
-#include <sstream>
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
 #include "../Mod/Mod.h"
-#include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
-#include "../Interface/Frame.h"
 #include "../Savegame/SavedGame.h"
 #include "../Engine/Options.h"
 #include "../Savegame/DiplomacyFaction.h"
@@ -34,6 +31,7 @@
 #include "../Savegame/Base.h"
 #include "../FTA/DiplomacySellState.h"
 #include "../FTA/DiplomacyPurchaseState.h"
+#include "../FTA/DiplomacyHirePersonnelState.h"
 
 namespace OpenXcom
 {
@@ -67,7 +65,7 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 	for (std::vector<DiplomacyFaction*>::iterator i = factions.begin(); i != factions.end(); ++i)
 	{
 		if (step > 2) { break; } //draw only 3 cards
-		dX = 103 * step;
+		dX *= step;
 		faction = factions.at(step);
 		Window* card = new Window(this, 98, 150, 8 + dX, 25, POPUP_NONE);
 		Text* txtName = new Text(90, 17, 12 + dX, 31);
@@ -82,6 +80,7 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 			card->setBackground(_game->getMod()->getSurface(faction->getRules()->getCardBackground()));
 			card->setVeryThinBorder();
 			_cards.push_back(card);
+
 			//name, reputation
 			add(txtName, "name", interfaceName);
 			txtName->setAlign(ALIGN_CENTER);
@@ -92,6 +91,7 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 			txtRep->setAlign(ALIGN_CENTER);
 			txtRep->setText(tr(faction->getReputationName()));
 			txtRep->setAlign(ALIGN_CENTER);
+
 			//Info, Negation
 			add(btnInfo, "button", interfaceName);
 			btnInfo->setText(tr("STR_INFO"));
@@ -102,6 +102,7 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 			btnTalk->setText(tr("STR_CONTACT_UC"));
 			btnTalk->onMouseClick((ActionHandler)&DiplomacyStartState::btnTalkClick);
 			_btnsTalk.push_back(btnTalk);
+
 			//trade buttons
 			add(btnPurchase, "button", interfaceName);
 			btnPurchase->setText(tr("STR_PURCHASE"));
@@ -176,8 +177,22 @@ void DiplomacyStartState::btnTalkClick(Action* action)
 		if (action->getSender() == _btnsTalk.at(i))
 		{
 			auto faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
-			Log(LOG_INFO) << "You clicked NEGOTIATION button of " << tr(faction->getRules()->getName()) << " faction! Sorry, it's not implemented yet!";
-			//_game->pushState(new UfopaediaSelectState(_cats[_offset + i], _heightOffset, _windowOffset));
+			if (faction)
+			{
+				if (_base != 0)
+				{
+					_game->pushState(new DiplomacyHirePersonnelState(_base, faction));
+				}
+				else if (_game->getSavedGame()->getBases()->size() == 1)
+				{
+					_game->pushState(new DiplomacyHirePersonnelState(_game->getSavedGame()->getBases()->front(), faction));
+				}
+				else
+				{
+					_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_HIRING));
+				}
+			}
+
 			break;
 		}
 	}
@@ -194,18 +209,22 @@ void DiplomacyStartState::btnPurchaseClick(Action* action)
 		if (action->getSender() == _btnsPurchase.at(i))
 		{
 			DiplomacyFaction* faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
-			if (_base != 0)
+			if (faction)
 			{
-				_game->pushState(new DiplomacyPurchaseState(_base, faction));
+				if (_base != 0)
+				{
+					_game->pushState(new DiplomacyPurchaseState(_base, faction));
+				}
+				else if (_game->getSavedGame()->getBases()->size() == 1)
+				{
+					_game->pushState(new DiplomacyPurchaseState(_game->getSavedGame()->getBases()->front(), faction));
+				}
+				else
+				{
+					_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_BUYING));
+				}
 			}
-			else if (_game->getSavedGame()->getBases()->size() == 1)
-			{
-				_game->pushState(new DiplomacyPurchaseState(_game->getSavedGame()->getBases()->front(), faction));
-			}
-			else
-			{
-				_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_BUYING));
-			}
+
 			break;
 		}
 	}
@@ -221,18 +240,22 @@ void DiplomacyStartState::btnSellClick(Action* action)
 		if (action->getSender() == _btnsSell.at(i))
 		{
 			auto faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
-			if (_base != 0)
+			if (faction)
 			{
-				_game->pushState(new DiplomacySellState(_base, faction, 0));
+				if (_base != 0)
+				{
+					_game->pushState(new DiplomacySellState(_base, faction, 0));
+				}
+				else if (_game->getSavedGame()->getBases()->size() == 1)
+				{
+					_game->pushState(new DiplomacySellState(_game->getSavedGame()->getBases()->front(), faction, 0));
+				}
+				else
+				{
+					_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_SELLING));
+				}
 			}
-			else if (_game->getSavedGame()->getBases()->size() == 1)
-			{
-				_game->pushState(new DiplomacySellState (_game->getSavedGame()->getBases()->front(), faction, 0));
-			}
-			else
-			{
-				_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_SELLING));
-			}
+
 			break;
 		}
 	}
@@ -353,6 +376,9 @@ void DiplomacyChooseBaseState::btnBaseClick(Action* action)
 				break;
 			case OpenXcom::OPERATION_SELLING:
 				_game->pushState(new DiplomacySellState(base, _faction, 0));
+				break;
+			case OPERATION_HIRING:
+				_game->pushState(new DiplomacyHirePersonnelState(base, _faction));
 				break;
 			default:
 				break;

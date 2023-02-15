@@ -22,9 +22,11 @@
 
 namespace OpenXcom
 {
-
+class SavedGame;
+class Mod;
 class DiplomacyFaction;
 class RuleResearch;
+class SoldierPool;
 
 /**
 * Represents ongoing factional research.
@@ -37,25 +39,24 @@ private:
 	DiplomacyFaction* _faction;
 	int _priority;
 	int _timeLeft;
-	int _scientists;
+	SoldierPool* _scientists;
 public:
 	/// Creates a blank Factional Research.
 	FactionalResearch(const RuleResearch* rule, DiplomacyFaction* faction);
 	/// Cleans up the Factional Research info.
 	~FactionalResearch();
 	/// Loads the FactionalResearch from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::Node& node, SavedGame* save, const Mod* mod);
 	/// Saves the FactionalResearch to YAML.
-	YAML::Node save() const;
+	YAML::Node save(const Mod* mod) const;
 	/// Process ongoing research project, decreasing timer and returns true if it is over.
 	bool step();
-	int getScientists() { return _scientists; };
-	void setScientists(int scientists) { _scientists = scientists; };
-	int getTimeLeft() { return _timeLeft; };
+	SoldierPool* getScientists() { return _scientists; }
+	int getTimeLeft() { return _timeLeft; }
 	void setTimeLeft(int timeLeft) { _timeLeft = timeLeft; }
-	int getPriority() { return _priority; };
+	int getPriority() { return _priority; }
 	void setPriority(int priority) { _priority = priority; }
 	const std::string& getName();
-	const RuleResearch* getRules() const { return _rule; };
+	const RuleResearch* getRules() const { return _rule; }
 };
 }

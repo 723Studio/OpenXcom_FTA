@@ -1,6 +1,6 @@
 #pragma once
 /*
- * Copyright 2010-2021 OpenXcom Developers.
+ * Copyright 2010-2016 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
  *
@@ -17,37 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <string>
 #include <yaml-cpp/yaml.h>
 
 namespace OpenXcom
 {
+class Mod;
+class SavedGame;
+class Soldier;
+enum SoldierRole : int;
 
 /**
-* Represents non-item game entities, like faction personell, crafts, property, etc.
-* Handles all necessary methods to manipulate container.
-*/
-class FactionalContainer
+ * Represents the items contained by a certain entity,
+ * like base stores, craft equipment, etc.
+ * Handles all necessary item management tasks.
+ */
+class SoldierPool
 {
 private:
-	std::map<std::string, int> _qty;
+	std::vector<Soldier*> _pool;
 public:
 	/// Creates an empty item container.
-	FactionalContainer();
+	SoldierPool();
 	/// Cleans up the item container.
-	~FactionalContainer();
+	~SoldierPool();
 	/// Loads the item container from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::Node& node, SavedGame* save, const Mod* mod);
 	/// Saves the item container to YAML.
-	YAML::Node save() const;
+	YAML::Node save(const Mod* mod) const;
 	/// Adds an item to the container.
-	void addItem(const std::string& id, int qty = 1);
+	void addSoldier(Soldier* soldier);
 	/// Removes an item from the container.
-	void removeItem(const std::string& id, int qty = 1);
+	void removeSoldier(Soldier* soldier);
 	/// Gets an item in the container.
-	int getItem(const std::string& id) const;
-	/// Gets all the items in the container.
-	std::map<std::string, int>* getContents() { return &_qty; };
+	std::vector<Soldier*> getSoldiers() const;
+	// Gets soldiers by role
+	std::vector<Soldier*> getSoldiers(SoldierRole role) const;
+
 };
 
 }

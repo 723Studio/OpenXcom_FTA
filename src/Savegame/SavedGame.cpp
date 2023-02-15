@@ -550,7 +550,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		if (mod->getDiplomacyFaction(diplomacyFactionName))
 		{
 			DiplomacyFaction *diplomacyFaction = new DiplomacyFaction(mod, diplomacyFactionName);
-			diplomacyFaction->load(*it);
+			diplomacyFaction->load(*it, this);
 			_diplomacyFactions.push_back(diplomacyFaction);
 		}
 		else

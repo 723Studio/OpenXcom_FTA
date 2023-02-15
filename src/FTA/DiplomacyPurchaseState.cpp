@@ -28,7 +28,6 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
@@ -46,13 +45,10 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
-#include "../Mod/RuleCraftWeapon.h"
-#include "../Mod/Armor.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/DiplomacyFaction.h"
-#include "../Savegame/FactionalContainer.h"
 #include "../Mod/RuleDiplomacyFaction.h"
-#include "../Engine/Logger.h"
+//#include "../Engine/Logger.h"
 
 
 namespace OpenXcom
@@ -144,7 +140,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 	_cats.push_back("STR_FILTER_HIDDEN");
 
 	auto providedBaseFunc = _base->getProvidedBaseFunc({});
-	const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
+	/*const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
 	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
 		const RuleSoldier *rule = _game->getMod()->getSoldier(*i);
@@ -190,7 +186,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			}
 		}
 
-	}
+	}*/
 	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
 	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
 	{
@@ -595,44 +591,44 @@ void DiplomacyPurchaseState::btnOkClick(Action *)
 			switch (i->type)
 			{
 			case TRANSFER_SOLDIER:
-				for (int s = 0; s < i->amount; s++)
-				{
-					const RuleSoldier *rule = (RuleSoldier*)i->rule;
-					int time = rule->getTransferTime();
-					if (time == 0)
-						time = _game->getMod()->getPersonnelTime();
-					t = new Transfer(time);
-					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), rule, _base);
-					t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality));
-					_base->getTransfers()->push_back(t);
-					_faction->getStaffContainer()->removeItem(rule->getType());
-				}
-				break;
+			//	for (int s = 0; s < i->amount; s++)
+			//	{
+			//		const RuleSoldier *rule = (RuleSoldier*)i->rule;
+			//		int time = rule->getTransferTime();
+			//		if (time == 0)
+			//			time = _game->getMod()->getPersonnelTime();
+			//		t = new Transfer(time);
+			//		int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), rule, _base);
+			//		t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality));
+			//		_base->getTransfers()->push_back(t);
+			//		_faction->getStaffContainer()->removeItem(rule->getType());
+			//	}
+			//	break;
 			case TRANSFER_SCIENTIST:
-				t = new Transfer(_game->getMod()->getPersonnelTime());
-				t->setScientists(i->amount);
-				_base->getTransfers()->push_back(t);
-				_faction->getStaffContainer()->removeItem("STR_SCIENTIST", i->amount);
-				break;
+			//	t = new Transfer(_game->getMod()->getPersonnelTime());
+			//	t->setScientists(i->amount);
+			//	_base->getTransfers()->push_back(t);
+			//	_faction->getStaffContainer()->removeItem("STR_SCIENTIST", i->amount);
+			//	break;
 			case TRANSFER_ENGINEER:
-				t = new Transfer(_game->getMod()->getPersonnelTime());
-				t->setEngineers(i->amount);
-				_base->getTransfers()->push_back(t);
-				_faction->getStaffContainer()->removeItem("STR_ENGINEER", i->amount);
-				break;
+			//	t = new Transfer(_game->getMod()->getPersonnelTime());
+			//	t->setEngineers(i->amount);
+			//	_base->getTransfers()->push_back(t);
+			//	_faction->getStaffContainer()->removeItem("STR_ENGINEER", i->amount);
+			//	break;
 			case TRANSFER_CRAFT:
-				for (int c = 0; c < i->amount; c++)
-				{
-					RuleCraft *rule = (RuleCraft*)i->rule;
-					t = new Transfer(rule->getTransferTime());
-					Craft *craft = new Craft(rule, _base, _game->getSavedGame()->getId(rule->getType()));
-					craft->initFixedWeapons(_game->getMod());
-					craft->setStatus("STR_REFUELLING");
-					t->setCraft(craft);
-					_base->getTransfers()->push_back(t);
-					_faction->getStaffContainer()->removeItem(rule->getType());
-				}
-				break;
+			//	for (int c = 0; c < i->amount; c++)
+			//	{
+			//		RuleCraft *rule = (RuleCraft*)i->rule;
+			//		t = new Transfer(rule->getTransferTime());
+			//		Craft *craft = new Craft(rule, _base, _game->getSavedGame()->getId(rule->getType()));
+			//		craft->initFixedWeapons(_game->getMod());
+			//		craft->setStatus("STR_REFUELLING");
+			//		t->setCraft(craft);
+			//		_base->getTransfers()->push_back(t);
+			//		_faction->getStaffContainer()->removeItem(rule->getType());
+			//	}
+			//	break;
 			case TRANSFER_ITEM:
 				{
 					RuleItem *rule = (RuleItem*)i->rule;
@@ -848,7 +844,7 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 	if (0 >= change) return;
 	std::string errorMessage;
 
-	if (_total + getRow().cost > _game->getSavedGame()->getFunds())
+	if ((int64_t)_total + (int64_t)getRow().cost > _game->getSavedGame()->getFunds())
 	{
 		errorMessage = tr("STR_NOT_ENOUGH_MONEY");
 	}
@@ -858,7 +854,7 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 	}
 	else
 	{
-		RuleItem *rule = nullptr;
+		RuleItem *rule;
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
@@ -1088,7 +1084,7 @@ int DiplomacyPurchaseState::getFactionItemStock(std::string entityName)
 	// if not, we check other factional property
 	else
 	{
-		int sQty = _faction->getStaffContainer()->getItem(entityName);
+		int sQty = 0; // _faction->getStaffContainer()->getItem(entityName); #FINNIKTODO
 		if (sQty > 0)
 		{
 			return sQty;
@@ -1098,8 +1094,6 @@ int DiplomacyPurchaseState::getFactionItemStock(std::string entityName)
 			return 0;
 		}
 	}
-	// nothing to sell, sorry
-	return 0;
 }
 
 }

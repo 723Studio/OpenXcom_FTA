@@ -17,6 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "FactionalResearch.h"
+
+#include "SoldierPool.h"
+
 #include <assert.h>
 #include <algorithm>
 #include "../fmath.h"
@@ -46,9 +49,9 @@ FactionalResearch::~FactionalResearch()
 * Loads the Diplomacy Faction from YAML.
 * @param node The YAML node containing the data.
 */
-void FactionalResearch::load(const YAML::Node& node)
+void FactionalResearch::load(const YAML::Node& node, SavedGame* save, const Mod* mod)
 {
-	_scientists = node["scientists"].as<int>(_scientists);
+	_scientists->load(node, save, mod);
 	_timeLeft = node["timeLeft"].as<int>(_timeLeft);
 }
 
@@ -56,11 +59,11 @@ void FactionalResearch::load(const YAML::Node& node)
 * Saves the Factional Research to YAML.
 * @return YAML node.
 */
-YAML::Node FactionalResearch::save() const
+YAML::Node FactionalResearch::save(const Mod* mod) const
 {
 	YAML::Node node;
 	node["name"] = _rule->getName();
-	node["scientists"] = _scientists;
+	node["scientists"] = _scientists->save(mod);
 	node["timeLeft"] = _timeLeft;
 
 	return node;
@@ -72,9 +75,10 @@ YAML::Node FactionalResearch::save() const
 */
 bool FactionalResearch::step()
 {
-	_timeLeft -= _scientists;
-	int64_t baseCost = _faction->getRules()->getScienceBaseCost();
-	_faction->setFunds(_faction->getFunds() - (baseCost * _scientists));
+	int64_t effort = _scientists->getSoldiers().size(); // #FINNIKTODO - more precise calculation required?
+	_timeLeft -= effort;
+	int64_t cost = _faction->getRules()->getScienceBaseCost() * effort;
+	_faction->setFunds(_faction->getFunds() - cost);
 	return (_timeLeft <= 0);
 }
 

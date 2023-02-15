@@ -1226,6 +1226,20 @@ void Soldier::addStunCount(int count)
 	_stuns += count;
 }
 
+int Soldier::getHireValue() const
+{
+	int value = _rules->getBuyCost();
+
+	value *= getBestRoleRank().second;
+	
+	value += RNG::generate(-value * 0.25, value * 0.25);
+
+	value /= 100;
+	value *= 100;
+
+	return value;
+}
+
 /**
  * Get pointer to initial stats.
  */

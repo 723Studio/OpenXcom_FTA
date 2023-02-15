@@ -77,10 +77,12 @@ private:
 	void hideAllStats();
 	void fillNumbers();
 	void displayPsionic(SoldierRole selected);
+	void initUi(bool listing);
 
   public:
 	/// Creates the Soldier Info state.
 	SoldierInfoStateFtA(Base *base, size_t soldierId);
+	SoldierInfoStateFtA(Soldier *soldier);
 	/// Cleans up the Soldier Info state.
 	~SoldierInfoStateFtA();
 	/// Updates the soldier info.

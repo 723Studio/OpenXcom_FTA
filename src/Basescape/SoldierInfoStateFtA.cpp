@@ -51,13 +51,36 @@ namespace OpenXcom
 {
 /**
  * Initializes all the elements in the Soldier Info screen.
- * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from. NULL to use the dead soldiers list.
  * @param soldierId ID of the selected soldier.
  */
 SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(base), _soldierId(soldierId), _soldier(0)
 {
-	if (_base == 0)
+	initUi(true);
+}
+
+SoldierInfoStateFtA::SoldierInfoStateFtA(Soldier *soldier) : _soldier(soldier)
+{
+	initUi(false);
+}
+
+/**
+ *
+ */
+SoldierInfoStateFtA::~SoldierInfoStateFtA()
+{
+
+}
+
+void SoldierInfoStateFtA::initUi(bool listing)
+{
+	if (!listing)
+	{
+		_base = 0;
+		_soldierId = 0;
+		_list->push_back(_soldier);
+	}
+	else if (_base == 0)
 	{
 		_list = _game->getSavedGame()->getDeadSoldiers();
 		if (_soldierId >= _list->size())
@@ -168,6 +191,12 @@ SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(b
 		_btnNext->onKeyboardPress((ActionHandler)&SoldierInfoStateFtA::btnNextClick, Options::keyBattleNextUnit);
 	}
 
+	if (!listing)
+	{
+		_btnNext->setVisible(false);
+		_btnPrev->setVisible(false);
+	}
+
 	_btnArmor->setText(tr("STR_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnArmorClick);
 
@@ -217,14 +246,6 @@ SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(b
 	_txtPsionic->setText(tr("STR_IN_PSIONIC_TRAINING"));
 
 	nameBars();
-}
-
-/**
- *
- */
-SoldierInfoStateFtA::~SoldierInfoStateFtA()
-{
-
 }
 
 /**
