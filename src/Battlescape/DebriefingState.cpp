@@ -649,12 +649,19 @@ void DebriefingState::init()
 	_missionStatistics->score = total;
 	_txtRating->setText(tr("STR_RATING").arg(tr(rating)));
 
+
 	SavedGame *save = _game->getSavedGame();
 	SavedBattleGame *battle = save->getSavedBattle();
 
 	_missionStatistics->daylight = save->getSavedBattle()->getGlobalShade();
 	_missionStatistics->id = _game->getSavedGame()->getMissionStatistics()->size();
-	_game->getSavedGame()->getMissionStatistics()->push_back(_missionStatistics);
+	save->getMissionStatistics()->push_back(_missionStatistics);
+
+	_totalScoreExp = RNG::generate(0, std::abs(total / 100));
+	if (save->getDifficulty() == DIFF_SUPERHUMAN)
+	{
+		_totalScoreExp /= 2;
+	}
 
 	// Award Best-of commendations.
 	int bestScoreID[7] = {0, 0, 0, 0, 0, 0, 0};
@@ -1767,8 +1774,6 @@ void DebriefingState::prepareDebriefing()
 							case ROLE_ENGINEER:
 								addStat("STR_ENGINEER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
 								break;
-							case ROLE_NONE:
-								break;
 							default: ;
 							}
 						}
@@ -1787,6 +1792,7 @@ void DebriefingState::prepareDebriefing()
 					if ((*j)->getGeoscapeSoldier())
 					{
 						_soldierStats.push_back(std::pair<Soldier*, UnitStats>((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+						(*j)->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, _totalScoreExp);
 					}
 					playersInExitArea++;
 

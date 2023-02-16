@@ -2707,9 +2707,9 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 		{
 			stats->bravery += improveStat(exp->bravery, rate, true);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
-				addExperience(role, 1);
+				addExperience(role, 10);
 			else
-				addExperience(ROLE_SOLDIER, 1);
+				addExperience(ROLE_SOLDIER, 10);
 		}
 		if (exp->reactions && stats->reactions < caps.reactions)
 		{

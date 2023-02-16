@@ -4065,7 +4065,9 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	{
 		hasImproved = true;
 		if (s->getRank() == RANK_ROOKIE && !mod->isFTAGame())
+		{
 			s->promoteRank();
+		}
 		int v;
 		v = caps.tu - stats->tu;
 		if (v > 0) stats->tu += RNG::generate(0, v/10 + 2);
@@ -4082,9 +4084,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		if (v > 0) stats->stamina += RNG::generate(0, v/10 + 2);
 
 		if (!mod->isManaTrainingPrimary())
-		{
 			_exp.mana = 0;
-		}
 		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
 	}
 
