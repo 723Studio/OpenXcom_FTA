@@ -2931,6 +2931,21 @@ void GeoscapeState::time1Month()
 			}
 		}
 	}
+
+	//we want to reduce not-native role experience
+	for (auto &base: *_game->getSavedGame()->getBases())
+	{
+		for (auto &soldier: *base->getSoldiers())
+		{
+			for (auto role: soldier->getRoles())
+			{
+				if (role->rank < 1)
+				{
+					role->experience /= 2;
+				}
+			}
+		}
+	}
 }
 
 /**
