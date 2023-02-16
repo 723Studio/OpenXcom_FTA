@@ -352,12 +352,12 @@ constexpr Position TileEngine::voxelTileCenter;
  * @param maxViewDistance Max view distance in tiles.
  * @param maxDarknessToSeeUnits Threshold of darkness for LoS calculation.
  */
-TileEngine::TileEngine(SavedBattleGame *save, Mod *mod) :
-	_save(save), _voxelData(mod->getVoxelData()), _inventorySlotGround(mod->getInventoryGround()), _personalLighting(true), _cacheTile(0), _cacheTileBelow(0),
-	_maxViewDistance(mod->getMaxViewDistance()), _maxViewDistanceSq(_maxViewDistance * _maxViewDistance),
-	_maxVoxelViewDistance(_maxViewDistance * 16), _maxDarknessToSeeUnits(mod->getMaxDarknessToSeeUnits()),
-	_maxStaticLightDistance(mod->getMaxStaticLightDistance()), _maxDynamicLightDistance(mod->getMaxDynamicLightDistance()),
-	_enhancedLighting(mod->getEnhancedLighting())
+TileEngine::TileEngine(SavedBattleGame *save, Mod *mod)
+	: _save(save), _voxelData(mod->getVoxelData()), _inventorySlotGround(mod->getInventoryGround()), _personalLighting(true), _cacheTile(0), _cacheTileBelow(0),
+	  _maxViewDistance(mod->getMaxViewDistance()), _maxViewDistanceSq(_maxViewDistance * _maxViewDistance),
+	  _maxVoxelViewDistance(_maxViewDistance * 16), _maxDarknessToSeeUnits(mod->getMaxDarknessToSeeUnits()),
+	  _maxStaticLightDistance(mod->getMaxStaticLightDistance()), _maxDynamicLightDistance(mod->getMaxDynamicLightDistance()),
+	  _enhancedLighting(mod->getEnhancedLighting()), _visibilityStatsMod(mod->getVisibilityStatsMod())
 {
 	_blockVisibility.resize(save->getMapSizeXYZ());
 	_cacheTilePos = invalid;
@@ -365,7 +365,7 @@ TileEngine::TileEngine(SavedBattleGame *save, Mod *mod) :
 	if (Options::oxceTogglePersonalLightType == 2)
 	{
 		// persisted per campaign
-		SavedGame* geosave = _save->getGeoscapeSave();
+		SavedGame *geosave = _save->getGeoscapeSave();
 		if (geosave)
 		{
 			_personalLighting = geosave->getTogglePersonalLight();
@@ -1360,7 +1360,10 @@ bool TileEngine::visible(BattleUnit *currentUnit, Position originPosition, Tile 
 			}
 		}
 		visibleDistanceMaxVoxel = getMaxVoxelViewDistance(); // reset again (because of smoke formula)
-		auto visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - densityOfSmoke * smokeDensityFactor * getMaxViewDistance()/(3 * 20 * 100);
+
+		int statsDiff = (currentUnit->getBaseStats()->perseption - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100;
+
+		auto visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - statsDiff - densityOfSmoke * smokeDensityFactor * getMaxViewDistance()/(3 * 20 * 100);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), visibleDistanceVoxels, visibleDistanceMaxVoxel, densityOfSmoke * smokeDensityFactor / 100, densityOfFire };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);

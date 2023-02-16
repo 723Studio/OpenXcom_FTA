@@ -72,8 +72,8 @@ struct SoldierRoleRanks
 	{
 		YAML::Node node;
 		node["role"] = (int)role;
-		node["rank"] = (int)rank;
-		node["experience"] = (int)experience;
+		node["rank"] = rank;
+		node["experience"] = experience;
 
 		return node;
 	}

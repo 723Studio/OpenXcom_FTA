@@ -354,7 +354,7 @@ public:
  */
 Mod::Mod()
 	: _inventoryOverlapsPaperdoll(false),
-	  _maxViewDistance(20), _maxDarknessToSeeUnits(9), _maxStaticLightDistance(16), _maxDynamicLightDistance(24), _enhancedLighting(0),
+	  _maxViewDistance(20), _maxDarknessToSeeUnits(9), _maxStaticLightDistance(16), _maxDynamicLightDistance(24), _enhancedLighting(0), _visibilityStatsMod(0),
 	  _costHireEngineer(0), _costHireScientist(0),
 	  _costEngineer(0), _costScientist(0), _timePersonnel(0), _hireByCountryOdds(0), _hireByRegionOdds(0), _initialFunding(0),
 	  _aiUseDelayBlaster(3), _aiUseDelayFirearm(0), _aiUseDelayGrenade(3), _aiUseDelayMelee(0), _aiUseDelayPsionic(0),
@@ -2996,6 +2996,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_performanceBonusFactor = doc["performanceBonusFactor"].as<int>(_performanceBonusFactor);
 	_covertOpsExperienceFactor = doc["covertOpsExperienceFactor"].as<int>(_covertOpsExperienceFactor);
 	_covertOpsIntelBonusFactor = doc["covertOpsIntelBonusFactor"].as<int>(_covertOpsIntelBonusFactor);
+	_visibilityStatsMod = doc["visibilityStatsMod"].as<int>(_visibilityStatsMod);
 	_enableNewResearchSorting = doc["enableNewResearchSorting"].as<bool>(_enableNewResearchSorting);
 	_displayCustomCategories = doc["displayCustomCategories"].as<int>(_displayCustomCategories);
 	_shareAmmoCategories = doc["shareAmmoCategories"].as<bool>(_shareAmmoCategories);

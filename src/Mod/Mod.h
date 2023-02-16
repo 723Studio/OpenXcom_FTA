@@ -221,6 +221,7 @@ private:
 
 	int _maxViewDistance, _maxDarknessToSeeUnits;
 	int _maxStaticLightDistance, _maxDynamicLightDistance, _enhancedLighting;
+	int _visibilityStatsMod;
 	int _costHireEngineer, _costHireScientist;
 	int _costEngineer, _costScientist, _timePersonnel, _hireByCountryOdds, _hireByRegionOdds, _initialFunding;
 	int _aiUseDelayBlaster, _aiUseDelayFirearm, _aiUseDelayGrenade, _aiUseDelayMelee, _aiUseDelayPsionic;
@@ -793,6 +794,8 @@ public:
 	int getMaxDynamicLightDistance() const { return _maxDynamicLightDistance; }
 	/// Get flags for enhanced lighting, 0x1 - tiles and fire, 0x2 - items, 0x4 - units.
 	int getEnhancedLighting() const { return _enhancedLighting; }
+	/// Get coefficient for stats (stealth and perception) visibility modifier calculations.
+	int getVisibilityStatsMod() const { return _visibilityStatsMod; }
 	/// Get basic damage type
 	const RuleDamageType *getDamageType(ItemDamageType type) const;
 

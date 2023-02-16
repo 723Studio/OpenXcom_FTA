@@ -102,6 +102,7 @@ private:
 	const int _maxStaticLightDistance;
 	const int _maxDynamicLightDistance;
 	const int _enhancedLighting;
+	const int _visibilityStatsMod;
 	Position _eventVisibilitySectorL, _eventVisibilitySectorR, _eventVisibilityObserverPos;
 	std::vector<BattleUnit*> _movingUnitPrev;
 	BattleUnit* _movingUnit = nullptr;
