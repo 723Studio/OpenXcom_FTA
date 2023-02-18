@@ -364,9 +364,9 @@ public:
 	/// Remove item
 	void removeItem(BattleItem *item);
 	/// Get pointer to the BattleObject
-	BattleObject* getBattleObject() const { return _battleObject; };
+	BattleObject* getBattleObject() const { return _battleObject; }
 	/// Set BattleObject
-	void setBattleObject(BattleObject* object);
+	void setBattleObject(BattleObject* object) { _battleObject = object; }
 	/// Get top-most item
 	BattleItem* getTopItem();
 	/// New turn preparations.

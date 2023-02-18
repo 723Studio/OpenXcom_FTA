@@ -39,12 +39,11 @@ class SavedBattleGame;
 class BattleObject
 {
 private:
-	int _id;
 	const RuleObject* _rules;
 	Tile* _tile;
 	int _hackingDefence;
 	int _failedAttempts;
-	bool _wasHacked, _isDiscovered;
+	bool _wasUsed, _isDiscovered;
 	Position _position;
 
 public:
@@ -62,14 +61,12 @@ public:
 	/// Gets the item's tile.
 	Tile* getTile() const { return _tile; }
 	/// Sets the tile.
-	void setTile(Tile* tile) { _tile = tile; }
-	/// Gets it's unique id.
-	int getId() const { return _id; }
+	void setTile(Tile* tile);
 
-	/// Gets a flag if the object was hacked.
-	void setWasHacked(bool wasHacked) { _wasHacked = wasHacked; }
-	/// Checks a flag if the object was hacked.
-	bool isWasHacked() const { return _wasHacked; }
+	/// Gets a flag if the object was used.
+	void setWasUsed(bool wasHacked) { _wasUsed = wasHacked; }
+	/// Checks a flag if the object was used.
+	bool wasUsed() const { return _wasUsed; }
 	/// Gets the objects's hacking defence value.
 	int getHackingDefence() const { return _hackingDefence; }
 	/// Sets the objects's hacking defence value.
@@ -77,7 +74,7 @@ public:
 	///returns a tile radius of alterations caused by hacking
 
 	/// Checks if this object can be hacked
-	bool canBeHacked() const { return !_wasHacked && _hackingDefence != 0; }
+	bool canBeHacked() const { return !_wasUsed && _hackingDefence != 0; }
 
 	void hackingPostProcess(bool result);
 

@@ -53,7 +53,6 @@
 #include "../Savegame/Node.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleInventory.h"
-#include "../Mod/RuleObject.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleTerrain.h"
 #include "../Mod/Armor.h"
@@ -69,8 +68,6 @@
 #include "ConfirmEndMissionState.h"
 #include "HackingBState.h"
 #include "../fmath.h"
-
-#include "HackingBState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/CovertOperation.h"
 
@@ -1992,7 +1989,7 @@ void BattlescapeGame::primaryAction(Position pos)
 					hackTargetAllowed = false;
 					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
-				// TODO: add battle object line of sight check here
+				// #FINNIKTODO: add battle object line of sight check here
 			}
 			else
 			{

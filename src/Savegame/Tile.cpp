@@ -883,13 +883,6 @@ void Tile::removeItem(BattleItem *item)
 	item->setTile(0);
 }
 
-void Tile::setBattleObject(BattleObject* object)
-{
-	//update with new BattleObject
-	_battleObject = object;
-	object->setTile(this);
-}
-
 /**
  * Get the topmost item sprite to draw on the battlescape.
  * @return item sprite ID in floorob, or -1 when no item

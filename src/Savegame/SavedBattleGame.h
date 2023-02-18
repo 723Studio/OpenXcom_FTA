@@ -230,7 +230,7 @@ public:
 	/// Gets a pointer to the list of items.
 	std::vector<BattleItem*> *getItems();
 	/// Gets a pointer to the list of battle objects.
-	std::vector<BattleObject*>* getBattleObjects() { return &_battleObjects; };
+	std::vector<BattleObject*>* getBattleObjects() { return &_battleObjects; }
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
 	/// Gets terrain size x.

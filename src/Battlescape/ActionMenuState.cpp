@@ -39,6 +39,7 @@
 #include "Pathfinding.h"
 #include "TileEngine.h"
 #include "../Interface/Text.h"
+#include "../Savegame/BattleObject.h"
 
 namespace OpenXcom
 {
@@ -191,11 +192,12 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 	}
 	else if (weapon->getBattleType() == BT_HACKING)
 	{
-		// addItem(BA_USE, weapon->getHackingActionName(), &id, Options::keyBattleActionItem1); // TODO: Will we use a separate function for hacking actions?
-		// Use scanner method at this time
 		addItem(BA_HACK, weapon->getPsiAttackName().empty() ? "STR_USE_HACKING_TOOL" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
 	}
-
+	else if (weapon->getBattleType() == BT_SAMPLING)
+	{
+		addItem(BA_SAMPLE, weapon->getPsiAttackName().empty() ? "STR_USE_SAMPLING_TOOL" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
+	}
 }
 
 /**
@@ -473,6 +475,73 @@ void ActionMenuState::handleAction()
 				newHitLog = true;
 			}
 			_game->popState();
+		}
+		else if (_action->type == BA_SAMPLE && weapon->getBattleType() == BT_SAMPLING && _action->actor->getGeoscapeSoldier())
+		{
+			BattleUnit* unit = _action->actor;
+			BattleObject* object = unit->getTile()->getBattleObject();
+			if (object == nullptr)
+			{
+				TileEngine* tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
+				if (tileEngine->validMeleeRange(unit->getPosition(), unit->getDirection(), unit, 0, &_action->target, false))
+				{
+					object = _game->getSavedGame()->getSavedBattle()->getTile(_action->target)->getBattleObject();
+				}
+			}
+
+			if (object && !object->wasUsed())
+			{
+				int defence = object->getRules()->getSamplingDefence();
+				if (defence > 0)
+				{
+					if (_action->spendTU(&_action->result))
+					{
+						int power = weapon->getSamplingPower() + unit->getBaseStats()->biology;
+						if (unit->getGeoscapeSoldier()->getRoleRank(ROLE_SCIENTIST) < 1)
+							power /= 2;
+
+						if (RNG::generate(0, power) >= defence) //we succeed in sampling!
+						{
+							std::vector<RuleEvent*> events;
+							bool result = false;
+							for (auto gEvent : object->getRules()->getSpawnedEvents())
+							{
+								auto eventRule = _game->getMod()->getEvent(gEvent);
+								if (eventRule)
+								{
+									events.push_back(eventRule);
+								}
+							}
+							if (!events.empty())
+							{
+								RuleEvent* ruleEvent = events[RNG::generate(0, events.size() - 1)];
+								_game->getSavedGame()->spawnEvent(ruleEvent);
+								result = true;
+							}
+
+							RuleItem* itemRule = _game->getMod()->getItem(object->getRules()->getSpawnedItem());
+							if (itemRule)
+							{
+								_game->getSavedGame()->getSavedBattle()->createItemForTile(itemRule, unit->getTile());
+								result = true;
+							}
+							if (result)
+								_action->result = "STR_SAMPLES_GATHERED";
+						}
+						else
+						{
+							_action->result = "STR_SAMPLES_GATHERING_FAILED";
+						}
+
+						object->setWasUsed(true);
+					}
+				}
+			}
+			else
+			{
+				_action->result = "STR_NOTHING_TO_GATHER";
+			}
+		_game->popState();
 		}
 		else if (_action->type == BA_LAUNCH)
 		{

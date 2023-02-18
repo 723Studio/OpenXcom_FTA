@@ -307,7 +307,6 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	for (YAML::const_iterator i = node["battleObjects"].begin(); i != node["battleObjects"].end(); ++i)
 	{
 		BattleObject* object;
-		int id = (*i)["id"].as<int>();
 		std::string type = (*i)["type"].as<std::string>();
 		if (!mod->getObject(type))
 			continue;
@@ -316,6 +315,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		
 		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));
 		getTile(pos)->setBattleObject(object);
+
 		_battleObjects.push_back(object);
 
 	}

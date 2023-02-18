@@ -35,7 +35,7 @@ namespace OpenXcom
 * @param rules Pointer to ruleset.
 * @param id The id of the object.
 */
-BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _failedAttempts(0), _wasHacked(false), _isDiscovered(false)
+BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _failedAttempts(0), _wasUsed(false), _isDiscovered(false)
 {
 	if (_rules)
 	{
@@ -59,7 +59,7 @@ void BattleObject::load(const YAML::Node& node, Mod* mod)
 {
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
 	_failedAttempts = node["failedAttempts"].as<int>(_failedAttempts);
-	_wasHacked = node["wasHacked"].as<bool>(_wasHacked);
+	_wasUsed = node["wasUsed"].as<bool>(_wasUsed);
 	_position = node["position"].as<Position>(_position);
 }
 
@@ -70,15 +70,19 @@ void BattleObject::load(const YAML::Node& node, Mod* mod)
 YAML::Node BattleObject::save() const
 {
 	YAML::Node node;
-	node["id"] = _id;
 	node["type"] = _rules->getType();
 	node["hackingDefence"] = _hackingDefence;
 	node["failedAttempts"] = _failedAttempts;
-	node["wasHacked"] = _wasHacked;
+	node["wasUsed"] = _wasUsed;
 	if (_tile)
 		node["position"] = _tile->getPosition();
 
 	return node;
+}
+
+void BattleObject::setTile(Tile *tile)
+{
+	_tile = tile;
 }
 
 /**
@@ -103,8 +107,18 @@ BattleObject* SavedBattleGame::createObjectForTile(const RuleObject* rule, Tile*
 	if (tile)
 	{
 		tile->setBattleObject(object);
+		object->setTile(tile);
+		object->setPosition(tile->getPosition());
+		return object;
 	}
-	return object;
+	else
+	{
+		delete object;
+		return 0;
+	}
+	
+	
+	
 }
 
 }

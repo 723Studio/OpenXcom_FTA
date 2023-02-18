@@ -2301,13 +2301,17 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 	{
 		for (std::vector<BattleObject*>::iterator i = battleUnit->getVisibleBattleObjects()->begin(); i != battleUnit->getVisibleBattleObjects()->end() && j < VISIBLE_MAX; ++i)
 		{
-			_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX+2]);
-			_btnVisibleUnit[j]->setVisible(true);
-			_numVisibleUnit[j]->setVisible(true);
-			_visibleBattleObject[j] = (*i);
-			++j;
+			if ((*i)->getRules()->getHackingDefence() > 0)
+			{
+				_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX + 2]);
+				_btnVisibleUnit[j]->setVisible(true);
+				_numVisibleUnit[j]->setVisible(true);
+				_visibleBattleObject[j] = (*i);
+				++j;
+			}
+			
 		}
-		// TODO: show discovered battle objects that aren't visible to a unit
+		// #FINNIK_TODO: show discovered battle objects that aren't visible to a unit
 	}
 
 	updateUiButton(battleUnit);

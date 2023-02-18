@@ -4479,7 +4479,7 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 			}
 		}
 	);
-	object->setWasHacked(true);
+	object->setWasUsed(true);
 	return true;
 }
 

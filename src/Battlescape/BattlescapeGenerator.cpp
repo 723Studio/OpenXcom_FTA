@@ -2381,9 +2381,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 				ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
 				throw Exception(ss.str());
 			}
-
-			_save->createObjectForTile(rule, _save->getTile((*j) + Position(xoff, yoff, zoff)));
-			
+			_save->getBattleObjects()->push_back(_save->createObjectForTile(rule, _save->getTile((*j) + Position(xoff, yoff, zoff))));
 		}
 	}
 

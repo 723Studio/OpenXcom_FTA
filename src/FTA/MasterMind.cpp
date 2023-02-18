@@ -241,7 +241,7 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 				{
 					triggerHappy = (save.isResearched(j->first) == j->second);
 					if (!triggerHappy)
-						continue;
+						break;;
 				}
 
 				// reputation requirements
@@ -300,7 +300,7 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 					{
 						triggerHappy = (save.isItemObtained(triggerItem.first) == triggerItem.second);
 						if (!triggerHappy)
-							continue;
+							break;;
 					}
 				}
 				if (triggerHappy)
@@ -310,7 +310,7 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 					{
 						triggerHappy = (save.isFacilityBuilt(triggerFacility.first) == triggerFacility.second);
 						if (!triggerHappy)
-							continue;
+							break;
 					}
 				}
 				if (triggerHappy)

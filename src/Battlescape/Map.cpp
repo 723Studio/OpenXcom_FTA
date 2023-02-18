@@ -106,7 +106,7 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _anyIndicator(false), _isAltPressed(false),
+	_game(game), _arrow(0), _missionPointer(0), _samplingObjectPointer(0), _sensorPointer(0), _anyIndicator(false), _isAltPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
@@ -223,6 +223,7 @@ Map::~Map()
 	delete _obstacleTimer;
 	delete _arrow;
 	delete _missionPointer;
+	delete _samplingObjectPointer;
 	delete _sensorPointer;
 	delete _message;
 	delete _camera;
@@ -277,6 +278,28 @@ void Map::init()
 			for (int x = 0; x < 9; ++x)
 				_missionPointer->setPixel(x, y, pixels[x + (y * 9)]);
 		_missionPointer->unlock();
+	}
+	// load sampling battle object pointer into a surface
+	{
+		int f = Palette::blockOffset(13); // blue
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_samplingObjectPointer = new Surface(9, 9);
+		_samplingObjectPointer->setPalette(this->getPalette());
+		_samplingObjectPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_samplingObjectPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_samplingObjectPointer->unlock();
 	}
 	// load motion scanner pointer into a surface
 	{
@@ -1748,6 +1771,27 @@ void Map::drawTerrain(Surface *surface)
 
 		}
 	}
+	//Draw arrows on sampling battle objects
+	for (auto ba : *_save->getBattleObjects())
+	{
+		if (!ba->wasUsed() && ba->getRules()->getSamplingDefence() > 0)
+		{
+			auto pos = ba->getPosition();
+			auto objTile = ba->getTile();
+
+			if (pos.z <= _camera->getViewLevel() && !objTile->getUnit() && (objTile->isDiscovered(O_FLOOR) || objTile->isDiscovered(O_OBJECT)))
+			{
+				_camera->convertMapToScreen(pos, &screenPosition);
+				screenPosition += _camera->getMapOffset();
+				Position offset;
+				offset.y += 5;//(getTerrainLevel(pos, 10) - 4);
+				if (this->getCursorType() != CT_NONE)
+				{
+					_samplingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_samplingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _samplingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+				}
+			}
+		}
+	}
 	delete _numWaypid;
 
 	// Draw craft deployment preview arrows
@@ -1775,7 +1819,8 @@ void Map::drawTerrain(Surface *surface)
 		// big explosions cause the screen to flash as bright as possible before any explosions are actually drawn.
 		// this causes everything to look like EGA for a single frame.
 		// Meridian: no frikin flashing!!
-		_flashScreen = false;
+		// Finnik: flashing is back!
+		//_flashScreen = false;
 		if (_flashScreen)
 		{
 			for (int x = 0, y = 0; x < surface->getWidth() && y < surface->getHeight();)

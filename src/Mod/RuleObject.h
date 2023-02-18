@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <map>
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
@@ -32,12 +31,13 @@ class RuleObject
 {
 private:
 	std::string _type;
-	int _hackingDefence;
+	int _hackingDefence, _samplingDefence;
 	int _alterationMCDNumber, _alterationMCDRadius;
-
+	std::vector<std::string> _spawnedEvents;
+	std::string _spawnedItem;
 public:
 	/// Creates a blank RuleObject.
-	RuleObject(const std::string& name);
+	RuleObject(const std::string& type);
 	/// Cleans up the RuleObject ruleset.
 	~RuleObject() = default;
 	/// Loads the RuleObject definition from YAML.
@@ -45,10 +45,17 @@ public:
 	/// Gets the RuleObject's type.
 	const std::string& getType() const { return _type; }
 	/// Gets the RuleObject's hacking defence.
-	int getHackingDefence() const { return _hackingDefence; };
-
-	int getAlterationMCDNumber() const { return _alterationMCDNumber; };
-	int getAlterationMCDRadius() const { return _alterationMCDRadius; };
+	int getHackingDefence() const { return _hackingDefence; }
+	/// Gets the RuleObject's hacking defence.
+	int getSamplingDefence() const { return _samplingDefence; }
+	/// Gets the MCD number for a tile to be altered (to ALT_MCD) once hacking performed.
+	int getAlterationMCDNumber() const { return _alterationMCDNumber; }
+	/// Gets the radius where hacking MCD alteration will check tiles.
+	int getAlterationMCDRadius() const { return _alterationMCDRadius; }
+	/// Gets the list of spawned event to choose once succesful BattleObject iteration.
+	std::vector<std::string> getSpawnedEvents() const { return _spawnedEvents; }
+	/// Gets the item name to spawn succesful BattleObject iteration.
+	std::string getSpawnedItem() const { return _spawnedItem; }
 
 
 

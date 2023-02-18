@@ -18,12 +18,12 @@
  */
 #include "RuleObject.h"
 #include "../Engine/RNG.h"
-#include "../fmath.h"
 
 namespace OpenXcom
 {
 
-RuleObject::RuleObject(const std::string& type) : _type(type), _hackingDefence(0), _alterationMCDNumber(0), _alterationMCDRadius(0)
+RuleObject::RuleObject(const std::string& type)
+	: _type(type), _hackingDefence(0), _samplingDefence(0), _alterationMCDNumber(0), _alterationMCDRadius(0)
 {
 }
 
@@ -39,7 +39,10 @@ void RuleObject::load(const YAML::Node& node)
 	}
 	_type = node["type"].as<std::string>(_type);
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
+	_samplingDefence = node["samplingDefence"].as<int>(_samplingDefence);
 
+	_spawnedEvents = node["spawnedEvents"].as<std::vector<std::string>>(_spawnedEvents);
+	_spawnedItem = node["spawnedItem"].as<std::string >(_spawnedItem);;
 	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_alterationMCDNumber);
 	_alterationMCDRadius= node["alterationMCDRadius"].as<int>(_alterationMCDRadius);
 }
