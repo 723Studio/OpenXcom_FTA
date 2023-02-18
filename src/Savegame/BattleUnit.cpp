@@ -4014,6 +4014,14 @@ void BattleUnit::addHackingExp()
 }
 
 /**
+ * Adds one the biology exp counter.
+ */
+void BattleUnit::addBiologyExp()
+{
+	_exp.biology++;
+}
+
+/**
  * Did the unit gain any experience yet?
  */
 bool BattleUnit::hasGainedAnyExperience()

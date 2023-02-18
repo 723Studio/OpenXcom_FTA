@@ -425,7 +425,7 @@ void DiplomacyHirePersonnelState::updateState()
 
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(_base->getAvailableQuarters() - _selectedSoldiers.size()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(_base->getUsedQuarters() + _selectedSoldiers.size()));
-	_txtTotal->setText(tr("STR_TOTAL_UC").arg(_total));
+	_txtTotal->setText(tr("STR_TOTAL_UC_ARG").arg(_total));
 }
 
 /**

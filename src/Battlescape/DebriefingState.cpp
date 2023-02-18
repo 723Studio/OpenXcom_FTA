@@ -2733,7 +2733,12 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 				else if (rule->getBattleType() == BT_CORPSE)
 				{
 					BattleUnit *corpseUnit = (*it)->getUnit();
-					auto type = _game->getMod()->getAlienRace(corpseUnit->getUnitRules()->getRace())->getRaceType();
+					AlienRace *race = _game->getMod()->getAlienRace(corpseUnit->getUnitRules()->getRace());
+					RaceType type = RACE_TYPE_ALIEN;
+					if (race)
+					{
+						type = _game->getMod()->getAlienRace(corpseUnit->getUnitRules()->getRace())->getRaceType();
+					}
 					if (corpseUnit->getStatus() == STATUS_DEAD)
 					{
 						if (rule->isCorpseRecoverable())

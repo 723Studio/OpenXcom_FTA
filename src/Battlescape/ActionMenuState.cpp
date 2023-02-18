@@ -525,8 +525,15 @@ void ActionMenuState::handleAction()
 								_game->getSavedGame()->getSavedBattle()->createItemForTile(itemRule, unit->getTile());
 								result = true;
 							}
+
 							if (result)
+							{
 								_action->result = "STR_SAMPLES_GATHERED";
+								if (RNG::generate(0, 5) >= (int)_game->getSavedGame()->getDifficulty())
+								{
+									unit->addBiologyExp();
+								}
+							}
 						}
 						else
 						{

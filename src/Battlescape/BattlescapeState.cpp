@@ -119,7 +119,10 @@ BattlescapeState::BattlescapeState() :
 	_indicatorGreen = _game->getMod()->getInterface("battlescape")->getElement("squadsightUnits")->color;
 	_indicatorBlue = _game->getMod()->getInterface("battlescape")->getElement("woundedUnits")->color;
 	_indicatorPurple = _game->getMod()->getInterface("battlescape")->getElement("passingOutUnits")->color;
-	_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color; 
+	if (_game->getMod()->isFTAGame())
+		_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color;
+	else
+		_indicatorGray = 0;
 
 	_twoHandedRed = _game->getMod()->getInterface("battlescape")->getElement("twoHandedRed")->color;
 	_twoHandedGreen = _game->getMod()->getInterface("battlescape")->getElement("twoHandedGreen")->color;

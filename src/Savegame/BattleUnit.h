@@ -520,6 +520,8 @@ public:
 	void addMeleeExp();
 	/// Adds one the hacking exp counter.
 	void addHackingExp();
+	/// Adds one the biology exp counter.
+	void addBiologyExp();
 	/// Did the unit gain any experience yet?
 	bool hasGainedAnyExperience();
 	/// Updates the stats of a Geoscape soldier.
