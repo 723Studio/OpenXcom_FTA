@@ -329,6 +329,7 @@
     <ClCompile Include="Battlescape\CommendationState.cpp" />
     <ClCompile Include="Battlescape\ConfirmEndMissionState.cpp" />
     <ClCompile Include="Battlescape\CustomBattleMessageState.cpp" />
+    <ClCompile Include="Battlescape\DebriefingExtraStatsState.cpp" />
     <ClCompile Include="Battlescape\DebriefingState.cpp" />
     <ClCompile Include="Battlescape\Explosion.cpp" />
     <ClCompile Include="Battlescape\ExplosionBState.cpp" />
@@ -764,6 +765,7 @@
     <ClInclude Include="Battlescape\CommendationState.h" />
     <ClInclude Include="Battlescape\ConfirmEndMissionState.h" />
     <ClInclude Include="Battlescape\CustomBattleMessageState.h" />
+    <ClInclude Include="Battlescape\DebriefingExtraStatsState.h" />
     <ClInclude Include="Battlescape\DebriefingState.h" />
     <ClInclude Include="Battlescape\Explosion.h" />
     <ClInclude Include="Battlescape\ExplosionBState.h" />

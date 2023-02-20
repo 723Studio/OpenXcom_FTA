@@ -110,6 +110,7 @@ set ( battlescape_src
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp
   Battlescape/CustomBattleMessageState.cpp
+  Battlescape/DebriefingExtraStatsState.cpp
   Battlescape/DebriefingState.cpp
   Battlescape/Explosion.cpp
   Battlescape/ExplosionBState.cpp

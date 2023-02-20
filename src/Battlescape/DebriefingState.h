@@ -69,7 +69,7 @@ private:
 	Base *_base{};
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
-	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer;
+	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer, *_btnNonCombatStats;
 	Window *_window;
 	Text *_txtTitle, *_txtItem, *_txtQuantity, *_txtScore, *_txtRecovery, *_txtRating, *_txtLoyalty;
 	Text *_txtSoldier, *_txtTU, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions;
@@ -90,6 +90,7 @@ private:
 	int _totalScoreExp;
 	MissionStatistics *_missionStatistics;
 	std::vector<Soldier*> _soldiersCommended, _deadSoldiersCommended;
+	std::map<Soldier*, UnitStats> _nonComatStatIncreaseList;
 	/// Adds to the debriefing stats.
 	void addStat(const std::string &name, int quantity, int score);
 	/// Prepares debriefing.
@@ -126,6 +127,8 @@ public:
 	void btnSellClick(Action *action);
 	/// Handler for clicking the TRANSFER button.
 	void btnTransferClick(Action *action);
+	/// Handler for clicking the Non-combat stats button.
+	void btnNonCombatStatsClick(Action* action);
 	/// Handler for showing tooltip.
 	void txtTooltipIn(Action *action);
 	/// Handler for hiding tooltip.
@@ -138,6 +141,8 @@ public:
 	void decreaseRecoveredItemCount(const RuleItem *rule, int amount);
 	// Hides the SELL and TRANSFER buttons.
 	void hideSellTransferButtons();
+	// Gets the list of soldiers with increased non combat stats.
+	std::map<Soldier*, UnitStats> getNonCombatStatIncreaseList() { return _nonComatStatIncreaseList; }
 };
 
 }

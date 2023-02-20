@@ -32,6 +32,7 @@
 #include "PromotionsState.h"
 #include "CommendationState.h"
 #include "CommendationLateState.h"
+#include "DebriefingExtraStatsState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleCraft.h"
@@ -91,8 +92,8 @@ namespace OpenXcom
  * Initializes all the elements in the Debriefing screen.
  * @param game Pointer to the core game.
  */
-DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _country(0), _positiveScore(true), _destroyBase(false), _showSellButton(true),
-									_initDone(false), _recoveredItemObjs(0), _pageNumber(0)
+DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _country(0), _pageNumber(0), _positiveScore(true), _destroyBase(false),
+                                     _showSellButton(true), _initDone(false), _recoveredItemObjs(0)
 {
 	_missionStatistics = new MissionStatistics();
 	_fta = _game->getMod()->isFTAGame();
@@ -149,6 +150,8 @@ DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _countr
 
 	_txtTooltip = new Text(200, 9, 64, 180);
 
+	_btnNonCombatStats = new TextButton(111, 12, 114, 180);
+
 	// Third page (recovered items)
 	_lstRecoveredItems = new TextList(272, 144, 16, 32); // 18 rows
 
@@ -189,6 +192,7 @@ DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _countr
 	add(_txtPsiSkill, "text", "debriefing");
 	add(_lstSoldierStats, "list", "debriefing");
 	add(_txtTooltip, "text", "debriefing");
+	add(_btnNonCombatStats, "button", "debriefing");
 
 	add(_lstRecoveredItems, "list", "debriefing");
 
@@ -208,6 +212,8 @@ DebriefingState::DebriefingState() : _eventToSpawn(nullptr), _region(0), _countr
 	_btnSell->onMouseClick((ActionHandler)&DebriefingState::btnSellClick);
 	_btnTransfer->setText(tr("STR_TRANSFER_UC"));
 	_btnTransfer->onMouseClick((ActionHandler)&DebriefingState::btnTransferClick);
+	_btnNonCombatStats->setText(tr("STR_NON_COMBAT_STATS"));
+	_btnNonCombatStats->onMouseClick((ActionHandler)&DebriefingState::btnNonCombatStatsClick);
 
 	_txtTitle->setBig();
 
@@ -383,6 +389,7 @@ void DebriefingState::applyVisibility()
 	_txtPsiSkill->setVisible(showStats && showPsi);
 	_lstSoldierStats->setVisible(showStats);
 	_txtTooltip->setVisible(showStats);
+	_btnNonCombatStats->setVisible(showStats && _nonComatStatIncreaseList.size() > 0);
 
 	// Third page (recovered items)
 	_lstRecoveredItems->setVisible(showItems);
@@ -959,6 +966,11 @@ void DebriefingState::btnTransferClick(Action *)
 	{
 		_game->pushState(new TransferBaseState(_base, this));
 	}
+}
+
+void DebriefingState::btnNonCombatStatsClick(Action* action)
+{
+	_game->pushState(new DebriefingExtraStatsState(this));
 }
 
 /**
@@ -1746,12 +1758,11 @@ void DebriefingState::prepareDebriefing()
 					|| !aborted
 					|| (aborted && (*j)->isInExitArea(END_POINT)))
 				{ // so game is not aborted or aborted and unit is on exit area
-					if (evacObj && soldier == nullptr) //first, we check if the unit can be transformed to some basescape entity
+					if (evacObj && soldier == nullptr)
 					{
 						addStat("STR_VIP_SAVED", 1, value);
 						vipsSaved++;
 					}
-
 					else if (soldier && soldier->isJustSaved())
 					{
 						addStat("STR_VIP_SAVED", 1, value);
@@ -1791,8 +1802,13 @@ void DebriefingState::prepareDebriefing()
 					(*j)->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
 					if ((*j)->getGeoscapeSoldier())
 					{
-						_soldierStats.push_back(std::pair<Soldier*, UnitStats>((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+						_soldierStats.push_back(std::pair((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
 						(*j)->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, _totalScoreExp);
+						//noncombat stats
+						if (statIncrease.statGrowth.biology > 0 || statIncrease.statGrowth.hacking > 0)
+						{
+							_nonComatStatIncreaseList.emplace(std::pair((*j)->getGeoscapeSoldier(), statIncrease.statGrowth));
+						}
 					}
 					playersInExitArea++;
 
