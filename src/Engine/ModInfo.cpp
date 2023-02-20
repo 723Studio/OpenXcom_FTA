@@ -181,6 +181,7 @@ struct EngineData
  */
 const EngineData supportedEngines[] = {
 	{ OPENXCOM_VERSION_ENGINE, { OPENXCOM_VERSION_NUMBER }},
+	{ OPENXCOM_FTA_VERSION_ENGINE, { OPENXCOM_FTA_VERSION_NUMBER }},
 	{ "", { 0, 0, 0, 0 } }, // assume that every engine support mods from base game, remove if its not true.
 };
 

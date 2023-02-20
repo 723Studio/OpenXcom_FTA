@@ -31,7 +31,7 @@ RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name)
 	  _keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
 	  _allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
 	  _listOrder(0), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
-	  _showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE),
+	  _showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_SOLDIER),
 	  _reset(false)
 {
 }
