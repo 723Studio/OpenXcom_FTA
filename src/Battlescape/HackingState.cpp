@@ -292,7 +292,7 @@ void HackingState::onExitClick(Action*)
 	}
 	if (_targetObject)
 	{
-		_targetObject->hackingPostProcess(_result);
+		_targetObject->hackingPostProcess(_result, _game);
 	}
 	_game->popState();
 }

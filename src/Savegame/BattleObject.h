@@ -23,6 +23,7 @@
 
 namespace OpenXcom
 {
+class Game;
 class RuleObject;
 class Tile;
 class Mod;
@@ -76,7 +77,7 @@ public:
 	/// Checks if this object can be hacked
 	bool canBeHacked() const { return !_wasUsed && _hackingDefence != 0; }
 
-	void hackingPostProcess(bool result);
+	void hackingPostProcess(bool result, Game* game);
 
 	Position getPosition() { return _position; }
 

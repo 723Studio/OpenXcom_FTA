@@ -23,10 +23,8 @@
 #include "SavedBattleGame.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleObject.h"
-#include "../Engine/Surface.h"
-#include "../Engine/SurfaceSet.h"
 #include "../Engine/RNG.h"
-#include "../fmath.h"
+#include "../Engine/Game.h"
 
 namespace OpenXcom
 {
@@ -89,10 +87,17 @@ void BattleObject::setTile(Tile *tile)
  * Process battleobject value updates on hacking
  * @param result - result of hacking, true if success 
  */
-void BattleObject::hackingPostProcess(bool result)
+void BattleObject::hackingPostProcess(bool result, Game* game)
 {
 	setHackingDefence(ceil(getHackingDefence() * RNG::generate(0.3, 0.7)));
-	if (!result)
+	if (result)
+	{
+		for (auto e : _rules->getSpawnedEvents())
+		{
+			game->getSavedGame()->spawnEvent(game->getMod()->getEvent(e));
+		}
+	}
+	else
 	{
 		_failedAttempts++;
 	}
@@ -116,9 +121,5 @@ BattleObject* SavedBattleGame::createObjectForTile(const RuleObject* rule, Tile*
 		delete object;
 		return 0;
 	}
-	
-	
-	
 }
-
 }
