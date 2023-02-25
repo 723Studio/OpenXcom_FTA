@@ -258,7 +258,7 @@ YAML::Node ResearchProject::save() const
  */
 std::string ResearchProject::getResearchProgress() const
 {
-	float progress = (float)getSpent() / getRules()->getCost();
+	float progress = (float)getSpent() / (float)getRules()->getCost();
 	if (getAssigned() == 0)
 	{
 		return "STR_NONE";
@@ -270,7 +270,7 @@ std::string ResearchProject::getResearchProgress() const
 	else
 	{
 		float rating = (float)getAssigned();
-		rating /= getRules()->getCost();
+		rating /= (float)getRules()->getCost();
 		if (rating <= PROGRESS_LIMIT_POOR)
 		{
 			return "STR_POOR";

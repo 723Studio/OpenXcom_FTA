@@ -96,12 +96,12 @@ void RuleIntelStage::load(const YAML::Node& node, Mod* mod)
 	_stageName = node["stageName"].as<std::string>(_stageName);
 	_odds = node["odds"].as<int>(_odds);
 	_requireRolls = node["requireRolls"].as<int>(_requireRolls);
-	_availableRolls = node["availableRolls"].as<int>(_availableRolls);
+	//_availableRolls = node["availableRolls"].as<int>(_availableRolls);
 	_eventScripts = node["eventScripts"].as<std::vector<std::string>>(_eventScripts);
 	_spawnMission = node["spawnMission"].as<std::string>(_spawnMission);
 	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
 	_disabledByResearchName = node["disabledByResearch"].as<std::string>(_disabledByResearchName);
-	mod->loadBaseFunction(_stageName, _requiresBaseFunc, node["requiresBaseFunc"]);
+	//mod->loadBaseFunction(_stageName, _requiresBaseFunc, node["requiresBaseFunc"]);
 	_finalStage = node["finalStage"].as<bool>(_finalStage);
 }
 

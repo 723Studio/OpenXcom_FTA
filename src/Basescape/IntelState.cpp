@@ -78,7 +78,7 @@ IntelState::IntelState(Base *base) : _base(base)
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "researchMenu");
+	setWindowBackground(_window, "intelMenu");
 
 	_btnPrisonCells->setText(tr("STR_MANAGE_PRISON_CELLS"));
 	_btnPrisonCells->onMouseClick((ActionHandler)&IntelState::btnPrisonClick);

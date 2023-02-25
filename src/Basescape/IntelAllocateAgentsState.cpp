@@ -231,6 +231,7 @@ void IntelAllocateAgentsState::btnOkClick(Action *)
 
 	for (auto s : _assignedAgents)
 	{
+		s->clearBaseDuty();
 		s->setIntelProject(_project);
 	}
 	_game->popState();
@@ -292,19 +293,22 @@ void IntelAllocateAgentsState::initList(size_t scrl)
 		}
 
 		Uint8 color = _lstAgents->getColor();
+		auto iter = std::find(std::begin(_assignedAgents), std::end(_assignedAgents), (*s));
 		bool matched = false;
-		auto agents = *_base->getSoldiers();
-		auto iter = std::find(std::begin(agents), std::end(agents), (*s));
-		if (iter != std::end(agents))
+		if (iter != std::end(_assignedAgents))
 		{
 			matched = true;
+		}
+		else if ((*s)->getIntelProject() == _project)
+		{
+			matched = true;
+			_assignedAgents.emplace(*s);
 		}
 
 		if (matched)
 		{
 			color = _lstAgents->getSecondaryColor();
 			_lstAgents->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
-			_assignedAgents.insert(*s);
 		}
 		else if (isBusy || !isFree)
 		{
@@ -347,36 +351,16 @@ void IntelAllocateAgentsState::lstAgentsClick(Action *action)
 		Uint8 color = _lstAgents->getColor();
 		bool isBusy = false, isFree = false, matched = false;
 		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree, INTEL);
-		auto agents = *_base->getSoldiers();
-		auto iter = std::find(std::begin(agents), std::end(agents), s);
-		if (iter != std::end(agents))
+		auto iter = std::find(std::begin(_assignedAgents), std::end(_assignedAgents), s);
+		if (iter != std::end(_assignedAgents))
 		{
 			matched = true;
 		}
 		if (matched)
 		{
 			_assignedAgents.erase(s);
-			if (s->getActivePrisoner())
-			{
-				if (s->getIntelProject() == _project)
-				{
-					color = _lstAgents->getColor();
-					_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
-				}
-				else
-				{
-					color = _otherCraftColor;
-					_lstAgents->setCellText(row, 1, duty);
-				}
-			}
-			else
-			{
-				_lstAgents->setCellText(row, 1, duty);
-				if (isBusy || !isFree || s->getCraft())
-				{
-					color = _otherCraftColor;
-				}
-			}
+			_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
+			color = _lstAgents->getColor();
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{

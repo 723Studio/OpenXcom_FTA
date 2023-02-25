@@ -217,7 +217,8 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 			// check allowed processor first!
 			if ((source == SCRIPT_MONTHLY && allowedProcessor != 0) ||
 				(source == SCRIPT_FACTIONAL && allowedProcessor != 1) ||
-				(source == SCRIPT_XCOM && allowedProcessor != 2))
+				(source == SCRIPT_XCOM && allowedProcessor != 2) ||
+				(source == OTHER_SCRIPT && allowedProcessor != 3))
 			{
 				continue; //we should skip that!
 			}

@@ -554,19 +554,13 @@ void SoldiersState::initList(size_t scrl)
 		{
 			_lstSoldiers->addRow(3, (*s)->getName(true).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
+		Uint8 color = _lstSoldiers->getColor();
+		if (isBusy || !isFree || (*s)->getCraft())
+		{
+			color = _lstSoldiers->getSecondaryColor();
+		}
 
-		if ((*s)->getCraft() == 0)
-		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
-		}
-		if ((*s)->getCovertOperation() != 0)
-		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
-		}
-		if ((*s)->getDeath())
-		{
-			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
-		}
+		_lstSoldiers->setRowColor(row, color);
 		row++;
 	}
 	if (scrl)

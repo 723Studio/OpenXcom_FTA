@@ -279,15 +279,9 @@ void PrisonerAllocateAgentsState::initList(size_t scrl)
 		}
 
 		Uint8 color = _lstAgents->getColor();
-		bool matched = false;
 		auto agents = _selectedPrisoner->getAgents();
 		auto iter = std::find(std::begin(agents), std::end(agents), (*s));
 		if (iter != std::end(agents))
-		{
-			matched = true;
-		}
-
-		if (matched)
 		{
 			color = _lstAgents->getSecondaryColor();
 			_lstAgents->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
@@ -337,33 +331,9 @@ void PrisonerAllocateAgentsState::lstAgentsClick(Action *action)
 		auto iter = std::find(std::begin(agents), std::end(agents), s);
 		if (iter != std::end(agents))
 		{
-			matched = true;
-		}
-		if (matched)
-		{
 			_selectedPrisoner->removeAgent(s);
-			if (s->getActivePrisoner())
-			{
-				if (s->getActivePrisoner() == _selectedPrisoner->getPrisioner())
-				{
-					s->setActivePrisoner(0);
-					color = _lstAgents->getColor();
-					_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
-				}
-				else
-				{
-					color = _otherCraftColor;
-					_lstAgents->setCellText(row, 1, duty);
-				}
-			}
-			else
-			{
-				_lstAgents->setCellText(row, 1, duty);
-				if (isBusy || !isFree || s->getCraft())
-				{
-					color = _otherCraftColor;
-				}
-			}
+			color = _lstAgents->getColor();
+			_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{

@@ -143,7 +143,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	bool specialRule = _rules->getSpecialRule() != INTEL_NONE;
 	_active = progress > 0 && specialRule;
 	
-	if (_spent >= _cost)
+	if (_spent >= (_rolls * getRules()->getCostIncrease()))
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
 		_rolls++;
@@ -151,7 +151,10 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 		std::vector<const RuleIntelStage*> rolledStages;
 		for (auto stage : getAvailableStages(save))
 		{
-			if (RNG::percent(stage->getOdds()))
+			if (RNG::percent(stage->getOdds()
+				&& stage->getRequireRolls() <= _rolls
+				&& save->isResearched(stage->getRequiredResearch()))
+				&& !save->isResearched(stage->getDisabledByResearch()))
 			{
 				rolledStages.push_back(stage); //populate list of stages
 			}
@@ -163,7 +166,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 			//run all event scripts for chosen stage
 			if (!pickedStage->getEventScripts().empty())
 			{
-				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), SCRIPT_XCOM);
+				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), OTHER_SCRIPT);
 			}
 
 			//and create alien mission if any

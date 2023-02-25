@@ -113,10 +113,9 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 	_btnAllocate->setText(tr("STR_ALLOCATE_AGENTS"));
 	_btnAllocate->onMouseClick((ActionHandler)&PrisonerInfoState::btnAllocateClick);
 
+	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&PrisonerInfoState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&PrisonerInfoState::btnOkClick, Options::keyOk);
-
-	_btnOk->setText(tr("STR_OK"));
 
 	_btnCancel->setText(tr("STR_CANCEL_UC"));
 	_btnCancel->onMouseClick((ActionHandler)&PrisonerInfoState::btnCancelClick);
@@ -246,6 +245,14 @@ void PrisonerInfoState::fillAgentsList(size_t scrl)
  */
 void PrisonerInfoState::btnOkClick(Action *)
 {
+	for (auto s : *_base->getSoldiers())
+	{
+		if (s->getActivePrisoner() == _prisoner)
+		{
+			s->clearBaseDuty();
+		}
+	}
+
 	if (_agents.size() > 0)
 	{
 		if (_display == PRISONER_STATE_INTERROGATION || _display == PRISONER_STATE_REQRUITING || _display == PRISONER_STATE_TORTURE)
@@ -281,6 +288,7 @@ void PrisonerInfoState::btnOkClick(Action *)
  */
 void PrisonerInfoState::btnCancelClick(Action *)
 {
+	_agents.clear();
 	_game->popState();
 }
 
@@ -291,11 +299,16 @@ void PrisonerInfoState::btnCancelClick(Action *)
  */
 void PrisonerInfoState::btnTerminateClick(Action *)
 {
-	for (auto s : _agents)
+	for (auto s : *_base->getSoldiers())
 	{
-		s->setActivePrisoner(0);
+		if (s->getActivePrisoner() == _prisoner)
+		{
+			s->clearBaseDuty();
+		}
 	}
+
 	_base->removePrisoner(_prisoner);
+	_agents.clear();
 	_game->popState();
 }
 
@@ -353,7 +366,6 @@ void PrisonerInfoState::btnContainToggle(Action* action)
 	if (_ableContain)
 	{
 		_display = PRISONER_STATE_CONTAINING;
-
 	}
 }
 
