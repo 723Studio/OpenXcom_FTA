@@ -33,7 +33,7 @@ jobs:
 
           - name: macOS
             os: macOS-latest
-            packages: ccache sdl sdl_gfx sdl_image sdl_mixer
+            packages: ccache sdl sdl_gfx sdl_image sdl_mixer pkg-config
             compiler: clang
             cpp-compiler: clang++
             app-bundle: openxcom.app  # all other builds default to bin/
