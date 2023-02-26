@@ -294,6 +294,11 @@ void HackingState::onExitClick(Action*)
 	{
 		_targetObject->hackingPostProcess(_result, _game);
 	}
+
+	if (_result)
+	{
+		_action->actor->addHackingExp();
+	}
 	_game->popState();
 }
 
@@ -323,7 +328,7 @@ void HackingState::onNodeClick(Action* action)
 			{
 				_tileEngine->hackObject(*_action, _targetObject);
 			}
-			if (_sourceHacking < _targetHacking || RNG::percent(30))
+			if (_sourceHacking < _targetHacking || RNG::percent(20))
 			{
 				_sourceUnit->addHackingExp(); //base exp
 			}
