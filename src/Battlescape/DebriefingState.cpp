@@ -1890,7 +1890,12 @@ void DebriefingState::prepareDebriefing()
 				{
 					battle->getTileEngine()->itemDropInventory((*j)->getTile(), (*j));
 				}
-				if (!(*j)->getArmor()->getCorpseBattlescape().empty())
+				
+				if (_fta && (*j)->getUnitRules()->getPrisoner())
+				{
+					recoverPrisoner((*j), base);
+				}
+				else if (!(*j)->getArmor()->getCorpseBattlescape().empty())
 				{
 					auto corpseRule = (*j)->getArmor()->getCorpseBattlescape().front();
 					if (corpseRule && corpseRule->isRecoverable())
@@ -1908,7 +1913,11 @@ void DebriefingState::prepareDebriefing()
 				{
 					battle->getTileEngine()->itemDropInventory((*j)->getTile(), (*j));
 				}
-				if (!(*j)->getArmor()->getCorpseBattlescape().empty())
+				if (_fta && (*j)->getUnitRules()->getPrisoner())
+				{
+					recoverPrisoner((*j), base);
+				}
+				else if (!(*j)->getArmor()->getCorpseBattlescape().empty())
 				{
 					auto corpseRule = (*j)->getArmor()->getCorpseBattlescape().front();
 					if (corpseRule && corpseRule->isRecoverable())
