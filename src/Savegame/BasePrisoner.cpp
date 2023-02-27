@@ -321,26 +321,24 @@ bool BasePrisoner::think(Game &engine)
 					int difficultyRoll = RNG::generate(rules.getDifficulty() / 2, rules.getDifficulty() * 2);
 					//calculate and apply torture effects
 					
-					int maxDmg = 2 + floor(save.getDifficultyCoefficient() / 2);
+					int maxDmg = 4 + floor(save.getDifficultyCoefficient() / 2);
 					int loyaty = rules.getLoyalty() * (1 + floor(save.getDifficultyCoefficient() / 2));
-					int moraleDmg = rules.getMorale(), eventChance = 0;
+					int moraleDmg = rules.getMorale();
+					int eventChance = rules.getEventChance();
 					if (difficultyRoll > torturePower * 2) // min torture
 					{
 						moraleDmg = 0;
-						maxDmg = ceil(maxDmg / 3);
+						maxDmg = ceil(maxDmg / 2);
 						loyaty = ceil(loyaty / 3);
+						eventChance = ceil(eventChance / 3);
 					}
 					else if (difficultyRoll > torturePower)
 					{
 						maxDmg = ceil(maxDmg / 2);
 						moraleDmg = ceil(moraleDmg / 3);
 						loyaty = ceil(loyaty / 2);
+						eventChance = ceil(eventChance / 2);
 					}
-					else // max torture
-					{
-						eventChance = rules.getEventChance();
-					}
-
 					setHealth(getHealth() - RNG::generate(0, maxDmg));
 					setMorale(getMorale() - moraleDmg);
 					setCooperation(getCooperation() - rules.getCooperation());
