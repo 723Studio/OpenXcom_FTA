@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -84,6 +85,7 @@ class PrisonerTortureRules
 private:
 	int _difficulty, _loyaltyChange, _moraleChange, _cooperationChange, _eventChance;
 	std::vector<std::string> _spawnEvents;
+	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
 
 public:
 	PrisonerTortureRules();
@@ -97,6 +99,8 @@ public:
 	int getCooperation() { return _cooperationChange; }
 	int getEventChance() { return _eventChance; }
 	const std::vector<std::string>& getSpawnedEvents() { return _spawnEvents; }
+	/// Generates an event based on the month.
+	std::string getWeightedEvent(const size_t monthsPassed) const;
 };
 
 class PrisonerContainingRules

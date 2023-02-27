@@ -2981,12 +2981,20 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 
 				soldier->setImprisoned(true);
 			}
-			else
+			else //only battle unit
 			{
 				p->setName(tr(from->getType()));
 				p->setIntelligence(from->getUnitRules()->getIntelligence());
 				p->setAggression(from->getUnitRules()->getAggression());
 				points = from->getUnitRules()->getValue();
+				if (!from->getRoles().empty())
+				{
+					p->setRoles(from->getRoles());
+				}
+				else
+				{
+					p->setRoles(std::vector<SoldierRole>(ROLE_SOLDIER));
+				}
 			}
 
 			p->setFaction(from->getFaction());

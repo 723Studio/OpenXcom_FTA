@@ -254,6 +254,15 @@ void SoldierTransformationListState::initList()
 					}
 				}
 			}
+
+			if (transformationRule->getForbiddenRole() != ROLE_NONE)
+			{
+				if (soldier->getRoleRank(transformationRule->getForbiddenRole()) > 0)
+				{
+					roleRankPassed = false;
+				}
+			}
+
 			if (!roleRankPassed)
 			{
 				continue;

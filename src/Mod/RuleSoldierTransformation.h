@@ -56,6 +56,7 @@ private:
 	int _upperBoundType;
 	SoldierRole _addRole;
 	std::map<SoldierRole, int> _roleRankRequirements;
+	SoldierRole _forbiddentRole;
 	bool _reset;
 	std::string _soldierBonusType;
 
@@ -153,6 +154,7 @@ public:
 
 	SoldierRole getRoleToAdd() const { return _addRole; }
 	std::map<SoldierRole, int> getRoleRankRequirments() const { return _roleRankRequirements; }
+	SoldierRole getForbiddenRole() const { return _forbiddentRole; }
 
 	/// Gets whether or not this project should reset info about all previous transformations and all previously assigned soldier bonuses
 	bool getReset() const;

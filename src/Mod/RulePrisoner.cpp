@@ -19,7 +19,6 @@
 
 #include "RulePrisoner.h"
 #include "Mod.h"
-#include "../Engine/Exception.h"
 
 namespace OpenXcom
 {
@@ -87,6 +86,10 @@ PrisonerTortureRules::PrisonerTortureRules() : _difficulty(100), _loyaltyChange(
 
 PrisonerTortureRules::~PrisonerTortureRules()
 {
+	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _eventWeights.begin(); i != _eventWeights.end(); ++i)
+	{
+		delete i->second;
+	}
 }
 
 void PrisonerTortureRules::load(const YAML::Node& node)
@@ -97,6 +100,27 @@ void PrisonerTortureRules::load(const YAML::Node& node)
 	_cooperationChange = node["cooperationChange"].as<int>(_cooperationChange);
 	_eventChance = node["eventChance"].as<int>(_eventChance);
 	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
+	if (const YAML::Node& weights = node["eventWeights"])
+	{
+		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
+		{
+			WeightedOptions* nw = new WeightedOptions();
+			nw->load(nn->second);
+			_eventWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
+		}
+	}
+}
+
+std::string PrisonerTortureRules::getWeightedEvent(const size_t monthsPassed) const
+{
+	if (_eventWeights.empty())
+		return std::string();
+
+	std::vector<std::pair<size_t, WeightedOptions*> >::const_reverse_iterator rw;
+	rw = _eventWeights.rbegin();
+	while (monthsPassed < rw->first)
+		++rw;
+	return rw->second->choose();
 }
 
 PrisonerContainingRules::PrisonerContainingRules() : _funds(-100), _cooperationChange(0)

@@ -17,7 +17,6 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <utility>
 #include <vector>
 #include <string>
 #include "Soldier.h"
@@ -46,6 +45,7 @@ private:
 	const RulePrisoner* _rule;
 	std::string _id, _type;
 	PrisonerState _state;
+	std::vector<SoldierRole> _roles;
 	int	_soldierId, _health;
 	UnitFaction _faction = FACTION_HOSTILE;
 	std::string _name;
@@ -86,11 +86,14 @@ public:
 	{
 		_geoscapeSoldier = soldier;
 		_soldierId = _geoscapeSoldier->getId();
-	};
+	}
 	Soldier* getGeoscapeSoldier() const { return _geoscapeSoldier; }
 
 	void setArmor(Armor* armor) { _armor = armor; }
 	const Armor* getArmor() const { return _armor; }
+
+	void setRoles(std::vector<SoldierRole> roles) { _roles = roles; }
+	std::vector<SoldierRole> getRoles() { return _roles; }
 
 	void setFaction(UnitFaction faction) { _faction = faction; }
 	UnitFaction getFaction() const { return _faction; }

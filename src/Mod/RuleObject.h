@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -35,11 +36,12 @@ private:
 	int _alterationMCDNumber, _alterationMCDRadius;
 	std::vector<std::string> _spawnedEvents;
 	std::string _spawnedItem;
+	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
 public:
 	/// Creates a blank RuleObject.
 	RuleObject(const std::string& type);
 	/// Cleans up the RuleObject ruleset.
-	~RuleObject() = default;
+	~RuleObject();
 	/// Loads the RuleObject definition from YAML.
 	void load(const YAML::Node& node);
 	/// Gets the RuleObject's type.
@@ -54,12 +56,9 @@ public:
 	int getAlterationMCDRadius() const { return _alterationMCDRadius; }
 	/// Gets the list of spawned event to choose once succesful BattleObject iteration.
 	std::vector<std::string> getSpawnedEvents() const { return _spawnedEvents; }
+	/// Generates an event based on the month.
+	std::string getWeightedEvent(const size_t monthsPassed) const;
 	/// Gets the item name to spawn succesful BattleObject iteration.
 	std::string getSpawnedItem() const { return _spawnedItem; }
-
-
-
-
-
 };
 }

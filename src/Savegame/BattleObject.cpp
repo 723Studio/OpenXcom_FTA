@@ -96,6 +96,7 @@ void BattleObject::hackingPostProcess(bool result, Game* game)
 		{
 			game->getSavedGame()->spawnEvent(game->getMod()->getEvent(e));
 		}
+		game->getSavedGame()->spawnEvent(game->getMod()->getEvent(_rules->getWeightedEvent(game->getSavedGame()->getMonthsPassed())));
 	}
 	else
 	{

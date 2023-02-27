@@ -43,6 +43,19 @@ BasePrisoner::BasePrisoner(const RulePrisoner* rule, Base* base, const std::stri
 {
 }
 
+void BasePrisoner::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
+}
+
 ///**
 // * Loads the unit from a YAML file.
 // * @param node YAML node.
@@ -52,6 +65,8 @@ void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 	_name = node["name"].as<std::string>(_name);
 	_soldierId = node["soldierId"].as<int>(_soldierId);
 	_state = (PrisonerState)node["state"].as<int>(_state);
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
 	_health = node["health"].as<int>(_health);
 	_faction = (UnitFaction)node["faction"].as<int>(_faction);
 	_stats = node["stats"].as<UnitStats>(_stats);
@@ -88,6 +103,14 @@ YAML::Node BasePrisoner::save() const
 	node["type"] = _type;
 	node["name"] = _name;
 	node["state"] = (int)_state;
+	{
+		std::vector<int> roles;
+		for (auto r : _roles)
+		{
+			roles.push_back(r);
+		}
+		node["roles"] = roles;
+	}
 	if (_geoscapeSoldier)
 	{
 		node["soldierId"] = _geoscapeSoldier->getId();
@@ -140,15 +163,12 @@ bool BasePrisoner::think(Game &engine)
 			_agents.push_back(s);
 	}
 
-	Log(LOG_DEBUG) << "Processing prisoner: " << this->getNameAndId();
-	Log(LOG_DEBUG) << "start cycle health: " << getHealth();
 	//first, let's process physical conditions first
 	if (!save.isResearched(_rule->getContainingRules().getReuiredResearch()))
 	{
 		setHealth(getHealth() - RNG::generate(0, _rule->getDamageOverTime()));
 	}
 
-	Log(LOG_DEBUG) << "end cycle health: " << getHealth();
 	if (getHealth() <= 0) //prisoner dies
 	{
 		die();
@@ -161,7 +181,6 @@ bool BasePrisoner::think(Game &engine)
 		{
 			auto rules = _rule->getInterrogationRules();
 			int breakpoint = rules.getBaseResistance() + getMorale() / 2 + getAggression() * 5 + getIntelligence() * 5;
-			Log(LOG_DEBUG) << "Interrogating... Breakpoint value: " << breakpoint;
 			int progress = 0;
 			double effort = 0;
 			int factor = mod.getIntelTrainingFactor();
@@ -174,8 +193,6 @@ bool BasePrisoner::think(Game &engine)
 				int charismaCoef = 20;
 				int deceptionCoef = 40;
 				int psiCoef = 5;
-				Log(LOG_DEBUG) << "Agent " << s->getName() << " is calculating his/her effort for the interrogation";
-
 				statEffort = stats->interrogation;
 				soldierEffort += (statEffort / interrogationCoef);
 				if (stats->interrogation < caps.interrogation
@@ -225,7 +242,6 @@ bool BasePrisoner::think(Game &engine)
 				soldierEffort += insightBonus / 20;
 
 				effort += soldierEffort;
-				Log(LOG_DEBUG) << "soldierEffort value: " << effort << ", total effort: " << effort;
 			}
 			// If one woman can carry a baby in nine months, nine women can't do it in a month...
 			if (_agents.size() > 1)
@@ -235,8 +251,6 @@ bool BasePrisoner::think(Game &engine)
 
 			effort *= (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
 			progress = static_cast<int>(effort);
-			Log(LOG_DEBUG) << " >>> Total daily progress for prisoner " << getNameAndId() << ": " << progress;
-
 			_interrogationProgress += progress;
 			if (_interrogationProgress >= breakpoint)
 			{
@@ -285,7 +299,6 @@ bool BasePrisoner::think(Game &engine)
 		else if (prisonerState == PRISONER_STATE_TORTURE)
 		{
 			auto rules = _rule->getTortureRules();
-			Log(LOG_DEBUG) << "Torturing... ";
 			// let's calculate power of our team
 			int psionics = 0, torturePower = 0;
 			for (auto agent: _agents)
@@ -301,17 +314,11 @@ bool BasePrisoner::think(Game &engine)
 			}
 			
 			torturePower *= psionics + 1;
-			Log(LOG_DEBUG) << "torturePower: " << torturePower;
-
 			if (torturePower > 0)
 			{
 				if (RNG::percent(-10 * save.getDifficultyCoefficient() + 80))
 				{
 					int difficultyRoll = RNG::generate(rules.getDifficulty() / 2, rules.getDifficulty() * 2);
-					Log(LOG_DEBUG) << "difficultyRoll: " << torturePower;
-					Log(LOG_DEBUG) << "application torture effects, initial stats:";
-					Log(LOG_DEBUG) << "health: " << getHealth() << ", morale: " << getMorale() << " , cooperation: " << getCooperation();
-
 					//calculate and apply torture effects
 					
 					int maxDmg = 2 + floor(save.getDifficultyCoefficient() / 2);
@@ -339,23 +346,22 @@ bool BasePrisoner::think(Game &engine)
 					setCooperation(getCooperation() - rules.getCooperation());
 					engine.getMasterMind()->updateLoyalty(loyaty);
 
-					auto events = rules.getSpawnedEvents();
-					if (!events.empty() && RNG::percent(eventChance))
+					if (RNG::percent(eventChance))
 					{
-						save.spawnEvent(events, &mod);
+						auto events = rules.getSpawnedEvents();
+						events.push_back(rules.getWeightedEvent(save.getMonthsPassed()));
+						if (!events.empty())
+						{
+							save.spawnEvent(events, &mod);
+						}
 					}
-
-					Log(LOG_DEBUG) << "new stats:";
-					Log(LOG_DEBUG) << "morale: " << getMorale() << " , cooperation: " << getCooperation();
 				}
-				
 			}
 		}
 		else if (prisonerState == PRISONER_STATE_REQRUITING)
 		{
 			auto rules = _rule->getRecruitingRules();
 			int breakpoint = rules.getDifficulty() - getCooperation() + (100 - getMorale());
-			Log(LOG_DEBUG) << "Recruiting... Breakpoint value: " << breakpoint;
 			int progress = 0;
 			double effort = 0;
 			int factor = mod.getIntelTrainingFactor();
@@ -384,7 +390,6 @@ bool BasePrisoner::think(Game &engine)
 				}
 
 				soldierEffort /= 2;
-				Log(LOG_DEBUG) << "Effort value: " << effort;
 				effort += soldierEffort;
 			}
 
@@ -395,8 +400,6 @@ bool BasePrisoner::think(Game &engine)
 
 			effort *= (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
 			progress = static_cast<int>(effort);
-			Log(LOG_DEBUG) << " >>> Total daily progress for prisoner " << getNameAndId() << ": " << progress;
-
 			_recruitingProgress += progress;
 			if (_recruitingProgress >= breakpoint)
 			{
@@ -420,6 +423,10 @@ bool BasePrisoner::think(Game &engine)
 				{
 					Soldier* soldier = new Soldier(soldierRule, _armor, save.getId("STR_SOLDIER"));
 					soldier->setBothStats(&_stats);
+					for (auto r : _roles)
+					{
+						soldier->addRole(r);
+					}
 					_base->getSoldiers()->push_back(soldier);
 					engine.pushState(new PrisonReportState(soldier, this, _base));
 				}
@@ -429,7 +436,6 @@ bool BasePrisoner::think(Game &engine)
 		}
 		else if (prisonerState == PRISONER_STATE_CONTAINING)
 		{
-			Log(LOG_DEBUG) << ">>> Containing prisoner: " << getNameAndId();
 			auto rules = _rule->getInterrogationRules();
 			int effort = 0;
 			for (auto s : _agents)
@@ -454,16 +460,9 @@ bool BasePrisoner::think(Game &engine)
 				hpRegen += RNG::generate(0, 1);
 			}
 			int coopChange = RNG::generate(-2, effort / 10 + 1);
-
-			Log(LOG_DEBUG) << "application contain effects, initial stats:";
-			Log(LOG_DEBUG) << "health: "<< getHealth() <<", morale: " << getMorale() << " , cooperation: " << getCooperation();
-
 			setMorale(getMorale() + moraleRegen);
 			setHealth(getHealth() + hpRegen);
 			setCooperation(getCooperation() + coopChange);
-
-			Log(LOG_DEBUG) << "new stats:";
-			Log(LOG_DEBUG) << "health: " << getHealth() << ", morale: " << getMorale() << " , cooperation: " << getCooperation();
 		}
 
 		//almost done...

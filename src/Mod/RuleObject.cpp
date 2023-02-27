@@ -27,6 +27,14 @@ RuleObject::RuleObject(const std::string& type)
 {
 }
 
+RuleObject::~RuleObject()
+{
+	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _eventWeights.begin(); i != _eventWeights.end(); ++i)
+	{
+		delete i->second;
+	}
+}
+
 /**
 	* Loads the event definition from YAML.
 	* @param node YAML node.
@@ -45,6 +53,27 @@ void RuleObject::load(const YAML::Node& node)
 	_spawnedItem = node["spawnedItem"].as<std::string >(_spawnedItem);;
 	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_alterationMCDNumber);
 	_alterationMCDRadius= node["alterationMCDRadius"].as<int>(_alterationMCDRadius);
+	if (const YAML::Node& weights = node["eventWeights"])
+	{
+		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
+		{
+			WeightedOptions* nw = new WeightedOptions();
+			nw->load(nn->second);
+			_eventWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
+		}
+	}
+}
+
+std::string RuleObject::getWeightedEvent(const size_t monthsPassed) const
+{
+	if (_eventWeights.empty())
+		return std::string();
+
+	std::vector<std::pair<size_t, WeightedOptions*> >::const_reverse_iterator rw;
+	rw = _eventWeights.rbegin();
+	while (monthsPassed < rw->first)
+		++rw;
+	return rw->second->choose();
 }
 
 }

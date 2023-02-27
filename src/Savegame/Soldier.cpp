@@ -240,7 +240,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		}
 		else
 		{
-			addRole(ROLE_SOLDIER);
+			addRole(ROLE_NONE);
 		}
 	}
 
@@ -2096,6 +2096,14 @@ bool Soldier::isEligibleForTransformation(RuleSoldierTransformation *transformat
 		{
 			if (getRoleRank(req.first) < req.second)
 				return false;
+		}
+	}
+
+	if (transformationRule->getForbiddenRole() != ROLE_NONE)
+	{
+		if (getRoleRank(transformationRule->getForbiddenRole()) > 0)
+		{
+			return false;
 		}
 	}
 

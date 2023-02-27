@@ -797,6 +797,16 @@ YAML::Node BattleUnit::save(const ScriptGlobal *shared) const
 	node["genUnitArmor"] = _armor->getType();
 	node["faction"] = (int)_faction;
 	node["status"] = (int)_status;
+	if (!_roles.empty())
+	{
+		std::vector<int> roles;
+		for (auto r : _roles)
+		{
+			roles.push_back(r);
+		}
+		node["roles"] = roles;
+	}
+	
 	if (_wantsToSurrender)
 		node["wantsToSurrender"] = _wantsToSurrender;
 	if (_isSurrendering)
@@ -3073,7 +3083,7 @@ void BattleUnit::loadRoles(const std::vector<int>& r)
 		}
 	}
 }
-;
+
 
 /**
  * Fit item into inventory slot.
