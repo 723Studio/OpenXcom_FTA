@@ -1785,6 +1785,9 @@ void DebriefingState::prepareDebriefing()
 							case ROLE_ENGINEER:
 								addStat("STR_ENGINEER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
 								break;
+							case ROLE_NONE:
+								addStat("STR_CIVILIAN_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								break;
 							default: ;
 							}
 						}
