@@ -4107,6 +4107,32 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		if (!mod->isManaTrainingPrimary())
 			_exp.mana = 0;
 		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
+
+		if (mod->isFTAGame() && _kills > 0)
+		{
+			int killExpMod = 100;
+			switch (geoscape->getDifficulty())
+			{
+			case DIFF_BEGINNER:
+				killExpMod = 120;
+				break;
+			case DIFF_EXPERIENCED:
+				killExpMod = 100;
+				break;
+			case DIFF_VETERAN:
+				killExpMod = 80;
+				break;
+			case DIFF_GENIUS:
+				killExpMod = 70;
+				break;
+			case DIFF_SUPERHUMAN:
+				killExpMod = 50;
+				break;
+			default: ;
+			}
+
+			s->addExperience(ROLE_SOLDIER, RNG::generate(1, (int)std::ceil(_kills * killExpMod / 100)));
+		}
 	}
 
 	UnitStats *newStats = s->getCurrentStats();
