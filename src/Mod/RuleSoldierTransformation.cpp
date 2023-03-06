@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <algorithm>
 #include "RuleSoldierTransformation.h"
 #include "Mod.h"
 
@@ -56,6 +55,7 @@ void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod, int listO
 
 	mod->loadUnorderedNames(_name, _requires, node["requires"]);
 	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
+	_description = node["description"].as<std::string>(_description);
 	_producedItem = node["producedItem"].as<std::string >(_producedItem);
 	_producedSoldierType = node["producedSoldierType"].as<std::string >(_producedSoldierType);
 	_producedSoldierArmor = node["producedSoldierArmor"].as<std::string >(_producedSoldierArmor);

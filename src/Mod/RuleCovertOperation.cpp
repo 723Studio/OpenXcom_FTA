@@ -32,11 +32,11 @@ namespace OpenXcom
 * @param type String defining the type.
 */
 RuleCovertOperation::RuleCovertOperation(const std::string& name) : _name(name), _soldierSlots(1), _optionalSoldierSlots(0),
-																	_scientistSlots(0), _engineerSlots(0), _optionalSoldierEffect(15), _scientistEffect(10), _engineerEffect(10),
-																	_baseChances(50), _costs(0), _itemSpaceLimit(-1), _itemSpaceEffect(10), _danger(0), _trapChance(0), _armorEffect(20),
-																	_successScore(0), _failureScore(0), _progressEventChance(0), _repeatProgressEvent(false), _allowAllEquipment(false),
-																	_concealedItemsBonus(4), _requiredItemsEffect(5), _successFunds(0), _failureFunds(0), _successMusic("GMMARS"), _failureMusic("GMLOSE"),
-																	_listOrder(0) 
+	_optionalSoldierEffect(10), _scientistEffect(5), _engineerEffect(5), _itemSpaceEffect(10), _armorEffect(20),
+	_itemSpaceLimit(-1), _baseChances(50), _costs(0), _successScore(0), _failureScore(0),
+	_successLoyalty(0), _failureLoyalty(0), _successFunds(0), _failureFunds(0), _danger(0), _trapChance(0),
+	_progressEventChance(0), _concealedItemsBonus(10), _bonusItemsEffect(5), _repeatProgressEvent(false), _allowAllEquipment(false),
+	_removeRequiredItemsOnSuccess(true), _removeRequiredItemsOnFailure(false), _listOrder(0) 
 {
 }
 
@@ -80,8 +80,6 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 		throw Exception("Error in loading operation '" + _name + "'! It must have at least 1 soldier.");
 	}
 	_optionalSoldierSlots = node["optionalSoldierSlots"].as<int>(_optionalSoldierSlots);
-	_scientistSlots = node["scientistSlots"].as<int>(_scientistSlots);
-	_engineerSlots = node["engineerSlots"].as<int>(_engineerSlots);
 	_optionalSoldierEffect = node["optionalSoldierEffect"].as<int>(_optionalSoldierEffect);
 	_scientistEffect = node["scientistEffect"].as<int>(_scientistEffect);
 	_engineerEffect = node["engineerEffect"].as<int>(_engineerEffect);
@@ -96,6 +94,8 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_danger = node["danger"].as<int>(_danger);
 	_successScore = node["successScore"].as<int>(_successScore);
 	_failureScore = node["failureScore"].as<int>(_failureScore);
+	_successLoyalty = node["successLoyalty"].as<int>(_successLoyalty);
+	_failureLoyalty = node["failureLoyalty"].as<int>(_failureLoyalty);
 	_successFunds = node["successFunds"].as<int>(_successFunds);
 	_failureFunds = node["failureFunds"].as<int>(_failureFunds);
 	_successEveryItemList = node["successEveryItemList"].as<std::map<std::string, int> >(_successEveryItemList);
@@ -132,8 +132,11 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_itemSpaceLimit = node["itemSpaceLimit"].as<double>(_itemSpaceLimit);
 	_itemSpaceEffect = node["itemSpaceEffect"].as<double>(_itemSpaceEffect);
 	_requiredItems = node["requiredItems"].as<std::map<std::string, int>>(_requiredItems);
-	_requiredItemsEffect = node["requiredItemsEffect"].as<int>(_requiredItemsEffect);
+	_bonusItems = node["bonusItems"].as<std::map<std::string, int> >(_bonusItems);
+	_bonusItemsEffect = node["bonusItemsEffect"].as<int>(_bonusItemsEffect);
 	_allowAllEquipment = node["allowAllEquipment"].as<bool>(_allowAllEquipment);
+	_removeRequiredItemsOnSuccess = node["removeRequiredItemsOnSuccess"].as<bool>(_removeRequiredItemsOnSuccess);
+	_removeRequiredItemsOnFailure = node["removeRequiredItemsOnFailure"].as<bool>(_removeRequiredItemsOnFailure);
 	_concealedItemsBonus = node["concealedItemsBonus"].as<int>(_concealedItemsBonus);
 	_allowedArmor = node["allowedArmor"].as<std::vector<std::string>>(_allowedArmor);
 	_armorEffect = node["armorEffect"].as<int>(_armorEffect);

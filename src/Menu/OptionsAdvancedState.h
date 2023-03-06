@@ -36,7 +36,7 @@ private:
 	TextList *_lstOptions;
 	bool _isTFTD;
 	Uint8 _colorGroup, _greyedOutColor;
-	std::vector<OptionInfo> _settingsGeneral, _settingsGeo, _settingsBattle, _settingsOxce;
+	std::vector<OptionInfo> _settingsGeneral, _settingsGeo, _settingsBattle, _settingsOxce, _settingsFtA;
 
 	void addSettings(const std::vector<OptionInfo> &settings);
 	OptionInfo *getSetting(size_t sel);

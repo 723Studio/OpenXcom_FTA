@@ -1049,9 +1049,14 @@ struct BindValue
 template<typename T, std::string (*X)(const T*)>
 struct BindDebugDisplay
 {
-	static RetEnum func(ScriptWorkerBase& swb, const T* t)
+	static RetEnum func(ScriptWorkerBase &swb, const T *t)
 	{
+#ifdef _MSC_VER
+		constexpr auto x = X;
+		auto f = [&] { return x(t); };
+#else
 		auto f = [&]{ return X(t); };
+#endif
 		swb.log_buffer_add(&f);
 		return RetContinue;
 	}
@@ -1161,6 +1166,8 @@ struct BindBase
 	struct SetAndGet{};
 	/// Tag type to choose allowed operations
 	struct OnlyGet{};
+	/// Tag type to skip adding default operations
+	struct ExtensionBinding{ explicit ExtensionBinding() = default; };
 
 	ScriptParserBase* parser;
 	BindBase(ScriptParserBase* p) : parser{ p }
@@ -1196,7 +1203,12 @@ struct Bind : BindBase
 
 	}
 
-	Bind(ScriptParserBase* p, std::string r) : BindBase{ p }, prefix{ r }
+	Bind(ScriptParserBase* p, ExtensionBinding e) : Bind{ p, T::ScriptName, e }
+	{
+
+	}
+
+	Bind(ScriptParserBase* p, std::string r) : BindBase{ p }, prefix{ std::move(r) }
 	{
 		parser->addParser<helper::FuncGroup<helper::BindSet<T*>>>("set", BindBase::functionInvisible);
 		parser->addParser<helper::FuncGroup<helper::BindSet<const T*>>>("set", BindBase::functionInvisible);
@@ -1205,6 +1217,11 @@ struct Bind : BindBase
 		parser->addParser<helper::FuncGroup<helper::BindClear<T*>>>("clear", BindBase::functionInvisible);
 		parser->addParser<helper::FuncGroup<helper::BindClear<const T*>>>("clear", BindBase::functionInvisible);
 		parser->addParser<helper::FuncGroup<helper::BindEq<const T*>>>("test_eq", BindBase::functionInvisible);
+	}
+
+	Bind(ScriptParserBase* p, std::string r, ExtensionBinding) : BindBase{ p }, prefix{ std::move(r) }
+	{
+		// no default operations defined!
 	}
 
 	std::string getName(const std::string& s)
@@ -1224,18 +1241,28 @@ struct Bind : BindBase
 	}
 
 	template<int T::*X>
-	void addField(const std::string& get, const std::string& set = "")
+	void addField(const std::string& get)
 	{
 		addCustomFunc<helper::BindPropGet<T, X>>(getName(get), "Get int field of " + prefix);
-		if (!set.empty())
-		{
-			addCustomFunc<helper::BindPropSet<T, X>>(getName(set), "Set int field of " + prefix);
-		}
 	}
+
+	template<int T::*X>
+	void addField(const std::string& get, const std::string& set)
+	{
+		addCustomFunc<helper::BindPropGet<T, X>>(getName(get), "Get int field of " + prefix);
+		addCustomFunc<helper::BindPropSet<T, X>>(getName(set), "Set int field of " + prefix);
+	}
+
 	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
 	void addField(const std::string& get)
 	{
 		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get inner field of " + prefix);
+	}
+	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
+	void addField(const std::string& get, const std::string& set)
+	{
+		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get inner field of " + prefix);
+		addCustomFunc<helper::BindPropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(set), "Set inner field of " + prefix);
 	}
 
 	template<typename TagValues = ScriptValues<T>, typename Parent = typename TagValues::Parent*>
@@ -1248,7 +1275,7 @@ struct Bind : BindBase
 			const ScriptTypeData* conf = parser->getType(ScriptParserBase::getArgType<Parent>());
 			if (conf == nullptr)
 			{
-				throw Exception("Errow with adding script tag to unknow type");
+				throw Exception("Errow with adding script tag to unknown type");
 			}
 			parser->addType<Tag>(conf->name.toString() + ".Tag");
 			parser->addParser<helper::FuncGroup<helper::BindSet<Tag>>>("set", BindBase::functionInvisible);

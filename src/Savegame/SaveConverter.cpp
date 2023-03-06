@@ -515,7 +515,7 @@ void SaveConverter::loadDatZonal()
 	}
 	YAML::Node node;
 	node["regions"] = chances;
-	_save->getAlienStrategy().load(node);
+	_save->getAlienStrategy().load(node, _mod);
 }
 
 /**
@@ -546,7 +546,7 @@ void SaveConverter::loadDatActs()
 		subnode["missions"] = i->second;
 		node["possibleMissions"].push_back(subnode);
 	}
-	_save->getAlienStrategy().load(node);
+	_save->getAlienStrategy().load(node, _mod);
 }
 
 /**
@@ -592,7 +592,7 @@ void SaveConverter::loadDatMissions()
 				}
 				node["missionSiteZone"] = RNG::generate(0, rule->getMissionZones().at(missionZone).areas.size() - 1);
 			}
-			m->load(node, *_save);
+			m->load(node, *_save, _mod);
 			_save->getAlienMissions().push_back(m);
 			_missions[std::make_pair(mission, region)] = m;
 		}
@@ -971,7 +971,7 @@ void SaveConverter::loadDatCraft()
 					subnode["nextUfoCounter"] = 0;
 					subnode["spawnCountdown"] = 1000;
 					subnode["uniqueID"] = _save->getId("ALIEN_MISSIONS");
-					m->load(subnode, *_save);
+					m->load(subnode, *_save, _mod);
 					_save->getAlienMissions().push_back(m);
 					_missions[std::make_pair(mission, region)] = m;
 					if (mission == 6)
@@ -1082,7 +1082,7 @@ void SaveConverter::loadDatSoldier()
 			node["look"] = (int)load<Uint8>(sdata + _rules->getOffset("SOLDIER.DAT_LOOK"));
 			node["id"] = _save->getId("STR_SOLDIER");
 
-			Soldier *soldier = new Soldier(_mod->getSoldier(_mod->getSoldiersList().front(), true), 0);
+			Soldier *soldier = new Soldier(_mod->getSoldier(_mod->getSoldiersList().front(), true), nullptr, 0 /*nationality*/);
 			soldier->load(node, _mod, _save, _mod->getScriptGlobal());
 			if (base != 0xFFFF)
 			{
@@ -1155,8 +1155,8 @@ void SaveConverter::loadDatUp()
 			bool discovered = load<Uint8>(rdata + 0x08) == 2;
 			if (discovered)
 			{
-				std::vector<std::string> requires = article->requires;
-				for (std::vector<std::string>::const_iterator r = requires.begin(); r != requires.end(); ++r)
+				std::vector<std::string> reqs = article->_requires;
+				for (std::vector<std::string>::const_iterator r = reqs.begin(); r != reqs.end(); ++r)
 				{
 					RuleResearch *research = _mod->getResearch(*r);
 					if (research && research->getCost() == 0)

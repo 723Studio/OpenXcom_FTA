@@ -31,6 +31,8 @@ class RuleCraft;
 class Soldier;
 class Craft;
 class CovertOperation;
+class IntelProject;
+class BasePrisoner;
 class ItemContainer;
 class Transfer;
 class Language;
@@ -42,7 +44,8 @@ class ResearchProject;
 class Production;
 class Vehicle;
 class Ufo;
-
+class AlienMission;
+enum SoldierRole : int;
 enum UfoDetection : int;
 enum BasePlacementErrors : int
 {
@@ -93,6 +96,8 @@ private:
 	std::vector<Soldier*> _soldiers;
 	std::vector<Craft*> _crafts;
 	std::vector<CovertOperation*> _covertOperations;
+	std::vector<IntelProject*> _intelProjects;
+	std::vector<BasePrisoner*> _prisoners;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
 	int _scientists, _engineers;
@@ -100,6 +105,7 @@ private:
 	std::vector<Production *> _productions;
 	bool _inBattlescape;
 	bool _retaliationTarget;
+	AlienMission* _retaliationMission;
 	bool _fakeUnderwater;
 	std::vector<Vehicle*> _vehicles;
 	std::vector<Vehicle*> _vehiclesFromBase;
@@ -130,6 +136,7 @@ public:
 	std::vector<BaseFacility*> *getFacilities();
 	/// Gets the base's soldiers.
 	std::vector<Soldier*> *getSoldiers();
+	std::vector<Soldier*> getPersonnel(SoldierRole role) const;
 	/// Pre-calculates soldier stats with various bonuses.
 	void prepareSoldierStatsWithBonuses();
 	/// Gets the base's crafts.
@@ -137,13 +144,24 @@ public:
 	/// Gets the base's crafts.
 	const std::vector<Craft*> *getCrafts() const { return &_crafts; }
 	/// Gets the base's covert operations.
-	std::vector<CovertOperation*> &getCovertOperations() {	return _covertOperations; }
-	/// Gets the base's covert operations.
 	const std::vector<CovertOperation*> &getCovertOperations() const { return _covertOperations; }
-	/// Adds new ongoing Covert Operation
-	void addCovertOperation(CovertOperation * operation);
-	/// Removes finished Covert Operation
+	/// Adds new ongoing Covert Operation.
+	void addCovertOperation(CovertOperation* operation) { _covertOperations.push_back(operation); }
+	/// Removes finished Covert Operation.
 	void removeCovertOperation(CovertOperation* operation);
+	/// Gets the base's Intel projects.
+	const std::vector<IntelProject*> &getIntelProjects() const { return _intelProjects; }
+	/// Adds new ongoing Intel Project.
+	void addIntelProject(IntelProject* project) { _intelProjects.push_back(project); }
+	/// Removes finished Intel Project.
+	void removeIntelProject(IntelProject* project);
+	/// Gets the base's prisoners.
+	const std::vector<BasePrisoner*>& getPrisoners() const { return _prisoners; }
+	/// Adds new BasePrisoner.
+	void addPrisoner(BasePrisoner* prisoner) { _prisoners.push_back(prisoner); }
+	/// Removes finished Intel Project.
+	void removePrisoner(BasePrisoner* project);
+	int getFreeInterrogationSpace();
 	/// Gets the base's transfers.
 	std::vector<Transfer*> *getTransfers() { return &_transfers; }
 	/// Gets the base's transfers.
@@ -161,7 +179,7 @@ public:
 	/// Sets the base's engineers.
 	void setEngineers(int engineers);
 	/// Checks if a target is detected by the base's radar.
-	UfoDetection detect(const Ufo *target, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const;
 	/// Gets the base's available soldiers.
 	int getAvailableSoldiers(bool checkCombatReadiness = false, bool includeWounded = false) const;
 	/// Gets the base's total soldiers.
@@ -189,11 +207,11 @@ public:
 	/// Gets the base's available storage space.
 	int getAvailableStores() const;
 	/// Gets the base's used laboratory space.
-	int getUsedLaboratories() const;
+	int getUsedLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
 	/// Gets the base's available laboratory space.
 	int getAvailableLaboratories() const;
 	/// Gets the base's used workshop space.
-	int getUsedWorkshops() const;
+	int getUsedWorkshops(bool fta = false, Production *exclude = nullptr) const;
 	/// Gets the base's available workshop space.
 	int getAvailableWorkshops() const;
 	/// Gets the base's used hangars.
@@ -201,12 +219,11 @@ public:
 	/// Gets the base's available hangars.
 	int getAvailableHangars() const;
 	/// Get the number of available space lab (not used by a ResearchProject)
-	int getFreeLaboratories() const;
+	int getFreeLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
 	/// Get the number of available space lab (not used by a Production)
-	int getFreeWorkshops() const;
+	int getFreeWorkshops(bool fta = false, Production *exclude = nullptr) const;
 
 	int getAllocatedScientists() const;
-
 	int getAllocatedEngineers() const;
 	/// Gets the base's defense value.
 	int getDefenseValue() const;
@@ -254,10 +271,13 @@ public:
 	int getFreeTrainingSpace() const;
 	/// Gets the amount of free Containment space.
 	int getFreeContainment(int prisonType) const;
+	int getFreePrisonSpace() const;
 	/// Gets the total amount of Containment space.
 	int getAvailableContainment(int prisonType) const;
+	int getAvailablePrisonSpace() const;
 	/// Gets the total amount of used Containment space.
-	int getUsedContainment(int prisonType) const;
+	int getUsedContainment(int prisonType, bool onlyExternal = false) const;
+	int getUsedPrisonSpace() const { return (int)_prisoners.size(); }
 	/// Sets the craft's battlescape status.
 	void setInBattlescape(bool inbattle);
 	/// Gets if the craft is in battlescape.
@@ -266,6 +286,10 @@ public:
 	void setRetaliationTarget(bool mark = true);
 	/// Gets the retaliation status of this base.
 	bool getRetaliationTarget() const;
+	/// Sets the corresponding alien retaliation mission.
+	void setRetaliationMission(AlienMission* retaliationMission) { _retaliationMission = retaliationMission; }
+	/// Gets the corresponding alien retaliation mission.
+	AlienMission* getRetaliationMission() const { return _retaliationMission; }
 	/// Mark/unmark this base as a fake underwater base.
 	void setFakeUnderwater(bool fakeUnderwater) { _fakeUnderwater = fakeUnderwater; }
 	/// Is this a fake underwater base?
@@ -275,7 +299,7 @@ public:
 	/// Gets how many Grav Shields the base has
 	int getGravShields() const;
 	/// Setup base defenses.
-	void setupDefenses();
+	void setupDefenses(AlienMission* am);
 	/// Get a list of Defensive Facilities
 	std::vector<BaseFacility*> *getDefenses();
 	/// Gets the base's vehicles.
@@ -292,6 +316,7 @@ public:
 	std::list<std::vector<BaseFacility*>::iterator> getDisconnectedFacilities(BaseFacility *remove);
 	/// destroy a facility and deal with the side effects.
 	void destroyFacility(std::vector<BaseFacility*>::iterator facility);
+	void cleanupPrisons(int prisonType);
 	/// Cleans up the defenses vector and optionally reclaims the tanks and their ammo.
 	void cleanupDefenses(bool reclaimItems);
 

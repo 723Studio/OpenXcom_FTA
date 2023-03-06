@@ -37,6 +37,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Ufopaedia/Ufopaedia.h"
 #include "ManufactureStartState.h"
 #include "TechTreeViewerState.h"
 
@@ -260,12 +261,48 @@ void NewManufactureListState::lstProdClickRight(Action *)
 void NewManufactureListState::lstProdClickMiddle(Action *)
 {
 	_doInit = false;
+	bool ctrlPressed = _game->isCtrlPressed();
 	const RuleManufacture *selectedTopic = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
-	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	if (_game->getMod()->isFTAGame() && !ctrlPressed)
 	{
-		return;
+		auto itemList = selectedTopic->getProducedItems();
+		if (!itemList.empty())
+		{
+			if (itemList.size() == 1)
+			{
+				auto ruleItem = itemList.begin()->first;
+				auto article = ruleItem->getName();
+				if (ruleItem->getBattleType() == BT_AMMO)
+				{
+					for (std::vector<std::string>::const_iterator iter = _game->getMod()->getItemsList().begin(); iter != _game->getMod()->getItemsList().end(); ++iter)
+					{
+						auto ruleIter = _game->getMod()->getItem((*iter));
+						auto it = std::find(ruleIter->getPrimaryCompatibleAmmo()->begin(), ruleIter->getPrimaryCompatibleAmmo()->end(), ruleItem);
+						if (it != ruleIter->getPrimaryCompatibleAmmo()->end())
+						{
+							article = ruleIter->getName();
+							break;
+						}
+					}
+				}
+				Ufopaedia::openArticle(_game, article);
+			}
+			return;
+		}
+		if (selectedTopic->getProducedCraft() != nullptr)
+		{
+			Ufopaedia::openArticle(_game, selectedTopic->getProducedCraft()->getType());
+		}
 	}
-	_game->pushState(new TechTreeViewerState(0, selectedTopic));
+	else
+	{
+		if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+		{
+			return;
+		}
+		_game->pushState(new TechTreeViewerState(0, selectedTopic));
+	}
+
 }
 
 /**

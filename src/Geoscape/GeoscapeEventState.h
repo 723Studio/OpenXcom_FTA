@@ -26,9 +26,8 @@ namespace OpenXcom
 class TextButton;
 class Window;
 class Text;
-class GeoscapeEvent;
 class RuleEvent;
-class CustomAnswer;
+struct CustomAnswer;
 
 /**
  * Displays info about a custom Geoscape event.
@@ -55,7 +54,7 @@ private:
 
 public:
 	/// Creates the GeoscapeEventState.
-	GeoscapeEventState(GeoscapeEvent *geoEvent);
+	GeoscapeEventState(const RuleEvent& eventRule);
 	/// Cleans up the GeoscapeEventState.
 	~GeoscapeEventState();
 	/// Initializes the state.

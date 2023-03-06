@@ -116,6 +116,8 @@ public:
 	int getKillTotal() const;
 	/// Get the total number of missions.
 	int getMissionTotal() const;
+	/// Get the total number of missions filtered by modder's criteria.
+	int getMissionTotalFiltered(std::vector<MissionStatistics*>*, const RuleCommendations* rule) const;
 	/// Get the total number of wins.
 	int getWinTotal(std::vector<MissionStatistics*>*) const;
 	/// Get the total number of stuns.

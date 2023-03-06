@@ -39,7 +39,7 @@ class BuildFacilitiesState : public State
 protected:
 	Base *_base;
 	State *_state;
-	std::vector<RuleBaseFacility*> _facilities;
+	std::vector<RuleBaseFacility*> _facilities, _disabledFacilities;
 	size_t _lstScroll;
 
 	TextButton *_btnOk;

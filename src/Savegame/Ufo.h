@@ -80,6 +80,7 @@ private:
 	bool _isHunterKiller, _isEscort;
 	int _huntMode, _huntBehavior;
 	bool _isHunting, _isEscorting;
+	int _softlockShotCounter;
 	Waypoint *_origWaypoint;
 	ScriptValues<Ufo> _scriptValues;
 
@@ -247,6 +248,10 @@ public:
 	bool isHunting() const;
 	/// Is this UFO escorting other UFO right now?
 	bool isEscorting() const;
+	/// Gets the value of the softlock shot counter;
+	int getSoftlockShotCounter() const { return _softlockShotCounter; }
+	/// Increases the value of the softlock shot counter;
+	void increaseSoftlockShotCounter() { _softlockShotCounter++; }
 	/// Checks if a target is inside the UFO's radar range.
 	bool insideRadarRange(Target *target) const;
 };

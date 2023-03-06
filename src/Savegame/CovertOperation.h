@@ -44,7 +44,7 @@ private:
 	const RuleCovertOperation* _rule;
 	Base* _base;
 	int _spent, _cost;
-	int _successChance, _assignedScientists, _assignedEngineers;
+	int _successChance;
 	ItemContainer* _items;
 	CovertOperationResults* _results;
 	bool _inBattlescape, _hasBattlescapeResolve, _over, _hasPsi, _progressEventSpawned;
@@ -59,43 +59,36 @@ public:
 	/// Saves the Covert Operation to YAML.
 	YAML::Node save() const;
 	/// Gets the operation's ruleset.
-	const RuleCovertOperation* getRules() const { return _rule; };
+	const RuleCovertOperation* getRules() const { return _rule; }
 	/// Gets the operation's base.
-	Base* getBase() const { return _base; };
+	Base* getBase() const { return _base; }
 	/// Sets the operation's base.
 	void setBase(Base* base);
 	/// Gets operation name
 	std::string getOperationName();
 	/// Gets spent effort for this operation.
-	int getSpent() const { return _spent; };
+	int getSpent() const { return _spent; }
 	/// Sets spent effort for this operation.
-	void setSpent(int spent) { _spent = spent; };
+	void setSpent(int spent) { _spent = spent; }
 	/// Gets cost for this operation.
-	int getCost() const { return _cost; };
+	int getCost() const { return _cost; }
 	/// Sets cost for this operation.
-	void setCost(int cost) { _cost = cost; };
+	void setCost(int cost) { _cost = cost; }
 
 	/// Gets success chance for this operation.
-	int getSuccessChance() const { return _successChance; };
+	int getSuccessChance() const { return _successChance; }
 	/// Sets success chance for this operation.
-	void setSuccessChance(int successChance) { _successChance = successChance; };
+	void setSuccessChance(int successChance) { _successChance = successChance; }
 	/// Gets assigned scientists for this operation.
-	int getAssignedScientists() const { return _assignedScientists; };
-	/// Sets assigned scientists for this operation.
-	void setAssignedScientists(int assignedScientists) { _assignedScientists = assignedScientists; };
-	/// Gets assigned Engineers for this operation.
-	int getAssignedEngineers() const { return _assignedEngineers; };
-	/// Sets assigned Engineers for this operation.
-	void setAssignedEngineers(int assignedEngineers) { _assignedEngineers = assignedEngineers; };
 	/// Gets if operation has psionic agents capable to use their abilities.
-	int getIsPsi() const { return _hasPsi; };
+	int getIsPsi() const { return _hasPsi; }
 	/// Sets if operation has psionic agents capable to use their abilities.
-	void setIsPsi(int hasPsi) { _hasPsi = hasPsi; };
+	void setIsPsi(int hasPsi) { _hasPsi = hasPsi; }
 	/// Gets name of the discovered research
 	std::string getDiscoveredResearch() { return _researchName; }
 
 	/// Gets operation's items.
-	ItemContainer* getItems() { return _items; };
+	ItemContainer* getItems() { return _items; }
 	/// Gets operation's results.
 	CovertOperationResults* getResults() { return _results; }
 	/// Gets operation's soldiers
@@ -116,8 +109,6 @@ public:
 	bool think(Game& engine, const Globe& globe);
 	/// Process soldier's actions results in covert operation
 	void backgroundSimulation(Game& engine, bool operationResult, bool criticalFail, int woundOdds, int deathOdds);
-	/// Converts the number of experience to the stat increase.
-	int improveStat(int exp) const;
 	/// Takes care to finish covert operation.
 	void finishOperation();
 };
@@ -128,8 +119,8 @@ class CovertOperationResults
 {
 private:
 	std::string _operationName;
-	std::string _finishDate;
 	bool _result;
+	std::string _finishDate;
 	int _score, _funds;
 	std::map<std::string, int> _bountyItems, _reputation, _soldierDamage;
 	std::string _specialMessage;
@@ -137,9 +128,10 @@ private:
 public:
 	/// Create base Covert Operation results
 	CovertOperationResults(const std::string& operationName, bool result, std::string finishDate) :
-		_operationName(operationName), _result(result), _finishDate(finishDate), _score(0), _funds(0) {};
+		_operationName(operationName), _result(result), _finishDate(finishDate), _score(0), _funds(0) {}
 	/// Cleans up the Covert Operation results info.
-	~CovertOperationResults() {};
+	~CovertOperationResults() {}
+	bool getOperationResult() { return _result; }
 	/// Manipulate score
 	void addScore(int score) { _score += score; }
 	int getScore() { return _score; }
@@ -160,7 +152,7 @@ public:
 	std::string getSpecialMessage() { return _specialMessage; }
 	/// Handlers for soldier stat improvement
 	void addSoldierImprovement(std::string soldier, UnitStats* improvement)
-	{ _soldierStats.push_back(std::pair<std::string, UnitStats*>(soldier, improvement)); };
+	{ _soldierStats.push_back(std::pair<std::string, UnitStats*>(soldier, improvement)); }
 	std::vector<std::pair<std::string, UnitStats*>> getSoldierImprovement() const { return _soldierStats; }
 };
 

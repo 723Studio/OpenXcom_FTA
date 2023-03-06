@@ -62,7 +62,7 @@ const std::string Armor::NONE = "STR_NONE";
  */
 Armor::Armor(const std::string &type) :
 	_type(type), _infiniteSupply(false), _frontArmor(0), _sideArmor(0), _leftArmorDiff(0), _rearArmor(0), _underArmor(0),
-	_drawingRoutine(0), _drawBubbles(false), _movementType(MT_WALK), _turnBeforeFirstStep(false), _turnCost(1), _moveSound(-1), _size(1), _weight(0),
+	_drawingRoutine(0), _drawBubbles(false), _movementType(MT_WALK), _specab(SPECAB_NONE), _turnBeforeFirstStep(false), _turnCost(1), _moveSound(-1), _size(1), _weight(0),
 	_visibilityAtDark(0), _visibilityAtDay(0), _personalLight(15),
 	_camouflageAtDay(0), _camouflageAtDark(0), _antiCamouflageAtDay(0), _antiCamouflageAtDark(0), _heatVision(0), _psiVision(0), _psiCamouflage(0),
 	_deathFrames(3), _constantAnimation(false), _hasInventory(true), _forcedTorso(TORSO_USE_GENDER),
@@ -70,7 +70,7 @@ Armor::Armor(const std::string &type) :
 	_fearImmune(defTriBool), _bleedImmune(defTriBool), _painImmune(defTriBool), _zombiImmune(defTriBool),
 	_ignoresMeleeThreat(defTriBool), _createsMeleeThreat(defTriBool),
 	_overKill(0.5f), _meleeDodgeBackPenalty(0),
-	_allowsRunning(defTriBool), _allowsStrafing(defTriBool), _allowsKneeling(defTriBool), _allowsMoving(1),
+	_allowsRunning(defTriBool), _allowsStrafing(defTriBool), _allowsSneaking(defTriBool), _allowsKneeling(defTriBool), _allowsMoving(1),
 	_isPilotArmor(false), _allowTwoMainWeapons(false), _instantWoundRecovery(false),
 	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1),
 	_hackingDefense(0)
@@ -83,7 +83,7 @@ Armor::Armor(const std::string &type) :
 	_energyRecovery.setEnergyRecovery();
 	_stunRecovery.setStunRecovery();
 
-	_customArmorPreviewIndex.push_back(0);
+	_customArmorPreviewIndex.push_back(Mod::NO_SURFACE);
 }
 
 /**
@@ -121,10 +121,10 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 		_corpseGeoName = _corpseBattleNames.at(0);
 	}
 	mod->loadNames(_type, _builtInWeaponsNames, node["builtInWeapons"]);
-	_corpseGeoName = node["corpseGeo"].as<std::string>(_corpseGeoName);
-	_storeItemName = node["storeItem"].as<std::string>(_storeItemName);
-	_specWeaponName = node["specialWeapon"].as<std::string>(_specWeaponName);
-	_requiresName = node["requires"].as<std::string>(_requiresName);
+	mod->loadName(_type, _corpseGeoName, node["corpseGeo"]);
+	mod->loadNameNull(_type, _storeItemName, node["storeItem"]);
+	mod->loadNameNull(_type, _specWeaponName, node["specialWeapon"]);
+	mod->loadNameNull(_type, _requiresName, node["requires"]);
 
 	_layersDefaultPrefix = node["layersDefaultPrefix"].as<std::string>(_layersDefaultPrefix);
 	_layersSpecificPrefix = node["layersSpecificPrefix"].as< std::map<int, std::string> >(_layersSpecificPrefix);
@@ -138,9 +138,30 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	_drawingRoutine = node["drawingRoutine"].as<int>(_drawingRoutine);
 	_drawBubbles = node["drawBubbles"].as<bool>(_drawBubbles);
 	_movementType = (MovementType)node["movementType"].as<int>(_movementType);
+	_specab = (SpecialAbility)node["specab"].as<int>(_specab);
 
 	_turnBeforeFirstStep = node["turnBeforeFirstStep"].as<bool>(_turnBeforeFirstStep);
 	_turnCost = node["turnCost"].as<int>(_turnCost);
+	if (const YAML::Node &move =  node["moveCost"])
+	{
+		_moveCostBase.load(move["basePercent"]);
+		_moveCostBaseFly.load(move["baseFlyPercent"]);
+		_moveCostBaseNormal.load(move["baseNormalPercent"]);
+
+		_moveCostWalk.load(move["walkPercent"]);
+		_moveCostRun.load(move["runPercent"]);
+		_moveCostStrafe.load(move["strafePercent"]);
+		_moveCostSneak.load(move["sneakPercent"]);
+
+		_moveCostFlyWalk.load(move["flyWalkPercent"]);
+		_moveCostFlyRun.load(move["flyRunPercent"]);
+		_moveCostFlyStrafe.load(move["flyStrafePercent"]);
+
+		_moveCostFlyUp.load(move["flyUpPercent"]);
+		_moveCostFlyDown.load(move["flyDownPercent"]);
+
+		_moveCostGravLift.load(move["gravLiftPercent"]);
+	}
 
 	mod->loadSoundOffset(_type, _moveSound, node["moveSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _deathSoundMale, node["deathMale"], "BATTLE.CAT");
@@ -166,6 +187,8 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	_heatVision = node["heatVision"].as<int>(_heatVision);
 	_psiVision = node["psiVision"].as<int>(_psiVision);
 	_psiCamouflage = node["psiCamouflage"].as<int>(_psiCamouflage);
+	_isAlwaysVisible =  node["alwaysVisible"].as<bool>(_isAlwaysVisible);
+
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	if (const YAML::Node &dmg = node["damageModifier"])
 	{
@@ -176,7 +199,7 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	}
 	mod->loadInts(_type, _loftempsSet, node["loftempsSet"]);
 	if (node["loftemps"])
-		_loftempsSet.push_back(node["loftemps"].as<int>());
+		_loftempsSet = { node["loftemps"].as<int>() };
 	_deathFrames = node["deathFrames"].as<int>(_deathFrames);
 	_constantAnimation = node["constantAnimation"].as<bool>(_constantAnimation);
 	_forcedTorso = (ForcedTorso)node["forcedTorso"].as<int>(_forcedTorso);
@@ -235,6 +258,7 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
 	mod->loadSpriteOffset(_type, _customArmorPreviewIndex, node["customArmorPreviewIndex"], "CustomArmorPreviews");
 	loadTriBoolHelper(_allowsRunning, node["allowsRunning"]);
 	loadTriBoolHelper(_allowsStrafing, node["allowsStrafing"]);
+	loadTriBoolHelper(_allowsSneaking, node["allowsSneaking"]);
 	loadTriBoolHelper(_allowsKneeling, node["allowsKneeling"]);
 	_allowsMoving = node["allowsMoving"].as<bool>(_allowsMoving);
 	_isPilotArmor = node["isPilotArmor"].as<bool>(_isPilotArmor);
@@ -252,6 +276,22 @@ void Armor::load(const YAML::Node &node, const ModScript &parsers, Mod *mod)
  */
 void Armor::afterLoad(const Mod* mod)
 {
+	mod->verifySoundOffset(_type, _moveSound, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _deathSoundMale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _deathSoundFemale, "BATTLE.CAT");
+
+	mod->verifySoundOffset(_type, _selectUnitSoundMale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _selectUnitSoundFemale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _startMovingSoundMale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _startMovingSoundFemale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _selectWeaponSoundMale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _selectWeaponSoundFemale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _annoyedSoundMale, "BATTLE.CAT");
+	mod->verifySoundOffset(_type, _annoyedSoundFemale, "BATTLE.CAT");
+
+	mod->verifySpriteOffset(_type, _customArmorPreviewIndex, "CustomArmorPreviews");
+
+
 	mod->linkRule(_corpseBattle, _corpseBattleNames);
 	mod->linkRule(_corpseGeo, _corpseGeoName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
@@ -265,27 +305,81 @@ void Armor::afterLoad(const Mod* mod)
 	mod->linkRule(_specWeapon, _specWeaponName);
 
 
-	if (_corpseBattle.size() != (size_t)getTotalSize())
 	{
-		if (_corpseBattle.size() != 0)
+		auto totalSize = (size_t)getTotalSize();
+
+		mod->checkForSoftError(_corpseBattle.size() != totalSize, _type, "Number of battle corpse items for 'corpseBattle' does not match the armor size.", LOG_ERROR);
+		mod->checkForSoftError(_loftempsSet.size() != totalSize, _type, "Number of defined templates for 'loftempsSet' or 'loftemps' does not match the armor size.", LOG_ERROR);
+
+		auto s = mod->getVoxelData()->size() / 16;
+		for (auto& lof : _loftempsSet)
 		{
-			throw Exception("Number of battle corpse items does not match the armor size.");
-		}
-		else
-		{
-			throw Exception("Missing battle corpse item(s).");
+			mod->checkForSoftError((size_t)lof >= s, _type, "Value " + std::to_string(lof) + " in 'loftempsSet' or 'loftemps' is larger than number of avaiable templates.", LOG_ERROR);
 		}
 	}
+
+	int numCorpse = 0;
 	for (auto& c : _corpseBattle)
 	{
 		if (!c)
 		{
 			throw Exception("Battle corpse item(s) cannot be empty.");
 		}
+
+		if (!numCorpse++)
+		{
+			// only the first item needs to be a corpse item
+			mod->checkForSoftError(c->getBattleType() != BT_CORPSE, _type, "The first battle corpse item must be of item type 'corpse' (battleType: 11)");
+		}
+		else
+		{
+			mod->checkForSoftError(c->isRecoverable(), _type, "Multiple recoverable battle corpse item(s)");
+		}
 	}
 	if (!_corpseGeo)
 	{
 		throw Exception("Geo corpse item cannot be empty.");
+	}
+
+	// calcualte final surfaces used by layers
+	if (!_layersDefaultPrefix.empty())
+	{
+		std::stringstream ss;
+		for (auto& version : _layersDefinition)
+		{
+			int layerIndex = 0;
+			for (auto& layerItem : version.second)
+			{
+				if (!layerItem.empty())
+				{
+					ss.str("");
+					auto pre = _layersSpecificPrefix.find(layerIndex);
+					if (pre != _layersSpecificPrefix.end())
+					{
+						ss << pre->second;
+					}
+					else
+					{
+						ss << _layersDefaultPrefix;
+					}
+					ss << "__" << layerIndex << "__" << layerItem;
+
+					//override element in vector
+					layerItem = ss.str();
+
+					//check if surface is valid
+					if (Options::lazyLoadResources == false)
+					{
+						//TODO: remove `const_cast`
+						mod->checkForSoftError(const_cast<Mod*>(mod)->getSurface(layerItem, false) == nullptr, _type, "Missing surface definition for '" + layerItem + "'", LOG_ERROR);
+					}
+				}
+				layerIndex++;
+			}
+			//clean unused layers
+			Collections::removeIf(version.second, [](const std::string& s) { return s.empty(); });
+			version.second.shrink_to_fit();
+		}
 	}
 
 	Collections::sortVector(_units);
@@ -473,6 +567,48 @@ bool Armor::drawBubbles() const
 MovementType Armor::getMovementType() const
 {
 	return _movementType;
+}
+
+/**
+ * Get MovementType based on depth of battle.
+ */
+MovementType Armor::getMovementTypeByDepth(int depth) const
+{
+	if (_movementType == MT_FLOAT)
+	{
+		if (depth > 0)
+		{
+			return MT_FLY;
+		}
+		else
+		{
+			return MT_WALK;
+		}
+	}
+	else if (_movementType == MT_SINK)
+	{
+		if (depth == 0)
+		{
+			return MT_FLY;
+		}
+		else
+		{
+			return MT_WALK;
+		}
+	}
+	else
+	{
+		return _movementType;
+	}
+}
+
+/**
+ * Gets the armor's special ability.
+ * @return The armor's specab.
+ */
+int Armor::getSpecialAbility() const
+{
+	return (int)_specab;
 }
 
 /**
@@ -971,6 +1107,15 @@ bool Armor::allowsStrafing(bool def) const
 }
 
 /**
+ * Can you sneak while wearing this armor?
+ * @return True if you are allowed to sneak.
+ */
+bool Armor::allowsSneaking(bool def) const
+{
+	return useTriBoolHelper(_allowsSneaking, def);
+}
+
+/**
  * Can you kneel while wearing this armor?
  * @return True if you are allowed to kneel.
  */
@@ -1091,6 +1236,10 @@ void Armor::ScriptRegister(ScriptParserBase* parser)
 	ar.add<&getTypeScript>("getType");
 
 	ar.add<&Armor::getDrawingRoutine>("getDrawingRoutine");
+	ar.add<&Armor::drawBubbles>("getDrawBubbles");
+	ar.add<&Armor::getDeathFrames>("getDeathFrames");
+	ar.add<&Armor::getConstantAnimation>("getConstantAnimation");
+
 	ar.add<&Armor::getVisibilityAtDark>("getVisibilityAtDark");
 	ar.add<&Armor::getVisibilityAtDay>("getVisibilityAtDay");
 	ar.add<&Armor::getPersonalLight>("getPersonalLight");
@@ -1099,6 +1248,15 @@ void Armor::ScriptRegister(ScriptParserBase* parser)
 	UnitStats::addGetStatsScript<&Armor::_stats>(ar, "Stats.");
 
 	ar.add<&getArmorValueScript>("getArmor");
+
+
+	ar.addField<&Armor::_moveCostBase, &ArmorMoveCost::TimePercent>("MoveCost.getBaseTimePercent");
+	ar.addField<&Armor::_moveCostBase, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseEnergyPercent");
+	ar.addField<&Armor::_moveCostBaseNormal, &ArmorMoveCost::TimePercent>("MoveCost.getBaseNormalTimePercent");
+	ar.addField<&Armor::_moveCostBaseNormal, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseNormalEnergyPercent");
+	ar.addField<&Armor::_moveCostBaseFly, &ArmorMoveCost::TimePercent>("MoveCost.getBaseFlyTimePercent");
+	ar.addField<&Armor::_moveCostBaseFly, &ArmorMoveCost::EnergyPercent>("MoveCost.getBaseFlyEnergyPercent");
+
 
 	ar.addScriptValue<BindBase::OnlyGet, &Armor::_scriptValues>();
 	ar.addDebugDisplay<&debugDisplayScript>();

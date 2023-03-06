@@ -25,6 +25,7 @@ namespace OpenXcom
 class RuleInventory;
 class Game;
 class BattleUnit;
+class Timer;
 
 /**
  * View of an alien inventory.
@@ -37,6 +38,8 @@ private:
 	Surface *_grid, *_items;
 	BattleUnit *_selUnit;
 	int _dynamicOffset;
+	int _animFrame;
+	Timer* _animTimer;
 	/// Gets the slot in the specified position.
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
 public:
@@ -60,6 +63,10 @@ public:
 	void blit(SDL_Surface *surface) override;
 	/// Special handling for mouse clicks.
 	void mouseClick(Action *action, State *state) override;
+	/// Handles timers.
+	void think() override;
+	/// Animate surface.
+	void animate();
 };
 
 }

@@ -39,6 +39,8 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Screen.h"
 #include "../Menu/CutsceneState.h"
+#include "../Savegame/AlienMission.h"
+#include "../Mod/RuleAlienMission.h"
 
 namespace OpenXcom
 {
@@ -73,8 +75,8 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 	std::string mission = battleSave->getMissionType();
 	AlienDeployment *deployment = _game->getMod()->getDeployment(mission);
 
-	if (_game->getMod()->getIsFTAGame() &&
-		base && !_game->getSavedGame()->isResearched("STR_LOG1") &&
+	if (_game->getMod()->isFTAGame() &&
+		!_game->getSavedGame()->isResearched("STR_LOG1") &&
 		!battleSave->getAlienCustomDeploy().empty())
 	{
 		deployment = _game->getMod()->getDeployment(battleSave->getAlienCustomDeploy());  //#FINNIKTODO dirty hack
@@ -190,15 +192,44 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 
 	_txtTitle->setText(tr(title));
 
+	bool isPreview = battleSave->isPreview();
+	if (isPreview)
+	{
+		if (battleSave->getCraftForPreview())
+		{
+			if (battleSave->getCraftForPreview()->getId() == RuleCraft::DUMMY_CRAFT_ID)
+			{
+				// we're using the same alienDeployment for the real craft preview and for the dummy craft preview,
+				// but we want to have different briefing texts
+				desc = desc + "_DUMMY";
+			}
+		}
+		else
+		{
+			// base preview
+			desc = desc + "_PREVIEW";
+		}
+	}
 	_txtBriefing->setWordWrap(true);
 	_txtBriefing->setText(tr(desc));
 
 	if (_infoOnly) return;
 
-	if (mission == "STR_BASE_DEFENSE")
+	if (!isPreview && base && mission == "STR_BASE_DEFENSE")
 	{
-		// And make sure the base is unmarked.
-		base->setRetaliationTarget(false);
+		auto* am = base->getRetaliationMission();
+
+		// And make sure the base is unmarked (but only for vanilla retaliations, not for instant retaliations)
+		if (am)
+		{
+			base->setRetaliationTarget(false);
+		}
+
+		if (am && am->getRules().isMultiUfoRetaliation())
+		{
+			// Remember that more UFOs may be coming
+			am->setMultiUfoRetaliationInProgress(true);
+		}
 	}
 }
 
@@ -243,11 +274,18 @@ void BriefingState::btnOkClick(Action *)
 	BattlescapeState *bs = new BattlescapeState;
 	bs->getBattleGame()->spawnFromPrimedItems();
 	auto tally = bs->getBattleGame()->tallyUnits();
-	if (tally.liveAliens > 0)
+	bool isPreview = _game->getSavedGame()->getSavedBattle()->isPreview();
+	if (tally.liveAliens > 0 || isPreview)
 	{
 		_game->pushState(bs);
 		_game->getSavedGame()->getSavedBattle()->setBattleState(bs);
 		_game->pushState(new NextTurnState(_game->getSavedGame()->getSavedBattle(), bs));
+		if (isPreview)
+		{
+			// skip InventoryState
+			_game->getSavedGame()->getSavedBattle()->startFirstTurn();
+			return;
+		}
 		_game->pushState(new InventoryState(false, bs, 0));
 	}
 	else

@@ -89,6 +89,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
+	_ftaUI = _game->getMod()->isFTAGame();
+
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_soldier = new Surface(320, 200, 0, 0);
@@ -223,11 +225,13 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnUnload->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnUnload->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
 
-	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClick, SDL_BUTTON_LEFT);
-	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClick, SDL_BUTTON_RIGHT);
+	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_LEFT);
+	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_RIGHT);
 	_btnGround->setTooltip("STR_SCROLL_RIGHT");
 	_btnGround->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnGround->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
+	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickBackward, Options::keyBattleLeft);
+	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickForward, Options::keyBattleRight);
 
 	_btnRank->onMouseClick((ActionHandler)&InventoryState::btnRankClick);
 	_btnRank->setTooltip("STR_UNIT_STATS");
@@ -399,10 +403,21 @@ void InventoryState::init()
 
 	_txtName->setBig();
 	_txtName->setText(unit->getName(_game->getLanguage()));
+
+	_btnLinks->setVisible(Options::oxceLinks && !_tu);
+
 	bool resetGroundOffset = _tu;
+	static bool s_prevUnitIsSummoned = false;
 	if (unit->isSummonedPlayerUnit())
 	{
 		resetGroundOffset = true; // this unit is likely not standing on the shared inventory tile, just re-arrange it every time
+		s_prevUnitIsSummoned = true; // when we switch between units we need to remember which is summoned (for FtA missions)
+	}
+	else
+	{
+		if (s_prevUnitIsSummoned)  // if we switch back from a summoned unit during the starting equipment phase (FtA possibility) we require re-arrangement. In other cases it's already set to re-arrange.
+			resetGroundOffset = true;
+		s_prevUnitIsSummoned = false;
 	}
 	_inv->setSelectedUnit(unit, resetGroundOffset);
 	Soldier *s = unit->getGeoscapeSoldier();
@@ -412,7 +427,7 @@ void InventoryState::init()
 		if (_reloadUnit)
 		{
 			// Step 0: update unit's armor
-			unit->updateArmorFromSoldier(_game->getMod(), s, s->getArmor(), _battleGame->getDepth());
+			unit->updateArmorFromSoldier(_game->getMod(), s, s->getArmor(), _battleGame->getDepth(), false, nullptr);
 
 			// Step 1: remember the unit's equipment (incl. loaded fixed items)
 			_clearInventoryTemplate(_tempInventoryTemplate);
@@ -439,18 +454,21 @@ void InventoryState::init()
 			_reloadUnit = false;
 		}
 
+		SoldierRole role = s->getBestRole();
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
 		auto frame = texture->getFrame(s->getRankSpriteBattlescape());
+		if (_ftaUI)
+		{
+			frame = texture->getFrame(s->getRoleRankSpriteBattlescape(role));
+		}
 		if (frame)
 		{
 			frame->blitNShade(_btnRank, 0, 0);
 		}
 
-		auto defaultPrefix = s->getArmor()->getLayersDefaultPrefix();
-		if (!defaultPrefix.empty())
+		if (s->getArmor()->hasLayersDefinition())
 		{
-			auto layers = s->getArmorLayers();
-			for (auto layer : layers)
+			for (const auto& layer : s->getArmorLayers())
 			{
 				_game->getMod()->getSurface(layer, true)->blitNShade(_soldier, 0, 0);
 			}
@@ -524,14 +542,22 @@ void InventoryState::init()
  * Disables the input, if not a soldier. Sets the name without a statstring otherwise.
  * @param action Pointer to an action.
  */
-void InventoryState::edtSoldierPress(Action *)
+void InventoryState::edtSoldierPress(Action *action)
 {
-	// renaming available only in the base (not during mission)
-	if (_base == 0 || _btnLinks->getVisible())
+	if (_btnLinks->getVisible())
 	{
-		_txtName->setFocus(false);
+		double mx = action->getAbsoluteXMouse();
+		if (mx >= _btnLinks->getX())
+		{
+			_txtName->setFocus(false);
+			return;
+		}
+		else
+		{
+			_btnLinks->setVisible(false);
+		}
 	}
-	else
+
 	{
 		BattleUnit *unit = _inv->getSelectedUnit();
 		if (unit != 0)
@@ -594,7 +620,7 @@ void InventoryState::updateStats()
 	}
 	bool showPsiStrength = (psiSkillWithoutAnyBonuses > 0 || (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
 
-	bool ftaGame = _game->getMod()->getIsFTAGame();
+	bool ftaGame = _game->getMod()->isFTAGame();
 
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{
@@ -604,21 +630,21 @@ void InventoryState::updateStats()
 			switch (element->custom)
 			{
 				case 1:
-					txtField->setText(tr("STR_ACCURACY_SHORT").arg(unit->getBaseStats()->firing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
 				case 2:
-					txtField->setText(tr("STR_REACTIONS_SHORT").arg(unit->getBaseStats()->reactions));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->reactions));
 					break;
 				case 3:
 					if (ftaGame)
 					{
-						txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
+						txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
 						break;
 					}
 					else
 					{
 						if (psiSkillWithoutAnyBonuses > 0)
-							txtField->setText(tr("STR_PSIONIC_SKILL_SHORT").arg(unit->getBaseStats()->psiSkill));
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
 						else
 							txtField->setText("");
 						break;
@@ -627,7 +653,7 @@ void InventoryState::updateStats()
 					if (ftaGame)
 					{
 						if (psiSkillWithoutAnyBonuses > 0)
-							txtField->setText(tr("STR_PSIONIC_SKILL_SHORT").arg(unit->getBaseStats()->psiSkill));
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
 						else
 							txtField->setText("");
 						break;
@@ -635,19 +661,19 @@ void InventoryState::updateStats()
 					else
 					{
 						if (showPsiStrength)
-							txtField->setText(tr("STR_PSIONIC_STRENGTH_SHORT").arg(unit->getBaseStats()->psiStrength));
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiStrength));
 						else
 							txtField->setText("");
 						break;
 					}
 				case 11:
-					txtField->setText(tr("STR_FIRING_SHORT").arg(unit->getBaseStats()->firing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
 				case 12:
-					txtField->setText(tr("STR_THROWING_SHORT").arg(unit->getBaseStats()->throwing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->throwing));
 					break;
 				case 13:
-					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
 					if (showPsiStrength)
@@ -816,7 +842,7 @@ void InventoryState::saveGlobalLayout(int index, bool includingArmor)
 	_createInventoryTemplate(*tmpl);
 
 	// optionally save armor info too
-	if (includingArmor)
+	if (includingArmor && _battleGame->getSelectedUnit()->getGeoscapeSoldier())
 	{
 		_game->getSavedGame()->setGlobalEquipmentLayoutArmor(index, _battleGame->getSelectedUnit()->getArmor()->getType());
 	}
@@ -891,9 +917,9 @@ bool InventoryState::tryArmorChange(const std::string& armorName)
 	if (armorAvailable)
 	{
 		Craft* craft = soldier->getCraft();
-		if (craft != 0 && next->getSize() > prev->getSize())
+		if (craft)
 		{
-			if (craft->getNumVehicles() >= craft->getRules()->getVehicles() || craft->getSpaceAvailable() < 3)
+			if (!craft->validateArmorChange(prev->getSize(), next->getSize()))
 			{
 				// STR_NOT_ENOUGH_CRAFT_SPACE
 				return false;
@@ -910,7 +936,7 @@ bool InventoryState::tryArmorChange(const std::string& armorName)
 				_base->getStorageItems()->removeItem(next->getStoreItem());
 			}
 		}
-		soldier->setArmor(next);
+		soldier->setArmor(next, true);
 		armorChanged = true;
 	}
 
@@ -935,15 +961,34 @@ void InventoryState::btnGlobalEquipmentLayoutClick(Action *action)
 		return;
 	}
 
-	// SDLK_1 = 49, SDLK_9 = 57
-	const int index = action->getDetails()->key.keysym.sym - 49;
-	if (index < 0 || index > 8)
+	// SDLK_0 = 48, SDLK_1 = 49, SDLK_9 = 57
+	// SDLK_0 selects the 10-th inventory layout
+	// by repeating a key you can load a layout from the next decade
+	const int sym = action->getDetails()->key.keysym.sym;
+	const int layout_no = (sym == 48) ? 10 : sym - 48;
+
+	if (sym == _prev_key && !_game->isCtrlPressed())
 	{
-		return; // just in case
+		_key_repeats++;
+	}
+	else
+	{
+		_key_repeats = 0;
+	}
+	_prev_key = sym;
+
+	const int index = 10 * _key_repeats + layout_no - 1;
+
+	if (index < 0 || index >= Options::oxceMaxEquipmentLayoutTemplates)
+	{
+		// do nothing if the layout index is out of bounds
+		return;
 	}
 
 	if (_game->isCtrlPressed())
 	{
+		// can't save layout >10 this way
+		_prev_key = 0, _key_repeats = 0;
 		saveGlobalLayout(index, false);
 
 		// give audio feedback
@@ -1030,7 +1075,10 @@ void InventoryState::btnOkClick(Action *)
 	_game->popState();
 	if (!_tu)
 	{
-		saveEquipmentLayout();
+		if (_base || !Options::oxceAlternateCraftEquipmentManagement)
+		{
+			saveEquipmentLayout();
+		}
 		if (_parent)
 		{
 			_battleGame->startFirstTurn();
@@ -1129,14 +1177,9 @@ void InventoryState::btnQuickSearchApply(Action *)
  * Shows more ground items / rearranges them.
  * @param action Pointer to an action.
  */
-void InventoryState::btnGroundClick(Action *action)
+void InventoryState::btnGroundClickForward(Action *action)
 {
-	if (_game->isRightClick(action))
-	{
-		// scroll backwards
-		_inv->arrangeGround(-1);
-	}
-	else if (_game->isShiftPressed())
+	if (_game->isShiftPressed())
 	{
 		// scroll backwards
 		_inv->arrangeGround(-1);
@@ -1146,6 +1189,16 @@ void InventoryState::btnGroundClick(Action *action)
 		// scroll forward
 		_inv->arrangeGround(1);
 	}
+}
+
+/**
+ * Shows more ground items / rearranges them.
+ * @param action Pointer to an action.
+ */
+void InventoryState::btnGroundClickBackward(Action *action)
+{
+	// scroll backwards
+	_inv->arrangeGround(-1);
 }
 
 /**
@@ -1620,6 +1673,7 @@ void InventoryState::onAutoequip(Action *)
 void InventoryState::invClick(Action *act)
 {
 	updateStats();
+	_prev_key = 0, _key_repeats = 0;
 }
 
 /**
@@ -1952,17 +2006,21 @@ void InventoryState::handle(Action *action)
 {
 	State::handle(action);
 
-	if (action->getDetails()->type == SDL_KEYDOWN)
+	if (action->getDetails()->type == SDL_KEYDOWN && !_btnQuickSearch->isFocused() && !_txtName->isFocused())
 	{
 		// "ctrl+1..9" - save equipment
 		// "1..9" - load equipment
-		if (action->getDetails()->key.keysym.sym >= SDLK_1 && action->getDetails()->key.keysym.sym <= SDLK_9)
+		if (action->getDetails()->key.keysym.sym >= SDLK_0 && action->getDetails()->key.keysym.sym <= SDLK_9)
 		{
-			if (!_btnQuickSearch->isFocused())
 			{
 				btnGlobalEquipmentLayoutClick(action);
 			}
 		}
+		else
+		{
+			_prev_key = 0, _key_repeats = 0;
+		}
+
 		if (action->getDetails()->key.keysym.sym == Options::keyInvClear)
 		{
 			if (_game->isCtrlPressed() && _game->isAltPressed())
@@ -2042,7 +2100,7 @@ void InventoryState::think()
 			r.w -= 2;
 			r.h -= 2;
 			_selAmmo->drawRect(&r, Palette::blockOffset(0)+15);
-			firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, anim);
+			firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
 		}
 		else
 		{

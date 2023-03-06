@@ -29,8 +29,8 @@ class Screen;
 class Cursor;
 class Language;
 class SavedGame;
-class MasterMind;
 class Mod;
+class MasterMind;
 class ModInfo;
 class FpsCounter;
 class Action;
@@ -50,8 +50,8 @@ private:
 	Language *_lang;
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
-	MasterMind *_mind;
 	Mod *_mod;
+	MasterMind *_mind;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
 	bool _mouseActive;
@@ -101,6 +101,10 @@ public:
 	void setMouseActive(bool active);
 	/// Returns whether current state is the param state
 	bool isState(State *state) const;
+	/// Returns whether a UfopaediaStartState is in the background.
+	bool containsUfopaediaStartState() const;
+	/// Returns whether a NotesState is in the background.
+	bool containsNotesState() const;
 	/// Returns whether the game is shutting down.
 	bool isQuitting() const;
 	/// Loads the default and current language.

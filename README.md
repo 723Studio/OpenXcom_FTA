@@ -1,14 +1,92 @@
-# OpenXcom From the Ashes [![Workflow Status][workflow-badge]][actions-url]
+# OpenXCom: From the Ashes [![Workflow Status][workflow-badge]][actions-url]
 
 [workflow-badge]: https://github.com/OpenXcom/OpenXcom/workflows/ci/badge.svg
 [actions-url]: https://github.com/OpenXcom/OpenXcom/actions
 
-This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
-UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
-by Microprose, licensed under the GPL and written in C++ / SDL.
+[![OpenXcom FTA issues](https://img.shields.io/github/issues-raw/723Studio/OpenXcom_FTA?color=1182c3&logo=GitHub&labelColor=282828)](https://github.com/openapoc/openapoc/issues)
+[![OpenXcom FTA Discord](https://img.shields.io/discord/699764481105854542?label=Discord&logo=discord&logoColor=ffffff&labelColor=7289DA&color=2c2f33)](https://discord.gg/epmtzH9) 
+[![OpenXcom FTA Vkontakte](https://img.shields.io/static/v1?label=VK&logo=vk&logoColor=ffffff&message=Vstupaj%20|%2097&color=282828&labelColor=2787f5)](https://vk.com/xcomfta)
+[![OpenXcom FTA Support](https://img.shields.io/static/v1?label=Support&logo=paypal&logoColor=ffffff&message=Me&color=282828&labelColor=2787f5)](http://x-comfromtheashes.tilda.ws/)
+<a href="https://www.youtube.com/channel/UCt5SsOdMgRJuFK65Z1xdkhw" target="_blank" rel="nofollow">
+<img alt="OpenXcom FTA YouTube Channel Subscribers" src="https://img.shields.io/youtube/channel/subscribers/UCt5SsOdMgRJuFK65Z1xdkhw?label=Youtube&style=social">
+</a>
+<a href="https://www.twitch.tv/finnik723studio" target="_blank" rel="nofollow">
+<img alt="OpenXcom FTA Twitch Status" src="https://img.shields.io/twitch/status/finnik723studio?style=social">
+</a>
 
-Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
+<p align="center"><a href="https://x-comfromtheashes.tilda.ws" target="_blank" rel="nofollow"><img src="https://i.imgur.com/KPawjTn.png"/></a></p>
+
+> This is a fork of [OpenXcom project](https://openxcom.org) - an open-source clone of the popular "UFO: Enemy Unknown" ("X-COM:
+UFO Defense" in the USA release) and "X-COM: Terror From the Deep" videogames
+by Microprose, that requires the original files to run, licensed under the GPL and written in C++ / SDL. It was founded by Finnik in June 2019.
+
+> Current fork of the game engine inherits all features from OXC and OXCE ongoing development and 
 provides several exclusive game mechanics. See [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more details.
+
+
+
+## Table of Contents
+
+* [Copyright](#copyright)
+* [Overview and Features](#overview-and-features)
+* [FAQ](#faq)
+* [Installation](#installation)
+* [Mods](#mods)
+* [Directory Locations](#directory-locations)
+  * [Windows](#windows)
+  * [Mac OS X](#mac-os-x)
+  * [Linux](#linux)
+* [Configuration](#configuration)
+* [Development](#development)
+
+
+## Copyright
+All rights for the original game and its resources belong to their respective owners. We do not encourage and do not support any form of illegal usage of the original game. We strongly advise to purchase the original game on GOG or other platforms. Pirate ISOs are not supported and will cause issues such as crashes and map problems with OpenXcom FTA.
+
+## Overview and Features 
+The X-Com initiative failed, with alien agents infiltrating the ranks of the governments of most major powers. The agency's base is in poor condition due to lack of funding. Most of the personnel were dismissed or killed. To win, the player will have to revive X-Com literally from the ashes ...
+
+The mod adding new content, missions and mechanics. Its expand the gaming experience while maintaining the original setting and spirit of the game. Here some features:
+
+- The game has an alternative start. 
+- Loyalty system of your troops and stuff.For instance, mission results, events, and research affect it every time, but the alien activity count only it was detected.
+- Custom Geoscape dialogue system that will spawn events depending on the player's choice.
+- Faction Diplomacy. It represents dynamic factions for the player to interact that replace the Council of Funding Nations and its Countries.
+  - Factions live their own life with custom geoscape AI system - they have resources, like funds, power and vigilance, as well as stash of items a personnel, and they manage those resources to keep growing and balance things.
+  - Geoscape Events and Covert Operations can affect reputation scores directly.
+  - There can be hidden factions and can be discovered for diplomacy.
+  - Negotiations system with full dialogue to interact with faction.
+  - Interfaction relations. When the player rises reputation score with one faction, another goes down.
+  - ...
+- A covert operations system. The operation can be launched from each base and can involve soldiers, scientists, and engineers. 
+  - Once operation launched, some events can occur in its process, and once finished operation the game would decide its results.
+  - All covert operations can end with success, failure, or critical failure.
+  - Each covert operation can have its own geoscape entities to be added to the game on success or failure - score, funds, research, faction reputation, items, spawn events, and alien missions.
+  - It can even push the battlescape game with defined alien deployment!
+- BattleScripts a special command that is processing in the battlescape layer after the end of each player's turn. 
+- New handy animated cutscene system.
+- The game now process ongoing researchers not every day, but every hour. 
+- Hide alien base from every vanilla way to discover alien bases, but not for special ways introduced in FtA
+- ...
+
+## FAQ
+Q: At what stage is the development of the game?
+> the mod is in pre-alpha stage.
+
+Q: Where can I join the community and chat or participate in development?
+> [join to our Discord channel](https://discord.gg/epmtzH9) where you can find more then 180 fans. (Its can be opened in browser and does not require registration)
+
+Q: How and where can I translate the game into my language?
+> we must achieve the implementation of most ideas and mechanics after which it will be possible to start translating into languages
+
+Q: I am an artist, how can I help the project?
+> [join to our Discord channel](https://discord.gg/epmtzH9) and we will discuss specifically your case
+
+Q: I can help the development if I test the game, where can I post bug reports?
+> You can post bugreports [here](https://github.com/723Studio/OpenXcom_FTA/issues)
+
+Q: I have some great ideas where can I share them?
+> [join to our Discord channel](https://discord.gg/epmtzH9) (Its can be opened in browser and does not require registration)
 
 ## Installation
 
@@ -29,29 +107,12 @@ data or user folder (see below for folder locations).
 
 ## Mods
 
-Mods are an important and exciting part of the game.  OpenXcom comes with a set
-of standard mods based on traditional XcomUtil and UFOExtender functionality.
-There is also a [mod portal website](https://openxcom.mod.io/) with a thriving
-mod community with hundreds of innovative mods to choose from.
-
-To install a mod, go to the mods subdirectory in your user directory (see below
-for folder locations).  Extract the mod into a new subdirectory.  WinZip has an
-"Extract to" option that creates a directory whose name is based on the archive
-name.  It doesn't really matter what the directory name is as long as it is
-unique.  Some mods are packed with extra directories at the top, so you may
-need to move files around inside the new mod directory to get things straighted
-out.  For example, if you extract a mod to mods/LulzMod and you see something
-like:
-
-    mods/LulzMod/data/TERRAIN/
-    mods/LulzMod/data/Rulesets/
-
-and so on, just move everything up a level so it looks like:
-
-    mods/LulzMod/TERRAIN/
-    mods/LulzMod/Rulesets/
-
-and you're good to go!  Enable your new mod on the Options -> Mods page in-game.
+Current engine version is designed to be used together with [X-COM: From the Ashes
+mod](https://github.com/723Studio/X-Com-From-the-Ashes). Still, currently it is fully compatible 
+with all OXC an OXCE mods, and does not have any game breaking changes. If you
+face any bug with mod, please, let us know with created issue in this repository.
+All major changes in this code, compared to OpenXcom or OpenXcom Extended are
+locked behind `ftaGame` property (see [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more info.)
 
 ## Directory Locations
 
@@ -153,10 +214,10 @@ For more details please check the [wiki](https://ufopaedia.org/index.php/Options
 
 OpenXcom requires the following developer libraries:
 
-- [SDL](http://www.libsdl.org) (libsdl1.2)
-- [SDL\_mixer](http://www.libsdl.org/projects/SDL_mixer/) (libsdl-mixer1.2)
-- [SDL\_gfx](http://www.ferzkopp.net/joomla/content/view/19/14/) (libsdl-gfx1.2), version 2.0.22 or later
-- [SDL\_image](http://www.libsdl.org/projects/SDL_image/) (libsdl-image1.2)
+- [SDL](https://www.libsdl.org) (libsdl1.2)
+- [SDL\_mixer](https://www.libsdl.org/projects/SDL_mixer/) (libsdl-mixer1.2)
+- [SDL\_gfx](https://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) (libsdl-gfx1.2), version 2.0.22 or later
+- [SDL\_image](https://www.libsdl.org/projects/SDL_image/) (libsdl-image1.2)
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp), version 0.5.3 or later
 
 The source code includes files for the following build tools:

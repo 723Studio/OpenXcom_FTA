@@ -53,7 +53,38 @@ enum ExperienceTrainingMode {
 	ETM_PSI_STRENGTH_OR_SKILL, ETM_PSI_STRENGTH_OR_SKILL_2X,
 	ETM_NOTHING
 };
-enum BattleActionType : Uint8 { BA_NONE, BA_TURN, BA_WALK, BA_KNEEL, BA_PRIME, BA_UNPRIME, BA_THROW, BA_AUTOSHOT, BA_SNAPSHOT, BA_AIMEDSHOT, BA_HIT, BA_USE, BA_LAUNCH, BA_MINDCONTROL, BA_PANIC, BA_RETHINK, BA_CQB, BA_HACK };
+enum BattleActionType : Uint8
+{
+	BA_NONE = 0,
+
+	BA_TURN = 1,
+	BA_WALK = 2,
+	BA_KNEEL = 3,
+
+	BA_PRIME = 4,
+	BA_UNPRIME = 5,
+	BA_THROW = 6,
+	BA_AUTOSHOT = 7,
+	BA_SNAPSHOT = 8,
+	BA_AIMEDSHOT = 9,
+	BA_HIT = 10,
+
+	BA_USE = 11,
+	BA_LAUNCH = 12,
+	BA_MINDCONTROL = 13,
+	BA_PANIC = 14,
+
+	BA_RETHINK = 15,
+
+	BA_CQB = 16,
+
+	BA_TRIGGER_TIMED_GRENADE = 17,
+	BA_TRIGGER_PROXY_GRENADE = 18,
+
+	BA_SELF_DESTRUCT = 19,
+
+	BA_HACK = 20,
+};
 
 enum class BattleActionOrigin { CENTRE = 0, LEFT, RIGHT }; // Used for off-centre shooting.
 
@@ -202,6 +233,7 @@ struct RuleItemAction
 	RuleItemUseCost flat;
 	bool arcing = false; // Only overrides arcing: false on a weapon for a specific action
 	std::string name;
+	std::string shortName;
 };
 
 /**
@@ -288,6 +320,7 @@ public:
 
 private:
 	std::string _type, _name, _nameAsAmmo; // two types of objects can have the same name
+	std::string _requiresBuyCountry;
 	std::vector<std::string> _requiresName;
 	std::vector<std::string> _requiresBuyName;
 	std::vector<const RuleResearch *> _requires, _requiresBuy;
@@ -300,14 +333,14 @@ private:
 
 	Unit* _vehicleUnit;
 	double _size;
-	int _costBuy, _costSell, _transferTime, _weight, _costDispose;
+	int _monthlyBuyLimit, _costBuy, _costSell, _transferTime, _weight, _costDispose;
 	int _throwRange, _underwaterThrowRange;
 	int _stackSize;
 	int _bigSprite;
 	int _floorSprite;
 	int _handSprite, _bulletSprite;
 	int _specialIconSprite;
-	std::vector<int> _reloadSound;
+	std::vector<int> _reloadSound, _primeSound, _unprimeSound;
 	std::vector<int> _fireSound, _hitSound;
 	int _hitAnimation, _hitAnimFrames;
 	std::vector<int> _hitMissSound;
@@ -320,15 +353,16 @@ private:
 	int _psiAnimation, _psiAnimFrames;
 	std::vector<int> _psiMissSound;
 	int _psiMissAnimation, _psiMissAnimFrames;
-	int _power;
+	int _power, _powerForAnimation;
 	bool _hidePower;
 	float _powerRangeReduction;
 	float _powerRangeThreshold;
-	int _coneSize;
+	int _coneSize, _noiseValue;
 	std::vector<std::vector<std::string>> _compatibleAmmoNames = std::vector<std::vector<std::string>>(AmmoSlotMax);
 	std::vector<const RuleItem*> _compatibleAmmo[AmmoSlotMax];
 	std::unordered_map<const RuleItem*, int> _compatibleAmmoSlots;
 	RuleDamageType _damageType, _meleeType;
+	bool _damageTypeSet, _meleeTypeSet;
 	RuleItemAction _confAimed, _confAuto, _confSnap, _confMelee;
 	int _accuracyUse, _accuracyMind, _accuracyPanic, _accuracyThrow, _accuracyCloseQuarters;
 	int _noLOSAccuracyPenalty;
@@ -339,7 +373,10 @@ private:
 	RuleItemFuseTrigger _fuseTriggerEvents;
 	bool _hiddenOnMinimap;
 	std::string _medikitActionName, _psiAttackName, _primeActionName, _unprimeActionName, _primeActionMessage, _unprimeActionMessage;
-	bool _twoHanded, _blockBothHands, _fixedWeapon, _fixedWeaponShow, _isConsumable, _isFireExtinguisher, _isExplodingInHands, _specialUseEmptyHand;
+
+	bool _twoHanded, _blockBothHands, _fixedWeapon, _fixedWeaponShow, _isConsumable, _isFireExtinguisher;
+	bool _isExplodingInHands, _specialUseEmptyHand, _specialUseEmptyHandShow;
+	int _inventoryMoveCostPercent = 100;
 	std::string _defaultInventorySlotName;
 	const RuleInventory* _defaultInventorySlot;
 	int _defaultInvSlotX, _defaultInvSlotY;
@@ -353,6 +390,7 @@ private:
 	int _medikitTargetMatrix;
 	std::string _medikitBackground;
 	int _woundRecovery, _healthRecovery, _stunRecovery, _energyRecovery, _manaRecovery, _moraleRecovery, _painKillerRecovery;
+
 	int _recoveryPoints;
 	int _armor;
 	int _turretType;
@@ -380,6 +418,7 @@ private:
 	RuleStatBonus _damageBonus, _meleeBonus, _accuracyMulti, _meleeMulti, _throwMulti, _closeQuartersMulti;
 	ModScript::BattleItemScripts::Container _battleItemScripts;
 	ScriptValues<RuleItem> _scriptValues;
+	int _extendedItemReloadCostLocal;
 
 	/// Get final value of cost.
 	RuleItemUseCost getDefault(const RuleItemUseCost& a, const RuleItemUseCost& b) const;
@@ -417,6 +456,8 @@ public:
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
+	/// Gets reload cost
+	int getExtendedItemReloadCostLocal() const { return _extendedItemReloadCostLocal; }
 	/// Gets the item's type.
 	const std::string &getType() const;
 	/// Gets the item's name.
@@ -427,6 +468,8 @@ public:
 	const std::vector<const RuleResearch*> &getRequirements() const;
 	/// Gets the item's buy requirements.
 	const std::vector<const RuleResearch*> &getBuyRequirements() const;
+	/// Gets the allied country name required to buy this item.
+	const std::string& getRequiresBuyCountry() const { return _requiresBuyCountry; }
 	/// Gets the base functions required to buy craft.
 	RuleBaseFacilityFunctions getRequiresBuyBaseFunc() const { return _requiresBuyBaseFunc; }
 	/// Gets the dividers used for recovery of special items.
@@ -443,6 +486,8 @@ public:
 	double getSize() const;
 	/// Gets the item's reputation requirments.
 	const std::map<std::string, int>& getReputationRequirements() const { return _reputationRequirements; };
+	/// Gets the item's monthly buy limit.
+	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
 	/// Gets the item's purchase cost.
 	int getBuyCost() const;
 	/// Gets the item's sale cost.
@@ -467,6 +512,9 @@ public:
 	int getHandSprite() const;
 	/// Gets the item's reference in SPICONS.DAT for special weapon button.
 	int getSpecialIconSprite() const;
+
+	/// Gets cost of moving item around inventory.
+	int getInventoryMoveCostPercent() const { return _inventoryMoveCostPercent; }
 	/// Gets if the item is two-handed.
 	bool isTwoHanded() const;
 	/// Gets if the item can only be used by both hands.
@@ -475,7 +523,6 @@ public:
 	bool isFixed() const;
 	/// Do show fixed weapon on unit.
 	bool getFixedShow() const;
-
 	/// Get name of the default inventory slot.
 	const RuleInventory* getDefaultInventorySlot() const { return _defaultInventorySlot; }
 	/// Get inventory slot default X position.
@@ -494,6 +541,12 @@ public:
 	/// Gets the item's reload sound.
 	int getReloadSound() const;
 	const std::vector<int> &getReloadSoundRaw() const { return _reloadSound; }
+	/// Gets the item's prime sound.
+	int getPrimeSound() const;
+	const std::vector<int>& getPrimeSoundRaw() const { return _primeSound; }
+	/// Gets the item's unprime sound.
+	int getUnprimeSound() const;
+	const std::vector<int>& getUnprimeSoundRaw() const { return _unprimeSound; }
 	/// Gets the item's fire sound.
 	int getFireSound() const;
 	const std::vector<int> &getFireSoundRaw() const { return _fireSound; }
@@ -552,6 +605,8 @@ public:
 
 	/// Gets the item's power.
 	int getPower() const;
+	/// Gets the item's power used for AoE explosion animation.
+	int getPowerForAnimation() const { return _powerForAnimation; }
 	/// Should the item's power be displayed in Ufopedia or not?
 	bool getHidePower() const { return _hidePower; }
 	/// Ok, so this isn't a melee type weapon but we're using it for melee... how much damage should it do?
@@ -564,6 +619,8 @@ public:
 
 	/// Gets the item's cone size.
 	int getConeSize() const { return _coneSize; }
+	/// Gets the item's fire noise value.
+	int getNoiseValue() const { return _noiseValue; }
 
 	/// Gets amount of psi accuracy dropped for range in voxels.
 	float getPsiAccuracyRangeReduction(float range) const;
@@ -679,8 +736,10 @@ public:
 
 	/// Gets the item's damage type.
 	const RuleDamageType *getDamageType() const;
+	bool isDamageTypeSet() const { return _damageTypeSet; }
 	/// Gets the item's melee damage type for range weapons.
 	const RuleDamageType *getMeleeType() const;
+	bool isMeleeTypeSet() const { return _meleeTypeSet; }
 	/// Gets the item's type.
 	BattleType getBattleType() const;
 	/// Gets the item's fuse type.
@@ -701,7 +760,7 @@ public:
 	/// Gets the chance of special effect like zombify or corpse explosion or mine triggering.
 	int getSpecialChance() const;
 	/// Draws the item's hand sprite onto a surface.
-	void drawHandSprite(SurfaceSet *texture, Surface *surface, BattleItem *item = 0, int animFrame = 0) const;
+	void drawHandSprite(const SurfaceSet *texture, Surface *surface, const BattleItem *item = 0, const SavedBattleGame* save = 0, int animFrame = 0) const;
 	/// item's hand spite x offset
 	int getHandSpriteOffX() const;
 	/// item's hand spite y offset
@@ -746,6 +805,8 @@ public:
 	bool isExplodingInHands() const;
 	/// If this is used as a speacialWeapon, is it accessed by empty hand?
 	bool isSpecialUsingEmptyHand() const;
+	/// Display icon in an empty hand?
+	bool showSpecialInEmptyHand() const { return _specialUseEmptyHandShow; }
 	/// Gets the medikit use type.
 	BattleMediKitType getMediKitType() const;
 	/// Gets the medikit custom background.

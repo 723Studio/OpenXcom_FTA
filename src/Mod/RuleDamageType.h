@@ -24,7 +24,19 @@ namespace OpenXcom
 {
 
 enum ItemDamageType { DT_NONE, DT_AP, DT_IN, DT_HE, DT_LASER, DT_PLASMA, DT_STUN, DT_MELEE, DT_ACID, DT_SMOKE, DT_10, DT_11, DT_12, DT_13, DT_14, DT_15, DT_16, DT_17, DT_18, DT_19, DAMAGE_TYPES };
-enum ItemDamageRandomType { DRT_DEFAULT, DRT_UFO, DRT_TFTD, DRT_FLAT, DRT_FIRE, DRT_NONE, DRT_UFO_WITH_TWO_DICE, DRT_EASY };
+enum ItemDamageRandomType
+{
+	DRT_DEFAULT = 0,
+	DRT_UFO = 1,
+	DRT_TFTD = 2,
+	DRT_FLAT = 3,
+	DRT_FIRE = 4,
+	DRT_NONE = 5,
+	DRT_UFO_WITH_TWO_DICE = 6,
+	DRT_EASY = 7,
+	DRT_STANDARD = 8,
+	DRT_EXPLOSION = 9,
+};
 
 /**
  * Represents a specific damage type.

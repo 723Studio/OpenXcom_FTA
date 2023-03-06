@@ -19,6 +19,7 @@
 #include "WarningMessage.h"
 #include <SDL.h>
 #include <string>
+#include "../fmath.h"
 #include "../Engine/Timer.h"
 #include "../Interface/Text.h"
 
@@ -102,11 +103,12 @@ void WarningMessage::setPalette(const SDL_Color *colors, int firstcolor, int nco
 /**
  * Displays the warning message.
  * @param msg Message string.
+ * @param time How long message will be visible.
  */
-void WarningMessage::showMessage(const std::string &msg)
+void WarningMessage::showMessage(const std::string &msg, int time)
 {
 	_text->setText(msg);
-	_fade = 0;
+	_fade = time * 12;
 	_redraw = true;
 	setVisible(true);
 	_timer->start();
@@ -125,9 +127,9 @@ void WarningMessage::think()
  */
 void WarningMessage::fade()
 {
-	_fade++;
+	_fade--;
 	_redraw = true;
-	if (_fade == 24)
+	if (_fade == 0)
 	{
 		setVisible(false);
 		_timer->stop();
@@ -140,7 +142,7 @@ void WarningMessage::fade()
 void WarningMessage::draw()
 {
 	Surface::draw();
-	drawRect(0, 0, getWidth(), getHeight(), _color + (_fade > 12 ? 12 : _fade));
+	drawRect(0, 0, getWidth(), getHeight(), _color + Clamp(24 - _fade, 0, 12));
 	_text->blit(this->getSurface());
 }
 

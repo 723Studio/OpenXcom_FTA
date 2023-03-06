@@ -21,13 +21,14 @@
 #include "BattleItem.h"
 #include "BattleObject.h"
 #include "ItemContainer.h"
+#include "Base.h"
+#include "Craft.h"
 #include "SavedBattleGame.h"
 #include "SavedGame.h"
 #include "Tile.h"
 #include "HitLog.h"
 #include "Node.h"
 #include "../Mod/MapDataSet.h"
-#include "../Mod/MCDPatch.h"
 #include "../Battlescape/Pathfinding.h"
 #include "../Battlescape/TileEngine.h"
 #include "../Battlescape/BattlescapeState.h"
@@ -36,6 +37,8 @@
 #include "../Battlescape/Inventory.h"
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
+#include "../Mod/AlienDeployment.h"
+#include "../Mod/BattleScript.h"
 #include "../Engine/Game.h"
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
@@ -47,6 +50,7 @@
 #include "../Engine/Logger.h"
 #include "../Engine/ScriptBind.h"
 #include "SerializationHelper.h"
+#include "../Mod/RuleStartingCondition.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleSoldier.h"
@@ -60,17 +64,19 @@ namespace OpenXcom
 /**
  * Initializes a brand new battlescape saved game.
  */
-SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang) :
+SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
+	_isPreview(isPreview), _craftPos(), _craftZ(0), _craftForPreview(nullptr),
 	_battleState(0), _rule(rule), _mapsize_x(0), _mapsize_y(0), _mapsize_z(0), _selectedUnit(0),
 	_lastSelectedUnit(0), _pathfinding(0), _tileEngine(0),
-	_reinforcementsItemLevel(0), _enviroEffects(nullptr), _ecEnabledFriendly(false), _ecEnabledHostile(false), _ecEnabledNeutral(false),
+	_reinforcementsItemLevel(0), _startingCondition(nullptr), _enviroEffects(nullptr), _ecEnabledFriendly(false), _ecEnabledHostile(false), _ecEnabledNeutral(false),
 	_globalShade(0), _side(FACTION_PLAYER), _turn(0), _bughuntMinTurn(20), _animFrame(0), _nameDisplay(false),
-	_debugMode(false), _bughuntMode(false), _aborted(false), _itemId(0),
+	_debugMode(false), _bughuntMode(false), _aborted(false), _stealthMission(false), _itemId(0),
 	_vipEscapeType(ESCAPE_NONE), _vipSurvivalPercentage(0), _vipsSaved(0), _vipsLost(0), _vipsWaitingOutside(0), _vipsSavedScore(0), _vipsLostScore(0), _vipsWaitingOutsideScore(0),
 	_objectiveType(-1), _objectivesDestroyed(0), _objectivesNeeded(0),
 	_unitsFalling(false), _cheating(false), _tuReserved(BA_NONE), _kneelReserved(false), _depth(0),
 	_ambience(-1), _ambientVolume(0.5), _minAmbienceRandomDelay(20), _maxAmbienceRandomDelay(60), _currentAmbienceDelay(0),
-	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _alarmLvl(0), _beforeGame(true)
+	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _alarmLvl(0), _beforeGame(true),
+	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0)
 {
 	_tileSearch.resize(11*11);
 	for (int i = 0; i < 121; ++i)
@@ -147,6 +153,11 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_missionType = node["missionType"].as<std::string>(_missionType);
 	_strTarget = node["strTarget"].as<std::string>(_strTarget);
 	_strCraftOrBase = node["strCraftOrBase"].as<std::string>(_strCraftOrBase);
+	if (node["startingConditionType"])
+	{
+		std::string startingConditionType = node["startingConditionType"].as<std::string>();
+		_startingCondition = mod->getStartingCondition(startingConditionType);
+	}
 	if (node["enviroEffectsType"])
 	{
 		std::string enviroEffectsType = node["enviroEffectsType"].as<std::string>();
@@ -158,6 +169,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_ecEnabledNeutral = node["ecEnabledNeutral"].as<bool>(_ecEnabledNeutral);
 	_alienCustomDeploy = node["alienCustomDeploy"].as<std::string>(_alienCustomDeploy);
 	_alienCustomMission = node["alienCustomMission"].as<std::string>(_alienCustomMission);
+	_lastUsedMapScript = node["lastUsedMapScript"].as<std::string>(_lastUsedMapScript);
 	_reinforcementsDeployment = node["reinforcementsDeployment"].as<std::string>(_reinforcementsDeployment);
 	_reinforcementsRace = node["reinforcementsRace"].as<std::string>(_reinforcementsRace);
 	_reinforcementsItemLevel = node["reinforcementsItemLevel"].as<int>(_reinforcementsItemLevel);
@@ -171,8 +183,12 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_battleScriptVars = node["battleScriptVars"].as< std::map<std::string, int> >(_battleScriptVars);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_bughuntMode = node["bughuntMode"].as<bool>(_bughuntMode);
-	_itemObjectivesNumber = node["itemObjectivesNumber"].as<int>(_itemObjectivesNumber);
 	_depth = node["depth"].as<int>(_depth);
+	_stealthMission = node["stealthMission"].as<bool>(_stealthMission);
+	if (_stealthMission)
+	{
+		Log(LOG_INFO) << ">>> This mission considered as stealth mission because it was saved like that."; //#FINNIKTODO #CLEARLOGS
+	}
 	_animFrame = node["animFrame"].as<int>(_animFrame);
 	int selectedUnit = node["selectedUnit"].as<int>();
 
@@ -199,13 +215,13 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		size_t totalTiles = node["totalTiles"].as<size_t>();
 
 		memset(&serKey, 0, sizeof(Tile::SerializationKey));
-		serKey.index = node["tileIndexSize"].as<Uint8>(serKey.index);
+		serKey.index = node["tileIndexSize"].as<char>(serKey.index);
 		serKey.totalBytes = node["tileTotalBytesPer"].as<Uint32>(serKey.totalBytes);
-		serKey._fire = node["tileFireSize"].as<Uint8>(serKey._fire);
-		serKey._smoke = node["tileSmokeSize"].as<Uint8>(serKey._smoke);
-		serKey._mapDataID = node["tileIDSize"].as<Uint8>(serKey._mapDataID);
-		serKey._mapDataSetID = node["tileSetIDSize"].as<Uint8>(serKey._mapDataSetID);
-		serKey.boolFields = node["tileBoolFieldsSize"].as<Uint8>(1); // boolean flags used to be stored in an unmentioned byte (Uint8) :|
+		serKey._fire = node["tileFireSize"].as<char>(serKey._fire);
+		serKey._smoke = node["tileSmokeSize"].as<char>(serKey._smoke);
+		serKey._mapDataID = node["tileIDSize"].as<char>(serKey._mapDataID);
+		serKey._mapDataSetID = node["tileSetIDSize"].as<char>(serKey._mapDataSetID);
+		serKey.boolFields = node["tileBoolFieldsSize"].as<char>(1); // boolean flags used to be stored in an unmentioned byte (Uint8) :|
 
 		// load binary tile data!
 		YAML::Binary binTiles = node["binTiles"].as<YAML::Binary>();
@@ -250,7 +266,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		if (id < BattleUnit::MAX_SOLDIER_ID) // Unit is linked to a geoscape soldier
 		{
 			// look up the matching soldier
-			unit = new BattleUnit(mod, savedGame->getSoldier(id), _depth);
+			unit = new BattleUnit(mod, savedGame->getSoldier(id), _depth, nullptr);
 		}
 		else
 		{
@@ -258,7 +274,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 			std::string armor = (*i)["genUnitArmor"].as<std::string>();
 			// create a new Unit.
 			if(!mod->getUnit(type) || !mod->getArmor(armor)) continue;
-			unit = new BattleUnit(mod, mod->getUnit(type), originalFaction, id, nullptr, mod->getArmor(armor), mod->getStatAdjustment(savedGame->getDifficulty()), _depth);
+			unit = new BattleUnit(mod, mod->getUnit(type), originalFaction, id, nullptr, mod->getArmor(armor), mod->getStatAdjustment(savedGame->getDifficulty()), _depth, nullptr);
 		}
 		unit->load(*i, this->getMod(), this->getMod()->getScriptGlobal());
 		// Handling of special built-in weapons will be done during and after the load of items
@@ -306,7 +322,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 
 	using ItemVec = std::vector<BattleItem*>&;
 
-	// node to load from, vector to load into, offset for maching ammo
+	// node to load from, vector to load into, offset for matching ammo
 	std::tuple<YAML::Node, ItemVec, size_t> toContainer[] =
 	{
 		std::make_tuple(node["items"], std::ref(_items), 0u),
@@ -317,7 +333,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 
 	for (auto& pass : toContainer)
 	{
-		// update start point for maching ammo
+		// update start point for matching ammo
 		std::get<size_t>(pass) = std::get<ItemVec>(pass).size();
 
 		for (YAML::const_iterator i = std::get<YAML::Node>(pass).begin(); i != std::get<YAML::Node>(pass).end(); ++i)
@@ -483,6 +499,9 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_turnLimit = node["turnLimit"].as<int>(_turnLimit);
 	_chronoTrigger = ChronoTrigger(node["chronoTrigger"].as<int>(_chronoTrigger));
 	_cheatTurn = node["cheatTurn"].as<int>(_cheatTurn);
+	_togglePersonalLight = node["togglePersonalLight"].as<bool>(_togglePersonalLight);
+	_toggleNightVision = node["toggleNightVision"].as<bool>(_toggleNightVision);
+	_toggleBrightness = node["toggleBrightness"].as<int>(_toggleBrightness);
 	_scriptValues.load(node, _rule->getScriptGlobal());
 }
 
@@ -553,6 +572,10 @@ YAML::Node SavedBattleGame::save() const
 	node["missionType"] = _missionType;
 	node["strTarget"] = _strTarget;
 	node["strCraftOrBase"] = _strCraftOrBase;
+	if (_startingCondition)
+	{
+		node["startingConditionType"] = _startingCondition->getType();
+	}
 	if (_enviroEffects)
 	{
 		node["enviroEffectsType"] = _enviroEffects->getType();
@@ -563,6 +586,7 @@ YAML::Node SavedBattleGame::save() const
 	node["ecEnabledNeutral"] = _ecEnabledNeutral;
 	node["alienCustomDeploy"] = _alienCustomDeploy;
 	node["alienCustomMission"] = _alienCustomMission;
+	node["lastUsedMapScript"] = _lastUsedMapScript;
 	node["reinforcementsDeployment"] = _reinforcementsDeployment;
 	node["reinforcementsRace"] = _reinforcementsRace;
 	node["reinforcementsItemLevel"] = _reinforcementsItemLevel;
@@ -572,6 +596,7 @@ YAML::Node SavedBattleGame::save() const
 	node["flattenedMapBlockNames"] = _flattenedMapBlockNames;
 	node["globalshade"] = _globalShade;
 	node["turn"] = _turn;
+	node["stealthMission"] = _stealthMission;
 	node["alarmLvl"] = _alarmLvl;
 	node["battleScriptVars"] = _battleScriptVars;
 	node["bughuntMinTurn"] = _bughuntMinTurn;
@@ -592,13 +617,13 @@ YAML::Node SavedBattleGame::save() const
 	}
 #else
 	// first, write out the field sizes we're going to use to write the tile data
-	node["tileIndexSize"] = Tile::serializationKey.index;
+	node["tileIndexSize"] = static_cast<char>(Tile::serializationKey.index);
 	node["tileTotalBytesPer"] = Tile::serializationKey.totalBytes;
-	node["tileFireSize"] = Tile::serializationKey._fire;
-	node["tileSmokeSize"] = Tile::serializationKey._smoke;
-	node["tileIDSize"] = Tile::serializationKey._mapDataID;
-	node["tileSetIDSize"] = Tile::serializationKey._mapDataSetID;
-	node["tileBoolFieldsSize"] = Tile::serializationKey.boolFields;
+	node["tileFireSize"] = static_cast<char>(Tile::serializationKey._fire);
+	node["tileSmokeSize"] = static_cast<char>(Tile::serializationKey._smoke);
+	node["tileIDSize"] = static_cast<char>(Tile::serializationKey._mapDataID);
+	node["tileSetIDSize"] = static_cast<char>(Tile::serializationKey._mapDataSetID);
+	node["tileBoolFieldsSize"] = static_cast<char>(Tile::serializationKey.boolFields);
 
 	size_t tileDataSize = Tile::serializationKey.totalBytes * _mapsize_z * _mapsize_y * _mapsize_x;
 	Uint8* tileData = (Uint8*) calloc(tileDataSize, 1);
@@ -671,8 +696,10 @@ YAML::Node SavedBattleGame::save() const
 	node["baseItems"] = _baseItems->save();
 	node["turnLimit"] = _turnLimit;
 	node["chronoTrigger"] = int(_chronoTrigger); 
-	node["itemObjectivesNumber"] = int(_itemObjectivesNumber);
 	node["cheatTurn"] = _cheatTurn;
+	node["togglePersonalLight"] = _togglePersonalLight;
+	node["toggleNightVision"] = _toggleNightVision;
+	node["toggleBrightness"] = _toggleBrightness;
 	_scriptValues.save(node, _rule->getScriptGlobal());
 
 	return node;
@@ -708,7 +735,7 @@ void SavedBattleGame::initMap(int mapsize_x, int mapsize_y, int mapsize_z, bool 
 	_tiles.reserve(_mapsize_z * _mapsize_y * _mapsize_x);
 	for (int i = 0; i < _mapsize_z * _mapsize_y * _mapsize_x; ++i)
 	{
-		_tiles.push_back(Tile(getTileCoords(i)));
+		_tiles.push_back(Tile(getTileCoords(i), this));
 	}
 
 }
@@ -921,39 +948,36 @@ int SavedBattleGame::getGlobalShade() const
 }
 
 /**
- * Gets the map width.
- * @return The map width (Size X) in tiles.
+ * Pre-calculate all valid tiles for later use in map drawing.
  */
-int SavedBattleGame::getMapSizeX() const
+void SavedBattleGame::calculateCraftTiles()
 {
-	return _mapsize_x;
-}
-
-/**
- * Gets the map length.
- * @return The map length (Size Y) in tiles.
- */
-int SavedBattleGame::getMapSizeY() const
-{
-	return _mapsize_y;
-}
-
-/**
- * Gets the map height.
- * @return The map height (Size Z) in layers.
- */
-int SavedBattleGame::getMapSizeZ() const
-{
-	return _mapsize_z;
-}
-
-/**
- * Gets the map size in tiles.
- * @return The map size.
- */
-int SavedBattleGame::getMapSizeXYZ() const
-{
-	return _mapsize_x * _mapsize_y * _mapsize_z;
+	if (_craftForPreview && !_craftForPreview->getRules()->getDeployment().empty() && !_craftForPreview->getRules()->useAllStartTiles())
+	{
+		for (auto& vec : _craftForPreview->getRules()->getDeployment())
+		{
+			if (vec.size() >= 3)
+			{
+				Position tmp = Position(vec[0] + _craftPos.x * 10, vec[1] + _craftPos.y * 10, vec[2] + _craftZ);
+				_craftTiles.push_back(tmp);
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < getMapSizeXYZ(); ++i)
+		{
+			auto* tile = getTile(i);
+			if (tile &&
+				tile->getFloorSpecialTileType() == START_POINT &&
+				!tile->getMapData(O_OBJECT) &&
+				tile->getMapData(O_FLOOR) && // for clarity this is checked again, first time was in `getFloorSpecialTileType`
+				tile->getMapData(O_FLOOR)->getTUCost(MT_WALK) != Pathfinding::INVALID_MOVE_COST)
+			{
+				_craftTiles.push_back(tile->getPosition());
+			}
+		}
+	}
 }
 
 /**
@@ -1304,6 +1328,11 @@ void SavedBattleGame::startFirstTurn()
  */
 void SavedBattleGame::newTurnUpdateScripts()
 {
+	if (_isPreview)
+	{
+		return;
+	}
+
 	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
 	{
 		if ((*i)->isIgnored())
@@ -1334,21 +1363,235 @@ void SavedBattleGame::newTurnUpdateScripts()
  */
 void SavedBattleGame::updateAlarm()
 {
-	if (_side == FACTION_HOSTILE)
+	bool riseAlarm = false;
+	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
 	{
+		if ((*i)->getFaction() == FACTION_HOSTILE && !(*i)->isOut())
+		{
+			if ((*i)->getAlarmed())
+			{
+				riseAlarm = true;
+				(*i)->setUnitWarned(false);
+				(*i)->setAlarmed(false);
+				Log(LOG_INFO) << "Unit not warned and alarmed anymore, because it was already alarmed and rised global alarm level on the map."; //#FINNIKTODO #CLEARLOGS
+			}
+
+			if ((*i)->getUnitWarned())
+			{
+				(*i)->setAlarmed(true);
+				Log(LOG_INFO) << "Unit is alarmed because its warned status."; //#FINNIKTODO #CLEARLOGS
+
+			}
+		}
+	}
+	if (riseAlarm)
+	{
+		_alarmLvl += 1;
 		for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
 		{
-			if ((*i)->getFaction() == FACTION_HOSTILE &&
-				((*i)->getStatus() != STATUS_DEAD) || ((*i)->getStatus() != STATUS_UNCONSCIOUS) || ((*i)->getStatus() != STATUS_PANICKING))
+			if ((*i)->getFaction() == FACTION_PLAYER && !(*i)->getUndercover())
 			{
-				if ((*i)->getKills() || (*i)->getAlarmed())
+				(*i)->setUndercover(false);
+			}
+		}
+		Log(LOG_INFO) << "Rising alarm level to " << _alarmLvl << " !"; //#FINNIKTODO #CLEARLOGS
+	}
+}
+/**
+ * Tallies the units in the craft deployment preview.
+ */
+BattlescapeTally SavedBattleGame::tallyUnitsForPreview()
+{
+	BattlescapeTally tally = { };
+
+	bool custom = _isPreview && _craftForPreview && !_craftTiles.empty();
+	Position tmp;
+
+	for (auto* unit : _units)
+	{
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			if (unit->isSummonedPlayerUnit())
+			{
+				continue;
+			}
+			if (custom)
+			{
+				bool placementOk = true;
+				for (int x = 0; x < unit->getArmor()->getSize(); ++x)
 				{
-					_alarmLvl += 1;
+					for (int y = 0; y < unit->getArmor()->getSize(); ++y)
+					{
+						tmp = Position(x + unit->getPosition().x, y + unit->getPosition().y, unit->getPosition().z);
+						bool found = false;
+						for (auto& pos : _craftTiles)
+						{
+							if (pos == tmp)
+							{
+								found = true;
+								break;
+							}
+						}
+						if (!found)
+						{
+							placementOk = false;
+						}
+					}
+				}
+				if (placementOk)
+				{
+					tally.inEntrance++;
+				}
+				else
+				{
+					tally.inField++;
+				}
+			}
+			else
+			{
+				if (unit->isInExitArea(START_POINT))
+				{
+					tally.inEntrance++;
+				}
+				else
+				{
+					tally.inField++;
 				}
 			}
 		}
 	}
 
+	return tally;
+}
+
+/**
+ * Saves the custom craft deployment.
+ */
+void SavedBattleGame::saveCustomCraftDeployment()
+{
+	_craftForPreview->resetCustomDeployment();
+	auto& customSoldierDeployment = _craftForPreview->getCustomSoldierDeployment();
+	auto& customVehicleDeployment = _craftForPreview->getCustomVehicleDeployment();
+
+	Position tmp;
+	for (auto* unit : _units)
+	{
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			if (unit->isSummonedPlayerUnit())
+			{
+				continue;
+			}
+			tmp = Position(unit->getPosition().x - _craftPos.x * 10, unit->getPosition().y - _craftPos.y * 10, unit->getPosition().z - _craftZ);
+			if (unit->getGeoscapeSoldier())
+			{
+				customSoldierDeployment[unit->getGeoscapeSoldier()->getId()] = std::make_pair(tmp, unit->getDirection());
+			}
+			else
+			{
+				VehicleDeploymentData v;
+				v.type = unit->getType();
+				v.pos = tmp;
+				v.dir = unit->getDirection();
+				v.used = false; // irrelevant now, this will be used only in BattlescapeGenerator::addXCOMUnit()
+				customVehicleDeployment.push_back(v);
+			}
+		}
+	}
+}
+
+/**
+ * Saves the custom RuleCraft deployment. Invalidates corresponding custom craft deployments.
+ */
+void SavedBattleGame::saveDummyCraftDeployment()
+{
+	auto* save = getGeoscapeSave();
+
+	// don't forget to invalidate custom deployments of all real craft of this type
+	for (auto* base : *save->getBases())
+	{
+		for (auto* craft : *base->getCrafts())
+		{
+			if (craft->getRules() == _craftForPreview->getRules())
+			{
+				craft->resetCustomDeployment();
+			}
+		}
+	}
+
+	auto& data = save->getCustomRuleCraftDeployments();
+
+	if (isCtrlPressed(true))
+	{
+		// delete
+		data.erase(_craftForPreview->getRules()->getType());
+	}
+	else
+	{
+		// save
+		RuleCraftDeployment customDeployment;
+		Position tmp;
+		for (auto* unit : _units)
+		{
+			if (unit->getOriginalFaction() == FACTION_PLAYER)
+			{
+				if (unit->isSummonedPlayerUnit())
+				{
+					continue;
+				}
+				tmp = Position(unit->getPosition().x - _craftPos.x * 10, unit->getPosition().y - _craftPos.y * 10, unit->getPosition().z - _craftZ);
+				if (unit->getGeoscapeSoldier())
+				{
+					customDeployment.push_back({ tmp.x, tmp.y, tmp.z, unit->getDirection() });
+				}
+			}
+		}
+		data[_craftForPreview->getRules()->getType()] = customDeployment;
+	}
+}
+
+/**
+ * Does the given craft type have a custom deployment?
+ */
+bool SavedBattleGame::hasCustomDeployment(const RuleCraft* rule) const
+{
+	// first check the fallback
+	if (!rule->getDeployment().empty())
+	{
+		return true;
+	}
+	// then the override
+	auto* save = getGeoscapeSave();
+	auto& data = save->getCustomRuleCraftDeployments();
+	if (!data.empty())
+	{
+		auto find = data.find(rule->getType());
+		if (find != data.end())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Gets a custom deployment for the given craft type.
+ */
+const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft* rule) const
+{
+	// first try the override
+	auto* save = getGeoscapeSave();
+	auto& data = save->getCustomRuleCraftDeployments();
+	if (!data.empty())
+	{
+		auto find = data.find(rule->getType());
+		if (find != data.end())
+		{
+			return find->second;
+		}
+	}
+	// this is the fallback
+	return rule->getDeployment();
 }
 
 /**
@@ -1374,6 +1617,11 @@ void SavedBattleGame::endTurn()
 	}
 	else if (_side == FACTION_HOSTILE)
 	{
+		if (isStealthMission())
+		{
+			updateAlarm();
+		}
+		
 		_selectedUnit =  0;
 		_side = FACTION_NEUTRAL;
 		// if there is no neutral team, we skip this and instantly prepare the new turn for the player
@@ -1460,9 +1708,6 @@ void SavedBattleGame::endTurn()
 	//scripts update
 	newTurnUpdateScripts();
 
-	//time to handle alarm
-	updateAlarm();
-
 	//fov check will be done by `BattlescapeGame::endTurn`
 
 	if (_side != FACTION_PLAYER)
@@ -1491,12 +1736,17 @@ void SavedBattleGame::nextAnimFrame()
  */
 void SavedBattleGame::setDebugMode()
 {
+	revealMap();
+
+	_debugMode = true;
+}
+
+void SavedBattleGame::revealMap()
+{
 	for (int i = 0; i < _mapsize_z * _mapsize_y * _mapsize_x; ++i)
 	{
 		_tiles[i].setDiscovered(true, O_FLOOR);
 	}
-
-	_debugMode = true;
 }
 
 /**
@@ -1591,6 +1841,30 @@ bool SavedBattleGame::isCtrlPressed(bool considerTouchButtons) const
 	if (_battleState)
 	{
 		return _battleState->getGame()->isCtrlPressed(considerTouchButtons);
+	}
+	return false;
+}
+
+/**
+ * Is ALT pressed?
+ */
+bool SavedBattleGame::isAltPressed(bool considerTouchButtons) const
+{
+	if (_battleState)
+	{
+		return _battleState->getGame()->isAltPressed(considerTouchButtons);
+	}
+	return false;
+}
+
+/**
+ * Is SHIFT pressed?
+ */
+bool SavedBattleGame::isShiftPressed(bool considerTouchButtons) const
+{
+	if (_battleState)
+	{
+		return _battleState->getGame()->isShiftPressed(considerTouchButtons);
 	}
 	return false;
 }
@@ -1741,6 +2015,11 @@ void SavedBattleGame::addFixedItems(BattleUnit *unit, const std::vector<const Ru
  */
 void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 {
+	if (_isPreview)
+	{
+		return;
+	}
+
 	unit->setSpecialWeapon(this, false);
 	Unit* rule = unit->getUnitRules();
 	const Armor* armor = unit->getArmor();
@@ -1795,15 +2074,12 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
  */
 void SavedBattleGame::initItem(BattleItem *item, BattleUnit *unit)
 {
-	ModScript::scriptCallback<ModScript::CreateItem>(item->getRules(), item, unit, this, this->getTurn());
-}
+	if (_isPreview)
+	{
+		return;
+	}
 
-/**
- * Create new item for unit.
- */
-BattleItem *SavedBattleGame::createItemForUnit(const std::string& type, BattleUnit *unit, bool fixedWeapon)
-{
-	return createItemForUnit(_rule->getItem(type, true), unit, fixedWeapon);
+	ModScript::scriptCallback<ModScript::CreateItem>(item->getRules(), item, unit, this, this->getTurn());
 }
 
 /**
@@ -1811,6 +2087,11 @@ BattleItem *SavedBattleGame::createItemForUnit(const std::string& type, BattleUn
  */
 BattleItem *SavedBattleGame::createItemForUnit(const RuleItem *rule, BattleUnit *unit, bool fixedWeapon)
 {
+	if (_isPreview)
+	{
+		return nullptr;
+	}
+
 	BattleItem *item = new BattleItem(rule, getCurrentItemId());
 	if (!unit->addItem(item, _rule, false, fixedWeapon, fixedWeapon))
 	{
@@ -1821,10 +2102,6 @@ BattleItem *SavedBattleGame::createItemForUnit(const RuleItem *rule, BattleUnit 
 	{
 		_items.push_back(item);
 		initItem(item, unit);
-		if (item->getRules()->isMissionObjective())
-		{
-			++_itemObjectivesNumber;
-		}
 	}
 	return item;
 }
@@ -1834,6 +2111,11 @@ BattleItem *SavedBattleGame::createItemForUnit(const RuleItem *rule, BattleUnit 
  */
 BattleItem *SavedBattleGame::createItemForUnitSpecialBuiltin(const RuleItem *rule, BattleUnit *unit)
 {
+	if (_isPreview)
+	{
+		return nullptr;
+	}
+
 	BattleItem *item = new BattleItem(rule, getCurrentItemId());
 	item->setOwner(unit);
 	item->setSlot(nullptr);
@@ -1854,15 +2136,13 @@ BattleItem *SavedBattleGame::createItemForTile(const std::string& type, Tile *ti
  */
 BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile)
 {
+	// Note: this is allowed also in preview mode; for items spawned from map blocks (and friendly units spawned from such items)
+
 	BattleItem *item = new BattleItem(rule, getCurrentItemId());
 	if (tile)
 	{
 		RuleInventory *ground = _rule->getInventoryGround();
 		tile->addItem(item, ground);
-	}
-	if (item->getRules()->isMissionObjective())
-	{
-		++_itemObjectivesNumber;
 	}
 	_items.push_back(item);
 	initItem(item);
@@ -1883,10 +2163,11 @@ BattleUnit *SavedBattleGame::createTempUnit(const Unit *rules, UnitFaction facti
 		const_cast<Unit*>(rules),
 		faction,
 		nextUnitId > 0 ? nextUnitId : getUnits()->back()->getId() + 1,
-		faction != FACTION_PLAYER ? getEnviroEffects() : nullptr,
+		getEnviroEffects(),
 		rules->getArmor(),
 		faction == FACTION_HOSTILE ? _rule->getStatAdjustment(getGeoscapeSave()->getDifficulty()) : nullptr,
-		getDepth());
+		getDepth(),
+		getStartingCondition());
 
 	if (faction == FACTION_PLAYER)
 	{
@@ -1901,6 +2182,67 @@ BattleUnit *SavedBattleGame::createTempUnit(const Unit *rules, UnitFaction facti
 		newUnit->setAIModule(new AIModule(this, newUnit, 0));
 	}
 
+	return newUnit;
+}
+
+/**
+ * Converts a unit into a unit of another type.
+ * @param unit The unit to convert.
+ * @return Pointer to the new unit.
+ */
+BattleUnit *SavedBattleGame::convertUnit(BattleUnit *unit)
+{
+	// only ever respawn once
+	unit->setAlreadyRespawned(true);
+
+	bool visible = unit->getVisible();
+
+	if (getSelectedUnit() == unit)
+	{
+		setSelectedUnit(nullptr);
+	}
+
+	// in case the unit was unconscious
+	removeUnconsciousBodyItem(unit);
+
+	unit->instaKill();
+
+	auto tile = unit->getTile();
+	if (tile == nullptr)
+	{
+		auto pos = unit->getPosition();
+		if (pos != TileEngine::invalid)
+		{
+			tile = getTile(pos);
+		}
+	}
+
+	// in case of unconscious unit someone could stand on top of it, or take current unit to inventory, then we skip spawning anything
+	if (!tile || (tile->getUnit() != nullptr && tile->getUnit() != unit))
+	{
+		return nullptr;
+	}
+
+	getTileEngine()->itemDropInventory(tile, unit, false, true);
+
+	// remove unit-tile link
+	unit->setTile(nullptr, this);
+
+	const Unit* type = unit->getSpawnUnit();
+
+	BattleUnit *newUnit = createTempUnit(type, unit->getSpawnUnitFaction());
+
+	newUnit->clearTimeUnits();
+	newUnit->setVisible(visible);
+	newUnit->setTile(tile, this);
+	newUnit->setPosition(unit->getPosition());
+	newUnit->setDirection(unit->getDirection());
+	getUnits()->push_back(newUnit);
+	initUnit(newUnit);
+
+	getTileEngine()->calculateFOV(newUnit->getPosition());  //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+	getTileEngine()->applyGravity(newUnit->getTile());
+	newUnit->dontReselect();
 	return newUnit;
 }
 
@@ -2010,7 +2352,7 @@ Node *SavedBattleGame::getSpawnNode(int nodeRank, BattleUnit *unit)
 		}
 		if ((*i)->getRank() == nodeRank								// ranks must match
 			&& (!((*i)->getType() & Node::TYPE_SMALL)
-				|| unit->getArmor()->getSize() == 1)				// the small unit bit is not set or the unit is small
+				|| unit->isSmallUnit())								// the small unit bit is not set or the unit is small
 			&& (!((*i)->getType() & Node::TYPE_FLYING)
 				|| unit->getMovementType() == MT_FLY)				// the flying unit bit is not set or the unit can fly
 			&& (*i)->getPriority() > 0								// priority 0 is no spawn place
@@ -2067,7 +2409,7 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 		Node *n = getNodes()->at(scout ? i : fromNode->getNodeLinks()->at(i));
 		if ( !n->isDummy()																				// don't consider dummy nodes.
 			&& (n->getFlags() > 0 || n->getRank() > 0 || scout)											// for non-scouts we find a node with a desirability above 0
-			&& (!(n->getType() & Node::TYPE_SMALL) || unit->getArmor()->getSize() == 1)					// the small unit bit is not set or the unit is small
+			&& (!(n->getType() & Node::TYPE_SMALL) || unit->isSmallUnit())								// the small unit bit is not set or the unit is small
 			&& (!(n->getType() & Node::TYPE_FLYING) || unit->getMovementType() == MT_FLY)	// the flying unit bit is not set or the unit can fly
 			&& !n->isAllocated()																		// check if not allocated
 			&& !(n->getType() & Node::TYPE_DANGEROUS)													// don't go there if an alien got shot there; stupid behavior like that
@@ -2092,7 +2434,7 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 	if (compliantNodes.empty())
 	{
 		if (Options::traceAI) { Log(LOG_INFO) << (scout ? "Scout " : "Guard") << " found on patrol node! XXX XXX XXX"; }
-		if (unit->getArmor()->getSize() > 1 && !scout)
+		if (unit->isBigUnit() && !scout)
 		{
 			return getPatrolNode(true, unit, fromNode); // move dammit
 		}
@@ -2284,7 +2626,7 @@ void SavedBattleGame::reviveUnconsciousUnits(bool noTU)
 {
 	for (std::vector<BattleUnit*>::iterator i = getUnits()->begin(); i != getUnits()->end(); ++i)
 	{
-		if ((*i)->getArmor()->getSize() == 1 && !(*i)->isIgnored())
+		if ((*i)->isSmallUnit() && !(*i)->isIgnored())
 		{
 			Position originalPosition = (*i)->getPosition();
 			if (originalPosition == Position(-1, -1, -1))
@@ -2300,7 +2642,7 @@ void SavedBattleGame::reviveUnconsciousUnits(bool noTU)
 			if ((*i)->getStatus() == STATUS_UNCONSCIOUS && !(*i)->isOutThresholdExceed())
 			{
 				Tile *targetTile = getTile(originalPosition);
-				bool largeUnit =  targetTile && targetTile->getUnit() && targetTile->getUnit() != *i && targetTile->getUnit()->getArmor()->getSize() != 1;
+				bool largeUnit =  targetTile && targetTile->getUnit() && targetTile->getUnit() != *i && targetTile->getUnit()->isBigUnit();
 				if (placeUnitNearPosition((*i), originalPosition, largeUnit))
 				{
 					// recover from unconscious
@@ -2368,7 +2710,7 @@ bool SavedBattleGame::setUnitPosition(BattleUnit *bu, Position position, bool te
 			Tile *t = getTile(position + Position(x,y,0) + zOffset);
 			if (t == 0 ||
 				(t->getUnit() != 0 && t->getUnit() != bu) ||
-				t->getTUCost(O_OBJECT, bu->getMovementType()) == 255 ||
+				t->getTUCost(O_OBJECT, bu->getMovementType()) == Pathfinding::INVALID_MOVE_COST ||
 				(t->hasNoFloor(this) && bu->getMovementType() != MT_FLY) ||
 				(t->getMapData(O_OBJECT) && t->getMapData(O_OBJECT)->getBigWall() && t->getMapData(O_OBJECT)->getBigWall() <= 3))
 			{
@@ -2386,10 +2728,10 @@ bool SavedBattleGame::setUnitPosition(BattleUnit *bu, Position position, bool te
 
 	if (size > 0)
 	{
-		getPathfinding()->setUnit(bu);
+		getPathfinding()->setUnit(bu); //TODO: remove as was required by `isBlockedDirection`
 		for (int dir = 2; dir <= 4; ++dir)
 		{
-			if (getPathfinding()->isBlockedDirection(getTile(position + zOffset), dir, 0))
+			if (getPathfinding()->isBlockedDirection(bu, getTile(position + zOffset), dir))
 				return false;
 		}
 	}
@@ -2544,7 +2886,7 @@ int SavedBattleGame::getMoraleLossModifierWhenKilled(BattleUnit* unit)
 
 	if (unit->getGeoscapeSoldier())
 	{
-		result = unit->getGeoscapeSoldier()->getRules()->getMoraleLossWhenKilled();
+		result = unit->getGeoscapeSoldier()->getRules()->getTransferTime();
 	}
 	else if (unit->getUnitRules())
 	{
@@ -2624,7 +2966,7 @@ bool SavedBattleGame::placeUnitNearPosition(BattleUnit *unit, const Position& en
 	{
 		Position offset = Position (xArray[dir], yArray[dir], 0);
 		Tile *t = getTile(entryPoint + offset);
-		if (t && !getPathfinding()->isBlockedDirection(getTile(entryPoint + (offset / 2)), dir, 0)
+		if (t && !getPathfinding()->isBlockedDirection(unit, getTile(entryPoint + (offset / 2)), dir)
 			&& setUnitPosition(unit, entryPoint + offset))
 		{
 			return true;
@@ -2839,6 +3181,30 @@ void SavedBattleGame::playRandomAmbientSound()
 	{
 		int soundIndex = RNG::seedless(0, _ambienceRandom.size() - 1);
 		getMod()->getSoundByDepth(_depth, _ambienceRandom.at(soundIndex))->play(3); // use fixed ambience channel; don't check if previous sound is still playing or not
+	}
+}
+
+void SavedBattleGame::defineStealth()
+{
+	auto mission = getAlienDeploymet();
+
+	if (!mission->getUndercoverArmors().empty())
+	{
+		_stealthMission = true;
+		Log(LOG_INFO) << ">>> This mission considered as stealth mission because it's deployment has defined Undercover Armors!"; //#FINNIKTODO #CLEARLOGS
+	}
+	else if (!mission->getBattleScript().empty())
+	{
+		auto scripts = _rule->getBattleScript(mission->getBattleScript());
+		for (std::vector<BattleScript*>::const_iterator i = scripts->begin(); i != scripts->end(); ++i)
+		{
+			if ((*i)->getMinAlarm() > 0)
+			{
+				_stealthMission = true;
+				Log(LOG_INFO) << ">>> This mission considered as stealth mission because " << (*i)->getType() << " battleScript has min alarm level " << (*i)->getMinAlarm(); //#FINNIKTODO #CLEARLOGS
+				break;
+			}
+		}
 	}
 }
 
@@ -3175,6 +3541,7 @@ void SavedBattleGame::resetUnitHitStates()
 
 namespace
 {
+
 template<typename... Args>
 void flashMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Args... args)
 {
@@ -3187,6 +3554,21 @@ void flashMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Ar
 	(translated.arg(args), ...);
 	sbg->getBattleState()->warningRaw(translated);
 }
+
+template<typename... Args>
+void flashLongMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Args... args)
+{
+	if (!sbg || !sbg->getBattleState())
+	{
+		return;
+	}
+	const Language *lang = sbg->getBattleState()->getGame()->getLanguage();
+	LocalizedText translated = lang->getString(message);
+	(translated.arg(args), ...);
+	sbg->getBattleState()->warningLongRaw(translated);
+}
+
+
 
 void randomChanceScript(SavedBattleGame* sbg, int& val)
 {
@@ -3314,7 +3696,7 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 
 	Bind<SavedBattleGame> sbg = { parser };
 
-	sbg.add<&SavedBattleGame::getTurn>("getTurn");
+	sbg.add<&SavedBattleGame::getTurn>("getTurn", "Current turn, 0 - before battle, 1 - first turn, each stage reset this value.");
 	sbg.add<&SavedBattleGame::getAnimFrame>("getAnimFrame");
 	sbg.add<&getTileScript>("getTile", "Get tile on position x, y, z");
 
@@ -3326,8 +3708,14 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 	sbg.add<void(*)(SavedBattleGame*, ScriptText, int, int, int), &flashMessageVariadicScriptImpl>("flashMessage");
 	sbg.add<void(*)(SavedBattleGame*, ScriptText, int, int, int, int), &flashMessageVariadicScriptImpl>("flashMessage");
 
-	sbg.add<&randomChanceScript>("randomChance");
-	sbg.add<&randomRangeScript>("randomRange");
+	sbg.add<void(*)(SavedBattleGame*, ScriptText), &flashLongMessageVariadicScriptImpl>("flashLongMessage");
+	sbg.add<void(*)(SavedBattleGame*, ScriptText, int), &flashLongMessageVariadicScriptImpl>("flashLongMessage");
+	sbg.add<void(*)(SavedBattleGame*, ScriptText, int, int), &flashLongMessageVariadicScriptImpl>("flashLongMessage");
+	sbg.add<void(*)(SavedBattleGame*, ScriptText, int, int, int), &flashLongMessageVariadicScriptImpl>("flashLongMessage");
+	sbg.add<void(*)(SavedBattleGame*, ScriptText, int, int, int, int), &flashLongMessageVariadicScriptImpl>("flashLongMessage");
+
+	sbg.add<&randomChanceScript>("randomChance", "first argument is percent in range 0 - 100, then return in that argument random 1 or 0 based on percent");
+	sbg.add<&randomRangeScript>("randomRange", "set in first argument random value from range given in two last arguments");
 	sbg.add<&turnSideScript>("getTurnSide", "Return the faction whose turn it is.");
 	sbg.addCustomConst("FACTION_PLAYER", FACTION_PLAYER);
 	sbg.addCustomConst("FACTION_HOSTILE", FACTION_HOSTILE);

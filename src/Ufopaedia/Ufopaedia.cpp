@@ -56,7 +56,7 @@ namespace OpenXcom
 	 */
 	bool Ufopaedia::isArticleAvailable(SavedGame *save, ArticleDefinition *article)
 	{
-		return save->isResearched(article->requires);
+		return save->isResearched(article->_requires);
 	}
 
 	/**
@@ -86,7 +86,7 @@ namespace OpenXcom
 		}
 		for (size_t it = 0; it<articles.size(); ++it)
 		{
-			for (std::vector<std::string>::iterator j = articles[it]->requires.begin(); j != articles[it]->requires.end(); ++j)
+			for (std::vector<std::string>::iterator j = articles[it]->_requires.begin(); j != articles[it]->_requires.end(); ++j)
 			{
 				if (article_id == *j)
 				{
@@ -94,7 +94,7 @@ namespace OpenXcom
 				}
 			}
 		}
-		return ArticleCommonState::invaild;
+		return ArticleCommonState::invalid;
 	}
 
 	/**
@@ -156,7 +156,7 @@ namespace OpenXcom
 	{
 		auto state = createCommonArticleState(game->getSavedGame(), game->getMod());
 		state->current_index = getArticleIndex(state->articleList, article->id);
-		if (state->current_index != ArticleCommonState::invaild)
+		if (state->current_index != ArticleCommonState::invalid)
 		{
 			game->pushState(createArticleState(std::move(state)));
 		}
@@ -171,7 +171,7 @@ namespace OpenXcom
 	{
 		auto state = createCommonArticleState(game->getSavedGame(), game->getMod());
 		state->current_index = getArticleIndex(state->articleList, article_id);
-		if (state->current_index != ArticleCommonState::invaild)
+		if (state->current_index != ArticleCommonState::invalid)
 		{
 			game->pushState(createArticleState(std::move(state)));
 		}
@@ -186,7 +186,7 @@ namespace OpenXcom
 	{
 		auto state = createCommonArticleState(game->getSavedGame(), game->getMod());
 		state->current_index = getArticleIndex(state->articleList, article_id);
-		if (state->current_index != ArticleCommonState::invaild)
+		if (state->current_index != ArticleCommonState::invalid)
 		{
 			game->pushState(new StatsForNerdsState(std::move(state), false, false, false));
 		}

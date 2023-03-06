@@ -38,5 +38,6 @@ namespace OpenXcom
 	protected:
 		Text *_txtTitle;
 		Text *_txtInfo;
+		Uint8 _buttonColor, _titleColor, _textColor1, _textColor2;
 	};
 }

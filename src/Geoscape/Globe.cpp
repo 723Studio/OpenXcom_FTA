@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Globe.h"
-#include <algorithm>
 #include "../fmath.h"
 #include "../Engine/Action.h"
 #include "../Engine/SurfaceSet.h"
@@ -34,7 +33,6 @@
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
 #include "../Interface/Text.h"
-#include "../Engine/LocalizedText.h"
 #include "../Mod/RuleRegion.h"
 #include "../Savegame/Region.h"
 #include "../Mod/City.h"
@@ -1476,7 +1474,7 @@ void Globe::drawDetail()
 		delete label;
 	}
 
-	static int debugType = 0;
+	int& debugType = _game->getSavedGame()->debugType;
 	static bool canSwitchDebugType = false;
 	if (_game->getSavedGame()->getDebugMode())
 	{
@@ -1487,6 +1485,9 @@ void Globe::drawDetail()
 			color = 0;
 			for (std::vector<Country*>::iterator i = _game->getSavedGame()->getCountries()->begin(); i != _game->getSavedGame()->getCountries()->end(); ++i)
 			{
+				if (_game->getSavedGame()->debugCountry && _game->getSavedGame()->debugCountry != (*i))
+					continue;
+
 				color += 10;
 				for (size_t k = 0; k != (*i)->getRules()->getLatMax().size(); ++k)
 				{
@@ -1533,7 +1534,7 @@ void Globe::drawDetail()
 					continue;
 
 				color = -1;
-				int zoneNumber = 0;
+				size_t zoneNumber = 0;
 				for (std::vector<MissionZone>::const_iterator j = (*i)->getRules()->getMissionZones().begin(); j != (*i)->getRules()->getMissionZones().end(); ++j)
 				{
 					++zoneNumber;
@@ -1541,8 +1542,13 @@ void Globe::drawDetail()
 						continue;
 
 					color += 2;
+					size_t areaNumber = 0;
 					for (std::vector<MissionArea>::const_iterator k = (*j).areas.begin(); k != (*j).areas.end(); ++k)
 					{
+						++areaNumber;
+						if (_game->getSavedGame()->debugArea > 0 && _game->getSavedGame()->debugArea != areaNumber)
+							continue;
+
 						double lon2 = (*k).lonMax;
 						double lon1 = (*k).lonMin;
 						double lat2 = (*k).latMax;

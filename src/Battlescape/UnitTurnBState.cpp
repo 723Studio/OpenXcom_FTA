@@ -115,10 +115,26 @@ void UnitTurnBState::think()
 		if (_chargeTUs && _unit->getFaction() == _parent->getSave()->getSide() && _parent->getPanicHandled() && _action.type == BA_NONE && _unit->getUnitsSpottedThisTurn().size() > unitSpotted)
 		{
 			_unit->abortTurn();
+			_parent->popState();
 		}
-		if (_unit->getStatus() == STATUS_STANDING)
+		else if (_unit->getStatus() == STATUS_STANDING)
 		{
 			_parent->popState();
+
+			if (_action.kneel && !_unit->isFloating() && !_unit->isKneeled())
+			{
+				BattleAction kneel;
+				kneel.type = BA_KNEEL;
+				kneel.actor = _unit;
+				kneel.Time = _unit->getKneelChangeCost();
+				if (kneel.spendTU())
+				{
+					_unit->kneel(!_unit->isKneeled());
+					// kneeling or standing up can reveal new terrain or units. I guess.
+					_parent->getTileEngine()->calculateFOV(_unit->getPosition(), 1, false); //Update unit FOV for everyone through this position, skip tiles.
+					_parent->getTileEngine()->checkReactionFire(_unit, kneel);
+				}
+			}
 		}
 	}
 	else if (_parent->getPanicHandled())

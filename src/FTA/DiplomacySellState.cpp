@@ -72,7 +72,8 @@ namespace OpenXcom
  */
 DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState, OptionsOrigin origin) :
 		_base(base), _faction(faction), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
-		_reset(false), _sellAllButOne(false), _delayedInitDone(false)
+		_reset(false), _sellAllButOne(false), _delayedInitDone(false),
+		_previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER)
 {
 
 	_timerInc = new Timer(250);
@@ -104,12 +105,13 @@ void DiplomacySellState::delayedInit()
 	_btnTransfer = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtSales = new Text(150, 9, 10, 24);
-	_txtFunds = new Text(150, 9, 160, 24);
-	_txtSpaceUsed = new Text(150, 9, 160, 34);
+	_txtFunds = new Text(130, 9, 120, 24);
+	_txtSpaceUsed = new Text(130, 9, 120, 34);
 	_txtQuantity = new Text(54, 9, 136, 44);
-	_txtSell = new Text(96, 9, 190, 44);
-	_txtValue = new Text(40, 9, 270, 44);
-	_cbxCategory = new ComboBox(this, 120, 16, 10, 36);
+	_txtSell = new Text(76, 9, 190, 44);
+	_txtValue = new Text(60, 9, 250, 44);
+	_cbxCategory = new ComboBox(this, 105, 16, 10, 36);
+	_cbxSortBy = new ComboBox(this, 64, 16, 249, 24, false, false);
 	_lstItems = new TextList(287, 120, 8, 54);
 
 	// Set palette
@@ -131,6 +133,7 @@ void DiplomacySellState::delayedInit()
 	add(_txtValue, "text", "sellMenu");
 	add(_lstItems, "list", "sellMenu");
 	add(_cbxCategory, "text", "sellMenu");
+	add(_cbxSortBy, "text", "sellMenu");
 
 	centerAllSurfaces();
 
@@ -161,15 +164,15 @@ void DiplomacySellState::delayedInit()
 	_txtSpaceUsed->setVisible(true); // (Options::storageLimitsEnforced);
 
 	std::ostringstream ss;
-	ss << _base->getUsedStores() << ":" << _base->getAvailableStores();
+	ss << ceil(_base->getUsedStores()) << "/" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(ss.str());
-	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss.str()));
+	_txtSpaceUsed->setText(tr("STR_SPACE_USED_LC").arg(ss.str()));
 
-	_txtQuantity->setText(tr("STR_QUANTITY_UC"));
+	_txtQuantity->setText(tr("STR_QUANTITY"));
 
 	_txtSell->setText(tr("STR_SELL"));
 
-	_txtValue->setText(tr("STR_VALUE"));
+	_txtValue->setText(tr("STR_COST_LC"));
 
 	_lstItems->setArrowColumn(182, ARROW_VERTICAL);
 	_lstItems->setColumns(4, 156, 54, 24, 53);
@@ -186,26 +189,22 @@ void DiplomacySellState::delayedInit()
 
 	_cats.push_back("STR_ALL_ITEMS");
 
-	//for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
-	//{
-	//	if (_debriefingState) break;
-	//	if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
-	//	{
-	//		TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), 0, 1, 0, 0 };
-	//		_items.push_back(row);
-	//		std::string cat = getCategory(_items.size() - 1);
-	//		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//		{
-	//			_cats.push_back(cat);
-	//		}
-	//	}
-	//}
+	_sortingTypes.push_back("STR_LISTING_ORDER");
+	_sortingTypes.push_back("STR_BY_TOTAL_SIZE");
+	_sortingTypes.push_back("STR_BY_UNIT_SIZE");
+	//_sortingTypes.push_back("STR_BY_TOTAL_COST");
+	_sortingTypes.push_back("STR_BY_UNIT_COST");
+
+	_cbxSortBy->setOptions(_sortingTypes, true);
+	_cbxSortBy->onChange((ActionHandler)&DiplomacySellState::cbxSortByChange);
+	_cbxSortBy->setText(tr("STR_SORT_BY"));
+
 	for (std::vector<Craft*>::iterator i = _base->getCrafts()->begin(); i != _base->getCrafts()->end(); ++i)
 	{
 		if (_debriefingState) break;
 		if ((*i)->getStatus() != "STR_OUT")
 		{
-			TransferRow row = { TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()), getCostAdjustment((*i)->getRules()->getSellCost()), 1, 0, 0 };
+			TransferRow row = {TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()), getCostAdjustment((*i)->getRules()->getSellCost()), 1, 0, 0, 0, -3, 0, 0, (*i)->getRules()->getSellCost()};
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -214,26 +213,7 @@ void DiplomacySellState::delayedInit()
 			}
 		}
 	}
-	//if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	//{
-	//	TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0 };
-	//	_items.push_back(row);
-	//	std::string cat = getCategory(_items.size() - 1);
-	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//	{
-	//		_cats.push_back(cat);
-	//	}
-	//}
-	//if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	//{
-	//	TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0 };
-	//	_items.push_back(row);
-	//	std::string cat = getCategory(_items.size() - 1);
-	//	if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-	//	{
-	//		_cats.push_back(cat);
-	//	}
-	//}
+
 	const std::vector<std::string>& items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -267,7 +247,7 @@ void DiplomacySellState::delayedInit()
 		}
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
-			TransferRow row = { TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0 };
+			TransferRow row = {TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCost()};
 			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
 			{
 				row.amount = qty;
@@ -329,7 +309,7 @@ void DiplomacySellState::delayedInit()
 		}
 	}
 
-	_txtSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
+	_txtSales->setText(tr("STR_VALUE_OF_SALES_LC").arg(Unicode::formatFunding(_total)));
 
 	_cbxCategory->setOptions(_cats, true);
 	_cbxCategory->onChange((ActionHandler)&DiplomacySellState::cbxCategoryChange);
@@ -517,6 +497,33 @@ void DiplomacySellState::updateList()
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 
+	if (_previousSort != _currentSort)
+	{
+		switch (_currentSort)
+		{
+		case TransferSortDirection::BY_TOTAL_COST:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.totalCost > b.totalCost; });
+			break;
+		case TransferSortDirection::BY_UNIT_COST:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.cost > b.cost; });
+			break;
+		case TransferSortDirection::BY_TOTAL_SIZE:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.totalSize > b.totalSize; });
+			break;
+		case TransferSortDirection::BY_UNIT_SIZE:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.size > b.size; });
+			break;
+		default:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.listOrder < b.listOrder; });
+			break;
+		}
+	}
+
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
@@ -607,7 +614,7 @@ void DiplomacySellState::btnOkClick(Action*)
 		}
 	};
 
-	auto cleanUpCraft = [&](Craft* craft, const RuleItem* rule, int toRemove) -> int
+	auto cleanUpCraft = [&](Craft* craft2, const RuleItem* rule, int toRemove) -> int
 	{
 		struct S
 		{
@@ -637,7 +644,7 @@ void DiplomacySellState::btnOkClick(Action*)
 			}
 		};
 
-		for (auto*& w : *craft->getWeapons())
+		for (auto*& w : *craft2->getWeapons())
 		{
 			if (w != nullptr)
 			{
@@ -657,7 +664,7 @@ void DiplomacySellState::btnOkClick(Action*)
 		}
 
 		Collections::deleteIf(
-			*craft->getVehicles(),
+			*craft2->getVehicles(),
 			[&](Vehicle* v)
 			{
 				auto clipType = v->getRules()->getVehicleClipAmmo();
@@ -1024,8 +1031,6 @@ void DiplomacySellState::changeByValue(int change, int dir)
 {
 	if (dir > 0)
 	{
-		int i = getRow().qtySrc;
-		int y = getRow().amount;
 		if (change <= 0 || getRow().qtySrc <= getRow().amount)
 		{
 			return;
@@ -1052,9 +1057,6 @@ void DiplomacySellState::changeByValue(int change, int dir)
 	_total += increase;
 
 	std::string errorMessage;
-	auto test = getRow().cost;
-	auto testA = _total + test;
-	auto testB = _faction->getFunds();
 	if (_total > _faction->getFunds())
 	{
 		errorMessage = tr("STR_NOT_ENOUGH_MONEY_FACTION");
@@ -1118,7 +1120,7 @@ void DiplomacySellState::updateItemStrings()
 	_lstItems->setCellText(_sel, 2, ss.str());
 	ss2 << getRow().qtySrc - getRow().amount;
 	_lstItems->setCellText(_sel, 1, ss2.str());
-	_txtSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
+	_txtSales->setText(tr("STR_VALUE_OF_SALES_LC").arg(Unicode::formatFunding(_total)));
 
 	if (getRow().amount > 0)
 	{
@@ -1154,11 +1156,42 @@ void DiplomacySellState::updateItemStrings()
 }
 
 /**
-* Updates the production list to match the category filter.
+* Updates the selling list to match the category filter.
 */
 void DiplomacySellState::cbxCategoryChange(Action*)
 {
 	updateList();
 }
 
+void DiplomacySellState::cbxSortByChange(Action *action)
+{
+
+	size_t selSorting = _cbxSortBy->getSelected();
+	const std::string selectedSorting = _sortingTypes[selSorting];
+
+	if (selectedSorting == "STR_BY_TOTAL_SIZE")
+	{
+		_currentSort = TransferSortDirection::BY_TOTAL_SIZE;
+	}
+	else if (selectedSorting == "STR_BY_UNIT_SIZE")
+	{
+		_currentSort = TransferSortDirection::BY_UNIT_SIZE;
+	}
+	/*else if (selectedSorting == "STR_BY_TOTAL_COST")
+	{
+		_currentSort = TransferSortDirection::BY_TOTAL_COST;
+	}*/
+	else if (selectedSorting == "STR_BY_UNIT_COST")
+	{
+		_currentSort = TransferSortDirection::BY_UNIT_COST;
+	}
+	else
+	{
+		_currentSort = TransferSortDirection::BY_LIST_ORDER;
+	}
+
+	updateList();
+
+	_previousSort = _currentSort;
+}
 }

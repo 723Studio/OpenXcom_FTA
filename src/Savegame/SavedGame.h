@@ -29,12 +29,15 @@
 #include "../Savegame/Craft.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleBaseFacility.h"
+#include "../Mod/RuleCraft.h"
 #include "../Engine/Script.h"
 
 namespace OpenXcom
 {
 
+class Game;
 class Mod;
+class MasterMind;
 class GameTime;
 class Country;
 class Base;
@@ -114,9 +117,15 @@ struct PromotionInfo
  */
 class SavedGame
 {
-public:
+  protected:
+	static Game *_game;
+
+  public:
+	Country *debugCountry = nullptr;
 	Region *debugRegion = nullptr;
-	int debugZone = 0;
+	int debugType = 0;
+	size_t debugZone = 0;
+	size_t debugArea = 0;
 
 	/// Name of class used in script.
 	static constexpr const char *ScriptName = "GeoscapeGame";
@@ -124,7 +133,7 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 
 
-	static const int MAX_EQUIPMENT_LAYOUT_TEMPLATES = 20;
+	static const int MAX_EQUIPMENT_LAYOUT_TEMPLATES = 50;
 	static const int MAX_CRAFT_LOADOUT_TEMPLATES = 10;
 
 private:
@@ -155,12 +164,17 @@ private:
 	std::map<std::string, int> _ufopediaRuleStatus;
 	std::map<std::string, int> _manufactureRuleStatus;
 	std::map<std::string, int> _researchRuleStatus;
+	std::map<std::string, int> _monthlyPurchaseLimitLog;
 	std::map<std::string, bool> _hiddenPurchaseItemsMap;
+	std::map<std::string, RuleCraftDeployment> _customRuleCraftDeployments;
+	Base* _previewBase;
 	std::vector<AlienMission*> _activeMissions;
 	std::vector<GeoscapeEvent*> _geoscapeEvents;
 	std::vector<CovertOperation*> _covertOperations;
 	std::vector<DiplomacyFaction*> _diplomacyFactions;
-	bool _debug, _warned;
+	bool _debug, _warned, _ftaGame;
+	bool _togglePersonalLight, _toggleNightVision;
+	int _toggleBrightness;
 	int _monthsPassed;
 	int _loyalty, _lastMonthsLoyalty;
 	std::string _graphRegionToggles;
@@ -217,6 +231,14 @@ public:
 	bool isIronman() const;
 	/// Sets if the game is in ironman mode.
 	void setIronman(bool ironman);
+	/// Gets if the game is FtA game.
+	bool isFtAGame() const { return _ftaGame; };
+	/// Sets if the game is FtA game.
+	void setFtAGame(bool ftaGame) { _ftaGame = ftaGame; };
+	/// Sets game object pointer
+	static void setGamePtr(Game *game) { _game = game; };
+	/// Gets our game.
+	Game *getGame() { return _game; };
 	/// Gets the current funds.
 	int64_t getFunds() const;
 	/// Gets the list of funds from previous months.
@@ -253,6 +275,12 @@ public:
 	void setTime(const GameTime& time);
 	/// Gets the current ID for an object.
 	int getId(const std::string &name);
+	/// Gets the last ID for an object.
+	int getLastId(const std::string& name);
+	/// Increase a custom counter.
+	void increaseCustomCounter(const std::string& name);
+	/// Decrease a custom counter.
+	void decreaseCustomCounter(const std::string& name);
 	/// Resets the list of object IDs.
 	const std::map<std::string, int> &getAllIds() const;
 	/// Resets the list of object IDs.
@@ -323,8 +351,16 @@ public:
 	void getDependableFacilities(std::vector<RuleBaseFacility*> & dependables, const RuleResearch *research, const Mod *mod) const;
 	/// Gets the status of a ufopedia rule.
 	int getUfopediaRuleStatus(const std::string &ufopediaRule);
+	/// Gets the log of monthly purchase limits
+	std::map<std::string, int>& getMonthlyPurchaseLimitLog() { return _monthlyPurchaseLimitLog; }
 	/// Gets the list of hidden items
 	const std::map<std::string, bool> &getHiddenPurchaseItems();
+	/// Gets the list of player-defined save-specific RuleCraft '_deployment' overrides
+	std::map<std::string, RuleCraftDeployment>& getCustomRuleCraftDeployments() { return _customRuleCraftDeployments; }
+	/// Gets the preview base.
+	Base* getPreviewBase() { return _previewBase; }
+	/// Sets the preview base.
+	void setPreviewBase(Base* previewBase) { _previewBase = previewBase; }
 	/// Gets the status of a manufacture rule.
 	int getManufactureRuleStatus(const std::string &manufactureRule);
 	/// Gets all the research rule status info.
@@ -349,6 +385,8 @@ public:
 	bool isItemObtained(const std::string &itemType) const;
 	/// Gets if a certain facility has been built.
 	bool isFacilityBuilt(const std::string &facilityType) const;
+	/// Gets if a certain soldier type has been hired.
+	bool isSoldierTypeHired(const std::string& soldierType) const;
 	/// Gets the soldier matching this ID.
 	Soldier *getSoldier(int id) const;
 	/// Handles the higher promotions.
@@ -379,6 +417,20 @@ public:
 	bool getWarned() const;
 	/// sets whether or not the player has been warned
 	void setWarned(bool warned);
+
+	/// gets personal light toggle
+	bool getTogglePersonalLight() const { return _togglePersonalLight; }
+	/// sets personal light toggle
+	void setTogglePersonalLight(bool togglePersonalLight) { _togglePersonalLight = togglePersonalLight; }
+	/// gets night vision toggle
+	bool getToggleNightVision() const { return _toggleNightVision; }
+	/// sets night vision toggle
+	void setToggleNightVision(bool toggleNightVision) { _toggleNightVision = toggleNightVision; }
+	/// gets brightness toggle
+	int getToggleBrightness() const { return _toggleBrightness; }
+	/// sets brightness toggle
+	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+
 	/// Full access to the alien strategy data.
 	AlienStrategy &getAlienStrategy() { return *_alienStrategy; }
 	/// Read-only access to the alien strategy data.
@@ -401,6 +453,12 @@ public:
 	Region *locateRegion(double lon, double lat) const;
 	/// Locate a region containing a Target.
 	Region *locateRegion(const Target &target) const;
+	/// Locate a country containing a position.
+	Country* locateCountry(double lon, double lat) const;
+	/// Locate a country containing a Target.
+	Country* locateCountry(const Target& target) const;
+	/// Select a soldier nationality based on mod rules and location on the globe.
+	int selectSoldierNationalityByLocation(const Mod* mod, const RuleSoldier* rule, const Target* target) const;
 	/// Return the month counter.
 	int getMonthsPassed() const;
 	/// Return the GraphRegionToggles.
@@ -476,7 +534,7 @@ public:
 	/// Checks if a UFO is on the ignore list.
 	bool isUfoOnIgnoreList(int ufoId);
 	/// Handles a soldier's death.
-	std::vector<Soldier*>::iterator killSoldier(Soldier *soldier, BattleUnitKills *cause = 0);
+	std::vector<Soldier*>::iterator killSoldier(bool resetArmor, Soldier *soldier, BattleUnitKills *cause = 0);
 	/// enables/disables autosell for an item type
 	void setAutosell(const RuleItem *itype, const bool enabled);
 	/// get autosell state for an item type
@@ -501,6 +559,17 @@ public:
 	int getCurrentScore(int monthsPassed) const;
 	/// Clear links for the given alien base. Use this before deleting the alien base.
 	void clearLinksForAlienBase(AlienBase* alienBase, const Mod* mod);
+	/// Delete the given retaliation mission.
+	void deleteRetaliationMission(AlienMission* am, Base* base);
+	/// Spawn a Geoscape event from the event rules.
+	bool spawnEvent(const RuleEvent* eventRules);
+	bool spawnEvent(std::vector<std::string> eventNames, const Mod* mod);
+	/// Checks if an instant Geoscape event can be spawned.
+	bool canSpawnInstantEvent(const RuleEvent* eventRules);
+	/// Handles research unlocked by successful/failed missions and despawned mission sites.
+	bool handleResearchUnlockedByMissions(const RuleResearch* research, const Mod* mod);
+	/// Handles research side effects for primary research sources.
+	void handlePrimaryResearchSideEffects(const std::vector<const RuleResearch*> &topicsToCheck, const Mod* mod, Base* base);
 	/// Gets the list of user notes.
 	std::vector<std::string>& getUserNotes() { return _userNotes; }
 };

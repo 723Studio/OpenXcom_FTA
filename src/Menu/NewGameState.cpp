@@ -19,7 +19,6 @@
 #include "NewGameState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
@@ -31,14 +30,7 @@
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/SavedBattleGame.h"
-#include "../Battlescape/BattlescapeGenerator.h"
-#include "../Battlescape/BriefingState.h"
-#include "../Geoscape/BaseNameState.h"
 #include "../FTA/MasterMind.h"
-#include "../Savegame/AlienBase.h"
-#include "../Savegame/DiplomacyFaction.h"
-#include "../Mod/RuleDiplomacyFaction.h"
 #include "../Engine/Logger.h"
 
 namespace OpenXcom
@@ -137,7 +129,7 @@ NewGameState::NewGameState()
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
 
-	if (_game->getMod()->getIsFTAGame() && !_game->getMod()->getIsIronManEnabled()) // #FINNIKTODO remove on beta
+	if (_game->getMod()->isFTAGame() && !_game->getMod()->getIsIronManEnabled()) // #FINNIKTODO remove on beta
 	{
 		_btnIronman->setVisible(false);
 		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
@@ -187,15 +179,16 @@ void NewGameState::btnOkClick(Action *)
 	save->setDifficulty(diff);
 	save->setIronman(_btnIronman->getPressed());
 	_game->setSavedGame(save);
-	const Mod* mod = _game->getMod();
+	save->setGamePtr(_game);
 
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
   
 	//choose the game scenario
-	if (_game->getMod()->getIsFTAGame())
+	if (_game->getMod()->isFTAGame())
 	{
 		_game->getMasterMind()->newGameHelper(diff, gs);
+		save->setFtAGame(true);
 	}
 	else //vanilla
 	{

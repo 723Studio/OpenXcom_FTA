@@ -31,16 +31,13 @@
 #include "../Interface/Window.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
-#include "../Savegame/CraftWeapon.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/ResearchProject.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
-#include "../Savegame/Vehicle.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
-#include "../Mod/RuleCraftWeapon.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleResearch.h"
 #include <algorithm>
@@ -264,12 +261,12 @@ void StoresState::initList(bool grandTotal)
 
 	// find relevant items
 	const std::vector<std::string> &items = _game->getMod()->getItemsList();
-	for (std::vector<std::string>::const_iterator item = items.begin(); item != items.end(); ++item)
+	for (auto& item : items)
 	{
 		// quick search
 		if (!searchString.empty())
 		{
-			std::string projectName = tr((*item));
+			std::string projectName = tr(item);
 			Unicode::upperCase(projectName);
 			if (projectName.find(searchString) == std::string::npos)
 			{
@@ -278,42 +275,42 @@ void StoresState::initList(bool grandTotal)
 		}
 
 		int qty = 0;
-		auto rule = _game->getMod()->getItem(*item, true);
+		auto rule = _game->getMod()->getItem(item, true);
 		if (!grandTotal)
 		{
 			// items in stores from this base only
-			qty += _base->getStorageItems()->getItem(*item);
+			qty += _base->getStorageItems()->getItem(item);
 		}
 		else
 		{
 
 			// items from all bases
-			for (std::vector<Base*>::iterator base = _game->getSavedGame()->getBases()->begin(); base != _game->getSavedGame()->getBases()->end(); ++base)
+			for (auto* base : *_game->getSavedGame()->getBases())
 			{
 				// 1. items in base stores
-				qty += (*base)->getStorageItems()->getItem(rule);
+				qty += base->getStorageItems()->getItem(rule);
 
 				// 2. items from craft
-				for (std::vector<Craft*>::iterator craft = (*base)->getCrafts()->begin(); craft != (*base)->getCrafts()->end(); ++craft)
+				for (auto* craft : *base->getCrafts())
 				{
-					qty += (*craft)->getTotalItemCount(rule);
+					qty += craft->getTotalItemCount(rule);
 				}
 
 				// 3. armor in use (worn by soldiers)
-				for (std::vector<Soldier*>::iterator soldier = (*base)->getSoldiers()->begin(); soldier != (*base)->getSoldiers()->end(); ++soldier)
+				for (auto* soldier : *base->getSoldiers())
 				{
-					if ((*soldier)->getArmor()->getStoreItem() == rule)
+					if (soldier->getArmor()->getStoreItem() == rule)
 					{
 						qty += 1;
 					}
 				}
 
 				// 4. items/aliens in research
-				for (std::vector<ResearchProject *>::const_iterator research = (*base)->getResearch().begin(); research != (*base)->getResearch().end(); ++research)
+				for (auto* research : base->getResearch())
 				{
-					if ((*research)->getRules()->needItem() && (*research)->getRules()->getName() == (*item))
+					if (research->getRules()->needItem() && research->getRules()->getName() == item)
 					{
-						if ((*research)->getRules()->destroyItem())
+						if (research->getRules()->destroyItem())
 						{
 							qty += 1;
 							break;
@@ -322,18 +319,25 @@ void StoresState::initList(bool grandTotal)
 				}
 
 				// 5. items in transfer
-				for (std::vector<Transfer*>::iterator transfer = (*base)->getTransfers()->begin(); transfer != (*base)->getTransfers()->end(); ++transfer)
+				for (auto* transfer : *base->getTransfers())
 				{
-					Craft *craft2 = (*transfer)->getCraft();
-					if (craft2)
+					if (transfer->getCraft())
 					{
 						// 5a. craft equipment, weapons, vehicles
-						qty += craft2->getTotalItemCount(rule);
+						qty += transfer->getCraft()->getTotalItemCount(rule);
 					}
-					else if ((*transfer)->getItems() == (*item))
+					else if (transfer->getSoldier())
+					{
+						// 5c. armor in use (worn by soldiers)
+						if (transfer->getSoldier()->getArmor()->getStoreItem() == rule)
+						{
+							qty += 1;
+						}
+					}
+					else if (transfer->getItems() == item)
 					{
 						// 5b. items in transfer
-						qty += (*transfer)->getQuantity();
+						qty += transfer->getQuantity();
 					}
 				}
 			}
@@ -341,7 +345,7 @@ void StoresState::initList(bool grandTotal)
 
 		if (qty > 0)
 		{
-			_itemList.push_back(StoredItem(tr(*item), qty, rule->getSize(), qty * rule->getSize()));
+			_itemList.push_back(StoredItem(tr(item), qty, rule->getSize(), qty * rule->getSize()));
 		}
 	}
 
@@ -454,13 +458,13 @@ void StoresState::sortList(ItemSort sort)
  */
 void StoresState::updateList()
 {
-	for (std::vector<StoredItem>::const_iterator j = _itemList.begin(); j != _itemList.end(); ++j)
+	for (auto& item : _itemList)
 	{
 		std::ostringstream ss, ss2, ss3;
-		ss << (*j).quantity;
-		ss2 << (*j).size;
-		ss3 << (*j).spaceUsed;
-		_lstStores->addRow(4, (*j).name.c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
+		ss << item.quantity;
+		ss2 << item.size;
+		ss3 << item.spaceUsed;
+		_lstStores->addRow(4, item.name.c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
 	}
 }
 

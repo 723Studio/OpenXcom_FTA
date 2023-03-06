@@ -40,14 +40,15 @@ private:
 	static const int BUTTON_HEIGHT = 16;
 
 	std::vector<Target*> _targets;
-	Craft *_craft;
+	std::vector<Craft*> _crafts;
 	GeoscapeState *_state;
+	bool _useCustomSound;
 
 	Window *_window;
 	std::vector<TextButton*> _btnTargets;
 public:
 	/// Creates the Multiple Targets state.
-	MultipleTargetsState(std::vector<Target*> targets, Craft *craft, GeoscapeState *state);
+	MultipleTargetsState(std::vector<Target*> targets, std::vector<Craft*> crafts, GeoscapeState *state, bool useCustomSound);
 	/// Cleans up the Multiple Targets state.
 	~MultipleTargetsState();
 	/// Updates the window.

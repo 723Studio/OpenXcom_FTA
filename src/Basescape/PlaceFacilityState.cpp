@@ -18,20 +18,24 @@
  */
 #include "PlaceFacilityState.h"
 #include "../Engine/Game.h"
+#include "../Engine/Sound.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "BaseView.h"
+#include "FacilityAllocateEngineersState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
+#include "../FTA/MasterMind.h"
 #include "../Mod/RuleInterface.h"
 #include <algorithm>
 #include <climits>
@@ -49,6 +53,7 @@ namespace OpenXcom
 PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule, BaseFacility *origFac) : _base(base), _rule(rule), _origFac(origFac)
 {
 	_screen = false;
+	_ftaUi = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 128, 160, 192, 40);
@@ -113,10 +118,9 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 			if (item.second.first > 9) --max;
 			if (item.second.first > 99) --max;
 			std::string name = tr(item.first);
-			UString uname = Unicode::convUtf8ToUtf32(name);
-			if (uname.length() > max)
+			if (Unicode::codePointLengthUTF8(name) > max)
 			{
-				name = Unicode::convUtf32ToUtf8(uname.substr(0, max));
+				name = Unicode::codePointSubstrUTF8(name, 0, max);
 			}
 
 			ss << name << ": " << item.second.first << std::endl;
@@ -126,9 +130,15 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 
 	_txtTime->setText(tr("STR_CONSTRUCTION_TIME_UC"));
 
+	int time = _rule->getBuildTime();
+	std::string units = "STR_DAY";
+	if (_ftaUi && _rule->getProjectRules())
+	{
+		time = _rule->getProjectRules()->getManufactureTime() / 24 / 100; //converse to days and adjust as FtA uses more precise calculation of manufacture cost
+		units = "STR_MAN_DAY";
+	}
 	_numTime->setBig();
-	_numTime->setText(tr("STR_DAY", _origFac != 0 ? 0 : _rule->getBuildTime()));
-
+	_numTime->setText(tr(units, _origFac != 0 ? 0 : time));
 	_txtMaintenance->setText(tr("STR_MAINTENANCE_UC"));
 
 	_numMaintenance->setBig();
@@ -174,7 +184,7 @@ void PlaceFacilityState::viewClick(Action *)
 		{
 			_origFac->setX(_view->getGridX());
 			_origFac->setY(_view->getGridY());
-			if (Options::allowBuildingQueue)
+			if (Options::allowBuildingQueue && !_ftaUi) // sorry, no queue for FtA game...
 			{
 				// first reset (maybe the moved facility is not queued anymore)
 				if (abs(_origFac->getBuildTime()) > _rule->getBuildTime()) _origFac->setBuildTime(_rule->getBuildTime());
@@ -289,6 +299,7 @@ void PlaceFacilityState::viewClick(Action *)
 
 			}
 
+			//Creating facility
 			BaseFacility *fac = new BaseFacility(_rule, _base);
 			fac->setX(_view->getGridX());
 			fac->setY(_view->getGridY());
@@ -301,7 +312,13 @@ void PlaceFacilityState::viewClick(Action *)
 				fac->setBuildTime(std::max(1, fac->getBuildTime() - reducedBuildTimeRounded));
 			}
 			_base->getFacilities()->push_back(fac);
-			if (Options::allowBuildingQueue)
+			
+			if (fac->getRules()->getPlaceSound() != Mod::NO_SOUND)
+			{
+				_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
+			}
+
+			if (Options::allowBuildingQueue && !_ftaUi)
 			{
 				if (_view->isQueuedBuilding(_rule)) fac->setBuildTime(INT_MAX);
 				_view->reCalcQueuedBuildings();
@@ -312,7 +329,30 @@ void PlaceFacilityState::viewClick(Action *)
 			{
 				_base->getStorageItems()->removeItem(i.first, i.second.first);
 			}
-			_game->popState();
+			//Making production for FtA game logic
+			if (_ftaUi)
+			{
+				//create project
+				auto ruleProject = fac->getRules()->getProjectRules();
+				if (ruleProject == nullptr)
+				{
+					_game->pushState(new ErrorMessageState("No rule for this facility, ask devs why!", _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK13.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
+				}
+				else
+				{
+					Production* project = new Production(fac->getRules()->getProjectRules(), 1);
+					_base->addProduction(project);
+					project->setFacility(fac);
+					fac->setProductionProject(project);
+
+					// apply project's property
+					_game->pushState(new FacilityAllocateEngineersState(_base, project));
+				}
+			}
+			else
+			{
+				_game->popState();
+			}
 		}
 	}
 }

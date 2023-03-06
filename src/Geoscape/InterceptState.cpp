@@ -32,6 +32,7 @@
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/AlienBase.h"
 #include "../Engine/Options.h"
+#include "../Engine/RNG.h"
 #include "Globe.h"
 #include "SelectDestinationState.h"
 #include "ConfirmDestinationState.h"
@@ -49,13 +50,23 @@ namespace OpenXcom
  * @param base Pointer to base to show contained crafts (NULL to show all crafts).
  * @param target Pointer to target to intercept (NULL to ask user for target).
  */
-InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _globe(globe), _base(base), _target(target)
+InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Target *target) : _globe(globe), _base(base), _target(target)
 {
 	const int WIDTH_CRAFT = 72;
 	const int WIDTH_STATUS = 94;
 	const int WIDTH_BASE = 74;
 	const int WIDTH_WEAPONS = 48;
 	_screen = false;
+
+	if (useCustomSound)
+	{
+		auto& sounds = _game->getMod()->getSelectBaseSounds();
+		int soundId = sounds.empty() ? Mod::NO_SOUND : sounds[RNG::generate(0, sounds.size() - 1)];
+		if (soundId != Mod::NO_SOUND)
+		{
+			_customSound = _game->getMod()->getSound("GEO.CAT", soundId);
+		}
+	}
 
 	// Create objects
 	if (Options::oxceInterceptGuiMaintenanceTimeHidden > 0)
@@ -152,6 +163,9 @@ InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _glob
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsLeftClick);
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsRightClick, SDL_BUTTON_RIGHT);
 	_lstCrafts->onMouseClick((ActionHandler)&InterceptState::lstCraftsMiddleClick, SDL_BUTTON_MIDDLE);
+
+	//clear list of selected crafts before creating a new wing
+	_selCrafts.clear();
 
 	int row = 0;
 	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
@@ -275,18 +289,18 @@ InterceptState::InterceptState(Globe *globe, Base *base, Target *target) : _glob
 				ss << 0;
 			}
 			ss << "/";
-			if ((*j)->getNumSoldiers() > 0)
+			if ((*j)->getNumTotalSoldiers() > 0)
 			{
-				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumSoldiers() << Unicode::TOK_COLOR_FLIP;
+				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumTotalSoldiers() << Unicode::TOK_COLOR_FLIP;
 			}
 			else
 			{
 				ss << 0;
 			}
 			ss << "/";
-			if ((*j)->getNumVehicles() > 0)
+			if ((*j)->getNumTotalVehicles() > 0)
 			{
-				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumVehicles() << Unicode::TOK_COLOR_FLIP;
+				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumTotalVehicles() << Unicode::TOK_COLOR_FLIP;
 			}
 			else
 			{
@@ -336,18 +350,61 @@ void InterceptState::btnGotoBaseClick(Action *)
  */
 void InterceptState::lstCraftsLeftClick(Action *)
 {
-	Craft* c = _crafts[_lstCrafts->getSelectedRow()];
-	if (c->getStatus() == "STR_READY" || ((c->getStatus() == "STR_OUT" || Options::craftLaunchAlways) && !c->getLowFuel() && !c->getMissionComplete()))
+	// condition used in shift and non-shift paths
+	auto allowStart = [&](Craft* c)
 	{
-		_game->popState();
-		if (_target == 0)
+		return c->getStatus() == "STR_READY" || (
+			 (c->getStatus() == "STR_OUT" || Options::craftLaunchAlways) &&
+			 !c->getLowFuel() &&
+			 !c->getMissionComplete() );
+	};
+
+	unsigned int row;
+	row = _lstCrafts->getSelectedRow();
+	Craft* c = _crafts[row];
+
+	// add and remove crafts to the wing to be created
+	if (_game->isShiftPressed())
+	{
+		// add craft to the list when it is not included yet
+		// limit to 4 (3+1 due to the dogfight window)
+		// need more sanity checks?
+		if (allowStart(c) && (_selCrafts.size() < 3) && !( std::find(_selCrafts.begin(), _selCrafts.end(), (Craft*) c) != _selCrafts.end()))
 		{
-			_game->pushState(new SelectDestinationState(c, _globe));
+			_selCrafts.push_back(c);
+			_lstCrafts->setCellColor(row, 0, _lstCrafts->getSecondaryColor());
 		}
-		else
+		// remove craft from the wing to be created when it is already included
+		else if (( std::find(_selCrafts.begin(), _selCrafts.end(), (Craft*) c) != _selCrafts.end()))
 		{
-			_game->pushState(new ConfirmDestinationState(c, _target));
-		}
+			std::vector<Craft *>::const_iterator craftIt = std::find (_selCrafts.begin(), _selCrafts.end(), (Craft*) c);
+			_selCrafts.erase(craftIt);
+			_lstCrafts->setCellColor(row, 0, _lstCrafts->getColor());
+ 		}
+	}
+	// add last craft to the wing (may already be part of the wing) and launch
+	else
+	{
+		if (allowStart(c))
+ 		{
+			//remove itself from the vector assuming it is already inside, so it can be put in front of the vector
+			auto craftIt = std::find (_selCrafts.begin(), _selCrafts.end(), c);
+			if ( craftIt != _selCrafts.end() )
+			{
+				_selCrafts.erase(craftIt);
+			}
+			_selCrafts.insert(_selCrafts.begin(), c);
+
+			_game->popState();
+			if (_target == 0)
+			{
+				_game->pushState(new SelectDestinationState(_selCrafts, _globe));
+			}
+			else
+			{
+				_game->pushState(new ConfirmDestinationState(_selCrafts, _target));
+			}
+		 }
 	}
 }
 

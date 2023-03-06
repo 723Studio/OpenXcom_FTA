@@ -74,6 +74,7 @@ namespace OpenXcom
 		_txtInfo->setColor(Palette::blockOffset(14)+15);
 		_txtInfo->setSecondaryColor(Palette::blockOffset(15) + 4);
 		_txtInfo->setWordWrap(true);
+		_txtInfo->setScrollable(true);
 		_txtInfo->setText(tr(defs->getTextForPage(_state->current_page)));
 
 		_txtStats = new Text(defs->rect_stats.width, defs->rect_stats.height, defs->rect_stats.x, defs->rect_stats.y);
@@ -135,12 +136,12 @@ namespace OpenXcom
 		}
 		ss << tr("STR_WEAPON_PODS").arg(craft->getWeapons()) << '\n';
 		ss << tr("STR_DAMAGE_CAPACITY_UC").arg(Unicode::formatNumber(craft->getMaxDamage())) << '\n';
-		ss << tr("STR_CARGO_SPACE").arg(craft->getSoldiers()) << '\n';
+		ss << tr("STR_CARGO_SPACE").arg(craft->getMaxUnits()) << '\n';
 		if (craft->getPilots() > 0)
 		{
 			ss << tr("STR_COCKPIT_CAPACITY").arg(craft->getPilots()) << '\n';
 		}
-		ss << tr("STR_HWP_CAPACITY").arg(craft->getVehicles());
+		ss << tr("STR_HWP_CAPACITY").arg(craft->getMaxVehiclesAndLargeSoldiers());
 		_txtStats->setText(ss.str());
 
 		centerAllSurfaces();

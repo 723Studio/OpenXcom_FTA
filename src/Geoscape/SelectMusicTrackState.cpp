@@ -27,6 +27,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
+#include "../Mod/RuleInterface.h"
 #include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
@@ -85,12 +86,20 @@ SelectMusicTrackState::SelectMusicTrackState(SelectMusicTrackOrigin origin) : _o
 	_lstTracks->onMouseClick((ActionHandler)&SelectMusicTrackState::lstTrackClick);
 
 	const std::string search = _origin == SMT_BATTLESCAPE ? "GMTAC" : "GMGEO";
+	const std::string& currentName = _game->getMod()->getCurrentMusicTrack();
+	int currentTrackIndex = -1;
 	for (auto& i : _game->getMod()->getMusicTrackList())
 	{
-		if (i.first.find(search) != std::string::npos)
+		if (i.first == currentName || i.first.find(search) != std::string::npos)
 		{
 			_lstTracks->addRow(1, tr(i.first).c_str());
 			_tracks.push_back(i.second);
+			_trackNames.push_back(i.first);
+			if (i.first == currentName)
+			{
+				currentTrackIndex = _lstTracks->getLastRowIndex();
+				_lstTracks->setRowColor(currentTrackIndex, _lstTracks->getSecondaryColor());
+			}
 		}
 	}
 
@@ -98,6 +107,11 @@ SelectMusicTrackState::SelectMusicTrackState(SelectMusicTrackOrigin origin) : _o
 	if (_origin == SMT_BATTLESCAPE)
 	{
 		applyBattlescapeTheme("selectMusicTrack");
+		if (currentTrackIndex > -1)
+		{
+			Element* element = _game->getMod()->getInterface("battlescape")->getElement("optionLists");
+			_lstTracks->setRowColor(currentTrackIndex, element->color2);
+		}
 	}
 }
 
@@ -126,6 +140,7 @@ void SelectMusicTrackState::lstTrackClick(Action *)
 {
 	Music *selected = _tracks[_lstTracks->getSelectedRow()];
 	selected->play();
+	_game->getMod()->setCurrentMusicTrack(_trackNames[_lstTracks->getSelectedRow()]);
 
 	_game->popState();
 }

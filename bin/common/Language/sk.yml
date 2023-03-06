@@ -248,7 +248,7 @@ sk:
   STR_ALIEN_RACE: "Druh"
   STR_ALIEN_TECH_LEVEL: "Úroveň technológie"
   STR_RANDOMIZE: "Náhodne"
-  STR_OXCE_REQUIRED_QUESTION: "Tento mod vyžaduje OpenXcom Extended (OXCE). Aktivovať tento mod?"
+  STR_OXCE_REQUIRED_QUESTION: "Tento mod vyžaduje OpenXcom {0}. Aktivovať tento mod?"
   STR_RESTORE_DEFAULTS_QUESTION: "Naozaj chceš obnoviť pôvodné nastavenia?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Chcete zachovať súčasné nastavenia zobrazenia?"
   STR_DISPLAY_OPTIONS_REVERT: "Pôvodné nastavenia sa vrátia za 0:{0}"

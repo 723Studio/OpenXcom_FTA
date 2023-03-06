@@ -72,7 +72,7 @@ private:
 	std::string _type, _size;
 	int _sprite, _marker, _markerLand, _markerCrash;
 	int _power, _range, _score, _reload, _breakOffTime, _missionScore;
-	int _hunterKillerPercentage, _huntMode, _huntSpeed, _huntBehavior;
+	int _hunterKillerPercentage, _huntMode, _huntSpeed, _huntBehavior, _softlockThreshold;
 	int _missilePower;
 	bool _unmanned;
 	int _splashdownSurvivalChance;
@@ -149,6 +149,8 @@ public:
 	int getHuntSpeed() const;
 	/// Gets the UFO's hunting behavior (normal, kamikaze or random).
 	int getHuntBehavior() const;
+	/// Gets the amount of shots fired before a softlock is detected.
+	int getSoftlockThreshold() const { return _softlockThreshold; }
 	/// Gets the missile power (of a UFO that represents one or more missiles).
 	int getMissilePower() const { return _missilePower; }
 	/// Is this an unmanned UFO (drone, missile, etc.)?

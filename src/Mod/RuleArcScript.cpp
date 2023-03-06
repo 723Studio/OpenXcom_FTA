@@ -69,9 +69,15 @@ void RuleArcScript::load(const YAML::Node& node)
 	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
 	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
 	_requiredReputation = node["requiredReputation"].as<std::map<std::string, int>>(_requiredReputation);
+	_missionVarName = node["missionVarName"].as<std::string>(_missionVarName);
+	_missionMarkerName = node["missionMarkerName"].as<std::string>(_missionMarkerName);
+	_counterMin = node["counterMin"].as<int>(_counterMin);
+	_counterMax = node["counterMax"].as<int>(_counterMax);
 	_researchTriggers = node["researchTriggers"].as<std::map<std::string, bool> >(_researchTriggers);
 	_itemTriggers = node["itemTriggers"].as<std::map<std::string, bool> >(_itemTriggers);
 	_facilityTriggers = node["facilityTriggers"].as<std::map<std::string, bool> >(_facilityTriggers);
+	_xcomBaseInRegionTriggers = node["xcomBaseInRegionTriggers"].as<std::map<std::string, bool> >(_xcomBaseInRegionTriggers);
+	_xcomBaseInCountryTriggers = node["xcomBaseInCountryTriggers"].as<std::map<std::string, bool> >(_xcomBaseInCountryTriggers);
 }
 
 }

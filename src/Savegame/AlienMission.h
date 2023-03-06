@@ -37,6 +37,7 @@ class MissionSite;
 struct MissionArea;
 class AlienDeployment;
 class Country;
+class Base;
 
 /**
  * Represents an ongoing alien mission.
@@ -53,7 +54,7 @@ private:
 	size_t _nextUfoCounter;
 	size_t _spawnCountdown;
 	size_t _liveUfos;
-	bool _interrupted;
+	bool _interrupted, _multiUfoRetaliationInProgress;
 	int _uniqueID, _missionSiteZone;
 	const AlienBase *_base;
 public:
@@ -64,7 +65,7 @@ public:
 	/// Cleans up the mission info.
 	~AlienMission();
 	/// Loads the mission from YAML.
-	void load(const YAML::Node& node, SavedGame &game);
+	void load(const YAML::Node& node, SavedGame &game, const Mod* mod);
 	/// Saves the mission to YAML.
 	YAML::Node save() const;
 	/// Gets the mission's ruleset.
@@ -104,6 +105,8 @@ public:
 	void decreaseLiveUfos() { --_liveUfos; }
 	/// Sets the interrupted flag.
 	void setInterrupted(bool interrupted) { _interrupted = interrupted; }
+	/// Sets the multiUfoRetaliationInProgress flag.
+	void setMultiUfoRetaliationInProgress(bool multiUfoRetaliationInProgress) { _multiUfoRetaliationInProgress = multiUfoRetaliationInProgress; }
 	/// Handle UFO reaching a waypoint.
 	void ufoReachedWaypoint(Ufo &ufo, Game &engine, const Globe &globe);
 	/// Handle UFO lifting from the ground.
@@ -115,6 +118,8 @@ public:
 	/// Keep track of the city/whatever that we're going to target.
 	void setMissionSiteZone(int zone);
 private:
+	/// Selects an xcom base in a given region.
+	Base* selectXcomBase(SavedGame& game, const RuleRegion& regionRules);
 	/// Spawns a UFO, based on mission rules.
 	Ufo *spawnUfo(SavedGame &game, const Mod &mod, const Globe &globe, const MissionWave &wave, const UfoTrajectory &trajectory);
 	/// Spawn an alien base
@@ -125,6 +130,8 @@ private:
 	std::pair<double, double> getWaypoint(const MissionWave &wave, const UfoTrajectory &trajectory, const size_t nextWaypoint, const Globe &globe, const RuleRegion &region, const Ufo &ufo);
 	/// Get a random landing point inside the given region zone.
 	std::pair<double, double> getLandPoint(const Globe &globe, const RuleRegion &region, size_t zone, const Ufo &ufo);
+	/// Get a random landing point inside the given region zone and area.
+	std::pair<double, double> getLandPointForMissionSite(const Globe& globe, const RuleRegion& region, size_t zone, int area, const Ufo& ufo);
 	/// Spawns a MissionSite at a specific location.
 	MissionSite *spawnMissionSite(SavedGame &game, const Mod &mod, const MissionArea &area, const Ufo *ufo = 0, AlienDeployment *missionOveride = 0);
 	/// Provides some error information for bad mission definitions

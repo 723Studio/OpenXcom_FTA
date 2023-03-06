@@ -83,9 +83,11 @@ fr:
   STR_CONSTRUCTION_TIME_UC: "TEMPS DE CONSTRUCTION>"
   STR_DAY:
     one: "{N} jour"
+    many: "{N} jours"
     other: "{N} jours"
   STR_HOUR:
     one: "{N} heure"
+    many: "{N} heures"
     other: "{N} heures"
   STR_MAINTENANCE_UC: "ENTRETIEN>"
   STR_OK: "OK"
@@ -1010,15 +1012,19 @@ fr:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "UTs réservées pour s'agenouiller et tirer"
   STR_UNITS_IN_CRAFT:
     one: "{N} Unité dans Vaisseau X-Com"
+    many: "{N} Unités dans Vaisseau X-Com"
     other: "{N} Unités dans Vaisseau X-Com"
   STR_UNITS_OUTSIDE:
     one: "{N} Unité laissée à l'extérieur"
+    many: "{N} Unités laissées à l'extérieur"
     other: "{N} Unités laissées à l'extérieur"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} Unité en Zone d’Insertion"
+    many: "{N} Unités en Zone d’Insertion"
     other: "{N} Unités en Zone d’Insertion"
   STR_UNITS_IN_EXIT:
     one: "{N} Unité en Zone d'Extraction"
+    many: "{N} Unités en Zone d'Extraction"
     other: "{N} Unités en Zone d'Extraction"
   STR_ABORT_MISSION_QUESTION: "Abandonner la Mission ?"
   STR_CORPSE: "Corps"
@@ -1065,6 +1071,7 @@ fr:
   STR_ALL_ITEMS: "Tous les objets"
   STR_NO_MORE_EQUIPMENT_ALLOWED:
     one: "LIMITE DE MATÉRIEL À BORD ATTEINTE !{SMALLLINE}Vous n'êtes pas autorisé à embarquer plus de {N} objets à bord de ce vaisseau."
+    many: "LIMITE DE MATÉRIEL À BORD ATTEINTE !{SMALLLINE}Vous n'êtes pas autorisé à embarquer plus de {N} objets à bord de ce vaisseau."
     other: "LIMITE DE MATÉRIEL À BORD ATTEINTE !{SMALLLINE}Vous n'êtes pas autorisé à embarquer plus de {N} objets à bord de ce vaisseau."
   STR_CONTROL_CENTER_DESTROYED: "{SMALLLINE}CENTRE DE CONTRÔLE DÉTRUIT{NEWLINE}Trouvez votre chemin jusqu'à l'entrée et abandonnez."
   STR_XCOM_BASE_CANNOT_BE_BUILT: "Les installations X-Com ne peuvent être construites sous l'eau"

@@ -84,9 +84,11 @@ it:
   STR_CONSTRUCTION_TIME_UC: "TEMPO COSTRUZIONE>"
   STR_DAY:
     one: "{N} giorno"
+    many: "{N} giorni"
     other: "{N} giorni"
   STR_HOUR:
     one: "{N} ora"
+    many: "{N} ore"
     other: "{N} ore"
   STR_MAINTENANCE_UC: "COSTO MANTENIMENTO>"
   STR_OK: "OK"
@@ -1106,15 +1108,19 @@ it:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "UdT riservate per Inginocchiarsi e Sparare"
   STR_UNITS_IN_CRAFT:
     one: "{N} Unità nello Scafo X-Com"
+    many: "{N} Unità nello Scafo X-Com"
     other: "{N} Unità nello Scafo X-Com"
   STR_UNITS_OUTSIDE:
     one: "{N} Unità rimasta fuori"
+    many: "{N} Unità rimaste fuori"
     other: "{N} Unità rimaste fuori"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} Unità sull'Entrata"
+    many: "{N} Unità sull'Entrata"
     other: "{N} Unità sull'Entrata"
   STR_UNITS_IN_EXIT:
     one: "{N} Unità sull'Obiettivo d'Uscita"
+    many: "{N} Unità sull'Obiettivo d'Uscita"
     other: "{N} Unità sull'Obiettivo d'Uscita"
   STR_ABORT_MISSION_QUESTION: "Annullare la missione?"
   STR_CORPSE: "Cadavere"
@@ -1147,6 +1153,7 @@ it:
   STR_ALL_ITEMS: "Tutti gli Oggetti"
   STR_NO_MORE_EQUIPMENT_ALLOWED:
     one: "NON È POSSIBILE AGGIUNGERE ALTRO EQUIPAGGIAMENTO A BORDO!{SMALLLINE}È possibile portare un massimo di {N} oggetto di equipaggiamento su questo sottomarino."
+    many: "NON È POSSIBILE AGGIUNGERE ALTRA ATTREZZATURA A BORDO!{SMALLLINE}Ti è permesso di portare solo un massimo di {N} oggetti di equipaggiamento su questo sottomarino."
     other: "NON È POSSIBILE AGGIUNGERE ALTRA ATTREZZATURA A BORDO!{SMALLLINE}Ti è permesso di portare solo un massimo di {N} oggetti di equipaggiamento su questo sottomarino."
   STR_CONTROL_CENTER_DESTROYED: "{SMALLLINE}CENTRO DI CONTROLLO DISTRUTTO{SMALLLINE}Dirigiti all'entrata ed abbandona la missione."
   STR_XCOM_BASE_CANNOT_BE_BUILT: "Le strutture sottomarine di X-Com non possono essere costruite sulla terra ferma"

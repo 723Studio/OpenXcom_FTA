@@ -38,7 +38,7 @@ public:
 	/// Initialize values according to the rules.
 	void init(const Mod *mod);
 	/// Loads the data from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::Node& node, const Mod* mod);
 	/// Saves the data to YAML.
 	YAML::Node save() const;
 	/// Choose a random region for a regular mission.

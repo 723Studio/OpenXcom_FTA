@@ -16,6 +16,7 @@ OPT MusicFormat preferredMusic;
 OPT SoundFormat preferredSound;
 OPT VideoFormat preferredVideo;
 OPT SDL_GrabMode captureMouse;
+OPT TextWrapping wordwrap;
 OPT SDLKey keyOk, keyCancel, keyScreenshot, keyFps, keyQuickLoad, keyQuickSave;
 
 // Geoscape options
@@ -24,7 +25,7 @@ OPT bool includePrimeStateInSavedLayout, anytimePsiTraining, weaponSelfDestructi
 	storageLimitsEnforced, containmentLimitsEnforced, canSellLiveAliens, canTransferCraftsWhileAirborne, customInitialBase, aggressiveRetaliation, geoDragScrollInvert,
 	allowBuildingQueue, showFundsOnGeoscape, psiStrengthEval, allowPsiStrengthImprovement, fieldPromotions, meetingPoint;
 OPT SDLKey keyGeoLeft, keyGeoRight, keyGeoUp, keyGeoDown, keyGeoZoomIn, keyGeoZoomOut, keyGeoSpeed1, keyGeoSpeed2, keyGeoSpeed3, keyGeoSpeed4, keyGeoSpeed5, keyGeoSpeed6,
-	keyGeoIntercept, keyGeoBases, keyGeoGraphs, keyGeoUfopedia, keyGeoOptions, keyGeoFunding, keyGeoToggleDetail, keyGeoToggleRadar,
+	keyGeoIntercept, keyGeoBases, keyGeoGraphs, keyDiplomacy, keyGeoUfopedia, keyGeoOptions, keyGeoFunding, keyGeoToggleDetail, keyGeoToggleRadar,
 	keyBaseSelect1, keyBaseSelect2, keyBaseSelect3, keyBaseSelect4, keyBaseSelect5, keyBaseSelect6, keyBaseSelect7, keyBaseSelect8;
 
 // Battlescape options
@@ -47,24 +48,27 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
 	keyMarkAllAsSeen,
 	keySellAll, keySellAllButOne,
+	keyTransferAll,
 	keyRemoveSoldiersFromCraft, keyRemoveSoldiersFromAllCrafts,
 	keyRemoveEquipmentFromCraft,
 	keyRemoveArmorFromCraft, keyRemoveArmorFromAllCrafts,
-	keyRemoveSoldiersFromTraining,
+	keyRemoveSoldiersFromTraining, keyAddSoldiersToTraining,
 	keyInventoryArmor, keyInventoryAvatar, keyInventorySave, keyInventoryLoad,
 	keyInvSavePersonalEquipment, keyInvLoadPersonalEquipment, keyInvShowPersonalEquipment,
+	keyBattleShowLayers,
 	keyBattleUseSpecial,
 	keyBattleActionItem1, keyBattleActionItem2, keyBattleActionItem3, keyBattleActionItem4, keyBattleActionItem5,
 	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack;
 OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers, keyBasescapeCrafts,
 	keyBasescapeFacilities, keyBasescapeResearch, keyBasescapeManufacture, keyBasescapeTransfer,
-	keyBasescapePurchase, keyBasescapeSell;
+	keyBasescapePurchase, keyBasescapeSell, keyBasescapeCovertOperations, keyBasescapeDiplomacy, keyBasescapeIntel;
 
 // OXCE, accessible via GUI
 OPT bool oxceUpdateCheck;
 OPT int autosaveSlots;
 
 OPT bool oxceLinks;
+OPT bool oxceAlternateCraftEquipmentManagement;
 OPT bool oxceUfoLandingAlert;
 OPT int oxceWoundedDefendBaseIf;
 OPT bool oxcePlayBriefingMusicDuringEquipment;
@@ -76,13 +80,24 @@ OPT bool oxceEnableOffCentreShooting;
 
 // OXCE hidden, accessible only via options.cfg
 OPT bool oxceFatFingerLinks;
+OPT int oxceThrottleMouseMoveEvent;
 OPT bool oxceHighlightNewTopicsHidden;
 OPT int oxceInterceptGuiMaintenanceTimeHidden;
 OPT bool oxceEnableUnitResponseSounds;
 OPT bool oxceEnableSlackingIndicator;
 OPT bool oxceEnablePaletteFlickerFix;
+OPT int oxceMaxEquipmentLayoutTemplates;
 OPT bool oxcePersonalLayoutIncludingArmor;
 OPT bool oxceManufactureFilterSuppliesOK;
+// 0 = not persisted; 1 = persisted per battle; 2 = persisted per campaign
+OPT int oxceTogglePersonalLightType;
+OPT int oxceToggleNightVisionType;
+OPT int oxceToggleBrightnessType;
+/**
+ * Verification level of mod data.
+ * Same levels supported as `SeverityLevel`.
+ */
+OPT int oxceModValidationLevel;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;

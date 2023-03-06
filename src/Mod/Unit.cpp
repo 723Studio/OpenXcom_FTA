@@ -17,9 +17,11 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Unit.h"
+#include "RuleSoldier.h"
 #include "../Engine/Exception.h"
 #include "../Engine/ScriptBind.h"
 #include "Mod.h"
+#include "Armor.h"
 
 namespace OpenXcom
 {
@@ -29,11 +31,11 @@ namespace OpenXcom
  * @param type String defining the type.
  */
 Unit::Unit(const std::string &type) :
-	_type(type), _showFullNameInAlienInventory(-1), _armor(nullptr), _standHeight(0), _kneelHeight(0), _floatHeight(0), _value(0),
-	_moraleLossWhenKilled(100), _aggroSound(-1), _moveSound(-1), _intelligence(0), _aggression(0),
-	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _livingWeapon(false),
+	_type(type), _liveAlienName(Mod::STR_NULL), _showFullNameInAlienInventory(-1), _armor(nullptr), _standHeight(0), _kneelHeight(0), _floatHeight(0), _value(0),
+	_moraleLossWhenKilled(100), _moveSound(-1), _intelligence(0), _aggression(0),
+	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
-	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _vip(false),
+	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
 	_canPanic(true), _canBeMindControlled(true), _berserkChance(33)
 {
 }
@@ -58,8 +60,9 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 		load(parent, mod);
 	}
 	_type = node["type"].as<std::string>(_type);
-	_civilianRecoveryType = node["civilianRecoveryType"].as<std::string>(_civilianRecoveryType);
-	_spawnedPersonName = node["spawnedPersonName"].as<std::string>(_spawnedPersonName);
+	mod->loadNameNull(_type, _civilianRecoveryType, node["civilianRecoveryType"]);
+	mod->loadNameNull(_type, _spawnedPersonName, node["spawnedPersonName"]);
+	mod->loadNameNull(_type, _liveAlienName, node["liveAlien"]);
 	if (node["spawnedSoldier"])
 	{
 		_spawnedSoldier = node["spawnedSoldier"];
@@ -69,7 +72,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_rank = node["rank"].as<std::string>(_rank);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	_statsRandom.merge(node["statsRandom"].as<UnitStats>(_statsRandom));
-	_armorName = node["armor"].as<std::string>(_armorName);
+	mod->loadName(_type, _armorName, node["armor"]);
 	_standHeight = node["standHeight"].as<int>(_standHeight);
 	_kneelHeight = node["kneelHeight"].as<int>(_kneelHeight);
 	_floatHeight = node["floatHeight"].as<int>(_floatHeight);
@@ -99,8 +102,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
 	_capturable = node["capturable"].as<bool>(_capturable);
 	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
-	_specialObjectiveType = node["specialObjectiveType"].as<std::string>(_specialObjectiveType); //FtA way to specify units
+	_specialObjective = (SpecialObjective)node["specialObjective"].as<int>(_specialObjective); //FtA way to define special units
 	_vip = node["vip"].as<bool>(_vip); //OXCE variant
+	_cosmetic = node["cosmetic"].as<bool>(_cosmetic);
+	_ignoredByAI = node["ignoredByAI"].as<bool>(_ignoredByAI);
+	_treatedByAI = node["treatedByAI"].as<bool>(_treatedByAI);
 	_canPanic = node["canPanic"].as<bool>(_canPanic);
 	_canBeMindControlled = node["canBeMindControlled"].as<bool>(_canBeMindControlled);
 	_berserkChance = node["berserkChance"].as<int>(_berserkChance);
@@ -110,6 +116,11 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	{
 		_builtInWeaponsNames.push_back(node["builtInWeapons"].as<std::vector<std::string> >());
 	}
+
+	if (node["roles"])
+		loadRoles(node["roles"].as<std::vector<int> >());
+
+	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
 
 	mod->loadSoundOffset(_type, _deathSound, node["deathSound"], "BATTLE.CAT");
 	mod->loadSoundOffset(_type, _panicSound, node["panicSound"], "BATTLE.CAT");
@@ -133,7 +144,62 @@ void Unit::afterLoad(const Mod* mod)
 	mod->linkRule(_armor, _armorName);
 	mod->linkRule(_spawnUnit, _spawnUnitName);
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
-	mod->linkRule(_altUnit, _altRecoveredUnit);	
+	mod->linkRule(_altUnit, _altRecoveredUnit);
+	mod->linkRule(_prisoner, _prisonerName);
+	if (_liveAlienName == Mod::STR_NULL)
+	{
+		_liveAlien = mod->getItem(_type, false); // this is optional default behavior
+	}
+	else
+	{
+		mod->linkRule(_liveAlien, _liveAlienName);
+	}
+
+	mod->checkForSoftError(_armor == nullptr, _type, "Unit is missing armor", LOG_ERROR);
+	if (_armor)
+	{
+		if (_capturable && _armor->getCorpseBattlescape().front()->isRecoverable() && _spawnUnit == nullptr)
+		{
+			if (mod->isFTAGame() && (_altUnit == nullptr && this->getCivilianRecoveryType().empty()))
+			{
+				mod->checkForSoftError(
+					_liveAlien == nullptr,
+					_type,
+					"This unit can be recovered (in theory), but there is no corresponding item to recover.",
+					LOG_INFO);
+			}
+		}
+		else
+		{
+			std::string s =
+				!_capturable ? "the unit is marked with 'capturable: false'" :
+				!_armor->getCorpseBattlescape().front()->isRecoverable() ? "the first 'corpseBattle' item of the unit's armor is marked with 'recover: false'" :
+				_spawnUnit != nullptr ? "the unit will be converted into another unit type on stun/kill/capture" :
+				"???";
+
+			mod->checkForSoftError(
+				_liveAlien
+				&& _liveAlien->getVehicleUnit() == nullptr
+				&& _spawnUnit == nullptr, // if unit is `_capturable` we can still get live species even if it can spawn unit
+				_type,
+				"This unit has a corresponding item to recover, but still isn't recoverable. Reason: (" + s + "). Consider marking the unit with 'liveAlien: \"\"'.",
+				LOG_INFO
+			);
+		}
+	}
+}
+
+void Unit::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
 }
 
 /**
@@ -319,10 +385,10 @@ const Unit *Unit::getSpawnUnit() const
 }
 
 /**
- * Gets the unit's war cry.
- * @return The id of the unit's aggro sound.
+ * Gets the unit's aggro sounds (warcries).
+ * @return List of sound IDs.
  */
-int Unit::getAggroSound() const
+const std::vector<int> &Unit::getAggroSounds() const
 {
 	return _aggroSound;
 }

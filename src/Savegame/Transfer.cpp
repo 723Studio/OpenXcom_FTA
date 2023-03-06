@@ -64,7 +64,7 @@ bool Transfer::load(const YAML::Node& node, Base *base, const Mod *mod, SavedGam
 		std::string type = soldier["type"].as<std::string>(mod->getSoldiersList().front());
 		if (mod->getSoldier(type) != 0)
 		{
-			_soldier = new Soldier(mod->getSoldier(type), 0);
+			_soldier = new Soldier(mod->getSoldier(type), nullptr, 0 /*nationality*/);
 			_soldier->load(soldier, mod, save, mod->getScriptGlobal());
 		}
 		else

@@ -19,18 +19,11 @@
 #include "PsiAttackBState.h"
 #include "ExplosionBState.h"
 #include "BattlescapeGame.h"
-#include "BattlescapeState.h"
 #include "TileEngine.h"
-#include "InfoboxState.h"
 #include "Map.h"
 #include "Camera.h"
-#include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
-#include "../Engine/Game.h"
-#include "../Engine/RNG.h"
-#include "../Engine/Language.h"
-#include "../Engine/Sound.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/BattleUnitStatistics.h"
 
@@ -104,7 +97,7 @@ void PsiAttackBState::init()
 
 	int height = _target->getFloatHeight() + (_target->getHeight() / 2) - _parent->getSave()->getTile(_action.target)->getTerrainLevel();
 	Position voxel = _action.target.toVoxel() + Position(8, 8, height);
-	_parent->statePushFront(new ExplosionBState(_parent, voxel, BattleActionAttack{ _action.type, _action.actor, _action.weapon, _action.weapon }));
+	_parent->statePushFront(new ExplosionBState(_parent, voxel, BattleActionAttack::GetAferShoot(_action, _action.weapon)));
 }
 
 

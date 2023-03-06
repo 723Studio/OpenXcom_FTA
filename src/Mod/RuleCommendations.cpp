@@ -19,7 +19,6 @@
 
 #include "RuleCommendations.h"
 #include "Mod.h"
-#include "../Engine/Collections.h"
 
 namespace OpenXcom
 {
@@ -27,7 +26,7 @@ namespace OpenXcom
 /**
  * Creates a blank set of commendation data.
  */
-RuleCommendations::RuleCommendations() : _criteria(), _killCriteria(), _description(""), _sprite(), _soldierBonusTypes()
+RuleCommendations::RuleCommendations(const std::string& type) : _type(type), _criteria(), _killCriteria(), _description(""), _sprite(), _soldierBonusTypes()
 {
 }
 
@@ -42,13 +41,15 @@ RuleCommendations::~RuleCommendations()
  * Loads the commendations from YAML.
  * @param node YAML node.
  */
-void RuleCommendations::load(const YAML::Node &node)
+void RuleCommendations::load(const YAML::Node &node, const Mod* mod)
 {
 	_description = node["description"].as<std::string>(_description);
-	_criteria = node["criteria"].as<std::map<std::string, std::vector<int> > >(_criteria);
+	mod->loadUnorderedNamesToInts(_type, _criteria, node["criteria"]);
 	_sprite = node["sprite"].as<int>(_sprite);
-	_killCriteria = node["killCriteria"].as<std::vector<std::vector<std::pair<int, std::vector<std::string> > > > >(_killCriteria);
-	_soldierBonusTypesNames = node["soldierBonusTypes"].as<std::vector<std::string> >(_soldierBonusTypesNames);
+	mod->loadKillCriteria(_type, _killCriteria, node["killCriteria"]);
+	mod->loadNames(_type, _soldierBonusTypesNames, node["soldierBonusTypes"]);
+	mod->loadNames(_type, _missionMarkerNames, node["missionMarkerFilter"]);
+	mod->loadNames(_type, _missionTypeNames, node["missionTypeFilter"]);
 }
 
 /**
@@ -63,7 +64,7 @@ void RuleCommendations::afterLoad(const Mod* mod)
  * Get the commendation's description.
  * @return string Commendation description.
  */
-std::string RuleCommendations::getDescription() const
+const std::string& RuleCommendations::getDescription() const
 {
 	return _description;
 }
@@ -72,7 +73,7 @@ std::string RuleCommendations::getDescription() const
  * Get the commendation's award criteria.
  * @return map<string, int> Commendation criteria.
  */
-std::map<std::string, std::vector<int> > *RuleCommendations::getCriteria()
+const std::map<std::string, std::vector<int> > *RuleCommendations::getCriteria() const
 {
 	return &_criteria;
 }
@@ -81,7 +82,7 @@ std::map<std::string, std::vector<int> > *RuleCommendations::getCriteria()
  * Get the commendation's award kill criteria.
  * @return vector<string> Commendation kill criteria.
  */
-std::vector<std::vector<std::pair<int, std::vector<std::string> > > > *RuleCommendations::getKillCriteria()
+const std::vector<std::vector<std::pair<int, std::vector<std::string> > > > *RuleCommendations::getKillCriteria() const
 {
 	return &_killCriteria;
 }
@@ -108,6 +109,24 @@ const RuleSoldierBonus *RuleCommendations::getSoldierBonus(int decorationLevel) 
 		return _soldierBonusTypes.at(index);
 	}
 	return nullptr;
+}
+
+/**
+ * Gets the commendation's mission marker filter.
+ * @return vector<string> Mission marker types.
+ */
+const std::vector<std::string>& RuleCommendations::getMissionMarkerNames() const
+{
+	return _missionMarkerNames;
+}
+
+/**
+ * Gets the commendation's mission type filter.
+ * @return vector<string> Mission types.
+ */
+const std::vector<std::string>& RuleCommendations::getMissionTypeNames() const
+{
+	return _missionTypeNames;
 }
 
 }

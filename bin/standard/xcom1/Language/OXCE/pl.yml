@@ -15,4 +15,5 @@ pl:
   GMGEO1: "Ekran globu: motyw #1"
   GMGEO2: "Ekran globu: motyw #2"
   GMTACTIC: "Motyw z ekranu bitwy"
+  GMINTER: "Motyw walki powietrznej"
   STR_SHOT_TYPE_AUTO: "Seria (x{0})"

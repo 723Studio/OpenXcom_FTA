@@ -35,10 +35,10 @@ namespace OpenXcom
 	struct ArticleCommonState
 	{
 		/// Invalid index.
-		static constexpr size_t invaild = -1;
+		static constexpr size_t invalid = -1;
 
 		/// Current selected article index (for previous/next navigation).
-		size_t current_index = invaild;
+		size_t current_index = invalid;
 
 		/// Current sub page of article.
 		size_t current_page = 0;

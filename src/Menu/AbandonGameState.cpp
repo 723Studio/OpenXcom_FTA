@@ -21,7 +21,6 @@
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
 #include "../Mod/Mod.h"
-#include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
@@ -107,7 +106,7 @@ void AbandonGameState::btnYesClick(Action *)
 	// Reset touch flags
 	_game->resetTouchButtonFlags();
 
-	if (_origin == OPT_BATTLESCAPE && _game->getSavedGame()->getSavedBattle()->getAmbientSound() != -1)
+	if (_origin == OPT_BATTLESCAPE && _game->getSavedGame()->getSavedBattle()->getAmbientSound() != Mod::NO_SOUND)
 		_game->getMod()->getSoundByDepth(0, _game->getSavedGame()->getSavedBattle()->getAmbientSound())->stopLoop();
 	if (!_game->getSavedGame()->isIronman())
 	{

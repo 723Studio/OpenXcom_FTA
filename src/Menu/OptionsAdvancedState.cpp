@@ -113,6 +113,10 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_settingsOxce.push_back(*i);
 			}
+			else if (i->category() == "STR_FTA")
+			{
+				_settingsFtA.push_back(*i);
+			}
 		}
 	}
 }
@@ -147,6 +151,10 @@ void OptionsAdvancedState::init()
 	_lstOptions->addRow(2, tr("STR_OXCE").c_str(), "");
 	_lstOptions->setCellColor(_settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2, 0, _colorGroup);
 	addSettings(_settingsOxce);
+	_lstOptions->addRow(2, "", "");
+	_lstOptions->addRow(2, tr("STR_FTA").c_str(), "");
+	_lstOptions->setCellColor(_settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size() + 2, 0, _colorGroup);
+	addSettings(_settingsFtA);
 }
 
 /**
@@ -206,6 +214,11 @@ OptionInfo *OptionsAdvancedState::getSetting(size_t sel)
 		sel <= _settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size())
 	{
 		return &_settingsOxce[sel - 1 - _settingsGeneral.size() - 2 - _settingsGeo.size() - 2 - _settingsBattle.size() - 2];
+	}
+	else if (sel > _settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size() + 2 &&
+			 sel <= _settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size() + 2 + _settingsFtA.size())
+	{
+		return &_settingsFtA[sel - 1 - _settingsGeneral.size() - 2 - _settingsGeo.size() - 2 - _settingsBattle.size() - 2 - _settingsOxce.size() - 2];
 	}
 	else
 	{
@@ -267,7 +280,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		else if (i == &Options::changeValueByMouseWheel)
 		{
 			min = 0;
-			max = 50;
+			max = 100;
 		}
 		else if (i == &Options::FPS)
 		{

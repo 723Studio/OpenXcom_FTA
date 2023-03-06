@@ -20,7 +20,6 @@
 #include "PrimeGrenadeState.h"
 #include "BattlescapeGame.h"
 #include "../Engine/Game.h"
-#include "../Engine/LocalizedText.h"
 #include "../Engine/Action.h"
 #include "../Interface/Text.h"
 #include "../Interface/Frame.h"
@@ -30,6 +29,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
+#include "../Engine/Sound.h"
 
 namespace OpenXcom
 {
@@ -163,8 +163,20 @@ void PrimeGrenadeState::btnClick(Action *action)
 
 	if (btnID != -1)
 	{
-		if (_inInventoryView) _grenadeInInventory->setFuseTimer(0 + btnID);
-		else _action->value = btnID;
+		if (_inInventoryView)
+		{
+			_grenadeInInventory->setFuseTimer(0 + btnID);
+			// prime sound
+			int sound = _grenadeInInventory->getRules()->getPrimeSound();
+			if (sound != Mod::NO_SOUND)
+			{
+				_game->getMod()->getSoundByDepth(_game->getSavedGame()->getSavedBattle()->getDepth(), sound)->play();
+			}
+		}
+		else
+		{
+			_action->value = btnID;
+		}
 		_game->popState();
 		if (!_inInventoryView) _game->popState();
 	}

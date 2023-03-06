@@ -22,7 +22,6 @@
 #include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
-#include <set>
 
 namespace OpenXcom
 {
@@ -66,6 +65,8 @@ private:
 	bool _reset;
 	bool _sellAllButOne;
 	bool _delayedInitDone;
+	TransferSortDirection _previousSort, _currentSort;
+
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.

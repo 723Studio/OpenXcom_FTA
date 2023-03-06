@@ -660,6 +660,7 @@ items:
     floorSprite: 39
     invWidth: 2
     invHeight: 3
+    battleType: 11
     recover: false
   - type: STR_CORPSE_ARMOR
     name: STR_CORPSE
@@ -669,6 +670,7 @@ items:
     invWidth: 2
     invHeight: 3
     armor: 30
+    battleType: 11
     recover: false
   - type: STR_CORPSE_SUIT
     name: STR_CORPSE
@@ -678,6 +680,7 @@ items:
     invWidth: 2
     invHeight: 3
     armor: 40
+    battleType: 11
     recover: false
   - type: STR_HEAVY_PLASMA
     requires:
@@ -1093,41 +1096,49 @@ items:
     floorSprite: 64
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: HOVERTANK_CORPSE_2
     floorSprite: 65
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: HOVERTANK_CORPSE_3
     floorSprite: 66
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: HOVERTANK_CORPSE_4
     floorSprite: 67
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: TANK_CORPSE_1
     floorSprite: 68
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: TANK_CORPSE_2
     floorSprite: 69
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: TANK_CORPSE_3
     floorSprite: 70
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: TANK_CORPSE_4
     floorSprite: 71
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: CIVM_CORPSE
     name: STR_CORPSE
@@ -1137,6 +1148,7 @@ items:
     invWidth: 2
     invHeight: 3
     armor: 12
+    battleType: 11
     recover: false
   - type: CIVF_CORPSE
     name: STR_CORPSE
@@ -1146,6 +1158,7 @@ items:
     invWidth: 2
     invHeight: 3
     armor: 12
+    battleType: 11
     recover: false
   - type: STR_UFO_POWER_SOURCE
     size: 0.7

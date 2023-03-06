@@ -105,7 +105,7 @@ void LoadGameState::buildUi(SDL_Color *palette)
 	{
 		add(_txtStatus, "textLoad", "battlescape");
 		_txtStatus->setHighContrast(true);
-		if (_game->getSavedGame()->getSavedBattle()->getAmbientSound() != -1)
+		if (_game->getSavedGame()->getSavedBattle()->getAmbientSound() != Mod::NO_SOUND)
 		{
 			_game->getMod()->getSoundByDepth(0, _game->getSavedGame()->getSavedBattle()->getAmbientSound())->stopLoop();
 		}
@@ -186,6 +186,7 @@ void LoadGameState::think()
 					origBattleState->resetPalettes();
 				}
 				_game->setState(new GeoscapeState);
+				s->setGamePtr(_game);
 				if (_game->getSavedGame()->getSavedBattle() != 0)
 				{
 					_game->getSavedGame()->getSavedBattle()->loadMapResources(_game->getMod());

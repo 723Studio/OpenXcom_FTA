@@ -20,7 +20,6 @@
 #include "BattleItem.h"
 #include "BattleUnit.h"
 #include "Tile.h"
-#include "SavedGame.h"
 #include "SavedBattleGame.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
@@ -47,6 +46,7 @@ BattleItem::BattleItem(const RuleItem *rules, int *id) : _id(*id), _rules(rules)
 	(*id)++;
 	if (_rules)
 	{
+		_inventoryMoveCostPercent = _rules->getInventoryMoveCostPercent();
 		_confMelee = _rules->getConfigMelee();
 		setAmmoQuantity(_rules->getClipSize());
 		if (_rules->getBattleType() == BT_MEDIKIT)
@@ -102,6 +102,10 @@ BattleItem::~BattleItem()
  */
 void BattleItem::load(const YAML::Node &node, Mod *mod, const ScriptGlobal *shared)
 {
+	if (const YAML::Node& cost = node["inventoryMoveCost"])
+	{
+		_inventoryMoveCostPercent = cost["basePercent"].as<int>(_inventoryMoveCostPercent);
+	}
 	std::string slot = node["inventoryslot"].as<std::string>("NULL");
 	if (slot != "NULL")
 	{
@@ -149,14 +153,24 @@ YAML::Node BattleItem::save(const ScriptGlobal *shared) const
 	if (_unit)
 		node["unit"] = _unit->getId();
 
+	if (_inventoryMoveCostPercent != _rules->getInventoryMoveCostPercent())
+	{
+		node["inventoryMoveCost"]["basePercent"] = _inventoryMoveCostPercent;
+	}
 	if (_inventorySlot)
+	{
 		node["inventoryslot"] = _inventorySlot->getId();
-	node["inventoryX"] = _inventoryX;
-	node["inventoryY"] = _inventoryY;
+		if (_inventorySlot->getType() == INV_SLOT) // only for slot items this matter, for hands and ground it can be `0` for both
+		{
+			node["inventoryX"] = _inventoryX;
+			node["inventoryY"] = _inventoryY;
+		}
+	}
 
 	if (_tile)
 		node["position"] = _tile->getPosition();
-	node["ammoqty"] = _ammoQuantity;
+	if (_ammoQuantity)
+		node["ammoqty"] = _ammoQuantity;
 	if (_ammoItem[0])
 	{
 		node["ammoItem"] = _ammoItem[0]->getId();
@@ -169,6 +183,7 @@ YAML::Node BattleItem::save(const ScriptGlobal *shared) const
 		},
 		[&](BattleItem *i)
 		{
+			node["ammoItemSlots"].SetStyle(YAML::EmitterStyle::Flow); // called multiple times but prevent creating empty `ammoItemSlots: ~`
 			node["ammoItemSlots"].push_back(i ? i->getId() : -1);
 		}
 	);
@@ -260,7 +275,7 @@ void BattleItem::setFuseEnabled(bool enable)
 /**
  * Called at end of turn.
  */
-void BattleItem::fuseTimerEvent()
+void BattleItem::fuseEndTurnUpdate()
 {
 	auto event = _rules->getFuseTriggerEvent();
 	if (_fuseEnabled && getFuseTimer() > 0)
@@ -279,7 +294,7 @@ void BattleItem::fuseTimerEvent()
  * Get if item can trigger end of turn effect.
  * @return True if grenade should explode or other item removed
  */
-bool BattleItem::fuseEndTurnEffect()
+bool BattleItem::fuseTimeEvent()
 {
 	auto event = _rules->getFuseTriggerEvent();
 	auto check = [&]
@@ -562,6 +577,30 @@ RuleInventory *BattleItem::getSlot() const
 }
 
 /**
+ * Gets the cost of moving item to given slot.
+ */
+int BattleItem::getMoveToCost(const RuleInventory *slot) const
+{
+	auto cost = _inventorySlot->getCost(slot);
+	if (cost == 0)
+	{
+		// if move was free it stay free, required to prevent paying cost of move only for clicking on item in inventory
+		return 0;
+	}
+	else if (_inventorySlot->getType() == INV_HAND && slot->getType() == INV_GROUND)
+	{
+		// this special case has two roles:
+		// * right now dropping ammo when reloading only uses default move cost, manually dropping should have same cost.
+		// * conceptually you should be able to relese grip and item should fall down, "hard to grab, easy to drop"
+		return cost;
+	}
+	else
+	{
+		return std::max(1, cost * _inventoryMoveCostPercent / 100);
+	}
+}
+
+/**
  * Sets the item's inventory slot.
  * @param slot The slot id.
  */
@@ -637,12 +676,12 @@ bool BattleItem::occupiesSlot(int x, int y, BattleItem *item) const
  * Gets the item's floor sprite.
  * @return Return current floor sprite.
  */
-Surface *BattleItem::getFloorSprite(SurfaceSet *set, int animFrame, int shade) const
+const Surface *BattleItem::getFloorSprite(const SurfaceSet *set, const SavedBattleGame *save, int animFrame, int shade) const
 {
 	int i = _rules->getFloorSprite();
 	if (i != -1)
 	{
-		Surface *surf = set->getFrame(i);
+		const Surface *surf = set->getFrame(i);
 		//enforce compatibility with basic version
 		if (surf == nullptr)
 		{
@@ -652,7 +691,7 @@ Surface *BattleItem::getFloorSprite(SurfaceSet *set, int animFrame, int shade) c
 		i = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
 			_rules,
 			i, 0,
-			this, BODYPART_ITEM_FLOOR, animFrame, shade
+			this, save, BODYPART_ITEM_FLOOR, animFrame, shade
 		);
 		auto newSurf = set->getFrame(i);
 		if (newSurf == nullptr)
@@ -671,12 +710,12 @@ Surface *BattleItem::getFloorSprite(SurfaceSet *set, int animFrame, int shade) c
  * Gets the item's inventory sprite.
  * @return Return current inventory sprite.
  */
-Surface *BattleItem::getBigSprite(SurfaceSet *set, int animFrame) const
+const Surface *BattleItem::getBigSprite(const SurfaceSet *set, const SavedBattleGame *save, int animFrame) const
 {
 	int i = _rules->getBigSprite();
 	if (i != -1)
 	{
-		Surface *surf = set->getFrame(i);
+		const Surface *surf = set->getFrame(i);
 		//enforce compatibility with basic version
 		if (surf == nullptr)
 		{
@@ -686,7 +725,7 @@ Surface *BattleItem::getBigSprite(SurfaceSet *set, int animFrame) const
 		i = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
 			_rules,
 			i, 0,
-			this, BODYPART_ITEM_INVENTORY, animFrame, 0
+			this, save, BODYPART_ITEM_INVENTORY, animFrame, 0
 		);
 
 		auto newSurf = set->getFrame(i);
@@ -1329,7 +1368,7 @@ struct getAmmoForActionConstScript
 	}
 };
 
-struct getRuleInvenotrySlotScript
+struct getRuleInventorySlotScript
 {
 	static RetEnum func(const BattleItem *weapon, const RuleInventory *&inv)
 	{
@@ -1340,6 +1379,22 @@ struct getRuleInvenotrySlotScript
 		else
 		{
 			inv = nullptr;
+		}
+		return RetContinue;
+	}
+};
+
+struct getRuleInventoryMoveToCostScript
+{
+	static RetEnum func(const BattleItem *weapon, int& cost, const RuleInventory *inv)
+	{
+		if (weapon && weapon->getSlot() && inv)
+		{
+			cost = weapon->getMoveToCost(inv);
+		}
+		else
+		{
+			cost = 0;
 		}
 		return RetContinue;
 	}
@@ -1461,7 +1516,11 @@ void BattleItem::ScriptRegister(ScriptParserBase* parser)
 	bi.addFunc<getAmmoForSlotConstScript>("getAmmoForSlot");
 	bi.addFunc<getAmmoForActionScript>("getAmmoForAction");
 	bi.addFunc<getAmmoForActionConstScript>("getAmmoForAction");
-	bi.addFunc<getRuleInvenotrySlotScript>("getSlot");
+
+	bi.addFunc<getRuleInventorySlotScript>("getSlot");
+	bi.addFunc<getRuleInventoryMoveToCostScript>("getMoveToCost", "cost of moving item from slot in first arg to slot from last arg");
+	bi.addField<&BattleItem::_inventoryMoveCostPercent>("InventoryMoveCost.getBaseTimePercent", "InventoryMoveCost.setBaseTimePercent");
+
 	bi.addPair<BattleUnit, &BattleItem::getPreviousOwner, &BattleItem::getPreviousOwner>("getPreviousOwner");
 	bi.addPair<BattleUnit, &BattleItem::getOwner, &BattleItem::getOwner>("getOwner");
 	bi.add<&BattleItem::getId>("getId");
@@ -1507,6 +1566,8 @@ void BattleItem::ScriptRegister(ScriptParserBase* parser)
 	bi.addCustomConst("BA_PRIME", BA_PRIME);
 	bi.addCustomConst("BA_UNPRIME", BA_UNPRIME);
 	bi.addCustomConst("BA_NONE", BA_NONE);
+	bi.addCustomConst("BA_TRIGGER_TIMED_GRENADE", BA_TRIGGER_TIMED_GRENADE);
+	bi.addCustomConst("BA_TRIGGER_PROXY_GRENADE", BA_TRIGGER_PROXY_GRENADE);
 }
 
 namespace
@@ -1527,7 +1588,11 @@ void commonImpl(BindBase& b, Mod* mod)
 /**
  * Constructor of recolor script parser.
  */
-ModScript::RecolorItemParser::RecolorItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name, "new_pixel", "old_pixel", "item", "blit_part", "anim_frame", "shade" }
+ModScript::RecolorItemParser::RecolorItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"new_pixel",
+	"old_pixel",
+
+	"item", "battle_game", "blit_part", "anim_frame", "shade" }
 {
 	BindBase b { this };
 
@@ -1539,7 +1604,11 @@ ModScript::RecolorItemParser::RecolorItemParser(ScriptGlobal* shared, const std:
 /**
  * Constructor of select sprite script parser.
  */
-ModScript::SelectItemParser::SelectItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name, "sprite_index", "sprite_offset", "item", "blit_part", "anim_frame", "shade" }
+ModScript::SelectItemParser::SelectItemParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"sprite_index",
+	"sprite_offset",
+
+	"item", "battle_game", "blit_part", "anim_frame", "shade" }
 {
 	BindBase b { this };
 
@@ -1619,7 +1688,7 @@ ModScript::TryMeleeAttackItemParser::TryMeleeAttackItemParser(ScriptGlobal* shar
 /**
  * Init all required data in script using object data.
  */
-void BattleItem::ScriptFill(ScriptWorkerBlit* w, BattleItem* item, int part, int anim_frame, int shade)
+void BattleItem::ScriptFill(ScriptWorkerBlit* w, const BattleItem* item, const SavedBattleGame* save, int part, int anim_frame, int shade)
 {
 	w->clear();
 	if(item)
@@ -1627,11 +1696,11 @@ void BattleItem::ScriptFill(ScriptWorkerBlit* w, BattleItem* item, int part, int
 		const auto &scr = item->getRules()->getScript<ModScript::RecolorItemSprite>();
 		if (scr)
 		{
-			w->update(scr, item, part, anim_frame, shade);
+			w->update(scr, item, save, part, anim_frame, shade);
 		}
 		else
 		{
-			BattleUnit::ScriptFill(w, item->getUnit(), part, anim_frame, shade, 0);
+			BattleUnit::ScriptFill(w, item->getUnit(), save, part, anim_frame, shade, 0);
 		}
 	}
 }

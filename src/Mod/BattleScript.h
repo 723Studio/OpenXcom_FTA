@@ -58,13 +58,14 @@ class BattleScript
 private:
 	BattleScriptCommand _type;
 	std::vector<int> _groups, _conditionals;
-	int _executionChances, _executions, _maxRuns, _cumulativeFrequency, _label;
+	int _executionChances, _executions, _maxRuns, _label;
 	std::vector<std::string> _spawnBlocks;
 	std::vector<std::string> _itemSet, _unitSet;
 	std::map<int, BattleMessage> _message;
 	int _startTurn, _endTurn, _unitSide, _packSize, _minLevel, _maxLevel;
-	int _minDifficulty, _maxDifficulty, _minAlarmLevel, _maxAlarmLevel;
 	bool _randomPackSize;
+	int _minDifficulty, _maxDifficulty, _minAlarmLevel, _maxAlarmLevel;
+	std::vector<int> _spawnNodeRanks;
 	std::string _variable;
 public:
 	BattleScript();
@@ -77,8 +78,10 @@ public:
 	int getChancesOfExecution() const { return _executionChances; };
 	/// Gets the label for this command.
 	int getLabel() const { return _label; };
-	/// Gets how many times this command repeats (1 repeat means 2 executions) in one turn.
+	/// Gets how many times this command repeats in one turn.
 	int getExecutions() const { return _executions; };
+	/// Gets how many times this command repeats in battlescape game session (controlled with variable).
+	int getMaxRuns() const { return _maxRuns; };
 	/// Gets what conditions apply to this command.
 	const std::vector<int>* getConditionals() const { return &_conditionals; };
 	/// Gets the groups vector for iteration.
@@ -111,6 +114,8 @@ public:
 	int getMinAlarm() const { return _minAlarmLevel; };
 	/// Gets the max alarm level for this command to run.
 	int getMaxAlarm() const { return _maxAlarmLevel; };
+	/// Gets what conditions apply to this command.
+	const std::vector<int> *getSpawnNodeRanks() const { return &_spawnNodeRanks; };
 	/// Gets the list of battle messages for command.
 	std::map<int, BattleMessage> getBattleMessages() const { return _message; };
 	/// Gets the script variable name.

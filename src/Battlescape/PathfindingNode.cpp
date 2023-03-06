@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PathfindingNode.h"
-#include <cmath>
 
 namespace OpenXcom
 {
@@ -26,7 +25,7 @@ namespace OpenXcom
  * Sets up a PathfindingNode.
  * @param pos Position.
  */
-PathfindingNode::PathfindingNode(Position pos) : _pos(pos), _checked(0), _tuCost(0), _prevNode(0), _prevDir(0), _tuGuess(0), _openentry(0)
+PathfindingNode::PathfindingNode(Position pos) : _pos(pos), _prevNode(0), _prevDir(0), _tuGuess(0), _checked(0), _openentry(0)
 {
 
 }
@@ -67,19 +66,6 @@ bool PathfindingNode::isChecked() const
 }
 
 /**
- * Gets the TU cost.
- * @param missile Is this a missile?
- * @return The TU cost.
- */
-int PathfindingNode::getTUCost(bool missile) const
-{
-	if (missile)
-		return 0;
-	else
-		return _tuCost;
-}
-
-/**
  * Gets the previous node.
  * @return Pointer to the previous node.
  */
@@ -105,9 +91,9 @@ int PathfindingNode::getPrevDir() const
  * @param prevDir The direction FROM the previous node.
  * @param target The target position (used to update our guess cost).
  */
-void PathfindingNode::connect(int tuCost, PathfindingNode* prevNode, int prevDir, Position target)
+void PathfindingNode::connect(PathfindingCost cost, PathfindingNode* prevNode, int prevDir, Position target)
 {
-	_tuCost = tuCost;
+	_tuCost = cost;
 	_prevNode = prevNode;
 	_prevDir = prevDir;
 	if (!inOpenSet()) // Otherwise we have this already.
@@ -122,9 +108,9 @@ void PathfindingNode::connect(int tuCost, PathfindingNode* prevNode, int prevDir
  * @param prevNode The previous node along the path.
  * @param prevDir The direction FROM the previous node.
  */
-void PathfindingNode::connect(int tuCost, PathfindingNode* prevNode, int prevDir)
+void PathfindingNode::connect(PathfindingCost cost, PathfindingNode* prevNode, int prevDir)
 {
-	_tuCost = tuCost;
+	_tuCost = cost;
 	_prevNode = prevNode;
 	_prevDir = prevDir;
 	_tuGuess = 0;

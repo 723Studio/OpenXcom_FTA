@@ -47,6 +47,7 @@
 #include "BriefingState.h"
 #include "Map.h"
 #include "TileEngine.h"
+#include "Pathfinding.h"
 
 namespace OpenXcom
 {
@@ -59,6 +60,12 @@ namespace OpenXcom
  */
 NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *state) : _battleGame(battleGame), _state(state), _timer(0), _currentTurn(0), _showBriefing(false)
 {
+	if (_battleGame->isPreview())
+	{
+		// skip everything, go straight to init()
+		return;
+	}
+
 	_currentTurn = _battleGame->getTurn() < 1 ? 1 : _battleGame->getTurn();
 
 	// Create objects
@@ -257,10 +264,15 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 	}
 
 	std::string messageReinforcements;
-	if (_battleGame->getSide() == FACTION_HOSTILE && !_battleGame->getBattleGame()->areAllEnemiesNeutralized())
+	bool allowReinforcements = _battleGame->getSide() == FACTION_HOSTILE && _battleGame->getTurn() > 0;
+	if (_battleGame->getSide() == FACTION_PLAYER && _battleGame->getTurn() == 0)
+	{
+		allowReinforcements = true;
+	}
+	if (allowReinforcements && !_battleGame->getBattleGame()->areAllEnemiesNeutralized())
 	{
 		bool showAlert = determineReinforcements();
-		if (showAlert)
+		if (showAlert && _battleGame->getTurn() > 0)
 		{
 			messageReinforcements = tr("STR_REINFORCEMENTS_ALERT");
 			_txtMessageReinforcements->setText(messageReinforcements);
@@ -281,6 +293,34 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 NextTurnState::~NextTurnState()
 {
 	delete _timer;
+}
+
+void NextTurnState::init()
+{
+	State::init();
+
+	if (_battleGame->isPreview())
+	{
+		_battleGame->getBattleGame()->cleanupDeleted();
+		_game->popState();
+
+		if (_battleGame->getSide() == FACTION_HOSTILE)
+		{
+			// end preview
+			_state->finishBattle(false, 42);
+		}
+		else
+		{
+			// start preview
+			_state->btnCenterClick(0);
+
+			// Try to reactivate the touch buttons at the start of the player's turn
+			if (_battleGame->getSide() == FACTION_PLAYER)
+			{
+				_state->toggleTouchButtons(false, true);
+			}
+		}
+	}
 }
 
 /**
@@ -353,11 +393,6 @@ bool NextTurnState::applyEnvironmentalConditionToFaction(UnitFaction faction, En
 	// 2. no power range reduction (there is no projectile, range = 0)
 	// 3. no AOE damage from explosions (targets are damaged directly without affecting anyone/anything)
 	// 4. no terrain damage
-	// 5. no self-destruct
-	// 6. no vanilla target morale loss when hurt; vanilla morale loss for fatal wounds still applies though
-	//
-	// 7. no setting target on fire (...could be added if needed)
-	// 8. no fire extinguisher
 
 	bool showMessage = false;
 
@@ -415,6 +450,12 @@ bool NextTurnState::applyEnvironmentalConditionToFaction(UnitFaction faction, En
 void NextTurnState::handle(Action *action)
 {
 	State::handle(action);
+
+	if (_battleGame->isPreview())
+	{
+		// prevent NPE on Android/iOS
+		return;
+	}
 
 	if (_btnBriefingReinforcements->getVisible() && action->getDetails()->type == SDL_MOUSEBUTTONDOWN)
 	{
@@ -477,12 +518,9 @@ void NextTurnState::close()
 	bool killingAllAliensIsNotEnough = _battleGame->getObjectiveType() == MUST_DESTROY || (_battleGame->getVIPSurvivalPercentage() > 0 && _battleGame->getVIPEscapeType() != ESCAPE_NONE);
 	bool toDoScripts = _battleGame->getBattleGame()->scriptsToProcess();
 
-	if ((!killingAllAliensIsNotEnough && tally.liveAliens == 0) || tally.liveSoldiers == 0)
+	if ((!killingAllAliensIsNotEnough && tally.liveAliens == 0 && !toDoScripts) || tally.liveSoldiers == 0)
 	{
-		if (!toDoScripts)
-		{
-			_state->finishBattle(false, tally.liveSoldiers);
-		}
+		_state->finishBattle(false, tally.liveSoldiers);
 	}
 	else
 	{
@@ -528,6 +566,8 @@ bool NextTurnState::determineReinforcements()
 {
 	const AlienDeployment* deployment = _game->getMod()->getDeployment(_battleGame->getReinforcementsDeployment(), true);
 
+	int currentTurnReinforcements = _battleGame->getTurn();
+
 	if (!deployment)
 	{
 		// for backwards-compatibility! this save does not contain the data needed for this functionality...
@@ -552,14 +592,14 @@ bool NextTurnState::determineReinforcements()
 			}
 			else if (!wave.turns.empty())
 			{
-				if (std::find(wave.turns.begin(), wave.turns.end(), _currentTurn) == wave.turns.end())
+				if (std::find(wave.turns.begin(), wave.turns.end(), currentTurnReinforcements) == wave.turns.end())
 				{
 					continue;
 				}
 			}
 			else
 			{
-				if (_currentTurn < wave.minTurn || (wave.maxTurn != -1 && _currentTurn > wave.maxTurn))
+				if (currentTurnReinforcements < wave.minTurn || (wave.maxTurn != -1 && currentTurnReinforcements > wave.maxTurn))
 				{
 					continue;
 				}
@@ -817,13 +857,26 @@ bool NextTurnState::deployReinforcements(const ReinforcementsData &wave)
 	{
 		int quantity;
 
-		if (_game->getSavedGame()->getDifficulty() < DIFF_VETERAN)
-			quantity = d.lowQty + RNG::generate(0, d.dQty); // beginner/experienced
-		else if (_game->getSavedGame()->getDifficulty() < DIFF_SUPERHUMAN)
-			quantity = d.lowQty + ((d.highQty - d.lowQty) / 2) + RNG::generate(0, d.dQty); // veteran/genius
-		else
-			quantity = d.highQty + RNG::generate(0, d.dQty); // super (and beyond?)
+		switch (_game->getSavedGame()->getDifficulty())
+		{
+		case DIFF_BEGINNER:
+			quantity = d.lowQty;
+			break;
+		case DIFF_EXPERIENCED:
+			quantity = d.medQty > 0 ? d.lowQty + ((d.medQty - d.lowQty) / 2) : d.lowQty;
+			break;
+		case DIFF_VETERAN:
+			quantity = d.medQty > 0 ? d.medQty : d.lowQty + ((d.highQty - d.lowQty) / 2);
+			break;
+		case DIFF_GENIUS:
+			quantity = d.medQty > 0 ? d.medQty + ((d.highQty - d.medQty) / 2) : d.lowQty + ((d.highQty - d.lowQty) / 2);
+			break;
+		case DIFF_SUPERHUMAN:
+		default:
+			quantity = d.highQty;
+		}
 
+		quantity += RNG::generate(0, d.dQty);
 		quantity += RNG::generate(0, d.extraQty);
 
 		for (int i = 0; i < quantity; ++i)
@@ -981,7 +1034,17 @@ BattleUnit* NextTurnState::addReinforcement(const ReinforcementsData &wave, Unit
 			{
 				for (auto tryZ : tmpZList)
 				{
-					if (_battleGame->setUnitPosition(unit, randomPos + Position(0, 0, tryZ)))
+					Position finalPos = randomPos + Position(0, 0, tryZ);
+					if (unit->getMovementType() != MT_FLY)
+					{
+						Tile* t = _battleGame->getTile(finalPos);
+						if (t == 0 || t->getTUCost(O_FLOOR, unit->getMovementType()) == Pathfinding::INVALID_MOVE_COST)
+						{
+							// non-flying units cannot spawn on e.g. a water tile (e.g. in the POLAR terrain)
+							continue;
+						}
+					}
+					if (_battleGame->setUnitPosition(unit, finalPos))
 					{
 						unit->setRankInt(alienRank);
 						unit->setDirection(RNG::generate(0, 7));
@@ -1036,7 +1099,7 @@ bool NextTurnState::placeReinforcementNearFriend(BattleUnit *unit)
 			if (k->getFaction() == unit->getFaction() && k->getPosition() != TileEngine::invalid && k->getArmor()->getSize() >= unit->getArmor()->getSize())
 			{
 				entryPoint = k->getPosition();
-				largeUnit = (k->getArmor()->getSize() != 1);
+				largeUnit = k->isBigUnit();
 			}
 			--tries;
 		}

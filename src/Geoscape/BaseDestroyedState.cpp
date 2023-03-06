@@ -107,39 +107,21 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 		return;
 	}
 
-	std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin();
-	for (; k != _game->getSavedGame()->getRegions()->end(); ++k)
+	AlienMission* am = _base->getRetaliationMission();
+	if (!am)
 	{
-		if ((*k)->getRules()->insideRegion((base)->getLongitude(), (base)->getLatitude()))
+		// backwards-compatibility
+		std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin();
+		for (; k != _game->getSavedGame()->getRegions()->end(); ++k)
 		{
-			break;
+			if ((*k)->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
+			{
+				break;
+			}
 		}
+		am = _game->getSavedGame()->findAlienMission((*k)->getRules()->getType(), OBJECTIVE_RETALIATION);
 	}
-
-	AlienMission* am = _game->getSavedGame()->findAlienMission((*k)->getRules()->getType(), OBJECTIVE_RETALIATION);
-	for (std::vector<Ufo*>::iterator i = _game->getSavedGame()->getUfos()->begin(); i != _game->getSavedGame()->getUfos()->end();)
-	{
-		if ((*i)->getMission() == am)
-		{
-			delete *i;
-			i = _game->getSavedGame()->getUfos()->erase(i);
-		}
-		else
-		{
-			++i;
-		}
-	}
-
-	for (std::vector<AlienMission*>::iterator i = _game->getSavedGame()->getAlienMissions().begin();
-		i != _game->getSavedGame()->getAlienMissions().end(); ++i)
-	{
-		if ((AlienMission*)(*i) == am)
-		{
-			delete (*i);
-			_game->getSavedGame()->getAlienMissions().erase(i);
-			break;
-		}
-	}
+	_game->getSavedGame()->deleteRetaliationMission(am, _base);
 }
 
 /**

@@ -30,7 +30,7 @@
  * 6. same goes for subdirectories.
  * 7. the loader considers actual files in a directory tree with the same modId
  *    to override the zipped files from a mod with the modId.
- * 8. no more than a single .zip and a single directory is allowed for a modId.
+ * 8. no more than a single .zip or a single directory is allowed for a modId.
  * 9. zipfile name does not matter, but if a directory happens to get scanned insert_before
  *    a zipfile with the same modId, the zipfile would be ignored.
  * A. somename.zip is always scanned before somename/ directory.
@@ -617,17 +617,15 @@ struct VFSLayerStack {
 struct ModRecord {
 	ModInfo modInfo;
 	VFSLayerStack stack;
-	bool dirmapped; // was a mod from a plain dir mapped already?
 
-	ModRecord(const std::string& somepath) : modInfo(somepath), stack(), dirmapped(false) { }
+	ModRecord(const std::string& somepath) : modInfo(somepath), stack() { }
 	void push_back(VFSLayer *layer) { stack.push_back(layer); }
 	void push_front(VFSLayer *layer) { stack.push_front(layer); }
 	const FileRecord *at(const std::string& relpath) { return stack.at(relpath); }
 	const NameSet& ls(const std::string& relpath) { return stack.ls(relpath); }
 	const std::vector<FileRecord> &getRulesets() { return stack.getRulesets(); }
-	bool dir_mapped() { if (dirmapped) { return true; } else { dirmapped = true; } return false; }
 	void dump(std::ostream& out, const std::string& prefix, bool verbose) {
-		out << "  modId=" << modInfo.getId() << " dirmapped=" << dirmapped << "; " << stack.layers.size() << " layers";
+		out << "  modId=" << modInfo.getId() << "; " << stack.layers.size() << " layers";
 		stack.dump(out, prefix, verbose);
 	}
 };
@@ -853,7 +851,7 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 		}
 	}
 	if (!mapped_anything) { // well, nothing found. say so.
-		Log(LOG_ERROR) << log_ctx << "external resources not found.";
+		Log(LOG_INFO) << log_ctx << "external resources not found.";
 	}
 	return mapped_anything;
 }
@@ -886,7 +884,7 @@ static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const
 	mrec->modInfo.load(doc);
 	auto mri = ModsAvailable.find(mrec->modInfo.getId());
 	if (mri != ModsAvailable.end()) {
-		Log(LOG_WARNING) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
+		Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
 		delete mrec;
 		delete layer;
 		return;
@@ -909,6 +907,7 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 	// check if this is maybe a zip of a single mod (metadata.yml at the top level)
 	if (mz_zip_reader_locate_file_v2(mzip, "metadata.yml", NULL, 0, NULL)) {
 		Log(LOG_VERBOSE) << log_ctx << "retrying as a single-mod .zip";
+		// FIXME: this doesn't seem to work at all... do we support this?
 		mapZippedMod(mzip, fullpath, "");
 		return;
 	}
@@ -916,15 +915,18 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 	for (mz_uint fi = 0; fi < filecount; ++fi) {
 		mz_zip_archive_file_stat fistat;
 		mz_zip_reader_file_stat(mzip, fi, &fistat);
+		if (fistat.m_is_encrypted || !fistat.m_is_supported) { continue; }
+		if (!fistat.m_is_directory) { continue; } // skip files, we're only interested in toplevel dirs.
 		std::string prefix = fistat.m_filename;
 		if (!sanitizeZipEntryName(prefix)) {
 			Log(LOG_WARNING) << "Bogus dirname " << hexDumpBogusData(prefix) << " in " << fullpath << ", ignoring.";
 			continue;
 		}
-		if (fistat.m_is_encrypted || !fistat.m_is_supported) { continue; }
-		if (!fistat.m_is_directory) { continue; } // skip files, we're only interested in toplevel dirs.
 		auto slashpos = prefix.find_first_of("/"); // miniz returns dirnames with trailing slashes
 		if (slashpos != prefix.size() - 1) { continue; } // not top-level: skip.
+		// FIXME: if Microsoft Windows "Send to > Compressed (zipped) folder" is used to create the ZIP archive,
+		// this will never be called, because the top-level directory is NOT on the file list... yes, seriously, I'm not kidding!
+		// Do we want to handle this somehow or do we just call it unsupported?
 		mapZippedMod(mzip, fullpath, prefix);
 	}
 }
@@ -1135,14 +1137,8 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 		mrec->modInfo.load(doc);
 		auto mri = ModsAvailable.find(mrec->modInfo.getId());
 		if (mri != ModsAvailable.end()) {
-			if (mri->second->dir_mapped()) { // merge a plaindir mod only once.
-				Log(LOG_WARNING) << log_ctx << "modId " << mrec->modInfo.getId() << " already dirmapped in, skipping " << mp_basename;
-				delete layer;
-			} else {
-				Log(LOG_VERBOSE) << log_ctx << "modId " << mrec->modInfo.getId() << " merged in from " << mp_basename;
-				mri->second->push_back(layer);
-				MappedVFSLayers.insert(layer);
-			}
+			Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << mp_basename;
+			delete layer;
 			delete mrec;
 			continue;
 		}

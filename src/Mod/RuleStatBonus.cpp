@@ -20,7 +20,6 @@
 #include "Unit.h"
 #include "RuleStatBonus.h"
 #include "RuleSkill.h"
-#include "../Engine/RNG.h"
 #include "../Engine/ScriptBind.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
@@ -72,73 +71,69 @@ float currentRank(const BattleUnit *unit)
 	return unit->getRankInt();
 }
 
-float curretTimeUnits(const BattleUnit *unit)
+float currentTimeUnits(const BattleUnit *unit)
 {
 	return unit->getTimeUnits();
 }
 
-float curretHealth(const BattleUnit *unit)
+float currentHealth(const BattleUnit *unit)
 {
 	return unit->getHealth();
 }
 
-float curretMana(const BattleUnit* unit)
+float currentMana(const BattleUnit* unit)
 {
 	return unit->getMana();
 }
 
-float curretEnergy(const BattleUnit *unit)
+float currentEnergy(const BattleUnit *unit)
 {
 	return unit->getEnergy();
 }
 
-float curretMorale(const BattleUnit *unit)
+float currentMorale(const BattleUnit *unit)
 {
 	return unit->getMorale();
 }
 
-float curretStun(const BattleUnit *unit)
+float currentStun(const BattleUnit *unit)
 {
 	return unit->getStunlevel();
 }
 
+float normalizedHelper(int val, int max)
+{
+	return max > 0 ? 1.0f * val / max : 0.0f;
+}
 
 float normalizedTimeUnits(const BattleUnit *unit)
 {
-	return 1.0f * unit->getTimeUnits()/ unit->getBaseStats()->tu;
+	return normalizedHelper(unit->getTimeUnits(), unit->getBaseStats()->tu);
 }
 
 float normalizedHealth(const BattleUnit *unit)
 {
-	return 1.0f * unit->getHealth() / unit->getBaseStats()->health;
+	return normalizedHelper(unit->getHealth(), unit->getBaseStats()->health);
 }
 
 float normalizedMana(const BattleUnit* unit)
 {
-	return 1.0f * unit->getMana() / unit->getBaseStats()->mana;
+	return normalizedHelper(unit->getMana(), unit->getBaseStats()->mana);
 }
 
 float normalizedEnergy(const BattleUnit *unit)
 {
-	return 1.0f * unit->getEnergy() / unit->getBaseStats()->stamina;
+	return normalizedHelper(unit->getEnergy(), unit->getBaseStats()->stamina);
 }
 
 float normalizedMorale(const BattleUnit *unit)
 {
-	return 1.0f * unit->getMorale() / 100;
+	return normalizedHelper(unit->getMorale(), 100);
 }
 
 float normalizedStun(const BattleUnit *unit)
 {
-	int health = unit->getHealth();
-	if (health > 0)
-	{
-		return 1.0f * unit->getStunlevel() / health;
-	}
-	else
-	{
-		return 0.0f;
-	}
+	return normalizedHelper(unit->getStunlevel(), unit->getHealth());
 }
 
 float basicEnergyRegeneration(const BattleUnit *unit)
@@ -256,12 +251,12 @@ BonusStatData statDataMap[] =
 	{ "rank", create<&currentRank>() },
 	{ "fatalWounds", create<&currentFatalWounds>() },
 
-	{ "healthCurrent", create<&curretHealth>() },
-	{ "manaCurrent", create<&curretMana>() },
-	{ "tuCurrent", create<&curretTimeUnits>() },
-	{ "energyCurrent", create<&curretEnergy>() },
-	{ "moraleCurrent", create<&curretMorale>() },
-	{ "stunCurrent", create<&curretStun>() },
+	{ "healthCurrent", create<&currentHealth>() },
+	{ "manaCurrent", create<&currentMana>() },
+	{ "tuCurrent", create<&currentTimeUnits>() },
+	{ "energyCurrent", create<&currentEnergy>() },
+	{ "moraleCurrent", create<&currentMorale>() },
+	{ "stunCurrent", create<&currentStun>() },
 
 	{ "healthNormalized", create<&normalizedHealth>() },
 	{ "manaNormalized", create<&normalizedMana>() },

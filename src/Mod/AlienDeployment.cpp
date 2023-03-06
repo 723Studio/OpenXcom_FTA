@@ -51,6 +51,7 @@ namespace YAML
 			node["alienRank"] = rhs.alienRank;
 			node["customUnitType"] = rhs.customUnitType;
 			node["lowQty"] = rhs.lowQty;
+			node["medQty"] = rhs.medQty;
 			node["highQty"] = rhs.highQty;
 			node["dQty"] = rhs.dQty;
 			node["extraQty"] = rhs.extraQty;
@@ -68,6 +69,7 @@ namespace YAML
 			rhs.alienRank = node["alienRank"].as<int>(rhs.alienRank);
 			rhs.customUnitType = node["customUnitType"].as<std::string>(rhs.customUnitType);
 			rhs.lowQty = node["lowQty"].as<int>(rhs.lowQty);
+			rhs.medQty = node["medQty"].as<int>(rhs.medQty);
 			rhs.highQty = node["highQty"].as<int>(rhs.highQty);
 			rhs.dQty = node["dQty"].as<int>(rhs.dQty);
 			rhs.extraQty = node["extraQty"].as<int>(0); // give this a default, as it's not 100% needed, unlike the others.
@@ -180,14 +182,15 @@ namespace OpenXcom
  * @param type String defining the type.
  */
 AlienDeployment::AlienDeployment(const std::string &type) :
-	_type(type), _bughuntMinTurn(0), _width(0), _length(0), _height(0), _civilians(0), _markCiviliansAsVIP(false), _civilianSpawnNodeRank(0),
-	_shade(-1), _minShade(-1), _maxShade(-1), _finalDestination(false), _isAlienBase(false), _isHidden(false), _fakeUnderwaterSpawnChance(0),
+	_type(type), _missionBountyItemCount(1), _bughuntMinTurn(0), _width(0), _length(0), _height(0), _civilians(0), _markCiviliansAsVIP(false), _civilianSpawnNodeRank(0),
+	_shade(-1), _minShade(-1), _maxShade(-1), _finalDestination(false), _isAlienBase(false), _isHidden(false), _isHiddenAlienBase(false), _fakeUnderwaterSpawnChance(0),
 	_alert("STR_ALIENS_TERRORISE"), _alertBackground("BACK03.SCR"), _alertDescription(""), _alertSound(-1),
 	_markerName("STR_TERROR_SITE"), _markerIcon(-1), _durationMin(0), _durationMax(0), _minDepth(0), _maxDepth(0),
-	_genMissionFrequency(0), _genMissionLimit(1000),
+	_genMissionFrequency(0), _genMissionLimit(1000), _genMissionRaceFromAlienBase(true),
 	_objectiveType(-1), _objectivesRequired(0), _objectiveCompleteScore(0), _objectiveFailedScore(0), _despawnPenalty(0), _abortPenalty(0), _points(0),
 	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _keepCraftAfterFailedMission(false), _allowObjectiveRecovery(false), _escapeType(ESCAPE_NONE), _vipSurvivalPercentage(0),
-	_baseDetectionRange(0), _baseDetectionChance(100), _huntMissionMaxFrequency(60)
+	_baseDetectionRange(0), _baseDetectionChance(100), _huntMissionMaxFrequency(60), _huntMissionRaceFromAlienBase(true),
+	_resetAlienBaseAgeAfterUpgrade(false), _resetAlienBaseAge(false)
 {
 }
 
@@ -221,11 +224,22 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_customUfo = node["customUfo"].as<std::string>(_customUfo);
 	_enviroEffects = node["enviroEffects"].as<std::string>(_enviroEffects);
 	_startingCondition = node["startingCondition"].as<std::string>(_startingCondition);
-	_unlockedResearch = node["unlockedResearch"].as<std::string>(_unlockedResearch);
+	_unlockedResearchOnSuccess = node["unlockedResearch"].as<std::string>(_unlockedResearchOnSuccess);
+	_unlockedResearchOnFailure = node["unlockedResearchOnFailure"].as<std::string>(_unlockedResearchOnFailure);
+	_unlockedResearchOnDespawn = node["unlockedResearchOnDespawn"].as<std::string>(_unlockedResearchOnDespawn);
+	_counterSuccess = node["counterSuccess"].as<std::string>(_counterSuccess);
+	_counterFailure = node["counterFailure"].as<std::string>(_counterFailure);
+	_counterDespawn = node["counterDespawn"].as<std::string>(_counterDespawn);
+	_counterAll = node["counterAll"].as<std::string>(_counterAll);
+	_decreaseCounterSuccess = node["decreaseCounterSuccess"].as<std::string>(_decreaseCounterSuccess);
+	_decreaseCounterFailure = node["decreaseCounterFailure"].as<std::string>(_decreaseCounterFailure);
+	_decreaseCounterDespawn = node["decreaseCounterDespawn"].as<std::string>(_decreaseCounterDespawn);
+	_decreaseCounterAll = node["decreaseCounterAll"].as<std::string>(_decreaseCounterAll);
 	_missionBountyItem = node["missionBountyItem"].as<std::string>(_missionBountyItem);
 	_alternativeDeployment = node["alternativeDeployment"].as<std::string>(_alternativeDeployment);
 	_alternativeDeploymentResearch = node["alternativeDeploymentResearch"].as<std::string>(_alternativeDeploymentResearch);
 	_extendedObjectiveType = node["extendedObjectiveType"].as<std::string>(_extendedObjectiveType);
+	_missionBountyItemCount = node["missionBountyItemCount"].as<int>(_missionBountyItemCount);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_data = node["data"].as< std::vector<DeploymentData> >(_data);
 	_reinforcements = node["reinforcements"].as< std::vector<ReinforcementsData> >(_reinforcements);
@@ -247,8 +261,10 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_winCutscene = node["winCutscene"].as<std::string>(_winCutscene);
 	_loseCutscene = node["loseCutscene"].as<std::string>(_loseCutscene);
 	_abortCutscene = node["abortCutscene"].as<std::string>(_abortCutscene);
-	_script = node["script"].as<std::string>(_script);
 	_battleScript = node["battleScript"].as<std::string>(_battleScript);
+	_mapScript = node["script"].as<std::string>(_mapScript);
+	_mapScripts = node["mapScripts"].as<std::vector<std::string> >(_mapScripts);
+	_undercoverArmors = node["undercoverArmors"].as<std::vector<std::string> >(_undercoverArmors);
 	_alert = node["alert"].as<std::string>(_alert);
 	_alertBackground = node["alertBackground"].as<std::string>(_alertBackground);
 	_alertDescription = node["alertDescription"].as<std::string>(_alertDescription);
@@ -306,6 +322,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_chronoTrigger = ChronoTrigger(node["chronoTrigger"].as<int>(_chronoTrigger));
 	_isAlienBase = node["alienBase"].as<bool>(_isAlienBase);
 	_isHidden = node["isHidden"].as<bool>(_isHidden);
+	_isHiddenAlienBase = node["isHiddenAlienBase"].as<bool>(_isHiddenAlienBase);
 	_fakeUnderwaterSpawnChance = node["fakeUnderwaterSpawnChance"].as<int>(_fakeUnderwaterSpawnChance);
 	_keepCraftAfterFailedMission = node["keepCraftAfterFailedMission"].as<bool>(_keepCraftAfterFailedMission);
 	_allowObjectiveRecovery = node["allowObjectiveRecovery"].as<bool>(_allowObjectiveRecovery);
@@ -317,11 +334,13 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	}
 	_genMissionFrequency = node["genMissionFreq"].as<int>(_genMissionFrequency);
 	_genMissionLimit = node["genMissionLimit"].as<int>(_genMissionLimit);
+	_genMissionRaceFromAlienBase = node["genMissionRaceFromAlienBase"].as<bool>(_genMissionRaceFromAlienBase);
 
 	_baseSelfDestructCode = node["baseSelfDestructCode"].as<std::string>(_baseSelfDestructCode);
 	_baseDetectionRange = node["baseDetectionRange"].as<int>(_baseDetectionRange);
 	_baseDetectionChance = node["baseDetectionChance"].as<int>(_baseDetectionChance);
 	_huntMissionMaxFrequency = node["huntMissionMaxFrequency"].as<int>(_huntMissionMaxFrequency);
+	_huntMissionRaceFromAlienBase = node["huntMissionRaceFromAlienBase"].as<bool>(_huntMissionRaceFromAlienBase);
 	if (const YAML::Node &weights = node["huntMissionWeights"])
 	{
 		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
@@ -340,6 +359,9 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 			_alienBaseUpgrades.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
 		}
 	}
+	_resetAlienBaseAgeAfterUpgrade = node["resetAlienBaseAgeAfterUpgrade"].as<bool>(_resetAlienBaseAgeAfterUpgrade);
+	_resetAlienBaseAge = node["resetAlienBaseAge"].as<bool>(_resetAlienBaseAge);
+	_upgradeRace = node["upgradeRace"].as<std::string>(_upgradeRace);
 }
 
 /**
@@ -368,15 +390,6 @@ const std::string& AlienDeployment::getEnviroEffects() const
 const std::string& AlienDeployment::getStartingCondition() const
 {
 	return _startingCondition;
-}
-
-/**
-* Returns the research topic to be unlocked after a successful mission.
-* @return String ID for research topic.
-*/
-std::string AlienDeployment::getUnlockedResearch() const
-{
-	return _unlockedResearch;
 }
 
 /**
@@ -523,9 +536,14 @@ std::string AlienDeployment::getRace() const
  * Gets the script to use to generate a mission of this type.
  * @return The script to use to generate a mission of this type.
  */
-std::string AlienDeployment::getScript() const
+const std::string& AlienDeployment::getRandomMapScript() const
 {
-	return _script;
+	if (!_mapScripts.empty())
+	{
+		size_t pick = RNG::generate(0, _mapScripts.size() - 1);
+		return _mapScripts[pick];
+	}
+	return _mapScript;
 }
 
 /**
@@ -795,6 +813,11 @@ int AlienDeployment::getGenMissionLimit() const
 	return _genMissionLimit;
 }
 
+bool AlienDeployment::isGenMissionRaceFromAlienBase() const
+{
+	return _genMissionRaceFromAlienBase;
+}
+
 bool AlienDeployment::keepCraftAfterFailedMission() const
 {
 	return _keepCraftAfterFailedMission;
@@ -858,6 +881,15 @@ int AlienDeployment::getBaseDetectionChance() const
 int AlienDeployment::getHuntMissionMaxFrequency() const
 {
 	return _huntMissionMaxFrequency;
+}
+
+/**
+ * Should the hunt missions inherit the race from the alien base, or take it from their own 'raceWeights'?
+ * @return True, if the race is taken from the alien base (vanilla behavior).
+ */
+bool AlienDeployment::isHuntMissionRaceFromAlienBase() const
+{
+	return _huntMissionRaceFromAlienBase;
 }
 
 /**

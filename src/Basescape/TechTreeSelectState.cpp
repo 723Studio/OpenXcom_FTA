@@ -25,7 +25,6 @@
 #include "../Mod/RuleArcScript.h"
 #include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleMissionScript.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/TextButton.h"
@@ -148,6 +147,7 @@ void TechTreeSelectState::initLists()
 	_firstManufacturingTopicIndex = 0;
 	_firstFacilitiesTopicIndex = 0;
 	_firstItemTopicIndex = 0;
+	_firstCraftTopicIndex = 0;
 
 	_availableTopics.clear();
 	_lstTopics->clearList();
@@ -215,6 +215,7 @@ void TechTreeSelectState::initLists()
 		_firstManufacturingTopicIndex = row;
 		_firstFacilitiesTopicIndex = row;
 		_firstItemTopicIndex = row;
+		_firstCraftTopicIndex = row;
 		return;
 	}
 
@@ -338,6 +339,37 @@ void TechTreeSelectState::initLists()
 		}
 		++row;
 	}
+
+	_firstCraftTopicIndex = row;
+
+	const std::vector<std::string> &craftsList = _game->getMod()->getCraftsList();
+	for (std::vector<std::string>::const_iterator i = craftsList.begin(); i != craftsList.end(); ++i)
+	{
+		std::string craftName = tr((*i));
+		Unicode::upperCase(craftName);
+		if (searchString == "SHAZAM")
+		{
+			if (_parent->isDiscoveredCraft(*i))
+			{
+				continue;
+			}
+		}
+		else if (craftName.find(searchString) == std::string::npos)
+		{
+			continue;
+		}
+
+		_availableTopics.push_back(*i);
+		std::ostringstream ss;
+		ss << tr((*i));
+		ss << tr("STR_C_FLAG");
+		_lstTopics->addRow(1, ss.str().c_str());
+		if (!_parent->isDiscoveredCraft(*i))
+		{
+			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		}
+		++row;
+	}
 }
 
 /**
@@ -353,7 +385,11 @@ void TechTreeSelectState::onSelectTopic(Action *)
 	const std::string selectedTopic = _availableTopics[index];
 
 	TTVMode topicType = TTV_RESEARCH;
-	if (index >= _firstItemTopicIndex)
+	if (index >= _firstCraftTopicIndex)
+	{
+		topicType = TTV_CRAFTS;
+	}
+	else if (index >= _firstItemTopicIndex)
 	{
 		topicType = TTV_ITEMS;
 	}

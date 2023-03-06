@@ -26,20 +26,75 @@ class PathfindingOpenSet;
 struct OpenSetEntry;
 
 /**
+ * Cost of one step.
+ * As this is 2d point value it is not totally ordered.
+ */
+struct PathfindingCost
+{
+	Sint16 time = 0;
+	Sint16 energy = 0;
+
+	/// Default constructor.
+	PathfindingCost() = default;
+
+	/// Constructor from ints.
+	PathfindingCost(int t, int e) : time(t), energy(e) {}
+
+	PathfindingCost operator+(PathfindingCost c) const
+	{
+		return {
+			static_cast<Sint16>(time + c.time),
+			static_cast<Sint16>(energy + c.energy),
+		};
+	}
+
+	bool operator<=(PathfindingCost c) const
+	{
+		return time <= c.time && energy <= c.energy;
+	}
+	bool operator>=(PathfindingCost c) const
+	{
+		return time >= c.time && energy >= c.energy;
+	}
+	bool operator<(PathfindingCost c) const
+	{
+		return time < c.time && energy < c.energy;
+	}
+	bool operator>(PathfindingCost c) const
+	{
+		return time > c.time && energy > c.energy;
+	}
+};
+
+/**
+ * Result of one step in pathfinding algorithm.
+ */
+struct PathfindingStep
+{
+	/// Real cost of moving one step.
+	PathfindingCost cost;
+	/// Pathfinding penalty for given step.
+	PathfindingCost penalty = { };
+	/// Final position of one step.
+	Position pos = { };
+};
+
+/**
  * A class that holds pathfinding info for a certain node on the map.
  */
 class PathfindingNode
 {
 private:
 	Position _pos;
-	bool _checked;
-	int _tuCost;
+	PathfindingCost _tuCost;
 	PathfindingNode* _prevNode;
 	int _prevDir;
 	/// Approximate cost to reach goal position.
-	int _tuGuess;
+	Sint16 _tuGuess;
+	/// Is best path find for this tile.
+	bool _checked;
 	// Invasive field needed by PathfindingOpenSet
-	OpenSetEntry *_openentry;
+	Uint8 _openentry;
 	friend class PathfindingOpenSet;
 public:
 	/// Creates a new PathfindingNode class.
@@ -55,7 +110,7 @@ public:
 	/// Marks the node as checked.
 	void setChecked() { _checked = true; }
 	/// Gets the TU cost.
-	int getTUCost(bool missile) const;
+	PathfindingCost getTUCost(bool missile) const { return missile ? PathfindingCost{} : _tuCost; }
 	/// Gets the previous node.
 	PathfindingNode* getPrevNode() const;
 	/// Gets the previous walking direction.
@@ -70,9 +125,9 @@ public:
 	#endif
 
 	/// Connects to previous node along the path.
-	void connect(int tuCost, PathfindingNode* prevNode, int prevDir, Position target);
+	void connect(PathfindingCost cost, PathfindingNode* prevNode, int prevDir, Position target);
 	/// Connects to previous node along a visit.
-	void connect(int tuCost, PathfindingNode* prevNode, int prevDir);
+	void connect(PathfindingCost cost, PathfindingNode* prevNode, int prevDir);
 };
 
 /**

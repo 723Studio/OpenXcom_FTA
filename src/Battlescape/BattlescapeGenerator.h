@@ -67,8 +67,8 @@ private:
 	Base *_base;
 	MissionSite *_mission;
 	AlienBase *_alienBase;
-	RuleTerrain *_terrain, *_baseTerrain, *_globeTerrain, *_alternateTerrain;
 	CovertOperation *_covertOperation;
+	RuleTerrain *_terrain, *_baseTerrain, *_globeTerrain, *_alternateTerrain;
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	Texture *_missionTexture, *_globeTexture;
 	int _worldShade;
@@ -97,11 +97,13 @@ private:
 	/// sets the map size and associated vars
 	void init(bool resetTerrain);
 	/// Generates a new battlescape map.
-	void generateMap(const std::vector<MapScript*> *script, const std::string &customUfoName);
+	void generateMap(const std::vector<MapScript*> *script, const std::string &customUfoName, const RuleStartingCondition* startingCondition);
 	/// Adds a vehicle to the game.
 	BattleUnit *addXCOMVehicle(Vehicle *v);
 	/// Adds a soldier to the game.
 	BattleUnit *addXCOMUnit(BattleUnit *unit);
+	/// Tries to set a custom craft inventory tile.
+	void setCustomCraftInventoryTile();
 	/// Adds an alien to the game.
 	BattleUnit *addAlien(Unit *rules, int alienRank, bool outside);
 	/// Adds a civilian to the game.
@@ -194,6 +196,10 @@ public:
 	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
 	/// Runs the generator.
 	void run();
+	/// Gets craft position.
+	SDL_Rect getCraftPos() const { return _craftPos; }
+	/// Gets craft elevation.
+	int getCraftZ() const { return _craftZ; }
 	/// Sets up the next stage (for Cydonia/TFTD missions).
 	void nextStage();
 	/// Generates an inventory battlescape.

@@ -23,6 +23,15 @@
 namespace OpenXcom
 {
 
+enum class TransferSortDirection : int
+{
+	BY_LIST_ORDER,
+	BY_UNIT_SIZE,
+	BY_TOTAL_SIZE,
+	BY_UNIT_COST,
+	BY_TOTAL_COST
+};
+
 enum TransferType { TRANSFER_ITEM, TRANSFER_CRAFT, TRANSFER_SOLDIER, TRANSFER_SCIENTIST, TRANSFER_ENGINEER };
 
 struct TransferRow
@@ -34,6 +43,9 @@ struct TransferRow
 	int qtySrc, qtyDst;
 	int amount;
 	int stock;
+	int listOrder;
+	double size, totalSize;
+	int64_t totalCost;
 };
 
 class Soldier;

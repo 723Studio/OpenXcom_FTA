@@ -129,6 +129,10 @@ void UnitWalkBState::think()
 			bool onScreenBoundary = (_unit->getVisible() && _parent->getMap()->getCamera()->isOnScreen(_unit->getPosition(), true, size, true));
 			_unit->keepWalking(_parent->getSave(), onScreenBoundary); // advances the phase
 			playMovementSound();
+			if (_parent->getSave()->isPreview())
+			{
+				_unit->resetTimeUnitsAndEnergy();
+			}
 		}
 		else if (!_falling)
 		{
@@ -236,7 +240,7 @@ void UnitWalkBState::think()
 	}
 
 	// we are just standing around, shouldn't we be walking?
-	if (_unit->getStatus() == STATUS_STANDING || _unit->getStatus() == STATUS_PANICKING)
+	if (_unit->getStatus() == STATUS_STANDING || _unit->getStatus() == STATUS_PANICKING || _unit->getStatus() == STATUS_BERSERK)
 	{
 		// check if we did spot new units
 		if (unitSpotted && !_action.desperate && _unit->getCharging() == 0 && !_falling)
@@ -268,32 +272,23 @@ void UnitWalkBState::think()
 				_unit->setFaceDirection(_unit->getDirection());
 			}
 
-			Position destination;
-			int tu = _pf->getTUCost(_unit->getPosition(), dir, &destination, _unit, 0, false); // gets tu cost, but also gets the destination position.
-			if (_unit->getFaction() != FACTION_PLAYER &&
-				_unit->getSpecialAbility() < SPECAB_BURNFLOOR &&
-				_parent->getSave()->getTile(destination) &&
-				_parent->getSave()->getTile(destination)->getFire() > 0)
+			_pf->setUnit(_unit); //TODO: remove as was done by `getTUCost`
+			auto r = _pf->getTUCost(_unit->getPosition(), dir, _unit, 0, _action.getMoveType());
+
+			auto tu = r.cost.time;
+			int energy = r.cost.energy;
+			auto destination = r.pos;
+
+			if (tu == Pathfinding::INVALID_MOVE_COST)
 			{
-				tu -= 32; // we artificially inflate the TU cost by 32 points in getTUCost under these conditions, so we have to deflate it here.
+				_pf->abortPath();
+				_parent->popState();
+				return;
 			}
-			if (_falling)
-			{
-				tu = 0;
-			}
-			int energy = tu / 2;
-			if (dir >= Pathfinding::DIR_UP)
-			{
-				energy = 0;
-			}
-			else if (_action.run)
-			{
-				tu *= 0.75;
-				energy *= 1.5;
-			}
+
 			if (tu > _unit->getTimeUnits())
 			{
-				if (_parent->getPanicHandled() && tu < 255)
+				if (_parent->getPanicHandled())
 				{
 					_action.result = "STR_NOT_ENOUGH_TIME_UNITS";
 				}
@@ -537,7 +532,7 @@ void UnitWalkBState::playMovementSound()
 	int sound = -1;
 	int unitSound = _unit->getMoveSound();
 	int tileSoundOffset = tile->getFootstepSound(_parent->getSave()->getBelowTile(tile));
-	int tileSound = -1;
+	int tileSound = Mod::NO_SOUND;
 	if (tileSoundOffset > -1)
 	{
 		// play footstep sound 1
@@ -551,7 +546,7 @@ void UnitWalkBState::playMovementSound()
 			tileSound = Mod::WALK_OFFSET + (tileSoundOffset*2) + 1;
 		}
 	}
-	if (unitSound != -1)
+	if (unitSound != Mod::NO_SOUND)
 	{
 		// if a sound is configured in the ruleset, play that one
 		if (_unit->getWalkingPhase() == 0)
@@ -563,7 +558,7 @@ void UnitWalkBState::playMovementSound()
 	{
 		if (_unit->getStatus() == STATUS_WALKING)
 		{
-			if (tileSound > -1)
+			if (tileSound > Mod::NO_SOUND) //TODO: it should be `!=` but its possbile that offset could get negative is based on mod data
 			{
 				sound = tileSound;
 			}

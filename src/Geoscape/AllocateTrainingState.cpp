@@ -22,7 +22,6 @@
 #include "AllocateTrainingState.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
-#include "../Engine/Palette.h"
 #include "../Mod/RuleInterface.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
@@ -31,7 +30,6 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Interface/TextList.h"
-#include "GeoscapeState.h"
 #include "../Savegame/Soldier.h"
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
@@ -98,6 +96,7 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_btnOk->onMouseClick((ActionHandler)&AllocateTrainingState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&AllocateTrainingState::btnOkClick, Options::keyCancel);
 	_btnOk->onKeyboardPress((ActionHandler)& AllocateTrainingState::btnDeassignAllSoldiersClick, Options::keyRemoveSoldiersFromTraining);
+	_btnOk->onKeyboardPress((ActionHandler)&AllocateTrainingState::btnAssignAllSoldiersClick, Options::keyAddSoldiersToTraining);
 
 	_btnPlus->setText("+");
 	_btnPlus->setPressed(false);
@@ -591,6 +590,41 @@ void AllocateTrainingState::btnDeassignAllSoldiersClick(Action* action)
 		row++;
 	}
 	_space = _base->getAvailableTraining() - _base->getUsedTraining();
+	_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
+}
+
+/**
+ * Adds all soldiers to Martial Training.
+ * @param action Pointer to an action.
+ */
+void AllocateTrainingState::btnAssignAllSoldiersClick(Action* action)
+{
+	int row = 0;
+	for (auto* soldier : *_base->getSoldiers())
+	{
+		if (soldier->isFullyTrained())
+		{
+			// can't put fully trained soldiers back into training
+		}
+		else if (soldier->isWounded())
+		{
+			// wounded soldiers can be queued
+			if (!soldier->getReturnToTrainingWhenHealed())
+			{
+				_lstSoldiers->setCellText(row, 8, tr("STR_NO_QUEUED").c_str());
+				soldier->setReturnToTrainingWhenHealed(true);
+			}
+		}
+		else if (_space > 0 && !soldier->isInTraining())
+		{
+			// healthy soldiers can be assigned
+			_lstSoldiers->setCellText(row, 8, tr("STR_YES").c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			_space--;
+			soldier->setTraining(true);
+		}
+		row++;
+	}
 	_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
 }
 

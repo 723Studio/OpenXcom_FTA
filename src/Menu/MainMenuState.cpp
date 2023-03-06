@@ -21,7 +21,6 @@
 #include "../version.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/Exception.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
 #include "../Interface/TextButton.h"
@@ -31,7 +30,7 @@
 #include "NewBattleState.h"
 #include "ListLoadState.h"
 #include "OptionsVideoState.h"
-#include "OptionsModsState.h"
+#include "ModListState.h"
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
@@ -257,7 +256,7 @@ void MainMenuState::btnOptionsClick(Action *)
 */
 void MainMenuState::btnModsClick(Action *)
 {
-	_game->pushState(new OptionsModsState);
+	_game->pushState(new ModListState);
 }
 
 /**

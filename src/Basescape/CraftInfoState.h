@@ -43,8 +43,9 @@ private:
 	size_t _craftId;
 	Craft *_craft;
 	int _weaponNum;
+	bool _ftaUi;
 
-	TextButton *_btnOk, *_btnW[RuleCraft::WeaponMax], *_btnCrew, *_btnEquip, *_btnArmor, *_btnPilots;
+	TextButton *_btnOk, *_btnW[RuleCraft::WeaponMax], *_btnCrew, *_btnEquip, *_btnArmor, *_btnPilots, *_btnNewBattle;
 	Window *_window;
 	TextEdit *_edtCraft;
 	Text *_txtDamage, *_txtShield, *_txtFuel, *_txtSkin;
@@ -64,6 +65,8 @@ public:
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Ufopedia button.
 	void btnUfopediaClick(Action *action);
+	/// Handler for clicking the New Battle button.
+	void btnNewBattleClick(Action *action);
 	/// Handler for clicking the weapon button.
 	void btnWClick(Action *action);
 	/// Handler for clicking one of the weapon icons.

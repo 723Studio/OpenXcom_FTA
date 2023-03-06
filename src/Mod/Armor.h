@@ -38,6 +38,45 @@ class RuleResearch;
 class RuleSoldier;
 
 /**
+ * Move cost multipler.
+ */
+struct ArmorMoveCost
+{
+	int TimePercent;
+	int EnergyPercent;
+
+	ArmorMoveCost& operator*=(ArmorMoveCost c)
+	{
+		TimePercent *= c.TimePercent;
+		EnergyPercent *= c.EnergyPercent;
+		return *this;
+	}
+
+	bool operator==(ArmorMoveCost c) const
+	{
+		return TimePercent == c.TimePercent && EnergyPercent == c.EnergyPercent;
+	}
+
+	bool operator!=(ArmorMoveCost c) const
+	{
+		return !(*this == c);
+	}
+
+	void load(const YAML::Node& node)
+	{
+		if (node)
+		{
+			std::tie(TimePercent, EnergyPercent) = node.as<std::pair<int, int>>();
+		}
+	}
+	void save(YAML::Node& node, const char* name) const
+	{
+		node[name] = std::make_pair(TimePercent, EnergyPercent);
+	}
+};
+
+
+/**
  * Represents a specific type of armor.
  * Not only soldier armor, but also alien armor - some alien races wear
  * Soldier Armor, Leader Armor or Commander Armor depending on their rank.
@@ -75,14 +114,33 @@ private:
 	int _frontArmor, _sideArmor, _leftArmorDiff, _rearArmor, _underArmor, _drawingRoutine;
 	bool _drawBubbles;
 	MovementType _movementType;
+	SpecialAbility _specab;
+
 	bool _turnBeforeFirstStep;
 	int _turnCost;
+
+	ArmorMoveCost _moveCostBase = { 100, 100 };
+	ArmorMoveCost _moveCostBaseFly = { 100, 100 };
+	ArmorMoveCost _moveCostBaseNormal = { 100, 100 };
+
+	ArmorMoveCost _moveCostWalk = { 100, 50 };
+	ArmorMoveCost _moveCostRun = { 75, 75 };
+	ArmorMoveCost _moveCostStrafe = { 100, 50 };
+	ArmorMoveCost _moveCostSneak = { 100, 50 };
+	ArmorMoveCost _moveCostFlyWalk = { 100, 50 };
+	ArmorMoveCost _moveCostFlyRun = { 75, 75 };
+	ArmorMoveCost _moveCostFlyStrafe = { 100, 50 };
+	ArmorMoveCost _moveCostFlyUp = { 100, 0 };
+	ArmorMoveCost _moveCostFlyDown = { 100, 0 };
+	ArmorMoveCost _moveCostGravLift = { 100, 0 };
+
 	int _moveSound;
 	std::vector<int> _deathSoundMale, _deathSoundFemale;
 	std::vector<int> _selectUnitSoundMale, _selectUnitSoundFemale;
 	std::vector<int> _startMovingSoundMale, _startMovingSoundFemale;
 	std::vector<int> _selectWeaponSoundMale, _selectWeaponSoundFemale;
 	std::vector<int> _annoyedSoundMale, _annoyedSoundFemale;
+
 	int _size, _weight, _visibilityAtDark, _visibilityAtDay, _personalLight;
 	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision, _psiCamouflage;
 	float _damageModifier[DAMAGE_TYPES];
@@ -102,10 +160,11 @@ private:
 
 	ScriptValues<Armor> _scriptValues;
 	std::vector<int> _customArmorPreviewIndex;
-	Sint8 _allowsRunning, _allowsStrafing, _allowsKneeling, _allowsMoving;
+	Sint8 _allowsRunning, _allowsStrafing, _allowsSneaking, _allowsKneeling, _allowsMoving;
 	bool _isPilotArmor;
 	bool _allowTwoMainWeapons;
 	bool _instantWoundRecovery;
+	bool _isAlwaysVisible = false;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _hackingDefense;
 public:
@@ -153,6 +212,8 @@ public:
 	/// Gets the research required to be able to equip this armor.
 	const RuleResearch* getRequiredResearch() const;
 
+	/// Armor have layered armor definition. Check by Prefix.
+	bool hasLayersDefinition() const { return !_layersDefaultPrefix.empty(); }
 	/// Gets the default prefix for layered armor sprite names.
 	const std::string &getLayersDefaultPrefix() const { return _layersDefaultPrefix; }
 	/// Gets the overrides for layered armor sprite name prefix, per layer.
@@ -166,11 +227,43 @@ public:
 	bool drawBubbles() const;
 	/// DO NOT USE THIS FUNCTION OUTSIDE THE BATTLEUNIT CONSTRUCTOR OR I WILL HUNT YOU DOWN.
 	MovementType getMovementType() const;
+	/// Get MovementType based on depth of battle.
+	MovementType getMovementTypeByDepth(int depth) const;
+	/// Gets the armor's special ability.
+	int getSpecialAbility() const;
 
 	/// Should turning before first step cost TU or not?
 	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
 	/// Gets the turn cost.
 	int getTurnCost() const { return _turnCost; }
+
+	/// Multiplier of all move costs.
+	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }
+	/// Multiplier of normal base move cost.
+	ArmorMoveCost getMoveCostBaseNormal() const { return _moveCostBaseNormal; }
+	/// Multiplier of fly base move cost.
+	ArmorMoveCost getMoveCostBaseFly() const { return _moveCostBaseFly; }
+
+	/// Multiplier of walk move cost.
+	ArmorMoveCost getMoveCostWalk() const { return _moveCostWalk; }
+	/// Multiplier of run move cost.
+	ArmorMoveCost getMoveCostRun() const { return _moveCostRun; }
+	/// Multiplier of strafe move cost.
+	ArmorMoveCost getMoveCostStrafe() const { return _moveCostStrafe; }
+	/// Multiplier of sneak move cost.
+	ArmorMoveCost getMoveCostSneak() const { return _moveCostSneak; }
+	/// Multiplier of fly "walk" move cost.
+	ArmorMoveCost getMoveCostFlyWalk() const { return _moveCostFlyWalk; }
+	/// Multiplier of fly "run" move cost.
+	ArmorMoveCost getMoveCostFlyRun() const { return _moveCostFlyRun; }
+	/// Multiplier of fly "strafe" cost.
+	ArmorMoveCost getMoveCostFlyStrafe() const { return _moveCostFlyStrafe; }
+	/// Multiplier of fly up move cost.
+	ArmorMoveCost getMoveCostFlyUp() const { return _moveCostFlyUp; }
+	/// Multiplier of fly down move cost.
+	ArmorMoveCost getMoveCostFlyDown() const { return _moveCostFlyDown; }
+	/// Multiplier of moving using GravLift cost.
+	ArmorMoveCost getMoveCostGravLift() const { return _moveCostGravLift; }
 
 	/// Gets the move sound id. Overrides default/unit's move sound. To be used in BattleUnit constructors only too!
 	int getMoveSound() const;
@@ -243,6 +336,7 @@ public:
 	ForcedTorso getForcedTorso() const;
 	/// Gets built-in weapons of armor.
 	const std::vector<const RuleItem*> &getBuiltInWeapons() const;
+
 	/// Gets max view distance at dark in BattleScape.
 	int getVisibilityAtDark() const;
 	/// Gets max view distance at day in BattleScape.
@@ -263,6 +357,9 @@ public:
 	int getPsiCamouflage() const;
 	/// Gets personal light radius;
 	int getPersonalLight() const;
+	/// Gets if unit should be always visible.
+	bool isAlwaysVisible() const { return _isAlwaysVisible; }
+
 	/// Gets how armor react to fear.
 	bool getFearImmune(bool def = false) const;
 	/// Gets how armor react to bleeding.
@@ -317,6 +414,8 @@ public:
 	bool allowsRunning(bool def = true) const;
 	/// Can you strafe while wearing this armor?
 	bool allowsStrafing(bool def = true) const;
+	/// Can you sneak while wearing this armor?
+	bool allowsSneaking(bool def = true) const;
 	/// Can you kneel while wearing this armor?
 	bool allowsKneeling(bool def = true) const;
 	/// Can you move while wearing this armor?

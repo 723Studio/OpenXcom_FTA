@@ -107,10 +107,16 @@ SoldierBonusState::SoldierBonusState(Base *base, size_t soldier) : _base(base), 
 	_lstSummary->setVisible(false);
 
 	int visibilityAtDark = 0;
+	int frontArmor = 0, leftArmor = 0, rightArmor = 0, rearArmor = 0, underArmor = 0;
 	UnitStats stats;
 	bool timeRecovery = false, energyRecovery = false, moraleRecovery = false, healthRecovery = false, stunRecovery = false, manaRecovery = false;
 	for (auto bonusRule : *s->getBonuses(nullptr))
 	{
+		frontArmor += bonusRule->getFrontArmor();
+		leftArmor  += bonusRule->getLeftSideArmor();
+		rightArmor += bonusRule->getRightSideArmor();
+		rearArmor  += bonusRule->getRearArmor();
+		underArmor += bonusRule->getUnderArmor();
 		visibilityAtDark += bonusRule->getVisibilityAtDark();
 		stats += *bonusRule->getStats();
 		timeRecovery = timeRecovery || bonusRule->getTimeRecoveryRaw()->isModded();
@@ -144,6 +150,20 @@ SoldierBonusState::SoldierBonusState(Base *base, size_t soldier) : _base(base), 
 		_lstSummary->addRow(2, tr("STR_PSIONIC_STRENGTH").c_str(), std::to_string(stats.psiStrength).c_str());
 	if (stats.psiSkill != 0)
 		_lstSummary->addRow(2, tr("STR_PSIONIC_SKILL").c_str(), std::to_string(stats.psiSkill).c_str());
+	if (frontArmor != 0 || leftArmor != 0 || rightArmor != 0 || rearArmor != 0 || underArmor != 0)
+	{
+		_lstSummary->addRow(1, "");
+		if (frontArmor != 0)
+			_lstSummary->addRow(2, tr("STR_FRONT_ARMOR_UC").c_str(), std::to_string(frontArmor).c_str());
+		if (leftArmor != 0)
+			_lstSummary->addRow(2, tr("STR_LEFT_ARMOR_UC").c_str(), std::to_string(leftArmor).c_str());
+		if (rightArmor != 0)
+			_lstSummary->addRow(2, tr("STR_RIGHT_ARMOR_UC").c_str(), std::to_string(rightArmor).c_str());
+		if (rearArmor != 0)
+			_lstSummary->addRow(2, tr("STR_REAR_ARMOR_UC").c_str(), std::to_string(rearArmor).c_str());
+		if (underArmor != 0)
+			_lstSummary->addRow(2, tr("STR_UNDER_ARMOR_UC").c_str(), std::to_string(underArmor).c_str());
+	}
 	if (visibilityAtDark != 0)
 	{
 		_lstSummary->addRow(1, "");

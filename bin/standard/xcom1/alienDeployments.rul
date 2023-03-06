@@ -1,4 +1,12 @@
 alienDeployments:
+  - type: STR_CRAFT_DEPLOYMENT_PREVIEW
+    isHidden: true
+    width: 10
+    length: 10
+    height: 8
+    terrains:
+      - CULTA
+    script: STR_CRAFT_DEPLOYMENT_PREVIEW
   - type: STR_SMALL_SCOUT
     data:
       - alienRank: 5

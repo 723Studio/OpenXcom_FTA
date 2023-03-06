@@ -59,7 +59,7 @@ private:
 	void setDropdown(int options);
 public:
 	/// Creates a combo box with the specified size and position.
-	ComboBox(State *state, int width, int height, int x = 0, int y = 0, bool popupAboveButton = false);
+	ComboBox(State *state, int width, int height, int x = 0, int y = 0, bool popupAboveButton = false, bool hasScroll = true);
 	/// Cleans up the combo box.
 	~ComboBox();
 	/// Sets the X position of the surface.
@@ -98,7 +98,7 @@ public:
 	/// Handle arrow buttons.
 	void handle(Action *action, State *state) override;
 	/// Toggles the combo box state.
-	void toggle(bool first = false);
+	void toggle(bool first, bool listClick);
 	/// Hooks an action handler to when the slider changes.
 	void onChange(ActionHandler handler);
 	/// Hooks an action handler to moving the mouse in to the listbox when it is visible.

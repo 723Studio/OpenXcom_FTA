@@ -56,7 +56,8 @@ Ufo::Ufo(const RuleUfo *rules, int uniqueId, int hunterKillerPercentage, int hun
 	_inBattlescape(false), _mission(0), _trajectory(0),
 	_trajectoryPoint(0), _detected(false), _hyperDetected(false), _processedIntercept(false),
 	_shootingAt(0), _hitFrame(0), _fireCountdown(0), _escapeCountdown(0), _stats(), _shield(-1), _shieldRechargeHandle(0),
-	_tractorBeamSlowdown(0), _isHunterKiller(false), _isEscort(false), _huntMode(0), _huntBehavior(0), _isHunting(false), _isEscorting(false), _origWaypoint(0)
+	_tractorBeamSlowdown(0), _isHunterKiller(false), _isEscort(false), _huntMode(0), _huntBehavior(0),
+	_isHunting(false), _isEscorting(false), _softlockShotCounter(0), _origWaypoint(0)
 {
 	_stats = rules->getStats();
 	if (uniqueId != 0)
@@ -193,6 +194,7 @@ void Ufo::finishLoading(const YAML::Node &node, SavedGame &save)
 	_huntBehavior = node["huntBehavior"].as<int>(_huntBehavior);
 	_isHunting = node["isHunting"].as<bool>(_isHunting);
 	_isEscorting = node["isEscorting"].as<bool>(_isEscorting);
+	_softlockShotCounter = node["softlockShotCounter"].as<int>(_softlockShotCounter);
 
 	if (_isHunting)
 	{
@@ -304,6 +306,8 @@ YAML::Node Ufo::save(const ScriptGlobal *shared, bool newBattle) const
 		node["isHunting"] = _isHunting;
 	if (_isEscorting)
 		node["isEscorting"] = _isEscorting;
+	if (_softlockShotCounter > 0)
+		node["softlockShotCounter"] = _softlockShotCounter;
 	if (_origWaypoint)
 		node["origWaypoint"] = _origWaypoint->save();
 
@@ -1342,6 +1346,12 @@ void Ufo::ScriptRegister(ScriptParserBase* parser)
 	u.addField<&Ufo::_stats, &RuleUfoStats::getBase, &RuleCraftStats::shieldCapacity>("getShieldMax");
 	u.add<&Ufo::getShieldPercentage>("getShieldPercentage");
 
+	u.add<&Ufo::isHunterKiller>("isHunterKiller");
+	u.add<&Ufo::isHunting>("isHunting");
+	u.add<&Ufo::isEscorting>("isEscorting");
+	u.add<&Ufo::getHuntBehavior>("getHuntBehavior");
+	u.add<&Ufo::getHuntMode>("getHuntMode");
+
 	u.add<&Ufo::getDetected>("getDetected");
 	u.add<&Ufo::getHyperDetected>("getHyperDetected");
 
@@ -1368,7 +1378,8 @@ void Ufo::ScriptRegister(ScriptParserBase* parser)
 ModScript::DetectUfoFromBaseParser::DetectUfoFromBaseParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
 	"detection_type",
 	"detection_chance",
-	"ufo", "distance", "already_tracked", "radar_total_strength", "radar_max_distance", "hyperwave_total_strength", "hyperwave_max_distance", }
+	"ufo", "geoscape_game",
+	"distance", "already_tracked", "radar_total_strength", "radar_max_distance", "hyperwave_total_strength", "hyperwave_max_distance", }
 {
 	BindBase b { this };
 
@@ -1378,7 +1389,8 @@ ModScript::DetectUfoFromBaseParser::DetectUfoFromBaseParser(ScriptGlobal* shared
 ModScript::DetectUfoFromCraftParser::DetectUfoFromCraftParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
 	"detection_type",
 	"detection_chance",
-	"ufo", "craft", "distance", "already_tracked", "radar_total_strength", "radar_max_distance", }
+	"ufo", "geoscape_game", "craft",
+	"distance", "already_tracked", "radar_total_strength", "radar_max_distance", }
 {
 	BindBase b { this };
 

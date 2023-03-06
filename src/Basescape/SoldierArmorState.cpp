@@ -28,6 +28,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
+#include "../Interface/TextEdit.h"
 #include "../Interface/TextList.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/Armor.h"
@@ -72,6 +73,7 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 
 	// Create objects
 	_window = new Window(this, 192, 160, 64, 20, POPUP_BOTH);
+	_btnQuickSearch = new TextEdit(this, 48, 9, 80, 43);
 	_btnCancel = new TextButton(140, 16, 90, 156);
 	_txtTitle = new Text(182, 16, 69, 28);
 	_txtType = new Text(90, 9, 80, 52);
@@ -90,6 +92,7 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	}
 
 	add(_window, "window", "soldierArmor");
+	add(_btnQuickSearch, "button", "soldierArmor");
 	add(_btnCancel, "button", "soldierArmor");
 	add(_txtTitle, "text", "soldierArmor");
 	add(_txtType, "text", "soldierArmor");
@@ -147,6 +150,12 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 			_armors.push_back(ArmorItem(a->getType(), tr(a->getType()), ss.str()));
 		}
 	}
+
+	_btnQuickSearch->setText(""); // redraw
+	_btnQuickSearch->onEnter((ActionHandler)&SoldierArmorState::btnQuickSearchApply);
+	_btnQuickSearch->setVisible(false);
+
+	_btnCancel->onKeyboardRelease((ActionHandler)&SoldierArmorState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
 	_armorOrder = ARMOR_SORT_NONE;
 	updateArrows();
@@ -216,10 +225,30 @@ void SoldierArmorState::sortList()
 */
 void SoldierArmorState::updateList()
 {
+	std::string searchString = _btnQuickSearch->getText();
+	Unicode::upperCase(searchString);
+
 	_lstArmor->clearList();
+	_indices.clear();
+
+	int index = -1;
 	for (std::vector<ArmorItem>::const_iterator j = _armors.begin(); j != _armors.end(); ++j)
 	{
+		++index;
+
+		// quick search
+		if (!searchString.empty())
+		{
+			std::string armorName = (*j).name;
+			Unicode::upperCase(armorName);
+			if (armorName.find(searchString) == std::string::npos)
+			{
+				continue;
+			}
+		}
+
 		_lstArmor->addRow(2, (*j).name.c_str(), (*j).quantity.c_str());
+		_indices.push_back(index);
 	}
 }
 
@@ -233,6 +262,34 @@ void SoldierArmorState::btnCancelClick(Action *)
 }
 
 /**
+ * Quick search toggle.
+ * @param action Pointer to an action.
+ */
+void SoldierArmorState::btnQuickSearchToggle(Action* action)
+{
+	if (_btnQuickSearch->getVisible())
+	{
+		_btnQuickSearch->setText("");
+		_btnQuickSearch->setVisible(false);
+		btnQuickSearchApply(action);
+	}
+	else
+	{
+		_btnQuickSearch->setVisible(true);
+		_btnQuickSearch->setFocus(true);
+	}
+}
+
+/**
+ * Quick search.
+ * @param action Pointer to an action.
+ */
+void SoldierArmorState::btnQuickSearchApply(Action*)
+{
+	updateList();
+}
+
+/**
  * Equips the armor on the soldier and returns to the previous screen.
  * @param action Pointer to an action.
  */
@@ -240,11 +297,11 @@ void SoldierArmorState::lstArmorClick(Action *)
 {
 	Soldier *soldier = _base->getSoldiers()->at(_soldier);
 	Armor *prev = soldier->getArmor();
-	Armor *next = _game->getMod()->getArmor(_armors[_lstArmor->getSelectedRow()].type);
+	Armor *next = _game->getMod()->getArmor(_armors[_indices[_lstArmor->getSelectedRow()]].type);
 	Craft *craft = soldier->getCraft();
-	if (craft != 0 && next->getSize() > prev->getSize())
+	if (craft)
 	{
-		if (craft->getNumVehicles() >= craft->getRules()->getVehicles() || craft->getSpaceAvailable() < 3)
+		if (!craft->validateArmorChange(prev->getSize(), next->getSize()))
 		{
 			_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			return;
@@ -261,7 +318,7 @@ void SoldierArmorState::lstArmorClick(Action *)
 			_base->getStorageItems()->removeItem(next->getStoreItem());
 		}
 	}
-	soldier->setArmor(next);
+	soldier->setArmor(next, true);
 	_game->getSavedGame()->setLastSelectedArmor(next->getType());
 
 	_game->popState();
@@ -273,7 +330,7 @@ void SoldierArmorState::lstArmorClick(Action *)
 */
 void SoldierArmorState::lstArmorClickMiddle(Action *action)
 {
-	auto armor = _game->getMod()->getArmor(_armors[_lstArmor->getSelectedRow()].type, true);
+	auto armor = _game->getMod()->getArmor(_armors[_indices[_lstArmor->getSelectedRow()]].type, true);
 	std::string articleId = armor->getUfopediaType();
 	Ufopaedia::openArticle(_game, articleId);
 }

@@ -18,6 +18,7 @@
  */
 #include "RuleCraftWeapon.h"
 #include "Mod.h"
+#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -26,12 +27,12 @@ namespace OpenXcom
  * Creates a blank ruleset for a certain type of craft weapon.
  * @param type String defining the type.
  */
-RuleCraftWeapon::RuleCraftWeapon(const std::string &type) :
-	_type(type), _sprite(-1), _sound(-1), _damage(0), _shieldDamageModifier(100), _range(0), _accuracy(0),
-	_reloadCautious(0), _reloadStandard(0), _reloadAggressive(0), _ammoMax(0),
-	_rearmRate(1), _projectileSpeed(0), _weaponType(0), _projectileType(CWPT_CANNON_ROUND),
-	_stats(), _underwaterOnly(false),
-	_tractorBeamPower(0), _hidePediaInfo(false)
+RuleCraftWeapon::RuleCraftWeapon(const std::string &type)
+	: _type(type), _sprite(-1), _sound(-1), _damage(0), _shieldDamageModifier(100), _range(0), _accuracy(0),
+	  _reloadCautious(0), _reloadStandard(0), _reloadAggressive(0), _ammoMax(0),
+	  _rearmRate(1), _projectileSpeed(0), _weaponType(0), _projectileType(CWPT_CANNON_ROUND), _projectileSubType(CWPST_CANNON),
+	  _stats(), _underwaterOnly(false),
+	  _tractorBeamPower(0), _hidePediaInfo(false), _statisticalBulletSaving(false)
 {
 }
 
@@ -79,6 +80,7 @@ void RuleCraftWeapon::load(const YAML::Node &node, Mod *mod)
 	_ammoMax = node["ammoMax"].as<int>(_ammoMax);
 	_rearmRate = node["rearmRate"].as<int>(_rearmRate);
 	_projectileType = (CraftWeaponProjectileType)node["projectileType"].as<int>(_projectileType);
+	_projectileSubType = (CraftWeaponProjectileSubType)node["projectileSubType"].as<int>(_projectileSubType);
 	_projectileSpeed = node["projectileSpeed"].as<int>(_projectileSpeed);
 	_launcherName = node["launcher"].as<std::string>(_launcherName);
 	_clipName = node["clip"].as<std::string>(_clipName);
@@ -86,6 +88,7 @@ void RuleCraftWeapon::load(const YAML::Node &node, Mod *mod)
 	_underwaterOnly = node["underwaterOnly"].as<bool>(_underwaterOnly);
 	_tractorBeamPower = node["tractorBeamPower"].as<int>(_tractorBeamPower);
 	_hidePediaInfo = node["hidePediaInfo"].as<bool>(_hidePediaInfo);
+	_statisticalBulletSaving = node["bulletSaving"].as<bool>(_statisticalBulletSaving);
 }
 
 
@@ -98,6 +101,21 @@ void RuleCraftWeapon::afterLoad(const Mod* mod)
 	mod->linkRule(_clip, _clipName);
 
 
+	if (_projectileType < CWPT_LASER_BEAM && _damage > 0)
+	{
+		if (_projectileSpeed <= 0)
+		{
+			throw Exception("Missile-like craft weapons (with 'damage' > 0) must have a positive 'projectileSpeed'.");
+		}
+		else if (_projectileSpeed <= 4 && _range > 10)
+		{
+			Log(LOG_WARNING) << "Missile speed for " << _type << " is very low! Depending on craft approach speed, the missile may seem not moving, or even moving backwards. Speed: " << _projectileSpeed << "; range: " << _range;
+		}
+		else if (_projectileSpeed <= 5 && _range > 20)
+		{
+			Log(LOG_INFO) << "Missile speed for " << _type << " is quite low. Depending on craft approach speed, the missile may seem moving very slowly. Speed: " << _projectileSpeed << "; range: " << _range;
+		}
+	}
 	if (_launcher == nullptr)
 	{
 		throw Exception("Launcher item is required for a craft weapon");

@@ -31,8 +31,8 @@ namespace OpenXcom
 RuleMissionScript::RuleMissionScript(const std::string &type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _label(0), _executionOdds(100),
 	_targetBaseOdds(0), _minDifficulty(0), _maxRuns(-1), _avoidRepeats(0), _delay(0), _randomDelay(0),
-	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
-	_useTable(true), _siteType(false), _allowedProcessor(0), _spawnGap(0), _randomSpawnGap(0)
+	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _allowedProcessor(0), _spawnGap(0),
+	_randomSpawnGap(0), _minFunds(INT64_MIN), _maxFunds(INT64_MAX), _counterMin(INT_MIN), _counterMax(INT_MAX), _useTable(true), _siteType(false)
 {
 }
 
@@ -83,8 +83,12 @@ void RuleMissionScript::load(const YAML::Node& node)
 	_requiredReputation = node["requiredReputation"].as<std::map<std::string, int>>(_requiredReputation);
 	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
 	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
+	_missionVarName = node["missionVarName"].as<std::string>(_missionVarName);
+	_missionMarkerName = node["missionMarkerName"].as<std::string>(_missionMarkerName);
+	_counterMin = node["counterMin"].as<int>(_counterMin);
+	_counterMax = node["counterMax"].as<int>(_counterMax);
 	_conditionals = node["conditionals"].as<std::vector<int> >(_conditionals);
-	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only
+	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only
 	_spawnGap = node["spawnGap"].as<int>(_spawnGap);
 	_randomSpawnGap = node["randomSpawnGap"].as<int>(_randomSpawnGap);
 	if (const YAML::Node &weights = node["missionWeights"])
@@ -117,6 +121,8 @@ void RuleMissionScript::load(const YAML::Node& node)
 	_researchTriggers = node["researchTriggers"].as<std::map<std::string, bool> >(_researchTriggers);
 	_itemTriggers = node["itemTriggers"].as<std::map<std::string, bool> >(_itemTriggers);
 	_facilityTriggers = node["facilityTriggers"].as<std::map<std::string, bool> >(_facilityTriggers);
+	_xcomBaseInRegionTriggers = node["xcomBaseInRegionTriggers"].as<std::map<std::string, bool> >(_xcomBaseInRegionTriggers);
+	_xcomBaseInCountryTriggers = node["xcomBaseInCountryTriggers"].as<std::map<std::string, bool> >(_xcomBaseInCountryTriggers);
 	_useTable = node["useTable"].as<bool>(_useTable);
 	if (_varName.empty() && (_maxRuns > 0 || _avoidRepeats > 0))
 	{
@@ -263,6 +269,22 @@ const std::map<std::string, bool> &RuleMissionScript::getItemTriggers() const
 const std::map<std::string, bool> &RuleMissionScript::getFacilityTriggers() const
 {
 	return _facilityTriggers;
+}
+
+/**
+ * @return a list of xcom base triggers that govern execution of this script.
+ */
+const std::map<std::string, bool> &RuleMissionScript::getXcomBaseInRegionTriggers() const
+{
+	return _xcomBaseInRegionTriggers;
+}
+
+/**
+ * @return a list of xcom base triggers that govern execution of this script.
+ */
+const std::map<std::string, bool> &RuleMissionScript::getXcomBaseInCountryTriggers() const
+{
+	return _xcomBaseInCountryTriggers;
 }
 
 /**

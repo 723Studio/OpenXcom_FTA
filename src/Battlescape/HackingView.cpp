@@ -24,13 +24,6 @@
 namespace OpenXcom
 {
 
-struct Point
-{
-	Sint16 x, y;
-	Point(Sint16 x, Sint16 y) : x(x), y(y) {}
-};
-
-
 constexpr int hackingGridStartX{ 66 };
 constexpr int hackingGridStartY{ 29 };
 constexpr int hackingNodeOffsetX{ 18 };

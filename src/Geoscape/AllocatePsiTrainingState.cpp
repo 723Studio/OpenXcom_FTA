@@ -34,7 +34,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
-#include "../Mod/Mod.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Basescape/SoldierSortUtil.h"
 #include <algorithm>
 #include "../Engine/Unicode.h"
@@ -86,6 +86,7 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	_btnOk->onMouseClick((ActionHandler)&AllocatePsiTrainingState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&AllocatePsiTrainingState::btnOkClick, Options::keyCancel);
 	_btnOk->onKeyboardPress((ActionHandler)&AllocatePsiTrainingState::btnDeassignAllSoldiersClick, Options::keyRemoveSoldiersFromTraining);
+	_btnOk->onKeyboardPress((ActionHandler)&AllocatePsiTrainingState::btnAssignAllSoldiersClick, Options::keyAddSoldiersToTraining);
 
 	_btnPlus->setText("+");
 	_btnPlus->setPressed(false);
@@ -169,9 +170,8 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	_cbxSortBy->onChange((ActionHandler)&AllocatePsiTrainingState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
-	_lstSoldiers->setArrowColumn(240, ARROW_VERTICAL);
-	_lstSoldiers->setColumns(4, 114, 80, 62, 30);
+	_lstSoldiers->setArrowColumn(238, ARROW_VERTICAL);
+	_lstSoldiers->setColumns(4, 114, 80, 66, 40);
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(2);
@@ -321,7 +321,27 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 		{
 			ssSkl << "0/+0";
 		}
-		if ((*s)->isInPsiTraining())
+		if ((*s)->getRules()->getTrainingStatCaps().psiSkill <= 0)
+		{
+			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_NO_WOUNDED").c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+			if ((*s)->isInPsiTraining())
+			{
+				_labSpace++;
+				(*s)->setPsiTraining(false);
+			}
+		}
+		else if ((*s)->isFullyPsiTrained())
+		{
+			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_NO_DONE").c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+			if ((*s)->isInPsiTraining())
+			{
+				_labSpace++;
+				(*s)->setPsiTraining(false);
+			}
+		}
+		else if ((*s)->isInPsiTraining())
 		{
 			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_YES").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
@@ -338,6 +358,7 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 		}
 		row++;
 	}
+	_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);
 	_lstSoldiers->draw();
@@ -462,14 +483,22 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 	}
 
 	_sel = _lstSoldiers->getSelectedRow();
-	Soldier* selected = _base->getSoldiers()->at(_sel);
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		if ((selected->getCovertOperation() != 0) || selected->hasPendingTransformation())
+		auto* s = _base->getSoldiers()->at(_sel);
+		if (s->getRules()->getTrainingStatCaps().psiSkill <= 0)
 		{
-			return;
+			// noop
 		}
-		if (!selected->isInPsiTraining())
+		else if (s->isFullyPsiTrained())
+		{
+			// can't put fully psi-trained soldiers back into psi training
+		}
+		else if (s->getCovertOperation() != 0)
+		{
+			// soldier is out for covert operation
+		}
+		else if (!s->isInPsiTraining())
 		{
 			if (_base->getUsedPsiLabs() < _base->getAvailablePsiLabs())
 			{
@@ -477,7 +506,7 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 				_lstSoldiers->setRowColor(_sel, _lstSoldiers->getSecondaryColor());
 				_labSpace--;
 				_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
-				selected->setPsiTraining(true);
+				s->setPsiTraining(true);
 			}
 		}
 		else
@@ -486,7 +515,7 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 			_lstSoldiers->setRowColor(_sel, _lstSoldiers->getColor());
 			_labSpace++;
 			_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
-			selected->setPsiTraining(false);
+			s->setPsiTraining(false);
 		}
 	}
 }
@@ -531,11 +560,51 @@ void AllocatePsiTrainingState::btnDeassignAllSoldiersClick(Action* action)
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
 		(*i)->setPsiTraining(false);
-		_lstSoldiers->setCellText(row, 3, tr("STR_NO"));
+		if ((*i)->getRules()->getTrainingStatCaps().psiSkill <= 0)
+		{
+			_lstSoldiers->setCellText(row, 3, tr("STR_NO_WOUNDED"));
+		}
+		else if ((*i)->isFullyPsiTrained())
+		{
+			_lstSoldiers->setCellText(row, 3, tr("STR_NO_DONE"));
+		}
+		else
+		{
+			_lstSoldiers->setCellText(row, 3, tr("STR_NO"));
+		}
 		_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		row++;
 	}
 	_labSpace = _base->getAvailablePsiLabs() - _base->getUsedPsiLabs();
+	_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
+}
+
+/**
+ * Adds all soldiers to Psi Training.
+ * @param action Pointer to an action.
+ */
+void AllocatePsiTrainingState::btnAssignAllSoldiersClick(Action* action)
+{
+	int row = 0;
+	for (auto* s : *_base->getSoldiers())
+	{
+		if (s->getRules()->getTrainingStatCaps().psiSkill <= 0)
+		{
+			// noop
+		}
+		else if (s->isFullyPsiTrained())
+		{
+			// can't put fully psi-trained soldiers back into psi training
+		}
+		else if (_labSpace > 0 && !s->isInPsiTraining())
+		{
+			_lstSoldiers->setCellText(row, 3, tr("STR_YES"));
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			_labSpace--;
+			s->setPsiTraining(true);
+		}
+		row++;
+	}
 	_txtRemaining->setText(tr("STR_REMAINING_PSI_LAB_CAPACITY").arg(_labSpace));
 }
 

@@ -71,6 +71,8 @@ private:
 	/// Draws the number in item stack.
 	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
 	void updateUnitItems();
+	/// Play a sound.
+	void playSound(int sound);
 public:
 	/// Creates a new inventory view at the specified position and size.
 	Inventory(Game *game, int width, int height, int x = 0, int y = 0, bool base = false);

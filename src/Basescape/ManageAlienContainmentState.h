@@ -42,7 +42,7 @@ private:
 	Base *_base;
 	int _prisonType;
 	OptionsOrigin _origin;
-	TextButton *_btnOk, *_btnSell, *_btnCancel, *_btnTransfer;
+	TextButton *_btnOk, *_btnSell, *_btnCancel, *_btnTransfer, *_btnCleanup;
 	Window *_window;
 	Text *_txtTitle, *_txtUsed, *_txtAvailable, *_txtValueOfSales, *_txtItem, *_txtLiveAliens, *_txtDeadAliens, *_txtInterrogatedAliens;
 	TextList *_lstAliens;
@@ -77,6 +77,8 @@ public:
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Transfer button.
 	void btnTransferClick(Action *action);
+	/// Handler for clicking the Cleanup button.
+	void btnCleanupClick(Action *action);
 	/// Handler for pressing an Increase arrow in the list.
 	void lstItemsLeftArrowPress(Action *action);
 	/// Handler for releasing an Increase arrow in the list.

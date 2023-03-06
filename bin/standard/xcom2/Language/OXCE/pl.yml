@@ -20,4 +20,8 @@ pl:
   GMGEO6: "Ekran globu: motyw #6"
   GMTACDRY: "Motyw z ekranu bitwy (ląd)"
   GMTACWET: "Motyw z ekranu bitwy (woda)"
+  GMINTER0: "Motyw walki powietrznej #0"
+  GMINTER1: "Motyw walki powietrznej #1"
+  GMINTER2: "Motyw walki powietrznej #2"
+  GMINTER3: "Motyw walki powietrznej #3"
   STR_SHOT_TYPE_AUTO: "Seria (x{0})"

@@ -73,6 +73,8 @@ public:
 
 	/// Gets the month on which the base spawned.
 	int getStartMonth() const { return _startMonth; }
+	/// Sets the month on which the base spawned.
+	void setStartMonth(int startMonth) { _startMonth = startMonth; }
 	/// Gets the number of minutes passed since the last hunt mission was generated.
 	int getMinutesSinceLastHuntMissionGeneration() const;
 	/// Sets the number of minutes passed since the last hunt mission was generated.

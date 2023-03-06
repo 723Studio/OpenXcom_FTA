@@ -53,11 +53,11 @@ private:
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtSales, *_txtFunds, *_txtQuantity, *_txtSell, *_txtValue, *_txtSpaceUsed;
-	ComboBox *_cbxCategory;
+	ComboBox *_cbxCategory, *_cbxSortBy;
 	TextList *_lstItems;
 	std::vector<TransferRow> _items;
 	std::vector<int> _rows;
-	std::vector<std::string> _cats;
+	std::vector<std::string> _cats, _sortingTypes;
 	size_t _vanillaCategories;
 	size_t _sel;
 	int _total;
@@ -68,6 +68,8 @@ private:
 	bool _reset;
 	bool _sellAllButOne;
 	bool _delayedInitDone;
+	TransferSortDirection _previousSort, _currentSort;
+
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -125,6 +127,8 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+	/// Handler for changing the category filter.
+	void cbxSortByChange(Action *action);
 };
 
 }

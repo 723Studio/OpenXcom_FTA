@@ -90,6 +90,7 @@ private:
 	bool _followProjectile;
 	bool _projectileInFOV;
 	std::list<Explosion *> _explosions;
+	std::vector<std::vector<Particle>> _vaporParticlesInit;
 	std::vector<std::vector<Particle>> _vaporParticles;
 	bool _explosionInFOV, _launch;
 	BattlescapeMessage *_message;
@@ -98,7 +99,7 @@ private:
 	std::vector<Position> _waypoints;
 	bool _unitDying, _smoothCamera, _smoothingEngaged, _flashScreen;
 	int _bgColor;
-	PathPreview _previewSetting;
+	bool _previewSettingArrows, _previewSettingTu, _previewSettingEnergy;
 	Text *_txtAccuracy;
 	SurfaceSet *_projectileSet;
 
@@ -199,8 +200,10 @@ public:
 	/// Modify shade for fading
 	int reShade(Tile *tile);
 	/// toggle the night-vision mode
+	void enableNightVision();
 	void toggleNightVision();
 	void toggleDebugVisionMode();
+	void persistToggles();
 	/// Resets obstacle markers.
 	void resetObstacles();
 	/// Enables obstacle markers.

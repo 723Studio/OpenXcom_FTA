@@ -26,7 +26,7 @@
 namespace OpenXcom
 {
 enum TextDirection { DIRECTION_LTR, DIRECTION_RTL };
-enum TextWrapping { WRAP_WORDS, WRAP_LETTERS };
+enum TextWrapping { WRAP_AUTO, WRAP_WORDS, WRAP_LETTERS };
 
 class TextList;
 class ExtraStrings;
@@ -41,7 +41,6 @@ enum SoldierGender : char;
 class Language
 {
 private:
-	std::string _id;
 	std::map<std::string, LocalizedText> _strings;
 	LanguagePlurality *_handler;
 	TextDirection _direction;
@@ -65,10 +64,6 @@ public:
 	void loadFile(const FileMap::FileRecord *frec);
 	/// Loads the language from a ruleset file.
 	void loadRule(const std::map<std::string, ExtraStrings*> &extraStrings, const std::string &id);
-	/// Gets the language's ID.
-	std::string getId() const;
-	/// Gets the language's name.
-	std::string getName() const;
 	/// Outputs the language to a HTML file.
 	void toHtml(const std::string &filename) const;
 	/// Get a localized text.

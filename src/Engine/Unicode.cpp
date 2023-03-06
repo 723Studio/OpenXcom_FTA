@@ -20,8 +20,11 @@
 #include <sstream>
 #include <locale>
 #include <stdexcept>
-#include <algorithm>
+#include <cstring>
+#include <assert.h>
 #include "Logger.h"
+#include "Exception.h"
+
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -30,10 +33,14 @@
 #include <windows.h>
 #include <shlwapi.h>
 #else
+
+#if defined(__CYGWIN__)
+#include <algorithm>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #endif
 
 namespace OpenXcom
@@ -257,55 +264,339 @@ std::wstring convMbToWc(const std::string &src, unsigned int cp)
 #endif
 }
 
+
+/**
+ * Iterate pointer range without checking for correct range
+ * @param begin_ptr In/Out current pointer
+ * @param end End pointer
+ * @param callback_1 callback for ASCII char
+ * @param callback_2 callback for 2byte UTF code point
+ * @param callback_3 callback for 3byte UTF code point
+ * @param callback_4 callback for 4byte UTF code point
+ * @return True if iteration reach end, False if function find UTF8 error or callback request ending
+ */
+template<typename F1, typename F2, typename F3, typename F4>
+static bool iterateUTF8CodePointsUnsafe(const unsigned char** begin_ptr, const unsigned char* end, F1 callback_1, F2 callback_2, F3 callback_3, F4 callback_4)
+{
+	auto begin = *begin_ptr;
+	while (begin < end) {
+		if (begin[0] < 0x80) {
+			/* 0xxxxxxx */
+			if (false == callback_1(begin[0]))
+			{
+				*begin_ptr = begin;
+				return false;
+			}
+			begin += 1;
+		} else if ((begin[0] & 0xe0) == 0xc0) {
+			/* 110XXXXx 10xxxxxx */
+			if ((begin[1] & 0xc0) != 0x80 ||
+				false == callback_2(begin[0], begin[1]))
+			{
+				*begin_ptr = begin;
+				return false;
+			}
+			begin += 2;
+		} else if ((begin[0] & 0xf0) == 0xe0) {
+			/* 1110XXXX 10Xxxxxx 10xxxxxx */
+			if ((begin[1] & 0xc0) != 0x80 ||
+				(begin[2] & 0xc0) != 0x80 ||
+				false == callback_3(begin[0], begin[1], begin[2]))
+			{
+				*begin_ptr = begin;
+				return false;
+			}
+			begin +=  3;
+		} else if ((begin[0] & 0xf8) == 0xf0) {
+			/* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
+			if ((begin[1] & 0xc0) != 0x80 ||
+				(begin[2] & 0xc0) != 0x80 ||
+				(begin[3] & 0xc0) != 0x80 ||
+				false == callback_4(begin[0], begin[1], begin[2], begin[3]))
+			{
+				*begin_ptr = begin;
+				return false;
+			}
+			begin += 4;
+		} else {
+			*begin_ptr = begin;
+			return false;
+		}
+	}
+
+	*begin_ptr = begin;
+	return true;
+}
+
+/**
+ * Iterate pointer range, function is checking range for correction
+ * @param begin_ptr In/Out current pointer
+ * @param end End pointer
+ * @param callback_1 callback for ASCII char
+ * @param callback_2 callback for 2byte UTF code point
+ * @param callback_3 callback for 3byte UTF code point
+ * @param callback_4 callback for 4byte UTF code point
+ * @return True if iteration reach end, False if function find UTF8 error or callback request ending
+ */
+template<typename F1, typename F2, typename F3, typename F4>
+static bool iterateUTF8CodePoints(const unsigned char* begin, const unsigned char* end, F1 callback_1, F2 callback_2, F3 callback_3, F4 callback_4)
+{
+	assert(begin <= end && "Invalid UTF8 text pointers");
+
+	if (begin < end)
+	{
+		// we need buffer to avoid dereferencing memory after end of string
+		const auto fake_end = end - 3;
+		auto curr = begin;
+		if (false == iterateUTF8CodePointsUnsafe(&curr, fake_end, callback_1, callback_2, callback_3, callback_4))
+		{
+			return false;
+		}
+
+		if (curr != end)
+		{
+			// custom buffer for last 4 chars for case of corrupted UTF8
+			unsigned char buffer[8] = { };
+
+			const std::size_t tail_size = end - curr;
+			std::memcpy(buffer, curr, tail_size);
+			curr = buffer;
+			if (false == iterateUTF8CodePointsUnsafe(&curr, buffer + tail_size, callback_1, callback_2, callback_3, callback_4))
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 /**
  * Checks if UTF-8 string is well-formed.
  * @param ss candidate string
  * @return true if valid
  * @note based on https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c
  */
-bool isValidUTF8(const std::string& ss) {
-	std::basic_string<unsigned char> s((unsigned char *)ss.c_str());
-	s.append(4, 0); // we need to slap 4 bytes on the end of s or we can overrun it
-	size_t i = 0;
-	while ((i < ss.length()) && (s[i] != 0)) {
-		if (s[i] < 0x80) {
-			/* 0xxxxxxx */
-			i++;
-		} else if ((s[i+0] & 0xe0) == 0xc0) {
-			/* 110XXXXx 10xxxxxx */
-			if ((s[i+1] & 0xc0) != 0x80 || (s[i+0] & 0xfe) == 0xc0)	{	/* overlong? */
+bool isValidUTF8(const std::string& ss)
+{
+	if (false == iterateUTF8CodePoints(
+			reinterpret_cast<const unsigned char*>(ss.data()),
+			reinterpret_cast<const unsigned char*>(ss.data() + ss.size()),
+			[&](unsigned char s0)
+			{
+				/* 0xxxxxxx */
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1)
+			{
+				/* 110XXXXx 10xxxxxx */
+				if ((s0 & 0xfe) == 0xc0)	/* overlong? */
+				{
+					return false;
+				}
+
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2)
+			{
+				/* 1110XXXX 10Xxxxxx 10xxxxxx */
+				if ((s0 == 0xe0 && (s1 & 0xe0) == 0x80) ||		/* overlong? */
+					(s0 == 0xed && (s1 & 0xe0) == 0xa0) ||		/* surrogate? */
+					(s0 == 0xef && s1 == 0xbf &&
+					(s2 & 0xfe) == 0xbe))						/* U+FFFE or U+FFFF? */
+				{
+					return false;
+				}
+
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2, unsigned char s3)
+			{
+				/* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
+				if ((s0 == 0xf0 && (s1 & 0xf0) == 0x80) ||		/* overlong? */
+					(s0 == 0xf4 && s1 > 0x8f) || s0 > 0xf4) 	/* > U+10FFFF? */
+				{
+					return false;
+				}
+
+				return true;
+			}
+		)
+	)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Count code points in utf8 string.
+ * @param str Base string
+ * @return Number of utf8 codepoints in given string.
+ */
+std::size_t codePointLengthUTF8(const std::string &str)
+{
+	std::size_t size = 0;
+
+	if (false == iterateUTF8CodePoints(
+			reinterpret_cast<const unsigned char*>(str.data()),
+			reinterpret_cast<const unsigned char*>(str.data() + str.size()),
+			[&](unsigned char s0)
+			{
+				/* 0xxxxxxx */
+				size += 1;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1)
+			{
+				/* 110XXXXx 10xxxxxx */
+				size += 1;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2)
+			{
+				/* 1110XXXX 10Xxxxxx 10xxxxxx */
+				size += 1;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2, unsigned char s3)
+			{
+				/* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
+				size += 1;
+				return true;
+			}
+		)
+	)
+	{
+		throw Exception("Invalid utf8 string for length");
+	}
+
+	return size;
+}
+
+/**
+ * Substring based on code points in utf8 string.
+ * @param str Base string
+ * @param pos Start postion in codepoints, need be less or equal total number of code points in string.
+ * @param count Number of codepoints to return.
+ * @return utf8 substring from `str`.
+ */
+std::string codePointSubstrUTF8(const std::string &str, std::size_t pos, std::size_t count)
+{
+	bool found_end = false;
+	std::size_t curr = 0;
+	std::size_t byte_curr = 0;
+	std::size_t byte_begin = std::string::npos;
+	std::size_t byte_end = std::string::npos;
+
+	auto loop = [&]
+	{
+		if (byte_begin == std::string::npos)
+		{
+			if (pos == curr)
+			{
+				byte_begin = byte_curr;
+
+#if 0
+				// potential optimalization but it could propagate invalid bytes
+				if (count == std::string::npos)
+				{
+					found_end = true;
+					return false;
+				}
+#endif
+
+				if (count-- == 0)
+				{
+					found_end = true;
+					byte_end = byte_curr;
+					return false;
+				}
+			}
+		}
+		else
+		{
+			if (count-- == 0)
+			{
+				found_end = true;
+				byte_end = byte_curr;
 				return false;
-			} else {
-				i += 2;
 			}
-		} else if ((s[i] & 0xf0) == 0xe0) {
-			/* 1110XXXX 10Xxxxxx 10xxxxxx */
-			if ((s[i+1] & 0xc0) != 0x80 ||
-				(s[i+2] & 0xc0) != 0x80 ||
-				(s[i+0] == 0xe0 && (s[i+1] & 0xe0) == 0x80) ||		/* overlong? */
-				(s[i+0] == 0xed && (s[i+1] & 0xe0) == 0xa0) ||		/* surrogate? */
-				(s[i+0] == 0xef && s[i+1] == 0xbf &&
-				(s[i+2] & 0xfe) == 0xbe)) {							/* U+FFFE or U+FFFF? */
+		}
+
+		return true;
+	};
+
+	if (false == iterateUTF8CodePoints(
+			reinterpret_cast<const unsigned char*>(str.data()),
+			reinterpret_cast<const unsigned char*>(str.data() + str.size()),
+			[&](unsigned char s0)
+			{
+				/* 0xxxxxxx */
+				if (false == loop())
+				{
 					return false;
-			} else {
-				i += 3;
-			}
-		} else if ((s[0] & 0xf8) == 0xf0) {
-			/* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
-			if ((s[i+1] & 0xc0) != 0x80 ||
-				(s[i+2] & 0xc0) != 0x80 ||
-				(s[i+3] & 0xc0) != 0x80 ||
-				(s[i+0] == 0xf0 && (s[i+1] & 0xf0) == 0x80) ||		/* overlong? */
-				(s[i+0] == 0xf4 && s[i+1] > 0x8f) || s[i+0] > 0xf4) { 	/* > U+10FFFF? */
+				}
+
+				curr += 1;
+				byte_curr += 1;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1)
+			{
+				/* 110XXXXx 10xxxxxx */
+				if (false == loop())
+				{
 					return false;
-			} else {
-				i += 4;
+				}
+
+				curr += 1;
+				byte_curr += 2;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2)
+			{
+				/* 1110XXXX 10Xxxxxx 10xxxxxx */
+				if (false == loop())
+				{
+					return false;
+				}
+
+				curr += 1;
+				byte_curr += 3;
+				return true;
+			},
+			[&](unsigned char s0, unsigned char s1, unsigned char s2, unsigned char s3)
+			{
+				/* 11110XXX 10XXxxxx 10xxxxxx 10xxxxxx */
+				if (false == loop())
+				{
+					return false;
+				}
+
+				curr += 1;
+				byte_curr += 4;
+				return true;
 			}
-		} else {
-			return false;
+		)
+	)
+	{
+		// early end, check if we have invalid utf8
+		if (false == found_end)
+		{
+			throw Exception("Invalid utf8 string for substr");
 		}
 	}
-	return true;
+	else
+	{
+		// handle `pos == curr` after iterating all code points
+		loop();
+	}
+
+	// for big `count` we can do not find correct `byte_end`, it will be `npos` but it still should work
+	// in some cases for big `pos > curr` we have `byte_begin == std::string::npos` this will throw from `substr` and we want this.
+	return str.substr(byte_begin, byte_end - byte_begin);
 }
 
 /**
@@ -479,6 +770,121 @@ std::string formatPercentage(int value)
 	ss << value << "%";
 	return ss.str();
 }
+
+
+
+#ifdef OXCE_AUTO_TEST
+#define assert_throw(A) try { A; assert(false && "No throw from " #A ); } catch (...){ /*nothing*/ }
+
+static auto dummy = ([]
+{
+	assert(isValidUTF8("012345") == true);
+	assert(codePointLengthUTF8("012345") == 6);
+	assert(isValidUTF8("很烫烫的一锅汤") == true);
+	assert(codePointLengthUTF8("很烫烫的一锅汤") == 7);
+
+	assert(isValidUTF8("ÐðŁłŠšÝýÞþŽž") == true);
+	assert(codePointLengthUTF8("ÐðŁłŠšÝýÞþŽž") == 12);
+
+	assert(isValidUTF8("\xf0\x9f\x92\xa9") == true);
+	assert(codePointLengthUTF8("\xf0\x9f\x92\xa9") == 1);
+
+	assert(isValidUTF8("\x7f") == true);
+	assert(codePointLengthUTF8("\x7f") == 1);
+
+	assert(isValidUTF8("\xff") == false);
+	assert_throw(codePointLengthUTF8("\xff"));
+
+	assert(isValidUTF8("\x80") == false);
+	assert_throw(codePointLengthUTF8("\x80"));
+
+	assert(isValidUTF8("\xc5\x9b") == true);
+	assert(isValidUTF8("\xc5\xc5") == false);
+	assert(isValidUTF8("\xc5") == false);
+
+	assert(isValidUTF8("\xe5\xbe\x88") == true);
+	assert(isValidUTF8("\xe5\xbe") == false);
+	assert(isValidUTF8("\xe5") == false);
+
+	assert(isValidUTF8("\xc5\x9b\xe5\xbe\x88") == true);
+	assert(isValidUTF8("\xc5\x9b\xe5\xbe") == false);
+	assert(isValidUTF8("\xc5\x9b\xe5") == false);
+
+	assert(isValidUTF8("A\xc5\x9b\xe5\xbe\x88") == true);
+	assert(isValidUTF8("A\xc5\x9b\xe5\xbe") == false);
+	assert(isValidUTF8("A\xc5\x9b\xe5") == false);
+
+	assert(isValidUTF8("\xc4\x99\xc5\x9b\xe5\xbe\x88") == true);
+	assert(isValidUTF8("\xc4\x99\xc5\x9b\xe5\xbe") == false);
+	assert(isValidUTF8("\xc4\x99\xc5\x9b\xe5") == false);
+
+	assert(isValidUTF8("\xe5\xbe\x88    ") == true);
+	assert(isValidUTF8("\xe5\xbe     ") == false);
+	assert(isValidUTF8("\xe5    ") == false);
+
+	assert(isValidUTF8("    \xe5\xbe\x88") == true);
+	assert(isValidUTF8("    \xe5\xbe") == false);
+	assert(isValidUTF8("    \xe5") == false);
+
+	assert(isValidUTF8("\xe5\xbe\x88\xc4\x99") == true);
+	assert(isValidUTF8("\xe5\xbe\xc4\x99") == false);
+	assert(isValidUTF8("\xe5\xc4\x99") == false);
+
+	assert(isValidUTF8("\xf0\x9f\x92\xa9") == true);
+	assert(isValidUTF8("\xf0\x9f\x92") == false);
+	assert(isValidUTF8("\xf0\x9f") == false);
+	assert(isValidUTF8("\xf0") == false);
+
+	//handling of embedded zeros
+	assert(isValidUTF8(std::string{'\0','\0','\xc5','\x9b'}) == true);
+	assert(codePointLengthUTF8(std::string{'\0','\0','\xc5','\x9b'}) == 3);
+
+	assert(isValidUTF8(std::string{'\0','\0','\xc5'}) == false);
+	assert_throw(codePointLengthUTF8(std::string{'\0','\0','\xc5'}));
+
+
+	//test substr
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0) == std::string("很烫烫的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 1) == std::string("烫烫的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 2) == std::string("烫的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 3) == std::string("的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 4) == std::string("一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 5) == std::string("锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 6) == std::string("汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 7) == std::string(""));
+	assert_throw(codePointSubstrUTF8("很烫烫的一锅汤", 8));
+
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 8) == std::string("很烫烫的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 7) == std::string("很烫烫的一锅汤"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 6) == std::string("很烫烫的一锅"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 5) == std::string("很烫烫的一"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 4) == std::string("很烫烫的"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 3) == std::string("很烫烫"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 2) == std::string("很烫"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 1) == std::string("很"));
+	assert(codePointSubstrUTF8("很烫烫的一锅汤", 0, 0) == std::string(""));
+
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 0, 3) == std::string("ÐðŁ"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 3, 3) == std::string("łŠš"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 6, 3) == std::string("ÝýÞ"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 9, 3) == std::string("þŽž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 12, 3) == std::string(""));
+
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 11, 5) == std::string("ž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 10, 5) == std::string("Žž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 9, 5) == std::string("þŽž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 8, 5) == std::string("ÞþŽž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 7, 5) == std::string("ýÞþŽž"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 6, 5) == std::string("ÝýÞþŽ"));
+	assert(codePointSubstrUTF8("ÐðŁłŠšÝýÞþŽž", 5, 5) == std::string("šÝýÞþ"));
+
+	assert(codePointSubstrUTF8("012", 0, 1) == std::string("0"));
+	assert(codePointSubstrUTF8("012", 1, 1) == std::string("1"));
+	assert(codePointSubstrUTF8("012", 2, 1) == std::string("2"));
+
+	return 0;
+})();
+#endif
 
 }
 }

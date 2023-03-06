@@ -34,32 +34,39 @@ class RuleSoldierBonus;
 class RuleCommendations
 {
 private:
+	std::string _type;
 	std::map<std::string, std::vector<int> > _criteria;
 	std::vector<std::vector<std::pair<int, std::vector<std::string> > > > _killCriteria;
 	std::string _description;
 	int _sprite;
 	std::vector<std::string> _soldierBonusTypesNames;
 	std::vector<const RuleSoldierBonus*> _soldierBonusTypes;
+	std::vector<std::string> _missionMarkerNames; // these are not alien deployment type names!
+	std::vector<std::string> _missionTypeNames;   // these are not alien deployment type names!
 
 public:
 	/// Creates a blank commendation ruleset.
-	RuleCommendations();
+	RuleCommendations(const std::string& type);
 	/// Cleans up the commendation ruleset.
 	~RuleCommendations();
 	/// Loads commendation data from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::Node& node, const Mod* mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Get the commendation's description.
-	std::string getDescription() const;
+	const std::string& getDescription() const;
 	/// Get the commendation's award criteria.
-	std::map<std::string, std::vector<int> > *getCriteria();
+	const std::map<std::string, std::vector<int> > *getCriteria() const;
 	/// Get the commendation's award kill related criteria.
-	std::vector<std::vector<std::pair<int, std::vector<std::string> > > > *getKillCriteria();
+	const std::vector<std::vector<std::pair<int, std::vector<std::string> > > > *getKillCriteria() const;
 	/// Get the commendation's sprite.
 	int getSprite() const;
 	/// Gets the soldier bonus type corresponding to the commendation's decoration level.
 	const RuleSoldierBonus *getSoldierBonus(int decorationLevel) const;
+	/// Gets the commendation's mission marker filter.
+	const std::vector<std::string>& getMissionMarkerNames() const;
+	/// Gets the commendation's mission type filter.
+	const std::vector<std::string>& getMissionTypeNames() const;
 
 };
 

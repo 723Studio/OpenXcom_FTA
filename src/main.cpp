@@ -18,6 +18,7 @@
  */
 #include <sstream>
 #include <exception>
+#include <cassert>
 #include "version.h"
 #include "Engine/Exception.h"
 #include "Engine/Logger.h"
@@ -26,6 +27,7 @@
 #include "Engine/Options.h"
 #include "Engine/FileMap.h"
 #include "Menu/StartState.h"
+#include "Engine/Collections.h"
 
 /** @mainpage
  * @author OpenXcom Developers
@@ -147,4 +149,115 @@ namespace OpenXcom
 
 #ifdef __MORPHOS__
 const char Version[] = "$VER: OpenXCom " OPENXCOM_VERSION_SHORT " (" __AMIGADATE__  ")";
+#endif
+
+
+
+#ifdef OXCE_AUTO_TEST
+
+
+struct BadMove
+{
+	int i;
+
+	BadMove(int b)
+	{
+		i = b;
+	}
+	BadMove(BadMove&& b)
+	{
+		i = b.i;
+		b.i = {};
+	}
+	BadMove(const BadMove& b)
+	{
+		i = b.i;
+	}
+
+	BadMove& operator=(BadMove&& b)
+	{
+		i = {}; //this can reset other `b` too if we do not check for `this == &b`
+		i = b.i;
+		b.i = {}; //same there
+		return *this;
+	}
+
+	bool operator==(const BadMove& b) const
+	{
+		return i == b.i;
+	}
+};
+
+static auto dummy = ([]
+{
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { return i < 3; });
+		assert((v == std::vector<int>{ 3, 4 }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { return i > 2; });
+		assert((v == std::vector<int>{ 1, 2 }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { return i < 2 || i == 4; });
+		assert((v == std::vector<int>{ 2, 3 }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { if (i < 2 || i == 4) { return true; } else { i += 10; return false; } });
+		assert((v == std::vector<int>{ 12, 13 }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { return false; });
+		assert((v == std::vector<int>{ 1, 2, 3, 4 }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { return true; });
+		assert((v == std::vector<int>{ }));
+	}
+	{
+		std::vector<int> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](int& i) { i += 10; return false; });
+		assert((v == std::vector<int>{ 11, 12, 13, 14 }));
+	}
+
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { return i.i < 3; });
+		assert((v == std::vector<BadMove>{ 3, 4 }));
+	}
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { return i.i > 2; });
+		assert((v == std::vector<BadMove>{ 1, 2 }));
+	}
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { if (i.i < 2 || i.i == 4) { return true; } else { i.i += 10; return false; } });
+		assert((v == std::vector<BadMove>{ 12, 13 }));
+	}
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { return false; });
+		assert((v == std::vector<BadMove>{ 1, 2, 3, 4 }));
+	}
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { i.i += 10; return false; });
+		assert((v == std::vector<BadMove>{ 11, 12, 13, 14 }));
+	}
+	{
+		std::vector<BadMove> v = { 1, 2, 3, 4 };
+		Collections::removeIf(v, [](BadMove& i) { return true; });
+		assert((v == std::vector<BadMove>{ }));
+	}
+
+	return 0;
+})();
+
 #endif

@@ -21,7 +21,6 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
-#include <set>
 
 namespace OpenXcom
 {
@@ -34,6 +33,7 @@ class TextList;
 class ComboBox;
 class Timer;
 class Base;
+class CannotReequipState;
 class RuleItem;
 
 /**
@@ -44,6 +44,9 @@ class PurchaseState : public State
 {
 private:
 	Base *_base;
+	CannotReequipState *_parent;
+	bool _autoBuyDone;
+	std::map<RuleItem*, int> _missingItemsMap;
 
 	TextButton *_btnOk, *_btnCancel;
 	TextEdit *_btnQuickSearch;
@@ -67,11 +70,13 @@ private:
 	bool belongsToCategory(int sel, const std::string &cat) const;
 	/// Checks for hidden items
 	bool isHidden(int sel) const;
+	/// Checks for missing items
+	int getMissingQty(int sel) const;
 	/// Gets the row of the current selection.
 	TransferRow &getRow() { return _items[_rows[_sel]]; }
 public:
 	/// Creates the Purchase state.
-	PurchaseState(Base *base);
+	PurchaseState(Base *base, CannotReequipState *parent = nullptr);
 	/// Cleans up the Purchase state.
 	~PurchaseState();
 	/// Runs the timers.

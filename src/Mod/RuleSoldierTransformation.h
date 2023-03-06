@@ -34,7 +34,7 @@ class Mod;
 class RuleSoldierTransformation
 {
 private:
-	std::string _name;
+	std::string _name, _description;
 	std::vector<std::string > _requires, _requiredPreviousTransformations, _forbiddenPreviousTransformations;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	std::string _producedItem;
@@ -63,6 +63,8 @@ public:
 	void load(const YAML::Node& node, Mod* mod, int listOrder);
 	/// Gets the unique name id of the project
 	const std::string &getName() const;
+	/// Gets the description of the project
+	const std::string &getDescription() const { return _description; };
 	/// Gets the list weight of the project
 	int getListOrder() const;
 	/// Gets the list of research this project requires

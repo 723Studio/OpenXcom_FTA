@@ -33,8 +33,9 @@ class TextList;
 class RuleResearch;
 class RuleManufacture;
 class RuleBaseFacility;
+class RuleCraft;
 
-enum TTVMode { TTV_NONE, TTV_RESEARCH, TTV_MANUFACTURING, TTV_FACILITIES, TTV_ITEMS };
+enum TTVMode { TTV_NONE, TTV_RESEARCH, TTV_MANUFACTURING, TTV_FACILITIES, TTV_ITEMS, TTV_CRAFTS };
 
 /**
  * TechTreeViewer screen, where you can browse the Tech Tree.
@@ -53,7 +54,7 @@ private:
 	std::vector<std::string> _leftTopics, _rightTopics;
 	std::vector<TTVMode> _leftFlags, _rightFlags;
 	std::unordered_set<std::string> _disabledResearch;
-	std::unordered_set<std::string> _alreadyAvailableResearch, _alreadyAvailableManufacture, _alreadyAvailableFacilities;
+	std::unordered_set<std::string> _alreadyAvailableResearch, _alreadyAvailableManufacture, _alreadyAvailableFacilities, _alreadyAvailableCrafts;
 	std::unordered_set<std::string> _protectedItems, _alreadyAvailableItems;
 	void initLists();
 	void onSelectLeftTopic(Action *action);
@@ -61,7 +62,7 @@ private:
 	void onSelectFullTopic(Action *action);
 public:
 	/// Creates the Tech Tree Viewer state.
-	TechTreeViewerState(const RuleResearch *r = 0, const RuleManufacture *m = 0, const RuleBaseFacility *f = 0);
+	TechTreeViewerState(const RuleResearch *r = 0, const RuleManufacture *m = 0, const RuleBaseFacility *f = 0, const RuleCraft *c = 0);
 	/// Cleans up the Tech Tree Viewer state.
 	~TechTreeViewerState();
 	/// Initializes the state.
@@ -87,6 +88,8 @@ public:
 	bool isProtectedItem(const std::string &topic) const;
 	/// Is given protected item discovered/available for both purchase and usage/equipment?
 	bool isProtectedAndDiscoveredItem(const std::string &topic) const;
+	/// Is given craft discovered/available for both purchase and usage/equipment?
+	bool isDiscoveredCraft(const std::string &topic) const;
 };
 
 }

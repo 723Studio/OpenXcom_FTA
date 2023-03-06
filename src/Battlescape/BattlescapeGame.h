@@ -19,7 +19,6 @@
  */
 #include "Position.h"
 #include "../Mod/RuleItem.h"
-#include <SDL.h>
 #include <string>
 #include <list>
 #include <vector>
@@ -43,7 +42,7 @@ class RuleSkill;
 class BattleScript;
 class RuleTerrain;
 
-enum BattleActionMove { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2 };
+enum BattleActionMove : char { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2, BAM_SNEAK = 3, BAM_MISSILE = 4 };
 
 struct BattleActionCost : RuleItemUseCost
 {
@@ -78,7 +77,11 @@ struct BattleAction : BattleActionCost
 	bool targeting;
 	int value;
 	std::string result;
-	bool strafe, run, ignoreSpottedEnemies;
+	bool strafe = false;
+	bool run = false;
+	bool sneak = false;
+	bool ignoreSpottedEnemies = false;
+	bool kneel = false;
 	int diff;
 	int autoShotCounter;
 	Position cameraPosition;
@@ -91,12 +94,12 @@ struct BattleAction : BattleActionCost
 	int terrainMeleeTilePart = 0; // terrain melee
 
 	/// Default constructor
-	BattleAction() : target(-1, -1, -1), targeting(false), value(0), strafe(false), run(false), ignoreSpottedEnemies(false), diff(0), autoShotCounter(0), cameraPosition(0, 0, -1), desperate(false), finalFacing(-1), finalAction(false), number(0), sprayTargeting(false) { }
+	BattleAction() : target(-1, -1, -1), targeting(false), value(0), diff(0), autoShotCounter(0), cameraPosition(0, 0, -1), desperate(false), finalFacing(-1), finalAction(false), number(0), sprayTargeting(false) { }
 
 	/// Get move type
 	BattleActionMove getMoveType() const
 	{
-		return strafe ? BAM_STRAFE : run ? BAM_RUN : BAM_NORMAL;
+		return strafe ? BAM_STRAFE : run ? BAM_RUN : sneak ? BAM_SNEAK : BAM_NORMAL;
 	}
 };
 
@@ -167,7 +170,6 @@ private:
 	std::list<BattleState*> _states, _deleted;
 	bool _playerPanicHandled;
 	int _AIActionCounter;
-	int _itemObjectivesNumber;
 	BattleAction _currentAction;
 	bool _AISecondMove, _playedAggroSound;
 	bool _endTurnRequested;
@@ -193,7 +195,7 @@ private:
 	/// Gets valid blocks to process the battlescript command.
 	std::vector<std::pair<int, int>> getValidBlocks(BattleScript* command);
 	/// Spawn units as part of battlescript commands.
-	bool scriptSpawnUnit(BattleScript* command, std::vector<std::pair<int, int> > validBlock);
+	bool scriptSpawnUnit(BattleScript* command);
 	/// Display message fro the battlescript
 	void displayScriptMessage(BattleScript* command);
 public:
@@ -284,7 +286,7 @@ public:
 	/// Returns whether panic has been handled.
 	bool getPanicHandled() const { return _playerPanicHandled; }
 	/// Tries to find an item and pick it up if possible.
-	bool findItem(BattleAction *action, bool pickUpWeaponsMoreActively);
+	bool findItem(BattleAction *action, bool pickUpWeaponsMoreActively, bool& walkToItem);
 	/// Checks through all the items on the ground and picks one.
 	BattleItem *surveyItems(BattleAction *action, bool pickUpWeaponsMoreActively);
 	/// Evaluates if it's worthwhile to take this item.
@@ -297,7 +299,7 @@ public:
 	BattleActionType getReservedAction();
 	/// Tallies the living units, converting them if necessary.
 	bool isSurrendering(BattleUnit* bu);
-	/// Check count of units in diffrent state
+	/// Check count of units in different state
 	BattlescapeTally tallyUnits();
 	bool convertInfected();
 	/// Sets the kneel reservation setting.
@@ -318,6 +320,8 @@ public:
 	void playUnitResponseSound(BattleUnit *unit, int type);
 	/// Returns if we need to proceed battle and there would be more battle scripts to be processed.
 	bool scriptsToProcess();
+	/// Process weapon firing sound.
+	void processWeaponNoise();
 	/// Sets up a mission complete notification.
 	void missionComplete();
 	std::list<BattleState*> getStates();

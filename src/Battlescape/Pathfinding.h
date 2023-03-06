@@ -30,6 +30,9 @@ class Tile;
 class BattleUnit;
 struct BattleActionCost;
 
+enum BattleActionMove : char;
+
+
 /**
  * A utility class that calculates the shortest path between two points on the battlescape map.
  */
@@ -47,17 +50,23 @@ private:
 	BattleUnit *_unit;
 	bool _pathPreviewed;
 	bool _strafeMove;
-	int _totalTUCost;
-	bool _modifierUsed;
-	MovementType _movementType;
+	bool _ctrlUsed = false;
+	bool _altUsed = false;
+	PathfindingCost _totalTUCost;
+
 	/// Gets the node at certain position.
 	PathfindingNode *getNode(Position pos);
+
+	/// Gets movement type of unit or movement of missile.
+	MovementType getMovementType(const BattleUnit *unit, const BattleUnit *missileTarget, BattleActionMove bam) const;
 	/// Determines whether a tile blocks a certain movementType.
-	bool isBlocked(Tile *tile, const int part, BattleUnit *missileTarget, int bigWallExclusion = -1) const;
+	bool isBlocked(const BattleUnit *unit, const Tile *tile, const int part, BattleActionMove bam, const BattleUnit *missileTarget, int bigWallExclusion = -1) const;
+	/// Determines whether or not movement between start tile and end tile is possible in the direction.
+	bool isBlockedDirection(const BattleUnit *unit, Tile *startTile, const int direction, BattleActionMove bam, const BattleUnit *missileTarget) const;
 	/// Tries to find a straight line path between two positions.
-	bool bresenhamPath(Position origin, Position target, BattleUnit *missileTarget, bool sneak = false, int maxTUCost = 1000);
+	bool bresenhamPath(Position origin, Position target, BattleActionMove bam, const BattleUnit *missileTarget, bool sneak = false, int maxTUCost = 1000);
 	/// Tries to find a path between two positions.
-	bool aStarPath(Position origin, Position target, BattleUnit *missileTarget, bool sneak = false, int maxTUCost = 1000);
+	bool aStarPath(Position origin, Position target, BattleActionMove bam, const BattleUnit *missileTarget, bool sneak = false, int maxTUCost = 1000);
 	/// Determines whether a unit can fall down from this tile.
 	bool canFallDown(Tile *destinationTile) const;
 	/// Determines whether a unit can fall down from this tile.
@@ -67,7 +76,17 @@ public:
 	/// Determines whether the unit is going up a stairs.
 	bool isOnStairs(Position startPosition, Position endPosition) const;
 	/// Determines whether or not movement between start tile and end tile is possible in the direction.
-	bool isBlockedDirection(Tile *startTile, const int direction, BattleUnit *missileTarget);
+	bool isBlockedDirection(const BattleUnit *unit, Tile *startTile, const int direction) const;
+
+	/// Default move cost for tile that have floor with 0 cost.
+	static constexpr int DEFAULT_MOVE_COST = 4;
+	/// How much time units one move can have.
+	static constexpr int MAX_MOVE_COST = 100;
+	/// Fake cost representing invalid move.
+	static constexpr int INVALID_MOVE_COST = 255;
+	/// Fire penalty used in path search.
+	static constexpr int FIRE_PREVIEW_MOVE_COST = 32;
+
 	static const int DIR_UP = 8;
 	static const int DIR_DOWN = 9;
 	enum bigWallTypes{ BLOCK = 1, BIGWALLNESW, BIGWALLNWSE, BIGWALLWEST, BIGWALLNORTH, BIGWALLEAST, BIGWALLSOUTH, BIGWALLEASTANDSOUTH, BIGWALLWESTANDNORTH};
@@ -75,19 +94,20 @@ public:
 	static int red;
 	static int green;
 	static int yellow;
+
 	/// Creates a new Pathfinding class.
 	Pathfinding(SavedBattleGame *save);
 	/// Cleans up the Pathfinding.
 	~Pathfinding();
 	/// Calculates the shortest path.
-	void calculate(BattleUnit *unit, Position endPosition, BattleUnit *missileTarget = 0, int maxTUCost = 1000);
+	void calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget = 0, int maxTUCost = 1000);
 
 	/**
 	 * Converts direction to a vector. Direction starts north = 0 and goes clockwise.
 	 * @param direction Source direction.
 	 * @param vector Pointer to a position (which acts as a vector).
 	 */
-	static void directionToVector(int direction, Position *vector)
+	constexpr static void directionToVector(int direction, Position *vector)
 	{
 		vector->x = dir_x[direction];
 		vector->y = dir_y[direction];
@@ -99,44 +119,60 @@ public:
 	 * @param vector Pointer to a position (which acts as a vector).
 	 * @param dir Resulting direction.
 	 */
-	static void vectorToDirection(const Position &vector, int &dir)
+	constexpr static void vectorToDirection(Position vector, int &dir)
 	{
-		dir = -1;
+		dir = vectorToDirection(vector);
+	}
+
+	/**
+	 * Converts direction to a vector. Direction starts north = 0 and goes clockwise.
+	 * @param vector Pointer to a position (which acts as a vector).
+	 * @return dir Resulting direction.
+	 */
+	constexpr static int vectorToDirection(Position vector)
+	{
 		for (int i = 0; i < 8; ++i)
 		{
 			if (dir_x[i] == vector.x && dir_y[i] == vector.y)
 			{
-				dir = i;
-				return;
+				return i;
 			}
 		}
+		return -1;
 	}
+
 	/// Checks whether a path is ready and gives the first direction.
 	int getStartDirection() const;
 	/// Dequeues a direction.
 	int dequeuePath();
 	/// Gets the TU cost to move from 1 tile to the other.
-	int getTUCost(Position startPosition, int direction, Position *endPosition, BattleUnit *unit, BattleUnit *target, bool missile);
+	PathfindingStep getTUCost(Position startPosition, int direction, const BattleUnit *unit, const BattleUnit *missileTarget, BattleActionMove bam) const;
 	/// Aborts the current path.
 	void abortPath();
 	/// Gets the strafe move setting.
 	bool getStrafeMove() const;
 	/// Checks, for the up/down button, if the movement is valid.
-	bool validateUpDown(BattleUnit *bu, const Position& startPosition, const int direction, bool missile = false) const;
+	bool validateUpDown(const BattleUnit *bu, const Position& startPosition, const int direction, bool missile = false) const;
+
 	/// Previews the path.
 	bool previewPath(bool bRemove = false);
 	/// Removes the path preview.
 	bool removePreview();
+	/// Refresh the path preview.
+	void refreshPath();
+
 	/// Sets _unit in order to abuse low-level pathfinding functions from outside the class.
 	void setUnit(BattleUnit *unit);
 	/// Gets all reachable tiles, based on cost.
-	std::vector<int> findReachable(BattleUnit *unit, const BattleActionCost &cost);
+	std::vector<int> findReachable(const BattleUnit *unit, const BattleActionCost &cost);
 	/// Gets _totalTUCost; finds out whether we can hike somewhere in this turn or not.
-	int getTotalTUCost() const { return _totalTUCost; }
+	int getTotalTUCost() const { return _totalTUCost.time; }
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.
-	bool isModifierUsed() const;
+	bool isModifierCtrlUsed() const { return _ctrlUsed; }
+	/// Gets the modifier setting.
+	bool isModifierAltUsed() const { return _altUsed; }
 	/// Gets a reference to the path.
 	const std::vector<int> &getPath() const;
 	/// Makes a copy to the path.

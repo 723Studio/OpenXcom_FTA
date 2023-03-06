@@ -1,4 +1,8 @@
 mapScripts: #done
+  - type: STR_CRAFT_DEPLOYMENT_PREVIEW
+    commands:
+    - type: addCraft
+    - type: fillArea
   - type: DEFAULT #ATLAN_MU_GAL_VOLCANO
     commands:
     - type: addUFO

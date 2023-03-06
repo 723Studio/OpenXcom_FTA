@@ -26,7 +26,6 @@
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
@@ -45,7 +44,6 @@
 #include "../Engine/Options.h"
 #include "../fmath.h"
 #include "../Mod/RuleInterface.h"
-#include "../Mod/RuleCraftWeapon.h"
 #include "../Mod/Armor.h"
 #include "../Interface/ComboBox.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -62,7 +60,8 @@ namespace OpenXcom
  */
 TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingState *debriefingState) :
 	_baseFrom(baseFrom), _baseTo(baseTo), _debriefingState(debriefingState),
-	_sel(0), _total(0), _pQty(0), _cQty(0), _aQty(0), _iQty(0.0), _distance(0.0), _ammoColor(0)
+	_sel(0), _total(0), _pQty(0), _cQty(0), _aQty(0), _iQty(0.0), _distance(0.0), _ammoColor(0),
+	_previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER), _errorShown(false)
 {
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -118,7 +117,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	_txtAmountDestination->setWordWrap(true);
 
 	_lstItems->setArrowColumn(193, ARROW_VERTICAL);
-	_lstItems->setColumns(4, 162, 58, 40, 20);
+	_lstItems->setColumns(4, 162, 58, 40, 27);
 	_lstItems->setSelectable(true);
 	_lstItems->setBackground(_window);
 	_lstItems->setMargin(2);
@@ -140,7 +139,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		if (_debriefingState) break;
 		if ((*i)->getCraft() == 0 && (*i)->getCovertOperation() == 0)
 		{
-			TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), (int)(5 * _distance), 1, 0, 0 };
+			TransferRow row = { TRANSFER_SOLDIER, (*i), (*i)->getName(true), (int)(5 * _distance), 1, 0, 0, 1, -4, 0, 0, (int)(5 * _distance) };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -154,7 +153,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		if (_debriefingState) break;
 		if ((*i)->getStatus() != "STR_OUT" || (Options::canTransferCraftsWhileAirborne && (*i)->getFuel() >= (*i)->getFuelLimit(_baseTo)))
 		{
-			TransferRow row = { TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()),  (int)(25 * _distance), 1, 0, 0 };
+			TransferRow row = { TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()),  (int)(25 * _distance), 1, 0, 0, 1, -3, 0, 0, (int)(25 * _distance) };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -165,7 +164,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	}
 	if (_baseFrom->getAvailableScientists() > 0 && _debriefingState == 0)
 	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"),  (int)(5 * _distance), _baseFrom->getAvailableScientists(), _baseTo->getAvailableScientists(), 0 };
+		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"),  (int)(5 * _distance), _baseFrom->getAvailableScientists(), _baseTo->getAvailableScientists(), 0, _baseFrom->getAvailableScientists(), -2, 0, 0, _baseFrom->getAvailableScientists() * (int)(5 * _distance) };
 		_items.push_back(row);
 		std::string cat = getCategory(_items.size() - 1);
 		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -175,7 +174,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	}
 	if (_baseFrom->getAvailableEngineers() > 0 && _debriefingState == 0)
 	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"),  (int)(5 * _distance), _baseFrom->getAvailableEngineers(), _baseTo->getAvailableEngineers(), 0 };
+		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"),  (int)(5 * _distance), _baseFrom->getAvailableEngineers(), _baseTo->getAvailableEngineers(), 0, _baseFrom->getAvailableScientists(), -1, 0, 0, _baseFrom->getAvailableEngineers() * (int)(5 * _distance) };
 		_items.push_back(row);
 		std::string cat = getCategory(_items.size() - 1);
 		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -194,7 +193,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		}
 		if (qty > 0)
 		{
-			TransferRow row = { TRANSFER_ITEM, rule, tr(*i),  (int)(1 * _distance), qty, _baseTo->getStorageItems()->getItem(*i), 0 };
+			TransferRow row = { TRANSFER_ITEM, rule, tr(*i),  (int)(1 * _distance), qty, _baseTo->getStorageItems()->getItem(*i), 0, qty, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), qty * (int)(1 * _distance) };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -253,6 +252,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 
 	_cbxCategory->setOptions(_cats, true);
 	_cbxCategory->onChange((ActionHandler)&TransferItemsState::cbxCategoryChange);
+	_cbxCategory->onKeyboardPress((ActionHandler)&TransferItemsState::btnTransferAllClick, Options::keyTransferAll);
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&TransferItemsState::btnQuickSearchApply);
@@ -395,6 +395,18 @@ void TransferItemsState::updateList()
 	bool categoryUnassigned = (cat == "STR_UNASSIGNED");
 	bool specialCategory = allItems || onlyItemsAtDestination;
 
+	if (_previousSort != _currentSort)
+	{
+		switch (_currentSort)
+		{
+		case TransferSortDirection::BY_TOTAL_COST: std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.totalCost > b.totalCost; }); break;
+		case TransferSortDirection::BY_UNIT_COST:  std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.cost > b.cost; }); break;
+		case TransferSortDirection::BY_TOTAL_SIZE: std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.totalSize > b.totalSize; }); break;
+		case TransferSortDirection::BY_UNIT_SIZE:  std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.size > b.size; }); break;
+		default:                                   std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.listOrder < b.listOrder; }); break;
+		}
+	}
+
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
@@ -478,7 +490,7 @@ void TransferItemsState::btnOkClick(Action *)
 		// But only check the base whose available space is decreasing.
 		double freeStoresTo = _baseTo->getAvailableStores() - _baseTo->getUsedStores() - _iQty;
 		double freeStoresFrom = _baseFrom->getAvailableStores() - _baseFrom->getUsedStores() + _iQty;
-		if (_iQty > 0.0 ? freeStoresTo < 0.0 : freeStoresFrom < 0.0)
+		if (_iQty > 0.0 ? freeStoresTo < -0.00001 : freeStoresFrom < -0.00001)
 		{
 			RuleInterface *menuInterface = _game->getMod()->getInterface("transferMenu");
 			_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_STORE_SPACE"), _palette, menuInterface->getElement("errorMessage")->color, "BACK13.SCR", menuInterface->getElement("errorPalette")->color));
@@ -613,6 +625,39 @@ void TransferItemsState::btnCancelClick(Action *)
 {
 	_game->popState();
 	_game->popState();
+}
+
+/**
+ * Increase all items to max, i.e. transfer everything.
+ * @param action Pointer to an action.
+ */
+void TransferItemsState::btnTransferAllClick(Action *)
+{
+	bool allItemsSelected = true;
+	for (size_t i = 0; i < _lstItems->getTexts(); ++i)
+	{
+		if (_items[_rows[i]].type == TRANSFER_ITEM && _items[_rows[i]].amount < _items[_rows[i]].qtySrc)
+		{
+			allItemsSelected = false;
+			break;
+		}
+	}
+
+	size_t backup = _sel;
+	_errorShown = false;
+	for (size_t i = 0; i < _lstItems->getTexts(); ++i)
+	{
+		if (_items[_rows[i]].type == TRANSFER_ITEM)
+		{
+			_sel = i;
+			allItemsSelected ? decreaseByValue(INT_MAX) : increaseByValue(INT_MAX);
+			if (_errorShown)
+			{
+				break; // stop on first error
+			}
+		}
+	}
+	_sel = backup;
 }
 
 /**
@@ -794,7 +839,7 @@ void TransferItemsState::increaseByValue(int change)
 		{
 			errorMessage = tr("STR_NO_FREE_HANGARS_FOR_TRANSFER");
 		}
-		else if (craft->getNumSoldiers() > 0 && _pQty + craft->getNumSoldiers() > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
+		else if (craft->getNumTotalSoldiers() > 0 && _pQty + craft->getNumTotalSoldiers() > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
 		{
 			errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
 		}
@@ -838,7 +883,7 @@ void TransferItemsState::increaseByValue(int change)
 			break;
 		case TRANSFER_CRAFT:
 			_cQty++;
-			_pQty += craft->getNumSoldiers();
+			_pQty += craft->getNumTotalSoldiers();
 			_iQty += craft->getTotalItemStorageSize(_game->getMod());
 			getRow().amount++;
 			if (!Options::canTransferCraftsWhileAirborne || craft->getStatus() != "STR_OUT")
@@ -877,6 +922,7 @@ void TransferItemsState::increaseByValue(int change)
 		_timerInc->stop();
 		RuleInterface *menuInterface = _game->getMod()->getInterface("transferMenu");
 		_game->pushState(new ErrorMessageState(errorMessage, _palette, menuInterface->getElement("errorMessage")->color, "BACK13.SCR", menuInterface->getElement("errorPalette")->color));
+		_errorShown = true;
 	}
 }
 
@@ -910,7 +956,7 @@ void TransferItemsState::decreaseByValue(int change)
 	case TRANSFER_CRAFT:
 		craft = (Craft*)getRow().rule;
 		_cQty--;
-		_pQty -= craft->getNumSoldiers();
+		_pQty -= craft->getNumTotalSoldiers();
 		_iQty -= craft->getTotalItemStorageSize(_game->getMod());
 		break;
 	case TRANSFER_ITEM:
@@ -991,6 +1037,21 @@ double TransferItemsState::getDistance() const
 */
 void TransferItemsState::cbxCategoryChange(Action *)
 {
+	_previousSort = _currentSort;
+
+	if (_game->isCtrlPressed())
+	{
+		_currentSort = _game->isShiftPressed() ? TransferSortDirection::BY_UNIT_SIZE : TransferSortDirection::BY_TOTAL_SIZE;
+	}
+	else if (_game->isAltPressed())
+	{
+		_currentSort = _game->isShiftPressed() ? TransferSortDirection::BY_UNIT_COST : TransferSortDirection::BY_TOTAL_COST;
+	}
+	else
+	{
+		_currentSort = TransferSortDirection::BY_LIST_ORDER;
+	}
+
 	updateList();
 }
 

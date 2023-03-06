@@ -44,7 +44,7 @@ private:
 	std::vector<Soldier *> *_filteredListOfSoldiers;
 	Window *_window;
 	TextEdit *_edtSoldier;
-	Text *_txtCost, *_txtTransferTime, *_txtRecoveryTime, *_txtRequiredItems, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
+	Text *_txtDescription, *_txtCost, *_txtTransferTime, *_txtRecoveryTime, *_txtRequiredItems, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
 	TextList *_lstRequiredItems, *_lstStatChanges;
 	TextButton *_btnCancel, *_btnLeftArrow, *_btnRightArrow, *_btnStart;
 

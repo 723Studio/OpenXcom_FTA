@@ -32,6 +32,7 @@ class Window;
 class Action;
 class SavedBattleGame;
 class RuleInterface;
+class Sound;
 
 enum SoldierGender : char;
 
@@ -55,6 +56,7 @@ protected:
 	InteractiveSurface *_modal;
 	RuleInterface *_ruleInterface;
 	RuleInterface *_ruleInterfaceParent;
+	const Sound* _customSound;
 
 	SDL_Color _palette[256];
 	Uint8 _cursorColor;

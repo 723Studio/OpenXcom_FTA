@@ -31,6 +31,7 @@
 #include "Exception.h"
 #include "Logger.h"
 #include "CrossPlatform.h"
+#include "../Menu/ModConfirmExtendedState.h"
 #include "FileMap.h"
 #include "Screen.h"
 
@@ -139,6 +140,7 @@ void create()
 	_info.push_back(OptionInfo("preferredMusic", (int*)&preferredMusic, MUSIC_AUTO));
 	_info.push_back(OptionInfo("preferredSound", (int*)&preferredSound, SOUND_AUTO));
 	_info.push_back(OptionInfo("preferredVideo", (int*)&preferredVideo, VIDEO_FMV));
+	_info.push_back(OptionInfo("wordwrap", (int*)&wordwrap, WRAP_AUTO));
 	_info.push_back(OptionInfo("musicAlwaysLoop", &musicAlwaysLoop, false));
 	_info.push_back(OptionInfo("touchEnabled", &touchEnabled, false));
 	_info.push_back(OptionInfo("rootWindowedMode", &rootWindowedMode, false));
@@ -179,7 +181,7 @@ void create()
 	_info.push_back(OptionInfo("allowBuildingQueue", &allowBuildingQueue, false, "STR_ALLOWBUILDINGQUEUE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("craftLaunchAlways", &craftLaunchAlways, false, "STR_CRAFTLAUNCHALWAYS", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("storageLimitsEnforced", &storageLimitsEnforced, false, "STR_STORAGELIMITSENFORCED", "STR_GEOSCAPE"));
-	_info.push_back(OptionInfo("containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo("containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_FTA"));
 	_info.push_back(OptionInfo("canSellLiveAliens", &canSellLiveAliens, false, "STR_CANSELLLIVEALIENS", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("anytimePsiTraining", &anytimePsiTraining, false, "STR_ANYTIMEPSITRAINING", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("globeSeasons", &globeSeasons, false, "STR_GLOBESEASONS", "STR_GEOSCAPE"));
@@ -216,6 +218,7 @@ void create()
 #else
 	_info.push_back(OptionInfo("oxceLinks", &oxceLinks, false, "STR_OXCE_LINKS", "STR_OXCE"));
 #endif
+	_info.push_back(OptionInfo("oxceAlternateCraftEquipmentManagement", &oxceAlternateCraftEquipmentManagement, false, "STR_ALTERNATE_CRAFT_EQUIPMENT_MANAGEMENT", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_OXCE"));
 	_info.push_back(OptionInfo("oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_OXCE"));
@@ -231,13 +234,19 @@ void create()
 #else
 	_info.push_back(OptionInfo("oxceFatFingerLinks", &oxceFatFingerLinks, false));
 #endif
+	_info.push_back(OptionInfo("oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
 	_info.push_back(OptionInfo("oxceHighlightNewTopicsHidden", &oxceHighlightNewTopicsHidden, true));
 	_info.push_back(OptionInfo("oxceInterceptGuiMaintenanceTimeHidden", &oxceInterceptGuiMaintenanceTimeHidden, 2));
 	_info.push_back(OptionInfo("oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true));
 	_info.push_back(OptionInfo("oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true));
 	_info.push_back(OptionInfo("oxceEnablePaletteFlickerFix", &oxceEnablePaletteFlickerFix, false));
+	_info.push_back(OptionInfo("oxceMaxEquipmentLayoutTemplates", &oxceMaxEquipmentLayoutTemplates, 20));
 	_info.push_back(OptionInfo("oxcePersonalLayoutIncludingArmor", &oxcePersonalLayoutIncludingArmor, true));
 	_info.push_back(OptionInfo("oxceManufactureFilterSuppliesOK", &oxceManufactureFilterSuppliesOK, false));
+	_info.push_back(OptionInfo("oxceTogglePersonalLightType", &oxceTogglePersonalLightType, 1)); // per battle
+	_info.push_back(OptionInfo("oxceToggleNightVisionType", &oxceToggleNightVisionType, 1));     // per battle
+	_info.push_back(OptionInfo("oxceToggleBrightnessType", &oxceToggleBrightnessType, 0));       // not persisted
+	_info.push_back(OptionInfo("oxceModValidationLevel", &oxceModValidationLevel, (int)LOG_WARNING));
 
 	_info.push_back(OptionInfo("oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
 	_info.push_back(OptionInfo("oxceListVFSContents", &oxceListVFSContents, false));
@@ -283,6 +292,7 @@ void create()
 	_info.push_back(OptionInfo("keyGeoIntercept", &keyGeoIntercept, SDLK_i, "STR_INTERCEPT", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("keyGeoBases", &keyGeoBases, SDLK_b, "STR_BASES", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("keyGeoGraphs", &keyGeoGraphs, SDLK_g, "STR_GRAPHS", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo("keyGeoDiplomacy", &keyDiplomacy, SDLK_d, "STR_DIPLOMACY_UC", "STR_FTA"));
 	_info.push_back(OptionInfo("keyGeoUfopedia", &keyGeoUfopedia, SDLK_u, "STR_UFOPAEDIA_UC", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("keyGeoOptions", &keyGeoOptions, SDLK_ESCAPE, "STR_OPTIONS_UC", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo("keyGeoFunding", &keyGeoFunding, SDLK_f, "STR_FUNDING_UC", "STR_GEOSCAPE"));
@@ -350,6 +360,7 @@ void create()
 	_info.push_back(OptionInfo("keyBasescapeTransfer", &keyBasescapeTransfer, SDLK_t, "STR_TRANSFER_UC", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyBasescapePurchase", &keyBasescapePurchase, SDLK_p, "STR_PURCHASE_RECRUIT", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyBasescapeSell", &keyBasescapeSell, SDLK_l, "STR_SELL_SACK_UC", "STR_OXCE"));
+	_info.push_back(OptionInfo("keyBasescapeCovertOperations", &keyBasescapeCovertOperations, SDLK_c, "STR_COVERT_OPERATIONS_UC", "STR_FTA"));
 
 	_info.push_back(OptionInfo("keyGeoDailyPilotExperience", &keyGeoDailyPilotExperience, SDLK_e, "STR_DAILY_PILOT_EXPERIENCE", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyGeoUfoTracker", &keyGeoUfoTracker, SDLK_t, "STR_UFO_TRACKER", "STR_OXCE"));
@@ -366,12 +377,14 @@ void create()
 	_info.push_back(OptionInfo("keyMarkAllAsSeen", &keyMarkAllAsSeen, SDLK_x, "STR_MARK_ALL_AS_SEEN", "STR_OXCE"));
 	_info.push_back(OptionInfo("keySellAll", &keySellAll, SDLK_x, "STR_SELL_ALL", "STR_OXCE"));
 	_info.push_back(OptionInfo("keySellAllButOne", &keySellAllButOne, SDLK_z, "STR_SELL_ALL_BUT_ONE", "STR_OXCE"));
+	_info.push_back(OptionInfo("keyTransferAll", &keyTransferAll, SDLK_x, "STR_TRANSFER_ALL", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveSoldiersFromAllCrafts", &keyRemoveSoldiersFromAllCrafts, SDLK_x, "STR_REMOVE_SOLDIERS_FROM_ALL_CRAFTS", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveSoldiersFromCraft", &keyRemoveSoldiersFromCraft, SDLK_z, "STR_REMOVE_SOLDIERS_FROM_CRAFT", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveEquipmentFromCraft", &keyRemoveEquipmentFromCraft, SDLK_x, "STR_REMOVE_EQUIPMENT_FROM_CRAFT", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveArmorFromAllCrafts", &keyRemoveArmorFromAllCrafts, SDLK_x, "STR_REMOVE_ARMOR_FROM_ALL_CRAFTS", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveArmorFromCraft", &keyRemoveArmorFromCraft, SDLK_z, "STR_REMOVE_ARMOR_FROM_CRAFT", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyRemoveSoldiersFromTraining", &keyRemoveSoldiersFromTraining, SDLK_x, "STR_REMOVE_SOLDIERS_FROM_TRAINING", "STR_OXCE"));
+	_info.push_back(OptionInfo("keyAddSoldiersToTraining", &keyAddSoldiersToTraining, SDLK_z, "STR_ADD_SOLDIERS_TO_TRAINING", "STR_OXCE"));
 
 	_info.push_back(OptionInfo("keyInventoryArmor", &keyInventoryArmor, SDLK_a, "STR_INVENTORY_ARMOR", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyInventoryAvatar", &keyInventoryAvatar, SDLK_m, "STR_INVENTORY_AVATAR", "STR_OXCE"));
@@ -382,6 +395,7 @@ void create()
 	_info.push_back(OptionInfo("keyInvLoadPersonalEquipment", &keyInvLoadPersonalEquipment, SDLK_l, "STR_LOAD_PERSONAL_EQUIPMENT", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyInvShowPersonalEquipment", &keyInvShowPersonalEquipment, SDLK_p, "STR_PERSONAL_EQUIPMENT", "STR_OXCE"));
 
+	_info.push_back(OptionInfo("keyBattleShowLayers", &keyBattleShowLayers, SDLK_UNKNOWN, "STR_MULTI_LEVEL_VIEW", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyBattleUseSpecial", &keyBattleUseSpecial, SDLK_w, "STR_USE_SPECIAL_ITEM", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyBattleActionItem1", &keyBattleActionItem1, SDLK_1, "STR_ACTION_ITEM_1", "STR_OXCE"));
 	_info.push_back(OptionInfo("keyBattleActionItem2", &keyBattleActionItem2, SDLK_2, "STR_ACTION_ITEM_2", "STR_OXCE"));
@@ -445,8 +459,9 @@ static void _setDefaultMods()
 
 /**
  * Resets the options back to their defaults.
+ * @param includeMods Reset mods to default as well.
  */
-void resetDefault()
+void resetDefault(bool includeMods)
 {
 	for (std::vector<OptionInfo>::iterator i = _info.begin(); i != _info.end(); ++i)
 	{
@@ -454,10 +469,13 @@ void resetDefault()
 	}
 	backupDisplay();
 
-	mods.clear();
-	if (!_dataList.empty())
+	if (includeMods)
 	{
-		_setDefaultMods();
+		mods.clear();
+		if (!_dataList.empty())
+		{
+			_setDefaultMods();
+		}
 	}
 }
 
@@ -604,14 +622,14 @@ bool init()
 	if (showHelp())
 		return false;
 	create();
-	resetDefault();
+	resetDefault(true);
 	loadArgs();
 	setFolders();
 	_setDefaultMods();
 	updateOptions();
 
 	// set up the logging reportingLevel
-#ifdef _DEBUG
+#ifndef NDEBUG
 	Logger::reportingLevel() = LOG_DEBUG;
 #else
 	Logger::reportingLevel() = LOG_INFO;
@@ -655,7 +673,7 @@ bool init()
 // called from the dos screen state (StartState)
 void refreshMods()
 {
-	if (reload)
+	if (Options::reload)
 	{
 		_masterMod = "";
 	}
@@ -827,19 +845,47 @@ void updateMods()
 	FileMap::clear(false, Options::oxceEmbeddedOnly);
 
 	refreshMods();
-	FileMap::setup(getActiveMods(), Options::oxceEmbeddedOnly);
+
+	// check active mods that don't meet the enforced OXCE requirements
+	auto masterInf = getActiveMasterInfo();
+	auto activeModsList = getActiveMods();
+	bool forceQuit = false;
+	for (auto modInf : activeModsList)
+	{
+		if (ModConfirmExtendedState::isModNotValid(modInf, masterInf))
+		{
+			Log(LOG_ERROR) << "- " << modInf->getId() << " v" << modInf->getVersion();
+			if (!modInf->isEngineOk())
+			{
+				forceQuit = true;
+				if (modInf->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+				{
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require OXC " << modInf->getRequiredExtendedEngine() << " engine to run";
+				}
+				else
+				{
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
+				}
+			}
+			if (!modInf->isParentMasterOk(masterInf))
+			{
+				Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require version " << modInf->getRequiredMasterVersion() << " of master mod to run (current one is " << masterInf->getVersion() << ")";
+			}
+		}
+	}
+	if (forceQuit)
+	{
+		throw Exception("Incompatible mods are active. Please upgrade OpenXcom.");
+	}
+
+	FileMap::setup(activeModsList, Options::oxceEmbeddedOnly);
 	userSplitMasters();
 
-	// report active mods that don't meet the minimum OXCE requirements
 	Log(LOG_INFO) << "Active mods:";
 	auto activeMods = getActiveMods();
 	for (auto modInf : activeMods)
 	{
 		Log(LOG_INFO) << "- " << modInf->getId() << " v" << modInf->getVersion();
-		if (!modInf->isVersionOk())
-		{
-			Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' requires at least OXCE v" << modInf->getRequiredExtendedVersion();
-		}
 	}
 }
 
@@ -868,6 +914,14 @@ bool isPasswordCorrect()
 std::string getActiveMaster()
 {
 	return _masterMod;
+}
+
+/**
+ * Gets the master mod info.
+ */
+const ModInfo* getActiveMasterInfo()
+{
+	return &_modInfos.at(_masterMod);
 }
 
 bool getLoadLastSave()

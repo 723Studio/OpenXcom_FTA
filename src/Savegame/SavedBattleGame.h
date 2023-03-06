@@ -22,6 +22,7 @@
 #include <yaml-cpp/yaml.h>
 #include "Tile.h"
 #include "../Mod/AlienDeployment.h"
+#include "../Mod/RuleCraft.h"
 
 namespace OpenXcom
 {
@@ -35,6 +36,7 @@ class BattlescapeGame;
 class Position;
 class Pathfinding;
 class TileEngine;
+class RuleStartingCondition;
 class RuleEnviroEffects;
 class BattleItem;
 class BattleObject;
@@ -42,12 +44,14 @@ class BattleUnit;
 class Mod;
 class State;
 class ItemContainer;
+class Craft;
 class RuleItem;
 class RuleObject;
 class AlienDeployment;
 class Ufo;
 class HitLog;
 enum HitLogEntryType : int;
+struct BattlescapeTally;
 
 /**
  * The battlescape data that gets written to disk when the game is saved.
@@ -63,6 +67,11 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 
 private:
+	bool _isPreview;
+	SDL_Rect _craftPos;
+	int _craftZ;
+	Craft* _craftForPreview;
+	std::vector<Position> _craftTiles;
 	BattlescapeState *_battleState;
 	Mod *_rule;
 	int _mapsize_x, _mapsize_y, _mapsize_z;
@@ -77,12 +86,14 @@ private:
 	Pathfinding *_pathfinding;
 	TileEngine *_tileEngine;
 	std::string _missionType, _strTarget, _strCraftOrBase, _alienCustomDeploy, _alienCustomMission;
+	std::string _lastUsedMapScript;
 	std::string _reinforcementsDeployment, _reinforcementsRace;
 	int _reinforcementsItemLevel;
 	std::map<std::string, int> _reinforcementsMemory;
 	std::vector< std::vector<int> > _reinforcementsBlocks;
 	std::vector< std::vector<std::string> > _flattenedMapTerrainNames;
 	std::vector< std::vector<std::string> > _flattenedMapBlockNames;
+	const RuleStartingCondition *_startingCondition;
 	const RuleEnviroEffects *_enviroEffects;
 	bool _ecEnabledFriendly, _ecEnabledHostile, _ecEnabledNeutral;
 	int _globalShade;
@@ -92,6 +103,7 @@ private:
 	bool _nameDisplay;
 	bool _debugMode, _bughuntMode;
 	bool _aborted;
+	bool _stealthMission;
 	bool _baseCraftInventory = false;
 	int _itemId;
 	EscapeType _vipEscapeType;
@@ -115,6 +127,8 @@ private:
 	ChronoTrigger _chronoTrigger;
 	int _alarmLvl;
 	bool _beforeGame;
+	bool _togglePersonalLight, _toggleNightVision;
+	int _toggleBrightness;
 	std::string _hiddenMovementBackground;
 	std::map<std::string, int> _battleScriptVars;
 	HitLog *_hitLog;
@@ -127,7 +141,7 @@ private:
 	void updateAlarm();
 public:
 	/// Creates a new battle save, based on the current generic save.
-	SavedBattleGame(Mod *rule, Language *lang);
+	SavedBattleGame(Mod *rule, Language *lang, bool isPreview = false);
 	/// Cleans up the saved game.
 	~SavedBattleGame();
 	/// Loads a saved battle game from YAML.
@@ -150,8 +164,6 @@ public:
 	void setMissionTarget(const std::string& missionTarget) { _strTarget = missionTarget; }
 	/// Gets the mission target.
 	const std::string& getMissionTarget() const { return _strTarget; }
-	/// Gets objectives number
-	int getItemObjectivesNumber() const { return _itemObjectivesNumber; }
 	/// Sets the mission craft/base.
 	void setMissionCraftOrBase(const std::string& missionCraftOrBase) { _strCraftOrBase = missionCraftOrBase; }
 	/// Gets the mission craft/base.
@@ -166,6 +178,10 @@ public:
 	int findBattleScriptVariable(const std::string& varName);
 	/// Increments battleScript variable with value.
 	void updateBattleScriptVariable(const std::string& varName, int val = 0);
+	/// Sets the starting conditions.
+	void setStartingCondition(const RuleStartingCondition* sc) { _startingCondition = sc; }
+	/// Gets the starting conditions.
+	const RuleStartingCondition* getStartingCondition() const { return _startingCondition; }
 	/// Applies the enviro effects.
 	void applyEnviroEffects(const RuleEnviroEffects* enviroEffects);
 	/// Gets the enviro effects.
@@ -178,6 +194,10 @@ public:
 	const std::string &getAlienCustomDeploy() const;
 	/// Gets the custom mission definition.
 	const std::string &getAlienCustomMission() const;
+	/// Sets the last used map script.
+	void setLastUsedMapScript(const std::string& lastUsedMapScript) { _lastUsedMapScript = lastUsedMapScript; }
+	/// Gets the last used map script.
+	const std::string& getLastUsedMapScript() const { return _lastUsedMapScript; }
 
 	/// Sets the alien deployment to use for reinforcements.
 	void setReinforcementsDeployment(const std::string &reinforcementsDeployment) { _reinforcementsDeployment = reinforcementsDeployment; }
@@ -214,13 +234,28 @@ public:
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
 	/// Gets terrain size x.
-	int getMapSizeX() const;
+	int getMapSizeX() const { return _mapsize_x; }
 	/// Gets terrain size y.
-	int getMapSizeY() const;
+	int getMapSizeY() const { return _mapsize_y; }
 	/// Gets terrain size z.
-	int getMapSizeZ() const;
+	int getMapSizeZ() const { return _mapsize_z; }
 	/// Gets terrain x*y*z
-	int getMapSizeXYZ() const;
+	int getMapSizeXYZ() const { return _mapsize_x * _mapsize_y * _mapsize_z; }
+
+	/// Is this just a craft or base deployment preview?
+	bool isPreview() const { return _isPreview; }
+	/// Sets craft position.
+	void setCraftPos(SDL_Rect craftPos) { _craftPos = craftPos; }
+	/// Sets craft elevation.
+	void setCraftZ(int craftZ) { _craftZ = craftZ; }
+	/// Sets craft for preview.
+	void setCraftForPreview(Craft* craftForPreview) { _craftForPreview = craftForPreview; }
+	/// Gets craft for preview.
+	const Craft* getCraftForPreview() const { return _craftForPreview; }
+	/// Pre-calculate all valid tiles for later use in map drawing.
+	void calculateCraftTiles();
+	/// Gets craft tiles.
+	const std::vector<Position>& getCraftTiles() const { return _craftTiles; }
 
 	/**
 	 * Converts coordinates into a unique index.
@@ -368,6 +403,16 @@ public:
 	int getBughuntMinTurn() const;
 	/// Start first turn of battle.
 	void startFirstTurn();
+	/// Check count of units in different state for craft deployment preview.
+	BattlescapeTally tallyUnitsForPreview();
+	/// Saves the custom craft deployment.
+	void saveCustomCraftDeployment();
+	/// Saves the custom RuleCraft deployment. Invalidates corresponding custom craft deployments.
+	void saveDummyCraftDeployment();
+	/// Does the given craft type have a custom deployment?
+	bool hasCustomDeployment(const RuleCraft* rule) const;
+	/// Gets a custom deployment for the given craft type.
+	const RuleCraftDeployment& getCustomDeployment(const RuleCraft* rule) const;
 	/// Ends the turn.
 	void endTurn();
 	/// Gets animation frame.
@@ -376,6 +421,7 @@ public:
 	void nextAnimFrame();
 	/// Sets debug mode.
 	void setDebugMode();
+	void revealMap();
 	/// Gets debug mode.
 	bool getDebugMode() const;
 	/// Sets bug hunt mode.
@@ -399,8 +445,6 @@ public:
 	void initItem(BattleItem *item, BattleUnit *unit = nullptr);
 	/// Create new item for unit.
 	BattleItem *createItemForUnit(const RuleItem *rule, BattleUnit *unit, bool fixedWeapon = false);
-	/// Create new item for unit.
-	BattleItem *createItemForUnit(const std::string& type, BattleUnit *unit, bool fixedWeapon = false);
 	/// Create new special built-in item for unit.
 	BattleItem *createItemForUnitSpecialBuiltin(const RuleItem *rule, BattleUnit *unit);
 	/// Create new item for tile.
@@ -411,6 +455,8 @@ public:
 	BattleObject *createObjectForTile(const RuleObject *rule, Tile *tile);
 	/// Create new temporary unit.
 	BattleUnit *createTempUnit(const Unit *rules, UnitFaction faction, int nextUnitId = -1);
+	/// Converts a unit into a unit of another type.
+	BattleUnit *convertUnit(BattleUnit *unit);
 
 	/// Sets whether the mission was aborted.
 	void setAborted(bool flag);
@@ -456,8 +502,14 @@ public:
 	bool isBattlescapeStateBusy() const;
 	/// Sets the pointer to the BattlescapeState.
 	void setBattleState(BattlescapeState *bs);
+
 	/// Is CTRL pressed?
 	bool isCtrlPressed(bool considerTouchButtons = false) const;
+	/// Is ALT pressed?
+	bool isAltPressed(bool considerTouchButtons = false) const;
+	/// Is SHIFT pressed?
+	bool isShiftPressed(bool considerTouchButtons = false) const;
+
 	/// Gets the highest ranked, living XCom unit.
 	BattleUnit* getHighestRankedXCom();
 	/// Gets the morale modifier for the unit passed to this function.
@@ -527,6 +579,9 @@ public:
 	void resetCurrentAmbienceDelay();
 	/// Play a random ambient sound.
 	void playRandomAmbientSound();
+	/// Gets if this battle is a stealth mission.
+	bool isStealthMission() const { return _stealthMission; }
+	void defineStealth();
 	// gets ruleset.
 	const Mod *getMod() const;
 	/// gets the list of items we're guaranteed.
@@ -583,6 +638,20 @@ public:
 	void setCheatTurn(int turn);
 	/// Check whether the battle has actually commenced or not.
 	bool isBeforeGame() const;
+
+	/// gets personal light toggle
+	bool getTogglePersonalLight() const { return _togglePersonalLight; }
+	/// sets personal light toggle
+	void setTogglePersonalLight(bool togglePersonalLight) { _togglePersonalLight = togglePersonalLight; }
+	/// gets night vision toggle
+	bool getToggleNightVision() const { return _toggleNightVision; }
+	/// sets night vision toggle
+	void setToggleNightVision(bool toggleNightVision) { _toggleNightVision = toggleNightVision; }
+	/// gets brightness toggle
+	int getToggleBrightness() const { return _toggleBrightness; }
+	/// sets brightness toggle
+	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+
 	/// Randomly chooses hidden movement background.
 	void setRandomHiddenMovementBackground(const Mod *mod);
 	/// Gets the hidden movement background ID.

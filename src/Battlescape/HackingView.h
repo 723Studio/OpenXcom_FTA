@@ -23,7 +23,11 @@ namespace OpenXcom
 {
 // Classes forward declarations
 
-struct Point;
+struct Point
+{
+	Sint16 x, y;
+	Point(Sint16 x, Sint16 y) : x(x), y(y) {}
+};
 
 enum class NodeState
 {

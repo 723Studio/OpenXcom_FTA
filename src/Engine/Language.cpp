@@ -95,9 +95,35 @@ Language::Language() : _handler(0), _direction(DIRECTION_LTR), _wrap(WRAP_WORDS)
 	if (_cjk.empty())
 	{
 		_cjk.push_back("ja");
-		//_cjk.push_back("ko");  has spacing between words
+		_cjk.push_back("ko");
 		_cjk.push_back("zh-CN");
 		_cjk.push_back("zh-TW");
+	}
+
+	std::string id = Options::language;
+	_handler = LanguagePlurality::create(id);
+	if (std::find(_rtl.begin(), _rtl.end(), id) == _rtl.end())
+	{
+		_direction = DIRECTION_LTR;
+	}
+	else
+	{
+		_direction = DIRECTION_RTL;
+	}
+	if (Options::wordwrap == WRAP_AUTO)
+	{
+		if (std::find(_cjk.begin(), _cjk.end(), id) == _cjk.end())
+		{
+			_wrap = WRAP_WORDS;
+		}
+		else
+		{
+			_wrap = WRAP_LETTERS;
+		}
+	}
+	else
+	{
+		_wrap = Options::wordwrap;
 	}
 }
 
@@ -164,13 +190,11 @@ void Language::loadFile(const FileMap::FileRecord *frec)
 	YAML::Node lang;
 	if (doc.begin()->second.IsMap())
 	{
-		_id = doc.begin()->first.as<std::string>();
 		lang = doc.begin()->second;
 	}
 	// Fallback when file is missing language specifier
 	else
 	{
-		_id = fileNameToId(frec->fullpath);
 		lang = doc;
 	}
 	for (YAML::const_iterator i = lang.begin(); i != lang.end(); ++i)
@@ -198,24 +222,6 @@ void Language::loadFile(const FileMap::FileRecord *frec)
 				}
 			}
 		}
-	}
-	delete _handler;
-	_handler = LanguagePlurality::create(_id);
-	if (std::find(_rtl.begin(), _rtl.end(), _id) == _rtl.end())
-	{
-		_direction = DIRECTION_LTR;
-	}
-	else
-	{
-		_direction = DIRECTION_RTL;
-	}
-	if (std::find(_cjk.begin(), _cjk.end(), _id) == _cjk.end())
-	{
-		_wrap = WRAP_WORDS;
-	}
-	else
-	{
-		_wrap = WRAP_LETTERS;
 	}
 }
 
@@ -249,24 +255,6 @@ std::string Language::loadString(const std::string &string) const
 	Unicode::replace(s, "{SMALLLINE}", "\x02"); // Unicode::TOK_NL_SMALL
 	Unicode::replace(s, "{ALT}", "\x01"); // Unicode::TOK_COLOR_FLIP
 	return s;
-}
-
-/**
- * Returns the language's locale.
- * @return IANA language tag.
- */
-std::string Language::getId() const
-{
-	return _id;
-}
-
-/**
- * Returns the language's name in its native language.
- * @return Language name.
- */
-std::string Language::getName() const
-{
-	return _names[_id];
 }
 
 /**

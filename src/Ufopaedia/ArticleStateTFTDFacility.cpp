@@ -23,7 +23,6 @@
 #include "ArticleStateTFTD.h"
 #include "ArticleStateTFTDFacility.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Unicode.h"
@@ -34,6 +33,8 @@ namespace OpenXcom
 
 	ArticleStateTFTDFacility::ArticleStateTFTDFacility(ArticleDefinitionTFTD *defs, std::shared_ptr<ArticleCommonState> state) : ArticleStateTFTD(defs, std::move(state))
 	{
+		_txtInfo->setHeight(112);
+
 		_btnInfo->setVisible(_game->getMod()->getShowPediaInfoButton());
 
 		RuleBaseFacility *facility = _game->getMod()->getBaseFacility(defs->id, true);
@@ -50,6 +51,7 @@ namespace OpenXcom
 		if (facility->getDefenseValue() > 0)
 		{
 			_lstInfo->setY(_lstInfo->getY() - 16);
+			_txtInfo->setHeight(_txtInfo->getHeight() - 16);
 			ss.str("");ss.clear();
 			ss << facility->getDefenseValue();
 			_lstInfo->addRow(2, tr("STR_DEFENSE_VALUE").c_str(), ss.str().c_str());

@@ -41,9 +41,10 @@ class CraftSoldiersState : public State
 {
 private:
 	TextButton *_btnOk;
+	TextButton *_btnPreview;
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtAvailable, *_txtUsed;
-	ComboBox *_cbxSortBy;
+	ComboBox *_cbxSortBy, *_cbxScreenActions;
 	TextList *_lstSoldiers;
 
 	Base *_base;
@@ -51,6 +52,9 @@ private:
 	Uint8 _otherCraftColor;
 	std::vector<Soldier *> _origSoldierOrder;
 	std::vector<SortFunctor *> _sortFunctors;
+	std::vector<int> _soldierNumbers;
+	bool _ftaUI, _isInterceptor, _isMultipurpose;
+	std::vector<std::string> _availableOptions;
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
@@ -63,6 +67,8 @@ public:
 	void cbxSortByChange(Action *action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Preview button.
+	void btnPreviewClick(Action *action);
 	/// Updates the soldiers list.
 	void init() override;
 	/// Handler for clicking the Soldiers reordering button.
@@ -77,6 +83,8 @@ public:
 	void lstSoldiersClick(Action *action);
 	/// Handler for pressing-down a mouse-button in the list.
 	void lstSoldiersMousePress(Action *action);
+	/// Handler for changing the screen actions combo box.
+	void cbxScreenActionsChange(Action *action);
 	/// Handler for clicking the De-assign All Soldiers button.
 	void btnDeassignAllSoldiersClick(Action *action);
 	void btnDeassignCraftSoldiersClick(Action *action);

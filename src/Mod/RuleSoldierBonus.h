@@ -44,6 +44,7 @@ public:
 private:
 	std::string _name;
 	int _visibilityAtDark;
+	int _frontArmor, _sideArmor, _leftArmorDiff, _rearArmor, _underArmor;
 	UnitStats _stats;
 	int _listOrder;
 	RuleStatBonus _timeRecovery, _energyRecovery, _moraleRecovery, _healthRecovery, _stunRecovery, _manaRecovery;
@@ -61,6 +62,16 @@ public:
 	const std::string &getName() const { return _name; }
 	/// Gets the bonus to night vision (in tiles).
 	int getVisibilityAtDark() const { return _visibilityAtDark; }
+	/// Gets the bonus to front armor.
+	int getFrontArmor() const { return _frontArmor; }
+	/// Gets the bonus to left side armor.
+	int getLeftSideArmor() const { return _sideArmor + _leftArmorDiff; }
+	/// Gets the bonus to right side armor.
+	int getRightSideArmor() const { return _sideArmor; }
+	/// Gets the bonus to rear armor.
+	int getRearArmor() const { return _rearArmor; }
+	/// Gets the bonus to under armor.
+	int getUnderArmor() const { return _underArmor; }
 	/// Gets the bonus stats.
 	const UnitStats *getStats() const { return &_stats; }
 	/// Gets the list order for display purposes.

@@ -22,17 +22,15 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Logger.h"
-#include "../Mod/RuleTerrain.h"
 #include <climits>
-
 
 namespace OpenXcom
 {
 
 BattleScript::BattleScript() :
 	_type(BSC_UNDEFINED), 
-	_executionChances(100), _executions(0), _cumulativeFrequency(0), _label(0), _startTurn(0), _endTurn(-1), _unitSide(1),
-	_minLevel(0), _maxLevel(0), _packSize(1), _randomPackSize(false),
+	_executionChances(100), _executions(1), _maxRuns(-1), _label(0), _startTurn(0), _endTurn(-1), _unitSide(1),
+	_packSize(1), _minLevel(0), _maxLevel(0), _randomPackSize(false),
 	_minDifficulty(0), _maxDifficulty(4), _minAlarmLevel(0), _maxAlarmLevel(INT_MAX), _variable("battleScriptVariable")
 {
 }
@@ -84,6 +82,7 @@ void BattleScript::load(const YAML::Node& node)
 
 	_executionChances = node["executionChances"].as<int>(_executionChances);
 	_executions = node["executions"].as<int>(_executions);
+	_maxRuns = node["maxRuns"].as<int>(_maxRuns);
 	_variable = node["variable"].as<std::string>(_variable);
 	_label = std::abs(node["label"].as<int>(_label));
 	_itemSet = node["itemSet"].as<std::vector<std::string>>(_itemSet);
@@ -101,6 +100,7 @@ void BattleScript::load(const YAML::Node& node)
 	_maxDifficulty = node["maxDifficulty"].as<int>(_maxDifficulty);
 	_minAlarmLevel = node["minAlarmLevel"].as<int>(_minAlarmLevel);
 	_maxAlarmLevel = node["maxAlarmLevel"].as<int>(_maxAlarmLevel);
+	_spawnNodeRanks = node["spawnNodeRanks"].as<std::vector<int> >(_spawnNodeRanks);
 	if (const YAML::Node& messages = node["messages"])
 	{
 		for (YAML::const_iterator i = messages.begin(); i != messages.end(); ++i)

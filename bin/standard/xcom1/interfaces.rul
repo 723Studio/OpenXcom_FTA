@@ -146,13 +146,35 @@ interfaces:
   - type: modsMenu
     backgroundImage: BACK01.SCR
     elements:
+      - id: palette
+        color: 0     # brown
+      - id: window
+        color: 133   # minty green
       - id: optionLists
         color: 138   # yellow
         border: 133  # minty green
       - id: text
         color: 138   # yellow
-      - id: button
+      - id: tooltip
+        color: 133   # minty green
+      - id: button1
         color: 239   # bright green
+      - id: button2
+        color: 133   # minty green
+  - type: modsWindow
+    elements:
+      - id: palette
+        color: 0     # brown
+      - id: window
+        color: 239   # bright green
+      - id: heading
+        color: 239   # bright green
+      - id: text
+        color: 138   # yellow
+      - id: button1
+        color: 239   # bright green
+      - id: button2
+        color: 133   # minty green
   - type: saveMenus
     backgroundImage: BACK01.SCR
     elements:
@@ -247,6 +269,7 @@ interfaces:
         color: 138   # yellow
       - id: list
         color: 133   # minty green
+        color2: 138  # yellow
         border: 239  # bright green
       - id: button
         color: 133   # minty green
@@ -2042,6 +2065,30 @@ interfaces:
       - id: buttonEnd
         pos: [220, 140]
         size: [20, 20]
+  - type: systemMenu
+    elements:
+      - id: text
+        color: 138   # yellow
+      - id: button
+        color: 239   # bright green
+  - type: articleText
+    elements:
+      - id: button
+        color: 80    # very light grey
+      - id: title
+        color: 244   # light blue
+      - id: text
+        color: 239   # grey
+        color2: 244  # light blue
+  - type: articleTextImage
+    elements:
+      - id: button
+        color: 83    # light grey
+      - id: title
+        color: 244   # light blue
+      - id: text
+        color: 239   # grey
+        color2: 244  # light blue
   - type: articleArmor
     elements:
       - id: button

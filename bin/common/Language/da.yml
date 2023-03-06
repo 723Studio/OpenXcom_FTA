@@ -248,7 +248,6 @@ da:
   STR_ALIEN_RACE: "Race"
   STR_ALIEN_TECH_LEVEL: "Tek.-niveau"
   STR_RANDOMIZE: "Vilkårlig"
-  STR_OXCE_REQUIRED_QUESTION: "Denne mod kræver at OpenXcom Extended afvikles korrekt. Aktiver denne mod?"
   STR_RESTORE_DEFAULTS_QUESTION: "Er du sikker på, at du ønsker at gendanne standardindstillingerne?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Ønsker du at bevare de nuværende indstillinger for visningen?"
   STR_DISPLAY_OPTIONS_REVERT: "Vender tilbage om 0:{0}"

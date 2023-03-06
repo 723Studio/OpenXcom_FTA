@@ -41,7 +41,8 @@ class RuleTerrain
 private:
 	std::vector<MapDataSet*> _mapDataSets;
 	std::vector<MapBlock*> _mapBlocks;
-	std::string _name, _script;
+	std::string _name, _mapScript;
+	std::vector<std::string> _mapScripts;
 	std::string _enviroEffects;
 	std::vector<std::string> _civilianTypes, _music;
 	int _minDepth, _maxDepth, _ambience;
@@ -85,7 +86,7 @@ public:
 	/// Gets the maximum delay for the random ambient sound effect.
 	int getMaxAmbienceRandomDelay() const { return _maxAmbienceRandomDelay; }
 	/// Gets the generation script name.
-	std::string getScript() const;
+	const std::string& getRandomMapScript() const;
 	/// Gets the list of music to pick from.
 	const std::vector<std::string> &getMusic() const;
 	double getAmbientVolume() const;

@@ -146,12 +146,34 @@ interfaces: #done
   - type: modsMenu
     backgroundImage: BACK01.SCR
     elements:
+      - id: palette
+        color: 6
+      - id: window
+        color: 1
       - id: optionLists
         color: 1
         border: 239
       - id: text
         color: 239
-      - id: button
+      - id: tooltip
+        color: 239
+      - id: button1
+        color: 1
+      - id: button2
+        color: 1
+  - type: modsWindow
+    elements:
+      - id: palette
+        color: 6
+      - id: window
+        color: 239
+      - id: heading
+        color: 239
+      - id: text
+        color: 239
+      - id: button1
+        color: 1
+      - id: button2
         color: 1
   - type: saveMenus
     backgroundImage: BACK01.SCR
@@ -247,6 +269,7 @@ interfaces: #done
         color: 1
       - id: list
         color: 1
+        color2: 239
         border: 1
       - id: button
         color: 1
@@ -2206,6 +2229,12 @@ interfaces: #done
         pos: [90, 55]
         color: 6
         color2: 12
+  - type: systemMenu
+    elements:
+      - id: text
+        color: 239
+      - id: button
+        color: 1
   - type: articleTFTD
     palette: PAL_BASESCAPE
     backgroundImage: BACK08.SCR

@@ -106,7 +106,7 @@ public:
 	/// Gets the substitute mission region.
 	const std::string &getMissionRegion() const { return _missionRegion; }
 	/// Gets a random point inside a mission zone.
-	std::pair<double, double> getRandomPoint(size_t zone) const;
+	std::pair<double, double> getRandomPoint(size_t zone, int area = -1) const;
 	/// Gets the maximum longitude.
 	const std::vector<double> &getLonMax() const { return _lonMax; }
 	/// Gets the minimum longitude.

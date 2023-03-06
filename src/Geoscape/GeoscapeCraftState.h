@@ -48,7 +48,7 @@ private:
 	int _weaponNum;
 public:
 	/// Creates the Geoscape Craft state.
-	GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *waypoint);
+	GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *waypoint, bool useCustomSound);
 	/// Cleans up the Geoscape Craft state.
 	~GeoscapeCraftState();
 	/// Handler for clicking the Return To Base button.

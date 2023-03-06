@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <functional>
-#include <assert.h>
 
 
 
@@ -45,14 +44,24 @@ public:
 
 	/**
 	 * A constructor that takes a reference to some temporary callable object.
-	 *
-	 * To prevent the possibility of unintended dangling references, you need to spell the full type.
 	 */
 	template<typename F>
-	explicit FuncRef(F&& f) :FuncRef{ +[](Args... args, void* p){ return std::invoke(*static_cast<F*>(p), std::forward<Args>(args)...); }, &f }
+	FuncRef(F&& f) :FuncRef{ +[](Args... args, void* p){ return std::invoke(*static_cast<std::remove_reference_t<F>*>(p), std::forward<Args>(args)...); }, &f }
 	{
 
 	}
+
+	/**
+	 * Copy constructor.
+	 * @param f
+	 */
+	FuncRef(const FuncRef& f) = default;
+
+	/**
+	 * Move constructor.
+	 * @param f
+	 */
+	FuncRef(FuncRef&& f) = default;
 
 	/**
 	 * A constructor that takes a pointer to some callable object.

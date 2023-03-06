@@ -86,7 +86,7 @@ namespace OpenXcom
 	{
 		id = _pages[0].title = node["id"].as<std::string>(id);
 		section = node["section"].as<std::string>(section);
-		requires = node["requires"].as< std::vector<std::string> >(requires);
+		_requires = node["requires"].as< std::vector<std::string> >(_requires);
 		hiddenCommendation = node["hiddenCommendation"].as<bool>(hiddenCommendation);
 		//_type_id = (UfopaediaTypeId)node["type_id"].as<int>(_type_id);
 		_listOrder = node["listOrder"].as<int>(_listOrder);
@@ -213,7 +213,7 @@ namespace OpenXcom
 	/**
 	 * Constructor (only setting type of base class).
 	 */
-	ArticleDefinitionTextImage::ArticleDefinitionTextImage() : ArticleDefinition(UFOPAEDIA_TYPE_TEXTIMAGE), text_width(0)
+	ArticleDefinitionTextImage::ArticleDefinitionTextImage() : ArticleDefinition(UFOPAEDIA_TYPE_TEXTIMAGE), text_width(0), align_bottom(false)
 	{}
 
 	/**
@@ -228,6 +228,7 @@ namespace OpenXcom
 		if (image_id.find("_CPAL") != std::string::npos)
 			customPalette = true;
 		text_width = node["text_width"].as<int>(text_width);
+		align_bottom = node["align_bottom"].as<bool>(align_bottom);
 		rect_text = node["rect_text"].as<ArticleDefinitionRect>(rect_text);
 	}
 

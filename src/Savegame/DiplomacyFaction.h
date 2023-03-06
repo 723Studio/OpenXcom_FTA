@@ -25,7 +25,7 @@ namespace OpenXcom
 /**
 * Define what time frame should think logic process.
 */
-enum ThinkPeriod { TIMESTEP_DAILY, TIMESTEP_MONTHLY };
+enum ThinkPeriod { TIMESTEP_DAILY, TIMESTEP_10_DAYS, TIMESTEP_MONTHLY };
 
 /**
 * Define array of treaty names.
@@ -57,7 +57,8 @@ class DiplomacyFaction
 private:
 	const Mod* _mod;
 	const RuleDiplomacyFaction* _rule;
-	int _reputationScore, _reputationLvL, _power, _vigilance;
+	int _reputationScore, _reputationLvL, _power, _vigilance, _helpTreatyTimer;
+	std::vector<std::string> _avoidRepeatVars;
 	int64_t _funds;
 	std::vector<int> _dailyRepScore;
 	bool _discovered, _thisMonthDiscovered, _repLvlChanged;

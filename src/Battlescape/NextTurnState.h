@@ -76,6 +76,8 @@ public:
 	NextTurnState(SavedBattleGame *battleGame, BattlescapeState *state);
 	/// Cleans up the Next Turn state.
 	~NextTurnState();
+	/// Initialization
+	void init() override;
 	/// Handler for clicking anything.
 	void handle(Action *action) override;
 	/// Handles the timer.

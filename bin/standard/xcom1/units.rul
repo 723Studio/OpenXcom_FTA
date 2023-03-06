@@ -283,6 +283,7 @@ units:
   - type: STR_CYBERDISC_TERRORIST
     race: STR_CYBERDISC
     rank: STR_LIVE_TERRORIST
+    liveAlien: ""
     stats:
       tu: 62
       stamina: 90
@@ -809,6 +810,7 @@ units:
   - type: STR_SECTOPOD_TERRORIST
     race: STR_SECTOPOD
     rank: STR_LIVE_TERRORIST
+    liveAlien: ""
     stats:
       tu: 62
       stamina: 90

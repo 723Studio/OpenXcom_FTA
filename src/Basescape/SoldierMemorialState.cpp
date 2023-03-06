@@ -189,7 +189,7 @@ void SoldierMemorialState::btnStatisticsClick(Action *)
  */
 void SoldierMemorialState::lstSoldiersClick(Action *)
 {
-	_game->pushState(new SoldierInfoState(0, _lstSoldiers->getSelectedRow()));
+	_game->pushState(new SoldierInfoState(0, _indices[_lstSoldiers->getSelectedRow()]));
 }
 
 /**
@@ -201,9 +201,13 @@ void SoldierMemorialState::fillMemorialList()
 	Unicode::upperCase(searchString);
 
 	_lstSoldiers->clearList();
+	_indices.clear();
 
+	int index = -1;
 	for (std::vector<Soldier *>::reverse_iterator i = _game->getSavedGame()->getDeadSoldiers()->rbegin(); i != _game->getSavedGame()->getDeadSoldiers()->rend(); ++i)
 	{
+		++index;
+
 		// quick search
 		if (!searchString.empty())
 		{
@@ -221,7 +225,9 @@ void SoldierMemorialState::fillMemorialList()
 		saveDay << death->getTime()->getDayString(_game->getLanguage());
 		saveMonth << tr(death->getTime()->getMonthString());
 		saveYear << death->getTime()->getYear();
-		_lstSoldiers->addRow(5, (*i)->getName().c_str(), tr((*i)->getRankString()).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
+		bool fta = _game->getMod()->isFTAGame();
+		_lstSoldiers->addRow(5, (*i)->getName().c_str(), tr((*i)->getRankString(fta)).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
+		_indices.push_back(index);
 	}
 }
 

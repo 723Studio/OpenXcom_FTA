@@ -38,6 +38,7 @@ class GeoscapeState;
 class Craft;
 class Ufo;
 class CraftWeaponProjectile;
+class Soldier;
 
 /**
  * Shows a dogfight (interception) between a
@@ -56,8 +57,9 @@ private:
 	Text *_txtAmmo[RuleCraft::WeaponMax], *_txtDistance, *_txtStatus, *_txtInterceptionNumber;
 	Craft *_craft;
 	Ufo *_ufo;
-	bool _ufoIsAttacking, _disableDisengage, _disableCautious, _craftIsDefenseless, _selfDestructPressed;
-	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax];
+	std::vector<Soldier*> _pilots;
+	bool _ufoIsAttacking, _disableDisengage, _disableCautious, _craftIsDefenseless, _selfDestructPressed, _panicing;
+	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax], _panicTimeout;
 	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];
 	bool _minimized, _endDogfight, _animatingHit, _waitForPoly, _waitForAltitude;
 	std::vector<CraftWeaponProjectile*> _projectiles;
@@ -68,8 +70,9 @@ private:
 	int _x, _y, _minimizedIconX, _minimizedIconY;
 	int _weaponNum;
 	int _pilotAccuracyBonus, _pilotDodgeBonus, _pilotApproachSpeedModifier, _craftAccelerationBonus;
+	int _pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery, _squadTacticBonus;
 	bool _firedAtLeastOnce, _experienceAwarded;
-	bool _delayedRecolorDone;
+	bool _delayedRecolorDone, _fta;
 	// craft min/max, radar min/max, damage min/max, shield min/max
 	int _colors[13];
 	// Ends the dogfight.
@@ -93,6 +96,8 @@ public:
 	void fireWeapon(int i);
 	// Fires UFO weapon.
 	void ufoFireWeapon();
+	// Handles pilot panic.
+	void handlePanic(bool damaged = false);
 	// Sets the craft to minimum distance.
 	void minimumDistance();
 	// Sets the craft to maximum distance.

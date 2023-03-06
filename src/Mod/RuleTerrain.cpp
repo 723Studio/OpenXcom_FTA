@@ -29,7 +29,7 @@ namespace OpenXcom
 /**
  * RuleTerrain construction.
  */
-RuleTerrain::RuleTerrain(const std::string &name) : _name(name), _script("DEFAULT"), _minDepth(0), _maxDepth(0),
+RuleTerrain::RuleTerrain(const std::string &name) : _name(name), _mapScript("DEFAULT"), _minDepth(0), _maxDepth(0),
 	_ambience(-1), _ambientVolume(0.5), _minAmbienceRandomDelay(20), _maxAmbienceRandomDelay(60),
 	_lastCraftSkinIndex(0)
 {
@@ -107,7 +107,8 @@ void RuleTerrain::load(const YAML::Node &node, Mod *mod)
 		_minAmbienceRandomDelay = node["ambienceRandomDelay"][0].as<int>(_minAmbienceRandomDelay);
 		_maxAmbienceRandomDelay = node["ambienceRandomDelay"][1].as<int>(_maxAmbienceRandomDelay);
 	}
-	_script = node["script"].as<std::string>(_script);
+	_mapScript = node["script"].as<std::string>(_mapScript);
+	_mapScripts = node["mapScripts"].as<std::vector<std::string> >(_mapScripts);
 }
 
 /**
@@ -306,9 +307,14 @@ int RuleTerrain::getAmbience() const
  * Gets The generation script name.
  * @return The name of the script to use.
  */
-std::string RuleTerrain::getScript() const
+const std::string& RuleTerrain::getRandomMapScript() const
 {
-	return _script;
+	if (!_mapScripts.empty())
+	{
+		size_t pick = RNG::generate(0, _mapScripts.size() - 1);
+		return _mapScripts[pick];
+	}
+	return _mapScript;
 }
 
 /**

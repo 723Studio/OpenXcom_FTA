@@ -37,6 +37,7 @@ class ToggleTextButton;
 class TextButton;
 class ScriptParserBase;
 struct ArticleCommonState;
+struct ArmorMoveCost;
 template<typename T, typename I> class ScriptValues;
 
 /**
@@ -53,6 +54,7 @@ private:
 	TextList *_lstRawData;
 	ToggleTextButton *_btnIncludeDebug, *_btnIncludeIds, *_btnIncludeDefaults;
 	TextButton *_btnOk;
+	TextButton *_btnPreview;
 
 	Uint8 _purple, _pink, _blue, _white, _gold;
 
@@ -76,10 +78,10 @@ private:
 	void endHeading();
 
 	template<typename T, typename Callback>
-	void addVectorOfGeneric(std::ostringstream &ss, const std::vector<T> &vec, const std::string &propertyName, Callback&& func);
+	void addVectorOfGeneric(std::ostringstream &ss, const std::vector<T> &vec, const std::string &propertyName, Callback&& func, bool translate = true);
 
 	void addSingleString(std::ostringstream &ss, const std::string &id, const std::string &propertyName, const std::string &defaultId = "", bool translate = true);
-	void addVectorOfStrings(std::ostringstream &ss, const std::vector<std::string> &vec, const std::string &propertyName);
+	void addVectorOfStrings(std::ostringstream &ss, const std::vector<std::string> &vec, const std::string &propertyName, bool translate = true);
 
 	void addVectorOfResearch(std::ostringstream &ss, const std::vector<const RuleResearch *> &vec, const std::string &propertyName);
 
@@ -130,6 +132,7 @@ private:
 	void addItemTargets(std::ostringstream& ss, const RuleItem* value, const std::string& propertyName, const int& defaultvalue);
 	void addExperienceTrainingMode(std::ostringstream &ss, const ExperienceTrainingMode &value, const std::string &propertyName, const ExperienceTrainingMode &defaultvalue = ETM_DEFAULT);
 	void addRuleStatBonus(std::ostringstream &ss, const RuleStatBonus &value, const std::string &propertyName);
+	void addRuleArmorMoveCost(std::ostringstream &ss, const ArmorMoveCost &value, const std::string &propertyName, const ArmorMoveCost &defaultvalue = ArmorMoveCost());
 	void addSpriteResourcePath(std::ostringstream &ss, Mod *mod, const std::string &resourceSetName, const int &resourceId);
 	void addSoundVectorResourcePaths(std::ostringstream &ss, Mod *mod, const std::string &resourceSetName, const std::vector<int> &resourceIds);
 	void initItemList();
@@ -137,6 +140,7 @@ private:
 	void addUnitStatFormatted(std::ostringstream &ss, const int &value, const std::string &label, bool &isFirst);
 	void addUnitStatBonus(std::ostringstream &ss, const UnitStats &value, const std::string &propertyName);
 	void addArmorDamageModifiers(std::ostringstream &ss, const std::vector<float> &vec, const std::string &propertyName);
+	void addSpecialAbility(std::ostringstream &ss, const SpecialAbility &value, const std::string &propertyName, const SpecialAbility &defaultvalue = SPECAB_NONE);
 	void addMovementType(std::ostringstream &ss, const MovementType &value, const std::string &propertyName, const MovementType &defaultvalue = MT_WALK);
 	void addForcedTorso(std::ostringstream &ss, const ForcedTorso &value, const std::string &propertyName, const ForcedTorso &defaultvalue = TORSO_USE_GENDER);
 	void addDrawingRoutine(std::ostringstream &ss, const int &value, const std::string &propertyName, const int &defaultvalue = 0);
@@ -161,6 +165,7 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 
 	static const std::map<std::string, std::string> translationMap;
+	static const std::map<std::string, std::string> shortTranslationMap;
 
 
 	/// Creates the StatsForNerdsState state.
@@ -182,6 +187,8 @@ public:
 	void btnRefreshClick(Action *action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the [Preview] button.
+	void btnPreviewClick(Action *action);
 	/// Handler for clicking the [Previous] button.
 	void btnPrevClick(Action *action);
 	/// Handler for clicking the [Next] button.

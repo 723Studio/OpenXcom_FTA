@@ -123,7 +123,7 @@ ListGamesState::ListGamesState(OptionsOrigin origin, int firstValidRow, bool aut
 	// Set up objects
 	setWindowBackground(_window, "saveMenus");
 
-	_btnCancel->setText(tr("STR_CANCEL_UC"));
+	_btnCancel->setText(tr("STR_CANCEL"));
 	_btnCancel->onMouseClick((ActionHandler)&ListGamesState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&ListGamesState::btnCancelClick, Options::keyCancel);
 

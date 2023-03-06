@@ -21,6 +21,7 @@
 #include "WeightedOptions.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleRegion.h"
+#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -68,7 +69,7 @@ void AlienStrategy::init(const Mod *mod)
  * Loads the data from a YAML file.
  * @param node YAML node.
  */
-void AlienStrategy::load(const YAML::Node &node)
+void AlienStrategy::load(const YAML::Node &node, const Mod* mod)
 {
 	// Free allocated memory.
 	for (MissionsByRegion::iterator ii = _regionMissions.begin(); ii != _regionMissions.end(); ++ii)
@@ -82,10 +83,18 @@ void AlienStrategy::load(const YAML::Node &node)
 	for (YAML::const_iterator nn = strat.begin(); nn != strat.end(); ++nn)
 	{
 		std::string region = (*nn)["region"].as<std::string>();
-		const YAML::Node &missions = (*nn)["missions"];
-		WeightedOptions *options = new WeightedOptions();
-		options->load(missions);
-		_regionMissions.insert(std::make_pair(region, options));
+		RuleRegion* regionRule = mod->getRegion(region, false);
+		if (regionRule)
+		{
+			const YAML::Node& missions = (*nn)["missions"];
+			WeightedOptions* options = new WeightedOptions();
+			options->load(missions);
+			_regionMissions.insert(std::make_pair(region, options));
+		}
+		else
+		{
+			Log(LOG_WARNING) << "Corrupted save: Alien strategy contains an invalid region: " << region << ", skipping...";
+		}
 	}
 	_missionLocations = node["missionLocations"].as< std::map<std::string, std::vector<std::pair<std::string, int> > > >(_missionLocations);
 	_missionRuns = node["missionsRun"].as< std::map<std::string, int> >(_missionRuns);

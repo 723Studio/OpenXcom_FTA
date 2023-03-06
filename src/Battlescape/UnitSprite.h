@@ -25,6 +25,7 @@ namespace OpenXcom
 
 class BattleUnit;
 class BattleItem;
+class SavedBattleGame;
 class SurfaceSet;
 class Mod;
 
@@ -37,22 +38,23 @@ class UnitSprite
 private:
 	struct Part
 	{
-		Surface *src;
+		const Surface *src;
 		int bodyPart;
 		int offX;
 		int offY;
 
-		Part(int body, Surface *s = nullptr) : src{ s }, bodyPart{ body }, offX{ 0 }, offY{ 0 } { }
+		Part(int body, const Surface *s = nullptr) : src{ s }, bodyPart{ body }, offX{ 0 }, offY{ 0 } { }
 
-		void operator=(Surface *s) { src = s; }
+		void operator=(const Surface *s) { src = s; }
 		explicit operator bool() { return src; }
 	};
 
-	BattleUnit *_unit;
-	BattleItem *_itemR, *_itemL;
-	SurfaceSet *_unitSurface, *_itemSurface, *_fireSurface, *_breathSurface, *_facingArrowSurface;
-	Surface *_dest;
-	Mod *_mod;
+	const BattleUnit *_unit;
+	const BattleItem *_itemR, *_itemL;
+	const SurfaceSet *_unitSurface, *_itemSurface, *_fireSurface, *_breathSurface, *_facingArrowSurface;
+	Surface* _warnIndicator, *_dest;
+	const SavedBattleGame *_save;
+	const Mod *_mod;
 	int _part, _animationFrame, _drawingRoutine;
 	bool _helmet;
 	int _x, _y, _shade, _burn;
@@ -99,18 +101,20 @@ private:
 	/// Get graphic for unit part.
 	void selectUnit(Part& p, int index, int offset);
 	/// Get graphic for item part.
-	void selectItem(Part& p, BattleItem *item, int offset);
+	void selectItem(Part& p, const BattleItem *item, int offset);
 	/// Blit weapon sprite.
 	void blitItem(Part& item);
 	/// Blit body sprite.
 	void blitBody(Part& body);
 public:
 	/// Creates a new UnitSprite at the specified position and size.
-	UnitSprite(Surface* dest, Mod* mod, int frame, bool helmet);
+	UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet);
 	/// Cleans up the UnitSprite.
 	~UnitSprite();
 	/// Draws the unit.
-	void draw(BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool isAltPressed);
+	void draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool isAltPressed);
+	/// Draws special icon near the unit
+	void drawUnitIcon();
 };
 
 } //namespace OpenXcom

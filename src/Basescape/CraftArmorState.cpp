@@ -28,13 +28,13 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
+#include "../Menu/ErrorMessageState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Craft.h"
 #include "../Mod/Armor.h"
 #include "SoldierArmorState.h"
-#include "../Savegame/SavedGame.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
@@ -268,19 +268,21 @@ void CraftArmorState::initList(size_t scrl)
 
 	Craft *c = _base->getCrafts()->at(_craft);
 	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
+		std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
 			int dynStat = (*_dynGetter)(_game, *i);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), tr((*i)->getArmor()->getType()).c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), (*i)->getCraftString(_game->getLanguage(), recovery).c_str(), tr((*i)->getArmor()->getType()).c_str());
+			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str());
 		}
 
 		Uint8 color;
@@ -435,15 +437,63 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 	{
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 		{
-			_savedScrollPosition = _lstSoldiers->getScroll();
-			_game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));
+			if (_game->isCtrlPressed())
+			{
+				if (_game->getMod()->isFTAGame() && s->hasPendingTransformation())
+				{
+					_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				}
+				else
+				{
+					Craft *c = _base->getCrafts()->at(_craft);
+					if (s->getCraft() == c)
+					{
+						s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
+						_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 1, c->getName(_game->getLanguage()));
+						_lstSoldiers->setRowColor(_lstSoldiers->getSelectedRow(), _lstSoldiers->getSecondaryColor());
+					}
+					else if (s->hasFullHealth())
+					{
+						auto space = c->getSpaceAvailable();
+						if (c->validateAddingSoldier(space, s))
+						{
+							s->setCraft(c);
+							_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 1, c->getName(_game->getLanguage()));
+							_lstSoldiers->setRowColor(_lstSoldiers->getSelectedRow(), _lstSoldiers->getSecondaryColor());
+						}
+						else if (space > 0)
+						{
+							_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+						}
+					}
+				}
+			}
+			else
+			{
+				_savedScrollPosition = _lstSoldiers->getScroll();
+				_game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));
+			}
 		}
 		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 		{
 			SavedGame *save;
 			save = _game->getSavedGame();
 			Armor *a = _game->getMod()->getArmor(save->getLastSelectedArmor());
-			if (a && a->getCanBeUsedBy(s->getRules()))
+			bool armorUnlocked = true;
+			if (a && a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
+			{
+				armorUnlocked = false;
+			}
+			if (armorUnlocked && a)
+			{
+				Craft* craft = s->getCraft();
+				if (craft && !craft->validateArmorChange(s->getArmor()->getSize(), a->getSize()))
+				{
+					armorUnlocked = false; // armor not valid due to craft constraints
+					_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				}
+			}
+			if (armorUnlocked && a && a->getCanBeUsedBy(s->getRules()))
 			{
 				if (save->getMonthsPassed() != -1)
 				{
@@ -458,14 +508,14 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 							_base->getStorageItems()->removeItem(a->getStoreItem());
 						}
 
-						s->setArmor(a);
+						s->setArmor(a, true);
 						s->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
 						_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 2, tr(a->getType()));
 					}
 				}
 				else
 				{
-					s->setArmor(a);
+					s->setArmor(a, true);
 					s->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
 					_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 2, tr(a->getType()));
 				}
@@ -520,8 +570,14 @@ void CraftArmorState::btnDeequipAllArmorClick(Action *action)
 	{
 		if (!((*i)->getCraft() && (*i)->getCraft()->getStatus() == "STR_OUT"))
 		{
-			Armor *a = _game->getMod()->getArmor((*i)->getRules()->getArmor());
+			Armor *a = (*i)->getRules()->getDefaultArmor();
 
+			if ((*i)->getCraft() && !(*i)->getCraft()->validateArmorChange((*i)->getArmor()->getSize(), a->getSize()))
+			{
+				// silently ignore
+				row++;
+				continue;
+			}
 			if (a->getStoreItem() == nullptr || _base->getStorageItems()->getItem(a->getStoreItem()) > 0)
 			{
 				if ((*i)->getArmor()->getStoreItem())
@@ -533,7 +589,7 @@ void CraftArmorState::btnDeequipAllArmorClick(Action *action)
 					_base->getStorageItems()->removeItem(a->getStoreItem());
 				}
 
-				(*i)->setArmor(a);
+				(*i)->setArmor(a, true);
 				(*i)->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
 				_lstSoldiers->setCellText(row, 2, tr(a->getType()));
 			}
@@ -552,10 +608,16 @@ void CraftArmorState::btnDeequipCraftArmorClick(Action *action)
 	int row = 0;
 	for (auto s : *_base->getSoldiers())
 	{
-		if (s->getCraft() == c || s->getCraft() == 0)
+		if ((s->getCraft() == c || s->getCraft() == 0) && s->getCovertOperation() == 0)
 		{
-			Armor *a = _game->getMod()->getArmor(s->getRules()->getArmor());
+			Armor *a = s->getRules()->getDefaultArmor();
 
+			if (s->getCraft() && !s->getCraft()->validateArmorChange(s->getArmor()->getSize(), a->getSize()))
+			{
+				// silently ignore
+				row++;
+				continue;
+			}
 			if (a->getStoreItem() == nullptr || _base->getStorageItems()->getItem(a->getStoreItem()) > 0)
 			{
 				if (s->getArmor()->getStoreItem())
@@ -567,7 +629,7 @@ void CraftArmorState::btnDeequipCraftArmorClick(Action *action)
 					_base->getStorageItems()->removeItem(a->getStoreItem());
 				}
 
-				s->setArmor(a);
+				s->setArmor(a, true);
 				s->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
 				_lstSoldiers->setCellText(row, 2, tr(a->getType()));
 			}

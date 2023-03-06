@@ -24,7 +24,6 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "TileEngine.h"
-#include "Map.h"
 #include "BattlescapeState.h"
 #include "../Savegame/Tile.h"
 #include "Pathfinding.h"
@@ -121,6 +120,7 @@ YAML::Node AIModule::save() const
 		toNodeID = _toNode->getID();
 
 	YAML::Node node;
+	node.SetStyle(YAML::EmitterStyle::Flow);
 	node["fromNode"] = fromNodeID;
 	node["toNode"] = toNodeID;
 	node["AIMode"] = _AIMode;
@@ -158,10 +158,12 @@ void AIModule::dont_think(BattleAction *action)
 			action->weapon = 0;
 		}
 	}
-	int visibleEnemiesToAttack = selectNearestTargetLeeroy();
+
+	auto canRun = _melee && _unit->getArmor()->allowsRunning(false) && _unit->getEnergy() > _unit->getBaseStats()->stamina * 0.4f;
+	int visibleEnemiesToAttack = selectNearestTargetLeeroy(canRun);
 	if (_traceAI)
 	{
-		Log(LOG_INFO) << "LEEROY: visibleEnemiesToAttack: " << visibleEnemiesToAttack << " _melee: " << _melee;
+		Log(LOG_INFO) << "LEEROY: visibleEnemiesToAttack: " << visibleEnemiesToAttack << " _melee: " << _melee << (canRun ? " run" : "");
 	}
 	if ((visibleEnemiesToAttack > 0) && _melee)
 	{
@@ -169,8 +171,9 @@ void AIModule::dont_think(BattleAction *action)
 		{
 			Log(LOG_INFO) << "LEEROY: LEEROYIN' at someone!";
 		}
-		meleeActionLeeroy();
+		meleeActionLeeroy(canRun);
 		action->type = _attackAction.type;
+		action->run = _attackAction.run;
 		action->target = _attackAction.target;
 		// if this is a firepoint action, set our facing.
 		action->finalFacing = _attackAction.finalFacing;
@@ -201,6 +204,7 @@ void AIModule::think(BattleAction *action)
 	action->weapon = _unit->getMainHandWeapon(false);
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
+	_attackAction.run = false;
 	_attackAction.weapon = action->weapon;
 	_attackAction.number = action->number;
 	_escapeAction.number = action->number;
@@ -246,12 +250,6 @@ void AIModule::think(BattleAction *action)
 			break;
 		}
 		Log(LOG_INFO) << "Currently using " << AIMode << " behaviour";
-	}
-
-	if (_visibleEnemies) // || _knownEnemies #FINNIKTODO: Consider
-	{
-		Log(LOG_INFO) << "Unit has " << _visibleEnemies << "/" << _knownEnemies << " known enemies visible, its is now alarmed!";
-		_unit->setAlarmed(true);
 	}
 
 	if (_unit->isLeeroyJenkins())
@@ -402,6 +400,8 @@ void AIModule::think(BattleAction *action)
 		action->finalAction = true;
 		// ignore new targets.
 		action->desperate = true;
+		// if armor allow runing then run way from there.
+		action->run = _escapeAction.run;
 		// spin 180 at the end of your route.
 		_unit->setHiding(true);
 		break;
@@ -451,6 +451,10 @@ void AIModule::think(BattleAction *action)
 		{
 			action->waypoints = _attackAction.waypoints;
 		}
+		else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
+		{
+			action->kneel = _unit->getArmor()->allowsKneeling(false);
+		}
 		break;
 	case AI_AMBUSH:
 		_unit->setCharging(0);
@@ -460,6 +464,7 @@ void AIModule::think(BattleAction *action)
 		action->finalFacing = _ambushAction.finalFacing;
 		// end this unit's turn.
 		action->finalAction = true;
+		action->kneel = _unit->getArmor()->allowsKneeling(false);
 		break;
 	default:
 		break;
@@ -524,7 +529,7 @@ void AIModule::setupPatrol()
 		// destination reached
 		// head off to next patrol node
 		_fromNode = _toNode;
-		_toNode->freeNode();
+		freePatrolTarget();
 		_toNode = 0;
 		// take a peek through window before walking to the next node
 		int dir = _save->getTileEngine()->faceWindow(_unit->getPosition());
@@ -571,7 +576,7 @@ void AIModule::setupPatrol()
 		{
 			// after turn 20 or if the morale is low, everyone moves out the UFO and scout
 			// also anyone standing in fire should also probably move
-			if (_save->isCheating() || !_fromNode || _fromNode->getRank() == 0 ||
+			if (!_fromNode || _fromNode->getRank() == 0 || //_save->isCheating() || 
 				(_save->getTile(_unit->getPosition()) && _save->getTile(_unit->getPosition())->getFire()))
 			{
 				scout = true;
@@ -583,7 +588,7 @@ void AIModule::setupPatrol()
 		}
 
 		// in base defense missions, the smaller aliens walk towards target nodes - or if there, shoot objects around them
-		else if (_unit->getArmor()->getSize() == 1)
+		else if (_unit->getArmor()->getSize() == 1 && _unit->getOriginalFaction() == FACTION_HOSTILE)
 		{
 			// can i shoot an object?
 			if (_fromNode->isTarget() &&
@@ -591,6 +596,7 @@ void AIModule::setupPatrol()
 				_attackAction.weapon->getRules()->getAccuracySnap() &&
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT) &&
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT)->getRules()->getDamageType()->isDirect() &&
+				_save->canUseWeapon(_attackAction.weapon, _unit, false, BA_SNAPSHOT) &&
 				_save->getModuleMap()[_fromNode->getPosition().x / 10][_fromNode->getPosition().y / 10].second > 0)
 			{
 				// scan this room for objects to destroy
@@ -647,7 +653,7 @@ void AIModule::setupPatrol()
 
 		if (_toNode != 0)
 		{
-			_save->getPathfinding()->calculate(_unit, _toNode->getPosition());
+			_save->getPathfinding()->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
 			if (_save->getPathfinding()->getStartDirection() == -1)
 			{
 				_toNode = 0;
@@ -714,7 +720,7 @@ void AIModule::setupAmbush()
 			Position target;
 			if (!_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) && !getSpottingUnits(pos))
 			{
-				_save->getPathfinding()->calculate(_unit, pos);
+				_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
 				int ambushTUs = _save->getPathfinding()->getTotalTUCost();
 				// make sure we can move here
 				if (_save->getPathfinding()->getStartDirection() != -1)
@@ -723,7 +729,7 @@ void AIModule::setupAmbush()
 					score -= ambushTUs;
 
 					// make sure our enemy can reach here too.
-					_save->getPathfinding()->calculate(_aggroTarget, pos);
+					_save->getPathfinding()->calculate(_aggroTarget, pos, BAM_NORMAL);
 
 					if (_save->getPathfinding()->getStartDirection() != -1)
 					{
@@ -757,14 +763,12 @@ void AIModule::setupAmbush()
 				Position(8,8, _unit->getHeight() + _unit->getFloatHeight() - _save->getTile(_ambushAction.target)->getTerrainLevel() - 4);
 			Position currentPos = _aggroTarget->getPosition();
 			_save->getPathfinding()->setUnit(_aggroTarget);
-			Position nextPos;
 			size_t tries = path.size();
 			// hypothetically walk the target through the path.
 			while (tries > 0)
 			{
-				_save->getPathfinding()->getTUCost(currentPos, path.back(), &nextPos, _aggroTarget, 0, false);
+				currentPos = _save->getPathfinding()->getTUCost(currentPos, path.back(), _aggroTarget, 0, BAM_NORMAL).pos;
 				path.pop_back();
-				currentPos = nextPos;
 				Tile *tile = _save->getTile(currentPos);
 				Position target;
 				// do a virtual fire calculation
@@ -900,6 +904,7 @@ void AIModule::setupEscape()
 	int bestTileScore = -100000;
 	int score = -100000;
 	Position bestTile(0, 0, 0);
+	bool run = false;
 
 	Tile *tile = 0;
 
@@ -916,6 +921,7 @@ void AIModule::setupEscape()
 	while (tries < 150 && !coverFound)
 	{
 		_escapeAction.target = _unit->getPosition(); // start looking in a direction away from the enemy
+		_escapeAction.run = _unit->getArmor()->allowsRunning(false) && (tries & 1); // every odd try, i.e. roughly 50%
 
 		if (!_save->getTile(_escapeAction.target))
 		{
@@ -1034,11 +1040,12 @@ void AIModule::setupEscape()
 		if (tile && score > bestTileScore)
 		{
 			// calculate TUs to tile; we could be getting this from findReachable() somehow but that would break something for sure...
-			_save->getPathfinding()->calculate(_unit, _escapeAction.target);
+			_save->getPathfinding()->calculate(_unit, _escapeAction.target, _escapeAction.getMoveType());
 			if (_escapeAction.target == _unit->getPosition() || _save->getPathfinding()->getStartDirection() != -1)
 			{
 				bestTileScore = score;
 				bestTile = _escapeAction.target;
+				run = _escapeAction.run;
 				_escapeTUs = _save->getPathfinding()->getTotalTUCost();
 				if (_escapeAction.target == _unit->getPosition())
 				{
@@ -1056,6 +1063,7 @@ void AIModule::setupEscape()
 		}
 	}
 	_escapeAction.target = bestTile;
+	_escapeAction.run = run;
 	if (_traceAI)
 	{
 		_save->getTile(_escapeAction.target)->setMarkerColor(13);
@@ -1199,7 +1207,7 @@ int AIModule::selectNearestTarget()
  * Note: Differs from selectNearestTarget() in calling selectPointNearTargetLeeroy().
  * @return viable targets.
  */
-int AIModule::selectNearestTargetLeeroy()
+int AIModule::selectNearestTargetLeeroy(bool canRun)
 {
 	int tally = 0;
 	_closestDist = 100;
@@ -1214,7 +1222,7 @@ int AIModule::selectNearestTargetLeeroy()
 			if (dist < _closestDist)
 			{
 				bool valid = false;
-				if (selectPointNearTargetLeeroy(*i))
+				if (selectPointNearTargetLeeroy(*i, canRun))
 				{
 					int dir = _save->getTileEngine()->getDirectionTo(_attackAction.target, (*i)->getPosition());
 					valid = _save->getTileEngine()->validMeleeRange(_attackAction.target, dir, _unit, *i, 0);
@@ -1314,7 +1322,7 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 
 					if (valid && fitHere && !_save->getTile(checkPath)->getDangerous())
 					{
-						_save->getPathfinding()->calculate(_unit, checkPath, 0, maxTUs);
+						_save->getPathfinding()->calculate(_unit, checkPath, BAM_NORMAL, 0, maxTUs);
 
 						//for 100% dodge diff and on 4th difficulty it will allow aliens to move 10 squares around to made attack from behind.
 						int distanceCurrent = _save->getPathfinding()->getPath().size() - dodgeChanceDiff * _save->getTileEngine()->getArcDirection(dir - 4, dirTarget);
@@ -1342,7 +1350,7 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
  * @param target Pointer to a target.
  * @return True if a point was found.
  */
-bool AIModule::selectPointNearTargetLeeroy(BattleUnit *target)
+bool AIModule::selectPointNearTargetLeeroy(BattleUnit *target, bool canRun)
 {
 	int size = _unit->getArmor()->getSize();
 	int targetsize = target->getArmor()->getSize();
@@ -1365,7 +1373,7 @@ bool AIModule::selectPointNearTargetLeeroy(BattleUnit *target)
 
 					if (valid && fitHere)
 					{
-						_save->getPathfinding()->calculate(_unit, checkPath, 0, 100000); // disregard unit's TUs.
+						_save->getPathfinding()->calculate(_unit, checkPath, canRun ? BAM_RUN : BAM_NORMAL, 0, 100000); // disregard unit's TUs.
 						if (_save->getPathfinding()->getStartDirection() != -1 && _save->getPathfinding()->getPath().size() < distance)
 						{
 							_attackAction.target = checkPath;
@@ -1839,7 +1847,7 @@ bool AIModule::findFirePoint()
 
 		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false))
 		{
-			_save->getPathfinding()->calculate(_unit, pos);
+			_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
 			// can move here
 			if (_save->getPathfinding()->getStartDirection() != -1)
 			{
@@ -2061,7 +2069,7 @@ void AIModule::meleeAction()
  * Melee targetting: we can see an enemy, we can move to it so we're charging blindly toward an enemy.
  * Note: Differs from meleeAction() in calling selectPointNearTargetLeeroy() and ignoring some more checks.
  */
-void AIModule::meleeActionLeeroy()
+void AIModule::meleeActionLeeroy(bool canRun)
 {
 	if (_aggroTarget != 0 && !_aggroTarget->isOut())
 	{
@@ -2081,10 +2089,11 @@ void AIModule::meleeActionLeeroy()
 		//pick closest living unit
 		if ((newDistance < distance || newDistance == 1) && !(*i)->isOut())
 		{
-			if (newDistance == 1 || selectPointNearTargetLeeroy(*i))
+			if (newDistance == 1 || selectPointNearTargetLeeroy(*i, canRun))
 			{
 				_aggroTarget = (*i);
 				_attackAction.type = BA_WALK;
+				_attackAction.run = canRun;
 				_unit->setCharging(_aggroTarget);
 				distance = newDistance;
 			}
@@ -2120,7 +2129,7 @@ void AIModule::wayPointAction()
 	{
 		if (!validTarget(*i, true, _unit->getFaction() == FACTION_HOSTILE))
 			continue;
-		_save->getPathfinding()->calculate(_unit, (*i)->getPosition(), *i, -1);
+		_save->getPathfinding()->calculate(_unit, (*i)->getPosition(), BAM_MISSILE, *i, -1);
 		auto ammo = _attackAction.weapon->getAmmoForAction(BA_LAUNCH);
 		if (_save->getPathfinding()->getStartDirection() != -1 &&
 			explosiveEfficacy((*i)->getPosition(), _unit, ammo->getRules()->getExplosionRadius({ BA_LAUNCH, _unit, _attackAction.weapon, ammo }), _attackAction.diff))
@@ -2153,7 +2162,7 @@ void AIModule::wayPointAction()
 		Position CurrentPosition = _unit->getPosition();
 		Position DirectionVector;
 
-		_save->getPathfinding()->calculate(_unit, _aggroTarget->getPosition(), _aggroTarget, -1);
+		_save->getPathfinding()->calculate(_unit, _aggroTarget->getPosition(), BAM_MISSILE, _aggroTarget, -1);
 		PathDirection = _save->getPathfinding()->dequeuePath();
 		while (PathDirection != -1 && (int)_attackAction.waypoints.size() < maxWaypoints)
 		{
@@ -2669,20 +2678,28 @@ bool AIModule::validTarget(BattleUnit *target, bool assessDanger, bool includeCi
 	// 1. are dead/unconscious
 	// 2. are dangerous (they have been grenaded)
 	// 3. are on our side
+	// 4. are hostile/neutral units marked as ignored by the AI
 	if (target->isOut() ||
 		(assessDanger && target->getTile()->getDangerous()) ||
-		target->getFaction() == _unit->getFaction())
+		(target->getFaction() != FACTION_PLAYER && target->isIgnoredByAI()) ||
+		(target->getUndercover() && !_unit->getUnitWarned()) ||
+		(target->getFaction() == _unit->getFaction() && !target->isTreatedByAI()))
 	{
 		return false;
 	}
 
 	// ignore units that we don't "know" about...
 	// ... unless we are a sniper and the spotters know about them
-	if (_unit->getFaction() == FACTION_HOSTILE &&
+	if ((_unit->getFaction() == FACTION_HOSTILE && !target->isTreatedByAI()) &&
 		_intelligence < target->getTurnsSinceSpotted() &&
 		(!_unit->isSniper() || !target->getTurnsLeftSpottedForSnipers()))
 	{
 		return false;
+	}
+
+	if (target->isTreatedByAI())
+	{
+		return true;
 	}
 
 	if (includeCivs)
@@ -2817,6 +2834,14 @@ bool AIModule::getNodeOfBestEfficacy(BattleAction *action, int radius)
 BattleUnit* AIModule::getTarget()
 {
 	return _aggroTarget;
+}
+
+void AIModule::freePatrolTarget()
+{
+	if (_toNode)
+	{
+		_toNode->freeNode();
+	}
 }
 
 }

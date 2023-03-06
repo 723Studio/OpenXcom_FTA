@@ -51,7 +51,8 @@ EquipmentLayoutItem::EquipmentLayoutItem(const BattleItem* item) :
 	_slot(item->getSlot()->getId()),
 	_slotX(item->getSlotX()), _slotY(item->getSlotY()),
 	_ammoItem{}, _fuseTimer(item->getFuseTimer()),
-	_fixed(item->getRules()->isFixed())
+	_fixed(item->getRules()->isFixed()),
+	_stackSize(item->getRules()->getStackSize())
 {
 	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 	{
@@ -137,6 +138,15 @@ bool EquipmentLayoutItem::isFixed() const
 }
 
 /**
+ * Gets Stack size
+ * @return stack size.
+ */
+int EquipmentLayoutItem::stackSize() const
+{
+	return _stackSize;
+}
+
+/**
  * Loads the soldier-equipment layout item from a YAML file.
  * @param node YAML node.
  */
@@ -168,6 +178,7 @@ void EquipmentLayoutItem::load(const YAML::Node &node)
 YAML::Node EquipmentLayoutItem::save() const
 {
 	YAML::Node node;
+	node.SetStyle(YAML::EmitterStyle::Flow);
 	node["itemType"] = _itemType;
 	node["slot"] = _slot;
 	// only save this info if it's needed, reduce clutter in saves

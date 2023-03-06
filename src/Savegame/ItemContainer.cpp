@@ -64,7 +64,7 @@ YAML::Node ItemContainer::save() const
  */
 void ItemContainer::addItem(const std::string &id, int qty)
 {
-	if (id.empty())
+	if (Mod::isEmptyRuleName(id))
 	{
 		return;
 	}
@@ -91,7 +91,7 @@ void ItemContainer::addItem(const RuleItem* item, int qty)
  */
 void ItemContainer::removeItem(const std::string &id, int qty)
 {
-	if (id.empty())
+	if (Mod::isEmptyRuleName(id))
 	{
 		return;
 	}
@@ -131,7 +131,7 @@ void ItemContainer::removeItem(const RuleItem* item, int qty)
  */
 int ItemContainer::getItem(const std::string &id) const
 {
-	if (id.empty())
+	if (Mod::isEmptyRuleName(id))
 	{
 		return 0;
 	}

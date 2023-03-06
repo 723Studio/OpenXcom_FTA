@@ -32,6 +32,36 @@ class SoldierNamePool;
 class StatString;
 class RuleItem;
 class RuleSkill;
+class RulePrisoner;
+class Armor;
+/// Soldier roles for FtA game
+enum SoldierRole : int { ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4 };
+
+struct SoldierRoleRanksRequirments
+{
+	SoldierRole role;
+	std::map<int, int> requirments;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		requirments = node["requirments"].as<std::map<int, int>>(requirments);
+	}
+};
+
+struct SoldierRoleRanksStrings
+{
+	SoldierRole role;
+	std::map<int, std::string> strings;
+
+	/// Loads stats from YAML.
+	void load(const YAML::Node &node)
+	{
+		role = (SoldierRole)node["role"].as<int>(role);
+		strings = node["strings"].as<std::map<int, std::string>>(strings);
+	}
+};
 
 /**
  * Represents the creation data for an X-COM unit.
@@ -41,7 +71,6 @@ class RuleSkill;
 class RuleSoldier
 {
 public:
-
 	/// Number of bits for soldier gender.
 	static constexpr int LookGenderBits = 1;
 	/// Number of bits for soldier look.
@@ -62,13 +91,20 @@ public:
 
 private:
 	std::string _type;
+	std::vector<SoldierRole> _roles;
 	int _listOrder;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
+	std::vector<SoldierRoleRanksRequirments*> _roleExpRequirments;
+	std::vector<SoldierRoleRanksStrings*> _roleRankStrings;
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
-	std::string _armor;
+	std::string _armorName;
+	const Armor* _armor;
+	std::string _prisonerName;
+	const RulePrisoner* _prisoner = nullptr;
 	std::string _specWeaponName;
 	const RuleItem* _specWeapon;
+	int _monthlyBuyLimit;
 	int _costBuy, _costSalary, _costSalarySquaddie, _costSalarySergeant, _costSalaryCaptain, _costSalaryColonel, _costSalaryCommander;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _femaleFrequency, _value, _transferTime, _moraleLossWhenKilled;
@@ -81,16 +117,23 @@ private:
 	std::vector<int> _selectWeaponSoundMale, _selectWeaponSoundFemale;
 	std::vector<int> _annoyedSoundMale, _annoyedSoundFemale;
 	std::vector<SoldierNamePool*> _names;
+	int _totalSoldierNamePoolWeight;
 	std::string _armorForAvatar;
 	int _avatarOffsetX, _avatarOffsetY, _flagOffset;
 	bool _allowPromotion, _allowPiloting, _showTypeInInventory;
 	std::vector<StatString*> _statStrings;
-	std::vector<std::string> _rankStrings;
+	std::vector<std::string> _rankStrings, _pilotRankStrings, _agentRankStrings, _scientistRankStrings, _engineerRankStrings;
 	int _rankSprite, _rankSpriteBattlescape, _rankSpriteTiny;
+	int _pilotRankSprite, _pilotRankSpriteBattlescape, _pilotRankSpriteTiny;
+	int _agentRankSprite, _agentRankSpriteBattlescape, _agentRankSpriteTiny;
+	int _scientistRankSprite, _scientistRankSpriteBattlescape, _scientistRankSpriteTiny;
+	int _engineerRankSprite, _engineerRankSpriteBattlescape, _engineerRankSpriteTiny;
 	int _skillIconSprite;
 	std::vector<std::string> _skillNames;
 	std::vector<const RuleSkill*> _skills;
 	ScriptValues<RuleSoldier> _scriptValues;
+
+	void loadRoles(const std::vector<int> &r);
 
 	void addSoldierNamePool(const std::string &namFile);
 public:
@@ -104,6 +147,8 @@ public:
 	void afterLoad(const Mod* mod);
 	/// Gets the soldier's type.
 	const std::string& getType() const;
+	/// Gets the soldier's role.
+	std::vector<SoldierRole> getRoles() const { return _roles; }
 	/// Gets whether or not the soldier type should be displayed in the inventory.
 	bool getShowTypeInInventory() const { return _showTypeInInventory; }
 	/// Gets the list/sort order of the soldier's type.
@@ -122,6 +167,8 @@ public:
 	UnitStats getTrainingStatCaps() const;
 	/// Gets the improvement chances for pilots (after dogfight).
 	UnitStats getDogfightExperience() const;
+	/// Gets the monthly hiring limit.
+	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
 	/// Gets the cost of the soldier.
 	int getBuyCost() const;
 	/// Does salary depend on rank?
@@ -141,9 +188,11 @@ public:
 	/// Gets the elevation of the soldier when it's flying.
 	int getFloatHeight() const;
 	/// Gets the default-equipped armor.
-	std::string getArmor() const;
+	Armor* getDefaultArmor() const;
+	/// Gets the prisoner type.
+	const RulePrisoner* getPrisoner() const { return _prisoner; }
 	/// Gets the armor for avatar display.
-	std::string getArmorForAvatar() const;
+	const std::string& getArmorForAvatar() const;
 	/// Gets the X offset used for avatar.
 	int getAvatarOffsetX() const;
 	/// Gets the Y offset used for avatar.
@@ -188,12 +237,14 @@ public:
 	const std::vector<int> &getFemaleAnnoyedSounds() const { return _annoyedSoundFemale; }
 	/// Gets the pool list for soldier names.
 	const std::vector<SoldierNamePool*> &getNames() const;
+	/// Gets the total weight of all the soldier name pools.
+	int getTotalSoldierNamePoolWeight() const { return _totalSoldierNamePoolWeight; }
 	/// Gets the value - for score calculation.
 	int getValue() const;
 	/// Gets the soldier's transfer time.
 	int getTransferTime() const;
 	/// Percentage modifier for morale loss when this unit is killed.
-	int getMoraleLossWhenKilled() { return _moraleLossWhenKilled; };
+	int getMoraleLossWhenKilled() const { return _moraleLossWhenKilled; }
 	/// Gets the list of StatStrings.
 	const std::vector<StatString *> &getStatStrings() const;
 	/// Gets the list of strings for ranks.
@@ -204,6 +255,21 @@ public:
 	int getRankSpriteBattlescape() const;
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
+	/// Getters for FtA's roles sprite IDs.
+	int getPilotRankSprite() const { return _pilotRankSprite; }
+	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; }
+	int getPilotRankSpriteTiny() const { return _pilotRankSpriteTiny; }
+	int getAgentRankSprite() const { return _agentRankSprite; }
+	int getAgentRankSpriteBattlescape() const { return _agentRankSpriteBattlescape; }
+	int getAgentRankSpriteTiny() const { return _agentRankSpriteTiny; }
+	int getScientistRankSprite() const { return _scientistRankSprite; }
+	int getScientistSpriteBattlescape() const { return _scientistRankSpriteBattlescape; }
+	int getScientistSpriteTiny() const { return _scientistRankSpriteTiny; }
+	int getEngineerRankSprite() const { return _engineerRankSprite; }
+	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; }
+	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; }
+	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
+	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() const { return _roleRankStrings; }
 
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }

@@ -49,7 +49,7 @@ Game* State::_game = 0;
  * By default states are full-screen.
  * @param game Pointer to the core game.
  */
-State::State() : _screen(true), _soundPlayed(false), _modal(0), _ruleInterface(0), _ruleInterfaceParent(0)
+State::State() : _screen(true), _soundPlayed(false), _modal(0), _ruleInterface(0), _ruleInterfaceParent(0), _customSound(nullptr)
 {
 	// initialize palette to all black
 	memset(_palette, 0, sizeof(_palette));
@@ -264,25 +264,39 @@ void State::init()
 	_game->getFpsCounter()->setColor(_cursorColor);
 	_game->getFpsCounter()->draw();
 
+	// Highest priority: custom sound set explicitly in the code
+	// Medium priority: sound defined by the interface ruleset
+	// Lowest priority: default window popup sound
+	bool muteWindowPopupSound = false;
+	if (!_soundPlayed)
+	{
+		_soundPlayed = true;
+		if (!_customSound && _ruleInterface && _ruleInterface->getSound() != Mod::NO_SOUND)
+		{
+			_customSound = _game->getMod()->getSound("GEO.CAT", _ruleInterface->getSound());
+		}
+		if (_customSound)
+		{
+			muteWindowPopupSound = true;
+			_customSound->play();
+		}
+	}
+
 	for (std::vector<Surface*>::iterator i = _surfaces.begin(); i != _surfaces.end(); ++i)
 	{
 		Window* window = dynamic_cast<Window*>(*i);
 		if (window)
 		{
+			if (muteWindowPopupSound)
+			{
+				window->mute();
+			}
 			window->invalidate();
 		}
 	}
 	if (_ruleInterface != 0 && !_ruleInterface->getMusic().empty())
 	{
 		_game->getMod()->playMusic(_ruleInterface->getMusic());
-	}
-	if (_ruleInterface != 0 && _ruleInterface->getSound() > -1)
-	{
-		if (!_soundPlayed)
-		{
-			_game->getMod()->getSound("GEO.CAT", _ruleInterface->getSound())->play();
-			_soundPlayed = true;
-		}
 	}
 }
 

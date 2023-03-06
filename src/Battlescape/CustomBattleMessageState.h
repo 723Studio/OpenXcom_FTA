@@ -39,7 +39,6 @@ private:
 	Text* _txtTitle, * _txtContent;
 	TextButton* _btnOk;
 	SavedBattleGame* _battleGame;
-	BattlescapeState* _state;
 public:
 	/// Creates the InfoboxOKState.
 	CustomBattleMessageState(BattleMessage msg);

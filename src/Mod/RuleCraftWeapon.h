@@ -30,6 +30,7 @@ class RuleItem;
 
 enum CraftWeaponCategory { CWC_WEAPON, CWC_TRACTOR_BEAM, CWC_EQUIPMENT };
 
+
 /**
  * Represents a specific type of craft weapon.
  * Contains constant info about a craft weapon like
@@ -40,8 +41,10 @@ class RuleCraftWeapon
 {
 private:
 	std::string _type;
-	int _sprite, _sound, _damage, _shieldDamageModifier, _range, _accuracy, _reloadCautious, _reloadStandard, _reloadAggressive, _ammoMax, _rearmRate, _projectileSpeed, _weaponType;
+	int _sprite, _sound, _damage, _shieldDamageModifier, _range, _accuracy, _reloadCautious, _reloadStandard, _reloadAggressive;
+	int _ammoMax, _rearmRate, _projectileSpeed, _weaponType;
 	CraftWeaponProjectileType _projectileType;
+	CraftWeaponProjectileSubType _projectileSubType;
 	std::string _launcherName, _clipName;
 	const RuleItem* _launcher;
 	const RuleItem* _clip;
@@ -49,6 +52,7 @@ private:
 	bool _underwaterOnly;
 	int _tractorBeamPower;
 	bool _hidePediaInfo;
+	bool _statisticalBulletSaving;
 public:
 	/// Creates a blank craft weapon ruleset.
 	RuleCraftWeapon(const std::string &type);
@@ -69,6 +73,8 @@ public:
 	int getDamage() const;
 	/// Should the weapon's stats be displayed in Ufopedia or not?
 	bool getHidePediaInfo() const { return _hidePediaInfo; }
+	/// Should the statistical bullet saving be used or not?
+	bool useStatisticalBulletSaving() const { return _statisticalBulletSaving; }
 	/// Gets the craft weapon's effectiveness against shields.
 	int getShieldDamageModifier() const;
 	/// Gets the craft weapon's range.
@@ -91,6 +97,8 @@ public:
 	const RuleItem* getClipItem() const;
 	/// Gets the craft weapon's projectile's type.
 	CraftWeaponProjectileType getProjectileType() const;
+	/// Gets the craft weapon's global category.
+	CraftWeaponProjectileSubType getProjectileSubType() const { return _projectileSubType; };
 	/// Gets the craft weapon's projectile speed.
 	int getProjectileSpeed() const;
 	/// Gets weapon type used by craft slots.

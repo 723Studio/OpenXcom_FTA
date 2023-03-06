@@ -1,54 +1,67 @@
 # Based on UFOextender by Seb76 and Tycho
 items:
   - type: STR_DART_PISTOL
+    meleeType: 6
     meleePower: 20
     tuMelee: 15
     accuracyMelee: 100
   - type: STR_JET_HARPOON
+    meleeType: 6
     meleePower: 50
     tuMelee: 40
     accuracyMelee: 100
   - type: STR_GAS_CANNON
+    meleeType: 6
     meleePower: 65
     tuMelee: 50
     accuracyMelee: 100
   - type: STR_HYDRO_JET_CANNON
+    meleeType: 6
     meleePower: 65
     tuMelee: 50
     accuracyMelee: 100
   - type: STR_TORPEDO_LAUNCHER
+    meleeType: 6
     meleePower: 80
     tuMelee: 80
     accuracyMelee: 100
   - type: STR_GAUSS_PISTOL
+    meleeType: 6
     meleePower: 20
     tuMelee: 15
     accuracyMelee: 100
   - type: STR_GAUSS_RIFLE
+    meleeType: 6
     meleePower: 50
     tuMelee: 40
     accuracyMelee: 100
   - type: STR_HEAVY_GAUSS
+    meleeType: 6
     meleePower: 65
     tuMelee: 50
     accuracyMelee: 100
   - type: STR_SONIC_CANNON
+    meleeType: 6
     meleePower: 65
     tuMelee: 50
     accuracyMelee: 100
   - type: STR_SONIC_BLASTA_RIFLE
+    meleeType: 6
     meleePower: 50
     tuMelee: 40
     accuracyMelee: 100
   - type: STR_SONIC_PISTOL
+    meleeType: 6
     meleePower: 20
     tuMelee: 15
     accuracyMelee: 100
   - type: STR_DISRUPTOR_PULSE_LAUNCHER
+    meleeType: 6
     meleePower: 80
     tuMelee: 80
     accuracyMelee: 100
   - type: STR_THERMAL_SHOK_LAUNCHER
+    meleeType: 6
     meleePower: 50
     tuMelee: 40
     accuracyMelee: 100

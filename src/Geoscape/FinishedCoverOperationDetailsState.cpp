@@ -33,7 +33,9 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Soldier.h"
+#include "../Savegame/SavedGame.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Battlescape/CommendationLateState.h"
 
 namespace OpenXcom
 {
@@ -43,8 +45,8 @@ namespace OpenXcom
 	 * @param geoEvent Pointer to the event.
 	 * @param result - comes true if sucess operation, false if it was failed.
 	 */
-	FinishedCoverOperationDetailsState::FinishedCoverOperationDetailsState(CovertOperation* operation) :
-		_operation(operation), _pageNumber(0), _hasItems(false), _hasRep(false), _hasFunds(false), _hasScore(false), _hasSStatus(false), _hasMessage(false)
+	FinishedCoverOperationDetailsState::FinishedCoverOperationDetailsState(CovertOperation* operation) : _hasItems(false), _hasRep(false),
+	_hasFunds(false), _hasScore(false), _hasSStatus(false), _hasMessage(false), _hasMIA(false), _operation(operation), _pageNumber(0)
 	{
 		_screen = false;
 		_results = _operation->getResults();
@@ -298,9 +300,15 @@ namespace OpenXcom
 				auto soldier = tr((*i).first);
 				int damage = (*i).second;
 				if (damage > 0)
+				{
 					++wounded;
+				}
 				if (damage < 0)
+				{
 					++mia;
+					_hasMIA = true;
+				}
+					
 			}
 			if (wounded > 0)
 			{
@@ -397,6 +405,7 @@ namespace OpenXcom
 						_lstSoldierStats->addRow(13, (*i).first.c_str(), "", "", "", "", "", "", "", "", "", "", "", "");
 						_lstSoldierStats->setRowColor(row, _game->getMod()->getInterface("covertOperationFinishDetails")->getElement("damaged")->color);
 						_lstSoldierStats->getTooltip();
+						_lstSoldierStatus->setTooltip(tr("STR_MIA"));
 					}
 				}
 			}
@@ -420,6 +429,7 @@ namespace OpenXcom
 					makeSoldierString(tmp).c_str(),
 					makeSoldierString((*i).second->psiSkill).c_str(),
 					"");
+				_lstSoldierStatus->setTooltip(tr("STR_WOUNDED"));
 			}
 			row++;
 		}
@@ -438,6 +448,28 @@ namespace OpenXcom
 	void FinishedCoverOperationDetailsState::btnOkClick(Action*)
 	{
 		_game->popState();
+		if (_hasMIA)
+		{
+			std::vector<Soldier *> deadSoldiers;
+			for (auto &result : _results->getSoldierDamage())
+			{
+				if (result.second < 0) 
+				{
+					auto soldiers = _game->getSavedGame()->getDeadSoldiers();
+					for (auto &soldier : *soldiers)
+					{
+						if (soldier->getName() == result.first)
+						{
+							deadSoldiers.push_back(soldier);
+						}
+					}
+				}
+			}
+			if (!deadSoldiers.empty())
+			{
+				_game->pushState(new CommendationLateState(deadSoldiers));
+			}
+		}
 	}
 
 	/**
@@ -546,6 +578,8 @@ namespace OpenXcom
 	 */
 	void FinishedCoverOperationDetailsState::secondPage()
 	{
+		bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
+					   _game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
 		_txtSoldier->setVisible(true);
 		_txtTU->setVisible(true);
 		_txtStamina->setVisible(true);
@@ -556,11 +590,9 @@ namespace OpenXcom
 		_txtThrowing->setVisible(true);
 		_txtMelee->setVisible(true);
 		_txtStrength->setVisible(true);
-		_txtPsiStrength->setVisible(true);
-		_txtPsiSkill->setVisible(true);
+		_txtPsiStrength->setVisible(true && showPsi);
+		_txtPsiSkill->setVisible(true && showPsi);
 		_lstSoldierStats->setVisible(true);
-
-
 	}
 
 

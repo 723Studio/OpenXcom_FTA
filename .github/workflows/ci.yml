@@ -1,0 +1,167 @@
+# NOTE: We're using both Travis CI and Github Actions, if you change this file,
+# also change .travis.yml accordingly.
+name: ci
+
+# need to explicitly enable this here, otherwise even though it's correctly configured in github, it won't work (allow writing to container registry)
+permissions:
+  packages: write
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} (${{ matrix.compiler }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-20.04  # -latest is still stuck at 18.04
+            compiler: gcc
+            cpp-compiler: g++
+
+          - name: Linux
+            os: ubuntu-20.04  # -latest is still stuck at 18.04
+            compiler: clang
+            cpp-compiler: clang++
+
+          - name: Linux
+            os: ubuntu-20.04  # -latest is still stuck at 18.04
+            compiler: mingw
+            cpp-compiler: mingw
+
+          - name: macOS
+            os: macOS-latest
+            packages: ccache sdl sdl_gfx sdl_image sdl_mixer
+            compiler: clang
+            cpp-compiler: clang++
+            app-bundle: openxcom.app  # all other builds default to bin/
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Install packages (mingw)
+        if: matrix.compiler == 'mingw'
+        run: |
+          sudo apt-get update
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install ccache ${{ matrix.packages }}
+
+      - name: Install packages (Ubuntu)
+        if: runner.os == 'Linux' && matrix.compiler != 'mingw'
+        run: |
+          sudo apt-get update
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install ccache ${{ matrix.packages }}
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libsdl-gfx1.2-dev libyaml-cpp-dev
+
+      - name: Install packages (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          wget https://raw.githubusercontent.com/Homebrew/homebrew-core/15db440a1b4e74444005500aa37aa914e92dd041/Formula/yaml-cpp.rb
+          brew install --formula yaml-cpp.rb
+          brew install ${{ matrix.packages }}
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          # does not work??
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+
+      - name: Setup Cache
+        if: runner.os == 'Linux' || runner.os == 'macOS' || runner.os == 'Windows'
+        uses: actions/cache@v3
+        with:
+          path: ~/.ccache
+          # make sure we always update the cache by passing the run_id (otherwise actions/cache assumes a hit and never updates the cache)
+          key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: ccache-${{ runner.os }}-${{ matrix.compiler }}-
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Prepare mxe container
+        id: prepare-mxe-container
+        if: matrix.compiler == 'mingw'
+        uses: ./.github/actions/prepare-mxe-docker
+        with:
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup environment
+        shell: bash
+        run: |
+          echo "describe=$(git describe)" >> $GITHUB_ENV
+          if [ "${{ matrix.name }}" = "Linux" ]; then
+            echo "MAYBE_SUDO=sudo" >> $GITHUB_ENV
+          fi
+          echo "CMAKE_BUILD_PARALLEL_LEVEL=`getconf _NPROCESSORS_ONLN 2>/dev/null || getconf NPROCESSORS_ONLN 2>/dev/null || echo 2`" >> $GITHUB_ENV
+
+          if [ -d ".github/workflows/patches/${{ runner.os }}" ]; then
+            # apply patches in dir
+            for patch in .github/workflows/patches/${{ runner.os }}/*.patch; do
+              echo "Applying patch $patch"
+              git apply $patch
+            done
+          fi
+
+      - name: Generate project files
+        if: matrix.compiler != 'mingw'
+        run: |
+          cmake -B ${{ matrix.build-dir || 'build' }} ${{ matrix.build-src-dir || '.' }} -DCMAKE_BUILD_TYPE=Release -DENABLE_WARNING=1 -DCHECK_CCACHE=1 ${{ matrix.cmake-args }}
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cpp-compiler }}
+
+      - name: Compile source code
+        if: matrix.compiler != 'mingw'
+        run: |
+          cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} -- ${{ matrix.build-args }}
+
+      - name: Compile source code (mingw)
+        if: matrix.compiler == 'mingw'
+        # continue-on-error: true
+        run: |
+          mkdir build
+          ${{ steps.prepare-mxe-container.outputs.docker-cmd }} sh -c "\
+            export PATH=/opt/mxe/usr/bin:\$PATH \
+            && cd build \
+            && /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -DCMAKE_BUILD_TYPE=Release -DDEV_BUILD=OFF -DBUILD_PACKAGE=OFF -DCHECK_CCACHE=1 .. \
+            && make -j4 \
+          "
+          sudo chown -R runner ~/.ccache
+
+      - name: Setup upterm session
+        if: ${{ failure() }}
+        uses: lhotari/action-upterm@v1
+        timeout-minutes: 15
+        with:
+          limit-access-to-actor: true
+
+        # Note, this is bogus on MacOS, as it installs shaders et al twice.
+        # Windows installs under C:/Program Files (x86)/OpenXcom/bin (where the
+        # 'bin' is pretty redundant) and Linux installs under various dirs under
+        # /usr/local
+      - name: Make install
+        if: (runner.os == 'Linux' && matrix.compiler != 'mingw') || runner.os == 'macOS' || runner.os == 'Windows'
+        shell: bash
+        run: |
+          $MAYBE_SUDO cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} --target install
+
+      - name: Make install (mingw)
+        if: matrix.compiler == 'mingw'
+        shell: bash
+        run: |
+          ${{ steps.prepare-mxe-container.outputs.docker-cmd }} sh -c "\
+            export PATH=/opt/mxe/usr/bin:\$PATH \
+            && /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} --target install
+          "
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+            name: openxcom_${{ matrix.name }}_${{ matrix.compiler }}-${{ env.describe }}
+            path: |
+                ${{ matrix.build-dir || 'build' }}/${{ matrix.app-bundle || 'bin' }}/**/*
+                !${{ matrix.build-dir || 'build' }}/${{ matrix.app-bundle || 'bin' }}/libopenxcom.dll.a
+
+      - name: ccache stats
+        if: runner.os == 'Linux' || runner.os == 'macOS' || runner.os == 'Windows'
+        run: ccache -s --max-size=390MB

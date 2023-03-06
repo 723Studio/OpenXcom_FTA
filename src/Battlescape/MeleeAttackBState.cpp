@@ -25,12 +25,10 @@
 #include "Camera.h"
 #include "AIModule.h"
 #include "../Savegame/Tile.h"
-#include "../Engine/RNG.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
 #include "../Engine/Exception.h"
-#include "../Engine/Sound.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../fmath.h"
@@ -156,6 +154,13 @@ void MeleeAttackBState::init()
 	if (_unit->getFaction() == FACTION_HOSTILE)
 	{
 		_hitNumber = _weapon->getRules()->getAIMeleeHitCount() - 1;
+	}
+
+	if (_target->getFaction() == FACTION_HOSTILE && _parent->getSave()->isStealthMission()
+		&& !_target->getUnitWarned() && !_target->isOut())
+	{
+		_target->setUnitWarned(true);
+		Log(LOG_INFO) << "Unit is warned because it was attacked by melee."; //#FINNIKTODO #CLEARLOGS
 	}
 
 	performMeleeAttack();

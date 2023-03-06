@@ -42,6 +42,7 @@ namespace OpenXcom
 ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::string &selectedItem) : _selectedItem(selectedItem), _showAll(false)
 {
 	_screen = false;
+	_ftaGame = _game->getMod()->isFTAGame();
 
 	_window = new Window(this, 222, 144, 49, 32);
 	_txtTitle = new Text(182, 9, 53, 42);
@@ -87,6 +88,12 @@ ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::st
 		_lstTopics->setVisible(false);
 		return;
 	}
+	if (_ftaGame)
+	{
+		_btnShowAll->setVisible(false);
+		_btnOk->setWidth(_btnOk->getX() - _btnShowAll->getX() + _btnOk->getWidth());
+		_btnOk->setX(_btnShowAll->getX());
+	}
 }
 
 ManufactureDependenciesTreeState::~ManufactureDependenciesTreeState()
@@ -100,9 +107,13 @@ void ManufactureDependenciesTreeState::init()
 {
 	State::init();
 
-	if (!Options::oxceDisableProductionDependencyTree)
+	if (!Options::oxceDisableProductionDependencyTree && !_ftaGame)
 	{
 		initList();
+	}
+	else if (_ftaGame)
+	{
+		initFtAList();
 	}
 }
 
@@ -354,6 +365,205 @@ void ManufactureDependenciesTreeState::initList()
 	_lstTopics->addRow(1, tr("STR_MORE_DEPENDENCIES").c_str());
 	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
 	++row;
+}
+
+void ManufactureDependenciesTreeState::initFtAList()
+{
+	_lstTopics->clearList();
+
+	// dependency map (item -> vector of items that needs this item)
+	std::unordered_map<std::string, std::vector<std::string> > deps;
+
+	const std::vector<std::string> &manufactureItems = _game->getMod()->getManufactureList();
+	for (std::vector<std::string>::const_iterator i = manufactureItems.begin(); i != manufactureItems.end(); ++i)
+	{
+		RuleManufacture *rule = _game->getMod()->getManufacture((*i));
+		if (_game->getSavedGame()->isResearched(rule->getRequirements()))
+		{
+			for (auto &j : rule->getRequiredItems())
+			{
+				deps[j.first->getType()].push_back((*i));
+			}
+		}
+	}
+
+	// breadth-first tree search
+	int row = 0;
+	const std::vector<std::string> firstLevel = deps[_selectedItem];
+	std::vector<std::string> secondLevel;
+	std::vector<std::string> thirdLevel;
+	std::vector<std::string> fourthLevel;
+	std::vector<std::string> fifthLevel;
+
+	std::unordered_set<std::string> alreadyVisited;
+	alreadyVisited.insert(_selectedItem);
+	for (std::vector<std::string>::const_iterator i = firstLevel.begin(); i != firstLevel.end(); ++i)
+	{
+		alreadyVisited.insert((*i));
+	}
+
+	std::vector<const RuleBaseFacility *> facilitiesLevel;
+	for (auto &facilityId : _game->getMod()->getBaseFacilitiesList())
+	{
+		RuleBaseFacility *facilityRule = _game->getMod()->getBaseFacility(facilityId);
+		for (auto &itemRequired : facilityRule->getBuildCostItems())
+		{
+			if (itemRequired.first == _selectedItem)
+			{
+				if (_game->getSavedGame()->isResearched(facilityRule->getRequirements()))
+				{
+					facilitiesLevel.push_back(facilityRule);
+				}
+				break;
+			}
+		}
+	}
+
+	if (firstLevel.empty() && facilitiesLevel.empty())
+	{
+		_lstTopics->addRow(1, tr("STR_NO_DEPENDENCIES").c_str());
+		_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		++row;
+		return;
+	}
+
+	// first level
+	_lstTopics->addRow(1, tr("STR_DIRECT_DEPENDENCIES").c_str());
+	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+	++row;
+
+	// first list all the dependent base facilities
+	for (auto &i : facilitiesLevel)
+	{
+		_lstTopics->addRow(1, tr(i->getType()).c_str());
+		++row;
+	}
+
+	for (std::vector<std::string>::const_iterator i = firstLevel.begin(); i != firstLevel.end(); ++i)
+	{
+		_lstTopics->addRow(1, tr((*i)).c_str());
+		++row;
+
+		const std::vector<std::string> goDeeper = deps[(*i)];
+		for (std::vector<std::string>::const_iterator j = goDeeper.begin(); j != goDeeper.end(); ++j)
+		{
+			if (alreadyVisited.find((*j)) == alreadyVisited.end())
+			{
+				secondLevel.push_back((*j));
+				alreadyVisited.insert((*j));
+			}
+		}
+	}
+
+	_lstTopics->addRow(1, "");
+	++row;
+	if (secondLevel.empty())
+	{
+		_lstTopics->addRow(1, tr("STR_END_OF_SEARCH").c_str());
+		_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		++row;
+		return;
+	}
+
+	// second level
+	_lstTopics->addRow(1, tr("STR_LEVEL_2_DEPENDENCIES").c_str());
+	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+	++row;
+
+	for (std::vector<std::string>::const_iterator i = secondLevel.begin(); i != secondLevel.end(); ++i)
+	{
+		_lstTopics->addRow(1, tr((*i)).c_str());
+		++row;
+
+		const std::vector<std::string> goDeeper = deps[(*i)];
+		for (std::vector<std::string>::const_iterator j = goDeeper.begin(); j != goDeeper.end(); ++j)
+		{
+			if (alreadyVisited.find((*j)) == alreadyVisited.end())
+			{
+				thirdLevel.push_back((*j));
+				alreadyVisited.insert((*j));
+			}
+		}
+	}
+
+	_lstTopics->addRow(1, "");
+	++row;
+	if (thirdLevel.empty())
+	{
+		_lstTopics->addRow(1, tr("STR_END_OF_SEARCH").c_str());
+		_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		++row;
+		return;
+	}
+
+	// third level
+	_lstTopics->addRow(1, tr("STR_LEVEL_3_DEPENDENCIES").c_str());
+	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+	++row;
+
+	for (std::vector<std::string>::const_iterator i = thirdLevel.begin(); i != thirdLevel.end(); ++i)
+	{
+		_lstTopics->addRow(1, tr((*i)).c_str());
+		++row;
+
+		const std::vector<std::string> goDeeper = deps[(*i)];
+		for (std::vector<std::string>::const_iterator j = goDeeper.begin(); j != goDeeper.end(); ++j)
+		{
+			if (alreadyVisited.find((*j)) == alreadyVisited.end())
+			{
+				fourthLevel.push_back((*j));
+				alreadyVisited.insert((*j));
+			}
+		}
+	}
+
+	_lstTopics->addRow(1, "");
+	++row;
+	if (fourthLevel.empty())
+	{
+		_lstTopics->addRow(1, tr("STR_END_OF_SEARCH").c_str());
+		_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		++row;
+		return;
+	}
+
+	// fourth level
+	_lstTopics->addRow(1, tr("STR_LEVEL_4_DEPENDENCIES").c_str());
+	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+	++row;
+
+	for (std::vector<std::string>::const_iterator i = fourthLevel.begin(); i != fourthLevel.end(); ++i)
+	{
+		_lstTopics->addRow(1, tr((*i)).c_str());
+		++row;
+
+		const std::vector<std::string> goDeeper = deps[(*i)];
+		for (std::vector<std::string>::const_iterator j = goDeeper.begin(); j != goDeeper.end(); ++j)
+		{
+			if (alreadyVisited.find((*j)) == alreadyVisited.end())
+			{
+				fifthLevel.push_back((*j));
+				alreadyVisited.insert((*j));
+			}
+		}
+	}
+
+	_lstTopics->addRow(1, "");
+	++row;
+	if (fifthLevel.empty())
+	{
+		_lstTopics->addRow(1, tr("STR_END_OF_SEARCH").c_str());
+		_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+		++row;
+		return;
+	}
+
+	_lstTopics->addRow(1, tr("STR_MORE_DEPENDENCIES").c_str());
+	_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
+	++row;
+
+
+
 }
 
 }

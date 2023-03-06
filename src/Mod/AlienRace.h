@@ -24,6 +24,8 @@
 
 enum AlienRank{AR_HUMAN = -1, AR_COMMANDER, AR_LEADER, AR_ENGINEER, AR_MEDIC, AR_NAVIGATOR, AR_SOLDIER, AR_TERRORIST, AR_TERRORIST2};
 
+enum RaceType { RACE_TYPE_MIXED = -1, RACE_TYPE_ALIEN = 0, RACE_TYPE_HUMAN = 1, RACE_TYPE_MONSTER = 2 };
+
 namespace OpenXcom
 {
 
@@ -41,6 +43,7 @@ private:
 	std::vector<std::string> _members;
 	std::vector< std::vector<std::string> > _membersRandom;
 	int _retaliationAggression;
+	RaceType _raceType;
 public:
 	/// Creates a blank alien race ruleset.
 	AlienRace(const std::string &id);
@@ -62,6 +65,7 @@ public:
 	int getRetaliationAggression() const;
 	/// Returns a list of retaliation missions based on the given month.
 	WeightedOptions* retaliationMissionWeights(const size_t monthsPassed) const;
+	RaceType getRaceType() const { return _raceType; }
 };
 
 }

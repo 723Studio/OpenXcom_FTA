@@ -22,9 +22,9 @@
 ;--------------------------------
 ;Defines
 
-	!define GAME_NAME "OpenXcom Extended"
-	!define GAME_VERSION "7.0.0"
-	!define GAME_AUTHOR "OpenXcom Developers"
+	!define GAME_NAME "OpenXcom From the Ashes"
+	!define GAME_VERSION "0.1.0.3"
+	!define GAME_AUTHOR "OpenXcom Developers & 723Studio"
 	!include "version.nsh"
 
 ;--------------------------------
@@ -32,7 +32,7 @@
 
 	;Name and file
 	Name "${GAME_NAME} ${GAME_VERSION}"
-	OutFile "openxcom_extended_v${GAME_VERSION}-win64.exe"
+	OutFile "openxcom_fta_v${GAME_VERSION}-win64.exe"
 
 	;Default installation folder
 	InstallDir "$PROGRAMFILES\${GAME_NAME}"
@@ -111,7 +111,7 @@
 	!insertmacro MUI_UNPAGE_INSTFILES
 	
 Function RunAsUser
-	ShellExecAsUser::ShellExecAsUser "open" "$INSTDIR\OpenXcomEx.exe"
+	ShellExecAsUser::ShellExecAsUser "open" "$INSTDIR\OpenXcomFta.exe"
 FunctionEnd
 
 ${StrStr}
@@ -258,7 +258,7 @@ Section "$(SETUP_GAME)" SecMain
 
 	SetOutPath "$INSTDIR"
 
-	File "OpenXcomEx.exe"
+	File "OpenXcomFta.exe"
 	;File "..\..\LICENSE.txt"
 	;File "..\..\CHANGELOG.txt"
 	;File /oname=README.txt "..\..\README.md"
@@ -330,12 +330,53 @@ ${If} $PortableMode == ${BST_CHECKED}
 	CreateDirectory "$INSTDIR\user"
 ${EndIf}
 
+    ;Download mod files
+ 	;(uses inetc.dll)
+	inetc::get "https://codeload.github.com/723Studio/X-Com-From-the-Ashes/zip/refs/tags/latest" "$TEMP\X-Com-From-the-Ashes.zip" /end
+	Pop $0
+	StrCmp $0 "OK" 0 download_mod_fail1
+
+	;(uses nsisunz.dll)
+${If} $PortableMode == ${BST_CHECKED}
+	nsisunz::UnzipToLog "$TEMP\X-Com-From-the-Ashes.zip" "$INSTDIR\user\mods"
+${Else}
+	nsisunz::UnzipToLog "$TEMP\X-Com-From-the-Ashes.zip" "$DOCUMENTS\OpenXcom\mods"
+${EndIf}
+        Pop $0
+	StrCmp $0 "success" download_mod_yes download_mod_fail1
+
+	download_mod_fail1:
+	Abort "Error"
+
+	download_mod_yes:
+	Delete "$TEMP\X-Com-From-the-Ashes.zip"
+	
+ 	;(uses inetc.dll)
+	inetc::get "https://github.com/723Studio/Hit-Fx-FtA/archive/refs/heads/main.zip" "$TEMP\Hit-Fx-FtA.zip" /end
+	Pop $0
+	StrCmp $0 "OK" 0 download_hitfx_fail1
+
+	;(uses nsisunz.dll)
+${If} $PortableMode == ${BST_CHECKED}
+	nsisunz::UnzipToLog "$TEMP\Hit-Fx-FtA.zip" "$INSTDIR\user\mods"
+${Else}
+	nsisunz::UnzipToLog "$TEMP\Hit-Fx-FtA.zip" "$DOCUMENTS\OpenXcom\mods"
+${EndIf}
+        Pop $0
+	StrCmp $0 "success" download_hitfx_yes download_hitfx_fail1
+
+	download_hitfx_fail1:
+	Abort "Error"
+
+	download_hitfx_yes:
+	Delete "$TEMP\Hit-Fx-FtA.zip"
+	
 	;Store installation folder
 	WriteRegStr HKLM "Software\${GAME_NAME}" "" $INSTDIR
 
 	;Write the uninstall keys for Windows
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "DisplayName" "${GAME_NAME} ${GAME_VERSION}"
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "DisplayIcon" '"$INSTDIR\OpenXcomEx.exe",0'
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "DisplayIcon" '"$INSTDIR\OpenXcomFta.exe",0'
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "DisplayVersion" "${GAME_VERSION}.0"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "InstallLocation" "$INSTDIR"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GAME_NAME}" "Publisher" "${GAME_AUTHOR}"
@@ -353,7 +394,7 @@ ${EndIf}
 	!insertmacro MUI_STARTMENU_WRITE_BEGIN Application
 
 		CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\${GAME_NAME}.lnk" "$INSTDIR\OpenXcomEx.exe"
+		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\${GAME_NAME}.lnk" "$INSTDIR\OpenXcomFta.exe"
 		;CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_CHANGELOG).lnk" "$INSTDIR\CHANGELOG.txt"
 		;CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_README).lnk" "$INSTDIR\README.txt"
 ${If} $PortableMode == ${BST_CHECKED}
@@ -429,7 +470,7 @@ Section /o "$(SETUP_DESKTOP)" SecDesktop
 
 	SetOutPath "$INSTDIR"
 
-	CreateShortCut "$DESKTOP\${GAME_NAME}.lnk" "$INSTDIR\OpenXcomEx.exe"
+	CreateShortCut "$DESKTOP\${GAME_NAME}.lnk" "$INSTDIR\OpenXcomFta.exe"
 
 SectionEnd
 
@@ -616,7 +657,7 @@ Section "-un.Main"
 
 	SetOutPath "$TEMP"
 
-	Delete "$INSTDIR\OpenXcomEx.exe"
+	Delete "$INSTDIR\OpenXcomFta.exe"
 	Delete "$INSTDIR\*.dll"
 	Delete "$INSTDIR\*.txt"
 	Delete "$INSTDIR\*.md"

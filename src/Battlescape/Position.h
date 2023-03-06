@@ -146,6 +146,7 @@ namespace YAML
 		static Node encode(const OpenXcom::Position& rhs)
 		{
 			Node node;
+			node.SetStyle(EmitterStyle::Flow);
 			node.push_back(rhs.x);
 			node.push_back(rhs.y);
 			node.push_back(rhs.z);

@@ -27,7 +27,7 @@ namespace OpenXcom
  * Creates a blank alien race.
  * @param id String defining the id.
  */
-AlienRace::AlienRace(const std::string &id) : _id(id), _retaliationAggression(0)
+AlienRace::AlienRace(const std::string &id) : _id(id), _retaliationAggression(0), _raceType(RACE_TYPE_ALIEN)
 {
 }
 
@@ -55,6 +55,7 @@ void AlienRace::load(const YAML::Node &node)
 	_members = node["members"].as< std::vector<std::string> >(_members);
 	_membersRandom = node["membersRandom"].as< std::vector <std::vector<std::string> > >(_membersRandom);
 	_retaliationAggression = node["retaliationAggression"].as<int>(_retaliationAggression);
+	_raceType = (RaceType)node["raceType"].as<int>(_raceType);
 
 	if (const YAML::Node& weights = node["retaliationMissionWeights"])
 	{

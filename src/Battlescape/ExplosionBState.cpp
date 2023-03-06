@@ -28,7 +28,6 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
 #include "../Mod/Mod.h"
-#include "../Engine/Sound.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Engine/RNG.h"
@@ -178,14 +177,21 @@ void ExplosionBState::init()
 		_radius = _power /10;
 		_areaOfEffect = true;
 	}
-	else if (_attack.attacker && (_attack.attacker->getSpecialAbility() == SPECAB_EXPLODEONDEATH || _attack.attacker->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE))
+	else if (_attack.type == BA_SELF_DESTRUCT)
 	{
-		itemRule = _attack.attacker->getArmor()->getCorpseGeoscape(); //TODO: not getCorpseBattlescape ones?
-		_power = itemRule->getPowerBonus(_attack);
-		_damageType = itemRule->getDamageType();
-		_radius = itemRule->getExplosionRadius(_attack);
 		_areaOfEffect = true;
-		if (!RNG::percent(itemRule->getSpecialChance()))
+		if (_attack.attacker)
+		{
+			itemRule = _attack.attacker->getArmor()->getCorpseGeoscape(); //TODO: not getCorpseBattlescape ones?
+			_power = itemRule->getPowerBonus(_attack);
+			_damageType = itemRule->getDamageType();
+			_radius = itemRule->getExplosionRadius(_attack);
+			if (!RNG::percent(itemRule->getSpecialChance()))
+			{
+				_power = 0;
+			}
+		}
+		else
 		{
 			_power = 0;
 		}
@@ -206,9 +212,15 @@ void ExplosionBState::init()
 		{
 			_parent->getSave()->getTileEngine()->explode(_attack, _center, _power, _damageType, _radius, range);
 
+			int powerForAnimation = _power;
+			if (itemRule && itemRule->getPowerForAnimation() > 0)
+			{
+				powerForAnimation = itemRule->getPowerForAnimation();
+			}
+
 			int frame = Mod::EXPLOSION_OFFSET;
 			int frameCount = -1;
-			int sound = _power <= 80 ? Mod::SMALL_EXPLOSION : Mod::LARGE_EXPLOSION;
+			int sound = powerForAnimation <= 80 ? Mod::SMALL_EXPLOSION : Mod::LARGE_EXPLOSION;
 
 			if (itemRule)
 			{
@@ -221,13 +233,13 @@ void ExplosionBState::init()
 				frame -= (frameCount > 0 ? frameCount : Explosion::EXPLODE_FRAMES);
 			}
 			int frameDelay = 0;
-			int counter = std::max(1, (_power/5) / 5);
+			int counter = std::max(1, (powerForAnimation / 5) / 5);
 			_parent->getMap()->setBlastFlash(true);
-			int lowerLimit = std::max(1, _power/5);
+			int lowerLimit = std::max(1, powerForAnimation / 5);
 			for (int i = 0; i < lowerLimit; i++)
 			{
-				int X = RNG::generate(-_power/2,_power/2);
-				int Y = RNG::generate(-_power/2,_power/2);
+				int X = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
+				int Y = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
 				Position p = _center;
 				p.x += X; p.y += Y;
 				Explosion *explosion = new Explosion(p, frame, frameDelay, true, false, frameCount);
@@ -253,6 +265,25 @@ void ExplosionBState::init()
 			if (_parent->getMap()->getFollowProjectile() || _explosionCounter > 0)
 			{
 				_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+			}
+
+			// update noise for enemy units
+			if (_parent->getSave()->isStealthMission())
+			{
+				for (BattleUnit *unit : *_parent->getSave()->getUnits())
+				{
+					if (unit->getFaction() == FACTION_HOSTILE && !unit->getUnitWarned() && !unit->isOut())
+					{
+						int soundRange = _radius + 35;
+						int dist = std::ceil(Position::distance(unit->getPosition(), _center.toTile()));
+						if (dist <= soundRange)
+						{
+							unit->setUnitWarned(true);
+							Log(LOG_INFO) << "Unit is warned because explosion sound."; //#FINNIKTODO #CLEARLOGS
+							continue;
+						}
+					}
+				}
 			}
 		}
 		else
@@ -355,6 +386,14 @@ void ExplosionBState::init()
 		// bullet hit sound
 		_parent->playSound(sound, _center.toTile());
 	}
+
+	if (_attack.type == BA_SELF_DESTRUCT)
+	{
+		if (_attack.attacker)
+		{
+			_attack.attacker->setAlreadyExploded(false);
+		}
+	}
 }
 
 /**
@@ -438,7 +477,7 @@ void ExplosionBState::explode()
 	_parent->checkForCasualties(_attack.damage_item ? _damageType : nullptr, _attack, false, terrainExplosion);
 	// revive units if damage could give hp or reduce stun
 	_parent->getSave()->reviveUnconsciousUnits(true);
-	// if any unit get infected trun it to zombie
+	// if any unit get infected turn it to zombie
 	_parent->convertInfected();
 
 	// if this explosion was caused by a unit shooting, now it's the time to put the gun down

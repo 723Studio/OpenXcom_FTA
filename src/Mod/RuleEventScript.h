@@ -36,13 +36,18 @@ private:
 	int _firstMonth, _lastMonth, _executionOdds, _minDifficulty, _maxDifficulty;
 	int _minScore, _maxScore;
 	int _minLoyalty, _maxLoyalty;
+	int64_t _minFunds, _maxFunds;
 	int _allowedProcessor;
 	int _spawnGap, _randomSpawnGap;
-	int64_t _minFunds, _maxFunds;
+	std::string _missionVarName, _missionMarkerName;
+	int _counterMin, _counterMax;
 	std::map<std::string, int> _requiredReputation;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _soldierTypeTriggers;
+	std::map<std::string, bool> _xcomBaseInRegionTriggers;
+	std::map<std::string, bool> _xcomBaseInCountryTriggers;
 	bool _affectsGameProgression;
 public:
 	/// Creates a blank RuleEventScript.
@@ -79,20 +84,34 @@ public:
 	int64_t getMinFunds() const { return _minFunds; }
 	/// Gets the maximum funds (from current month) for this command to run.
 	int64_t getMaxFunds() const { return _maxFunds; }
-	/// Get allowed procesor (monthly/factional) that is allowed to process this command.
+	/// Get allowed processor (monthly/factional) that is allowed to process this command.
 	int getAllowedProcessor() const { return _allowedProcessor; }
 	/// Gets interval in what the event script command should not be processed.
 	int getSpawnGap() const { return _spawnGap; }
-	/// Gets random ammount of gap for event script command.
+	/// Gets random amount of gap for event script command.
 	int getRandomSpawnGap() const { return _randomSpawnGap; }
+	/// Gets the name of the mission script tracking variable.
+	const std::string& getMissionVarName() const { return _missionVarName; }
+	/// Gets the name of the mission marker tracking variable.
+	const std::string& getMissionMarkerName() const { return _missionMarkerName; }
+	/// Gets the minimum number of missions generated for this command to run.
+	int getCounterMin() const { return _counterMin; }
+	/// Gets the maximum number of missions generated for this command to run.
+	int getCounterMax() const { return _counterMax; }
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const { return _researchTriggers; }
-	/// Gets the diplomacy faction requirments that may apply to this command.
+	/// Gets the diplomacy faction requirements that may apply to this command.
 	const std::map<std::string, int>& getReputationRequirments() const { return _requiredReputation; }
 	/// Gets the item triggers that may apply to this command.
 	const std::map<std::string, bool> &getItemTriggers() const { return _itemTriggers; }
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const { return _facilityTriggers; }
+	/// Gets the soldier type triggers that may apply to this command.
+	const std::map<std::string, bool> &getSoldierTypeTriggers() const { return _soldierTypeTriggers; }
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const { return _xcomBaseInRegionTriggers; }
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const { return _xcomBaseInCountryTriggers; }
 	/// Gets a flag used for TechTreeViewer.
 	bool getAffectsGameProgression() const { return _affectsGameProgression; }
 	/// Generates an event based on the month.

@@ -248,7 +248,7 @@ ja:
   STR_ALIEN_RACE: "種族"
   STR_ALIEN_TECH_LEVEL: "技術レベル"
   STR_RANDOMIZE: "ランダム化"
-  STR_OXCE_REQUIRED_QUESTION: "このModは予め拡張Modが適用されていないと正常に動作しません。適用しますか？"
+  STR_OXCE_REQUIRED_QUESTION: "このModは以下のMod:' {0} 'が適用されていないと正常に動作しません。適用しますか？"
   STR_RESTORE_DEFAULTS_QUESTION: "デフォルトのオプションを復元してもよろしいですか？"
   STR_DISPLAY_OPTIONS_CONFIRM: "現在のディスプレイオプションを保持しますか？"
   STR_DISPLAY_OPTIONS_REVERT: "0:{0}に戻す"

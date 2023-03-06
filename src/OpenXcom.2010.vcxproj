@@ -30,21 +30,25 @@
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -230,6 +234,7 @@
     <ClCompile Include="Basescape\CovertOperationArmorState.cpp" />
     <ClCompile Include="Basescape\CovertOperationEquipmentState.cpp" />
     <ClCompile Include="Basescape\CovertOperationInfoState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationsListState.cpp" />
     <ClCompile Include="Basescape\CovertOperationSoldiersState.cpp" />
     <ClCompile Include="Basescape\CovertOperationStartState.cpp" />
     <ClCompile Include="Basescape\CovertOperationState.cpp" />
@@ -245,23 +250,36 @@
     <ClCompile Include="Basescape\CraftWeaponsState.cpp" />
     <ClCompile Include="Basescape\DismantleFacilityState.cpp" />
     <ClCompile Include="Basescape\DisposeState.cpp" />
+    <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
+    <ClCompile Include="Basescape\IntelState.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
+    <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\ManufactureDependenciesTreeState.cpp" />
+    <ClCompile Include="Basescape\ManufactureInfoState.cpp" />
+    <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp" />
     <ClCompile Include="Basescape\ManufactureState.cpp" />
     <ClCompile Include="Basescape\NewManufactureListState.cpp" />
-    <ClCompile Include="Basescape\ManufactureInfoState.cpp" />
+    <ClCompile Include="Basescape\ManufactureInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\MiniBaseView.cpp" />
     <ClCompile Include="Basescape\MonthlyCostsState.cpp" />
     <ClCompile Include="Basescape\NewResearchListState.cpp" />
+    <ClCompile Include="Basescape\PilotsState.cpp" />
     <ClCompile Include="Basescape\PlaceFacilityState.cpp" />
     <ClCompile Include="Basescape\PlaceLiftState.cpp" />
     <ClCompile Include="Basescape\ManufactureStartState.cpp" />
     <ClCompile Include="Basescape\PlaceStartFacilityState.cpp" />
+    <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp" />
+    <ClCompile Include="Basescape\PrisonerInfoState.cpp" />
+    <ClCompile Include="Basescape\PrisonManagementState.cpp" />
     <ClCompile Include="Basescape\PurchaseState.cpp" />
+    <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp" />
     <ClCompile Include="Basescape\ResearchInfoState.cpp" />
+    <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp" />
+    <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\ResearchState.cpp" />
+    <ClCompile Include="Basescape\ScientistsState.cpp" />
     <ClCompile Include="Basescape\SelectStartFacilityState.cpp" />
     <ClCompile Include="Basescape\SackSoldierState.cpp" />
     <ClCompile Include="Basescape\SellState.cpp" />
@@ -402,6 +420,8 @@
     <ClCompile Include="Geoscape\FinishedCoverOperationState.cpp" />
     <ClCompile Include="Geoscape\ExtendedGeoscapeLinksState.cpp" />
     <ClCompile Include="Geoscape\GeoscapeEventState.cpp" />
+    <ClCompile Include="Geoscape\IntelAvailableState.cpp" />
+    <ClCompile Include="Geoscape\IntelCompleteState.cpp" />
     <ClCompile Include="Geoscape\MissionDetectedState.cpp" />
     <ClCompile Include="Geoscape\AllocatePsiTrainingState.cpp" />
     <ClCompile Include="Geoscape\BaseDefenseState.cpp" />
@@ -418,6 +438,7 @@
     <ClCompile Include="Geoscape\NewPossibleCraftState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleFacilityState.cpp" />
     <ClCompile Include="Geoscape\NewPossiblePurchaseState.cpp" />
+    <ClCompile Include="Geoscape\PrisonReportState.cpp" />
     <ClCompile Include="Geoscape\ResearchRequiredState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleManufactureState.cpp" />
     <ClCompile Include="Geoscape\PsiTrainingState.cpp" />
@@ -473,6 +494,7 @@
     <ClCompile Include="Menu\ListLoadState.cpp" />
     <ClCompile Include="Menu\ListSaveState.cpp" />
     <ClCompile Include="Menu\LoadGameState.cpp" />
+    <ClCompile Include="Menu\ModConfirmExtendedState.cpp" />
     <ClCompile Include="Menu\NotesState.cpp" />
     <ClCompile Include="Menu\OptionsAdvancedState.cpp" />
     <ClCompile Include="Menu\DeleteGameState.cpp" />
@@ -488,8 +510,7 @@
     <ClCompile Include="Menu\OptionsBaseState.cpp" />
     <ClCompile Include="Menu\OptionsBattlescapeState.cpp" />
     <ClCompile Include="Menu\OptionsControlsState.cpp" />
-    <ClCompile Include="Menu\OptionsInformExtendedState.cpp" />
-    <ClCompile Include="Menu\OptionsModsState.cpp" />
+    <ClCompile Include="Menu\ModListState.cpp" />
     <ClCompile Include="Menu\OptionsNoAudioState.cpp" />
     <ClCompile Include="Menu\OptionsVideoState.cpp" />
     <ClCompile Include="Menu\PauseState.cpp" />
@@ -511,9 +532,11 @@
     <ClCompile Include="Mod\RuleEnviroEffects.cpp" />
     <ClCompile Include="Mod\RuleEvent.cpp" />
     <ClCompile Include="Mod\RuleEventScript.cpp" />
+    <ClCompile Include="Mod\RuleIntelProject.cpp" />
     <ClCompile Include="Mod\RuleItemCategory.cpp" />
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp" />
     <ClCompile Include="Mod\RuleObject.cpp" />
+    <ClCompile Include="Mod\RulePrisoner.cpp" />
     <ClCompile Include="Mod\RuleSkill.cpp" />
     <ClCompile Include="Mod\RuleSoldierBonus.cpp" />
     <ClCompile Include="Mod\RuleSoldierTransformation.cpp" />
@@ -567,6 +590,7 @@
     <ClCompile Include="Savegame\AlienMission.cpp" />
     <ClCompile Include="Savegame\Base.cpp" />
     <ClCompile Include="Savegame\BaseFacility.cpp" />
+    <ClCompile Include="Savegame\BasePrisoner.cpp" />
     <ClCompile Include="Savegame\BattleItem.cpp" />
     <ClCompile Include="Savegame\BattleObject.cpp" />
     <ClCompile Include="Savegame\BattleUnit.cpp" />
@@ -582,6 +606,7 @@
     <ClCompile Include="Savegame\GameTime.cpp" />
     <ClCompile Include="Savegame\GeoscapeEvent.cpp" />
     <ClCompile Include="Savegame\HitLog.cpp" />
+    <ClCompile Include="Savegame\IntelProject.cpp" />
     <ClCompile Include="Savegame\ItemContainer.cpp" />
     <ClCompile Include="Savegame\MovingTarget.cpp" />
     <ClCompile Include="Savegame\Production.cpp" />
@@ -636,6 +661,7 @@
     <ClInclude Include="Basescape\CovertOperationArmorState.h" />
     <ClInclude Include="Basescape\CovertOperationEquipmentState.h" />
     <ClInclude Include="Basescape\CovertOperationInfoState.h" />
+    <ClInclude Include="Basescape\CovertOperationsListState.h" />
     <ClInclude Include="Basescape\CovertOperationSoldiersState.h" />
     <ClInclude Include="Basescape\CovertOperationStartState.h" />
     <ClInclude Include="Basescape\CovertOperationState.h" />
@@ -651,23 +677,36 @@
     <ClInclude Include="Basescape\CraftWeaponsState.h" />
     <ClInclude Include="Basescape\DismantleFacilityState.h" />
     <ClInclude Include="Basescape\DisposeState.h" />
+    <ClInclude Include="Basescape\FacilityAllocateEngineersState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
+    <ClInclude Include="Basescape\IntelState.h" />
+    <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
+    <ClInclude Include="Basescape\ManufactureInfoState.h" />
+    <ClInclude Include="Basescape\ManufactureProductDetailsState.h" />
     <ClInclude Include="Basescape\NewManufactureListState.h" />
     <ClInclude Include="Basescape\ManageAlienContainmentState.h" />
-    <ClInclude Include="Basescape\ManufactureInfoState.h" />
+    <ClInclude Include="Basescape\ManufactureInfoStateFtA.h" />
     <ClInclude Include="Basescape\ManufactureState.h" />
     <ClInclude Include="Basescape\MiniBaseView.h" />
     <ClInclude Include="Basescape\MonthlyCostsState.h" />
     <ClInclude Include="Basescape\NewResearchListState.h" />
+    <ClInclude Include="Basescape\PilotsState.h" />
     <ClInclude Include="Basescape\PlaceFacilityState.h" />
     <ClInclude Include="Basescape\PlaceLiftState.h" />
     <ClInclude Include="Basescape\ManufactureStartState.h" />
     <ClInclude Include="Basescape\PlaceStartFacilityState.h" />
+    <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h" />
+    <ClInclude Include="Basescape\PrisonerInfoState.h" />
+    <ClInclude Include="Basescape\PrisonManagementState.h" />
     <ClInclude Include="Basescape\PurchaseState.h" />
+    <ClInclude Include="Basescape\ResearchAllocateScientistsState.h" />
     <ClInclude Include="Basescape\ResearchInfoState.h" />
+    <ClInclude Include="Basescape\ResearchInfoStateFtA.h" />
+    <ClInclude Include="Basescape\ResearchProjectDetailsState.h" />
     <ClInclude Include="Basescape\ResearchState.h" />
+    <ClInclude Include="Basescape\ScientistsState.h" />
     <ClInclude Include="Basescape\SelectStartFacilityState.h" />
     <ClInclude Include="Basescape\SackSoldierState.h" />
     <ClInclude Include="Basescape\SellState.h" />
@@ -825,6 +864,8 @@
     <ClInclude Include="Geoscape\FinishedCoverOperationState.h" />
     <ClInclude Include="Geoscape\ExtendedGeoscapeLinksState.h" />
     <ClInclude Include="Geoscape\GeoscapeEventState.h" />
+    <ClInclude Include="Geoscape\IntelAvailableState.h" />
+    <ClInclude Include="Geoscape\IntelCompleteState.h" />
     <ClInclude Include="Geoscape\MissionDetectedState.h" />
     <ClInclude Include="Geoscape\AllocatePsiTrainingState.h" />
     <ClInclude Include="Geoscape\BaseDefenseState.h" />
@@ -842,6 +883,7 @@
     <ClInclude Include="Geoscape\NewPossibleCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleFacilityState.h" />
     <ClInclude Include="Geoscape\NewPossiblePurchaseState.h" />
+    <ClInclude Include="Geoscape\PrisonReportState.h" />
     <ClInclude Include="Geoscape\ResearchRequiredState.h" />
     <ClInclude Include="Geoscape\GeoscapeCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleManufactureState.h" />
@@ -895,6 +937,7 @@
     <ClInclude Include="Menu\ListLoadState.h" />
     <ClInclude Include="Menu\ListSaveState.h" />
     <ClInclude Include="Menu\LoadGameState.h" />
+    <ClInclude Include="Menu\ModConfirmExtendedState.h" />
     <ClInclude Include="Menu\NotesState.h" />
     <ClInclude Include="Menu\OptionsAdvancedState.h" />
     <ClInclude Include="Menu\DeleteGameState.h" />
@@ -910,8 +953,7 @@
     <ClInclude Include="Menu\OptionsBaseState.h" />
     <ClInclude Include="Menu\OptionsBattlescapeState.h" />
     <ClInclude Include="Menu\OptionsControlsState.h" />
-    <ClInclude Include="Menu\OptionsInformExtendedState.h" />
-    <ClInclude Include="Menu\OptionsModsState.h" />
+    <ClInclude Include="Menu\ModListState.h" />
     <ClInclude Include="Menu\OptionsNoAudioState.h" />
     <ClInclude Include="Menu\OptionsVideoState.h" />
     <ClInclude Include="Menu\PauseState.h" />
@@ -935,9 +977,11 @@
     <ClInclude Include="Mod\RuleEnviroEffects.h" />
     <ClInclude Include="Mod\RuleEvent.h" />
     <ClInclude Include="Mod\RuleEventScript.h" />
+    <ClInclude Include="Mod\RuleIntelProject.h" />
     <ClInclude Include="Mod\RuleItemCategory.h" />
     <ClInclude Include="Mod\RuleManufactureShortcut.h" />
     <ClInclude Include="Mod\RuleObject.h" />
+    <ClInclude Include="Mod\RulePrisoner.h" />
     <ClInclude Include="Mod\RuleSkill.h" />
     <ClInclude Include="Mod\RuleSoldierBonus.h" />
     <ClInclude Include="Mod\RuleSoldierTransformation.h" />
@@ -992,6 +1036,7 @@
     <ClInclude Include="Savegame\AlienMission.h" />
     <ClInclude Include="Savegame\Base.h" />
     <ClInclude Include="Savegame\BaseFacility.h" />
+    <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Savegame\BattleItem.h" />
     <ClInclude Include="Savegame\BattleObject.h" />
     <ClInclude Include="Savegame\BattleUnit.h" />
@@ -1008,6 +1053,7 @@
     <ClInclude Include="Savegame\GameTime.h" />
     <ClInclude Include="Savegame\GeoscapeEvent.h" />
     <ClInclude Include="Savegame\HitLog.h" />
+    <ClInclude Include="Savegame\IntelProject.h" />
     <ClInclude Include="Savegame\ItemContainer.h" />
     <ClInclude Include="Savegame\MissionStatistics.h" />
     <ClInclude Include="Savegame\MovingTarget.h" />

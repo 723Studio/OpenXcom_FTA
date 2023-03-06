@@ -34,7 +34,6 @@
 #include "FileMap.h"
 #include "Logger.h"
 #include "Screen.h"
-#include "Surface.h"
 #include "Options.h"
 #include "Game.h"
 
@@ -810,15 +809,14 @@ void FlcPlayer::initAudio(Uint16 format, Uint8 channels)
 	_videoDelay = 1000 / (_audioData.sampleRate / _audioFrameSize );
 	if (_useInternalAudio)
 	{
-		int err;
-
-		err = Mix_OpenAudio(_audioData.sampleRate, format, channels, _audioFrameSize *2);
-
-		if (err)
+		if (!Options::mute)
 		{
-			Log(LOG_WARNING) << Mix_GetError();
-			Log(LOG_WARNING) << "Failed to init cutscene audio";
-			return;
+			if (Mix_OpenAudio(_audioData.sampleRate, format, channels, _audioFrameSize * 2) != 0)
+			{
+				Log(LOG_ERROR) << Mix_GetError();
+				Log(LOG_WARNING) << "Failed to init cutscene audio";
+				Options::mute = true;
+			}
 		}
 
 		/* Start runnable */
@@ -836,7 +834,10 @@ void FlcPlayer::initAudio(Uint16 format, Uint8 channels)
 		_audioData.playingBuffer->samples = (Sint16 *)malloc(_audioFrameSize * 2);
 		_audioData.playingBuffer->sampleBufSize = _audioFrameSize * 2;
 
-		Mix_HookMusic(FlcPlayer::audioCallback, &_audioData);
+		if (!Options::mute)
+		{
+			Mix_HookMusic(FlcPlayer::audioCallback, &_audioData);
+		}
 	}
 }
 
@@ -844,11 +845,14 @@ void FlcPlayer::deInitAudio()
 {
 	if (_game)
 	{
-		Mix_HookMusic(NULL, NULL);
-		Mix_CloseAudio();
-		_game->initAudio();
+		if (!Options::mute)
+		{
+			Mix_HookMusic(NULL, NULL);
+			Mix_CloseAudio();
+			_game->initAudio();
+		}
 	}
-	else if(_audioData.sharedLock)
+	else if (_audioData.sharedLock)
 		SDL_DestroySemaphore(_audioData.sharedLock);
 
 	if (_audioData.loadingBuffer)

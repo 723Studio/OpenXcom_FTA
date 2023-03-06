@@ -247,7 +247,6 @@ sv:
   STR_ALIEN_RACE: "Ras"
   STR_ALIEN_TECH_LEVEL: "Tekniknivå"
   STR_RANDOMIZE: "Slumpa"
-  STR_OXCE_REQUIRED_QUESTION: "Denna mod behöver OpenXcom Extended för att kunna köras korrekt.\nAktivera denna mod?"
   STR_RESTORE_DEFAULTS_QUESTION: "Är du säker på att du vill återställa standardinställningarna?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Vill du behålla de nuvarande grafikinställningarna? "
   STR_DISPLAY_OPTIONS_REVERT: "Återgår inom 0:{0}"

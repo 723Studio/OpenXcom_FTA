@@ -66,6 +66,7 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 		_btnSell = new TextButton(96, 16, 112, 176);
 		_btnCancel = new TextButton(96, 16, 216, 176);
 		_btnTransfer = new TextButton(96, 16, 216, 176);
+		_btnCleanup = new TextButton(96, 16, 8, 176);
 	}
 	else
 	{
@@ -74,6 +75,7 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 		_btnSell = new TextButton(148, 16, 8, 176);
 		_btnCancel = new TextButton(148, 16, 164, 176);
 		_btnTransfer = new TextButton(148, 16, 164, 176);
+		_btnCleanup = new TextButton(148, 16, 8, 176);
 	}
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtAvailable =  new Text(190, 9, 10, 24);
@@ -93,6 +95,7 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 	add(_btnOk, "button", "manageContainment");
 	add(_btnCancel, "button", "manageContainment");
 	add(_btnTransfer, "button", "manageContainment");
+	add(_btnCleanup, "button", "manageContainment");
 	add(_txtTitle, "text", "manageContainment");
 	add(_txtAvailable, "text", "manageContainment");
 	add(_txtValueOfSales, "text", "manageContainment");
@@ -121,6 +124,9 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 
 	_btnTransfer->setText(tr("STR_GO_TO_TRANSFERS"));
 	_btnTransfer->onMouseClick((ActionHandler)&ManageAlienContainmentState::btnTransferClick);
+
+	_btnCleanup->setText(tr("STR_PRISON_CLEANUP"));
+	_btnCleanup->onMouseClick((ActionHandler)&ManageAlienContainmentState::btnCleanupClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -207,7 +213,7 @@ void ManageAlienContainmentState::resetListAndTotals()
 	{
 		const RuleResearch *research = (*iter)->getRules();
 		RuleItem *item = _game->getMod()->getItem(research->getName());
-		if (item && item->isAlien() && item->getPrisonType() == _prisonType)
+		if (research->needItem() && research->destroyItem() && item && item->isAlien() && item->getPrisonType() == _prisonType)
 		{
 			researchList.push_back(research->getName());
 		}
@@ -286,6 +292,11 @@ void ManageAlienContainmentState::resetListAndTotals()
 		_btnOk->setVisible(!overCrowded);
 		_btnSell->setVisible(!overCrowded && _threeButtons);
 		_btnTransfer->setVisible(overCrowded);
+
+		int usedContainmentExternal = _base->getUsedContainment(_prisonType, true);
+		bool needToCleanup = overCrowded && usedContainmentExternal > 0 && availableContainment < usedContainmentExternal;
+
+		_btnCleanup->setVisible(needToCleanup);
 	}
 }
 
@@ -387,6 +398,21 @@ void ManageAlienContainmentState::btnCancelClick(Action *)
 void ManageAlienContainmentState::btnTransferClick(Action *)
 {
 	_game->pushState(new TransferBaseState(_base, nullptr));
+}
+
+/**
+ * Cancels all prisoner interrogations. Cancels all incoming prisoner transfers.
+ * Allows the player to sell interrogated prisoners in case the prisons were destroyed (e.g. during a base defense).
+ * Reloads the screen when finished.
+ * @param action Pointer to an action.
+ */
+void ManageAlienContainmentState::btnCleanupClick(Action *)
+{
+	// cleanup
+	_base->cleanupPrisons(_prisonType);
+
+	// reset
+	resetListAndTotals();
 }
 
 /**

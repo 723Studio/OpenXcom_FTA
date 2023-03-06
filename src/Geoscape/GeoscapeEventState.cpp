@@ -34,7 +34,6 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/GeoscapeEvent.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
@@ -47,10 +46,10 @@ namespace OpenXcom
 {
 
 /**
-	* Initializes all the elements in the Geoscape Event window.
-	* @param geoEvent Pointer to the event.
-	*/
-GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geoEvent->getRules())
+ * Initializes all the elements in the Geoscape Event window.
+ * @param geoEvent Pointer to the event.
+ */
+GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(eventRule)
 {
 	_screen = false;
 
@@ -119,17 +118,16 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 		if (!_customAnswers[3].description.empty())
 		{
 			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
-			bTooltipIsPresent = true;
 		}
 		_btnAnswerThree->setWidth(115);
-		[[clang::fallthrough]];
+		//[[clang::fallthrough]];
+		break;
 	case 3:
 		_btnAnswerThree->setText(tr(_customAnswers[2].title));
 		_btnAnswerThree->setVisible(true);
 		if (!_customAnswers[2].description.empty())
 		{
 			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
-			bTooltipIsPresent = true;
 		}
 		_txtMessage->setHeight(78);
 		_btnAnswerOne->setHeight(16);
@@ -137,7 +135,8 @@ GeoscapeEventState::GeoscapeEventState(GeoscapeEvent* geoEvent) : _eventRule(geo
 		_btnAnswerOne->setY(142);
 		_btnAnswerTwo->setY(142);
 		_txtTooltip->setY(132);
-		[[clang::fallthrough]];
+		//[[clang::fallthrough]];
+		break;
 	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
 		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
@@ -193,7 +192,8 @@ void GeoscapeEventState::eventLogic()
 	const Mod* mod = _game->getMod();
 	const RuleEvent& rule = _eventRule;
 
-	RuleRegion* regionRule = nullptr;
+	RuleRegion *regionRule = nullptr;
+	City* city = nullptr;
 	if (!rule.getRegionList().empty())
 	{
 		size_t pickRegion = RNG::generate(0, rule.getRegionList().size() - 1);
@@ -207,7 +207,7 @@ void GeoscapeEventState::eventLogic()
 			if (cities > 0)
 			{
 				size_t pickCity = RNG::generate(0, cities - 1);
-				City* city = regionRule->getCities()->at(pickCity);
+				city = regionRule->getCities()->at(pickCity);
 				place = city->getName(_game->getLanguage());
 			}
 		}
@@ -217,6 +217,20 @@ void GeoscapeEventState::eventLogic()
 
 		std::string messagePlus = tr(rule.getDescription()).arg(place);
 		_txtMessage->setText(messagePlus);
+	}
+
+	// even if the event isn't city-specific, we'll still pick one city randomly to represent the region (and maybe even a country)
+	if (regionRule)
+	{
+		if (!rule.isCitySpecific())
+		{
+			size_t cities = regionRule->getCities()->size();
+			if (cities > 0)
+			{
+				size_t pickCity = RNG::generate(0, cities - 1);
+				city = regionRule->getCities()->at(pickCity);
+			}
+		}
 	}
 
 	// 1. give/take score points
@@ -275,18 +289,23 @@ void GeoscapeEventState::eventLogic()
 		}
 		else
 		{
-			RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+			const RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
 			if (ruleSoldier)
 			{
 				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
 				{
 					Transfer* t = new Transfer(24);
-					Soldier* s = mod->genSoldier(save, ruleSoldier->getType());
+					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, city);
+					Soldier* s = mod->genSoldier(save, ruleSoldier, nationality);
+					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
 					if (!rule.getSpawnedPersonName().empty())
 					{
 						s->setName(tr(rule.getSpawnedPersonName()));
 					}
-					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
+					else
+					{
+						s->genName();
+					}
 					t->setSoldier(s);
 					hq->getTransfers()->push_back(t);
 				}
@@ -325,6 +344,20 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
+	if (!rule.getRandomMultiItemList().empty())
+	{
+		size_t pickItem = RNG::generate(0, rule.getRandomMultiItemList().size() - 1);
+		auto& sublist = rule.getRandomMultiItemList().at(pickItem);
+		for (auto& pair : sublist)
+		{
+			const RuleItem* itemRule = mod->getItem(pair.first, true);
+			if (itemRule)
+			{
+				itemsToTransfer[itemRule->getType()] += pair.second;
+			}
+		}
+	}
+
 	if (!rule.getWeightedItemList().empty())
 	{
 		const RuleItem* randomItem = mod->getItem(rule.getWeightedItemList().choose(), true);
@@ -342,51 +375,15 @@ void GeoscapeEventState::eventLogic()
 	}
 
 	// 6. give bonus research
-	std::vector<const RuleResearch*> possibilities;
-
-	for (auto rName : rule.getResearchList())
 	{
-		const RuleResearch *rRule = mod->getResearch(rName, true);
-		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
+		std::vector<const RuleResearch*> researches;
+		for (const auto &rName : rule.getResearchList())
 		{
-			possibilities.push_back(rRule);
+			const RuleResearch* rRule = mod->getResearch(rName, true);
+			researches.push_back(rRule);
 		}
-	}
-
-	if (!possibilities.empty())
-	{
-		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
-		const RuleResearch *eventResearch = possibilities.at(pickResearch);
-
-		bool alreadyResearched = false;
-		std::string name = eventResearch->getLookup().empty() ? eventResearch->getName() : eventResearch->getLookup();
-		if (save->isResearched(name, false))
-		{
-			alreadyResearched = true; // we have seen the pedia article already, don't show it again
-		}
-
-		save->addFinishedResearch(eventResearch, mod, hq, true);
-		_researchName = alreadyResearched ? "" : eventResearch->getName();
-
-		if (!eventResearch->getLookup().empty())
-		{
-			const RuleResearch* lookupResearch = mod->getResearch(eventResearch->getLookup(), true);
-			save->addFinishedResearch(lookupResearch, mod, hq, true);
-			_researchName = alreadyResearched ? "" : lookupResearch->getName();
-		}
-
-		if (auto bonus = save->selectGetOneFree(eventResearch))
-		{
-			save->addFinishedResearch(bonus, mod, hq, true);
-			_bonusResearchName = bonus->getName();
-
-			if (!bonus->getLookup().empty())
-			{
-				const RuleResearch *bonusLookup = mod->getResearch(bonus->getLookup(), true);
-				save->addFinishedResearch(bonusLookup, mod, hq, true);
-				_bonusResearchName = bonusLookup->getName();
-			}
-		}
+		std::vector<const RuleResearch*> possibilities;
+		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
 	// 7. Add reputation
@@ -415,9 +412,9 @@ void GeoscapeEventState::eventLogic()
 	*/
 void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 {
-	for (auto eventName : _customAnswers[playerChoice].spawnEvent)
+	for (const auto &eventName : _customAnswers[playerChoice].spawnEvents)
 	{
-		bool success = _game->getMasterMind()->spawnEvent(eventName);
+		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
 	}
 }
 /**
@@ -449,7 +446,7 @@ void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
 
-	if (!_game->getMod()->getIsFTAGame())
+	if (!_game->getMod()->isFTAGame())
 	{
 		Base* base = _game->getSavedGame()->getBases()->front();
 		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())

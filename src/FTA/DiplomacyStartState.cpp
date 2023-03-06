@@ -90,7 +90,6 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 			_txtsName.push_back(txtName);
 			add(txtRep, "name", interfaceName);
 			txtRep->setAlign(ALIGN_CENTER);
-			int rep = faction->getReputationLevel();
 			txtRep->setText(tr(faction->getReputationName()));
 			txtRep->setAlign(ALIGN_CENTER);
 			//Info, Negation
@@ -195,7 +194,6 @@ void DiplomacyStartState::btnPurchaseClick(Action* action)
 		if (action->getSender() == _btnsPurchase.at(i))
 		{
 			DiplomacyFaction* faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
-			int size = _game->getSavedGame()->getBases()->size();
 			if (_base != 0)
 			{
 				_game->pushState(new DiplomacyPurchaseState(_base, faction));
@@ -223,7 +221,6 @@ void DiplomacyStartState::btnSellClick(Action* action)
 		if (action->getSender() == _btnsSell.at(i))
 		{
 			auto faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
-			int size = _game->getSavedGame()->getBases()->size();
 			if (_base != 0)
 			{
 				_game->pushState(new DiplomacySellState(_base, faction, 0));

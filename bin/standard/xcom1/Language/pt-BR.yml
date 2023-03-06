@@ -83,9 +83,11 @@ pt-BR:
   STR_CONSTRUCTION_TIME_UC: "TEMPO DE CONSTRUÇÃO>"
   STR_DAY:
     one: "{N} dia"
+    many: "{N} dias"
     other: "{N} dias"
   STR_HOUR:
     one: "{N} hora"
+    many: "{N} horas"
     other: "{N} horas"
   STR_MAINTENANCE_UC: "MANUTENÇÃO>"
   STR_OK: "OK"
@@ -762,7 +764,7 @@ pt-BR:
   STR_PSIONIC__STRENGTH: "Força{NEWLINE}Psiônica"
   STR_PSIONIC_SKILL_IMPROVEMENT: "Habilidade Psiônica{NEWLINE}/Melhora"
   STR_PSI_AMP: "Amp-Psi"
-  STR_IN_TRAINING: "Em{NEWLINE}Treinamento?"
+  STR_IN_TRAINING: "Treinando?"
   STR_TARGETTED_BY: "FOCADO EM:"
   STR_WEAPONS_CREW_HWPS: "ARMAS/{NEWLINE}TRIPULAÇÃO/PAPs"
   STR_IS_LOW_ON_FUEL_RETURNING_TO_BASE: "tem pouco combustível.{NEWLINE}retornando a base"
@@ -1010,15 +1012,19 @@ pt-BR:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "Unidades de Tempo reservadas para Ajoelhar e Disparar"
   STR_UNITS_IN_CRAFT:
     one: "{N} unidade na nave X-Com."
+    many: "{N} unidades na nave X-Com."
     other: "{N} unidades na nave X-Com."
   STR_UNITS_OUTSIDE:
     one: "Resta {N} unidade do lado de fora."
+    many: "Restam {N} unidades do lado de fora."
     other: "Restam {N} unidades do lado de fora."
   STR_UNITS_IN_ENTRANCE:
     one: "{N} unidade na entrada."
+    many: "{N} unidades na entrada."
     other: "{N} unidades na entrada."
   STR_UNITS_IN_EXIT:
     one: "{N} unidade na área de saída."
+    many: "{N} unidades na área de saída."
     other: "{N} unidades na área de saída."
   STR_ABORT_MISSION_QUESTION: "Abortar Missão?"
   STR_CORPSE: "Cadáver"
@@ -1065,6 +1071,7 @@ pt-BR:
   STR_ALL_ITEMS: "Todos os Itens"
   STR_NO_MORE_EQUIPMENT_ALLOWED:
     one: "NÃO SÃO PERMITIDOS MAIS EQUIPAMENTOS A BORDO!{SMALLLINE}Só é permitido levar um máximo de {N} item deste equipamento nesta aeronave."
+    many: "NÃO SÃO PERMITIDOS MAIS EQUIPAMENTOS A BORDO!{SMALLLINE}Só é permitido levar um máximo de {N} itens deste equipamento nesta aeronave."
     other: "NÃO SÃO PERMITIDOS MAIS EQUIPAMENTOS A BORDO!{SMALLLINE}Só é permitido levar um máximo de {N} itens deste equipamento nesta aeronave."
   STR_CONTROL_CENTER_DESTROYED: "CENTRO DE CONTROLE DESTRUÍDO{NEWLINE}Encaminha-se para a entrada e aborta."
   STR_XCOM_BASE_CANNOT_BE_BUILT: "As bases X-Com não podem ser construídas debaixo da água."

@@ -58,6 +58,7 @@ void RuleEvent::load(const YAML::Node &node)
 	_everyMultiItemList = node["everyMultiItemList"].as<std::map<std::string, int> >(_everyMultiItemList);
 	_everyItemList = node["everyItemList"].as<std::vector<std::string> >(_everyItemList);
 	_randomItemList = node["randomItemList"].as<std::vector<std::string> >(_randomItemList);
+	_randomMultiItemList = node["randomMultiItemList"].as<std::vector<std::map<std::string, int> > >(_randomMultiItemList);
 	if (node["weightedItemList"])
 	{
 		_weightedItemList.load(node["weightedItemList"]);

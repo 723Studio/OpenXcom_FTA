@@ -184,6 +184,13 @@ void SkillMenuState::btnActionMenuItemClick(Action *action)
 
 	int btnID = -1;
 
+	if (_game->getSavedGame()->getSavedBattle()->isPreview())
+	{
+		_action->result = "STR_UNABLE_TO_USE_ALIEN_ARTIFACT_UNTIL_RESEARCHED";
+		_game->popState();
+		return;
+	}
+
 	// got to find out which button was pressed
 	for (size_t i = 0; i < std::size(_actionMenu) && btnID == -1; ++i)
 	{
@@ -196,8 +203,6 @@ void SkillMenuState::btnActionMenuItemClick(Action *action)
 
 	if (btnID != -1)
 	{
-		std::string actionResult = "STR_UNKNOWN"; // needs a non-empty default/fall-back !
-
 		TileEngine *tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
 		const RuleSkill *selectedSkill = _actionMenu[btnID]->getSkill();
 		_action->skillRules = selectedSkill;
@@ -222,7 +227,7 @@ void SkillMenuState::btnActionMenuItemClick(Action *action)
 		{
 			if (!item)
 			{
-				_action->result = tr("STR_SKILL_NEEDS_ITEM");
+				_action->result = "STR_SKILL_NEEDS_ITEM";
 				if (_action->type == BA_HIT) _action->type = BA_NONE; // OXC merge
 				_game->popState();
 				return;

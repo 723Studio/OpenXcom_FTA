@@ -22,7 +22,6 @@
 #include "BattlescapeGame.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/MapData.h"
-#include <SDL.h>
 
 namespace OpenXcom
 {
@@ -67,19 +66,13 @@ private:
 	 */
 	struct VisibilityBlockCache
 	{
-		Uint8 blockDir;
-		Uint8 blockDirUp;
-		Uint8 blockDirDown;
+		Uint32 blockDir;
 
 		Uint8 bigWall;
 
 		Uint8 height;
-
-		Uint8 blockUp: 1;
-		Uint8 blockDown: 1;
-		Uint8 smoke: 1;
-		Uint8 fire: 1;
 	};
+
 	/**
 	 * Helper class storing reaction data.
 	 */
@@ -90,10 +83,11 @@ private:
 		BattleActionType attackType;
 		double reactionScore;
 		double reactionReduction;
+		int count;
 	};
 
 	SavedBattleGame *_save;
-	std::vector<Uint16> *_voxelData;
+	const std::vector<Uint16> *_voxelData;
 	std::vector<VisibilityBlockCache> _blockVisibility;
 	RuleInventory *_inventorySlotGround;
 	constexpr static int heightFromCenter[11] = {0,-2,+2,-4,+4,-6,+6,-8,+8,-12,+12};
@@ -160,16 +154,19 @@ public:
 	void calculateTilesInFOV(BattleUnit *unit, const Position eventPos = invalid, const int eventRadius = 0);
 	/// Calculates visible units within the field of view. Supply an eventPosition to do an update limited to a small slice of the view sector.
 	bool calculateUnitsInFOV(BattleUnit* unit, const Position eventPos = invalid, const int eventRadius = 0);
+	/// Calculates visible units within a 360 field of view around the originPos. Used for LoS Previews.
+	void calculateUnitsForLoSPreview(std::vector<BattleUnit *> *visibleUnits, BattleUnit *unit, const Position originPos);
 	/// Calculates the field of view from a units view point.
 	bool calculateFOV(BattleUnit *unit, bool doTileRecalc = true, bool doUnitRecalc = true);
 	/// Calculates the field of view within range of a certain position.
 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
+	void checkForSuspiciousItems(BattleUnit* unit);
 	/// Checks reaction fire.
 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
 	/// Recalculate all lighting in some area.
 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
 	/// Adds unit directional lighting
-	void calculateUnitDirectionalLighting(MapSubset gs, BattleUnit *unit, BattleItem *w);
+	void calculateUnitDirectionalLighting(MapSubset gs, BattleUnit *unit, const BattleItem *w);
 	/// Handles tile hit.
 	int hitTile(Tile *tile, int damage, const RuleDamageType* type);
 	/// Handles experience training.
@@ -194,8 +191,10 @@ public:
 	int calculateParabolaVoxel(Position origin, Position target, bool storeTrajectory, std::vector<Position> *trajectory, BattleUnit *excludeUnit, double curvature, const Position delta);
 	/// Gets the origin voxel of a unit's eyesight.
 	Position getSightOriginVoxel(BattleUnit *currentUnit);
+	Position getSightOriginVoxel(BattleUnit *currentUnit, Position originPos);
 	/// Checks visibility of a unit on this tile.
 	bool visible(BattleUnit *currentUnit, Tile *tile);
+	bool visible(BattleUnit *currentUnit, Position originPosition, Tile *tile);
 	/// Checks visibility of a tile.
 	bool isTileInLOS(BattleAction *action, Tile *tile);
 	/// Turn XCom soldier's personal lighting on or off.

@@ -29,7 +29,7 @@ namespace OpenXcom
 /**
  * Initializes a new pool with blank lists of names.
  */
-SoldierNamePool::SoldierNamePool() : _totalWeight(0), _femaleFrequency(-1)
+SoldierNamePool::SoldierNamePool() : _totalWeight(0), _femaleFrequency(-1), _globalWeight(100)
 {
 }
 
@@ -97,6 +97,15 @@ void SoldierNamePool::load(const std::string &filename)
 		_totalWeight += (*i);
 	}
 	_femaleFrequency = doc["femaleFrequency"].as<int>(_femaleFrequency);
+
+	_globalWeight = doc["globalWeight"].as<int>(_globalWeight);
+	if (_globalWeight <= 0)
+	{
+		// can't let the modders break this completely
+		_globalWeight = 100;
+	}
+	_country = doc["country"].as<std::string>(_country);
+	_region = doc["region"].as<std::string>(_region);
 }
 
 /**

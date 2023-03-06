@@ -19,7 +19,6 @@
 #include "SurfaceSet.h"
 #include <climits>
 #include "Surface.h"
-#include "Exception.h"
 #include "FileMap.h"
 
 namespace OpenXcom
@@ -188,6 +187,23 @@ void SurfaceSet::loadDat(const std::string &filename)
  * @return Pointer to the respective surface.
  */
 Surface *SurfaceSet::getFrame(int i)
+{
+	if ((size_t)i < _frames.size())
+	{
+		if (_frames[i])
+		{
+			return &_frames[i];
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * Returns a particular frame from the surface set.
+ * @param i Frame number in the set.
+ * @return Pointer to the respective surface.
+ */
+const Surface *SurfaceSet::getFrame(int i) const
 {
 	if ((size_t)i < _frames.size())
 	{

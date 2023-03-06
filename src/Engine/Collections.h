@@ -18,7 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vector>
-#include <map>
 #include <list>
 #include <unordered_map>
 #include <algorithm>
@@ -132,6 +131,7 @@ public:
 
 	/**
 	 * Remove items from vector with limit.
+	 * Similar to `std::remove_if` but `std` do not allow modify anything in `func`, this function do allow.
 	 * @param vec Vector from witch remove items
 	 * @param numberToRemove Limit of removal
 	 * @param func Test what should be removed, can modify everything except this vector
@@ -146,7 +146,19 @@ public:
 		}
 		auto begin = vec.begin();
 		auto newEnd = vec.begin();
-		//similar to `std::remove_if` but it do not allow modify anything in `func`
+
+		// initial scan for the first element to remove
+		for (; begin != vec.end(); ++begin, ++newEnd)
+		{
+			if (func(*begin))
+			{
+				++begin;
+				--numberToRemove;
+				break;
+			}
+		}
+
+		// remove elements and shift not removed
 		for (auto it = begin; it != vec.end(); ++it)
 		{
 			auto& value = *it;

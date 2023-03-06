@@ -48,6 +48,7 @@ private:
 	TextButton *_btnCancel;
 	TextList *_lstTracks;
 	std::vector<Music*> _tracks;
+	std::vector<std::string> _trackNames;
 public:
 	/// Creates the Select Music Track state.
 	SelectMusicTrackState(SelectMusicTrackOrigin origin);

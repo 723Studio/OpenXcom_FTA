@@ -30,18 +30,14 @@
 #include "../Menu/StatisticsState.h"
 #include "../Menu/CutsceneState.h"
 #include "PsiTrainingState.h"
-#include "TrainingState.h"
 #include "Globe.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GameTime.h"
 #include "../Savegame/Region.h"
-#include "../Savegame/Country.h"
 #include "../Savegame/DiplomacyFaction.h"
-#include "../Savegame/Base.h"
 #include "../Savegame/SoldierDiary.h"
 #include "../Mod/Mod.h"
-#include "../Mod/RuleCountry.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
@@ -56,9 +52,11 @@ namespace OpenXcom
 * @param psi Show psi training afterwards?
 * @param globe Pointer to the globe.
 */
-AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0), _loyalty(0)
+AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _ratingTotal(0), _fundingDiff(0), _lastMonthsRating(0),
+	_loyalty(0), _happyList(0), _sadList(0), _pactList(0), _cancelPactList(0)
 {
 	_globe = globe;
+	auto save = _game->getSavedGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(50, 12, 135, 180);
@@ -115,9 +113,12 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 	_txtFailure->setText(tr("STR_YOU_HAVE_FAILED"));
 	_txtFailure->setVisible(false);
 
+	_loyalty = save->getLoyalty();
+	_lastMonthsLoyalty = save->getLastMonthsLoyalty();
+
 	std::string updates = calculateUpdates();
 
-	int month = _game->getSavedGame()->getTime()->getMonth() - 1, year = _game->getSavedGame()->getTime()->getYear();
+	int month = save->getTime()->getMonth() - 1, year = save->getTime()->getYear();
 	if (month == 0)
 	{
 		month = 12;
@@ -143,7 +144,7 @@ AltMonthlyReportState::AltMonthlyReportState(Globe* globe) : _gameOver(0), _rati
 	_txtMonth->setText(tr("STR_MONTH").arg(tr(m)).arg(year));
 
 	// Calculate rating
-	int difficulty_threshold = _game->getMod()->getDefeatScore() + 100 * _game->getSavedGame()->getDifficultyCoefficient();
+	int difficulty_threshold = _game->getMod()->getDefeatScore() + 100 * save->getDifficultyCoefficient();
 	std::string rating = tr("STR_RATING_TERRIBLE");
 	if (_ratingTotal > difficulty_threshold - 300)
 	{
@@ -415,10 +416,10 @@ std::string AltMonthlyReportState::calculateUpdates()
 	}
 
 	// the council is more lenient after the first month
-	if (save->getMonthsPassed() > 1)
+	/*if (save->getMonthsPassed() > 1)
 	{
 		save->getResearchScores().at(monthOffset) += 400;
-	}
+	}*/
 
 	xcomTotal = save->getResearchScores().at(monthOffset) + xcomSubTotal;
 
@@ -432,12 +433,16 @@ std::string AltMonthlyReportState::calculateUpdates()
 
 	// update factions
 	std::vector<OpenXcom::DiplomacyFaction*> factions = _game->getSavedGame()->getDiplomacyFactions();
-	if (!factions.empty())
+	if (!factions.empty() && !_gameOver)
 	{
 		ss << "\n\n";
 		for (std::vector<DiplomacyFaction*>::iterator k = factions.begin(); k != factions.end(); ++k)
 		{
-			bool changed = _game->getMasterMind()->updateReputationLvl(*k);
+			if (!(*k)->isDiscovered())
+			{
+				continue;
+			}
+			bool changed = _game->getMasterMind()->updateReputationLvl(*k, false);
 			bool prevChanged = (*k)->isThisMonthRepLvlChanged();
 
 			if ((*k)->isThisMonthDiscovered())
@@ -449,8 +454,9 @@ std::string AltMonthlyReportState::calculateUpdates()
 				ss <<  tr((*k)->getReputationName());
 				ss << ". ";
 				ss << "\n\n";
+				(*k)->setThisMonthDiscovered(false);
 			}
-			else if (changed || prevChanged && (*k)->isDiscovered())
+			else if (changed || prevChanged)
 			{
 				ss << tr((*k)->getRules()->getName());
 				ss << tr("STR_ATTITUDE_BECOME");
@@ -467,45 +473,44 @@ std::string AltMonthlyReportState::calculateUpdates()
 	}
 
 	//handle loyalty updating
-	_loyalty = save->getLoyalty();
-	_lastMonthsLoyalty = save->getLastMonthsLoyalty();
-
-	int funds = save->getFunds();
-	if (funds < 0)
+	if (!_gameOver)
 	{
-		int noFundsV = _game->getMod()->getLoyaltyNoFundsValue();
-		if (funds < noFundsV)
+		int funds = save->getFunds();
+		if (funds < 0)
 		{
-			int	discontent = _game->getMod()->getLoyaltyNoFundsPenalty() * _game->getSavedGame()->getDifficultyCoefficient();
-			auto stuffMessage = tr("STR_STUFF_NO_MONEY1");
+			int noFundsV = _game->getMod()->getLoyaltyNoFundsValue();
+			if (funds < noFundsV)
+			{
+				int	discontent = _game->getMod()->getLoyaltyNoFundsPenalty() * _game->getSavedGame()->getDifficultyCoefficient();
+				auto stuffMessage = tr("STR_STUFF_NO_MONEY1");
 
-			if (funds < noFundsV * 2)
-			{
-				discontent *= 2;
-				stuffMessage = tr("STR_STUFF_NO_MONEY2");
+				if (funds < noFundsV * 2)
+				{
+					discontent *= 2;
+					stuffMessage = tr("STR_STUFF_NO_MONEY2");
+				}
+				if (funds < noFundsV * 5)
+				{
+					discontent *= 2;
+					stuffMessage = tr("STR_STUFF_NO_MONEY5");
+				}
+				if (funds < noFundsV * 10)
+				{
+					discontent *= 2;
+					stuffMessage = tr("STR_STUFF_NO_MONEY10");
+				}
+				if (funds < noFundsV * 20)
+				{
+					discontent *= 2;
+					stuffMessage = tr("STR_STUFF_NO_MONEY20");
+				}
+				ss << stuffMessage;
+				_game->getMasterMind()->updateLoyalty(-discontent, XCOM_GEOSCAPE);
 			}
-			if (funds < noFundsV * 5)
-			{
-				discontent *= 2;
-				stuffMessage = tr("STR_STUFF_NO_MONEY5");
-			}
-			if (funds < noFundsV * 10)
-			{
-				discontent *= 2;
-				stuffMessage = tr("STR_STUFF_NO_MONEY10");
-			}
-			if (funds < noFundsV * 20)
-			{
-				discontent *= 2;
-				stuffMessage = tr("STR_STUFF_NO_MONEY20");
-			}
-			ss << stuffMessage;
-			_game->getMasterMind()->updateLoyalty(discontent, XCOM_GEOSCAPE);
 		}
-
-	}
 		//update loyalty data after it was loaded
-	_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
+		_game->getSavedGame()->setLastMonthsLoyalty(_loyalty);
+	}
 
 	return ss.str();
 	

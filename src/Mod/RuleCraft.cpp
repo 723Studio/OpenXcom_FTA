@@ -16,15 +16,17 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <algorithm>
 #include "RuleCraft.h"
 #include "RuleTerrain.h"
 #include "../Engine/Exception.h"
+#include "../Engine/RNG.h"
 #include "../Engine/ScriptBind.h"
 #include "Mod.h"
 
 namespace OpenXcom
 {
+
+const std::string RuleCraft::DEFAULT_CRAFT_DEPLOYMENT_PREVIEW = "STR_CRAFT_DEPLOYMENT_PREVIEW";
 
 /**
  * Creates a blank ruleset for a certain
@@ -33,12 +35,14 @@ namespace OpenXcom
  */
 RuleCraft::RuleCraft(const std::string &type) :
 	_type(type), _sprite(-1), _marker(-1), _weapons(0), _soldiers(0), _pilots(0), _vehicles(0),
-	_costBuy(0), _costRent(0), _costSell(0), _costDispose(0), _repairRate(1), _refuelRate(1),
+	_maxSmallSoldiers(-1), _maxLargeSoldiers(-1), _maxSmallVehicles(-1), _maxLargeVehicles(-1),
+	_maxSmallUnits(-1), _maxLargeUnits(-1), _maxSoldiers(-1), _maxVehicles(-1),
+	_monthlyBuyLimit(0), _costBuy(0), _costRent(0), _costSell(0), _costDispose(0), _repairRate(1), _refuelRate(1),
 	_transferTime(24), _score(0), _battlescapeTerrainData(0), _maxSkinIndex(0),
 	_keepCraftAfterFailedMission(false), _allowLanding(true), _spacecraft(false), _notifyWhenRefueled(false), _autoPatrol(false), _undetectable(false),
 	_listOrder(0), _maxItems(0), _maxAltitude(-1), _maxStorageSpace(0.0), _stats(),
 	_shieldRechargeAtBase(1000),
-	_mapVisible(true), _forceShowInMonthlyCosts(false)
+	_mapVisible(true), _forceShowInMonthlyCosts(false), _useAllStartTiles(false)
 {
 	for (int i = 0; i < WeaponMax; ++ i)
 	{
@@ -108,6 +112,15 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModS
 	_soldiers = node["soldiers"].as<int>(_soldiers);
 	_pilots = node["pilots"].as<int>(_pilots);
 	_vehicles = node["vehicles"].as<int>(_vehicles);
+	_maxSmallSoldiers = node["maxSmallSoldiers"].as<int>(_maxSmallSoldiers);
+	_maxLargeSoldiers = node["maxLargeSoldiers"].as<int>(_maxLargeSoldiers);
+	_maxSmallVehicles = node["maxSmallVehicles"].as<int>(_maxSmallVehicles);
+	_maxLargeVehicles = node["maxLargeVehicles"].as<int>(_maxLargeVehicles);
+	_maxSmallUnits = node["maxSmallUnits"].as<int>(_maxSmallUnits);
+	_maxLargeUnits = node["maxLargeUnits"].as<int>(_maxLargeUnits);
+	_maxSoldiers = node["maxSoldiers"].as<int>(_maxSoldiers);
+	_maxVehicles = node["maxVehicles"].as<int>(_maxVehicles);
+	_monthlyBuyLimit = node["monthlyBuyLimit"].as<int>(_monthlyBuyLimit);
 	_costBuy = node["costBuy"].as<int>(_costBuy);
 	_costRent = node["costRent"].as<int>(_costRent);
 	_costSell = node["costSell"].as<int>(_costSell);
@@ -122,13 +135,13 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModS
 		RuleTerrain *rule = new RuleTerrain(terrain["name"].as<std::string>());
 		rule->load(terrain, mod);
 		_battlescapeTerrainData = rule;
-		if (const YAML::Node &craftInventoryTile = node["craftInventoryTile"])
-		{
-			_craftInventoryTile = craftInventoryTile.as<std::vector<int> >(_craftInventoryTile);
-		}
+	}
+	if (const YAML::Node& craftInventoryTile = node["craftInventoryTile"])
+	{
+		_craftInventoryTile = craftInventoryTile.as<std::vector<int> >(_craftInventoryTile);
 	}
 	_maxSkinIndex = node["maxSkinIndex"].as<int>(_maxSkinIndex);
-	_deployment = node["deployment"].as< std::vector< std::vector<int> > >(_deployment);
+	_deployment = node["deployment"].as< RuleCraftDeployment >(_deployment);
 	_keepCraftAfterFailedMission = node["keepCraftAfterFailedMission"].as<bool>(_keepCraftAfterFailedMission);
 	_allowLanding = node["allowLanding"].as<bool>(_allowLanding);
 	_spacecraft = node["spacecraft"].as<bool>(_spacecraft);
@@ -180,6 +193,11 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModS
 	_shieldRechargeAtBase = node["shieldRechargedAtBase"].as<int>(_shieldRechargeAtBase);
 	_mapVisible = node["mapVisible"].as<bool>(_mapVisible);
 	_forceShowInMonthlyCosts = node["forceShowInMonthlyCosts"].as<bool>(_forceShowInMonthlyCosts);
+	_useAllStartTiles = node["useAllStartTiles"].as<bool>(_useAllStartTiles);
+	_customPreview = node["customPreview"].as<std::string>(_customPreview);
+
+	mod->loadSoundOffset(_type, _selectSound, node["selectSound"], "GEO.CAT");
+	mod->loadSoundOffset(_type, _takeoffSound, node["takeoffSound"], "GEO.CAT");
 
 	_craftScripts.load(_type, node, parsers.craftScripts);
 	_scriptValues.load(node, parsers.getShared());
@@ -282,11 +300,11 @@ int RuleCraft::getWeapons() const
 }
 
 /**
- * Gets the maximum number of soldiers that
+ * Gets the maximum number of units (soldiers and vehicles, small and large) that
  * the craft can carry.
- * @return The soldier capacity.
+ * @return The maximum unit capacity.
  */
-int RuleCraft::getSoldiers() const
+int RuleCraft::getMaxUnits() const
 {
 	return _soldiers;
 }
@@ -301,11 +319,11 @@ int RuleCraft::getPilots() const
 }
 
 /**
- * Gets the maximum number of vehicles that
+ * Gets the maximum number of vehicles (and 2x2 soldiers) that
  * the craft can carry.
- * @return The vehicle capacity.
+ * @return The maximum vehicle capacity (incl. 2x2 soldiers).
  */
-int RuleCraft::getVehicles() const
+int RuleCraft::getMaxVehiclesAndLargeSoldiers() const
 {
 	return _vehicles;
 }
@@ -486,7 +504,7 @@ int RuleCraft::getListOrder() const
  * Gets the deployment layout for this craft.
  * @return The deployment layout.
  */
-const std::vector<std::vector<int> > &RuleCraft::getDeployment() const
+const RuleCraftDeployment &RuleCraft::getDeployment() const
 {
 	return _deployment;
 }
@@ -615,6 +633,33 @@ bool RuleCraft::forceShowInMonthlyCosts() const
 }
 
 /**
+ * Can the player utilize all start tiles on a craft or only the ones specified in the '_deployment' list?
+ * @return can use all or not?
+ */
+bool RuleCraft::useAllStartTiles() const
+{
+	return _useAllStartTiles;
+}
+
+/**
+ * Gets the craft's custom preview type.
+ * @return String ID of an alienDeployment.
+ */
+const std::string& RuleCraft::getCustomPreviewType() const
+{
+	return _customPreview.empty() ? DEFAULT_CRAFT_DEPLOYMENT_PREVIEW : _customPreview;
+}
+
+/**
+ * Gets the craft's custom preview type.
+ * @return String ID of an alienDeployment or an empty string.
+ */
+const std::string& RuleCraft::getCustomPreviewTypeRaw() const
+{
+	return _customPreview;
+}
+
+/**
  * Calculates the theoretical range of the craft
  * This depends on when you launch the craft as fuel is consumed only on exact 10 minute increments
  * @param type Which calculation should we do? 0 = maximum, 1 = minimum, 2 = average of the two
@@ -654,6 +699,39 @@ int RuleCraft::calculateRange(int type)
 	}
 
 	return range;
+}
+
+/**
+ * Gets a random sound id from a given sound vector.
+ * @param vector The source vector.
+ * @param defaultValue Default value (in case nothing is specified = vector is empty).
+ * @return The sound id.
+ */
+int RuleCraft::getRandomSound(const std::vector<int>& vector, int defaultValue) const
+{
+	if (!vector.empty())
+	{
+		return vector[RNG::generate(0, vector.size() - 1)];
+	}
+	return defaultValue;
+}
+
+/**
+ * Gets the sound played when the player directly selects a craft on the globe.
+ * @return The select sound id.
+ */
+int RuleCraft::getSelectSound() const
+{
+	return getRandomSound(_selectSound);
+}
+
+/**
+ * Gets the sound played when a craft takes off from a base.
+ * @return The takeoff sound id.
+ */
+int RuleCraft::getTakeoffSound() const
+{
+	return getRandomSound(_takeoffSound);
 }
 
 
@@ -708,8 +786,8 @@ void RuleCraft::ScriptRegister(ScriptParserBase* parser)
 	b.add<&getTypeScript>("getType");
 
 	b.add<&RuleCraft::getWeapons>("getWeaponsMax");
-	b.add<&RuleCraft::getSoldiers>("getSoldiersMax");
-	b.add<&RuleCraft::getVehicles>("getVehiclesMax");
+	b.add<&RuleCraft::getMaxUnits>("getSoldiersMax");
+	b.add<&RuleCraft::getMaxVehiclesAndLargeSoldiers>("getVehiclesMax");
 	b.add<&RuleCraft::getPilots>("getPilotsMax");
 
 	RuleCraftStats::addGetStatsScript<&RuleCraft::_stats>(b, "Stats.");

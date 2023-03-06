@@ -1,5 +1,4 @@
 en-US:
-#Extended+ BEGIN
 #=================== Basescape ===================
 #SoldierAvatarState.cpp
   STR_AVATAR_NAME_1: "#01 Dolph"
@@ -29,6 +28,9 @@ en-US:
   GMGEO6: "Geoscape Track #6"
   GMTACDRY: "Battlescape Track (Land)"
   GMTACWET: "Battlescape Track (Water)"
-#Extended+ END
+  GMINTER0: "Dogfight Track #0"
+  GMINTER1: "Dogfight Track #1"
+  GMINTER2: "Dogfight Track #2"
+  GMINTER3: "Dogfight Track #3"
 #==================================================================================================================
   STR_SHOT_TYPE_AUTO: "Auto (x{0})"

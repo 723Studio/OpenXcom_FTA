@@ -18,13 +18,13 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/Surface.h"
-#include "../Engine/Script.h"
 
 namespace OpenXcom
 {
 
 class BattleUnit;
 class BattleItem;
+class SavedBattleGame;
 class SurfaceSet;
 class Mod;
 
@@ -35,19 +35,21 @@ class Mod;
 class ItemSprite
 {
 private:
-	SurfaceSet *_itemSurface;
+	const SurfaceSet *_itemSurface;
 	int _animationFrame;
 	Surface *_dest;
+	const SavedBattleGame *_save;
+
 
 public:
 	/// Creates a new ItemSprite at the specified position and size.
-	ItemSprite(Surface* dest, Mod* mod, int frame);
+	ItemSprite(Surface* dest, const Mod* mod, const SavedBattleGame *_save, int frame);
 	/// Cleans up the ItemSprite.
 	~ItemSprite();
 	/// Draws the item.
-	void draw(BattleItem* item, int x, int y, int shade);
+	void draw(const BattleItem* item, int x, int y, int shade);
 	/// Draws the item shadow.
-	void drawShadow(BattleItem* item, int x, int y);
+	void drawShadow(const BattleItem* item, int x, int y);
 };
 
 } //namespace OpenXcom

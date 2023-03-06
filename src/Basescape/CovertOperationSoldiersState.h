@@ -56,12 +56,14 @@ private:
 	getStatFn_t _dynGetter;
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
-public:
+	void updateStrings();
+
+  public:
 	/// Creates the Craft Soldiers state.
 	CovertOperationSoldiersState(Base* base, CovertOperationStartState* operation);
 	/// Cleans up the Craft Soldiers state.
 	~CovertOperationSoldiersState();
-	/// Handler for changing the sort by combobox.
+	/// Handler for changing the sort by combo-box.
 	void cbxSortByChange(Action* action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);

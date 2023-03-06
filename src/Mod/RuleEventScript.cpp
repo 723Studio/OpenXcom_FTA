@@ -30,7 +30,8 @@ namespace OpenXcom
 RuleEventScript::RuleEventScript(const std::string &type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _executionOdds(100), _minDifficulty(0), _maxDifficulty(4),
 	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
-	_affectsGameProgression(false), _allowedProcessor(0), _spawnGap(0), _randomSpawnGap(0)
+	_allowedProcessor(0), _spawnGap(0), _randomSpawnGap(0), _counterMin(0), _counterMax(-1),
+	_affectsGameProgression(false)
 {
 }
 
@@ -82,11 +83,23 @@ void RuleEventScript::load(const YAML::Node &node)
 	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
 	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
 	_requiredReputation = node["requiredReputation"].as<std::map<std::string, int>>(_requiredReputation);
+	_missionVarName = node["missionVarName"].as<std::string>(_missionVarName);
+	_missionMarkerName = node["missionMarkerName"].as<std::string>(_missionMarkerName);
+	{
+		// deprecated, remove after July 2022
+		_counterMin = node["missionMinRuns"].as<int>(_counterMin);
+		_counterMax = node["missionMaxRuns"].as<int>(_counterMax);
+	}
+	_counterMin = node["counterMin"].as<int>(_counterMin);
+	_counterMax = node["counterMax"].as<int>(_counterMax);
 	_researchTriggers = node["researchTriggers"].as<std::map<std::string, bool> >(_researchTriggers);
 	_itemTriggers = node["itemTriggers"].as<std::map<std::string, bool> >(_itemTriggers);
 	_facilityTriggers = node["facilityTriggers"].as<std::map<std::string, bool> >(_facilityTriggers);
+	_soldierTypeTriggers = node["soldierTypeTriggers"].as<std::map<std::string, bool> >(_soldierTypeTriggers);
+	_xcomBaseInRegionTriggers = node["xcomBaseInRegionTriggers"].as<std::map<std::string, bool> >(_xcomBaseInRegionTriggers);
+	_xcomBaseInCountryTriggers = node["xcomBaseInCountryTriggers"].as<std::map<std::string, bool> >(_xcomBaseInCountryTriggers);
 	_affectsGameProgression = node["affectsGameProgression"].as<bool>(_affectsGameProgression);
-	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only
+	_allowedProcessor = node["allowedProcessor"].as<int>(_allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only, 3 - special scripts
 	_spawnGap = node["spawnGap"].as<int>(_spawnGap);
 	_randomSpawnGap = node["randomSpawnGap"].as<int>(_randomSpawnGap);
 }

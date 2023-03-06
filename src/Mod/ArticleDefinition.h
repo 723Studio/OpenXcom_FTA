@@ -81,7 +81,7 @@ namespace OpenXcom
 
 		std::string id;
 		std::string section;
-		std::vector<std::string> requires;
+		std::vector<std::string> _requires;
 		bool customPalette;
 		bool hiddenCommendation;
 
@@ -221,6 +221,7 @@ namespace OpenXcom
 
 		std::string image_id;
 		int text_width;
+		bool align_bottom;
 		ArticleDefinitionRect rect_text;
 	};
 

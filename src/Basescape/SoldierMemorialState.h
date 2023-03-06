@@ -40,6 +40,7 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtDate, *_txtRecruited, *_txtLost;
 	TextList *_lstSoldiers;
+	std::vector<int> _indices;
 	void fillMemorialList();
 public:
 	/// Creates the Soldiers state.

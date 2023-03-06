@@ -248,7 +248,7 @@ ru:
   STR_ALIEN_RACE: "Раса"
   STR_ALIEN_TECH_LEVEL: "Уровень технологий"
   STR_RANDOMIZE: "Случайно"
-  STR_OXCE_REQUIRED_QUESTION: "Для корректной работы данной модификации требуется OpenXcom Extended. Включить модификацию?"
+  STR_OXCE_REQUIRED_QUESTION: "Для корректной работы данного мода требуется OpenXcom {0}. Включить мод?"
   STR_RESTORE_DEFAULTS_QUESTION: "Вы уверены, что хотите восстановить настройки по умолчанию?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Оставить текущие настройки экрана?"
   STR_DISPLAY_OPTIONS_REVERT: "Возврат настроек через 0:{0}"

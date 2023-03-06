@@ -39,6 +39,7 @@ private:
 	std::string _ammoItem[RuleItem::AmmoSlotMax];
 	int _fuseTimer;
 	bool _fixed;
+	int _stackSize;
 public:
 	/// Creates a new soldier-equipment layout item and loads its contents from YAML.
 	EquipmentLayoutItem(const YAML::Node& node);
@@ -60,6 +61,8 @@ public:
 	int getFuseTimer() const;
 	/// Is this a fixed weapon entry?
 	bool isFixed() const;
+	// Gets Stack size
+	int stackSize() const;
 	/// Loads the soldier-equipment layout item from YAML.
 	void load(const YAML::Node& node);
 	/// Saves the soldier-equipment layout item to YAML.

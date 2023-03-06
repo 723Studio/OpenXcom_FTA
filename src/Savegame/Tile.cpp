@@ -30,7 +30,6 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "SerializationHelper.h"
-#include "../Battlescape/Particle.h"
 #include "../Battlescape/BattlescapeGame.h"
 #include "../fmath.h"
 #include "SavedBattleGame.h"
@@ -53,7 +52,7 @@ Tile::SerializationKey Tile::serializationKey =
  * constructor
  * @param pos Position.
  */
-Tile::Tile(Position pos): _pos(pos), _unit(0), _visible(false), _preview(-1), _TUMarker(-1), _overlaps(0)
+Tile::Tile(Position pos, SavedBattleGame* save): _save(save), _pos(pos)
 {
 	for (int i = 0; i < O_MAX; ++i)
 	{
@@ -362,7 +361,7 @@ int Tile::openDoor(TilePart part, BattleUnit *unit, BattleActionType reserve, bo
 
 	if (_objectsCache[part].isDoor)
 	{
-		if (unit && unit->getArmor()->getSize() > 1) // don't allow double-wide units to open swinging doors due to engine limitations
+		if (unit && unit->isBigUnit()) // don't allow double-wide units to open swinging doors due to engine limitations
 			return -1;
 		if (unit && cost.Time && !cost.haveTU())
 			return 4;
@@ -1057,6 +1056,25 @@ int Tile::getTUMarker() const
 {
 	return _TUMarker;
 }
+
+/**
+ * set the number to be displayed for pathfinding preview.
+ * @param energy
+ */
+void Tile::setEnergyMarker(int energy)
+{
+       _EnergyMarker = energy;
+}
+
+/**
+ * get the number to be displayed for pathfinding preview.
+ * @return marker
+ */
+int Tile::getEnergyMarker() const
+{
+       return _EnergyMarker;
+}
+
 
 /**
  * get the overlap value of this tile.

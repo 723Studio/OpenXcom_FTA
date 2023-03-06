@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <algorithm>
 #include "RuleResearch.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Collections.h"
@@ -26,7 +25,7 @@
 namespace OpenXcom
 {
 
-RuleResearch::RuleResearch(const std::string &name) : _name(name), _cost(0), _points(0), _sequentialGetOneFree(false),
+RuleResearch::RuleResearch(const std::string &name) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _funds(0), _sequentialGetOneFree(false),
 													  _needItem(false), _destroyItem(false), _hidden(false), _listOrder(0)
 {
 }
@@ -34,6 +33,8 @@ RuleResearch::RuleResearch(const std::string &name) : _name(name), _cost(0), _po
 /**
  * Loads the research project from a YAML file.
  * @param node YAML node.
+ * @param mod
+ * @param parsers
  * @param listOrder The list weight for this research.
  */
 void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parsers, int listOrder)
@@ -46,9 +47,15 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	_lookup = node["lookup"].as<std::string>(_lookup);
 	_cutscene = node["cutscene"].as<std::string>(_cutscene);
 	_spawnedItem = node["spawnedItem"].as<std::string>(_spawnedItem);
+	_spawnedItemCount = node["spawnedItemCount"].as<int>(_spawnedItemCount);
+	mod->loadUnorderedNames(_name, _spawnedItemList, node["spawnedItemList"]);
+	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
+	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
 	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
 	_cost = node["cost"].as<int>(_cost);
+	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	_points = node["points"].as<int>(_points);
+	_funds = node["funds"].as<int>(_funds);
 	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);
 	mod->loadUnorderedNames(_name, _unlocksName, node["unlocks"]);
 	mod->loadUnorderedNames(_name, _disablesName, node["disables"]);
@@ -57,7 +64,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	mod->loadUnorderedNames(_name, _requiresName, node["requires"]);
 	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
 	_sequentialGetOneFree = node["sequentialGetOneFree"].as<bool>(_sequentialGetOneFree);
-	_getOneFreeProtectedName = node["getOneFreeProtected"].as< std::map<std::string, std::vector<std::string> > >(_getOneFreeProtectedName);
+	mod->loadNamesToNames(_name, _getOneFreeProtectedName, node["getOneFreeProtected"]);
 	_needItem = node["needItem"].as<bool>(_needItem);
 	_destroyItem = node["destroyItem"].as<bool>(_destroyItem);
 	_hidden = node["hidden"].as<bool>(_hidden);
@@ -91,13 +98,14 @@ void RuleResearch::afterLoad(const Mod* mod)
 	_getOneFree = mod->getResearch(_getOneFreeName);
 	_requires = mod->getResearch(_requiresName);
 
+	_getOneFreeProtected.reserve(_getOneFreeProtectedName.size());
 	for (auto& n : _getOneFreeProtectedName)
 	{
 		auto left = mod->getResearch(n.first, false);
 		if (left)
 		{
 			auto right = mod->getResearch(n.second);
-			_getOneFreeProtected[left] = right;
+			_getOneFreeProtected.push_back(std::make_pair(left, right));
 		}
 		else
 		{
@@ -117,7 +125,7 @@ void RuleResearch::afterLoad(const Mod* mod)
 
 /**
  * Gets the cost of this ResearchProject.
- * @return The cost of this ResearchProject (in man/day).
+ * @return The cost of this ResearchProject (in man/day, or man/hours for FtA).
  */
 int RuleResearch::getCost() const
 {
@@ -217,7 +225,7 @@ const std::vector<const RuleResearch*> &RuleResearch::getGetOneFree() const
  * Gets the list(s) of ResearchProjects granted at random for free by this research (if a defined prerequisite is met).
  * @return The list(s) of ResearchProjects.
  */
-const std::map<const RuleResearch*, std::vector<const RuleResearch*> > &RuleResearch::getGetOneFreeProtected() const
+const std::vector<std::pair<const RuleResearch*, std::vector<const RuleResearch*> > > &RuleResearch::getGetOneFreeProtected() const
 {
 	return _getOneFreeProtected;
 }

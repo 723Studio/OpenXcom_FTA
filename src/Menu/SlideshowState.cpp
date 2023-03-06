@@ -21,7 +21,6 @@
 #include "../Engine/FileMap.h"
 #include "../Engine/Game.h"
 #include "../Engine/InteractiveSurface.h"
-#include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Timer.h"
 #include "../Interface/Text.h"
@@ -57,6 +56,7 @@ SlideshowState::SlideshowState(const SlideshowHeader &slideshowHeader, const std
 		caption->setColor(it->color);
 		caption->setText(tr(it->caption));
 		caption->setAlign(it->align);
+		caption->setVerticalAlign(it->valign);
 		caption->setWordWrap(true);
 		caption->setVisible(false);
 		_captions.push_back(caption);

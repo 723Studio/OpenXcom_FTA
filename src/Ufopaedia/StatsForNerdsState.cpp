@@ -18,6 +18,8 @@
  */
 #include "StatsForNerdsState.h"
 #include "Ufopaedia.h"
+#include "../Battlescape/BattlescapeGenerator.h"
+#include "../Battlescape/BriefingState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
@@ -43,7 +45,9 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleUfo.h"
+#include "../Savegame/Base.h"
 #include "../Savegame/BattleUnit.h"
+#include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "../fmath.h"
 #include <algorithm>
@@ -92,6 +96,47 @@ const std::map<std::string, std::string> StatsForNerdsState::translationMap =
 	{ "energyRegen", "STR_ENERGY_REGENERATION" }, // new, special stat returning vanilla energy regen
 };
 
+const std::map<std::string, std::string> StatsForNerdsState::shortTranslationMap =
+{
+	{ "flatOne", "" }, // no translation
+	{ "flatHundred", "" }, // no translation
+	{ "strength", "STR_STRENGTH_ABBREVIATION" },
+	{ "psi", "STR_PSI_SKILL_AND_PSI_STRENGTH_ABBREVIATION" }, // new, STR_PSIONIC_SKILL * STR_PSIONIC_STRENGTH
+	{ "psiSkill", "STR_PSIONIC_SKILL_ABBREVIATION" },
+	{ "psiStrength", "STR_PSIONIC_STRENGTH_ABBREVIATION" },
+	{ "throwing", "STR_THROWING_ACCURACY_ABBREVIATION" },
+	{ "bravery", "STR_BRAVERY_ABBREVIATION" },
+	{ "firing", "STR_FIRING_ACCURACY_ABBREVIATION" },
+	{ "health", "STR_HEALTH_ABBREVIATION" },
+	{ "mana", "STR_MANA_ABBREVIATION" },
+	{ "tu", "STR_TIME_UNITS_ABBREVIATION" },
+	{ "reactions", "STR_REACTIONS_ABBREVIATION" },
+	{ "stamina", "STR_STAMINA_ABBREVIATION" },
+	{ "melee", "STR_MELEE_ACCURACY_ABBREVIATION" },
+	{ "strengthMelee", "STR_STRENGTH_AND_MELEE_ACCURACY_ABBREVIATION" }, // new, STR_STRENGTH * STR_MELEE_ACCURACY
+	{ "strengthThrowing", "STR_STRENGTH_AND_THROWING_ACCURACY_ABBREVIATION" }, // new, STR_STRENGTH * STR_THROWING_ACCURACY
+	{ "firingReactions", "STR_FIRING_ACCURACY_AND_REACTIONS_ABBREVIATION" }, // new, STR_FIRING_ACCURACY * STR_REACTIONS
+
+	{ "rank", "STR_RANK" },
+	{ "fatalWounds", "STR_FATAL_WOUNDS" },
+
+	{ "healthCurrent", "STR_HEALTH_CURRENT_ABBREVIATION" }, // new, current HP (i.e. not max HP)
+	{ "manaCurrent", "STR_MANA_CURRENT_ABBREVIATION" },
+	{ "tuCurrent", "STR_TIME_UNITS_CURRENT_ABBREVIATION" }, // new
+	{ "energyCurrent", "STR_ENERGY" },
+	{ "moraleCurrent", "STR_MORALE" },
+	{ "stunCurrent", "STR_STUN_LEVEL_CURRENT_ABBREVIATION" }, // new
+
+	{ "healthNormalized", "STR_HEALTH_NORMALIZED_ABBREVIATION" }, // new, current HP normalized to [0, 1] interval
+	{ "manaNormalized", "STR_MANA_NORMALIZED_ABBREVIATION" },
+	{ "tuNormalized", "STR_TIME_UNITS_NORMALIZED_ABBREVIATION" }, // new
+	{ "energyNormalized", "STR_ENERGY_NORMALIZED_ABBREVIATION" }, // new
+	{ "moraleNormalized", "STR_MORALE_NORMALIZED_ABBREVIATION" }, // new
+	{ "stunNormalized", "STR_STUN_LEVEL_NORMALIZED_ABBREVIATION" }, // new
+
+	{ "energyRegen", "STR_ENERGY_REGENERATION_ABBREVIATION" }, // new, special stat returning vanilla energy regen
+};
+
 /**
  * Initializes all the elements on the UI.
  */
@@ -134,6 +179,7 @@ void StatsForNerdsState::buildUI(bool debug, bool ids, bool defaults)
 	_btnIncludeIds = new ToggleTextButton(70, 16, 86, 176);
 	_btnIncludeDefaults = new ToggleTextButton(70, 16, 164, 176);
 	_btnOk = new TextButton(70, 16, 242, 176);
+	_btnPreview = new TextButton(102, 16, 210, 7);
 
 	// Set palette
 	setInterface("statsForNerds");
@@ -152,6 +198,7 @@ void StatsForNerdsState::buildUI(bool debug, bool ids, bool defaults)
 	add(_btnIncludeIds, "button", "statsForNerds");
 	add(_btnIncludeDefaults, "button", "statsForNerds");
 	add(_btnOk, "button", "statsForNerds");
+	add(_btnPreview, "button", "statsForNerds");
 	add(_btnPrev, "button", "statsForNerds");
 	add(_btnNext, "button", "statsForNerds");
 	add(_cbxRelatedStuff, "comboBox", "statsForNerds");
@@ -189,6 +236,10 @@ void StatsForNerdsState::buildUI(bool debug, bool ids, bool defaults)
 	_btnOk->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnOkClick, Options::keyCancel);
 	_btnOk->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnScrollUpClick, Options::keyGeoUp);
 	_btnOk->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnScrollDownClick, Options::keyGeoDown);
+
+	_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+	_btnPreview->onMouseClick((ActionHandler)&StatsForNerdsState::btnPreviewClick);
+	_btnPreview->setVisible(false);
 
 	_btnPrev->setText("<<");
 	_btnPrev->onMouseClick((ActionHandler)&StatsForNerdsState::btnPrevClick);
@@ -244,8 +295,45 @@ void StatsForNerdsState::init()
 	if (!Options::oxceDisableStatsForNerds)
 	{
 		initLists();
+
+		_btnPreview->setVisible(false);
+		if (_typeId == UFOPAEDIA_TYPE_CRAFT || _typeId == UFOPAEDIA_TYPE_TFTD_CRAFT)
+		{
+			if (!_game->getSavedGame())
+			{
+				// how did we even get here?
+				return;
+			}
+			if (_game->getSavedGame()->getSavedBattle())
+			{
+				// there is already a battle going on, don't start another one
+				return;
+			}
+			if (!_game->containsUfopaediaStartState())
+			{
+				// let's ignore any random M-click articles too
+				// and allow the preview only if the ufopedia was opened from the main geoscape menu
+				return;
+			}
+			RuleCraft* craftRule = _game->getMod()->getCraft(_topicId);
+			if (craftRule->getMaxUnits() > 0 && craftRule->getBattlescapeTerrainData())
+			{
+				auto& data = _game->getSavedGame()->getCustomRuleCraftDeployments();
+				auto find = data.find(craftRule->getType());
+
+				// update the label to indicate presence of a saved deployment
+				if (find != data.end())
+					_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW_SAVED"));
+				else
+					_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+
+				_txtTitle->setAlign(ALIGN_LEFT);
+				_btnPreview->setVisible(true);
+			}
+		}
 	}
 }
+
 /**
  * Opens the details for the selected ammo item.
  * @param action Pointer to an action.
@@ -307,6 +395,94 @@ void StatsForNerdsState::btnOkClick(Action *)
 	}
 
 	_game->popState();
+}
+
+/**
+ * Shows the battlescape preview.
+ * @param action Pointer to an action.
+ */
+void StatsForNerdsState::btnPreviewClick(Action *)
+{
+	const Mod* mod = _game->getMod();
+	SavedGame* save = _game->getSavedGame();
+	Base* base = save->getPreviewBase();
+	if (!base)
+	{
+		// create a new base
+		// this base is temporary (i.e. not saved in the save file), but we also don't have to create a new one each time
+		base = new Base(mod);
+		save->setPreviewBase(base);
+		base->setName("Preview Base");
+
+		// create some 1x1 soldiers (as many as needed for the biggest craft type)
+		const RuleSoldier* soldierRule = nullptr;
+		Armor* defaultArmor = nullptr;
+		for (auto& soldierType : mod->getSoldiersList())
+		{
+			soldierRule = mod->getSoldier(soldierType);
+			defaultArmor = soldierRule->getDefaultArmor();
+			if (defaultArmor->getSize() == 1)
+			{
+				break;
+			}
+		}
+		int biggest = 0;
+		for (auto& craftType : mod->getCraftsList())
+		{
+			auto* cRule = mod->getCraft(craftType);
+			if (cRule->getMaxUnits() > biggest)
+			{
+				biggest = cRule->getMaxUnits();
+			}
+		}
+		for (int i = 0; i < biggest; ++i)
+		{
+			// we use NEGATIVE soldier IDs to make sure there is not even a theoretical chance of modifying real geoscape soldiers during the preview
+			int newId = -(i + 1);
+			Soldier* soldier = new Soldier(soldierRule, defaultArmor, 0 /*nationality*/, newId);
+			base->getSoldiers()->push_back(soldier);
+			soldier->setName("Position" + std::to_string(newId));
+		}
+	}
+	// now clean up from the previous preview
+	{
+		for (auto* soldier : *base->getSoldiers())
+		{
+			soldier->setCraft(nullptr);
+		}
+		for (auto* craft : *base->getCrafts())
+		{
+			delete craft;
+		}
+		base->getCrafts()->clear();
+	}
+	// and finally create the craft we need
+	RuleCraft* craftRule = mod->getCraft(_topicId);
+	Craft* c = new Craft(craftRule, base, RuleCraft::DUMMY_CRAFT_ID); // a negative integer
+	base->getCrafts()->push_back(c);
+	c->setName(tr(craftRule->getType()));
+	int max = craftRule->getMaxUnits();
+	for (auto* soldier : *base->getSoldiers())
+	{
+		soldier->setCraft(c);
+		max--;
+		if (max <= 0) break;
+	}
+
+	SavedBattleGame* bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage(), true);
+	_game->getSavedGame()->setBattleGame(bgame);
+	BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+	bgame->setMissionType(c->getRules()->getCustomPreviewType());
+	bgame->setCraftForPreview(c);
+	bgen.setCraft(c);
+	bgen.run();
+
+	// needed for preview of craft deployment tiles
+	bgame->setCraftPos(bgen.getCraftPos());
+	bgame->setCraftZ(bgen.getCraftZ());
+	bgame->calculateCraftTiles();
+
+	_game->pushState(new BriefingState(c));
 }
 
 /**
@@ -514,7 +690,7 @@ void StatsForNerdsState::endHeading()
  * Adds a vector of generic types
  */
 template<typename T, typename Callback>
-void StatsForNerdsState::addVectorOfGeneric(std::ostringstream &ss, const std::vector<T> &vec, const std::string &propertyName, Callback&& callback)
+void StatsForNerdsState::addVectorOfGeneric(std::ostringstream &ss, const std::vector<T> &vec, const std::string &propertyName, Callback&& callback, bool translate)
 {
 	if (vec.empty() && !_showDefaults)
 	{
@@ -529,7 +705,14 @@ void StatsForNerdsState::addVectorOfGeneric(std::ostringstream &ss, const std::v
 		{
 			ss << ", ";
 		}
-		addTranslation(ss, callback(item));
+		if (translate)
+		{
+			addTranslation(ss, callback(item));
+		}
+		else
+		{
+			ss << callback(item);
+		}
 		i++;
 	}
 	ss << "}";
@@ -571,9 +754,9 @@ void StatsForNerdsState::addSingleString(std::ostringstream &ss, const std::stri
 /**
  * Adds a vector of strings to the table.
  */
-void StatsForNerdsState::addVectorOfStrings(std::ostringstream &ss, const std::vector<std::string> &vec, const std::string &propertyName)
+void StatsForNerdsState::addVectorOfStrings(std::ostringstream &ss, const std::vector<std::string> &vec, const std::string &propertyName, bool translate)
 {
-	addVectorOfGeneric(ss, vec, propertyName, [](const std::string& s) -> const std::string& { return s; });
+	addVectorOfGeneric(ss, vec, propertyName, [](const std::string& s) -> const std::string& { return s; }, translate);
 }
 
 /**
@@ -1079,6 +1262,8 @@ void StatsForNerdsState::addDamageRandomType(std::ostringstream &ss, const ItemD
 		case DRT_NONE: ss << tr("DRT_NONE"); break;
 		case DRT_UFO_WITH_TWO_DICE: ss << tr("DRT_UFO_WITH_TWO_DICE"); break;
 		case DRT_EASY: ss << tr("DRT_EASY"); break;
+		case DRT_STANDARD: ss << tr("DRT_STANDARD"); break;
+		case DRT_EXPLOSION: ss << tr("DRT_EXPLOSION"); break;
 		default: ss << tr("STR_UNKNOWN"); break;
 	}
 	if (_showIds)
@@ -1487,6 +1672,35 @@ void StatsForNerdsState::addRuleStatBonus(std::ostringstream &ss, const RuleStat
 }
 
 /**
+ * Adds a ArmorMoveCost info to the table.
+ */
+void StatsForNerdsState::addRuleArmorMoveCost(std::ostringstream &ss, const ArmorMoveCost &value, const std::string &propertyName, const ArmorMoveCost &defaultvalue)
+{
+	if (value == defaultvalue && !_showDefaults)
+	{
+		return;
+	}
+	resetStream(ss);
+
+	ss << tr("STR_COST_TIME") << ": ";
+	addBoolOrInteger(ss, value.TimePercent, false);
+	ss << "%";
+
+	ss << ", ";
+
+	ss << tr("STR_COST_ENERGY") << ": ";
+	addBoolOrInteger(ss, value.EnergyPercent, false);
+	ss << "%";
+
+	_lstRawData->addRow(2, trp(propertyName).c_str(), ss.str().c_str());
+	++_counter;
+	if (value != defaultvalue)
+	{
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
+	}
+}
+
+/**
  * Adds a sprite resource path to the table.
  */
 void StatsForNerdsState::addSpriteResourcePath(std::ostringstream &ss, Mod *mod, const std::string &resourceSetName, const int &resourceId)
@@ -1706,6 +1920,8 @@ void StatsForNerdsState::initItemList()
 	for (int i = 0; i < 2; i++)
 	{
 		const RuleDamageType *rule = (i == 0) ? itemRule->getDamageType() : itemRule->getMeleeType();
+		const RuleDamageType *ruleByResistType = mod->getDamageType(rule->ResistType);
+
 		if (i == 0)
 		{
 			ItemDamageType damageTypeDefault = DT_NONE;
@@ -1733,7 +1949,7 @@ void StatsForNerdsState::initItemList()
 			addRuleStatBonus(ss, *itemRule->getDamageBonusRaw(), "damageBonus");
 			if (!_showDebug)
 			{
-				addInteger(ss, rule->FixRadius, "blastRadius", mod->getDamageType(rule->ResistType)->FixRadius);
+				addInteger(ss, rule->FixRadius, "blastRadius", ruleByResistType->FixRadius);
 			}
 			addHeading("damageAlter");
 		}
@@ -1747,58 +1963,69 @@ void StatsForNerdsState::initItemList()
 
 		if (_showDebug || i > 0)
 		{
-			addInteger(ss, rule->FixRadius, "FixRadius", mod->getDamageType(rule->ResistType)->FixRadius);
+			addInteger(ss, rule->FixRadius, "FixRadius", ruleByResistType->FixRadius);
 		}
 
-		addDamageRandomType(ss, rule->RandomType, "RandomType", mod->getDamageType(rule->ResistType)->RandomType);
+		bool isCustomDefault = (i == 0 ? itemRule->isDamageTypeSet() : itemRule->isMeleeTypeSet());
+		if (!isCustomDefault)
+		{
+			// default RandomType is 8 (DRT_STANDARD)
+			// but the RandomType of a default ResistType 0 (DT_NONE) is 5 (DRT_NONE)
+			// so we need this exceptional handling here to correctly show what's modded/changed and what's not
+			addDamageRandomType(ss, rule->RandomType, "RandomType", DRT_STANDARD);
+		}
+		else
+		{
+			addDamageRandomType(ss, rule->RandomType, "RandomType", ruleByResistType->RandomType);
+		}
 
-		addBoolean(ss, rule->FireBlastCalc, "FireBlastCalc", mod->getDamageType(rule->ResistType)->FireBlastCalc);
-		addBoolean(ss, rule->IgnoreDirection, "IgnoreDirection", mod->getDamageType(rule->ResistType)->IgnoreDirection);
-		addBoolean(ss, rule->IgnoreSelfDestruct, "IgnoreSelfDestruct", mod->getDamageType(rule->ResistType)->IgnoreSelfDestruct);
-		addBoolean(ss, rule->IgnorePainImmunity, "IgnorePainImmunity", mod->getDamageType(rule->ResistType)->IgnorePainImmunity);
-		addBoolean(ss, rule->IgnoreNormalMoraleLose, "IgnoreNormalMoraleLose", mod->getDamageType(rule->ResistType)->IgnoreNormalMoraleLose);
-		addBoolean(ss, rule->IgnoreOverKill, "IgnoreOverKill", mod->getDamageType(rule->ResistType)->IgnoreOverKill);
+		addBoolean(ss, rule->FireBlastCalc, "FireBlastCalc", ruleByResistType->FireBlastCalc);
+		addBoolean(ss, rule->IgnoreDirection, "IgnoreDirection", ruleByResistType->IgnoreDirection);
+		addBoolean(ss, rule->IgnoreSelfDestruct, "IgnoreSelfDestruct", ruleByResistType->IgnoreSelfDestruct);
+		addBoolean(ss, rule->IgnorePainImmunity, "IgnorePainImmunity", ruleByResistType->IgnorePainImmunity);
+		addBoolean(ss, rule->IgnoreNormalMoraleLose, "IgnoreNormalMoraleLose", ruleByResistType->IgnoreNormalMoraleLose);
+		addBoolean(ss, rule->IgnoreOverKill, "IgnoreOverKill", ruleByResistType->IgnoreOverKill);
 
-		addFloatAsPercentage(ss, rule->ArmorEffectiveness, "ArmorEffectiveness", mod->getDamageType(rule->ResistType)->ArmorEffectiveness);
-		addFloatAsPercentage(ss, rule->RadiusEffectiveness, "RadiusEffectiveness", mod->getDamageType(rule->ResistType)->RadiusEffectiveness);
-		addFloat(ss, rule->RadiusReduction, "RadiusReduction", mod->getDamageType(rule->ResistType)->RadiusReduction);
+		addFloatAsPercentage(ss, rule->ArmorEffectiveness, "ArmorEffectiveness", ruleByResistType->ArmorEffectiveness);
+		addFloatAsPercentage(ss, rule->RadiusEffectiveness, "RadiusEffectiveness", ruleByResistType->RadiusEffectiveness);
+		addFloat(ss, rule->RadiusReduction, "RadiusReduction", ruleByResistType->RadiusReduction);
 
-		addInteger(ss, rule->FireThreshold, "FireThreshold", mod->getDamageType(rule->ResistType)->FireThreshold);
-		addInteger(ss, rule->SmokeThreshold, "SmokeThreshold", mod->getDamageType(rule->ResistType)->SmokeThreshold);
+		addInteger(ss, rule->FireThreshold, "FireThreshold", ruleByResistType->FireThreshold);
+		addInteger(ss, rule->SmokeThreshold, "SmokeThreshold", ruleByResistType->SmokeThreshold);
 
-		addFloatAsPercentage(ss, rule->ToArmorPre, "ToArmorPre", mod->getDamageType(rule->ResistType)->ToArmorPre);
-		addBoolean(ss, rule->RandomArmorPre, "RandomArmorPre", mod->getDamageType(rule->ResistType)->RandomArmorPre);
+		addFloatAsPercentage(ss, rule->ToArmorPre, "ToArmorPre", ruleByResistType->ToArmorPre);
+		addBoolean(ss, rule->RandomArmorPre, "RandomArmorPre", ruleByResistType->RandomArmorPre);
 
-		addFloatAsPercentage(ss, rule->ToArmor, "ToArmor", mod->getDamageType(rule->ResistType)->ToArmor);
-		addBoolean(ss, rule->RandomArmor, "RandomArmor", mod->getDamageType(rule->ResistType)->RandomArmor);
+		addFloatAsPercentage(ss, rule->ToArmor, "ToArmor", ruleByResistType->ToArmor);
+		addBoolean(ss, rule->RandomArmor, "RandomArmor", ruleByResistType->RandomArmor);
 
-		addFloatAsPercentage(ss, rule->ToHealth, "ToHealth", mod->getDamageType(rule->ResistType)->ToHealth);
-		addBoolean(ss, rule->RandomHealth, "RandomHealth", mod->getDamageType(rule->ResistType)->RandomHealth);
+		addFloatAsPercentage(ss, rule->ToHealth, "ToHealth", ruleByResistType->ToHealth);
+		addBoolean(ss, rule->RandomHealth, "RandomHealth", ruleByResistType->RandomHealth);
 
-		addFloatAsPercentage(ss, rule->ToStun, "ToStun", mod->getDamageType(rule->ResistType)->ToStun);
-		addBoolean(ss, rule->RandomStun, "RandomStun", mod->getDamageType(rule->ResistType)->RandomStun);
+		addFloatAsPercentage(ss, rule->ToStun, "ToStun", ruleByResistType->ToStun);
+		addBoolean(ss, rule->RandomStun, "RandomStun", ruleByResistType->RandomStun);
 
-		addFloatAsPercentage(ss, rule->ToWound, "ToWound", mod->getDamageType(rule->ResistType)->ToWound);
-		addBoolean(ss, rule->RandomWound, "RandomWound", mod->getDamageType(rule->ResistType)->RandomWound);
+		addFloatAsPercentage(ss, rule->ToWound, "ToWound", ruleByResistType->ToWound);
+		addBoolean(ss, rule->RandomWound, "RandomWound", ruleByResistType->RandomWound);
 
-		addFloatAsPercentage(ss, rule->ToTime, "ToTime", mod->getDamageType(rule->ResistType)->ToTime);
-		addBoolean(ss, rule->RandomTime, "RandomTime", mod->getDamageType(rule->ResistType)->RandomTime);
+		addFloatAsPercentage(ss, rule->ToTime, "ToTime", ruleByResistType->ToTime);
+		addBoolean(ss, rule->RandomTime, "RandomTime", ruleByResistType->RandomTime);
 
-		addFloatAsPercentage(ss, rule->ToEnergy, "ToEnergy", mod->getDamageType(rule->ResistType)->ToEnergy);
-		addBoolean(ss, rule->RandomEnergy, "RandomEnergy", mod->getDamageType(rule->ResistType)->RandomEnergy);
+		addFloatAsPercentage(ss, rule->ToEnergy, "ToEnergy", ruleByResistType->ToEnergy);
+		addBoolean(ss, rule->RandomEnergy, "RandomEnergy", ruleByResistType->RandomEnergy);
 
-		addFloatAsPercentage(ss, rule->ToMorale, "ToMorale", mod->getDamageType(rule->ResistType)->ToMorale);
-		addBoolean(ss, rule->RandomMorale, "RandomMorale", mod->getDamageType(rule->ResistType)->RandomMorale);
+		addFloatAsPercentage(ss, rule->ToMorale, "ToMorale", ruleByResistType->ToMorale);
+		addBoolean(ss, rule->RandomMorale, "RandomMorale", ruleByResistType->RandomMorale);
 
-		addFloatAsPercentage(ss, rule->ToItem, "ToItem", mod->getDamageType(rule->ResistType)->ToItem);
-		addBoolean(ss, rule->RandomItem, "RandomItem", mod->getDamageType(rule->ResistType)->RandomItem);
+		addFloatAsPercentage(ss, rule->ToItem, "ToItem", ruleByResistType->ToItem);
+		addBoolean(ss, rule->RandomItem, "RandomItem", ruleByResistType->RandomItem);
 
-		addFloatAsPercentage(ss, rule->ToMana, "ToMana", mod->getDamageType(rule->ResistType)->ToMana);
-		addBoolean(ss, rule->RandomMana, "RandomMana", mod->getDamageType(rule->ResistType)->RandomMana);
+		addFloatAsPercentage(ss, rule->ToMana, "ToMana", ruleByResistType->ToMana);
+		addBoolean(ss, rule->RandomMana, "RandomMana", ruleByResistType->RandomMana);
 
-		addFloatAsPercentage(ss, rule->ToTile, "ToTile", mod->getDamageType(rule->ResistType)->ToTile);
-		addBoolean(ss, rule->RandomTile, "RandomTile", mod->getDamageType(rule->ResistType)->RandomTile);
-		addInteger(ss, rule->TileDamageMethod, "TileDamageMethod", mod->getDamageType(rule->ResistType)->TileDamageMethod);
+		addFloatAsPercentage(ss, rule->ToTile, "ToTile", ruleByResistType->ToTile);
+		addBoolean(ss, rule->RandomTile, "RandomTile", ruleByResistType->RandomTile);
+		addInteger(ss, rule->TileDamageMethod, "TileDamageMethod", ruleByResistType->TileDamageMethod);
 
 		endHeading();
 	}
@@ -1813,6 +2040,7 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getConfigAimed()->spendPerShot, "spendPerShot", 1);
 		addBoolean(ss, itemRule->getConfigAimed()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigAimed()->name, "name", "STR_AIMED_SHOT");
+		addSingleString(ss, itemRule->getConfigAimed()->shortName, "shortName");
 		addInteger(ss, itemRule->getConfigAimed()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigAimed()->arcing, "arcing");
 		endHeading();
@@ -1824,6 +2052,7 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getConfigAuto()->spendPerShot, "spendPerShot", 1);
 		addBoolean(ss, itemRule->getConfigAuto()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigAuto()->name, "name", "STR_AUTO_SHOT");
+		addSingleString(ss, itemRule->getConfigAuto()->shortName, "shortName");
 		addInteger(ss, itemRule->getConfigAuto()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigAuto()->arcing, "arcing");
 		endHeading();
@@ -1835,6 +2064,7 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getConfigSnap()->spendPerShot, "spendPerShot", 1);
 		addBoolean(ss, itemRule->getConfigSnap()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigSnap()->name, "name", "STR_SNAP_SHOT");
+		addSingleString(ss, itemRule->getConfigSnap()->shortName, "shortName");
 		addInteger(ss, itemRule->getConfigSnap()->ammoSlot, "ammoSlot");
 		addBoolean(ss, itemRule->getConfigSnap()->arcing, "arcing");
 		endHeading();
@@ -1846,6 +2076,7 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getConfigMelee()->spendPerShot, "spendPerShot", 1);
 		addBoolean(ss, itemRule->getConfigMelee()->followProjectiles, "followProjectiles", true);
 		addSingleString(ss, itemRule->getConfigMelee()->name, "name");
+		addSingleString(ss, itemRule->getConfigMelee()->shortName, "shortName");
 		int ammoSlotCurrent = itemRule->getConfigMelee()->ammoSlot;
 		int ammoSlotDefault = itemBattleType == BT_MELEE ? 0 : RuleItem::AmmoSlotSelfUse;
 		if (itemBattleType == BT_NONE)
@@ -1923,11 +2154,13 @@ void StatsForNerdsState::initItemList()
 	addVectorOfResearch(ss, itemRule->getRequirements(), "requires");
 	addVectorOfResearch(ss, itemRule->getBuyRequirements(), "requiresBuy");
 	addVectorOfStrings(ss, mod->getBaseFunctionNames(itemRule->getRequiresBuyBaseFunc()), "requiresBuyBaseFunc");
+	addSingleString(ss, itemRule->getRequiresBuyCountry(), "requiresBuyCountry");
 	addVectorOfStrings(ss, itemRule->getCategories(), "categories");
 	addVectorOfRulesId(ss, itemRule->getSupportedInventorySections(), "supportedInventorySections");
 
 	addDouble(ss, itemRule->getSize(), "size");
 	addInteger(ss, itemRule->getBuyCost(), "costBuy", 0, true);
+	addInteger(ss, itemRule->getMonthlyBuyLimit(), "monthlyBuyLimit");
 	addInteger(ss, itemRule->getTransferTime(), "transferTime", 24);
 	addInteger(ss, itemRule->getMonthlySalary(), "monthlySalary", 0, true);
 	addInteger(ss, itemRule->getMonthlyMaintenance(), "monthlyMaintenance", 0, true);
@@ -1968,6 +2201,14 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getDefaultInventorySlotY(), "defaultInvSlotY");
 		addBoolean(ss, itemRule->isFixed(), "fixedWeapon");
 		addBoolean(ss, itemRule->isSpecialUsingEmptyHand(), "specialUseEmptyHand");
+		addBoolean(ss, itemRule->showSpecialInEmptyHand(), "specialUseEmptyHandShow");
+
+		addHeading("inventoryMoveCost");
+		{
+			addInteger(ss, itemRule->getInventoryMoveCostPercent(), "basePercent", 100);
+
+			endHeading();
+		}
 
 		addSection("{Recovery}", "", _white);
 		addBoolean(ss, !itemRule->canBeEquippedBeforeBaseDefense(), "ignoreInBaseDefense"); // negated!
@@ -1982,6 +2223,7 @@ void StatsForNerdsState::initItemList()
 		addInteger(ss, itemRule->getPrisonType(), "prisonType");
 
 		addSection("{Explosives}", "", _white);
+		addInteger(ss, itemRule->getPowerForAnimation(), "powerForAnimation");
 		addBoolean(ss, itemRule->isHiddenOnMinimap(), "hiddenOnMinimap");
 		addSingleString(ss, itemRule->getPrimeActionName(), "primeActionName", "STR_PRIME_GRENADE");
 		addSingleString(ss, itemRule->getPrimeActionMessage(), "primeActionMessage", "STR_GRENADE_IS_ACTIVATED");
@@ -2032,6 +2274,10 @@ void StatsForNerdsState::initItemList()
 		addSection("{Sounds}", "", _white);
 		addVectorOfIntegers(ss, itemRule->getReloadSoundRaw(), "reloadSound");
 		addSoundVectorResourcePaths(ss, mod, "BATTLE.CAT", itemRule->getReloadSoundRaw());
+		addVectorOfIntegers(ss, itemRule->getPrimeSoundRaw(), "primeSound");
+		addSoundVectorResourcePaths(ss, mod, "BATTLE.CAT", itemRule->getPrimeSoundRaw());
+		addVectorOfIntegers(ss, itemRule->getUnprimeSoundRaw(), "unprimeSound");
+		addSoundVectorResourcePaths(ss, mod, "BATTLE.CAT", itemRule->getUnprimeSoundRaw());
 		addVectorOfIntegers(ss, itemRule->getFireSoundRaw(), "fireSound");
 		addSoundVectorResourcePaths(ss, mod, "BATTLE.CAT", itemRule->getFireSoundRaw());
 		addVectorOfIntegers(ss, itemRule->getHitSoundRaw(), "hitSound");
@@ -2237,6 +2483,36 @@ void StatsForNerdsState::addArmorDamageModifiers(std::ostringstream &ss, const s
 }
 
 /**
+ * Adds a SpecialAbility to the table.
+ */
+void StatsForNerdsState::addSpecialAbility(std::ostringstream &ss, const SpecialAbility &value, const std::string &propertyName, const SpecialAbility &defaultvalue)
+{
+	if (value == defaultvalue && !_showDefaults)
+	{
+		return;
+	}
+	resetStream(ss);
+	switch (value)
+	{
+	case SPECAB_NONE: ss << tr("SPECAB_NONE"); break;
+	case SPECAB_EXPLODEONDEATH: ss << tr("SPECAB_EXPLODEONDEATH"); break;
+	case SPECAB_BURNFLOOR: ss << tr("SPECAB_BURNFLOOR"); break;
+	case SPECAB_BURN_AND_EXPLODE: ss << tr("SPECAB_BURN_AND_EXPLODE"); break;
+	default: ss << tr("STR_UNKNOWN"); break;
+	}
+	if (_showIds)
+	{
+		ss << " [" << value << "]";
+	}
+	_lstRawData->addRow(2, trp(propertyName).c_str(), ss.str().c_str());
+	++_counter;
+	if (value != defaultvalue)
+	{
+		_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
+	}
+}
+
+/**
  * Adds a MovementType to the table.
  */
 void StatsForNerdsState::addMovementType(std::ostringstream &ss, const MovementType &value, const std::string &propertyName, const MovementType &defaultvalue)
@@ -2378,10 +2654,12 @@ void StatsForNerdsState::initArmorList()
 
 	addInteger(ss, armorRule->getSize(), "size", 1);
 
+	addSpecialAbility(ss, (SpecialAbility)armorRule->getSpecialAbility(), "specab");
 	addMovementType(ss, armorRule->getMovementType(), "movementType");
 
 	addBoolean(ss, armorRule->allowsRunning(), "allowsRunning", true);
 	addBoolean(ss, armorRule->allowsStrafing(), "allowsStrafing", true);
+	addBoolean(ss, armorRule->allowsSneaking(), "allowsSneaking", true);
 	addBoolean(ss, armorRule->allowsKneeling(), "allowsKneeling", true);
 	addBoolean(ss, armorRule->allowsMoving(), "allowsMoving", true);
 
@@ -2541,6 +2819,29 @@ void StatsForNerdsState::initArmorList()
 		addBoolean(ss, armorRule->getAllowTwoMainWeapons(), "allowTwoMainWeapons");
 		addBoolean(ss, armorRule->getInstantWoundRecovery(), "instantWoundRecovery");
 
+		addHeading("moveCost");
+		{
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostBase(), "basePercent", { 100, 100 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostBaseFly(), "baseFlyPercent", { 100, 100 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostBaseNormal(), "baseNormalPercent", { 100, 100 });
+
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostWalk(), "walkPercent", { 100, 50 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostRun(), "runPercent", { 75, 75 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostStrafe(), "strafePercent", { 100, 50 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostSneak(), "sneakPercent", { 100, 50 });
+
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyWalk(), "flyWalkPercent", { 100, 50 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyRun(), "flyRunPercent", { 75, 75 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyStrafe(), "flyStrafePercent", { 100, 50 });
+
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyUp(), "flyUpPercent", { 100, 0 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyDown(), "flyDownPercent", { 100, 0 });
+
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostGravLift(), "gravLiftPercent", { 100, 0 });
+
+			endHeading();
+		}
+
 		addSection("{Basics}", "Stuff from the main article", _white, true);
 		addInteger(ss, armorRule->getFrontArmor(), "frontArmor");
 		addInteger(ss, armorRule->getRightSideArmor(), "sideArmor");
@@ -2586,6 +2887,12 @@ void StatsForNerdsState::initSoldierBonusList()
 	std::ostringstream ss;
 
 	addUnitStatBonus(ss, *bonusRule->getStats(), "stats");
+
+	addInteger(ss, bonusRule->getFrontArmor(), "frontArmor");
+	addInteger(ss, bonusRule->getRightSideArmor(), "sideArmor");
+	addInteger(ss, bonusRule->getLeftSideArmor() - bonusRule->getRightSideArmor(), "leftArmorDiff");
+	addInteger(ss, bonusRule->getRearArmor(), "rearArmor");
+	addInteger(ss, bonusRule->getUnderArmor(), "underArmor");
 
 	addInteger(ss, bonusRule->getVisibilityAtDark(), "visibilityAtDark");
 
@@ -2809,6 +3116,11 @@ void StatsForNerdsState::initFacilityList()
 		tmpSoundVector.clear();
 		tmpSoundVector.push_back(facilityRule->getHitSound());
 		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", tmpSoundVector);
+
+		addInteger(ss, facilityRule->getPlaceSound(), "placeSound", -1);
+		tmpSoundVector.clear();
+		tmpSoundVector.push_back(facilityRule->getPlaceSound());
+		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", tmpSoundVector);
 	}
 }
 
@@ -2843,13 +3155,24 @@ void StatsForNerdsState::initCraftList()
 	addVectorOfStrings(ss, mod->getBaseFunctionNames(craftRule->getRequiresBuyBaseFunc()), "requiresBuyBaseFunc");
 
 	addInteger(ss, craftRule->getBuyCost(), "costBuy", 0, true);
+	addInteger(ss, craftRule->getMonthlyBuyLimit(), "monthlyBuyLimit");
 	addInteger(ss, craftRule->getRentCost(), "costRent", 0, true);
 	addInteger(ss, craftRule->getSellCost(), "costSell", 0, true);
 	addInteger(ss, craftRule->getTransferTime(), "transferTime", 24);
 
-	addInteger(ss, craftRule->getSoldiers(), "soldiers");
+	addInteger(ss, craftRule->getMaxUnits(), "soldiers");
 	addInteger(ss, craftRule->getPilots(), "pilots");
-	addInteger(ss, craftRule->getVehicles(), "vehicles");
+	addInteger(ss, craftRule->getMaxVehiclesAndLargeSoldiers(), "vehicles");
+
+	addInteger(ss, craftRule->getMaxSmallSoldiers(), "maxSmallSoldiers", -1);
+	addInteger(ss, craftRule->getMaxLargeSoldiers(), "maxLargeSoldiers", -1);
+	addInteger(ss, craftRule->getMaxSmallVehicles(), "maxSmallVehicles", -1);
+	addInteger(ss, craftRule->getMaxLargeVehicles(), "maxLargeVehicles", -1);
+	addInteger(ss, craftRule->getMaxSmallUnits(), "maxSmallUnits", -1);
+	addInteger(ss, craftRule->getMaxLargeUnits(), "maxLargeUnits", -1);
+	addInteger(ss, craftRule->getMaxSoldiers(), "maxSoldiers", -1);
+	addInteger(ss, craftRule->getMaxVehicles(), "maxVehicles", -1);
+
 	addInteger(ss, craftRule->getMaxItems(), "maxItems");
 	addDouble(ss, craftRule->getMaxStorageSpace(), "maxStorageSpace");
 
@@ -2937,7 +3260,7 @@ void StatsForNerdsState::initCraftList()
 			tmp.push_back(ss2.str());
 		}
 	}
-	addVectorOfStrings(ss, tmp, "weaponTypes");
+	addVectorOfStrings(ss, tmp, "weaponTypes", false);
 
 	addHeading("stats");
 	{
@@ -3011,10 +3334,18 @@ void StatsForNerdsState::initCraftList()
 		addInteger(ss, craftRule->getMaxSkinIndex(), "maxSkinIndex");
 		addBoolean(ss, !craftRule->getSkinSpritesRaw().empty(), "skinSprites", false); // just say if there is any or not
 
+		addSection("{Sounds}", "", _white);
+		addVectorOfIntegers(ss, craftRule->getSelectSoundRaw(), "selectSound");
+		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", craftRule->getSelectSoundRaw());
+		addVectorOfIntegers(ss, craftRule->getTakeoffSoundRaw(), "takeoffSound");
+		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", craftRule->getTakeoffSoundRaw());
+
 		addSection("{Battlescape}", "", _white);
 		addBoolean(ss, craftRule->getBattlescapeTerrainData() != 0, "battlescapeTerrainData", false); // just say if there is any or not
 		addBoolean(ss, craftRule->isMapVisible(), "mapVisible", true);
 		addVectorOfIntegers(ss, craftRule->getCraftInventoryTile(), "craftInventoryTile");
+		addBoolean(ss, craftRule->useAllStartTiles(), "useAllStartTiles");
+		addSingleString(ss, craftRule->getCustomPreviewTypeRaw(), "customPreview");
 		if (craftRule->getDeployment().empty())
 		{
 			std::vector<int> dummy;
@@ -3165,9 +3496,27 @@ void StatsForNerdsState::initUfoList()
 	addHeading("_calculatedValues", "STR_FOR_DIFFICULTY", true);
 	{
 		int escapeCountdown = ufoRule->getBreakOffTime() - 30 * _game->getSavedGame()->getDifficultyCoefficient();
-		addIntegerSeconds(ss, escapeCountdown, "_escapeCountdown", 0, escapeCountdown + ufoRule->getBreakOffTime());
+		int escapeCountdownMax = escapeCountdown + ufoRule->getBreakOffTime();
+		{
+			int diff = _game->getSavedGame()->getDifficulty();
+			auto& custom = _game->getMod()->getUfoEscapeCountdownCoefficients();
+			if (custom.size() > (size_t)diff)
+			{
+				escapeCountdown = ufoRule->getBreakOffTime() * custom[diff] / 100;
+				escapeCountdownMax = ufoRule->getBreakOffTime() * 2 * custom[diff] / 100;
+			}
+		}
+		addIntegerSeconds(ss, std::max(1, escapeCountdown), "_escapeCountdown", 0, std::max(1, escapeCountdownMax));
 
 		int fireCountdown = std::max(1, (ufoRule->getWeaponReload() - 2 * _game->getSavedGame()->getDifficultyCoefficient()));
+		{
+			int diff = _game->getSavedGame()->getDifficulty();
+			auto& custom = _game->getMod()->getUfoFiringRateCoefficients();
+			if (custom.size() > (size_t)diff)
+			{
+				fireCountdown = std::max(1, ufoRule->getWeaponReload() * custom[diff] / 100);
+			}
+		}
 		addIntegerSeconds(ss, fireCountdown, "_fireRate", 0, fireCountdown * 2);
 
 		// not considering race bonus
@@ -3223,6 +3572,7 @@ void StatsForNerdsState::initUfoList()
 		addSingleString(ss, ufoRule->getType(), "type");
 
 		addSection("{Exotic}", "", _white);
+		addInteger(ss, ufoRule->getSoftlockThreshold(), "softlockThreshold", 100);
 		addInteger(ss, ufoRule->getMissilePower(), "missilePower");
 		addBoolean(ss, ufoRule->isUnmanned(), "unmanned");
 		addInteger(ss, ufoRule->getSplashdownSurvivalChance(), "splashdownSurvivalChance", 100);
@@ -3302,6 +3652,7 @@ void StatsForNerdsState::initCraftWeaponList()
 	addRule(ss, craftWeaponRule->getClipItem(), "clip");
 	addInteger(ss, craftWeaponRule->getAmmoMax(), "ammoMax");
 	addInteger(ss, craftWeaponRule->getRearmRate(), "rearmRate", 1);
+	addBoolean(ss, craftWeaponRule->useStatisticalBulletSaving(), "bulletSaving");
 
 	addHeading("stats");
 	{
@@ -3407,10 +3758,10 @@ void StatsForNerdsState::ScriptRegister(ScriptParserBase* parser)
 
 	Bind<StatsForNerdsState> b = { parser };
 
-	b.add<&StatsForNerdsState::addIntegerScript>("addIntRow", "add new row with first argunemt as name and second argumet as value");
-	b.add<&StatsForNerdsState::addTextScript>("addTextRow", "add new row with first argunemt as name and second argumet as text value to translate");
-	b.add<&StatsForNerdsState::addTextFormat1Script>("addTextFormatRow", "add new row with first argunemt as name and second argumet as text format with one argument");
-	b.add<&StatsForNerdsState::addTextFormat2Script>("addTextFormatRow", "add new row with first argunemt as name and second argumet as text format with two arguments");
+	b.add<&StatsForNerdsState::addIntegerScript>("addIntRow", "add new row with first argument as name and second argument as value");
+	b.add<&StatsForNerdsState::addTextScript>("addTextRow", "add new row with first argument as name and second argument as text value to translate");
+	b.add<&StatsForNerdsState::addTextFormat1Script>("addTextFormatRow", "add new row with first argument as name and second argument as text format with one argument");
+	b.add<&StatsForNerdsState::addTextFormat2Script>("addTextFormatRow", "add new row with first argument as name and second argument as text format with two arguments");
 
 	b.addDebugDisplay<&debugDisplayScript>();
 }

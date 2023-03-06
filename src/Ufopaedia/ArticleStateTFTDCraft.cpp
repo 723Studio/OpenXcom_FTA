@@ -23,7 +23,6 @@
 #include "ArticleStateTFTD.h"
 #include "ArticleStateTFTDCraft.h"
 #include "../Engine/Game.h"
-#include "../Engine/Palette.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Unicode.h"
@@ -34,6 +33,8 @@ namespace OpenXcom
 
 	ArticleStateTFTDCraft::ArticleStateTFTDCraft(ArticleDefinitionTFTD *defs, std::shared_ptr<ArticleCommonState> state) : ArticleStateTFTD(defs, std::move(state))
 	{
+		_txtInfo->setHeight(80);
+
 		_btnInfo->setVisible(_game->getMod()->getShowPediaInfoButton());
 
 		RuleCraft *craft = _game->getMod()->getCraft(defs->id, true);
@@ -96,8 +97,8 @@ namespace OpenXcom
 		}
 		ss << tr("STR_WEAPON_PODS").arg(craft->getWeapons()) << '\n';
 		ss << tr("STR_DAMAGE_CAPACITY_UC").arg(Unicode::formatNumber(craft->getMaxDamage())) << '\n';
-		ss << tr("STR_CARGO_SPACE").arg(craft->getSoldiers()) << '\n';
-		ss << tr("STR_HWP_CAPACITY").arg(craft->getVehicles());
+		ss << tr("STR_CARGO_SPACE").arg(craft->getMaxUnits()) << '\n';
+		ss << tr("STR_HWP_CAPACITY").arg(craft->getMaxVehiclesAndLargeSoldiers());
 		_txtStats->setText(ss.str());
 
 		centerAllSurfaces();

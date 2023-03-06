@@ -248,7 +248,7 @@ tr:
   STR_ALIEN_RACE: "Irk"
   STR_ALIEN_TECH_LEVEL: "Teknoloji Seviyesi"
   STR_RANDOMIZE: "Rastgele"
-  STR_OXCE_REQUIRED_QUESTION: "Bu mod, OpenXcom Extended gerektiriyor. Aktifleştirilsin mi?"
+  STR_OXCE_REQUIRED_QUESTION: "Bu mod, OpenXcom {0} gerektiriyor. Aktifleştirilsin mi?"
   STR_RESTORE_DEFAULTS_QUESTION: "Varsayılan ayarlara dönmek istediğinize emin misiniz?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Mevcut görüntü ayarlarını kullanmak istiyor musunuz?"
   STR_DISPLAY_OPTIONS_REVERT: "{0} sn. içinde geri dönülecek."

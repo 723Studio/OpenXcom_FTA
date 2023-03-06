@@ -93,3 +93,9 @@ extraSprites: #done
   - type: TDXCOM_2.PCK
     files:
       233: Resources/Sprite/missing_arm.png
+  - type: WpnActive
+    width: 36
+    height: 52
+    singleImage: true
+    files:
+      0: Resources/UI/WpnActive.png

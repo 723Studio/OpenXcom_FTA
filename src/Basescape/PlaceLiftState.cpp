@@ -19,6 +19,7 @@
 #include "PlaceLiftState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
+#include "../Engine/Sound.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/Text.h"
@@ -132,6 +133,10 @@ void PlaceLiftState::viewClick(Action *)
 	fac->setX(_view->getGridX());
 	fac->setY(_view->getGridY());
 	_base->getFacilities()->push_back(fac);
+	if (fac->getRules()->getPlaceSound() != Mod::NO_SOUND)
+	{
+		_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
+	}
 	_game->popState();
 	BasescapeState *bState = new BasescapeState(_base, _globe);
 	_game->getSavedGame()->setSelectedBase(_game->getSavedGame()->getBases()->size() - 1);

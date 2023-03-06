@@ -497,7 +497,7 @@
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\ManufactureInfoState.cpp">
+    <ClCompile Include="Basescape\ManufactureInfoStateFtA.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\NewManufactureListState.cpp">
@@ -664,9 +664,6 @@
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Menu\OptionsVideoState.cpp">
-      <Filter>Menu</Filter>
-    </ClCompile>
-    <ClCompile Include="Menu\OptionsModsState.cpp">
       <Filter>Menu</Filter>
     </ClCompile>
     <ClCompile Include="Menu\OptionsAudioState.cpp">
@@ -1053,7 +1050,10 @@
     <ClCompile Include="Engine\Unicode.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
-    <ClCompile Include="Menu\OptionsInformExtendedState.cpp">
+    <ClCompile Include="Menu\ModListState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\ModConfirmExtendedState.cpp">
       <Filter>Menu</Filter>
     </ClCompile>
     <ClCompile Include="..\libs\miniz\miniz.c" />
@@ -1219,6 +1219,69 @@
     </ClCompile>
     <ClCompile Include="Savegame\BattleObject.cpp">
       <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\PilotsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ScientistsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ManufactureInfoState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RuleIntelProject.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\IntelProject.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\IntelCompleteState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\IntelState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\CovertOperationsListState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\IntelAvailableState.cpp">
+      <Filter>Geoscape</Filter>
+    </ClCompile>
+    <ClCompile Include="Mod\RulePrisoner.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\PrisonManagementState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\BasePrisoner.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\PrisonerInfoState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Geoscape\PrisonReportState.cpp">
+      <Filter>Geoscape</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1730,7 +1793,7 @@
     <ClInclude Include="Basescape\ManufactureStartState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\ManufactureInfoState.h">
+    <ClInclude Include="Basescape\ManufactureInfoStateFtA.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ResearchInfoState.h">
@@ -1907,9 +1970,6 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Menu\OptionsVideoState.h">
-      <Filter>Menu</Filter>
-    </ClInclude>
-    <ClInclude Include="Menu\OptionsModsState.h">
       <Filter>Menu</Filter>
     </ClInclude>
     <ClInclude Include="Menu\OptionsAudioState.h">
@@ -2315,7 +2375,10 @@
     <ClInclude Include="Engine\Unicode.h">
       <Filter>Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Menu\OptionsInformExtendedState.h">
+    <ClInclude Include="Menu\ModListState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\ModConfirmExtendedState.h">
       <Filter>Menu</Filter>
     </ClInclude>
     <ClInclude Include="..\libs\miniz\miniz.h" />
@@ -2503,6 +2566,69 @@
     </ClInclude>
     <ClInclude Include="Savegame\BattleObject.h">
       <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PilotsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ScientistsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ResearchInfoStateFtA.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ResearchAllocateScientistsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ManufactureInfoState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ManufactureProductDetailsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ResearchProjectDetailsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\FacilityAllocateEngineersState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RuleIntelProject.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\IntelProject.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\IntelCompleteState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\IntelState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\CovertOperationsListState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\IntelAvailableState.h">
+      <Filter>Geoscape</Filter>
+    </ClInclude>
+    <ClInclude Include="Mod\RulePrisoner.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonManagementState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\BasePrisoner.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonerInfoState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Geoscape\PrisonReportState.h">
+      <Filter>Geoscape</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -29,7 +29,6 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/GameTime.h"
 #include "PsiTrainingState.h"
-#include "TrainingState.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/Country.h"
 #include "../Mod/RuleCountry.h"
@@ -37,7 +36,6 @@
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
 #include "../Menu/CutsceneState.h"
-#include "../Savegame/Base.h"
 #include "../Battlescape/CommendationState.h"
 #include "../Savegame/SoldierDiary.h"
 #include "../Menu/SaveGameState.h"
@@ -143,6 +141,18 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 
 	// Calculate rating
 	int difficulty_threshold = _game->getMod()->getDefeatScore() + 100 * _game->getSavedGame()->getDifficultyCoefficient();
+	{
+		int diff = _game->getSavedGame()->getDifficulty();
+		auto& custom = _game->getMod()->getMonthlyRatingThresholds();
+		if (custom.size() > (size_t)diff)
+		{
+			// only negative values are allowed!
+			if (custom[diff] < 0)
+			{
+				difficulty_threshold = custom[diff];
+			}
+		}
+	}
 	std::string rating = tr("STR_RATING_TERRIBLE");
 	if (_ratingTotal > difficulty_threshold - 300)
 	{
@@ -218,6 +228,7 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 	_txtBalance->setText(ss3.str());
 
 	_txtDesc->setWordWrap(true);
+	_txtDesc->setScrollable(true);
 
 	// calculate satisfaction
 	std::ostringstream ss5;
@@ -278,27 +289,12 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 	_txtDesc->setText(ss5.str());
 
 	// Give modders some handles on political situation
-	auto spawnEvent = [](const RuleEvent* spawnedEventRule)
-	{
-		if (spawnedEventRule)
-		{
-			GeoscapeEvent* newEvent = new GeoscapeEvent(*spawnedEventRule);
-			int minutes = (spawnedEventRule->getTimer() + (RNG::generate(0, spawnedEventRule->getTimerRandom()))) / 30 * 30;
-			if (minutes < 60) minutes = 60; // just in case
-			newEvent->setSpawnCountdown(minutes);
-			_game->getSavedGame()->getGeoscapeEvents().push_back(newEvent);
-
-			// remember that it has been generated
-			_game->getSavedGame()->addGeneratedEvent(spawnedEventRule);
-		}
-	};
-
 	for (auto& traitorName : _pactList)
 	{
 		auto traitor = _game->getMod()->getCountry(traitorName, false);
 		if (traitor)
 		{
-			spawnEvent(traitor->getSignedPactEvent());
+			_game->getSavedGame()->spawnEvent(traitor->getSignedPactEvent());
 		}
 	}
 	for (auto& exTraitorName : _cancelPactList)
@@ -306,7 +302,7 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 		auto exTraitor = _game->getMod()->getCountry(exTraitorName, false);
 		if (exTraitor)
 		{
-			spawnEvent(exTraitor->getRejoinedXcomEvent());
+			_game->getSavedGame()->spawnEvent(exTraitor->getRejoinedXcomEvent());
 		}
 	}
 }

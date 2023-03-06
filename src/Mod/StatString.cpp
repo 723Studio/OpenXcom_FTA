@@ -20,6 +20,7 @@
 #include "Unit.h"
 #include <vector>
 #include "../Engine/Language.h"
+#include "../Engine/Unicode.h"
 
 namespace OpenXcom
 {
@@ -133,7 +134,7 @@ std::string StatString::calcStatString(UnitStats &currentStats, const std::vecto
 		{
 			std::string wstring = (*i)->getString();
 			statString += wstring;
-			if (wstring.length() > 1)
+			if (Unicode::codePointLengthUTF8(wstring) > 1)
 			{
 				break;
 			}

@@ -37,9 +37,13 @@ private:
 	int _minLoyalty, _maxLoyalty;
 	int64_t _minFunds, _maxFunds;
 	std::map<std::string, int> _requiredReputation;
+	std::string _missionVarName, _missionMarkerName;
+	int _counterMin, _counterMax;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _xcomBaseInRegionTriggers;
+	std::map<std::string, bool> _xcomBaseInCountryTriggers;
 public:
 	/// Creates a new arc script.
 	RuleArcScript(const std::string& type);
@@ -79,12 +83,24 @@ public:
 	int64_t getMinFunds() const { return _minFunds; }
 	/// Gets the maximum funds (from current month) for this command to run.
 	int64_t getMaxFunds() const { return _maxFunds; }
+	/// Gets the name of the mission script tracking variable.
+	const std::string& getMissionVarName() const { return _missionVarName; }
+	/// Gets the name of the mission marker tracking variable.
+	const std::string& getMissionMarkerName() const { return _missionMarkerName; }
+	/// Gets the minimum number of missions generated for this command to run.
+	int getCounterMin() const { return _counterMin; }
+	/// Gets the maximum number of missions generated for this command to run.
+	int getCounterMax() const { return _counterMax; }
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const { return _researchTriggers; }
 	/// Gets the item triggers that may apply to this command.
 	const std::map<std::string, bool> &getItemTriggers() const { return _itemTriggers; }
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const { return _facilityTriggers; }
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const { return _xcomBaseInRegionTriggers; }
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const { return _xcomBaseInCountryTriggers; }
 
 };
 

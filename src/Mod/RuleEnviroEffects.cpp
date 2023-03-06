@@ -18,8 +18,8 @@
  */
 #include "RuleEnviroEffects.h"
 #include "../Engine/Collections.h"
+#include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
-#include <algorithm>
 
 namespace YAML
 {
@@ -145,7 +145,11 @@ Armor* RuleEnviroEffects::getArmorTransformation(const Armor* sourceArmor) const
 		std::map<const Armor*, Armor*>::const_iterator i = _armorTransformations.find(sourceArmor);
 		if (i != _armorTransformations.end())
 		{
-			return i->second;
+			// cannot switch into a bigger armor size!
+			if (sourceArmor->getSize() >= i->second->getSize())
+			{
+				return i->second;
+			}
 		}
 	}
 

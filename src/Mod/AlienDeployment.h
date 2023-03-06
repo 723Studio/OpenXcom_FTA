@@ -38,10 +38,10 @@ struct DeploymentData
 {
 	int alienRank;
 	std::string customUnitType;
-	int lowQty, highQty, dQty, extraQty;
+	int lowQty, medQty, highQty, dQty, extraQty;
 	int percentageOutsideUfo;
 	std::vector<ItemSet> itemSets, extraRandomItems;
-	DeploymentData() : alienRank(0), lowQty(0), highQty(0), dQty(0), extraQty(0), percentageOutsideUfo(0) { }
+	DeploymentData() : alienRank(0), lowQty(0), medQty(0), highQty(0), dQty(0), extraQty(0), percentageOutsideUfo(0) { }
 };
 struct BriefingData
 {
@@ -93,8 +93,12 @@ private:
 	std::string _type;
 	std::string _customUfo;
 	std::string _enviroEffects, _startingCondition;
-	std::string _unlockedResearch, _missionBountyItem;
 	std::string _alternativeDeployment, _alternativeDeploymentResearch;
+	std::string _unlockedResearchOnSuccess, _unlockedResearchOnFailure, _unlockedResearchOnDespawn;
+	std::string _counterSuccess, _counterFailure, _counterDespawn, _counterAll;
+	std::string _decreaseCounterSuccess, _decreaseCounterFailure, _decreaseCounterDespawn, _decreaseCounterAll;
+	std::string _missionBountyItem;
+	int _missionBountyItemCount;
 	int _bughuntMinTurn;
 	std::vector<DeploymentData> _data;
 	std::vector<ReinforcementsData> _reinforcements;
@@ -104,9 +108,11 @@ private:
 	std::map<std::string, int> _civiliansByType;
 	std::vector<std::string> _terrains, _music;
 	int _shade, _minShade, _maxShade;
-	std::string _nextStage, _race, _script, _battleScript, _extendedObjectiveType;
+	std::string _nextStage, _race, _mapScript, _battleScript, _extendedObjectiveType;
+	std::vector<std::string> _mapScripts;
 	std::vector<std::string> _randomRaces;
-	bool _finalDestination, _isAlienBase, _isHidden;
+	std::vector<std::string> _undercoverArmors;
+	bool _finalDestination, _isAlienBase, _isHidden, _isHiddenAlienBase;
 	int _fakeUnderwaterSpawnChance;
 	std::string _winCutscene, _loseCutscene, _abortCutscene;
 	std::string _alert, _alertBackground, _alertDescription;
@@ -116,6 +122,7 @@ private:
 	std::string _missionCompleteText, _missionFailedText;
 	WeightedOptions _genMission, _successEvents, _failureEvents, _despawnEvents;
 	int _markerIcon, _durationMin, _durationMax, _minDepth, _maxDepth, _genMissionFrequency, _genMissionLimit;
+	bool _genMissionRaceFromAlienBase;
 	int _objectiveType, _objectivesRequired, _objectiveCompleteScore, _objectiveFailedScore, _despawnPenalty, _abortPenalty, _points, _turnLimit, _cheatTurn;
 	ChronoTrigger _chronoTrigger;
 	bool _keepCraftAfterFailedMission, _allowObjectiveRecovery;
@@ -123,8 +130,11 @@ private:
 	int _vipSurvivalPercentage;
 	std::string _baseSelfDestructCode;
 	int _baseDetectionRange, _baseDetectionChance, _huntMissionMaxFrequency;
+	bool _huntMissionRaceFromAlienBase;
 	std::vector<std::pair<size_t, WeightedOptions*> > _huntMissionDistribution;
 	std::vector<std::pair<size_t, WeightedOptions*> > _alienBaseUpgrades;
+	bool _resetAlienBaseAgeAfterUpgrade, _resetAlienBaseAge;
+	std::string _upgradeRace;
 public:
 	/// Creates a blank Alien Deployment ruleset.
 	AlienDeployment(const std::string &type);
@@ -141,13 +151,35 @@ public:
 	/// Gets the Alien Deployment's starting condition.
 	const std::string& getStartingCondition() const;
 	/// Gets the research topic to be unlocked after a successful mission.
-	std::string getUnlockedResearch() const;
+	const std::string& getUnlockedResearchOnSuccess() const { return _unlockedResearchOnSuccess; }
+	/// Gets the research topic to be unlocked after a failed mission.
+	const std::string& getUnlockedResearchOnFailure() const { return _unlockedResearchOnFailure; }
+	/// Gets the research topic to be unlocked after a despawned mission site.
+	const std::string& getUnlockedResearchOnDespawn() const { return _unlockedResearchOnDespawn; }
+	/// Gets the name of a custom counter variable to increase on mission success.
+	const std::string& getCounterSuccess() const { return _counterSuccess; }
+	/// Gets the name of a custom counter variable to increase on mission failure (incl. mission despawn).
+	const std::string& getCounterFailure() const { return _counterFailure; }
+	/// Gets the name of a custom counter variable to increase on mission despawn.
+	const std::string& getCounterDespawn() const { return _counterDespawn; }
+	/// Gets the name of a custom counter variable to increase on any mission result (success, failure and despawn).
+	const std::string& getCounterAll() const { return _counterAll; }
+	/// Gets the name of a custom counter variable to decrease on mission success.
+	const std::string& getDecreaseCounterSuccess() const { return _decreaseCounterSuccess; }
+	/// Gets the name of a custom counter variable to decrease on mission failure (incl. mission despawn).
+	const std::string& getDecreaseCounterFailure() const { return _decreaseCounterFailure; }
+	/// Gets the name of a custom counter variable to decrease on mission despawn.
+	const std::string& getDecreaseCounterDespawn() const { return _decreaseCounterDespawn; }
+	/// Gets the name of a custom counter variable to decrease on any mission result (success, failure and despawn).
+	const std::string& getDecreaseCounterAll() const { return _decreaseCounterAll; }
 	/// Gets the item to be recovered/given after a successful mission.
 	std::string getMissionBountyItem() const;
 	/// Gets the Alien Deployment's alternative deployment to show the player.
 	const std::string& getAlternativeDeploymentName() const { return _alternativeDeployment; };
 	/// Gets the Alien Deployment's research, that would update alien deployment to alternative.
 	const std::string& getAlternativeDeploymentResearchName() const { return _alternativeDeploymentResearch; };
+	/// Gets the number of items to be recovered/given after a successful mission.
+	int getMissionBountyItemCount() const { return _missionBountyItemCount; }
 	/// Gets the bug hunt mode minimum turn requirement (default = 0 = not used).
 	int getBughuntMinTurn() const;
 	/// Gets a pointer to the data.
@@ -178,8 +210,8 @@ public:
 	std::string getNextStage() const;
 	/// Gets the race to use in the next stage.
 	std::string getRace() const;
-	/// Gets the map script to use for this deployment.
-	std::string getScript() const;
+	/// Gets the script to use for this deployment.
+	const std::string& getRandomMapScript() const;
 	/// Gets the battle script to use for this deployment.
 	std::string getBattleScript() const { return _battleScript; };
 	/// Gets the extendedObjective for this deployment.
@@ -198,6 +230,8 @@ public:
 	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); };
 	/// Gets geoscape event rule name to spawn after failure mission.
 	std::string chooseFailureEvent() const { return _failureEvents.choose(); };
+	/// Gets the the list of undercover armor types for the mission to make concealed units.
+	std::vector<std::string> getUndercoverArmors() const { return _undercoverArmors; };
 	/// Gets the alert message for this mission type.
 	std::string getAlertMessage() const;
 	/// Gets the alert background for this mission type.
@@ -248,14 +282,15 @@ public:
 	bool isAlienBase() const;
 	/// Gets whether or not this mission should be hidden (purely for new battle mode)
 	bool isHidden() const { return _isHidden; }
+	/// Gets whether or not this mission site (alien base) would be hidden from all sources, but special rules.
+	bool isHiddenAlienBase() const { return _isHiddenAlienBase; }
 	/// Gets the chance for deciding to spawn an alien base on fakeUnderwater globe texture.
 	int getFakeUnderwaterSpawnChance() const { return _fakeUnderwaterSpawnChance; }
 
 	std::string chooseGenMissionType() const;
-
 	int getGenMissionFrequency() const;
-
 	int getGenMissionLimit() const;
+	bool isGenMissionRaceFromAlienBase() const;
 
 	bool keepCraftAfterFailedMission() const;
 	bool allowObjectiveRecovery() const;
@@ -273,9 +308,17 @@ public:
 	int getBaseDetectionChance() const;
 	/// Gets the maximum frequency of hunt missions generated by an alien base.
 	int getHuntMissionMaxFrequency() const;
+	/// Should the hunt missions inherit the race from the alien base, or take it from their own 'raceWeights'?
+	bool isHuntMissionRaceFromAlienBase() const;
 
 	/// Generates an alien base upgrade.
 	std::string generateAlienBaseUpgrade(const size_t baseAgeInMonths) const;
+	/// Should the age of an alien base be reset after an upgrade (from this type)?
+	bool resetAlienBaseAgeAfterUpgrade() const { return _resetAlienBaseAgeAfterUpgrade; }
+	/// Should the age of an alien base be reset after an upgrade (into this type)?
+	bool resetAlienBaseAge() const { return _resetAlienBaseAge; }
+	/// Gets the new race for an alien base after an upgrade (into this type).
+	const std::string& getUpgradeRace() const { return _upgradeRace; }
 
 };
 

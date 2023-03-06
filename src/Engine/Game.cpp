@@ -40,6 +40,7 @@
 #include "CrossPlatform.h"
 #include "FileMap.h"
 #include "Unicode.h"
+#include "../Ufopaedia/UfopaediaStartState.h"
 #include "../Menu/NotesState.h"
 #include "../Menu/TestState.h"
 #include <algorithm>
@@ -51,7 +52,7 @@ namespace OpenXcom
 const double Game::VOLUME_GRADIENT = 10.0;
 
 /**
- * Starts up SDL with all the subsystems and SDL_mixer for audio processing,
+ * Starts up all the SDL subsystems,
  * creates the display screen and sets up the cursor.
  * @param title Title of the game window.
  */
@@ -148,6 +149,10 @@ void Game::run()
 	static const ApplicationState stateRun[4] = { SLOWED, PAUSED, PAUSED, PAUSED };
 	// this will avoid processing SDL's resize event on startup, workaround for the heap allocation error it causes.
 	bool startupEvent = Options::allowResize;
+	Uint32 lastMouseMoveEvent = 0;
+	Sint16 xrel = 0;
+	Sint16 yrel = 0;
+
 	while (!_quit)
 	{
 		// Clean up states
@@ -244,6 +249,24 @@ void Game::run()
 					}
 					break;
 				case SDL_MOUSEMOTION:
+					if (Options::oxceThrottleMouseMoveEvent > 0)
+					{
+						Uint32 last = SDL_GetTicks();
+						if (0 == lastMouseMoveEvent)
+						{
+							lastMouseMoveEvent = last;
+						}
+						if (last - lastMouseMoveEvent < (Uint32)Options::oxceThrottleMouseMoveEvent)
+						{
+							xrel += _event.motion.xrel;
+							yrel += _event.motion.yrel;
+							continue;
+						}
+						lastMouseMoveEvent = 0;
+						_event.motion.xrel += std::exchange(xrel, 0);
+						_event.motion.yrel += std::exchange(yrel, 0);
+					}
+					FALLTHROUGH;
 				case SDL_MOUSEBUTTONDOWN:
 				case SDL_MOUSEBUTTONUP:
 					// Skip mouse events if they're disabled
@@ -266,9 +289,9 @@ void Game::run()
 							SDL_WM_GrabInput(Options::captureMouse);
 						}
 						// "ctrl-n" notes UI
-						else if (action.getDetails()->key.keysym.sym == SDLK_n && isCtrlPressed())
+						else if (action.getDetails()->key.keysym.sym == SDLK_n && isCtrlPressed() && !isAltPressed())
 						{
-							if (_save)
+							if (_save && !containsNotesState())
 							{
 								if (_save->getSavedBattle())
 								{
@@ -507,6 +530,40 @@ bool Game::isState(State *state) const
 }
 
 /**
+ * Returns whether a UfopaediaStartState is in the background.
+ * @return Is there a UfopaediaStartState in the background?
+ */
+bool Game::containsUfopaediaStartState() const
+{
+	for (auto* state : _states)
+	{
+		auto* pedia = dynamic_cast<UfopaediaStartState*>(state);
+		if (pedia)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * Returns whether a NotesState is in the background.
+ * @return Is there a NotesState in the background?
+ */
+bool Game::containsNotesState() const
+{
+	for (auto* state : _states)
+	{
+		auto* notes = dynamic_cast<NotesState*>(state);
+		if (notes)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Checks if the game is currently quitting.
  * @return whether the game is shutting down or not.
  */
@@ -523,9 +580,6 @@ void Game::loadLanguages()
 {
 	const std::string defaultLang = "en-US";
 	std::string currentLang = defaultLang;
-
-	delete _lang;
-	_lang = new Language();
 
 	// No language set, detect based on system
 	if (Options::language.empty())
@@ -565,6 +619,9 @@ void Game::loadLanguages()
 		}
 	}
 	Options::language = currentLang;
+
+	delete _lang;
+	_lang = new Language();
 
 	const std::string dirLanguage = "Language/";
 	const std::string dirLanguageAndroid = "Language/Android/";

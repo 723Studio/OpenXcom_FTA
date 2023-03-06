@@ -37,12 +37,16 @@ private:
 	int _allowedProcessor;
 	int _spawnGap, _randomSpawnGap;
 	int64_t _minFunds, _maxFunds;
+	std::string _missionVarName, _missionMarkerName;
+	int _counterMin, _counterMax;
 	std::vector<int> _conditionals;
 	std::vector<std::pair<size_t, WeightedOptions*> > _regionWeights, _missionWeights, _raceWeights;
 	std::map<std::string, int> _requiredReputation;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _xcomBaseInRegionTriggers;
+	std::map<std::string, bool> _xcomBaseInCountryTriggers;
 	bool _useTable, _siteType;
 public:
 	/// Creates a new mission script.
@@ -99,6 +103,14 @@ public:
 	int64_t getMaxFunds() const { return _maxFunds; }
 	/// Get allowed procesor (monthly/factional) that is allowed to process this command.
 	int getAllowedProcessor() const { return _allowedProcessor; }
+	/// Gets the name of the mission script tracking variable.
+	const std::string& getMissionVarName() const { return _missionVarName; }
+	/// Gets the name of the mission marker tracking variable.
+	const std::string& getMissionMarkerName() const { return _missionMarkerName; }
+	/// Gets the minimum number of missions generated for this command to run.
+	int getCounterMin() const { return _counterMin; }
+	/// Gets the maximum number of missions generated for this command to run.
+	int getCounterMax() const { return _counterMax; }
 	/// Gets the list of conditions this command requires in order to run.
 	const std::vector<int> &getConditionals() const;
 	/// Does this command have raceWeights?
@@ -113,6 +125,10 @@ public:
 	const std::map<std::string, bool> &getItemTriggers() const;
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const;
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const;
+	/// Gets the xcom base triggers that may apply to this command.
+	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const;
 	/// Delete this mission from the table? stops it coming up again in random selection, but NOT if a missionScript calls it by name.
 	bool getUseTable() const;
 	/// Sets this script to a terror mission type command or not.

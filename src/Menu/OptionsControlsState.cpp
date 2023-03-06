@@ -87,6 +87,10 @@ OptionsControlsState::OptionsControlsState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_controlsOxce.push_back(*i);
 			}
+			else if (i->category() == "STR_FTA")
+			{
+				_controlsFtA.push_back(*i);
+			}
 		}
 	}
 }
@@ -120,6 +124,10 @@ void OptionsControlsState::init()
 	_lstControls->addRow(2, tr("STR_OXCE").c_str(), "");
 	_lstControls->setCellColor(_controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2, 0, _colorGroup);
 	addControls(_controlsOxce);
+	_lstControls->addRow(2, "", "");
+	_lstControls->addRow(2, tr("STR_FTA").c_str(), "");
+	_lstControls->setCellColor(_controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size() + 2, 0, _colorGroup);
+	addControls(_controlsFtA);
 }
 
 /**
@@ -186,6 +194,11 @@ OptionInfo *OptionsControlsState::getControl(size_t sel)
 		sel <= _controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size())
 	{
 		return &_controlsOxce[sel - 1 - _controlsGeneral.size() - 2 - _controlsGeo.size() - 2 - _controlsBattle.size() - 2];
+	}
+	else if (sel > _controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size() + 2 &&
+			 sel <= _controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size() + 2 + _controlsFtA.size())
+	{
+		return &_controlsFtA[sel - 1 - _controlsGeneral.size() - 2 - _controlsGeo.size() - 2 - _controlsBattle.size() - 2 - _controlsOxce.size() - 2];
 	}
 	else
 	{

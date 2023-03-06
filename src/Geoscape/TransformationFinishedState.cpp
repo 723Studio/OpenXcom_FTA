@@ -113,9 +113,9 @@ void TransformationFinishedState::btnOpenClick(Action*)
  */
 void TransformationFinishedState::onSelectSoldier(Action* action)
 {
-	auto selSol = _soldiersList.at(_lstPossibilities->getSelectedRow()).first;
+	/*auto selSol = _soldiersList.at(_lstPossibilities->getSelectedRow()).first;
 	int id = selSol->getId() - 1;
-	_game->pushState(new SoldierInfoState(_base, id));
+	_game->pushState(new SoldierInfoState(_base, id));*/
 }
 
 }

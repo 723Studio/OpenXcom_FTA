@@ -26,6 +26,8 @@
 namespace OpenXcom
 {
 
+typedef std::vector<std::vector<int> > RuleCraftDeployment;
+
 class RuleTerrain;
 class Mod;
 class ModScript;
@@ -149,6 +151,11 @@ public:
 	/// Maximum of different types in one weapon slot.
 	static const int WeaponTypeMax = 8;
 
+	/// Default craft preview ID.
+	static const std::string DEFAULT_CRAFT_DEPLOYMENT_PREVIEW;
+	/// Dummy craft ID.
+	static const int DUMMY_CRAFT_ID = -42; // a negative integer
+
 	/// Name of class used in script.
 	static constexpr const char *ScriptName = "RuleCraft";
 	/// Register all useful function used by script.
@@ -160,7 +167,10 @@ private:
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
 	int _sprite, _marker;
 	std::vector<int> _skinSprites;
-	int _weapons, _soldiers, _pilots, _vehicles, _costBuy, _costRent, _costSell, _costDispose;
+	int _weapons, _soldiers, _pilots, _vehicles;
+	int _maxSmallSoldiers, _maxLargeSoldiers, _maxSmallVehicles, _maxLargeVehicles;
+	int _maxSmallUnits, _maxLargeUnits, _maxSoldiers, _maxVehicles;
+	int  _monthlyBuyLimit, _costBuy, _costRent, _costSell, _costDispose;
 	char _weaponTypes[WeaponMax][WeaponTypeMax];
 	std::string _refuelItem;
 	std::string _weaponStrings[WeaponMax];
@@ -171,14 +181,20 @@ private:
 	bool _keepCraftAfterFailedMission, _allowLanding, _spacecraft, _notifyWhenRefueled, _autoPatrol, _undetectable;
 	int _listOrder, _maxItems, _maxAltitude;
 	double _maxStorageSpace;
-	std::vector<std::vector <int> > _deployment;
+	RuleCraftDeployment _deployment;
 	std::vector<int> _craftInventoryTile;
 	RuleCraftStats _stats;
 	int _shieldRechargeAtBase;
 	bool _mapVisible, _forceShowInMonthlyCosts;
+	bool _useAllStartTiles;
+	std::string _customPreview;
+	std::vector<int> _selectSound, _takeoffSound;
 
 	ModScript::CraftScripts::Container _craftScripts;
 	ScriptValues<RuleCraft> _scriptValues;
+
+	/// Gets a random sound from a given vector.
+	int getRandomSound(const std::vector<int>& vector, int defaultValue = -1) const;
 
 public:
 	/// Creates a blank craft ruleset.
@@ -208,12 +224,31 @@ public:
 	int getAcceleration() const;
 	/// Gets the craft's weapon capacity.
 	int getWeapons() const;
-	/// Gets the craft's soldier capacity.
-	int getSoldiers() const;
+	/// Gets the craft's maximum unit capacity (soldiers and vehicles, small and large).
+	int getMaxUnits() const;
 	/// Gets the craft's pilot capacity/requirement.
 	int getPilots() const;
-	/// Gets the craft's vehicle capacity.
-	int getVehicles() const;
+	/// Gets the craft's maximum vehicle capacity (incl. 2x2 soldiers).
+	int getMaxVehiclesAndLargeSoldiers() const;
+	/// Gets the craft's maximum supported number of small (size=1) soldiers.
+	int getMaxSmallSoldiers() const { return _maxSmallSoldiers; }
+	/// Gets the craft's maximum supported number of large (size=2) soldiers.
+	int getMaxLargeSoldiers() const { return _maxLargeSoldiers; }
+	/// Gets the craft's maximum supported number of small (size=1) vehicles (HWPs/SWSs).
+	int getMaxSmallVehicles() const { return _maxSmallVehicles; }
+	/// Gets the craft's maximum supported number of large (size=2) vehicles (HWPs/SWSs).
+	int getMaxLargeVehicles() const { return _maxLargeVehicles; }
+	/// Gets the craft's maximum supported number of small (size=1) units (soldiers + vehicles).
+	int getMaxSmallUnits() const { return _maxSmallUnits; }
+	/// Gets the craft's maximum supported number of large (size=2) units (soldiers + vehicles).
+	int getMaxLargeUnits() const { return _maxLargeUnits; }
+	/// Gets the craft's maximum supported number of soldiers (small + large).
+	int getMaxSoldiers() const { return _maxSoldiers; }
+	/// Gets the craft's maximum supported number of vehicles (small + large).
+	int getMaxVehicles() const { return _maxVehicles; }
+	/// Gets the craft's monthly buy limit.
+	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
+	/// Gets the craft's role requirments for piloting.
 	/// Gets the craft's cost.
 	int getBuyCost() const;
 	/// Gets the craft's rent for a month.
@@ -257,7 +292,7 @@ public:
 	/// Gets the list weight for this craft.
 	int getListOrder() const;
 	/// Gets the deployment priority for the craft.
-	const std::vector<std::vector<int> > &getDeployment() const;
+	const RuleCraftDeployment &getDeployment() const;
 	/// Gets the craft inventory tile position.
 	const std::vector<int> &getCraftInventoryTile() const;
 	/// Gets the item limit for this craft.
@@ -283,8 +318,21 @@ public:
 	bool isMapVisible() const;
 	/// Gets whether or not the craft type should be displayed in Monthly Costs even if not present in the base.
 	bool forceShowInMonthlyCosts() const;
+	/// Can the player utilize all start tiles on a craft or only the ones specified in the '_deployment' list?
+	bool useAllStartTiles() const;
+	/// Gets the craft's custom preview type.
+	const std::string& getCustomPreviewType() const;
+	const std::string& getCustomPreviewTypeRaw() const;
+
 	/// Calculate the theoretical range of the craft in nautical miles
 	int calculateRange(int type);
+
+	/// Gets the sound played when the player directly selects a craft on the globe.
+	int getSelectSound() const;
+	const std::vector<int>& getSelectSoundRaw() const { return _selectSound; }
+	/// Gets the sound played when a craft takes off from a base.
+	int getTakeoffSound() const;
+	const std::vector<int>& getTakeoffSoundRaw() const { return _takeoffSound; }
 
 	/// Gets script.
 	template<typename Script>

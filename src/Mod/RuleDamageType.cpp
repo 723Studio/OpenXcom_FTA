@@ -18,7 +18,6 @@
  */
 #include <cmath>
 #include "RuleDamageType.h"
-#include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "Mod.h"
 
@@ -29,7 +28,7 @@ namespace OpenXcom
  * Default constructor
  */
 RuleDamageType::RuleDamageType() :
-	FixRadius(0), RandomType(DRT_DEFAULT), ResistType(DT_NONE), FireBlastCalc(false),
+	FixRadius(0), RandomType(DRT_STANDARD), ResistType(DT_NONE), FireBlastCalc(false),
 	IgnoreDirection(false), IgnoreSelfDestruct(false), IgnorePainImmunity(false), IgnoreNormalMoraleLose(false), IgnoreOverKill(false),
 	ArmorEffectiveness(1.0f), RadiusEffectiveness(0.0f), RadiusReduction(10.0f),
 	FireThreshold(1000), SmokeThreshold(1000),
@@ -104,17 +103,19 @@ int RuleDamageType::getRandomDamage(int power, FuncRef<int(int, int)> randFunc) 
 		{
 		case DT_NONE: randType = DRT_NONE; break;
 		case DT_IN: randType = DRT_FIRE; break;
-		case DT_HE: randType = DRT_TFTD; break;
+		case DT_HE: randType = DRT_EXPLOSION; break;
 		case DT_SMOKE: randType = DRT_NONE; break;
-		default: randType = DRT_UFO; break;
+		default: randType = DRT_STANDARD; break;
 		}
 	}
 
 	int dmgRng = 0;
 	switch (randType)
 	{
-	case DRT_UFO: dmgRng = (def ? Mod::DAMAGE_RANGE : 100); break;
-	case DRT_TFTD: dmgRng = (def ? Mod::EXPLOSIVE_DAMAGE_RANGE : 50); break;
+	case DRT_UFO: dmgRng = 100; break;
+	case DRT_TFTD: dmgRng = 50; break;
+	case DRT_STANDARD: dmgRng = Mod::DAMAGE_RANGE; break;
+	case DRT_EXPLOSION: dmgRng = Mod::EXPLOSIVE_DAMAGE_RANGE; break;
 	case DRT_FLAT: dmgRng = 0; break;
 	case DRT_FIRE:
 		return randFunc(Mod::FIRE_DAMAGE_RANGE[0], Mod::FIRE_DAMAGE_RANGE[1]);

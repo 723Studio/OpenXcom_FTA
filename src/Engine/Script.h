@@ -313,12 +313,12 @@ inline ArgEnum ArgRegisteType()
  */
 enum RegEnum : Uint16
 {
-	RegInvaild = (Uint16)-1,
+	RegInvalid = (Uint16)-1,
 
 	RegStartPos = 0,
 };
 
-static_assert(ScriptMaxReg < RegInvaild, "RegInvaild could be interpreted as correct register");
+static_assert(ScriptMaxReg < RegInvalid, "RegInvalid could be interpreted as correct register");
 
 /**
  * Return value from script operation.
@@ -843,9 +843,9 @@ public:
 	}
 
 	/// Programmable blitting using script.
-	void executeBlit(Surface* src, Surface* dest, int x, int y, int shade);
+	void executeBlit(const Surface* src, Surface* dest, int x, int y, int shade);
 	/// Programmable blitting using script.
-	void executeBlit(Surface* src, Surface* dest, int x, int y, int shade, GraphSubset mask);
+	void executeBlit(const Surface* src, Surface* dest, int x, int y, int shade, GraphSubset mask);
 
 	/// Clear all worker data.
 	void clear()
@@ -1449,6 +1449,7 @@ class ScriptParserEventsBase : public ScriptParserBase
 	struct EventData
 	{
 		int offset;
+		std::string name;
 		ScriptContainerBase script;
 	};
 

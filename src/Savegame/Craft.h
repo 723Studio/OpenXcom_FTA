@@ -19,10 +19,12 @@
  */
 #include "MovingTarget.h"
 #include <utility>
+#include <map>
 #include <vector>
 #include <string>
 #include "../Mod/RuleCraft.h"
 #include "../Engine/Script.h"
+#include "../Battlescape/Position.h"
 
 namespace OpenXcom
 {
@@ -43,6 +45,17 @@ class ScriptParserBase;
 class ScriptGlobal;
 
 enum UfoDetection : int;
+
+typedef std::pair<Position, int> SoldierDeploymentData;
+
+struct VehicleDeploymentData
+{
+	std::string type;
+	Position pos;
+	int dir;
+	bool used;
+	VehicleDeploymentData() : pos(-1, -1, -1), dir(0), used(false) { }
+};
 
 /**
  * Represents a craft stored in a base.
@@ -65,6 +78,7 @@ private:
 	int _fuel, _damage, _shield, _interceptionOrder, _takeoff;
 	std::vector<CraftWeapon*> _weapons;
 	ItemContainer *_items;
+	ItemContainer *_tempSoldierItems;
 	std::vector<Vehicle*> _vehicles;
 	std::string _status;
 	bool _lowFuel, _mission, _inBattlescape, _inDogfight;
@@ -73,6 +87,9 @@ private:
 	bool _isAutoPatrolling;
 	double _lonAuto, _latAuto;
 	std::vector<int> _pilots;
+	std::map<int, SoldierDeploymentData> _customSoldierDeployment;
+	std::vector<VehicleDeploymentData> _customVehicleDeployment;
+	int _scientists, _engineers;
 	int _skinIndex;
 	ScriptValues<Craft> _scriptValues;
 
@@ -132,18 +149,18 @@ public:
 	void setLatitudeAuto(double lat);
 	/// Gets the craft's amount of weapons.
 	int getNumWeapons(bool onlyLoaded = false) const;
-	/// Gets the craft's amount of soldiers.
-	int getNumSoldiers() const;
 	/// Gets the craft's amount of equipment.
 	int getNumEquipment() const;
-	/// Gets the craft's amount of vehicles.
-	int getNumVehicles() const;
 	/// Gets the craft's weapons.
 	std::vector<CraftWeapon*> *getWeapons();
 	/// Gets the craft's items.
 	ItemContainer *getItems();
+	/// Gets the craft's items equipped by the soldiers.
+	ItemContainer* getSoldierItems();
 	/// Gets the craft's vehicles.
 	std::vector<Vehicle*> *getVehicles();
+	/// Calculates (and stores) the sum of all equipment of all soldiers on the craft.
+	void calculateTotalSoldierEquipment();
 
 	/// Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
 	double getTotalItemStorageSize(const Mod* mod) const;
@@ -178,6 +195,8 @@ public:
 	void setShield(int shield);
 	/// Gets the percent shield remaining
 	int getShieldPercentage() const;
+	/// Gets whether the craft is ignored by hunter-killers.
+	bool isIgnoredByHK() const;
 	/// Gets whether the craft is running out of fuel.
 	bool getLowFuel() const;
 	/// Sets whether the craft is running out of fuel.
@@ -194,6 +213,14 @@ public:
 	int getFuelLimit() const;
 	/// Gets the craft's minimum fuel limit to go to a base.
 	int getFuelLimit(Base *base) const;
+	/// Gets the craft's scientists on board
+	int getScientists() const { return _scientists; };
+	/// Sets the craft's scientists on board
+	void setScientists(int scientists) { _scientists = scientists; };
+	/// Gets the craft's engineers on board
+	int getEngineers() const { return _engineers; };
+	/// Sets the craft's engineers on board
+	void setEngineers(int engineers) { _engineers = engineers; };
 
 	double getBaseRange() const;
 	/// Returns the craft to its base.
@@ -201,11 +228,13 @@ public:
 	/// Returns the crew to their base (using transfers).
 	void evacuateCrew(const Mod *mod);
 	/// Checks if a target is detected by the craft's radar.
-	UfoDetection detect(const Ufo *target, bool alreadyTracked) const;
+	UfoDetection detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const;
 	/// Handles craft logic.
-	bool think();
+	bool think(std::string &pushState);
+	/// Is the craft about to take off?
+	bool isTakingOff() const;
 	/// Does a craft full checkup.
-	void checkup();
+	bool checkup();
 	/// Consumes the craft's fuel.
 	void consumeFuel(int escortSpeed);
 	/// Calculates the time to repair
@@ -215,7 +244,7 @@ public:
 	/// Calculates the time to rearm
 	unsigned int calcRearmTime();
 	/// Repairs the craft.
-	void repair(int bonus = 100);
+	void repair();
 	/// Refuels the craft.
 	std::string refuel();
 	/// Rearms the craft.
@@ -230,6 +259,8 @@ public:
 	int getSpaceAvailable() const;
 	/// Gets the amount of space used inside a craft.
 	int getSpaceUsed() const;
+	/// Checks if the commander is onboard.
+	bool isCommanderOnboard();
 	/// Checks if there are only permitted soldier types onboard.
 	bool areOnlyPermittedSoldierTypesOnboard(const RuleStartingCondition* sc);
 	/// Checks if there are enough required items onboard.
@@ -250,6 +281,10 @@ public:
 	int getPilotAccuracyBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Calculates the dodge bonus based on pilot skills.
 	int getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
+	/// Calculates the tracking bonus based on pilot skills.
+	int getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
+	/// Calculates the coordination bonus based on pilot skills.
+	int getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const;
 	/// Calculates the approach speed modifier based on pilot skills.
 	int getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Gets the craft's vehicles of a certain type.
@@ -276,6 +311,46 @@ public:
 	void setSkinIndex(int skinIndex) { _skinIndex = skinIndex; }
 	/// Gets the craft's skin sprite ID.
 	int getSkinSprite() const;
+
+	/// Gets the craft's custom deployment of soldiers.
+	std::map<int, SoldierDeploymentData>& getCustomSoldierDeployment() { return _customSoldierDeployment; };
+	/// Gets the craft's custom deployment of vehicles.
+	std::vector<VehicleDeploymentData>& getCustomVehicleDeployment() { return _customVehicleDeployment; };
+	/// Does this craft have a custom deployment set?
+	bool hasCustomDeployment() const;
+	/// Resets the craft's custom deployment.
+	void resetCustomDeployment();
+	/// Resets the craft's custom deployment of vehicles temp variables.
+	void resetTemporaryCustomVehicleDeploymentFlags();
+
+	/// Gets the craft's amount of vehicles and 2x2 soldiers.
+	int getNumVehiclesAndLargeSoldiers() const;
+
+	/// Gets the craft's amount of 1x1 soldiers.
+	int getNumSmallSoldiers() const;
+	/// Gets the craft's amount of 2x2 soldiers.
+	int getNumLargeSoldiers() const;
+	/// Gets the craft's amount of 1x1 vehicles.
+	int getNumSmallVehicles() const;
+	/// Gets the craft's amount of 2x2 vehicles.
+	int getNumLargeVehicles() const;
+	/// Gets the craft's amount of 1x1 units.
+	int getNumSmallUnits() const;
+	/// Gets the craft's amount of 2x2 units.
+	int getNumLargeUnits() const;
+	/// Gets the craft's total amount of soldiers.
+	int getNumTotalSoldiers() const;
+	/// Gets the craft's total amount of vehicles.
+	int getNumTotalVehicles() const;
+	/// Gets the craft's total amount of units.
+	int getNumTotalUnits() const;
+
+	/// Validates craft space and craft constraints on soldier armor change.
+	bool validateArmorChange(int sizeFrom, int sizeTo) const;
+	/// Validates craft space and craft constraints on adding soldier to a craft.
+	bool validateAddingSoldier(int space, const Soldier* s) const;
+	/// Validates craft space and craft constraints on adding vehicles to a craft.
+	int validateAddingVehicles(int totalSize) const;
 };
 
 }

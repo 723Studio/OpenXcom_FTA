@@ -83,9 +83,11 @@ it:
   STR_CONSTRUCTION_TIME_UC: "TEMPO COSTRUZIONE>"
   STR_DAY:
     one: "{N} g."
+    many: "{N} giorni."
     other: "{N} giorni."
   STR_HOUR:
     one: "{N} ora"
+    many: "{N} ore"
     other: "{N} ore"
   STR_MAINTENANCE_UC: "MANUTENZIONE>"
   STR_OK: "OK"
@@ -1010,15 +1012,19 @@ it:
   STR_TIME_UNITS_RESERVED_FOR_KNEELING_AND_FIRING: "UdT riservati per Inginocchiarsi e Sparare"
   STR_UNITS_IN_CRAFT:
     one: "{N} unità nel velivolo X-Com"
+    many: "{N} unità nel velivolo X-Com"
     other: "{N} unità nel velivolo X-Com"
   STR_UNITS_OUTSIDE:
     one: "{N} unità rimasta fuori"
+    many: "{N} unità rimaste fuori"
     other: "{N} unità rimaste fuori"
   STR_UNITS_IN_ENTRANCE:
     one: "{N} unità nell'entrata"
+    many: "{N} unità nell'entrata"
     other: "{N} unità nell'entrata"
   STR_UNITS_IN_EXIT:
     one: "{N} unità nell'uscita obiettivo"
+    many: "{N} unità nell'uscita obiettivo"
     other: "{N} unità nell'uscita obiettivo"
   STR_ABORT_MISSION_QUESTION: "Interrompi la missione ?"
   STR_CORPSE: "Cadavere"
@@ -1065,6 +1071,7 @@ it:
   STR_ALL_ITEMS: "Tutti gli oggetti"
   STR_NO_MORE_EQUIPMENT_ALLOWED:
     one: "NON È CONSENTITO ULTERIORE EQUIPAGGIAMENTO A BORDO!{SMALLLINE}Ti è consentito portare al massimo {N} oggetto di equipaggiamento su questo veicolo."
+    many: "NON È CONSENTITO ULTERIORE EQUIPAGGIAMENTO A BORDO!{SMALLLINE}Ti è consentito portare al massimo {N} oggetti di equipaggiamento su questo veicolo."
     other: "NON È CONSENTITO ULTERIORE EQUIPAGGIAMENTO A BORDO!{SMALLLINE}Ti è consentito portare al massimo {N} oggetti di equipaggiamento su questo veicolo."
   STR_CONTROL_CENTER_DESTROYED: "{SMALLLINE}CENTRO DI CONTROLLO DISTRUTTO{SMALLLINE}Trova la strada per l'entrata e abbbandona."
   STR_XCOM_BASE_CANNOT_BE_BUILT: "Le strutture X-Com non possono essere costruite sott'acqua "

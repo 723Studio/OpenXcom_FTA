@@ -35,9 +35,9 @@ class FactionalResearch
 private:
 	const RuleResearch* _rule;
 	DiplomacyFaction* _faction;
-	int _scientists;
-	int _timeLeft;
 	int _priority;
+	int _timeLeft;
+	int _scientists;
 public:
 	/// Creates a blank Factional Research.
 	FactionalResearch(const RuleResearch* rule, DiplomacyFaction* faction);

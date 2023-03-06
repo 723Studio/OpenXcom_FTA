@@ -248,7 +248,7 @@ ro:
   STR_ALIEN_RACE: "Rasă"
   STR_ALIEN_TECH_LEVEL: "Nivel Tehnologic"
   STR_RANDOMIZE: "Aleator"
-  STR_OXCE_REQUIRED_QUESTION: "Această modificare necesită OpenXcom Extended pentru a funcționa corect. Activăm?"
+  STR_OXCE_REQUIRED_QUESTION: "Această modificare necesită OpenXcom {0} pentru a funcționa corect. Activăm modificarea?"
   STR_RESTORE_DEFAULTS_QUESTION: "Sigur se restaurează opțiunile implicite?"
   STR_DISPLAY_OPTIONS_CONFIRM: "Se păstrează opțiunile de afișare curente?"
   STR_DISPLAY_OPTIONS_REVERT: "Revenire în 0:{0}"

@@ -45,6 +45,7 @@ private:
 	size_t _firstManufacturingTopicIndex;
 	size_t _firstFacilitiesTopicIndex;
 	size_t _firstItemTopicIndex;
+	size_t _firstCraftTopicIndex;
 	void initLists();
 	void onSelectTopic(Action *action);
 public:

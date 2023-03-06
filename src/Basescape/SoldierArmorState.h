@@ -33,6 +33,7 @@ class Base;
 class TextButton;
 class Window;
 class Text;
+class TextEdit;
 class TextList;
 class Armor;
 class ArrowButton;
@@ -66,11 +67,13 @@ private:
 
 	SoldierArmorOrigin _origin;
 	TextButton *_btnCancel;
+	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtType, *_txtQuantity;
 	TextList *_lstArmor;
 	ArrowButton *_sortName;
 	std::vector<ArmorItem> _armors;
+	std::vector<int> _indices;
 	ArmorSort _armorOrder;
 	void updateArrows();
 public:
@@ -84,6 +87,9 @@ public:
 	void updateList();
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
+	/// Handlers for Quick Search.
+	void btnQuickSearchToggle(Action* action);
+	void btnQuickSearchApply(Action* action);
 	/// Handler for clicking the Weapons list.
 	void lstArmorClick(Action *action);
 	/// Handler for clicking the Weapons list.

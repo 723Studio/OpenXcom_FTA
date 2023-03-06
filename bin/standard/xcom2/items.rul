@@ -778,6 +778,7 @@ items: #done
     invWidth: 2
     invHeight: 3
     armor: 0
+    battleType: 11
     recover: false
   - type: STR_CORPSE_ARMOR
     name: STR_CORPSE
@@ -787,6 +788,7 @@ items: #done
     invWidth: 2
     invHeight: 3
     armor: 0
+    battleType: 11
     recover: false
   - type: STR_CORPSE_ION
     name: STR_CORPSE
@@ -796,6 +798,7 @@ items: #done
     invWidth: 2
     invHeight: 3
     armor: 0
+    battleType: 11
     recover: false
   - type: STR_SONIC_CANNON
     requires:
@@ -1302,41 +1305,49 @@ items: #done
     floorSprite: 64
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: DISPLACER_CORPSE_2
     floorSprite: 65
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: DISPLACER_CORPSE_3
     floorSprite: 66
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: DISPLACER_CORPSE_4
     floorSprite: 67
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: COELACANTH_CORPSE_1
     floorSprite: 68
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: COELACANTH_CORPSE_2
     floorSprite: 69
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: COELACANTH_CORPSE_3
     floorSprite: 70
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: COELACANTH_CORPSE_4
     floorSprite: 71
     invWidth: 0
     invHeight: 0
+    battleType: 11
     recover: false
   - type: CIVM_CORPSE
     name: STR_CORPSE
@@ -1345,6 +1356,7 @@ items: #done
     invWidth: 0
     invHeight: 0
     armor: 12
+    battleType: 11
     recover: false
   - type: CIVF_CORPSE
     name: STR_CORPSE
@@ -1353,6 +1365,7 @@ items: #done
     invWidth: 0
     invHeight: 0
     armor: 12
+    battleType: 11
     recover: false
   - type: STR_ION_BEAM_ACCELERATORS
     size: 0.7
@@ -1443,6 +1456,8 @@ items: #done
     clipSize: -1
     recover: false
   - type: STR_LOBSTERMAN_MELEE_WEAPON
+    specialUseEmptyHand: true
+    specialUseEmptyHandShow: true
     bigSprite: 70
     meleeSound: 42
     strengthApplied: true
