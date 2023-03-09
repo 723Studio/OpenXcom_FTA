@@ -1602,6 +1602,10 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 		if (_visibleBattleObject[btnID])
 		{
 			position = _visibleBattleObject[btnID]->getPosition();
+			// add battle object to obstacles to make it blink
+			getMap()->resetObstacles();
+			_visibleBattleObject[btnID]->getTile()->setObstacle(O_OBJECT);
+			getMap()->enableObstacles();
 		}
 		else
 		{
