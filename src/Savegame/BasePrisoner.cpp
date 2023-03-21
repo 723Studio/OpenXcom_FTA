@@ -257,10 +257,11 @@ bool BasePrisoner::think(Game &engine)
 				result = true;
 				_interrogationProgress = 0;
 				// give research if any
+				std::string researchName = "";
+				std::string bonusResearchName = "";
 				if (!rules.getUnlockedResearches().empty())
 				{
-					std::string researchName = "";
-					std::string bonusResearchName = "";
+
 					std::vector<const RuleResearch*> possibilities;
 
 					engine.getMasterMind()->helpResearchDiscovery(rules.getUnlockedResearches(), possibilities, _base, researchName, bonusResearchName);
@@ -291,9 +292,20 @@ bool BasePrisoner::think(Game &engine)
 							s->setActivePrisoner(0);
 						}
 					}
-
-					engine.pushState(new PrisonReportState(mod.getResearch(researchName), mod.getResearch(bonusResearchName), this, _base));
 				}
+				RuleResearch* research;
+				RuleResearch* bonus;
+				if (!researchName.empty())
+					research = mod.getResearch(researchName);
+				else
+					research = nullptr;
+
+				if (!bonusResearchName.empty())
+					bonus = mod.getResearch(bonusResearchName);
+				else
+					bonus = nullptr;
+
+				engine.pushState(new PrisonReportState(research, bonus, this, _base));
 			}
 		}
 		else if (prisonerState == PRISONER_STATE_TORTURE)

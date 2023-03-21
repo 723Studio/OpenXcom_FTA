@@ -116,7 +116,10 @@ void PrisonReportState::initUI()
 		ss << " ";
 		ss << _prisoner->getNameAndId();
 		ss << " ";
-		ss << "STR_PRISONER_INTERROGATED_PT2";
+		if (_research != nullptr || _bonus != nullptr)
+			ss << "STR_PRISONER_INTERROGATED_PT2";
+		else
+			ss << "STR_PRISONER_INTERROGATED_PT3";
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_RECRUITING:
