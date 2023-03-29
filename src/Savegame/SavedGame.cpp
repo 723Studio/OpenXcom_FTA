@@ -1634,7 +1634,7 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 			{
 				continue; // skip disabled topics
 			}
-			if (!isResearched(free, false))
+			if (!isResearched(free, false) || selectGetOneFree(free) != nullptr)
 			{
 				possibilities.push_back(free);
 			}
