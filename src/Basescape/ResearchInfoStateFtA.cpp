@@ -309,7 +309,7 @@ void ResearchInfoStateFtA::btnOkClick(Action *)
 	if (_newProject)
 	{
 		int rng = RNG::generate(50, 150);
-		int randomizedCost = getResearchRules()->getCost() * rng / 100;
+		int randomizedCost = getResearchRules()->getCost() * rng; // we do not devide it by 100 for better precision
 		if (getResearchRules()->getCost() > 0)
 		{
 			randomizedCost = std::max(1, randomizedCost);

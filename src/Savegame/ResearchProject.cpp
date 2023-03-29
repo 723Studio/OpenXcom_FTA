@@ -146,7 +146,7 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		if (statsN > 0)
 			soldierEffort /= statsN;
 		double insightBonus = RNG::generate(0, stats->insight);
-		soldierEffort += insightBonus / 20;
+		soldierEffort += insightBonus / 50;
 		effort += soldierEffort;
 		Log(LOG_INFO) << "Scientist effort value: " << effort;
 	}
@@ -155,6 +155,7 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		effort *= (100 - 19 * log(assignedScientists.size())) / 100;
 
 	effort *= (double)rating;
+	effort *= 100; // for more precise calculation after rounding to integer
 	progress = static_cast<int>(effort);
 	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress;
 	return progress;
