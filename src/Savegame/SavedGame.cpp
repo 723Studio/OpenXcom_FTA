@@ -1641,7 +1641,7 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 		}
 		for (auto& itMap : research->getGetOneFreeProtected())
 		{
-			if (isResearched(itMap.first, false))
+			if (isResearched(itMap.first, false) || selectGetOneFree(itMap.first) != nullptr)
 			{
 				for (auto& itVector : itMap.second)
 				{
