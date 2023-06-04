@@ -97,6 +97,7 @@ private:
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
 	std::vector<SoldierRoleRanksRequirments*> _roleExpRequirments;
 	std::vector<SoldierRoleRanksStrings*> _roleRankStrings;
+	std::string _requiresBuyCountry;
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
 	std::string _armorName;
 	const Armor* _armor;
@@ -138,11 +139,11 @@ private:
 	void addSoldierNamePool(const std::string &namFile);
 public:
 	/// Creates a blank soldier ruleset.
-	RuleSoldier(const std::string &type);
+	RuleSoldier(const std::string &type, int listOrder);
 	/// Cleans up the soldier ruleset.
 	~RuleSoldier();
 	/// Loads the soldier data from YAML.
-	void load(const YAML::Node& node, Mod *mod, int listOrder, const ModScript &parsers);
+	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the soldier's type.
@@ -155,8 +156,10 @@ public:
 	int getListOrder() const;
 	/// Gets the soldier's requirements.
 	const std::vector<std::string> &getRequirements() const;
-	/// Gets the base functions required to buy solder.
+	/// Gets the base functions required to hire this soldier type.
 	RuleBaseFacilityFunctions getRequiresBuyBaseFunc() const { return _requiresBuyBaseFunc; }
+	/// Gets the allied country name required to hire this soldier type.
+	const std::string& getRequiresBuyCountry() const { return _requiresBuyCountry; }
 	/// Gets the minimum stats for the random stats generator.
 	UnitStats getMinStats() const;
 	/// Gets the maximum stats for the random stats generator.

@@ -111,20 +111,20 @@ void MiniBaseView::draw()
 		{
 			SDL_Rect r;
 			lock();
-			for (std::vector<BaseFacility*>::iterator f = _bases->at(i)->getFacilities()->begin(); f != _bases->at(i)->getFacilities()->end(); ++f)
+			for (const auto* fac : *_bases->at(i)->getFacilities())
 			{
 				int color;
-				if ((*f)->getDisabled())
+				if (fac->getDisabled())
 					color = _blue;
-				else if ((*f)->getBuildTime() == 0)
+				else if (fac->getBuildTime() == 0)
 					color = _green;
 				else
 					color = _red;
 
-				r.x = i * (MINI_SIZE + 2) + 2 + (*f)->getX() * 2;
-				r.y = 2 + (*f)->getY() * 2;
-				r.w = (*f)->getRules()->getSize() * 2;
-				r.h = (*f)->getRules()->getSize() * 2;
+				r.x = i * (MINI_SIZE + 2) + 2 + fac->getX() * 2;
+				r.y = 2 + fac->getY() * 2;
+				r.w = fac->getRules()->getSize() * 2;
+				r.h = fac->getRules()->getSize() * 2;
 				drawRect(&r, color+3);
 				r.x++;
 				r.y++;

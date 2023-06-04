@@ -72,6 +72,8 @@ public:
 	bool move();
 	/// Gets the current position in voxel space.
 	Position getPosition(int offset = 0) const;
+	/// Gets the two last position in voxel space.
+	LastPositions getLastPositions(int offset = 0) const { return LastPositions(getPosition(offset), getPosition(offset + ItemDropVoxelOffset)); }
 	/// Gets a particle from the particle array.
 	int getParticle(int i) const;
 	/// Gets the item.

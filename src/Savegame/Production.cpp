@@ -63,12 +63,12 @@ bool Production::haveEnoughLivingSpaceForOneMoreUnit(Base * b)
 
 bool Production::haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const
 {
-	for (auto& i : _rules->getRequiredItems())
+	for (const auto& i : _rules->getRequiredItems())
 	{
 		if (b->getStorageItems()->getItem(i.first) < i.second)
 			return false;
 	}
-	for (auto& i : _rules->getRequiredCrafts())
+	for (const auto& i : _rules->getRequiredCrafts())
 	{
 		if (b->getCraftCountForProduction(i.first) < i.second)
 			return false;
@@ -247,7 +247,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 		int count = 0;
 		do
 		{
-			auto ruleCraft = _rules->getProducedCraft();
+			auto* ruleCraft = _rules->getProducedCraft();
 			if (ruleCraft)
 			{
 				Craft *craft = new Craft(ruleCraft, b, g->getId(ruleCraft->getType()));
@@ -257,7 +257,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 			}
 			else
 			{
-				for (auto& i : _rules->getProducedItems())
+				for (const auto& i : _rules->getProducedItems())
 				{
 					if (getSellItems())
 					{
@@ -274,9 +274,9 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 						}
 						if (i.first->getBattleType() == BT_NONE)
 						{
-							for (std::vector<Craft*>::iterator c = b->getCrafts()->begin(); c != b->getCrafts()->end(); ++c)
+							for (auto* c : *b->getCrafts())
 							{
-								(*c)->reuseItem(i.first);
+								c->reuseItem(i.first);
 							}
 						}
 					}
@@ -286,27 +286,27 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 			if (!_rules->getRandomProducedItems().empty())
 			{
 				int totalWeight = 0;
-				for (auto& itemSet : _rules->getRandomProducedItems())
+				for (const auto& itemSet : _rules->getRandomProducedItems())
 				{
 					totalWeight += itemSet.first;
 				}
 				// RNG
 				int roll = RNG::generate(1, totalWeight);
 				int runningTotal = 0;
-				for (auto& itemSet : _rules->getRandomProducedItems())
+				for (const auto& itemSet : _rules->getRandomProducedItems())
 				{
 					runningTotal += itemSet.first;
 					if (runningTotal >= roll)
 					{
-						for (auto& i : itemSet.second)
+						for (const auto& i : itemSet.second)
 						{
 							b->getStorageItems()->addItem(i.first->getType(), i.second);
 							_randomProductionInfo[i.first->getType()] += i.second;
 							if (i.first->getBattleType() == BT_NONE)
 							{
-								for (std::vector<Craft*>::iterator c = b->getCrafts()->begin(); c != b->getCrafts()->end(); ++c)
+								for (auto* c : *b->getCrafts())
 								{
-									(*c)->reuseItem(i.first);
+									c->reuseItem(i.first);
 								}
 							}
 						}
@@ -353,6 +353,11 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					}
 				}
 			}
+			if (_rules->getPoints() != 0)
+			{
+				// yes, negative points are allowed too
+				g->addResearchScore(_rules->getPoints());
+			}
 			count++;
 			if (count < produced)
 			{
@@ -392,18 +397,18 @@ const RuleManufacture * Production::getRules() const
 void Production::startItem(Base * b, SavedGame * g, const Mod *m) const
 {
 	g->setFunds(g->getFunds() - ((_rules->getManufactureCost() * 100) / _efficiency));
-	for (auto& i : _rules->getRequiredItems())
+	for (const auto& i : _rules->getRequiredItems())
 	{
 		b->getStorageItems()->removeItem(i.first, i.second);
 	}
-	for (auto& i : _rules->getRequiredCrafts())
+	for (const auto& i : _rules->getRequiredCrafts())
 	{
 		// Find suitable craft
-		for (std::vector<Craft*>::iterator c = b->getCrafts()->begin(); c != b->getCrafts()->end(); ++c)
+		for (auto* c : *b->getCrafts())
 		{
-			if ((*c)->getRules() == i.first)
+			if (c->getRules() == i.first)
 			{
-				Craft *craft = *c;
+				Craft *craft = c;
 				b->removeCraft(craft, true);
 				delete craft;
 				break;
@@ -415,11 +420,11 @@ void Production::startItem(Base * b, SavedGame * g, const Mod *m) const
 void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 {
 	g->setFunds(g->getFunds() + _rules->getManufactureCost());
-	for (auto& iter : _rules->getRequiredItems())
+	for (const auto& pair : _rules->getRequiredItems())
 	{
-		b->getStorageItems()->addItem(iter.first->getType(), iter.second);
+		b->getStorageItems()->addItem(pair.first->getType(), pair.second);
 	}
-	//for (auto& it : _rules->getRequiredCrafts())
+	//for (const auto& pair : _rules->getRequiredCrafts())
 	//{
 	//	// not supported
 	//}

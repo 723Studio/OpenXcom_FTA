@@ -118,38 +118,38 @@ UfoTrackerState::UfoTrackerState(GeoscapeState *state, Globe *globe) : _state(st
 	_lstObjects->onMouseClick((ActionHandler)&UfoTrackerState::lstObjectsMiddleClick, SDL_BUTTON_MIDDLE);
 
 	int row = 0;
-	for (std::vector<MissionSite*>::iterator iSite = _game->getSavedGame()->getMissionSites()->begin(); iSite != _game->getSavedGame()->getMissionSites()->end(); ++iSite)
+	for (auto* site : *_game->getSavedGame()->getMissionSites())
 	{
-		if (!(*iSite)->getDetected())
+		if (!site->getDetected())
 			continue;
 
-		_objects.push_back(*iSite);
-		_lstObjects->addRow(1, (*iSite)->getName(_game->getLanguage()).c_str());
+		_objects.push_back(site);
+		_lstObjects->addRow(1, site->getName(_game->getLanguage()).c_str());
 		_lstObjects->setCellColor(row, 0, _lstObjects->getSecondaryColor());
 		row++;
 	}
 
-	for (std::vector<Ufo*>::iterator iUfo = _game->getSavedGame()->getUfos()->begin(); iUfo != _game->getSavedGame()->getUfos()->end(); ++iUfo)
+	for (auto* ufo : *_game->getSavedGame()->getUfos())
 	{
-		if (!(*iUfo)->getDetected())
+		if (!ufo->getDetected())
 			continue;
 
 		std::ostringstream ss1;
-		ss1 << tr((*iUfo)->getRules()->getSize());
+		ss1 << tr(ufo->getRules()->getSize());
 
 		std::ostringstream ss2;
-		std::string altitude = (*iUfo)->getAltitude() == "STR_GROUND" ? "STR_GROUNDED" : (*iUfo)->getAltitude();
+		std::string altitude = ufo->getAltitude() == "STR_GROUND" ? "STR_GROUNDED" : ufo->getAltitude();
 		ss2 << tr(altitude);
 
 		std::ostringstream ss3;
-		std::string heading = (*iUfo)->getStatus() != Ufo::FLYING ? "STR_NONE_UC" : (*iUfo)->getDirection();
+		std::string heading = ufo->getStatus() != Ufo::FLYING ? "STR_NONE_UC" : ufo->getDirection();
 		ss3 << tr(heading);
 
 		std::ostringstream ss4;
-		ss4 << Unicode::formatNumber((*iUfo)->getSpeed());
+		ss4 << Unicode::formatNumber(ufo->getSpeed());
 
-		_objects.push_back(*iUfo);
-		_lstObjects->addRow(5, (*iUfo)->getName(_game->getLanguage()).c_str(), ss1.str().c_str(), ss2.str().c_str(), ss3.str().c_str(), ss4.str().c_str());
+		_objects.push_back(ufo);
+		_lstObjects->addRow(5, ufo->getName(_game->getLanguage()).c_str(), ss1.str().c_str(), ss2.str().c_str(), ss3.str().c_str(), ss4.str().c_str());
 		if (altitude == "STR_GROUNDED")
 		{
 			_lstObjects->setCellColor(row, 2, _lstObjects->getSecondaryColor());
@@ -157,13 +157,13 @@ UfoTrackerState::UfoTrackerState(GeoscapeState *state, Globe *globe) : _state(st
 		row++;
 	}
 
-	for (std::vector<AlienBase*>::iterator iBase = _game->getSavedGame()->getAlienBases()->begin(); iBase != _game->getSavedGame()->getAlienBases()->end(); ++iBase)
+	for (auto* ab : *_game->getSavedGame()->getAlienBases())
 	{
-		if (!(*iBase)->isDiscovered())
+		if (!ab->isDiscovered())
 			continue;
 
-		_objects.push_back(*iBase);
-		_lstObjects->addRow(1, (*iBase)->getName(_game->getLanguage()).c_str());
+		_objects.push_back(ab);
+		_lstObjects->addRow(1, ab->getName(_game->getLanguage()).c_str());
 		row++;
 	}
 }

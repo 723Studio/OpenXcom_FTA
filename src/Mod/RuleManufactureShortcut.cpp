@@ -36,7 +36,11 @@ RuleManufactureShortcut::RuleManufactureShortcut(const std::string &name) : _nam
  */
 void RuleManufactureShortcut::load(const YAML::Node &node)
 {
-	_name = node["name"].as<std::string>(_name);
+	if (const YAML::Node &parent = node["refNode"])
+	{
+		load(parent);
+	}
+
 	_startFrom = node["startFrom"].as<std::string>(_startFrom);
 	_breakDownItems = node["breakDownItems"].as< std::vector<std::string> >(_breakDownItems);
 	_breakDownRequires = node["breakDownRequires"].as<bool>(_breakDownRequires);

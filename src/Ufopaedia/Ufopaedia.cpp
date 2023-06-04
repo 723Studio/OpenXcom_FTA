@@ -86,9 +86,9 @@ namespace OpenXcom
 		}
 		for (size_t it = 0; it<articles.size(); ++it)
 		{
-			for (std::vector<std::string>::iterator j = articles[it]->_requires.begin(); j != articles[it]->_requires.end(); ++j)
+			for (const auto& req : articles[it]->_requires)
 			{
-				if (article_id == *j)
+				if (article_id == req)
 				{
 					return it;
 				}
@@ -255,7 +255,7 @@ namespace OpenXcom
 	void Ufopaedia::list(SavedGame *save, Mod *mod, const std::string &section, ArticleDefinitionList &data)
 	{
 		auto state = createCommonArticleState(save, mod);
-		for (auto a : state->articleList)
+		for (auto* a : state->articleList)
 		{
 			if (a->section == section)
 			{
@@ -308,13 +308,13 @@ namespace OpenXcom
 		if (article->section == UFOPAEDIA_COMMENDATIONS)
 		{
 			// 1. check living soldiers
-			for (std::vector<Base*>::iterator i = save->getBases()->begin(); i != save->getBases()->end(); ++i)
+			for (auto* xbase : *save->getBases())
 			{
-				for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
+				for (auto* soldier : *xbase->getSoldiers())
 				{
-					for (std::vector<SoldierCommendations*>::iterator k = (*j)->getDiary()->getSoldierCommendations()->begin(); k != (*j)->getDiary()->getSoldierCommendations()->end(); ++k)
+					for (auto* comm : *soldier->getDiary()->getSoldierCommendations())
 					{
-						if ((*k)->getType() == article->getMainTitle())
+						if (comm->getType() == article->getMainTitle())
 						{
 							return true;
 						}
@@ -323,11 +323,11 @@ namespace OpenXcom
 			}
 
 			// 2. check dead soldiers
-			for (std::vector<Soldier*>::reverse_iterator j = save->getDeadSoldiers()->rbegin(); j != save->getDeadSoldiers()->rend(); ++j)
+			for (std::vector<Soldier*>::reverse_iterator deadManIt = save->getDeadSoldiers()->rbegin(); deadManIt != save->getDeadSoldiers()->rend(); ++deadManIt)
 			{
-				for (std::vector<SoldierCommendations*>::iterator k = (*j)->getDiary()->getSoldierCommendations()->begin(); k != (*j)->getDiary()->getSoldierCommendations()->end(); ++k)
+				for (auto* comm : *(*deadManIt)->getDiary()->getSoldierCommendations())
 				{
-					if ((*k)->getType() == article->getMainTitle())
+					if (comm->getType() == article->getMainTitle())
 					{
 						return true;
 					}
@@ -347,10 +347,9 @@ namespace OpenXcom
 	std::shared_ptr<ArticleCommonState> Ufopaedia::createCommonArticleState(SavedGame *save, Mod *mod)
 	{
 		auto shared = std::make_shared<ArticleCommonState>();
-		const std::vector<std::string> &list = mod->getUfopaediaList();
-		for (std::vector<std::string>::const_iterator it=list.begin(); it!=list.end(); ++it)
+		for (const auto& articleName : mod->getUfopaediaList())
 		{
-			ArticleDefinition *article = mod->getUfopaediaArticle(*it);
+			ArticleDefinition *article = mod->getUfopaediaArticle(articleName);
 			if (isArticleAvailable(save, article) && article->section != UFOPAEDIA_NOT_AVAILABLE && !isArticleHidden(save, article, mod))
 			{
 				shared->articleList.push_back(article);

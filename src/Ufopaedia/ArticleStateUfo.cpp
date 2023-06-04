@@ -67,7 +67,7 @@ namespace OpenXcom
 
 		RuleInterface *dogfightInterface = _game->getMod()->getInterface("dogfight");
 
-		auto crop = _game->getMod()->getSurface("INTERWIN.DAT")->getCrop();
+		SurfaceCrop crop = _game->getMod()->getSurface("INTERWIN.DAT")->getCrop();
 		crop.setX(0);
 		crop.setY(0);
 		crop.getCrop()->x = 0;

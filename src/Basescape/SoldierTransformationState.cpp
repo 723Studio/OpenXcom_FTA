@@ -343,7 +343,7 @@ void SoldierTransformationState::initTransformationData()
 	UnitStats changedStatsMin = _sourceSoldier->calculateStatChanges(_game->getMod(), _transformationRule, _sourceSoldier, 1, _sourceSoldier->getRules());
 	UnitStats changedStatsMax = _sourceSoldier->calculateStatChanges(_game->getMod(), _transformationRule, _sourceSoldier, 2, _sourceSoldier->getRules());
 	UnitStats bonusStats;
-	auto bonusRule = _game->getMod()->getSoldierBonus(_transformationRule->getSoldierBonusType(), false);
+	auto* bonusRule = _game->getMod()->getSoldierBonus(_transformationRule->getSoldierBonusType(), false);
 	if (bonusRule)
 	{
 		bonusStats += *bonusRule->getStats();
@@ -560,11 +560,11 @@ void SoldierTransformationState::btnStartClick(Action *action)
 	// Pay upfront, no refunds
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _transformationRule->getCost());
 
-	for (std::map<std::string, int>::const_iterator i = _transformationRule->getRequiredItems().begin(); i != _transformationRule->getRequiredItems().end(); ++i)
+	for (auto& requiredItem : _transformationRule->getRequiredItems())
 	{
-		if (_game->getMod()->getItem(i->first) != 0)
+		if (_game->getMod()->getItem(requiredItem.first) != 0)
 		{
-			_base->getStorageItems()->removeItem(i->first, i->second);
+			_base->getStorageItems()->removeItem(requiredItem.first, requiredItem.second);
 		}
 	}
 
@@ -625,7 +625,7 @@ void SoldierTransformationState::performTransformation()
 		if (_sourceSoldier->getDeath())
 		{
 			// true resurrect = remove from Memorial Wall
-			std::vector<Soldier*>::iterator it = find(_game->getSavedGame()->getDeadSoldiers()->begin(), _game->getSavedGame()->getDeadSoldiers()->end(), _sourceSoldier);
+			auto it = find(_game->getSavedGame()->getDeadSoldiers()->begin(), _game->getSavedGame()->getDeadSoldiers()->end(), _sourceSoldier);
 			if (it != _game->getSavedGame()->getDeadSoldiers()->end())
 			{
 				_game->getSavedGame()->getDeadSoldiers()->erase(it);
@@ -634,7 +634,7 @@ void SoldierTransformationState::performTransformation()
 		else if (_transformationRule->getTransferTime() > 0)
 		{
 			// transfer time on a live soldier already at the base (doesn't make much sense, but we need to handle it anyway)
-			std::vector<Soldier*>::iterator it = find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), _sourceSoldier);
+			auto it = find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), _sourceSoldier);
 			if (it != _base->getSoldiers()->end())
 			{
 				_base->getSoldiers()->erase(it);
@@ -668,7 +668,7 @@ void SoldierTransformationState::retire()
 		if (_sourceSoldier->getDeath())
 		{
 			// I wonder if anyone will ever use THIS option
-			std::vector<Soldier *>::iterator it = find(_game->getSavedGame()->getDeadSoldiers()->begin(), _game->getSavedGame()->getDeadSoldiers()->end(), _sourceSoldier);
+			auto it = find(_game->getSavedGame()->getDeadSoldiers()->begin(), _game->getSavedGame()->getDeadSoldiers()->end(), _sourceSoldier);
 			if (it != _game->getSavedGame()->getDeadSoldiers()->end())
 			{
 				delete (*it);
@@ -677,7 +677,7 @@ void SoldierTransformationState::retire()
 		}
 		else
 		{
-			std::vector<Soldier *>::iterator it = find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), _sourceSoldier);
+			auto it = find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), _sourceSoldier);
 			if (it != _base->getSoldiers()->end())
 			{
 				delete (*it);
@@ -701,7 +701,7 @@ void SoldierTransformationState::retire()
  */
 void SoldierTransformationState::btnLeftArrowClick(Action *action)
 {
-	std::vector<Soldier*>::const_iterator iter = find(_filteredListOfSoldiers->begin(), _filteredListOfSoldiers->end(), _sourceSoldier);
+	auto iter = find(_filteredListOfSoldiers->begin(), _filteredListOfSoldiers->end(), _sourceSoldier);
 	if (iter == _filteredListOfSoldiers->begin())
 	{
 		iter = _filteredListOfSoldiers->end();
@@ -718,7 +718,7 @@ void SoldierTransformationState::btnLeftArrowClick(Action *action)
  */
 void SoldierTransformationState::btnRightArrowClick(Action *action)
 {
-	std::vector<Soldier*>::const_iterator iter = find(_filteredListOfSoldiers->begin(), _filteredListOfSoldiers->end(), _sourceSoldier);
+	auto iter = find(_filteredListOfSoldiers->begin(), _filteredListOfSoldiers->end(), _sourceSoldier);
 	if (iter == _filteredListOfSoldiers->end() - 1)
 	{
 		iter = _filteredListOfSoldiers->begin();

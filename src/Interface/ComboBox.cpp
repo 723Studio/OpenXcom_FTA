@@ -327,12 +327,12 @@ void ComboBox::setOptions(const std::vector<std::string> &options, bool translat
 {
 	setDropdown(options.size());
 	_list->clearList();
-	for (std::vector<std::string>::const_iterator i = options.begin(); i != options.end(); ++i)
+	for (const auto& option : options)
 	{
 		if (translate)
-			_list->addRow(1, _lang->getString(*i).c_str());
+			_list->addRow(1, _lang->getString(option).c_str());
 		else
-			_list->addRow(1, i->c_str());
+			_list->addRow(1, option.c_str());
 	}
 	setSelected(_sel);
 }

@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <map>
 #include "../Engine/State.h"
 #include "../Interface/TextButton.h"
 #include "../Savegame/EquipmentLayoutItem.h"
@@ -58,6 +59,8 @@ private:
 	const bool _tu, _noCraft;
 	BattlescapeState *_parent;
 	Base *_base;
+	std::map<Soldier*, Craft*> _backup;
+	bool _resetCustomDeploymentBackup;
 	std::string _currentTooltip;
 	std::string _currentDamageTooltip;
 	int _mouseHoverItemFrame = 0;

@@ -78,18 +78,18 @@ NewPossibleResearchState::NewPossibleResearchState(Base * base, const std::vecto
 	_lstPossibilities->setScrolling(true, 0);
 
 	bool foundNew = false;
-	for (std::vector<RuleResearch *>::const_iterator iter = possibilities.begin(); iter != possibilities.end(); ++iter)
+	for (const auto* rule : possibilities)
 	{
 		// Note: ignore all topics with "requires" (same reason as in NewResearchListState::fillProjectList())
-		if ((*iter)->getRequirements().empty())
+		if (rule->getRequirements().empty())
 		{
 			// Also ignore:
 			// 1. things that already popped before
 			// 2. things that never popped, but are researched already (can happen for topics that can be researched multiple times)
-			if (!_game->getSavedGame()->wasResearchPopped(*iter) && !_game->getSavedGame()->isResearched((*iter), false))
+			if (!_game->getSavedGame()->wasResearchPopped(rule) && !_game->getSavedGame()->isResearched(rule, false))
 			{
-				_game->getSavedGame()->addPoppedResearch((*iter));
-				_lstPossibilities->addRow(1, tr((*iter)->getName()).c_str());
+				_game->getSavedGame()->addPoppedResearch(rule);
+				_lstPossibilities->addRow(1, tr(rule->getName()).c_str());
 				foundNew = true;
 			}
 		}

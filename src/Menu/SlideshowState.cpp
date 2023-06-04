@@ -37,11 +37,11 @@ SlideshowState::SlideshowState(const SlideshowHeader &slideshowHeader, const std
 	_wasLetterboxed = CutsceneState::initDisplay();
 
 	// pre-render and queue up all the frames
-	for (std::vector<SlideshowSlide>::const_iterator it = _slideshowSlides->begin(); it != _slideshowSlides->end(); ++it)
+	for (const auto& def : *_slideshowSlides)
 	{
 		InteractiveSurface *slide =
 			new InteractiveSurface(Screen::ORIGINAL_WIDTH, Screen::ORIGINAL_HEIGHT, 0, 0);
-		slide->loadImage(it->imagePath);
+		slide->loadImage(def.imagePath);
 		slide->onMouseClick((ActionHandler)&SlideshowState::screenClick);
 		slide->onKeyboardPress((ActionHandler)&SlideshowState::screenClick, Options::keyOk);
 		slide->onKeyboardPress((ActionHandler)&SlideshowState::screenSkip, Options::keyCancel);
@@ -52,11 +52,11 @@ SlideshowState::SlideshowState(const SlideshowHeader &slideshowHeader, const std
 
 		// initialize with default rect; may get overridden by
 		// category/id definition
-		Text *caption = new Text(it->w, it->h, it->x, it->y);
-		caption->setColor(it->color);
-		caption->setText(tr(it->caption));
-		caption->setAlign(it->align);
-		caption->setVerticalAlign(it->valign);
+		Text *caption = new Text(def.w, def.h, def.x, def.y);
+		caption->setColor(def.color);
+		caption->setText(tr(def.caption));
+		caption->setAlign(def.align);
+		caption->setVerticalAlign(def.valign);
 		caption->setWordWrap(true);
 		caption->setVisible(false);
 		_captions.push_back(caption);

@@ -99,7 +99,7 @@ public:
 	/// Cleans up the UFO ruleset.
 	~RuleUfo();
 	/// Loads UFO data from YAML.
-	void load(const YAML::Node& node, const ModScript &parsers, Mod *mod);
+	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
 	/// Gets the UFO's type.
 	const std::string &getType() const;
 	/// Gets the UFO's size.

@@ -156,6 +156,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
+	PUSH_IN("STR_CRAFT", craftIdStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
 	if (_ftaUI)
 	{
@@ -294,10 +295,9 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
  */
 CraftSoldiersState::~CraftSoldiersState()
 {
-	for (std::vector<SortFunctor *>::iterator it = _sortFunctors.begin();
-		it != _sortFunctors.end(); ++it)
+	for (auto* sortFunctor : _sortFunctors)
 	{
-		delete(*it);
+		delete sortFunctor;
 	}
 }
 
@@ -318,7 +318,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 	_dynGetter = NULL;
 	if (compFunc)
 	{
-		if (selIdx != 2)
+		if (selIdx != 2 && selIdx != 3)
 		{
 			_dynGetter = compFunc->getGetter();
 		}
@@ -332,6 +332,33 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 					[](const Soldier* a, const Soldier* b)
 					{
 						return Unicode::naturalCompare(a->getName(), b->getName());
+					}
+				);
+			}
+			else if (selIdx == 3)
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+					[](const Soldier* a, const Soldier* b)
+					{
+						if (a->getCraft())
+						{
+							if (b->getCraft())
+							{
+								if (a->getCraft()->getRules() == b->getCraft()->getRules())
+								{
+									return a->getCraft()->getId() < b->getCraft()->getId();
+								}
+								else
+								{
+									return a->getCraft()->getRules() < b->getCraft()->getRules();
+								}
+							}
+							else
+							{
+								return true; // a < b
+							}
+						}
+						return false; // b > a
 					}
 				);
 			}
@@ -349,11 +376,9 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 	{
 		// restore original ordering, ignoring (of course) those
 		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier *>::const_iterator it = _origSoldierOrder.begin();
-			it != _origSoldierOrder.end(); ++it)
+		for (const auto* origSoldier : _origSoldierOrder)
 		{
-			std::vector<Soldier *>::iterator soldierIt =
-				std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
+			auto soldierIt = std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), origSoldier);
 			if (soldierIt != _base->getSoldiers()->end())
 			{
 				Soldier *s = *soldierIt;
@@ -600,7 +625,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	Uint8 color = _lstSoldiers->getColor();
 
 	int row = 0;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (auto* soldier : *_base->getSoldiers())
 	{
 		if ((*i)->getCovertOperation() != 0)
 		{ }
@@ -634,11 +659,11 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 {
 	Craft *c = _base->getCrafts()->at(_craft);
 	int row = 0;
-	for (auto s : *_base->getSoldiers())
+	for (auto* soldier : *_base->getSoldiers())
 	{
-		if (s->getCraft() == c)
+		if (soldier->getCraft() == c)
 		{
-			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
+			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}

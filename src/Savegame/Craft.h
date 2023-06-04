@@ -79,6 +79,7 @@ private:
 	std::vector<CraftWeapon*> _weapons;
 	ItemContainer *_items;
 	ItemContainer *_tempSoldierItems;
+	ItemContainer *_tempExtraItems;
 	std::vector<Vehicle*> _vehicles;
 	std::string _status;
 	bool _lowFuel, _mission, _inBattlescape, _inDogfight;
@@ -135,17 +136,17 @@ public:
 	std::string getAltitude() const;
 	/// Sets the craft's destination.
 	void setDestination(Target *dest) override;
-	/// Gets whether the craft is on auto patrol.
+	/// Gets whether the craft is on auto-patrol.
 	bool getIsAutoPatrolling() const;
-	/// Sets whether the craft is on auto patrol.
+	/// Sets whether the craft is on auto-patrol.
 	void setIsAutoPatrolling(bool isAuto);
-	/// Gets the auto patrol longitude.
+	/// Gets the auto-patrol longitude.
 	double getLongitudeAuto() const;
-	/// Sets the auto patrol longitude.
+	/// Sets the auto-patrol longitude.
 	void setLongitudeAuto(double lon);
-	/// Gets the auto patrol latitude.
+	/// Gets the auto-patrol latitude.
 	double getLatitudeAuto() const;
-	/// Sets the auto patrol latitude.
+	/// Sets the auto-patrol latitude.
 	void setLatitudeAuto(double lat);
 	/// Gets the craft's amount of weapons.
 	int getNumWeapons(bool onlyLoaded = false) const;
@@ -157,6 +158,8 @@ public:
 	ItemContainer *getItems();
 	/// Gets the craft's items equipped by the soldiers.
 	ItemContainer* getSoldierItems();
+	/// Gets the craft's items not equipped by the soldiers.
+	ItemContainer* getExtraItems();
 	/// Gets the craft's vehicles.
 	std::vector<Vehicle*> *getVehicles();
 	/// Calculates (and stores) the sum of all equipment of all soldiers on the craft.
@@ -260,11 +263,11 @@ public:
 	/// Gets the amount of space used inside a craft.
 	int getSpaceUsed() const;
 	/// Checks if the commander is onboard.
-	bool isCommanderOnboard();
+	bool isCommanderOnboard() const;
 	/// Checks if there are only permitted soldier types onboard.
-	bool areOnlyPermittedSoldierTypesOnboard(const RuleStartingCondition* sc);
+	bool areOnlyPermittedSoldierTypesOnboard(const RuleStartingCondition* sc) const;
 	/// Checks if there are enough required items onboard.
-	bool areRequiredItemsOnboard(const std::map<std::string, int>& requiredItems);
+	bool areRequiredItemsOnboard(const std::map<std::string, int>& requiredItems) const;
 	/// Destroys given required items.
 	void destroyRequiredItems(const std::map<std::string, int>& requiredItems);
 	/// Checks if there are enough pilots onboard.

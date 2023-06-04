@@ -246,10 +246,10 @@ void ListGamesState::updateList()
 {
 	int row = 0;
 	int color = _lstSaves->getSecondaryColor();
-	for (std::vector<SaveInfo>::const_iterator i = _saves.begin(); i != _saves.end(); ++i)
+	for (const auto& saveInfo : _saves)
 	{
-		_lstSaves->addRow(3, i->displayName.c_str(), i->isoDate.c_str(), i->isoTime.c_str());
-		if (i->reserved && _origin != OPT_BATTLESCAPE)
+		_lstSaves->addRow(3, saveInfo.displayName.c_str(), saveInfo.isoDate.c_str(), saveInfo.isoTime.c_str());
+		if (saveInfo.reserved && _origin != OPT_BATTLESCAPE)
 		{
 			_lstSaves->setRowColor(row, color);
 		}

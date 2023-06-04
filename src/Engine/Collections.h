@@ -416,7 +416,19 @@ public:
 	};
 
 	/**
-	 * Create range from `min` to `max` (excluding), if `max > min` it return empty range.
+	 * Create range from `min` to `max` (excluding), require that `max >= min`.
+	 * @param min minimum value of range
+	 * @param max maximum value of range
+	 * @return
+	 */
+	template<typename T>
+	static Range<ValueIterator<T>> rangeValueUncheck(T begin, T end)
+	{
+		return { ValueIterator<T>{ begin }, ValueIterator<T>{ end } };
+	}
+
+	/**
+	 * Create range from `min` to `max` (excluding), if `min > max` it return empty range.
 	 * @param min minimum value of range
 	 * @param max maximum value of range
 	 * @return
@@ -426,11 +438,11 @@ public:
 	{
 		if (begin < end)
 		{
-			return { ValueIterator<T>{ begin }, ValueIterator<T>{ end } };
+			return rangeValueUncheck(begin, end);
 		}
 		else
 		{
-			return { ValueIterator<T>{ end }, ValueIterator<T>{ end } };
+			return rangeValueUncheck(end, end);
 		}
 	}
 

@@ -66,7 +66,7 @@ void UfoTrajectory::load(const YAML::Node &node)
 	{
 		load(parent);
 	}
-	_id = node["id"].as<std::string>(_id);
+
 	_groundTimer = node["groundTimer"].as<size_t>(_groundTimer);
 	_waypoints = node["waypoints"].as< std::vector<TrajectoryWaypoint> >(_waypoints);
 }

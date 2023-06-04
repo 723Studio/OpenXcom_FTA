@@ -88,43 +88,46 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 
     ***/
 
-	const std::map<std::string, RuleCommendations *> commendationsList = _game->getMod()->getCommendationsList();
+	const auto& commendationsList = _game->getMod()->getCommendationsList();
 	bool modularCommendation;
 	std::string noun;
 
 
 	int row = 0;
 	// Loop over dead soldiers
-	for (std::vector<Soldier*>::iterator s = soldiersMedalled.begin() ; s != soldiersMedalled.end(); ++s)
+	for (auto* soldier : soldiersMedalled)
 	{
 		// Establish some base information
 		bool fta = _game->getMod()->isFTAGame();
 		_lstSoldiers->addRow(
 			3,
-			(*s)->getName().c_str(),
-			tr((*s)->getRankString(fta)).c_str(),
-			tr("STR_KILLS").arg((*s)->getDiary()->getKillTotal()).c_str());
+			soldier->getName().c_str(),
+			tr(soldier->getRankString(fta)).c_str(),
+			tr("STR_KILLS").arg(soldier->getDiary()->getKillTotal()).c_str());
 		_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		_commendationsNames.push_back("");
 		row++;
 
 		// Loop over all commendation
-		for (std::map<std::string, RuleCommendations *>::const_iterator commList = commendationsList.begin(); commList != commendationsList.end();)
+		for (auto commIter = commendationsList.begin(); commIter != commendationsList.end();)
 		{
+			const auto& commType = (*commIter).first;
+			const auto* commRule = (*commIter).second;
+
 			std::ostringstream wssCommendation;
 			modularCommendation = false;
 			noun = "noNoun";
 
 			// Loop over soldier's commendation
-			for (std::vector<SoldierCommendations*>::const_iterator soldierComm = (*s)->getDiary()->getSoldierCommendations()->begin(); soldierComm != (*s)->getDiary()->getSoldierCommendations()->end(); ++soldierComm)
+			for (auto* soldierComm : *soldier->getDiary()->getSoldierCommendations())
 			{
-				if ((*soldierComm)->getType() == (*commList).first && (*soldierComm)->isNew() && noun == "noNoun")
+				if (soldierComm->getType() == commType && soldierComm->isNew() && noun == "noNoun")
 				{
-					(*soldierComm)->makeOld();
+					soldierComm->makeOld();
 
-					if ((*soldierComm)->getNoun() != "noNoun")
+					if (soldierComm->getNoun() != "noNoun")
 					{
-						noun = (*soldierComm)->getNoun();
+						noun = soldierComm->getNoun();
 						modularCommendation = true;
 					}
 					// Decoration level name
@@ -132,18 +135,18 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 					int lastInt = -2;
 					int thisInt = -1;
 					int vectorIterator = 0;
-					for (std::vector<int>::const_iterator k = (*commList).second->getCriteria()->begin()->second.begin(); k != (*commList).second->getCriteria()->begin()->second.end(); ++k)
+					for (auto wtf = commRule->getCriteria()->begin()->second.begin(); wtf != commRule->getCriteria()->begin()->second.end(); ++wtf)
 					{
-						if (vectorIterator == (*soldierComm)->getDecorationLevelInt() + 1)
+						if (vectorIterator == soldierComm->getDecorationLevelInt() + 1)
 						{
 							break;
 						}
-						thisInt = *k;
-						if (k != (*commList).second->getCriteria()->begin()->second.begin())
+						thisInt = *wtf;
+						if (wtf != commRule->getCriteria()->begin()->second.begin())
 						{
-							--k;
-							lastInt = *k;
-							++k;
+							--wtf;
+							lastInt = *wtf;
+							++wtf;
 						}
 						if (thisInt == lastInt)
 						{
@@ -156,14 +159,14 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 					wssCommendation << "   ";
 					if (modularCommendation)
 					{
-						wssCommendation << tr((*commList).first).arg(tr(noun));
+						wssCommendation << tr(commType).arg(tr(noun));
 					}
 					else
 					{
-						wssCommendation << tr((*commList).first);
+						wssCommendation << tr(commType);
 					}
-					_lstSoldiers->addRow(3, wssCommendation.str().c_str(), "", tr((*soldierComm)->getDecorationLevelName(skipCounter)).c_str());
-					_commendationsNames.push_back((*commList).first);
+					_lstSoldiers->addRow(3, wssCommendation.str().c_str(), "", tr(soldierComm->getDecorationLevelName(skipCounter)).c_str());
+					_commendationsNames.push_back(commType);
 					row++;
 					break;
 				}
@@ -171,7 +174,7 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 
 			if (noun == "noNoun")
 			{
-				++commList;
+				++commIter;
 			}
 		} // END COMMS LOOPS
 		_lstSoldiers->addRow(3, "", "", ""); // Separator

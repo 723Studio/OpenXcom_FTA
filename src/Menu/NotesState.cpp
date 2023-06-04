@@ -125,7 +125,7 @@ void NotesState::updateList()
 	int row = 0;
 	int color = _lstNotes->getSecondaryColor();
 
-	for (auto& note : _game->getSavedGame()->getUserNotes())
+	for (const auto& note : _game->getSavedGame()->getUserNotes())
 	{
 		_lstNotes->addRow(1, note.c_str());
 		row++;
@@ -261,7 +261,7 @@ void NotesState::btnSaveClick(Action*)
 		return;
 	}
 
-	// overwrite evrything, no way back :)
+	// overwrite everything, no way back :)
 	auto& notes = _game->getSavedGame()->getUserNotes();
 	notes.clear();
 	if (_lstNotes->getTexts() > 1)

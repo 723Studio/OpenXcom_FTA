@@ -41,17 +41,17 @@ RuleMissionScript::RuleMissionScript(const std::string &type) :
  */
 RuleMissionScript::~RuleMissionScript()
 {
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _missionWeights.begin(); i != _missionWeights.end(); ++i)
+	for (auto& pair : _missionWeights)
 	{
-		delete i->second;
+		delete pair.second;
 	}
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _raceWeights.begin(); i != _raceWeights.end(); ++i)
+	for (auto& pair : _raceWeights)
 	{
-		delete i->second;
+		delete pair.second;
 	}
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _regionWeights.begin(); i != _regionWeights.end(); ++i)
+	for (auto& pair : _regionWeights)
 	{
-		delete i->second;
+		delete pair.second;
 	}
 }
 
@@ -65,6 +65,7 @@ void RuleMissionScript::load(const YAML::Node& node)
 	{
 		load(parent);
 	}
+
 	_varName = node["varName"].as<std::string>(_varName);
 	_firstMonth = node["firstMonth"].as<int>(_firstMonth);
 	_lastMonth = node["lastMonth"].as<int>(_lastMonth);
@@ -309,12 +310,12 @@ std::string RuleMissionScript::getVarName() const
 std::set<std::string> RuleMissionScript::getAllMissionTypes() const
 {
 	std::set<std::string> types;
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::const_iterator i = _missionWeights.begin(); i != _missionWeights.end(); ++i)
+	for (auto& pair : _missionWeights)
 	{
-		std::vector<std::string> names = (*i).second->getNames();
-		for (std::vector<std::string>::const_iterator j = names.begin(); j != names.end(); ++j)
+		std::vector<std::string> names = pair.second->getNames();
+		for (const auto& name : names)
 		{
-			types.insert(*j);
+			types.insert(name);
 		}
 	}
 	return types;
@@ -338,9 +339,9 @@ std::vector<std::string> RuleMissionScript::getMissionTypes(const int month) con
 		}
 	}
 	std::vector<std::string> names = rw->second->getNames();
-	for (std::vector<std::string>::const_iterator i = names.begin(); i != names.end(); ++i)
+	for (const auto& name : names)
 	{
-		missions.push_back(*i);
+		missions.push_back(name);
 	}
 	return missions;
 }
@@ -363,9 +364,9 @@ std::vector<std::string> RuleMissionScript::getRegions(const int month) const
 		}
 	}
 	std::vector<std::string> names = rw->second->getNames();
-	for (std::vector<std::string>::const_iterator i = names.begin(); i != names.end(); ++i)
+	for (const auto& name : names)
 	{
-		regions.push_back(*i);
+		regions.push_back(name);
 	}
 	return regions;
 }

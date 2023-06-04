@@ -36,6 +36,7 @@
 #include "../Basescape/PilotsState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
+#include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
 {
@@ -118,6 +119,7 @@ CraftsState::CraftsState(Base *base) : _base(base)
 	_lstCrafts->setMargin(8);
 	_lstCrafts->onMouseClick((ActionHandler)&CraftsState::lstCraftsClick);
 	_lstCrafts->onMouseClick((ActionHandler)&CraftsState::lstCraftsClick, SDL_BUTTON_RIGHT);
+	_lstCrafts->onMouseClick((ActionHandler)&CraftsState::lstCraftsClick, SDL_BUTTON_MIDDLE);
 }
 
 /**
@@ -136,13 +138,13 @@ void CraftsState::init()
 {
 	State::init();
 	_lstCrafts->clearList();
-	for (std::vector<Craft*>::iterator i = _base->getCrafts()->begin(); i != _base->getCrafts()->end(); ++i)
+	for (const auto* craft : *_base->getCrafts())
 	{
 		std::ostringstream ss, ss2, ss3;
-		ss << (*i)->getNumWeapons() << "/" << (*i)->getRules()->getWeapons();
-		ss2 << (*i)->getNumTotalSoldiers();
-		ss3 << (*i)->getNumTotalVehicles();
-		_lstCrafts->addRow(5, (*i)->getName(_game->getLanguage()).c_str(), tr((*i)->getStatus()).c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
+		ss << craft->getNumWeapons() << "/" << craft->getRules()->getWeapons();
+		ss2 << craft->getNumTotalSoldiers();
+		ss3 << craft->getNumTotalVehicles();
+		_lstCrafts->addRow(5, craft->getName(_game->getLanguage()).c_str(), tr(craft->getStatus()).c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
 	}
 }
 
@@ -202,6 +204,11 @@ void CraftsState::lstCraftsClick(Action *action)
 			// reload the UI
 			init();
 		}
+	}
+	else if (_game->isMiddleClick(action))
+	{
+		std::string articleId = crafts[row]->getRules()->getType();
+		Ufopaedia::openArticle(_game, articleId);
 	}
 }
 

@@ -198,9 +198,9 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
  */
 AllocateTrainingState::~AllocateTrainingState()
 {
-	for (std::vector<SortFunctor *>::iterator it = _sortFunctors.begin(); it != _sortFunctors.end(); ++it)
+	for (auto* sortFunctor : _sortFunctors)
 	{
-		delete(*it);
+		delete sortFunctor;
 	}
 }
 
@@ -241,11 +241,9 @@ void AllocateTrainingState::cbxSortByChange(Action *action)
 	{
 		// restore original ordering, ignoring (of course) those
 		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier *>::const_iterator it = _origSoldierOrder.begin();
-		it != _origSoldierOrder.end(); ++it)
+		for (const auto* origSoldier : _origSoldierOrder)
 		{
-			std::vector<Soldier *>::iterator soldierIt =
-			std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
+			auto soldierIt = std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), origSoldier);
 			if (soldierIt != _base->getSoldiers()->end())
 			{
 				Soldier *s = *soldierIt;
@@ -305,9 +303,9 @@ void AllocateTrainingState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstSoldiers->clearList();
-	for (std::vector<Soldier*>::const_iterator s = _base->getSoldiers()->begin(); s != _base->getSoldiers()->end(); ++s)
+	for (auto* soldier : *_base->getSoldiers())
 	{
-		UnitStats* stats = _btnPlus->getPressed() ? (*s)->getStatsWithSoldierBonusesOnly() : (*s)->getCurrentStats();
+		const UnitStats* stats = _btnPlus->getPressed() ? soldier->getStatsWithSoldierBonusesOnly() : soldier->getCurrentStats();
 
 		std::ostringstream tu;
 		tu << stats->tu;
@@ -324,12 +322,12 @@ void AllocateTrainingState::initList(size_t scrl)
 		std::ostringstream strength;
 		strength << stats->strength;
 
-		bool isDone = (*s)->isFullyTrained();
-		bool isWounded = (*s)->isWounded();
-		bool isQueued = isWounded && (*s)->getReturnToTrainingWhenHealed();
-		bool isTraining = (*s)->isInTraining();
-		bool isOut = (*s)->getCovertOperation() != 0;
-		bool isTransforming = (*s)->hasPendingTransformation();
+		bool isDone = soldier->isFullyTrained();
+		bool isWounded = soldier->isWounded();
+		bool isQueued = isWounded && soldier->getReturnToTrainingWhenHealed();
+		bool isTraining = soldier->isInTraining();
+		bool isOut = soldier->getCovertOperation() != 0;
+		bool isTransforming = soldier->hasPendingTransformation();
 
 		std::string status;
 		if (isDone)
@@ -348,7 +346,7 @@ void AllocateTrainingState::initList(size_t scrl)
 			status = tr("STR_NO");
 
 		_lstSoldiers->addRow(9,
-			(*s)->getName(true).c_str(),
+			soldier->getName(true).c_str(),
 			tu.str().c_str(),
 			stamina.str().c_str(),
 			health.str().c_str(),
@@ -485,7 +483,7 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 	_sel = _lstSoldiers->getSelectedRow();
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		auto soldier = _base->getSoldiers()->at(_sel);
+		auto* soldier = _base->getSoldiers()->at(_sel);
 
 		// can't put fully trained soldiers back into training
 		if (soldier->isFullyTrained()) return;
@@ -573,15 +571,15 @@ void AllocateTrainingState::lstSoldiersMousePress(Action *action)
 void AllocateTrainingState::btnDeassignAllSoldiersClick(Action* action)
 {
 	int row = 0;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (auto* soldier : *_base->getSoldiers())
 	{
-		(*i)->setTraining(false);
-		(*i)->setReturnToTrainingWhenHealed(false);
+		soldier->setTraining(false);
+		soldier->setReturnToTrainingWhenHealed(false);
 
 		std::string status;
-		if ((*i)->isFullyTrained())
+		if (soldier->isFullyTrained())
 			status = tr("STR_NO_DONE");
-		else if ((*i)->isWounded())
+		else if (soldier->isWounded())
 			status = tr("STR_NO_WOUNDED");
 		else
 			status = tr("STR_NO");

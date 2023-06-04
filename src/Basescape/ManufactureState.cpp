@@ -40,6 +40,7 @@
 #include "ManufactureInfoStateFtA.h"
 #include "TechTreeViewerState.h"
 #include "EngineersState.h"
+#include "../Ufopaedia/Ufopaedia.h"
 #include <algorithm>
 
 namespace OpenXcom
@@ -218,9 +219,8 @@ void ManufactureState::btnNewProductionClick(Action *)
  */
 void ManufactureState::fillProductionList(size_t scrl)
 {
-	const std::vector<Production *> productions(_base->getProductions());
 	_lstManufacture->clearList();
-	for (std::vector<Production *>::const_iterator iter = productions.begin(); iter != productions.end(); ++iter)
+	for (const auto* prod : _base->getProductions())
 	{
 		auto facility = (*iter)->getFacility();
 		std::ostringstream s1;
@@ -250,9 +250,9 @@ void ManufactureState::fillProductionList(size_t scrl)
 		}
 
 		std::ostringstream s3;
-		s3 << Unicode::formatFunding((*iter)->getRules()->getManufactureCost());
+		s3 << Unicode::formatFunding(prod->getRules()->getManufactureCost());
 		std::ostringstream s4;
-		if ((*iter)->getInfiniteAmount())
+		if (prod->getInfiniteAmount())
 		{
 			s4 << "∞";
 		}
@@ -345,7 +345,16 @@ void ManufactureState::lstManufactureClickMiddle(Action *)
 	{
 		return;
 	}
-	_game->pushState(new TechTreeViewerState(0, selectedTopic));
+	
+	if (_game->isCtrlPressed())
+	{
+		std::string articleId = selectedTopic->getName();
+		Ufopaedia::openArticle(_game, articleId);
+	}
+	else
+	{
+		_game->pushState(new TechTreeViewerState(0, selectedTopic));
+	}
 }
 
 /**

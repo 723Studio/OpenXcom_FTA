@@ -124,9 +124,9 @@ void StatisticsState::listStats()
 	_txtTitle->setText(ss.str());
 
 	int totalScore = sumVector(save->getResearchScores());
-	for (std::vector<Region*>::iterator iter = save->getRegions()->begin(); iter != save->getRegions()->end(); ++iter)
+	for (auto* region : *save->getRegions())
 	{
-		totalScore += sumVector((*iter)->getActivityXcom()) - sumVector((*iter)->getActivityAlien());
+		totalScore += sumVector(region->getActivityXcom()) - sumVector(region->getActivityAlien());
 	}
 
 	int monthlyScore = totalScore / (int)save->getResearchScores().size();
@@ -136,9 +136,9 @@ void StatisticsState::listStats()
 	int alienBasesDestroyed = 0, xcomBasesLost = 0;
 	int missionsWin = 0, missionsLoss = 0, nightMissions = 0;
 	int bestScore = -9999, worstScore = 9999;
-	for (std::vector<MissionStatistics*>::const_iterator i = save->getMissionStatistics()->begin(); i != save->getMissionStatistics()->end(); ++i)
+	for (const auto* ms : *save->getMissionStatistics())
 	{
-		if ((*i)->success)
+		if (ms->success)
 		{
 			missionsWin++;
 		}
@@ -146,17 +146,17 @@ void StatisticsState::listStats()
 		{
 			missionsLoss++;
 		}
-		bestScore = std::max(bestScore, (*i)->score);
-		worstScore = std::min(worstScore, (*i)->score);
-		if ((*i)->isDarkness(_game->getMod()))
+		bestScore = std::max(bestScore, ms->score);
+		worstScore = std::min(worstScore, ms->score);
+		if (ms->isDarkness(_game->getMod()))
 		{
 			nightMissions++;
 		}
-		if ((*i)->isAlienBase() && (*i)->success)
+		if (ms->isAlienBase() && ms->success)
 		{
 			alienBasesDestroyed++;
 		}
-		if ((*i)->isBaseDefense() && !(*i)->success)
+		if (ms->isBaseDefense() && !ms->success)
 		{
 			xcomBasesLost++;
 		}
@@ -166,9 +166,9 @@ void StatisticsState::listStats()
 	worstScore = (worstScore == 9999) ? 0 : worstScore;
 
 	std::vector<Soldier*> allSoldiers;
-	for (std::vector<Base*>::const_iterator i = save->getBases()->begin(); i != save->getBases()->end(); ++i)
+	for (auto* xbase : *save->getBases())
 	{
-		allSoldiers.insert(allSoldiers.end(), (*i)->getSoldiers()->begin(), (*i)->getSoldiers()->end());
+		allSoldiers.insert(allSoldiers.end(), xbase->getSoldiers()->begin(), xbase->getSoldiers()->end());
 	}
 	allSoldiers.insert(allSoldiers.end(), save->getDeadSoldiers()->begin(), save->getDeadSoldiers()->end());
 	int soldiersRecruited = allSoldiers.size();
@@ -178,9 +178,9 @@ void StatisticsState::listStats()
 	int daysWounded = 0, longestMonths = 0;
 	int shotsFired = 0, shotsLanded = 0;
 	std::map<std::string, int> weaponKills, alienKills;
-	for (std::vector<Soldier*>::iterator i = allSoldiers.begin(); i != allSoldiers.end(); ++i)
+	for (const auto* soldier : allSoldiers)
 	{
-		SoldierDiary *diary = (*i)->getDiary();
+		const SoldierDiary *diary = soldier->getDiary();
 		aliensKilled += diary->getKillTotal();
 		aliensCaptured += diary->getStunTotal();
 		daysWounded += diary->getDaysWoundedTotal();
@@ -188,21 +188,21 @@ void StatisticsState::listStats()
 		std::map<std::string, int> weaponTotal = diary->getWeaponTotal();
 		shotsFired += diary->getShotsFiredTotal();
 		shotsLanded += diary->getShotsLandedTotal();
-		for (std::map<std::string, int>::const_iterator j = weaponTotal.begin(); j != weaponTotal.end(); ++j)
+		for (const auto& pair : weaponTotal)
 		{
-			if (weaponKills.find(j->first) == weaponKills.end())
+			if (weaponKills.find(pair.first) == weaponKills.end())
 			{
-				weaponKills[j->first] = j->second;
+				weaponKills[pair.first] = pair.second;
 			}
 			else
 			{
-				weaponKills[j->first] += j->second;
+				weaponKills[pair.first] += pair.second;
 			}
 		}
 
-		if ((*i)->getDeath() != 0 && (*i)->getDeath()->getCause() != 0)
+		if (soldier->getDeath() != 0 && soldier->getDeath()->getCause() != 0)
 		{
-			const BattleUnitKills *kills = (*i)->getDeath()->getCause();
+			const BattleUnitKills *kills = soldier->getDeath()->getCause();
 			if (kills->faction == FACTION_PLAYER)
 			{
 				friendlyKills++;
@@ -228,30 +228,30 @@ void StatisticsState::listStats()
 
 	int maxWeapon = 0;
 	std::string highestWeapon = "STR_NONE";
-	for (std::map<std::string, int>::const_iterator i = weaponKills.begin(); i != weaponKills.end(); ++i)
+	for (const auto& pair : weaponKills)
 	{
-		if (i->second > maxWeapon)
+		if (pair.second > maxWeapon)
 		{
-			maxWeapon = i->second;
-			highestWeapon = i->first;
+			maxWeapon = pair.second;
+			highestWeapon = pair.first;
 		}
 	}
 	int maxAlien = 0;
 	std::string highestAlien = "STR_NONE";
-	for (std::map<std::string, int>::const_iterator i = alienKills.begin(); i != alienKills.end(); ++i)
+	for (const auto& pair : alienKills)
 	{
-		if (i->second > maxAlien)
+		if (pair.second > maxAlien)
 		{
-			maxAlien = i->second;
-			highestAlien = i->first;
+			maxAlien = pair.second;
+			highestAlien = pair.first;
 		}
 	}
 
 	std::map<std::string, int> ids = save->getAllIds();
 	int alienBases = alienBasesDestroyed;
-	for (std::vector<AlienBase*>::iterator i = save->getAlienBases()->begin(); i != save->getAlienBases()->end(); ++i)
+	for (const auto* ab : *save->getAlienBases())
 	{
-		if ((*i)->isDiscovered())
+		if (ab->isDiscovered())
 		{
 			alienBases++;
 		}
@@ -259,23 +259,23 @@ void StatisticsState::listStats()
 	int ufosDetected = std::max(0, ids["STR_UFO"] - 1);
 	int terrorSites = std::max(0, ids["STR_TERROR_SITE"] - 1);
 	int totalCrafts = 0;
-	for (std::vector<std::string>::const_iterator i = _game->getMod()->getCraftsList().begin(); i != _game->getMod()->getCraftsList().end(); ++i)
+	for (const auto& craftType : _game->getMod()->getCraftsList())
 	{
-		totalCrafts += std::max(0, ids[*i] - 1);
+		totalCrafts += std::max(0, ids[craftType] - 1);
 	}
 
 	int xcomBases = save->getBases()->size() + xcomBasesLost;
 	int currentScientists = 0, currentEngineers = 0;
-	for (std::vector<Base*>::const_iterator i = save->getBases()->begin(); i != save->getBases()->end(); ++i)
+	for (const auto* xbase : *save->getBases())
 	{
-		currentScientists += (*i)->getTotalScientists();
-		currentEngineers += (*i)->getTotalEngineers();
+		currentScientists += xbase->getTotalScientists();
+		currentEngineers += xbase->getTotalEngineers();
 	}
 
 	int countriesLost = 0;
-	for (std::vector<Country*>::const_iterator i = save->getCountries()->begin(); i != save->getCountries()->end(); ++i)
+	for (const auto* country : *save->getCountries())
 	{
-		if ((*i)->getPact())
+		if (country->getPact())
 		{
 			countriesLost++;
 		}

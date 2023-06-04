@@ -88,7 +88,7 @@ void RuleEnviroEffects::load(const YAML::Node& node, const Mod* mod)
 	{
 		load(parent, mod);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_environmentalConditions = node["environmentalConditions"].as< std::map<std::string, EnvironmentalCondition> >(_environmentalConditions);
 	mod->loadUnorderedNamesToNames(_type, _paletteTransformations, node["paletteTransformations"]);
 	mod->loadUnorderedNamesToNames(_type, _armorTransformationsName, node["armorTransformations"]);
@@ -105,8 +105,8 @@ void RuleEnviroEffects::afterLoad(const Mod* mod)
 {
 	for (auto& pair : _armorTransformationsName)
 	{
-		auto src = mod->getArmor(pair.first, true);
-		auto dest = mod->getArmor(pair.second, true);
+		auto* src = mod->getArmor(pair.first, true);
+		auto* dest = mod->getArmor(pair.second, true);
 		_armorTransformations[src] = dest;
 	}
 
@@ -123,7 +123,7 @@ EnvironmentalCondition RuleEnviroEffects::getEnvironmetalCondition(const std::st
 {
 	if (!_environmentalConditions.empty())
 	{
-		std::map<std::string, EnvironmentalCondition>::const_iterator i = _environmentalConditions.find(faction);
+		auto i = _environmentalConditions.find(faction);
 		if (i != _environmentalConditions.end())
 		{
 			return i->second;
@@ -142,7 +142,7 @@ Armor* RuleEnviroEffects::getArmorTransformation(const Armor* sourceArmor) const
 {
 	if (!_armorTransformations.empty())
 	{
-		std::map<const Armor*, Armor*>::const_iterator i = _armorTransformations.find(sourceArmor);
+		auto i = _armorTransformations.find(sourceArmor);
 		if (i != _armorTransformations.end())
 		{
 			// cannot switch into a bigger armor size!

@@ -40,9 +40,9 @@ MapScript::MapScript() :
 
 MapScript::~MapScript()
 {
-	for (std::vector<SDL_Rect*>::iterator i = _rects.begin(); i != _rects.end();++i)
+	for (auto* rect : _rects)
 	{
-		delete *i;
+		delete rect;
 	}
 	delete _tunnelData;
 }
@@ -306,9 +306,9 @@ void MapScript::init()
 	_frequenciesTemp.clear();
 	_maxUsesTemp.clear();
 
-	for (std::vector<int>::const_iterator i = _frequencies.begin(); i != _frequencies.end(); ++i)
+	for (int freq : _frequencies)
 	{
-		_cumulativeFrequency += *i;
+		_cumulativeFrequency += freq;
 	}
 	_blocksTemp = _blocks;
 	_groupsTemp = _groups;

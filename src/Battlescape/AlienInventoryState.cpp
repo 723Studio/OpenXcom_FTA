@@ -151,7 +151,7 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 		{
 			for (const auto& layer : s->getArmorLayers())
 			{
-				auto surf = _game->getMod()->getSurface(layer, true);
+				auto* surf = _game->getMod()->getSurface(layer, true);
 				surf->blitNShade(_soldier->getSurface(), 0, 0);
 			}
 		}
@@ -227,7 +227,7 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 	if (!Options::debug)
 		return;
 
-	auto weaponL = unit->getLeftHandWeapon();
+	auto* weaponL = unit->getLeftHandWeapon();
 	if (!weaponL)
 	{
 		auto typesToCheck = { BT_MELEE, BT_FIREARM };
@@ -253,7 +253,7 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 		}
 	}
 
-	auto weaponR = unit->getRightHandWeapon();
+	auto* weaponR = unit->getRightHandWeapon();
 	if (!weaponR)
 	{
 		auto typesToCheck = { BT_MELEE, BT_FIREARM };
@@ -296,7 +296,7 @@ void AlienInventoryState::calculateMeleeWeapon(BattleUnit* unit, BattleItem* wea
 {
 	std::ostringstream ss;
 
-	auto tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
+	TileEngine* tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
 
 	// Start by finding the target for the check
 	int surroundingTilePositions[8][2] = {
@@ -310,7 +310,7 @@ void AlienInventoryState::calculateMeleeWeapon(BattleUnit* unit, BattleItem* wea
 		{-1, -1} }; // northwest
 
 	Position tileToCheck = unit->getPosition();
-	auto dir = unit->getDirection();
+	int dir = unit->getDirection();
 	tileToCheck.x += surroundingTilePositions[dir][0];
 	tileToCheck.y += surroundingTilePositions[dir][1];
 	BattleUnit* meleeDodgeTarget = nullptr;
@@ -330,7 +330,7 @@ void AlienInventoryState::calculateMeleeWeapon(BattleUnit* unit, BattleItem* wea
 		attack.skill_rules = nullptr;
 		int hitChance = BattleUnit::getFiringAccuracy(attack, _game->getMod());
 
-		auto victim = meleeDodgeTarget;
+		BattleUnit* victim = meleeDodgeTarget;
 		if (victim)
 		{
 			int arc = tileEngine->getArcDirection(tileEngine->getDirectionTo(victim->getPositionVexels(), unit->getPositionVexels()), victim->getDirection());
@@ -354,7 +354,7 @@ void AlienInventoryState::calculateRangedWeapon(BattleUnit* unit, BattleItem* we
 {
 	std::ostringstream ss;
 
-	auto tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
+	TileEngine* tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
 
 	// Start by finding 'targets' for the check
 	std::vector<BattleUnit*> closeQuartersTargetList;
@@ -395,7 +395,7 @@ void AlienInventoryState::calculateRangedWeapon(BattleUnit* unit, BattleItem* we
 	ss << tr(weapon->getRules()->getType()) << " > ";
 	if (!closeQuartersTargetList.empty())
 	{
-		for (std::vector<BattleUnit*>::iterator bu = closeQuartersTargetList.begin(); bu != closeQuartersTargetList.end(); ++bu)
+		for (const auto* victim : closeQuartersTargetList)
 		{
 			{
 				BattleActionAttack attack;
@@ -406,7 +406,6 @@ void AlienInventoryState::calculateRangedWeapon(BattleUnit* unit, BattleItem* we
 				attack.skill_rules = nullptr;
 				int hitChance = BattleUnit::getFiringAccuracy(attack, _game->getMod());
 
-				auto victim = (*bu);
 				if (victim)
 				{
 					int arc = tileEngine->getArcDirection(tileEngine->getDirectionTo(victim->getPositionVexels(), unit->getPositionVexels()), victim->getDirection());

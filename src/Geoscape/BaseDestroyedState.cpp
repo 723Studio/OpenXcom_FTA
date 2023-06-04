@@ -92,7 +92,7 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 
 	if (_missiles && _partialDestruction)
 	{
-		for (auto each : *_base->getDestroyedFacilitiesCache())
+		for (const auto& each : *_base->getDestroyedFacilitiesCache())
 		{
 			std::ostringstream ss;
 			ss << each.second;
@@ -111,15 +111,16 @@ BaseDestroyedState::BaseDestroyedState(Base *base, bool missiles, bool partialDe
 	if (!am)
 	{
 		// backwards-compatibility
-		std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin();
-		for (; k != _game->getSavedGame()->getRegions()->end(); ++k)
+		RuleRegion* regionRule = _game->getSavedGame()->getRegions()->front()->getRules(); // wrong, but that's how it is in OXC
+		for (const auto* region : *_game->getSavedGame()->getRegions())
 		{
-			if ((*k)->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
+			if (region->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
 			{
+				regionRule = region->getRules();
 				break;
 			}
 		}
-		am = _game->getSavedGame()->findAlienMission((*k)->getRules()->getType(), OBJECTIVE_RETALIATION);
+		am = _game->getSavedGame()->findAlienMission(regionRule->getType(), OBJECTIVE_RETALIATION);
 	}
 	_game->getSavedGame()->deleteRetaliationMission(am, _base);
 }
@@ -151,13 +152,14 @@ void BaseDestroyedState::btnOkClick(Action *)
 		return;
 	}
 
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto xbaseIt = _game->getSavedGame()->getBases()->begin(); xbaseIt != _game->getSavedGame()->getBases()->end(); ++xbaseIt)
 	{
-		if ((*i) == _base)
+		Base* xbase = (*xbaseIt);
+		if (xbase == _base)
 		{
-			_game->getSavedGame()->stopHuntingXcomCrafts((*i)); // destroyed together with the base
-			delete (*i);
-			_game->getSavedGame()->getBases()->erase(i);
+			_game->getSavedGame()->stopHuntingXcomCrafts(xbase); // destroyed together with the base
+			delete xbase;
+			_game->getSavedGame()->getBases()->erase(xbaseIt);
 			break;
 		}
 	}

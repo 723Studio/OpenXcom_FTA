@@ -1051,12 +1051,7 @@ struct BindDebugDisplay
 {
 	static RetEnum func(ScriptWorkerBase &swb, const T *t)
 	{
-#ifdef _MSC_VER
-		constexpr auto x = X;
-		auto f = [&] { return x(t); };
-#else
-		auto f = [&]{ return X(t); };
-#endif
+		auto f = std::bind(X, t);
 		swb.log_buffer_add(&f);
 		return RetContinue;
 	}

@@ -254,6 +254,7 @@
     <ClCompile Include="Basescape\DisposeState.cpp" />
     <ClCompile Include="Basescape\EngineersState.cpp" />
     <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp" />
+    <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
     <ClCompile Include="Basescape\IntelAllocateAgentsState.cpp" />
@@ -297,6 +298,7 @@
     <ClCompile Include="Basescape\SoldierInfoState.cpp" />
     <ClCompile Include="Basescape\SoldierInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\SoldierMemorialState.cpp" />
+    <ClCompile Include="Basescape\SoldierRankState.cpp" />
     <ClCompile Include="Basescape\SoldierSortUtil.cpp" />
     <ClCompile Include="Basescape\SoldiersState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationListState.cpp" />
@@ -618,6 +620,7 @@
     <ClCompile Include="Savegame\ItemContainer.cpp" />
     <ClCompile Include="Savegame\MovingTarget.cpp" />
     <ClCompile Include="Savegame\Production.cpp" />
+    <ClCompile Include="Savegame\RankCount.cpp" />
     <ClCompile Include="Savegame\Region.cpp" />
     <ClCompile Include="Savegame\ResearchProject.cpp" />
     <ClCompile Include="Savegame\SaveConverter.cpp" />
@@ -690,6 +693,7 @@
     <ClInclude Include="Basescape\DisposeState.h" />
     <ClInclude Include="Basescape\EngineersState.h" />
     <ClInclude Include="Basescape\FacilityAllocateEngineersState.h" />
+    <ClInclude Include="Basescape\GlobalAlienContainmentState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
     <ClInclude Include="Basescape\IntelAllocateAgentsState.h" />
@@ -733,6 +737,7 @@
     <ClInclude Include="Basescape\SoldierInfoState.h" />
     <ClInclude Include="Basescape\SoldierInfoStateFtA.h" />
     <ClInclude Include="Basescape\SoldierMemorialState.h" />
+    <ClInclude Include="Basescape\SoldierRankState.h" />
     <ClInclude Include="Basescape\SoldierSortUtil.h" />
     <ClInclude Include="Basescape\SoldiersState.h" />
     <ClInclude Include="Basescape\SoldierTransformationListState.h" />
@@ -1015,6 +1020,7 @@
     <ClInclude Include="Mod\ExtraStrings.h" />
     <ClInclude Include="Mod\RuleMissionScript.h" />
     <ClInclude Include="Mod\Texture.h" />
+    <ClInclude Include="Mod\LoadYaml.h" />
     <ClInclude Include="Mod\MapBlock.h" />
     <ClInclude Include="Mod\MapDataSet.h" />
     <ClInclude Include="Mod\MapData.h" />
@@ -1075,6 +1081,7 @@
     <ClInclude Include="Savegame\MissionStatistics.h" />
     <ClInclude Include="Savegame\MovingTarget.h" />
     <ClInclude Include="Savegame\Production.h" />
+    <ClInclude Include="Savegame\RankCount.h" />
     <ClInclude Include="Savegame\Region.h" />
     <ClInclude Include="Savegame\ResearchProject.h" />
     <ClInclude Include="Savegame\SaveConverter.h" />

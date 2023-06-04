@@ -23,6 +23,7 @@ namespace OpenXcom
 {
 
 class TextButton;
+class ToggleTextButton;
 class Window;
 class Text;
 class TextList;
@@ -38,6 +39,7 @@ private:
 	Window *_window;
 	Text *_txtTitle;
 	TextList *_lstLoadout;
+	ToggleTextButton *_btnOnlyAdd;
 	TextButton *_btnCancel;
 public:
 	/// Creates the Load Craft Loadout state.

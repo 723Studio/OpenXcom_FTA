@@ -53,11 +53,11 @@ private:
 
 public:
 	/// Creates a blank RuleSoldierBonus.
-	RuleSoldierBonus(const std::string &name);
+	RuleSoldierBonus(const std::string &name, int listOrder);
 	/// Cleans up the soldier bonus ruleset.
 	~RuleSoldierBonus() = default;
 	/// Loads the soldier bonus definition from YAML.
-	void load(const YAML::Node &node, const ModScript &parsers, int listOrder);
+	void load(const YAML::Node &node, Mod* mod, const ModScript &parsers);
 	/// Gets the soldier bonus unique name/type.
 	const std::string &getName() const { return _name; }
 	/// Gets the bonus to night vision (in tiles).

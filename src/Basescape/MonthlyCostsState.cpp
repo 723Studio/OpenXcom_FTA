@@ -126,18 +126,16 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	_lstCrafts->setColumns(4, 125, 70, 44, 50);
 	_lstCrafts->setDot(true);
 
-	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
-	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
+	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
-		RuleCraft *craft = _game->getMod()->getCraft(*i);
 		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->isFTAGame()))
 		{
-			auto count = _base->getCraftCount(craft);
+			int count = _base->getCraftCount(craft);
 			if (count > 0 || craft->forceShowInMonthlyCosts())
 			{
 				std::ostringstream ss3;
 				ss3 << count;
-				_lstCrafts->addRow(4, tr(*i).c_str(), Unicode::formatFunding(craft->getRentCost()).c_str(), ss3.str().c_str(), Unicode::formatFunding(count * craft->getRentCost()).c_str());
+				_lstCrafts->addRow(4, tr(craftType).c_str(), Unicode::formatFunding(craft->getRentCost()).c_str(), ss3.str().c_str(), Unicode::formatFunding(count * craft->getRentCost()).c_str());
 			}
 		}
 	}
@@ -145,12 +143,12 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	_lstSalaries->setColumns(4, 125, 70, 44, 50);
 	_lstSalaries->setDot(true);
 
-	const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
+	auto& soldierTypes = _game->getMod()->getSoldiersList();
 
 	bool dynamicSalaries = false;
-	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+	for (auto& soldierType : soldierTypes)
 	{
-		if (_game->getMod()->getSoldier(*i)->isSalaryDynamic())
+		if (_game->getMod()->getSoldier(soldierType)->isSalaryDynamic())
 		{
 			dynamicSalaries = true;
 			break;
@@ -160,21 +158,21 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	if (!dynamicSalaries)
 	{
 		// vanilla
-		for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+		for (auto& soldierType : soldierTypes)
 		{
-			const RuleSoldier *soldier = _game->getMod()->getSoldier(*i);
+			RuleSoldier *soldier = _game->getMod()->getSoldier(soldierType);
 			if (soldier->getSalaryCost(0) != 0 && _game->getSavedGame()->isResearched(soldier->getRequirements()))
 			{
-				std::pair<int, int> info = _base->getSoldierCountAndSalary(*i);
+				std::pair<int, int> info = _base->getSoldierCountAndSalary(soldierType);
 				std::ostringstream ss4;
 				ss4 << info.first;
-				std::string name = (*i);
-				if (soldiers.size() == 1)
+				std::string name = soldierType;
+				if (soldierTypes.size() == 1)
 				{
 					name = "STR_SOLDIERS";
 				}
 				std::string costPerUnit = Unicode::formatFunding(soldier->getSalaryCost(0)); // 0 = default rookie salary
-				if (info.first > 0 || soldiers.size() == 1)
+				if (info.first > 0 || soldierTypes.size() == 1)
 				{
 					_lstSalaries->addRow(4, tr(name).c_str(), costPerUnit.c_str(), ss4.str().c_str(), Unicode::formatFunding(info.second).c_str());
 				}
@@ -187,9 +185,9 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 		std::ostringstream ss4;
 		int count = 0;
 		int salary = 0;
-		for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+		for (auto& soldierType : soldierTypes)
 		{
-			std::pair<int, int> info = _base->getSoldierCountAndSalary(*i);
+			std::pair<int, int> info = _base->getSoldierCountAndSalary(soldierType);
 			count += info.first;
 			salary += info.second;
 		}

@@ -35,7 +35,7 @@ std::string WeightedOptions::choose() const
 		return "";
 	}
 	size_t var = RNG::generate(0, _totalWeight);
-	std::map<std::string, size_t>::const_iterator ii = _choices.begin();
+	auto ii = _choices.begin();
 	for (; ii != _choices.end(); ++ii)
 	{
 		if (var <= ii->second)
@@ -56,7 +56,7 @@ std::string WeightedOptions::choose() const
  */
 void WeightedOptions::set(const std::string &id, size_t weight)
 {
-	std::map<std::string, size_t>::iterator option = _choices.find(id);
+	auto option = _choices.find(id);
 	if (option != _choices.end())
 	{
 		_totalWeight -= option->second;
@@ -100,9 +100,9 @@ void WeightedOptions::load(const YAML::Node &nd)
 YAML::Node WeightedOptions::save() const
 {
 	YAML::Node node;
-	for (std::map<std::string, size_t>::const_iterator ii = _choices.begin(); ii != _choices.end(); ++ii)
+	for (const auto& pair : _choices)
 	{
-		node[ii->first] = ii->second;
+		node[pair.first] = pair.second;
 	}
 	return node;
 }
@@ -114,9 +114,9 @@ YAML::Node WeightedOptions::save() const
 std::vector<std::string> WeightedOptions::getNames()
 {
 	std::vector<std::string> names;
-	for (std::map<std::string, size_t>::const_iterator ii = _choices.begin(); ii != _choices.end(); ++ii)
+	for (const auto& pair : _choices)
 	{
-		names.push_back((*ii).first);
+		names.push_back(pair.first);
 	}
 	return names;
 }

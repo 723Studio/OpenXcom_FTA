@@ -254,9 +254,9 @@ void MapDataSet::unloadData()
 {
 	if (_loaded)
 	{
-		for (std::vector<MapData*>::iterator i = _objects.begin(); i != _objects.end(); ++i)
+		for (auto* mapdata : _objects)
 		{
-			delete *i;
+			delete mapdata;
 		}
 		_objects.clear();
 		delete _surfaceSet;

@@ -251,7 +251,7 @@ LanguagePlurality *LanguagePlurality::create(const std::string &language)
 		s_factoryFunctions.insert(std::make_pair("hr", &CroatianPlurality::create));
 	}
 	PFCreate creator = &OneSingular::create;
-	std::map<std::string, PFCreate>::const_iterator found = s_factoryFunctions.find(language);
+	auto found = s_factoryFunctions.find(language);
 	if (found != s_factoryFunctions.end())
 	{
 		creator = found->second;

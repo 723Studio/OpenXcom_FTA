@@ -240,6 +240,9 @@ public:
 	void spawnNewUnit(BattleItem *item);
 	void spawnNewUnit(BattleActionAttack attack, Position position);
 	void spawnNewSoldier(BattleActionAttack attack, Position position);
+	/// Spawns a new item in the middle of battle.
+	void spawnNewItem(BattleItem *item);
+	void spawnNewItem(BattleActionAttack attack, Position position);
 	/// Spawns units from items that explode before battle
 	void spawnFromPrimedItems();
 	/// Removes spawned units that belong to the player to avoid dealing with recovery
@@ -326,7 +329,7 @@ public:
 	/// Sets up a mission complete notification.
 	void missionComplete();
 	std::list<BattleState*> getStates();
-	/// Auto end the battle if conditions are met.
+	/// Auto-end the battle if conditions are met.
 	void autoEndBattle();
 	/// Were all enemies neutralized?
 	bool areAllEnemiesNeutralized() const { return _allEnemiesNeutralized; }

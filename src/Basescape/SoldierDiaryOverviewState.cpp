@@ -224,18 +224,16 @@ void SoldierDiaryOverviewState::init()
 
 	_lstDiary->clearList();
 
-	std::vector<MissionStatistics*> *missionStatistics = _game->getSavedGame()->getMissionStatistics();
-
 	unsigned int row = 0;
-	for (std::vector<MissionStatistics*>::iterator j = missionStatistics->begin() ; j != missionStatistics->end() ; ++j)
+	for (const auto* missionStats : *_game->getSavedGame()->getMissionStatistics())
 	{
-		int missionId = (*j)->id;
+		int missionId = missionStats->id;
 		bool wasOnMission = false;
 
 		// See if this mission is part of the soldier's vector of missions
-		for (std::vector<int>::const_iterator k = _soldier->getDiary()->getMissionIdList().begin(); k != _soldier->getDiary()->getMissionIdList().end(); ++k)
+		for (const int& mId : _soldier->getDiary()->getMissionIdList())
 		{
-			if (missionId == (*k))
+			if (missionId == mId)
 			{
 				wasOnMission = true;
 				break;
@@ -247,12 +245,12 @@ void SoldierDiaryOverviewState::init()
 		}
 
 		std::ostringstream ss;
-		ss << (*j)->time.getYear();
+		ss << missionStats->time.getYear();
 
-		_lstDiary->addRow(5, (*j)->getMissionName(_game->getLanguage()).c_str(),
-							 (*j)->getRatingString(_game->getLanguage()).c_str(),
-							 (*j)->time.getDayString(_game->getLanguage()).c_str(),
-							 tr((*j)->time.getMonthString()).c_str(),
+		_lstDiary->addRow(5, missionStats->getMissionName(_game->getLanguage()).c_str(),
+							 missionStats->getRatingString(_game->getLanguage()).c_str(),
+							 missionStats->time.getDayString(_game->getLanguage()).c_str(),
+							 tr(missionStats->time.getMonthString()).c_str(),
 							 ss.str().c_str());
 		row++;
 	}

@@ -301,15 +301,16 @@ void BaseDefenseState::btnOkClick(Action *)
 			if (!am)
 			{
 				// backwards-compatibility
-				std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin();
-				for (; k != _game->getSavedGame()->getRegions()->end(); ++k)
+				RuleRegion* regionRule = _game->getSavedGame()->getRegions()->front()->getRules(); // wrong, but that's how it is in OXC
+				for (const auto* region : *_game->getSavedGame()->getRegions())
 				{
-					if ((*k)->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
+					if (region->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
 					{
+						regionRule = region->getRules();
 						break;
 					}
 				}
-				am = _game->getSavedGame()->findAlienMission((*k)->getRules()->getType(), OBJECTIVE_RETALIATION);
+				am = _game->getSavedGame()->findAlienMission(regionRule->getType(), OBJECTIVE_RETALIATION);
 			}
 
 			if (am && am->getRules().isMultiUfoRetaliation())

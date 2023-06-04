@@ -55,7 +55,7 @@ namespace OpenXcom
  * type of inventory section.
  * @param id String defining the id.
  */
-RuleInventory::RuleInventory(const std::string &id): _id(id), _x(0), _y(0), _type(INV_SLOT), _listOrder(0), _hand(0)
+RuleInventory::RuleInventory(const std::string &id, int listOrder): _id(id), _x(0), _y(0), _type(INV_SLOT), _listOrder(listOrder), _hand(0)
 {
 }
 
@@ -68,19 +68,19 @@ RuleInventory::~RuleInventory()
  * @param node YAML node.
  * @param listOrder The list weight for this inventory.
  */
-void RuleInventory::load(const YAML::Node &node, int listOrder)
+void RuleInventory::load(const YAML::Node &node)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, listOrder);
+		load(parent);
 	}
-	_id = node["id"].as<std::string>(_id);
+
 	_x = node["x"].as<int>(_x);
 	_y = node["y"].as<int>(_y);
 	_type = (InventoryType)node["type"].as<int>(_type);
 	_slots = node["slots"].as< std::vector<RuleSlot> >(_slots);
 	_costs = node["costs"].as< std::map<std::string, int> >(_costs);
-	_listOrder = node["listOrder"].as<int>(listOrder);
+	_listOrder = node["listOrder"].as<int>(_listOrder);
 	if (_id == "STR_RIGHT_HAND")
 	{
 		_hand = 2;
@@ -198,13 +198,13 @@ bool RuleInventory::checkSlotInPosition(int *x, int *y) const
 	}
 	else
 	{
-		for (std::vector<RuleSlot>::const_iterator i = _slots.begin(); i != _slots.end(); ++i)
+		for (const auto& coord : _slots)
 		{
-			if (mouseX >= _x + i->x * SLOT_W && mouseX < _x + (i->x + 1) * SLOT_W &&
-				mouseY >= _y + i->y * SLOT_H && mouseY < _y + (i->y + 1) * SLOT_H)
+			if (mouseX >= _x + coord.x * SLOT_W && mouseX < _x + (coord.x + 1) * SLOT_W &&
+				mouseY >= _y + coord.y * SLOT_H && mouseY < _y + (coord.y + 1) * SLOT_H)
 			{
-				*x = i->x;
-				*y = i->y;
+				*x = coord.x;
+				*y = coord.y;
 				return true;
 			}
 		}
@@ -247,10 +247,14 @@ bool RuleInventory::fitItemInSlot(const RuleItem *item, int x, int y) const
 	{
 		int totalSlots = item->getInventoryWidth() * item->getInventoryHeight();
 		int foundSlots = 0;
-		for (std::vector<RuleSlot>::const_iterator i = _slots.begin(); i != _slots.end() && foundSlots < totalSlots; ++i)
+		for (const auto& coord : _slots)
 		{
-			if (i->x >= x && i->x < x + item->getInventoryWidth() &&
-				i->y >= y && i->y < y + item->getInventoryHeight())
+			if (foundSlots >= totalSlots)
+			{
+				break; // loop finished
+			}
+			if (coord.x >= x && coord.x < x + item->getInventoryWidth() &&
+				coord.y >= y && coord.y < y + item->getInventoryHeight())
 			{
 				foundSlots++;
 			}

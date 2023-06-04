@@ -94,7 +94,7 @@ SoldierAvatarState::SoldierAvatarState(Base *base, size_t soldier) : _base(base)
 	_lstAvatar->setMargin(8);
 
 	std::string prefix = "STR_AVATAR_NAME_";
-	for  (int variant = 0; variant <= _game->getMod()->getMaxLookVariant(); ++variant)
+	for (int variant = 0; variant <= _game->getMod()->getMaxLookVariant(); ++variant)
 	{
 		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 1), GENDER_MALE,   LOOK_BLONDE,    variant));
 		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 2), GENDER_MALE,   LOOK_BROWNHAIR, variant));
@@ -106,9 +106,9 @@ SoldierAvatarState::SoldierAvatarState(Base *base, size_t soldier) : _base(base)
 		_avatars.push_back(SoldierAvatar(prefix + std::to_string(variant*8 + 8), GENDER_FEMALE, LOOK_AFRICAN,   variant));
 	}
 
-	for (std::vector<SoldierAvatar>::const_iterator i = _avatars.begin(); i != _avatars.end(); ++i)
+	for (const auto& soldierAvatar : _avatars)
 	{
-		_lstAvatar->addRow(1, tr(i->getAvatarName()).c_str());
+		_lstAvatar->addRow(1, tr(soldierAvatar.getAvatarName()).c_str());
 	}
 	_lstAvatar->onMouseClick((ActionHandler)&SoldierAvatarState::lstAvatarClick);
 
@@ -133,7 +133,7 @@ void SoldierAvatarState::initPreview(Soldier *s)
 	{
 		for (const auto& layer : s->getArmorLayers())
 		{
-			auto surf = _game->getMod()->getSurface(layer, true);
+			auto* surf = _game->getMod()->getSurface(layer, true);
 			surf->blitNShade(_soldierSurface, 0, 0);
 		}
 	}

@@ -91,7 +91,7 @@ SoldierBonusState::SoldierBonusState(Base *base, size_t soldier) : _base(base), 
 
 	_bonuses.clear();
 	_lstBonuses->clearList();
-	for (auto bonusRule : *s->getBonuses(nullptr))
+	for (auto* bonusRule : *s->getBonuses(nullptr))
 	{
 		_bonuses.push_back(bonusRule->getName());
 		_lstBonuses->addRow(1, tr(bonusRule->getName()).c_str());
@@ -110,7 +110,7 @@ SoldierBonusState::SoldierBonusState(Base *base, size_t soldier) : _base(base), 
 	int frontArmor = 0, leftArmor = 0, rightArmor = 0, rearArmor = 0, underArmor = 0;
 	UnitStats stats;
 	bool timeRecovery = false, energyRecovery = false, moraleRecovery = false, healthRecovery = false, stunRecovery = false, manaRecovery = false;
-	for (auto bonusRule : *s->getBonuses(nullptr))
+	for (auto* bonusRule : *s->getBonuses(nullptr))
 	{
 		frontArmor += bonusRule->getFrontArmor();
 		leftArmor  += bonusRule->getLeftSideArmor();

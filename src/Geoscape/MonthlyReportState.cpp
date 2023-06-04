@@ -175,13 +175,12 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 	{
 		rating = "";
 		int temp = INT_MIN;
-		const std::map<int, std::string> *monthlyRatings = _game->getMod()->getMonthlyRatings();
-		for (std::map<int, std::string>::const_iterator i = monthlyRatings->begin(); i != monthlyRatings->end(); ++i)
+		for (auto& pair : *_game->getMod()->getMonthlyRatings())
 		{
-			if (i->first > temp && i->first <= _ratingTotal)
+			if (pair.first > temp && pair.first <= _ratingTotal)
 			{
-				temp = i->first;
-				rating = tr(i->second);
+				temp = pair.first;
+				rating = tr(pair.second);
 			}
 		}
 	}
@@ -289,7 +288,7 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 	_txtDesc->setText(ss5.str());
 
 	// Give modders some handles on political situation
-	for (auto& traitorName : _pactList)
+	for (const auto& traitorName : _pactList)
 	{
 		auto traitor = _game->getMod()->getCountry(traitorName, false);
 		if (traitor)
@@ -297,7 +296,7 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 			_game->getSavedGame()->spawnEvent(traitor->getSignedPactEvent());
 		}
 	}
-	for (auto& exTraitorName : _cancelPactList)
+	for (const auto& exTraitorName : _cancelPactList)
 	{
 		auto exTraitor = _game->getMod()->getCountry(exTraitorName, false);
 		if (exTraitor)
@@ -325,12 +324,11 @@ void MonthlyReportState::btnOkClick(Action *)
 		_game->popState();
 		// Award medals for service time
 		// Iterate through all your bases
-		for (std::vector<Base*>::iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
+		for (auto* xbase : *_game->getSavedGame()->getBases())
 		{
 			// Iterate through all your soldiers
-			for (std::vector<Soldier*>::iterator s = (*b)->getSoldiers()->begin(); s != (*b)->getSoldiers()->end(); ++s)
+			for (auto* soldier : *xbase->getSoldiers())
 			{
-				Soldier *soldier = _game->getSavedGame()->getSoldier((*s)->getId());
 				// Award medals to eligible soldiers
 				soldier->getDiary()->addMonthlyService();
 				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
@@ -345,9 +343,9 @@ void MonthlyReportState::btnOkClick(Action *)
 		}
 
 		bool psi = false;
-		for (std::vector<Base*>::const_iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
+		for (auto* xbase : *_game->getSavedGame()->getBases())
 		{
-			psi = psi || (*b)->getAvailablePsiLabs();
+			psi = psi || xbase->getAvailablePsiLabs();
 		}
 		if (psi && !Options::anytimePsiTraining)
 		{
@@ -425,13 +423,13 @@ void MonthlyReportState::calculateChanges()
 		lastMonthOffset += 2;
 	// update activity meters, calculate a total score based on regional activity
 	// and gather last month's score
-	for (std::vector<Region*>::iterator k = _game->getSavedGame()->getRegions()->begin(); k != _game->getSavedGame()->getRegions()->end(); ++k)
+	for (auto* region : *_game->getSavedGame()->getRegions())
 	{
-		(*k)->newMonth();
-		if ((*k)->getActivityXcom().size() > 2)
-			_lastMonthsRating += (*k)->getActivityXcom().at(lastMonthOffset)-(*k)->getActivityAlien().at(lastMonthOffset);
-		xcomSubTotal += (*k)->getActivityXcom().at(monthOffset);
-		alienTotal += (*k)->getActivityAlien().at(monthOffset);
+		region->newMonth();
+		if (region->getActivityXcom().size() > 2)
+			_lastMonthsRating += region->getActivityXcom().at(lastMonthOffset) - region->getActivityAlien().at(lastMonthOffset);
+		xcomSubTotal += region->getActivityXcom().at(monthOffset);
+		alienTotal += region->getActivityAlien().at(monthOffset);
 	}
 	// apply research bonus AFTER calculating our total, because this bonus applies to the council ONLY,
 	// and shouldn't influence each country's decision.
@@ -454,33 +452,35 @@ void MonthlyReportState::calculateChanges()
 		pactScore = infiltration->getPoints();
 	}
 	int averageFunding = _game->getSavedGame()->getCountryFunding() / _game->getSavedGame()->getCountries()->size() / 1000 * 1000;
-	for (std::vector<Country*>::iterator k = _game->getSavedGame()->getCountries()->begin(); k != _game->getSavedGame()->getCountries()->end(); ++k)
+	for (auto* country : *_game->getSavedGame()->getCountries())
 	{
-		// add them to the list of new pact members
-		// this is done BEFORE initiating a new month
-		// because the _newPact flag will be reset in the
-		// process
-		if ((*k)->getNewPact())
-		{
-			_pactList.push_back((*k)->getRules()->getType());
-		}
-		if ((*k)->getCancelPact() && (*k)->getPact())
-		{
-			_cancelPactList.push_back((*k)->getRules()->getType());
-		}
+		// check pact status before and after, because scripting can arbitrarily form/break pacts
+		bool wasInPact = country->getPact();
+
 		// determine satisfaction level, sign pacts, adjust funding
 		// and update activity meters,
-		(*k)->newMonth(xcomTotal, alienTotal, pactScore, averageFunding);
+		country->newMonth(xcomTotal, alienTotal, pactScore, averageFunding, _game->getSavedGame());
 		// and after they've made their decisions, calculate the difference, and add
 		// them to the appropriate lists.
-		_fundingDiff += (*k)->getFunding().back()-(*k)->getFunding().at((*k)->getFunding().size()-2);
-		switch((*k)->getSatisfaction())
+		_fundingDiff += country->getFunding().back() - country->getFunding().at(country->getFunding().size()-2);
+
+		bool isInPact = country->getPact();
+		if (!wasInPact && isInPact) // signed a new pact this month
 		{
-		case 1:
-			_sadList.push_back((*k)->getRules()->getType());
+			_pactList.push_back(country->getRules()->getType());
+		}
+		else if (wasInPact && !isInPact) // renounced a pact this month
+		{
+			_cancelPactList.push_back(country->getRules()->getType());
+		}
+
+		switch(country->getSatisfaction())
+		{
+		case Country::Satisfaction::UNHAPPY:
+			_sadList.push_back(country->getRules()->getType());
 			break;
-		case 3:
-			_happyList.push_back((*k)->getRules()->getType());
+		case Country::Satisfaction::HAPPY:
+			_happyList.push_back(country->getRules()->getType());
 			break;
 		default:
 			break;

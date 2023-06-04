@@ -66,26 +66,25 @@ OptionsControlsState::OptionsControlsState(OptionsOrigin origin) : OptionsBaseSt
 	_colorSel = _lstControls->getScrollbarColor();
 	_colorNormal = _lstControls->getColor();
 
-	const std::vector<OptionInfo> &options = Options::getOptionInfo();
-	for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)
+	for (const auto& optionInfo : Options::getOptionInfo())
 	{
-		if (i->type() == OPTION_KEY && !i->description().empty())
+		if (optionInfo.type() == OPTION_KEY && !optionInfo.description().empty())
 		{
-			if (i->category() == "STR_GENERAL")
+			if (optionInfo.category() == "STR_GENERAL")
 			{
-				_controlsGeneral.push_back(*i);
+				_controlsGeneral.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_GEOSCAPE")
+			else if (optionInfo.category() == "STR_GEOSCAPE")
 			{
-				_controlsGeo.push_back(*i);
+				_controlsGeo.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_BATTLESCAPE")
+			else if (optionInfo.category() == "STR_BATTLESCAPE")
 			{
-				_controlsBattle.push_back(*i);
+				_controlsBattle.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_OXCE")
+			else if (optionInfo.category() == "STR_OXCE")
 			{
-				_controlsOxce.push_back(*i);
+				_controlsOxce.push_back(optionInfo);
 			}
 			else if (i->category() == "STR_FTA")
 			{
@@ -157,10 +156,10 @@ std::string OptionsControlsState::ucWords(std::string str)
  */
 void OptionsControlsState::addControls(const std::vector<OptionInfo> &keys)
 {
-	for (std::vector<OptionInfo>::const_iterator i = keys.begin(); i != keys.end(); ++i)
+	for (const auto& optionInfo : keys)
 	{
-		std::string name = tr(i->description());
-		SDLKey *key = i->asKey();
+		std::string name = tr(optionInfo.description());
+		SDLKey *key = optionInfo.asKey();
 		std::string keyName = ucWords(SDL_GetKeyName(*key));
 		if (*key == SDLK_UNKNOWN)
 			keyName = "";

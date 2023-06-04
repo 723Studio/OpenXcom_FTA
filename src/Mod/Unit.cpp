@@ -20,6 +20,7 @@
 #include "RuleSoldier.h"
 #include "../Engine/Exception.h"
 #include "../Engine/ScriptBind.h"
+#include "LoadYaml.h"
 #include "Mod.h"
 #include "Armor.h"
 
@@ -35,7 +36,8 @@ Unit::Unit(const std::string &type) :
 	_moraleLossWhenKilled(100), _moveSound(-1), _intelligence(0), _aggression(0),
 	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
-	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
+	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _avoidsFire(defBoolNullable), 
+	_vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
 	_canPanic(true), _canBeMindControlled(true), _berserkChance(33)
 {
 }
@@ -59,7 +61,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	{
 		load(parent, mod);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	mod->loadNameNull(_type, _civilianRecoveryType, node["civilianRecoveryType"]);
 	mod->loadNameNull(_type, _spawnedPersonName, node["spawnedPersonName"]);
 	mod->loadNameNull(_type, _liveAlienName, node["liveAlien"]);
@@ -98,6 +100,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_isLeeroyJenkins = node["isLeeroyJenkins"].as<bool>(_isLeeroyJenkins);
 	_waitIfOutsideWeaponRange = node["waitIfOutsideWeaponRange"].as<bool>(_waitIfOutsideWeaponRange);
 	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<int>(_pickUpWeaponsMoreActively);
+	loadBoolNullable(_avoidsFire, node["avoidsFire"]);
 	_meleeWeapon = node["meleeWeapon"].as<std::string>(_meleeWeapon);
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
 	_capturable = node["capturable"].as<bool>(_capturable);
@@ -469,6 +472,15 @@ bool Unit::canSurrender() const
 bool Unit::autoSurrender() const
 {
 	return _autoSurrender;
+}
+
+/**
+ * Is the unit afraid to pathfind through fire?
+ * @return True if this unit has a penalty when pathfinding through fire.
+ */
+bool Unit::avoidsFire() const
+{
+	return useBoolNullable(_avoidsFire, _specab < SPECAB_BURNFLOOR);
 }
 
 /**

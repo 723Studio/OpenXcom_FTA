@@ -283,7 +283,7 @@ void Window::draw()
 
 	if (_bg != 0)
 	{
-		auto crop = _bg->getCrop();
+		SurfaceCrop crop = _bg->getCrop();
 		crop.getCrop()->x = square.x - _dx;
 		crop.getCrop()->y = square.y - _dy;
 		crop.getCrop()->w = square.w ;

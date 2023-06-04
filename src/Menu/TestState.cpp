@@ -118,7 +118,7 @@ TestState::TestState()
 
 	_txtPalette->setText(tr("STR_PALETTE"));
 
-	for (auto pal : _game->getMod()->getPalettes())
+	for (auto& pal : _game->getMod()->getPalettes())
 	{
 		if (pal.first.find("BACKUP_") != 0)
 		{
@@ -168,7 +168,7 @@ TestState::TestState()
 
 TestState::~TestState()
 {
-	for (auto item : _vanillaPalettes)
+	for (auto& item : _vanillaPalettes)
 	{
 		delete item.second;
 	}
@@ -237,28 +237,28 @@ void TestState::testCase4()
 
 	// build a list of all terrains
 	std::map<std::string, int> terrainMap;
-	for (auto &texturePair : _game->getMod()->getGlobe()->getTexturesRaw())
+	for (auto& texturePair : _game->getMod()->getGlobe()->getTexturesRaw())
 	{
-		for (auto &terrainCrit : *texturePair.second->getTerrain())
+		for (auto& terrainCrit : *texturePair.second->getTerrain())
 			terrainMap[terrainCrit.name] += 1;
-		for (auto &baseTerrainCrit : *texturePair.second->getBaseTerrain())
+		for (auto& baseTerrainCrit : *texturePair.second->getBaseTerrain())
 			terrainMap[baseTerrainCrit.name] += 1;
 	}
-	for (auto &terrainName : _game->getMod()->getTerrainList())
+	for (auto& terrainName : _game->getMod()->getTerrainList())
 	{
 		terrainMap[terrainName] += 1;
 	}
-	for (auto &deployName : _game->getMod()->getDeploymentsList())
+	for (auto& deployName : _game->getMod()->getDeploymentsList())
 	{
 		AlienDeployment *deployRule = _game->getMod()->getDeployment(deployName);
-		for (auto &terrainName : deployRule->getTerrains())
+		for (auto& terrainName : deployRule->getTerrains())
 			terrainMap[terrainName] += 1;
 	}
-	for (auto &mapScript : _game->getMod()->getMapScriptsRaw())
+	for (auto& mapScript : _game->getMod()->getMapScriptsRaw())
 	{
-		for (auto &mapScriptCommand : mapScript.second)
+		for (auto* mapScriptCommand : mapScript.second)
 		{
-			for (auto &terrainName : mapScriptCommand->getRandomAlternateTerrain())
+			for (auto& terrainName : mapScriptCommand->getRandomAlternateTerrain())
 			{
 				terrainMap[terrainName] += 1;
 			}
@@ -272,7 +272,7 @@ void TestState::testCase4()
 
 	// 1. check terrain existence in ruleset
 	Log(LOG_INFO) << "----------------------------------------------1. check terrain existence in ruleset";
-	for (auto &pair : terrainMap)
+	for (auto& pair : terrainMap)
 	{
 		RuleTerrain *tRule = _game->getMod()->getTerrain(pair.first);
 		if (!tRule)
@@ -290,7 +290,7 @@ void TestState::testCase4()
 	{
 		if (terrainRule)
 		{
-			for (auto &mapblock : *terrainRule->getMapBlocks())
+			for (auto* mapblock : *terrainRule->getMapBlocks())
 			{
 				std::string uc = mapblock->getName();
 				Unicode::upperCase(uc);
@@ -298,7 +298,7 @@ void TestState::testCase4()
 			}
 			for (int skinIndex = 0; skinIndex <= maxSkinIndex; ++skinIndex)
 			{
-				for (auto& dataset : *terrainRule->getMapDataSets())
+				for (auto* dataset : *terrainRule->getMapDataSets())
 				{
 					std::string uc = dataset->getName();
 					Unicode::upperCase(uc);
@@ -312,18 +312,18 @@ void TestState::testCase4()
 		}
 	};
 
-	for (auto &pair : terrainMap)
+	for (auto& pair : terrainMap)
 	{
 		RuleTerrain *terrainRule = _game->getMod()->getTerrain(pair.first);
 		addMapblockAndDataset(terrainRule, blockMap, datasetMap);
 	}
-	for (auto &ufoName : _game->getMod()->getUfosList())
+	for (auto& ufoName : _game->getMod()->getUfosList())
 	{
 		RuleUfo *ufoRule = _game->getMod()->getUfo(ufoName);
 		RuleTerrain *terrainRule = ufoRule->getBattlescapeTerrainData();
 		addMapblockAndDataset(terrainRule, blockMap, datasetMap);
 	}
-	for (auto &craftName : _game->getMod()->getCraftsList())
+	for (auto& craftName : _game->getMod()->getCraftsList())
 	{
 		RuleCraft *craftRule = _game->getMod()->getCraft(craftName);
 		RuleTerrain *terrainRule = craftRule->getBattlescapeTerrainData();
@@ -335,7 +335,7 @@ void TestState::testCase4()
 
 	auto checkExistence = [](std::map<std::string, int> &mapRef, const std::string &dir, const std::string &ext, int &totalRef)
 	{
-		for (auto &mapItem : mapRef)
+		for (auto& mapItem : mapRef)
 		{
 			std::ostringstream filename;
 			filename << dir << mapItem.first << ext;
@@ -362,10 +362,10 @@ void TestState::testCase4()
 
 	auto findUnusedFiles = [](std::map<std::string, int> &mapRef, const std::string &dir, int &totalRef)
 	{
-		auto contents = FileMap::getVFolderContents(dir);
-		for (auto k = contents.begin(); k != contents.end(); ++k)
+		const auto& contents = FileMap::getVFolderContents(dir);
+		for (const auto& name : contents)
 		{
-			std::string upper = (*k);
+			std::string upper = name; // copy
 			Unicode::upperCase(upper);
 			std::string noExt = CrossPlatform::noExt(upper);
 			if (mapRef.find(noExt) == mapRef.end())
@@ -412,23 +412,23 @@ void TestState::testCase3()
 	_lstOutput->addRow(1, tr("STR_TESTS_STARTING").c_str());
 
 	std::map<const Armor *, std::map<std::string, int> > tagMatrix;
-	for (auto armorName : _game->getMod()->getArmorsList())
+	for (auto& armorName : _game->getMod()->getArmorsList())
 	{
-		auto armorRule = _game->getMod()->getArmor(armorName, true);
-		auto tagValues = armorRule->getScriptValuesRaw().getValuesRaw();
+		auto* armorRule = _game->getMod()->getArmor(armorName, true);
+		auto& tagValues = armorRule->getScriptValuesRaw().getValuesRaw();
 		ArgEnum index = ScriptParserBase::getArgType<ScriptTag<Armor>>();
-		auto tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
+		auto& tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
 		for (size_t i = 0; i < tagValues.size(); ++i)
 		{
-			auto nameAsString = tagNames.values[i].name.toString().substr(4);
+			std::string nameAsString = tagNames.values[i].name.toString().substr(4);
 			tagMatrix[armorRule][nameAsString] = tagValues.at(i);
 		}
 	}
 
 	std::map<std::string, bool> tagNames;
-	for (auto &a : tagMatrix)
+	for (auto& a : tagMatrix)
 	{
-		for (auto &t : a.second)
+		for (auto& t : a.second)
 		{
 			tagNames[t.first] = true;
 		}
@@ -440,16 +440,16 @@ void TestState::testCase3()
 	{
 		std::ostringstream ssNames;
 		ssNames << ";Armor";
-		for (auto &n : tagNames)
+		for (auto& n : tagNames)
 		{
 			ssNames << ";" << n.first;
 		}
 		Log(LOG_INFO) << ssNames.str();
 	}
-	for (auto armorName : _game->getMod()->getArmorsList())
+	for (auto& armorName : _game->getMod()->getArmorsList())
 	{
-		auto armorRule = _game->getMod()->getArmor(armorName, true);
-		auto armorData = tagMatrix[armorRule];
+		auto* armorRule = _game->getMod()->getArmor(armorName, true);
+		auto& armorData = tagMatrix[armorRule];
 		std::ostringstream ss;
 		ss << ";" << armorName;
 		for (auto& t : tagNames)
@@ -475,7 +475,7 @@ void TestState::testCase2()
 	_lstOutput->addRow(1, tr("STR_TESTS_STARTING").c_str());
 	if (_vanillaPalettes.empty())
 	{
-		for (auto item : _paletteMetadataMap)
+		for (auto& item : _paletteMetadataMap)
 		{
 			_vanillaPalettes[item.first] = new Palette();
 			_vanillaPalettes[item.first]->initBlack();
@@ -507,7 +507,7 @@ void TestState::testCase2()
 	}
 
 	int total = 0;
-	for (auto i : _game->getMod()->getExtraSprites())
+	for (auto& i : _game->getMod()->getExtraSprites())
 	{
 		std::string sheetName = i.first;
 		if (sheetName.find("_CPAL") != std::string::npos)
@@ -516,7 +516,7 @@ void TestState::testCase2()
 			continue;
 		}
 
-		for (auto spritePack : i.second)
+		for (auto* spritePack : i.second)
 		{
 		if (spritePack->getSingleImage())
 		{
@@ -525,20 +525,20 @@ void TestState::testCase2()
 		}
 		else
 		{
-			for (auto j : *spritePack->getSprites())
+			for (auto& j : *spritePack->getSprites())
 			{
 				int startFrame = j.first;
 				std::string fileName = j.second;
 				if (fileName.substr(fileName.length() - 1, 1) == "/")
 				{
-					auto contents = FileMap::getVFolderContents(fileName);
-					for (auto k = contents.begin(); k != contents.end(); ++k)
+					const auto& contents = FileMap::getVFolderContents(fileName);
+					for (const auto& name : contents)
 					{
-						if (!ExtraSprites::isImageFile(*k))
+						if (!ExtraSprites::isImageFile(name))
 							continue;
 						try
 						{
-							const std::string& relPath = fileName + *k;
+							std::string relPath = fileName + name;
 							total += checkPalette(relPath, spritePack->getWidth(), spritePack->getHeight());
 						}
 						catch (Exception &e)
@@ -597,7 +597,7 @@ int TestState::checkPalette(const std::string& fullPath, int width, int height)
 
 	int bestMatch = 0;
 	int matchedPaletteIndex = 0;
-	for (auto item : _vanillaPalettes)
+	for (auto& item : _vanillaPalettes)
 	{
 		int match = matchPalette(image, item.first, item.second);
 		if (match > bestMatch)
@@ -663,13 +663,13 @@ void TestState::testCase1()
 	_lstOutput->addRow(1, tr("STR_CHECKING_TERRAIN").c_str());
 	int total = 0;
 	std::map<std::string, std::set<int>> uniqueResults;
-	for (auto terrainName : _game->getMod()->getTerrainList())
+	for (auto& terrainName : _game->getMod()->getTerrainList())
 	{
 		RuleTerrain *terrainRule = _game->getMod()->getTerrain(terrainName);
 		total += checkMCD(terrainRule, uniqueResults);
 	}
 	_lstOutput->addRow(1, tr("STR_CHECKING_UFOS").c_str());
-	for (auto ufoName : _game->getMod()->getUfosList())
+	for (auto& ufoName : _game->getMod()->getUfosList())
 	{
 		RuleUfo *ufoRule = _game->getMod()->getUfo(ufoName);
 		RuleTerrain *terrainRule = ufoRule->getBattlescapeTerrainData();
@@ -680,7 +680,7 @@ void TestState::testCase1()
 		total += checkMCD(terrainRule, uniqueResults);
 	}
 	_lstOutput->addRow(1, tr("STR_CHECKING_CRAFT").c_str());
-	for (auto craftName : _game->getMod()->getCraftsList())
+	for (auto& craftName : _game->getMod()->getCraftsList())
 	{
 		RuleCraft *craftRule = _game->getMod()->getCraft(craftName);
 		RuleTerrain *terrainRule = craftRule->getBattlescapeTerrainData();
@@ -710,12 +710,12 @@ void TestState::testCase1()
 		Log(LOG_INFO) << "----------";
 		Log(LOG_INFO) << "SUMMARY";
 		Log(LOG_INFO) << "----------";
-		for (auto mapItem : uniqueResults)
+		for (auto& mapItem : uniqueResults)
 		{
 			std::ostringstream ss;
 			ss << mapItem.first << ": ";
 			bool first = true;
-			for (auto setItem : mapItem.second)
+			for (int setItem : mapItem.second)
 			{
 				if (!first)
 				{
@@ -737,12 +737,12 @@ void TestState::testCase1()
 int TestState::checkMCD(RuleTerrain *terrainRule, std::map<std::string, std::set<int>> &uniqueResults)
 {
 	int errors = 0;
-	for (auto myMapDataSet : *terrainRule->getMapDataSets())
+	for (auto* myMapDataSet : *terrainRule->getMapDataSets())
 	{
 		int index = 0;
 		myMapDataSet->loadData(_game->getMod()->getMCDPatch(myMapDataSet->getName()), false);
 		int size = (int)(myMapDataSet->getObjectsRaw()->size());
-		for (auto myMapData : *myMapDataSet->getObjectsRaw())
+		for (auto* myMapData : *myMapDataSet->getObjectsRaw())
 		{
 			// Check for 0 armor
 			if (myMapData->getArmor() == 0)
@@ -828,35 +828,35 @@ void TestState::testCase0()
 	_lstOutput->addRow(1, tr("STR_TESTS_STARTING").c_str());
 	_lstOutput->addRow(1, tr("STR_CHECKING_TERRAIN").c_str());
 	int total = 0;
-	for (std::vector<std::string>::const_iterator i = _game->getMod()->getTerrainList().begin(); i != _game->getMod()->getTerrainList().end(); ++i)
+	for (auto& terrainName : _game->getMod()->getTerrainList())
 	{
-		RuleTerrain *terrRule = _game->getMod()->getTerrain((*i));
-		for (std::vector<MapBlock*>::iterator j = terrRule->getMapBlocks()->begin(); j != terrRule->getMapBlocks()->end(); ++j)
+		RuleTerrain *terrRule = _game->getMod()->getTerrain(terrainName);
+		for (auto* mapblock : *terrRule->getMapBlocks())
 		{
-			total += checkRMP((*j));
+			total += checkRMP(mapblock);
 		}
 	}
 	_lstOutput->addRow(1, tr("STR_CHECKING_UFOS").c_str());
-	for (std::vector<std::string>::const_iterator i = _game->getMod()->getUfosList().begin(); i != _game->getMod()->getUfosList().end(); ++i)
+	for (auto& ufoName : _game->getMod()->getUfosList())
 	{
-		RuleUfo *ufoRule = _game->getMod()->getUfo((*i));
+		RuleUfo *ufoRule = _game->getMod()->getUfo(ufoName);
 		if (ufoRule->getBattlescapeTerrainData())
 		{
-			for (std::vector<MapBlock*>::iterator j = ufoRule->getBattlescapeTerrainData()->getMapBlocks()->begin(); j != ufoRule->getBattlescapeTerrainData()->getMapBlocks()->end(); ++j)
+			for (auto* mapblock : *ufoRule->getBattlescapeTerrainData()->getMapBlocks())
 			{
-				total += checkRMP((*j));
+				total += checkRMP(mapblock);
 			}
 		}
 	}
 	_lstOutput->addRow(1, tr("STR_CHECKING_CRAFT").c_str());
-	for (std::vector<std::string>::const_iterator i = _game->getMod()->getCraftsList().begin(); i != _game->getMod()->getCraftsList().end(); ++i)
+	for (auto& craftName : _game->getMod()->getCraftsList())
 	{
-		RuleCraft *craftRule = _game->getMod()->getCraft((*i));
+		RuleCraft *craftRule = _game->getMod()->getCraft(craftName);
 		if (craftRule->getBattlescapeTerrainData())
 		{
-			for (std::vector<MapBlock*>::iterator j = craftRule->getBattlescapeTerrainData()->getMapBlocks()->begin(); j != craftRule->getBattlescapeTerrainData()->getMapBlocks()->end(); ++j)
+			for (auto* mapblock : *craftRule->getBattlescapeTerrainData()->getMapBlocks())
 			{
-				total += checkRMP((*j));
+				total += checkRMP(mapblock);
 			}
 		}
 	}

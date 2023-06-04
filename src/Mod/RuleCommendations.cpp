@@ -43,6 +43,11 @@ RuleCommendations::~RuleCommendations()
  */
 void RuleCommendations::load(const YAML::Node &node, const Mod* mod)
 {
+	if (const YAML::Node &parent = node["refNode"])
+	{
+		load(parent, mod);
+	}
+
 	_description = node["description"].as<std::string>(_description);
 	mod->loadUnorderedNamesToInts(_type, _criteria, node["criteria"]);
 	_sprite = node["sprite"].as<int>(_sprite);

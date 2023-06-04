@@ -24,6 +24,8 @@ namespace OpenXcom
 {
 
 class TextButton;
+class TextList;
+class ToggleTextButton;
 class Window;
 class Text;
 class RuleEvent;
@@ -37,9 +39,12 @@ class GeoscapeEventState : public State
 private:
 	Window *_window;
 	Text *_txtTitle, *_txtMessage;
+	Text *_txtItem, *_txtQuantity;
 	TextButton *_btnOk;
 	TextButton* _btnAnswerOne, * _btnAnswerTwo, * _btnAnswerThree, * _btnAnswerFour;
 	Text* _txtTooltip;
+	ToggleTextButton *_btnItemsArriving;
+	TextList *_lstTransfers;
 
 	std::string _researchName;
 	std::string _bonusResearchName;
@@ -81,6 +86,8 @@ public:
 	void txtTooltipIn(Action* action);
 	/// Handler for hiding a mouseover tooltip
 	void txtTooltipOut(Action* action);
+	/// Handler for clicking the ItemsArriving button.
+	void btnItemsArrivingClick(Action *action);
 };
 
 class GeoscapeEventAnswerInfoState : public State

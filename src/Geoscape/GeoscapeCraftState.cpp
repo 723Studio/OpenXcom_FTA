@@ -82,7 +82,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	_txtDamage = new Text(80, 9, 164, offset_upper + 84);
 	_txtShield = new Text(80, 9, 164, offset_upper + 76);
 
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		_txtWeaponName[i] = new Text(130, 9, 32, offset_upper + 92 + 8*i);
 		_txtWeaponAmmo[i] = new Text(80, 9, 164, offset_upper + 92 + 8*i);
@@ -110,7 +110,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	add(_txtFuel, "text3", "geoCraft");
 	add(_txtDamage, "text3", "geoCraft");
 	add(_txtShield, "text3", "geoCraft");
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		add(_txtWeaponName[i], "text3", "geoCraft");
 		add(_txtWeaponAmmo[i], "text3", "geoCraft");
@@ -216,7 +216,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	_txtShield->setText(tr("STR_SHIELD").arg(Unicode::formatPercentage(_craft->getShieldPercentage())));
 	_txtShield->setVisible(_craft->getShieldCapacity() != 0);
 
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		const std::string &wName = _craft->getRules()->getWeaponSlotString(i);
 		if (wName.empty())

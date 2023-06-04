@@ -89,11 +89,11 @@ void MovingTarget::setDestination(Target *dest)
 	// Remove moving target from old destination's followers
 	if (_dest != 0)
 	{
-		for (std::vector<MovingTarget*>::iterator i = _dest->getFollowers()->begin(); i != _dest->getFollowers()->end(); ++i)
+		for (auto iter = _dest->getFollowers()->begin(); iter != _dest->getFollowers()->end(); ++iter)
 		{
-			if ((*i) == this)
+			if ((*iter) == this)
 			{
-				_dest->getFollowers()->erase(i);
+				_dest->getFollowers()->erase(iter);
 				break;
 			}
 		}
@@ -105,9 +105,9 @@ void MovingTarget::setDestination(Target *dest)
 		_dest->getFollowers()->push_back(this);
 	}
 	// Recalculate meeting point for any followers
-	for (std::vector<MovingTarget*>::iterator i = getFollowers()->begin(); i != getFollowers()->end(); ++i)
+	for (auto* mt : *getFollowers())
 	{
-		(*i)->resetMeetPoint();
+		mt->resetMeetPoint();
 	}
 	calculateSpeed();
 }
@@ -153,9 +153,9 @@ void MovingTarget::setSpeed(int speed)
 	_speed = speed;
 	_speedRadian = calculateRadianSpeed(_speed);
 	// Recalculate meeting point for any followers
-	for (std::vector<MovingTarget *>::iterator i = getFollowers()->begin(); i != getFollowers()->end(); ++i)
+	for (auto* mt : *getFollowers())
 	{
-		(*i)->resetMeetPoint();
+		mt->resetMeetPoint();
 	}
 	calculateSpeed();
 }

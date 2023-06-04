@@ -125,8 +125,7 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	_sortName->setX(_sortName->getX() + _txtType->getTextWidth() + 4);
 	_sortName->onMouseClick((ActionHandler)&SoldierArmorState::sortNameClick);
 
-	const auto &armors = _game->getMod()->getArmorsForSoldiers();
-	for (auto* a : armors)
+	for (auto* a : _game->getMod()->getArmorsForSoldiers())
 	{
 		if (a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
 			continue;
@@ -232,14 +231,14 @@ void SoldierArmorState::updateList()
 	_indices.clear();
 
 	int index = -1;
-	for (std::vector<ArmorItem>::const_iterator j = _armors.begin(); j != _armors.end(); ++j)
+	for (const auto& armorItem : _armors)
 	{
 		++index;
 
 		// quick search
 		if (!searchString.empty())
 		{
-			std::string armorName = (*j).name;
+			std::string armorName = armorItem.name;
 			Unicode::upperCase(armorName);
 			if (armorName.find(searchString) == std::string::npos)
 			{
@@ -247,7 +246,7 @@ void SoldierArmorState::updateList()
 			}
 		}
 
-		_lstArmor->addRow(2, (*j).name.c_str(), (*j).quantity.c_str());
+		_lstArmor->addRow(2, armorItem.name.c_str(), armorItem.quantity.c_str());
 		_indices.push_back(index);
 	}
 }
@@ -330,7 +329,7 @@ void SoldierArmorState::lstArmorClick(Action *)
 */
 void SoldierArmorState::lstArmorClickMiddle(Action *action)
 {
-	auto armor = _game->getMod()->getArmor(_armors[_indices[_lstArmor->getSelectedRow()]].type, true);
+	Armor* armor = _game->getMod()->getArmor(_armors[_indices[_lstArmor->getSelectedRow()]].type, true);
 	std::string articleId = armor->getUfopediaType();
 	Ufopaedia::openArticle(_game, articleId);
 }

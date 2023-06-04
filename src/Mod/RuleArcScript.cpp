@@ -50,7 +50,7 @@ void RuleArcScript::load(const YAML::Node& node)
 	{
 		load(parent);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_sequentialArcs = node["sequentialArcs"].as<std::vector<std::string> >(_sequentialArcs);
 	if (node["randomArcs"])
 	{

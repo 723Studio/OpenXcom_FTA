@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include "../fmath.h"
 #include <SDL_gfxPrimitives.h>
 #include "Map.h"
 #include "Camera.h"
@@ -41,7 +42,6 @@
 #include "BriefingState.h"
 #include "ExtendedBattlescapeLinksState.h"
 #include "../lodepng.h"
-#include "../fmath.h"
 #include "../Geoscape/SelectMusicTrackState.h"
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
@@ -105,6 +105,8 @@ BattlescapeState::BattlescapeState() :
 	_autosave(0),
 	_numberOfDirectlyVisibleUnits(0), _numberOfEnemiesTotal(0), _numberOfEnemiesTotalPlusWounded(0)
 {
+	_save = _game->getSavedGame()->getSavedBattle();
+
 	std::fill_n(_visibleUnit, 10, (BattleUnit*)(0));
 
 	const int screenWidth = Options::baseXResolution;
@@ -214,7 +216,7 @@ BattlescapeState::BattlescapeState() :
 	_ftaUI = _game->getMod()->isFTAGame();
 
 	{
-		auto posX = (screenWidth - 32);
+		int posX = (screenWidth - 32);
 		for (auto& pos :  _posSpecialActions)
 		{
 			pos = posX;
@@ -262,7 +264,7 @@ BattlescapeState::BattlescapeState() :
 	_txtTooltip = new Text(300, 10, x + 2, y - 10);
 
 	// Palette transformations
-	auto enviro = _game->getSavedGame()->getSavedBattle()->getEnviroEffects();
+	auto* enviro = _save->getEnviroEffects();
 	if (enviro)
 	{
 		for (auto& change : enviro->getPaletteTransformations())
@@ -278,7 +280,7 @@ BattlescapeState::BattlescapeState() :
 	}
 
 	// Set palette
-	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
+	_save->setPaletteByDepth(this);
 
 	if (_game->getMod()->getInterface("battlescape")->getElement("pathfinding"))
 	{
@@ -301,7 +303,7 @@ BattlescapeState::BattlescapeState() :
 	}
 
 	// there is some cropping going on here, because the icons image is 320x200 while we only need the bottom of it.
-	auto crop = icons->getCrop();
+	SurfaceCrop crop = icons->getCrop();
 	crop.getCrop()->x = 0;
 	crop.getCrop()->y = 200 - iconsHeight;
 	crop.getCrop()->w = iconsWidth;
@@ -421,7 +423,6 @@ BattlescapeState::BattlescapeState() :
 	_btnMMB->initSurfaces(_game->getMod()->getSurfaceSet("Touch")->getFrame(9));
 
 	// Set up objects
-	_save = _game->getSavedGame()->getSavedBattle();
 	_map->init();
 	_map->onMouseOver((ActionHandler)&BattlescapeState::mapOver);
 	_map->onMousePress((ActionHandler)&BattlescapeState::mapPress);
@@ -743,7 +744,7 @@ void BattlescapeState::resetPalettes()
 {
 	if (_paletteResetNeeded)
 	{
-		for (auto origPal : _game->getMod()->getPalettes())
+		for (auto& origPal : _game->getMod()->getPalettes())
 		{
 			if (origPal.first.find("PAL_") == 0)
 			{
@@ -769,8 +770,8 @@ void BattlescapeState::init()
 		_paletteResetRequested = false;
 
 		resetPalettes();
-		_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
-		for (auto surface : _surfaces)
+		_save->setPaletteByDepth(this);
+		for (auto* surface : _surfaces)
 		{
 			surface->setPalette(_palette);
 		}
@@ -1236,9 +1237,9 @@ void BattlescapeState::btnInventoryClick(Action *)
 #if 0
 	if (_save->getDebugMode())
 	{
-		for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
-			if ((*i)->getOriginalFaction() == _save->getSide())
-				(*i)->prepareNewTurn();
+		for (auto* bi : *_save->getUnits())
+			if (bi->getOriginalFaction() == _save->getSide())
+				bi->prepareNewTurn();
 		updateSoldierInfo();
 	}
 #endif
@@ -1519,7 +1520,7 @@ void BattlescapeState::btnLeftHandItemClick(Action *action)
 		if (!leftHandItem)
 		{
 			auto typesToCheck = {BT_MELEE, BT_PSIAMP, BT_FIREARM, BT_MEDIKIT, BT_SCANNER, BT_MINDPROBE};
-			for (auto &type : typesToCheck)
+			for (auto& type : typesToCheck)
 			{
 				leftHandItem = _save->getSelectedUnit()->getSpecialWeapon(type);
 				if (leftHandItem && leftHandItem->getRules()->isSpecialUsingEmptyHand())
@@ -1567,7 +1568,7 @@ void BattlescapeState::btnRightHandItemClick(Action *action)
 		if (!rightHandItem)
 		{
 			auto typesToCheck = {BT_MELEE, BT_PSIAMP, BT_FIREARM, BT_MEDIKIT, BT_SCANNER, BT_MINDPROBE};
-			for (auto &type : typesToCheck)
+			for (auto& type : typesToCheck)
 			{
 				rightHandItem = _save->getSelectedUnit()->getSpecialWeapon(type);
 				if (rightHandItem && rightHandItem->getRules()->isSpecialUsingEmptyHand())
@@ -1928,7 +1929,7 @@ void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<Num
 		{
 			if (item->isAmmoVisibleForSlot(slot))
 			{
-				auto ammo = item->getAmmoForSlot(slot);
+				BattleItem* ammo = item->getAmmoForSlot(slot);
 				if (!ammo)
 				{
 					ammoText[slot]->setVisible(true);
@@ -2083,7 +2084,7 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 		{
 			// show rank (vanilla behaviour)
 			SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
-			auto frame = texture->getFrame(soldier->getRankSpriteBattlescape());
+			auto* frame = texture->getFrame(soldier->getRankSpriteBattlescape());
 			if (frame)
 			{
 				frame->blitNShade(_rank, 0, 0);
@@ -2117,9 +2118,9 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 			{
 				for (const auto& layer : soldier->getArmorLayers(customArmor))
 				{
-					auto surf = _game->getMod()->getSurface(layer, true);
+					Surface* surf = _game->getMod()->getSurface(layer, true);
 
-					auto crop = surf->getCrop();
+					SurfaceCrop crop = surf->getCrop();
 					crop.getCrop()->x = soldier->getRules()->getAvatarOffsetX();
 					crop.getCrop()->y = soldier->getRules()->getAvatarOffsetY();
 					crop.getCrop()->w = 26;
@@ -2165,7 +2166,7 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 				}
 
 				// crop
-				auto crop = surf->getCrop();
+				SurfaceCrop crop = surf->getCrop();
 				crop.getCrop()->x = soldier->getRules()->getAvatarOffsetX();
 				crop.getCrop()->y = soldier->getRules()->getAvatarOffsetY();
 				crop.getCrop()->w = 26;
@@ -2208,12 +2209,13 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 
 	// go through all units visible to the selected soldier (or other unit, e.g. mind-controlled enemy)
 	int j = 0;
-	for (std::vector<BattleUnit*>::iterator i = battleUnit->getVisibleUnits()->begin(); i != battleUnit->getVisibleUnits()->end() && j < VISIBLE_MAX; ++i)
+	for (auto* bu : *battleUnit->getVisibleUnits())
 	{
+		if (j >= VISIBLE_MAX) break; // loop finished
 		_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[j]);
 		_btnVisibleUnit[j]->setVisible(true);
 		_numVisibleUnit[j]->setVisible(true);
-		_visibleUnit[j] = (*i);
+		_visibleUnit[j] = bu;
 		++j;
 	}
 
@@ -2221,16 +2223,17 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 	_numberOfDirectlyVisibleUnits = j;
 
 	// go through all units on the map
-	for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end() && j < VISIBLE_MAX; ++i)
+	for (auto* bu : *_save->getUnits())
 	{
+		if (j >= VISIBLE_MAX) break; // loop finished
 		// check if they are hostile and visible (by any friendly unit)
-		if ((*i)->getOriginalFaction() == FACTION_HOSTILE && !(*i)->isOut() && (*i)->getVisible())
+		if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut() && bu->getVisible())
 		{
 			bool alreadyShown = false;
 			// check if they are not already shown (e.g. because we see them directly)
-			for (std::vector<BattleUnit*>::iterator k = battleUnit->getVisibleUnits()->begin(); k != battleUnit->getVisibleUnits()->end(); ++k)
+			for (auto* bu2 : *battleUnit->getVisibleUnits())
 			{
-				if ((*i)->getId() == (*k)->getId())
+				if (bu->getId() == bu2->getId())
 				{
 					alreadyShown = true;
 				}
@@ -2240,7 +2243,7 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 				_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[j]);
 				_btnVisibleUnit[j]->setVisible(true);
 				_numVisibleUnit[j]->setVisible(true);
-				_visibleUnit[j] = (*i);
+				_visibleUnit[j] = bu;
 				++j;
 			}
 		}
@@ -2251,14 +2254,15 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 
 	{
 		// go through all wounded units under player's control (incl. unconscious)
-		for (std::vector<BattleUnit*>::iterator i = _battleGame->getSave()->getUnits()->begin(); i != _battleGame->getSave()->getUnits()->end() && j < VISIBLE_MAX; ++i)
+		for (auto* bu : *_save->getUnits())
 		{
-			if ((*i)->getFaction() == FACTION_PLAYER && (*i)->getStatus() != STATUS_DEAD && !(*i)->isIgnored() && (*i)->getFatalWounds() > 0 && (*i)->indicatorsAreEnabled())
+			if (j >= VISIBLE_MAX) break; // loop finished
+			if (bu->getFaction() == FACTION_PLAYER && bu->getStatus() != STATUS_DEAD && !bu->isIgnored() && bu->getFatalWounds() > 0 && bu->indicatorsAreEnabled())
 			{
 				_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX]);
 				_btnVisibleUnit[j]->setVisible(true);
 				_numVisibleUnit[j]->setVisible(true);
-				_visibleUnit[j] = (*i);
+				_visibleUnit[j] = bu;
 				++j;
 			}
 		}
@@ -2269,29 +2273,31 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 
 	{
 		// first show all stunned allies with negative health regen (usually caused by high stun level)
-		for (std::vector<BattleUnit*>::iterator i = _battleGame->getSave()->getUnits()->begin(); i != _battleGame->getSave()->getUnits()->end() && j < VISIBLE_MAX; ++i)
+		for (auto* bu : *_save->getUnits())
 		{
-			if ((*i)->getOriginalFaction() == FACTION_PLAYER && (*i)->getStatus() == STATUS_UNCONSCIOUS && (*i)->hasNegativeHealthRegen() && (*i)->indicatorsAreEnabled())
+			if (j >= VISIBLE_MAX) break; // loop finished
+			if (bu->getOriginalFaction() == FACTION_PLAYER && bu->getStatus() == STATUS_UNCONSCIOUS && bu->hasNegativeHealthRegen() && bu->indicatorsAreEnabled())
 			{
 				_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX + 1]);
 				_btnVisibleUnit[j]->setVisible(true);
 				_numVisibleUnit[j]->setVisible(true);
-				_visibleUnit[j] = (*i);
+				_visibleUnit[j] = bu;
 				++j;
 			}
 		}
 
 		// then show all standing units under player's control with high stun level
-		for (std::vector<BattleUnit*>::iterator i = _battleGame->getSave()->getUnits()->begin(); i != _battleGame->getSave()->getUnits()->end() && j < VISIBLE_MAX; ++i)
+		for (auto* bu : *_save->getUnits())
 		{
-			if ((*i)->getFaction() == FACTION_PLAYER && !((*i)->isOut()) && (*i)->getHealth() > 0 && (*i)->indicatorsAreEnabled())
+			if (j >= VISIBLE_MAX) break; // loop finished
+			if (bu->getFaction() == FACTION_PLAYER && !(bu->isOut()) && bu->getHealth() > 0 && bu->indicatorsAreEnabled())
 			{
-				if ((*i)->getStunlevel() * 100 / (*i)->getHealth() >= 75)
+				if (bu->getStunlevel() * 100 / bu->getHealth() >= 75)
 				{
 					_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX+1]);
 					_btnVisibleUnit[j]->setVisible(true);
 					_numVisibleUnit[j]->setVisible(true);
-					_visibleUnit[j] = (*i);
+					_visibleUnit[j] = bu;
 					++j;
 				}
 			}
@@ -2332,7 +2338,7 @@ void BattlescapeState::updateUiButton(const BattleUnit *battleUnit)
 	bool hasPsiWeapon = psiWeapon != 0 && psiWeapon != specialWeapon;
 
 	bool hasSkills = false;
-	auto soldier = battleUnit->getGeoscapeSoldier();
+	Soldier* soldier = battleUnit->getGeoscapeSoldier();
 	if (soldier)
 	{
 		hasSkills = soldier->getRules()->isSkillMenuDefined();
@@ -2472,7 +2478,7 @@ void BattlescapeState::handleItemClick(BattleItem *item, bool middleClick)
 	{
 		if (middleClick)
 		{
-			std::string articleId = item->getRules()->getType();
+			std::string articleId = item->getRules()->getUfopediaType();
 			Ufopaedia::openArticle(_game, articleId);
 		}
 		else
@@ -2617,7 +2623,7 @@ std::string BattlescapeState::getMeleeDamagePreview(BattleUnit *actor, BattleIte
 	{
 		int totalDamage = 0;
 		const RuleDamageType *dmgType;
-		auto attack = BattleActionAttack::GetBeforeShoot(BA_HIT, actor, weapon);
+		BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(BA_HIT, actor, weapon);
 		if (weapon->getRules()->getBattleType() == BT_MELEE)
 		{
 			totalDamage += weapon->getRules()->getPowerBonus(attack);
@@ -2736,14 +2742,14 @@ inline void BattlescapeState::handle(Action *action)
 					ss << tr("STR_NO_EXPERIENCE_YET");
 					ss << "\n\n";
 					bool first = true;
-					for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+					for (auto* bu : *_save->getUnits())
 					{
-						if ((*i)->getOriginalFaction() == FACTION_PLAYER && !(*i)->isOut())
+						if (bu->getOriginalFaction() == FACTION_PLAYER && !bu->isOut())
 						{
-							if ((*i)->getGeoscapeSoldier() && !(*i)->hasGainedAnyExperience())
+							if (bu->getGeoscapeSoldier() && !bu->hasGainedAnyExperience())
 							{
 								if (!first) ss << ", ";
-								ss << (*i)->getName(_game->getLanguage());
+								ss << bu->getName(_game->getLanguage());
 								first = false;
 							}
 						}
@@ -2762,7 +2768,7 @@ inline void BattlescapeState::handle(Action *action)
 
 						BattleItem *specialWeapon = 0;
 						auto typesToCheck = {BT_MELEE, BT_PSIAMP, BT_FIREARM, BT_MEDIKIT, BT_SCANNER, BT_MINDPROBE};
-						for (auto &type : typesToCheck)
+						for (auto& type : typesToCheck)
 						{
 							specialWeapon = actor->getSpecialWeapon(type);
 							if (specialWeapon && specialWeapon->getRules()->isSpecialUsingEmptyHand())
@@ -2816,7 +2822,7 @@ inline void BattlescapeState::handle(Action *action)
 					{
 						Position newPos;
 						_map->getSelectorPosition(&newPos);
-						if (_save->getBattleGame()->getTileEngine()->isPositionValidForUnit(newPos, unit))
+						if (_save->getTileEngine()->isPositionValidForUnit(newPos, unit))
 						{
 							debug("Beam me up Scotty");
 							_save->getPathfinding()->removePreview();
@@ -2827,7 +2833,7 @@ inline void BattlescapeState::handle(Action *action)
 							//free refresh as bonus
 							unit->updateUnitStats(true, false);
 							_save->getTileEngine()->calculateLighting(LL_UNITS);
-							_save->getBattleGame()->handleState();
+							_battleGame->handleState();
 							updateSoldierInfo(true);
 						}
 					}
@@ -2881,21 +2887,21 @@ inline void BattlescapeState::handle(Action *action)
 								// "ctrl-k" - kill all aliens
 								debug("Influenza bacterium dispersed");
 							}
-							for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+							for (auto* bu : *_save->getUnits())
 							{
-								if (unitUnderTheCursor && unitUnderTheCursor == (*i))
+								if (unitUnderTheCursor && unitUnderTheCursor == bu)
 								{
 									// kill (ctrl-alt-k) or stun (ctrl-alt-j) all aliens EXCEPT the one under the cursor
 									continue;
 								}
-								if ((*i)->getOriginalFaction() == FACTION_HOSTILE && !(*i)->isOut())
+								if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
 								{
-									(*i)->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_AP), _save, { });
+									bu->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_AP), _save, { });
 								}
 							}
 						}
-						_save->getBattleGame()->checkForCasualties(nullptr, BattleActionAttack{}, true, false);
-						_save->getBattleGame()->handleState();
+						_battleGame->checkForCasualties(nullptr, BattleActionAttack{}, true, false);
+						_battleGame->handleState();
 					}
 					// f11 - voxel map dump
 					else if (key == SDLK_F11)
@@ -3008,6 +3014,8 @@ void BattlescapeState::saveAIMap()
 					case FACTION_NEUTRAL:
 						characterRGBA(img, r.x, r.y, (tilePos.z - z) ? 'c' : 'C', 255, 127, 127, 0xff);
 						break;
+					case FACTION_NONE:
+						break;
 					}
 					break;
 				}
@@ -3068,13 +3076,13 @@ void BattlescapeState::saveVoxelView()
 	if (bu==0) return; //no unit selected
 	std::vector<Position> _trajectory;
 
-	double ang_x,ang_y;
+	double ang_x, ang_y;
 	bool black;
 	Tile *tile = 0;
 	std::ostringstream ss;
 	std::vector<unsigned char> image;
 	int test;
-	Position originVoxel = getBattleGame()->getTileEngine()->getSightOriginVoxel(bu);
+	Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
 
 	Position targetVoxel,hitPos;
 	double dist = 0;
@@ -3083,14 +3091,22 @@ void BattlescapeState::saveVoxelView()
 	image.clear();
 	for (int y = -256+32; y < 256+32; ++y)
 	{
-		ang_y = (((double)y)/640*M_PI+M_PI/2);
+		ang_y = (((double)y) / 640 * M_PI + M_PI / 2);
 		for (int x = -256; x < 256; ++x)
 		{
-			ang_x = ((double)x/1024)*M_PI+dir;
-
-			targetVoxel.x=originVoxel.x + (int)(-sin(ang_x)*1024*sin(ang_y));
-			targetVoxel.y=originVoxel.y + (int)(cos(ang_x)*1024*sin(ang_y));
-			targetVoxel.z=originVoxel.z + (int)(cos(ang_y)*1024);
+			if (Options::oxceFirstPersonViewFisheyeProjection)
+			{
+				ang_x = ((double)x / 1024) * M_PI + dir;
+				targetVoxel.x = originVoxel.x + (int)(-sin(ang_x) * 1024 * sin(ang_y));
+				targetVoxel.y = originVoxel.y + (int)(cos(ang_x) * 1024 * sin(ang_y));
+				targetVoxel.z = originVoxel.z + (int)(cos(ang_y) * 1024);
+			}
+			else
+			{
+				targetVoxel.x = originVoxel.x + (int)(-sin(dir + M_PI_2) * (x * 4) + cos(dir + M_PI_2) * (1024 + 512));
+				targetVoxel.y = originVoxel.y + (int)(cos(dir + M_PI_2) * (x * 4) + sin(dir + M_PI_2) * (1024 + 512));
+				targetVoxel.z = originVoxel.z + -y * 4;
+			}
 
 			_trajectory.clear();
 			test = _save->getTileEngine()->calculateLineVoxel(originVoxel, targetVoxel, false, &_trajectory, bu, nullptr, !_debug) +1;
@@ -3322,11 +3338,11 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 	AlienDeployment *ruleDeploy = _game->getMod()->getDeployment(_save->getMissionType());
 	if (!ruleDeploy)
 	{
-		for (std::vector<Ufo*>::iterator ufo =_game->getSavedGame()->getUfos()->begin(); ufo != _game->getSavedGame()->getUfos()->end(); ++ufo)
+		for (auto* ufo : *_game->getSavedGame()->getUfos())
 		{
-			if ((*ufo)->isInBattlescape())
+			if (ufo->isInBattlescape())
 			{
-				std::string ufoMissionName = (*ufo)->getRules()->getType();
+				std::string ufoMissionName = ufo->getRules()->getType();
 				if (!_save->getAlienCustomMission().empty())
 				{
 					// fake underwater UFO
@@ -3373,10 +3389,10 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 			_game->getSavedGame()->setBattleGame(0);
 
 			// unmark all craft and all bases (current craft would be enough, but better safe than sorry)
-			for (auto* base : *_game->getSavedGame()->getBases())
+			for (auto* xbase : *_game->getSavedGame()->getBases())
 			{
-				base->setInBattlescape(false);
-				for (auto* craft : *base->getCrafts())
+				xbase->setInBattlescape(false);
+				for (auto* craft : *xbase->getCrafts())
 				{
 					craft->setInBattlescape(false);
 				}
@@ -3583,32 +3599,31 @@ void BattlescapeState::txtTooltipInExtra(Action *action, bool leftHand, bool spe
 			return;
 		}
 
-		auto weaponRule = weapon->getRules();
+		auto* weaponRule = weapon->getRules();
 
 		// find the target unit
 		if (weaponRule->getBattleType() == BT_MEDIKIT)
 		{
 			BattleUnit *targetUnit = 0;
-			TileEngine *tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
-			const std::vector<BattleUnit*> *units = _game->getSavedGame()->getSavedBattle()->getUnits();
 
 			// search for target on the ground
 			bool onGround = false;
-			for (std::vector<BattleUnit*>::const_iterator i = units->begin(); i != units->end() && !targetUnit; ++i)
+			for (auto* bu : *_save->getUnits())
 			{
+				if (targetUnit) break; // loop finished
 				// we can heal a unit that is at the same position, unconscious and healable(=woundable)
-				if ((*i)->getPosition() == selectedUnit->getPosition() && *i != selectedUnit && (*i)->getStatus() == STATUS_UNCONSCIOUS && ((*i)->isWoundable() || weaponRule->getAllowTargetImmune()) && weaponRule->getAllowTargetGround())
+				if (bu->getPosition() == selectedUnit->getPosition() && bu != selectedUnit && bu->getStatus() == STATUS_UNCONSCIOUS && (bu->isWoundable() || weaponRule->getAllowTargetImmune()) && weaponRule->getAllowTargetGround())
 				{
-					if ((*i)->isBigUnit())
+					if (bu->isBigUnit())
 					{
 						// never EVER apply anything to 2x2 units on the ground
 						continue;
 					}
-					if ((weaponRule->getAllowTargetFriendGround() && (*i)->getOriginalFaction() == FACTION_PLAYER) ||
-						(weaponRule->getAllowTargetNeutralGround() && (*i)->getOriginalFaction() == FACTION_NEUTRAL) ||
-						(weaponRule->getAllowTargetHostileGround() && (*i)->getOriginalFaction() == FACTION_HOSTILE))
+					if ((weaponRule->getAllowTargetFriendGround() && bu->getOriginalFaction() == FACTION_PLAYER) ||
+						(weaponRule->getAllowTargetNeutralGround() && bu->getOriginalFaction() == FACTION_NEUTRAL) ||
+						(weaponRule->getAllowTargetHostileGround() && bu->getOriginalFaction() == FACTION_HOSTILE))
 					{
-						targetUnit = *i;
+						targetUnit = bu;
 						onGround = true;
 					}
 				}
@@ -3618,13 +3633,13 @@ void BattlescapeState::txtTooltipInExtra(Action *action, bool leftHand, bool spe
 			if (!targetUnit && weaponRule->getAllowTargetStanding())
 			{
 				Position dest;
-				if (tileEngine->validMeleeRange(
+				if (_save->getTileEngine()->validMeleeRange(
 					selectedUnit->getPosition(),
 					selectedUnit->getDirection(),
 					selectedUnit,
 					0, &dest, false))
 				{
-					Tile *tile = _game->getSavedGame()->getSavedBattle()->getTile(dest);
+					Tile *tile = _save->getTile(dest);
 					if (tile != 0 && tile->getUnit() && (tile->getUnit()->isWoundable() || weaponRule->getAllowTargetImmune()))
 					{
 						if ((weaponRule->getAllowTargetFriendStanding() && tile->getUnit()->getOriginalFaction() == FACTION_PLAYER) ||
@@ -3817,20 +3832,20 @@ void BattlescapeState::resize(int &dX, int &dY)
 	_map->getCamera()->resize();
 	_map->getCamera()->jumpXY(dX/2, dY/2);
 
-	for (std::vector<Surface*>::const_iterator i = _surfaces.begin(); i != _surfaces.end(); ++i)
+	for (auto* surf : _surfaces)
 	{
-		if (*i == _btnCtrl || *i == _btnAlt || *i == _btnShift || *i == _btnRMB || *i == _btnMMB)
+		if (surf == _btnCtrl || surf == _btnAlt || surf == _btnShift || surf == _btnRMB || surf == _btnMMB)
 		{
 			continue;
 		}
-		if (*i != _map && (*i) != _btnPsi && *i != _btnLaunch && *i != _btnSpecial && *i != _btnSkills && *i != _txtDebug)
+		if (surf != _map && surf != _btnPsi && surf != _btnLaunch && surf != _btnSpecial && surf != _btnSkills && surf != _txtDebug)
 		{
-			(*i)->setX((*i)->getX() + dX / 2);
-			(*i)->setY((*i)->getY() + dY);
+			surf->setX(surf->getX() + dX / 2);
+			surf->setY(surf->getY() + dY);
 		}
-		else if (*i != _map && *i != _txtDebug)
+		else if (surf != _map && surf != _txtDebug)
 		{
-			(*i)->setX((*i)->getX() + dX);
+			surf->setX(surf->getX() + dX);
 		}
 	}
 

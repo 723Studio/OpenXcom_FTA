@@ -112,7 +112,7 @@ struct AreaSubset
 		return !(*this == other);
 	}
 
-	static inline void intersection_range(DataType& begin_a, DataType& end_a, const DataType& begin_b, const DataType& end_b)
+	static inline void intersectionRange(DataType& begin_a, DataType& end_a, const DataType& begin_b, const DataType& end_b)
 	{
 		if (begin_a >= end_b || begin_b >= end_a)
 		{
@@ -125,28 +125,66 @@ struct AreaSubset
 			end_a = std::min(end_a, end_b);
 		}
 	}
+	static inline void boundBoxRange(DataType& begin_a, DataType& end_a, const DataType& begin_b, const DataType& end_b)
+	{
+		if (begin_b < end_b && begin_a < end_a)
+		{
+			begin_a = std::min(begin_a, begin_b);
+			end_a = std::max(end_a, end_b);
+		}
+		else if (begin_b < end_b)
+		{
+			begin_a = begin_b;
+			end_a = end_b;
+		}
+		else
+		{
+			//keep first range same
+		}
+	}
+
 	static inline AreaSubset intersection(const AreaSubset& a, const AreaSubset& b)
 	{
 		AreaSubset ret = a;
-		intersection_range(ret.beg_x, ret.end_x, b.beg_x, b.end_x);
-		intersection_range(ret.beg_y, ret.end_y, b.beg_y, b.end_y);
+		intersectionRange(ret.beg_x, ret.end_x, b.beg_x, b.end_x);
+		intersectionRange(ret.beg_y, ret.end_y, b.beg_y, b.end_y);
 		return ret;
 	}
-	static inline AreaSubset intersection(const AreaSubset& a, const AreaSubset& b,  const AreaSubset& c)
+	static inline AreaSubset intersection(const AreaSubset& a, const AreaSubset& b, const AreaSubset& c)
 	{
-		AreaSubset ret =  intersection(a, b);
-		intersection_range(ret.beg_x, ret.end_x, c.beg_x, c.end_x);
-		intersection_range(ret.beg_y, ret.end_y, c.beg_y, c.end_y);
+		AreaSubset ret = intersection(a, b);
+		intersectionRange(ret.beg_x, ret.end_x, c.beg_x, c.end_x);
+		intersectionRange(ret.beg_y, ret.end_y, c.beg_y, c.end_y);
 		return ret;
 	}
-	static inline AreaSubset intersection(const AreaSubset& a, const AreaSubset& b,  const AreaSubset& c, const AreaSubset& d)
+	static inline AreaSubset intersection(const AreaSubset& a, const AreaSubset& b, const AreaSubset& c, const AreaSubset& d)
 	{
-		AreaSubset ret =  intersection(a, b, c);
-		intersection_range(ret.beg_x, ret.end_x, d.beg_x, d.end_x);
-		intersection_range(ret.beg_y, ret.end_y, d.beg_y, d.end_y);
+		AreaSubset ret = intersection(a, b, c);
+		intersectionRange(ret.beg_x, ret.end_x, d.beg_x, d.end_x);
+		intersectionRange(ret.beg_y, ret.end_y, d.beg_y, d.end_y);
+		return ret;
+	}
+	static inline AreaSubset boundBox(const AreaSubset& a, const AreaSubset& b)
+	{
+		AreaSubset ret = a;
+		boundBoxRange(ret.beg_x, ret.end_x, b.beg_x, b.end_x);
+		boundBoxRange(ret.beg_y, ret.end_y, b.beg_y, b.end_y);
+		return ret;
+	}
+	static inline AreaSubset boundBox(const AreaSubset& a, const AreaSubset& b, const AreaSubset& c)
+	{
+		AreaSubset ret = boundBox(a, b);
+		boundBoxRange(ret.beg_x, ret.end_x, c.beg_x, c.end_x);
+		boundBoxRange(ret.beg_y, ret.end_y, c.beg_y, c.end_y);
 		return ret;
 	}
 
+
+
+	static inline AreaSubset fromPoint(int x, int y)
+	{
+		return AreaSubset{ 1, 1 }.offset(x, y);
+	}
 };
 
 /**

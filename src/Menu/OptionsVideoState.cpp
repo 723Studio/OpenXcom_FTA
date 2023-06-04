@@ -217,11 +217,10 @@ OptionsVideoState::OptionsVideoState(OptionsOrigin origin) : OptionsBaseState(or
 
 #ifndef __NO_OPENGL
 	std::vector<std::string> filters;
-	for (auto f: FileMap::filterFiles(FileMap::getVFolderContents(GL_FOLDER), GL_EXT)) { filters.push_back(f); }
+	for (const auto& f : FileMap::filterFiles(FileMap::getVFolderContents(GL_FOLDER), GL_EXT)) { filters.push_back(f); }
 	std::sort(filters.begin(), filters.end(), Unicode::naturalCompare);
-	for (auto i = filters.begin(); i != filters.end(); ++i)
+	for (const auto& file : filters)
 	{
-		std::string file = (*i);
 		std::string path = GL_FOLDER + file;
 		std::string name = file.substr(0, file.length() - GL_EXT.length() - 1) + GL_STRING;
 		filterNames.push_back(ucWords(name));

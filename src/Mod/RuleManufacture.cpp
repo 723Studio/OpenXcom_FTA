@@ -31,7 +31,8 @@ namespace OpenXcom
  * Creates a new Manufacture.
  * @param name The unique manufacture name.
  */
-RuleManufacture::RuleManufacture(const std::string &name) : _name(name), _space(0), _time(0), _cost(0), _refund(false), _producedCraft(0), _listOrder(0)
+RuleManufacture::RuleManufacture(const std::string &name, int listOrder) :
+	_name(name), _space(0), _time(0), _cost(0), _points(0), _refund(false), _producedCraft(0), _listOrder(listOrder)
 {
 	_producedItemsNames[name] = 1;
 }
@@ -41,20 +42,13 @@ RuleManufacture::RuleManufacture(const std::string &name) : _name(name), _space(
  * @param node YAML node.
  * @param listOrder The list weight for this manufacture.
  */
-void RuleManufacture::load(const YAML::Node &node, Mod* mod, int listOrder)
+void RuleManufacture::load(const YAML::Node &node, Mod* mod)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(parent, mod);
 	}
-	bool same = (1 == _producedItemsNames.size() && _name == _producedItemsNames.begin()->first);
-	_name = node["name"].as<std::string>(_name);
-	if (same)
-	{
-		int value = _producedItemsNames.begin()->second;
-		_producedItemsNames.clear();
-		_producedItemsNames[_name] = value;
-	}
+
 	_category = node["category"].as<std::string>(_category);
 	mod->loadUnorderedNames(_name, _requiresName, node["requires"]);
 	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
@@ -62,6 +56,7 @@ void RuleManufacture::load(const YAML::Node &node, Mod* mod, int listOrder)
 	_time = node["time"].as<int>(_time);
 	_cost = node["cost"].as<int>(_cost);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
+	_points = node["points"].as<int>(_points);
 	_refund = node["refund"].as<bool>(_refund);
 	mod->loadUnorderedNamesToInt(_name, _requiredItemsNames, node["requiredItems"]);
 	mod->loadUnorderedNamesToInt(_name, _producedItemsNames, node["producedItems"]);
@@ -73,10 +68,6 @@ void RuleManufacture::load(const YAML::Node &node, Mod* mod, int listOrder)
 		_spawnedSoldier = node["spawnedSoldier"];
 	}
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 }
 
 /**
@@ -115,8 +106,8 @@ void RuleManufacture::afterLoad(const Mod* mod)
 	}
 	for (auto& i : _requiredItemsNames)
 	{
-		auto itemRule = mod->getItem(i.first, false);
-		auto craftRule = mod->getCraft(i.first, false);
+		auto* itemRule = mod->getItem(i.first, false);
+		auto* craftRule = mod->getCraft(i.first, false);
 		if (itemRule)
 		{
 			_requiredItems[itemRule] = i.second;
@@ -159,9 +150,9 @@ void RuleManufacture::breakDown(const Mod* mod, const RuleManufactureShortcut* r
 	// 1. init temp variables
 	std::map<const RuleItem*, int> tempRequiredItems = _requiredItems;
 	std::map<const RuleResearch*, bool> tempRequires;
-	for (auto& r : _requires)
+	for (auto* r : _requires)
 		tempRequires[r] = true;
-	auto tempRequiresBaseFunc = _requiresBaseFunc;
+	RuleBaseFacilityFunctions tempRequiresBaseFunc = _requiresBaseFunc;
 
 	// 2. break down iteratively
 	bool doneSomething = false;
@@ -184,7 +175,7 @@ void RuleManufacture::breakDown(const Mod* mod, const RuleManufactureShortcut* r
 
 				for (auto& ri : projectRule->getRequiredItems())
 					tempRequiredItems[ri.first] += count * ri.second;
-				for (auto& r : projectRule->getRequirements())
+				for (auto* r : projectRule->getRequirements())
 					tempRequires[r] = true;
 
 				tempRequiresBaseFunc |= projectRule->getRequireBaseFunc();

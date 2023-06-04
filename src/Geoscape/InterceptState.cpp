@@ -168,37 +168,37 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 	_selCrafts.clear();
 
 	int row = 0;
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if (_base != 0 && (*i) != _base)
+		if (_base != 0 && xbase != _base)
 			continue;
-		for (std::vector<Craft*>::iterator j = (*i)->getCrafts()->begin(); j != (*i)->getCrafts()->end(); ++j)
+		for (auto* xcraft : *xbase->getCrafts())
 		{
 			std::ostringstream ssStatus;
-			std::string status = (*j)->getStatus();
+			std::string status = xcraft->getStatus();
 
-			bool hasEnoughPilots = (*j)->arePilotsOnboard();
+			bool hasEnoughPilots = xcraft->arePilotsOnboard();
 			if (status == "STR_OUT")
 			{
 				// QoL: let's give the player a bit more info
-				if ((*j)->getDestination() == 0 || (*j)->getIsAutoPatrolling())
+				if (xcraft->getDestination() == 0 || xcraft->getIsAutoPatrolling())
 				{
 					ssStatus << tr("STR_PATROLLING");
 				}
-				else if ((*j)->getLowFuel() || (*j)->getMissionComplete() || (*j)->getDestination() == (Target*)(*j)->getBase())
+				else if (xcraft->getLowFuel() || xcraft->getMissionComplete() || xcraft->getDestination() == (Target*)xcraft->getBase())
 				{
 					ssStatus << tr("STR_RETURNING");
 					//ssStatus << tr("STR_RETURNING_TO_BASE"); // vanilla craft info
 				}
 				else
 				{
-					Ufo *u = dynamic_cast<Ufo*>((*j)->getDestination());
-					MissionSite *m = dynamic_cast<MissionSite*>((*j)->getDestination());
-					AlienBase *b = dynamic_cast<AlienBase*>((*j)->getDestination());
-					Craft *craftTarget = dynamic_cast<Craft*>((*j)->getDestination());
+					Ufo *u = dynamic_cast<Ufo*>(xcraft->getDestination());
+					MissionSite *m = dynamic_cast<MissionSite*>(xcraft->getDestination());
+					AlienBase *b = dynamic_cast<AlienBase*>(xcraft->getDestination());
+					Craft *craftTarget = dynamic_cast<Craft*>(xcraft->getDestination());
 					if (u != 0)
 					{
-						if ((*j)->isInDogfight())
+						if (xcraft->isInDogfight())
 						{
 							ssStatus << tr("STR_TAILING_UFO");
 						}
@@ -241,20 +241,20 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 			{
 				unsigned int maintenanceHours = 0;
 
-				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REPAIRS")
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || xcraft->getStatus() == "STR_REPAIRS")
 				{
-					maintenanceHours += (*j)->calcRepairTime();
+					maintenanceHours += xcraft->calcRepairTime();
 				}
-				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REFUELLING")
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || xcraft->getStatus() == "STR_REFUELLING")
 				{
-					maintenanceHours += (*j)->calcRefuelTime();
+					maintenanceHours += xcraft->calcRefuelTime();
 				}
-				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || (*j)->getStatus() == "STR_REARMING")
+				if (Options::oxceInterceptGuiMaintenanceTimeHidden == 2 || xcraft->getStatus() == "STR_REARMING")
 				{
 					// Note: if the craft is already refueling, don't count any potential rearm time (can be > 0 if ammo is missing)
-					if ((*j)->getStatus() != "STR_REFUELLING")
+					if (xcraft->getStatus() != "STR_REFUELLING")
 					{
-						maintenanceHours += (*j)->calcRearmTime();
+						maintenanceHours += xcraft->calcRearmTime();
 					}
 				}
 
@@ -280,34 +280,34 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 			}
 
 			std::ostringstream ss;
-			if ((*j)->getNumWeapons() > 0)
+			if (xcraft->getNumWeapons() > 0)
 			{
-				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumWeapons() << Unicode::TOK_COLOR_FLIP;
+				ss << Unicode::TOK_COLOR_FLIP << xcraft->getNumWeapons() << Unicode::TOK_COLOR_FLIP;
 			}
 			else
 			{
 				ss << 0;
 			}
 			ss << "/";
-			if ((*j)->getNumTotalSoldiers() > 0)
+			if (xcraft->getNumTotalSoldiers() > 0)
 			{
-				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumTotalSoldiers() << Unicode::TOK_COLOR_FLIP;
+				ss << Unicode::TOK_COLOR_FLIP << xcraft->getNumTotalSoldiers() << Unicode::TOK_COLOR_FLIP;
 			}
 			else
 			{
 				ss << 0;
 			}
 			ss << "/";
-			if ((*j)->getNumTotalVehicles() > 0)
+			if (xcraft->getNumTotalVehicles() > 0)
 			{
-				ss << Unicode::TOK_COLOR_FLIP << (*j)->getNumTotalVehicles() << Unicode::TOK_COLOR_FLIP;
+				ss << Unicode::TOK_COLOR_FLIP << xcraft->getNumTotalVehicles() << Unicode::TOK_COLOR_FLIP;
 			}
 			else
 			{
 				ss << 0;
 			}
-			_crafts.push_back(*j);
-			_lstCrafts->addRow(4, (*j)->getName(_game->getLanguage()).c_str(), ssStatus.str().c_str(), (*i)->getName().c_str(), ss.str().c_str());
+			_crafts.push_back(xcraft);
+			_lstCrafts->addRow(4, xcraft->getName(_game->getLanguage()).c_str(), ssStatus.str().c_str(), xbase->getName().c_str(), ss.str().c_str());
 			if (hasEnoughPilots && status == "STR_READY")
 			{
 				_lstCrafts->setCellColor(row, 1, _lstCrafts->getSecondaryColor());
@@ -377,7 +377,7 @@ void InterceptState::lstCraftsLeftClick(Action *)
 		// remove craft from the wing to be created when it is already included
 		else if (( std::find(_selCrafts.begin(), _selCrafts.end(), (Craft*) c) != _selCrafts.end()))
 		{
-			std::vector<Craft *>::const_iterator craftIt = std::find (_selCrafts.begin(), _selCrafts.end(), (Craft*) c);
+			auto craftIt = std::find (_selCrafts.begin(), _selCrafts.end(), (Craft*) c);
 			_selCrafts.erase(craftIt);
 			_lstCrafts->setCellColor(row, 0, _lstCrafts->getColor());
  		}
@@ -425,15 +425,15 @@ void InterceptState::lstCraftsRightClick(Action *)
 		_game->popState();
 
 		bool found = false;
-		for (auto &bi : *_game->getSavedGame()->getBases())
+		for (auto* xbase : *_game->getSavedGame()->getBases())
 		{
-			if (_base != 0 && bi != _base)
+			if (_base != 0 && xbase != _base)
 				continue;
-			for (size_t ci = 0; ci < bi->getCrafts()->size(); ++ci)
+			for (size_t ci = 0; ci < xbase->getCrafts()->size(); ++ci)
 			{
-				if (c == bi->getCrafts()->at(ci))
+				if (c == xbase->getCrafts()->at(ci))
 				{
-					_game->pushState(new CraftInfoState(bi, ci));
+					_game->pushState(new CraftInfoState(xbase, ci));
 					found = true;
 					break;
 				}

@@ -37,7 +37,7 @@ void RuleEvent::load(const YAML::Node &node)
 	{
 		load(parent);
 	}
-	_name = node["name"].as<std::string>(_name);
+
 	_description = node["description"].as<std::string>(_description);
 	_background = node["background"].as<std::string>(_background);
 	_music = node["music"].as<std::string>(_music);

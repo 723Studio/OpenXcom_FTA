@@ -92,24 +92,24 @@ TransferBaseState::TransferBaseState(Base *base, DebriefingState *debriefingStat
 	_lstBases->onMouseClick((ActionHandler)&TransferBaseState::lstBasesClick);
 
 	int row = 0;
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if ((*i) != _base)
+		if (xbase != _base)
 		{
 			// Get area
 			std::string area;
-			for (std::vector<Region*>::iterator j = _game->getSavedGame()->getRegions()->begin(); j != _game->getSavedGame()->getRegions()->end(); ++j)
+			for (const auto* region : *_game->getSavedGame()->getRegions())
 			{
-				if ((*j)->getRules()->insideRegion((*i)->getLongitude(), (*i)->getLatitude()))
+				if (region->getRules()->insideRegion(xbase->getLongitude(), xbase->getLatitude()))
 				{
-					area = tr((*j)->getRules()->getType());
+					area = tr(region->getRules()->getType());
 					break;
 				}
 			}
 			std::ostringstream ss;
 			ss << Unicode::TOK_COLOR_FLIP << area;
-			_lstBases->addRow(2, (*i)->getName().c_str(), ss.str().c_str());
-			_bases.push_back(*i);
+			_lstBases->addRow(2, xbase->getName().c_str(), ss.str().c_str());
+			_bases.push_back(xbase);
 			row++;
 		}
 	}

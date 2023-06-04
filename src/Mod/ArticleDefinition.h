@@ -126,7 +126,7 @@ namespace OpenXcom
 
 		int getAmmoSlotPrevUsageForPage(size_t page) const
 		{
-			auto ammoSlot = getAmmoSlotForPage(page);
+			int ammoSlot = getAmmoSlotForPage(page);
 			int used = 0;
 			for (size_t i = 0; i < page; ++i)
 			{

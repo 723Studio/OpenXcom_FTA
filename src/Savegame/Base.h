@@ -25,6 +25,10 @@
 #include <cmath>
 #include "../Mod/RuleBaseFacilityFunctions.h"
 
+#ifndef BASEFACILITIESITERATOR
+#define BASEFACILITIESITERATOR std::vector<BaseFacility*>::iterator
+#endif
+
 namespace OpenXcom
 {
 
@@ -319,9 +323,9 @@ public:
 	/// Destroys all disconnected facilities in the base.
 	void destroyDisconnectedFacilities();
 	/// Gets a sorted list of the facilities(=iterators) NOT connected to the Access Lift.
-	std::list<std::vector<BaseFacility*>::iterator> getDisconnectedFacilities(BaseFacility *remove);
+	std::list<BASEFACILITIESITERATOR> getDisconnectedFacilities(BaseFacility *remove);
 	/// destroy a facility and deal with the side effects.
-	void destroyFacility(std::vector<BaseFacility*>::iterator facility);
+	void destroyFacility(BASEFACILITIESITERATOR facility);
 	void cleanupPrisons(int prisonType);
 	/// Cleans up the defenses vector and optionally reclaims the tanks and their ammo.
 	void cleanupDefenses(bool reclaimItems);

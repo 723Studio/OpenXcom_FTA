@@ -337,9 +337,9 @@ struct BattleUnitStatistics
 	/// Duplicate entry check
 	bool duplicateEntry(UnitStatus status, int id) const
 	{
-		for (std::vector<BattleUnitKills*>::const_iterator i = kills.begin(); i != kills.end(); ++i)
+		for (const auto* buk : kills)
 		{
-			if ((*i)->id == id && (*i)->status == status)
+			if (buk->id == id && buk->status == status)
 			{
 				return true;
 			}
@@ -350,9 +350,9 @@ struct BattleUnitStatistics
 	/// Friendly fire check
 	bool hasFriendlyFired() const
 	{
-		for (std::vector<BattleUnitKills*>::const_iterator i = kills.begin(); i != kills.end(); ++i)
+		for (const auto* buk : kills)
 		{
-			if ((*i)->faction == FACTION_PLAYER)
+			if (buk->faction == FACTION_PLAYER)
 				return true;
 		}
 		return false;
@@ -396,8 +396,10 @@ struct BattleUnitStatistics
 		if (wasUnconcious) node["wasUnconcious"] = wasUnconcious;
 		if (!kills.empty())
 		{
-			for (std::vector<BattleUnitKills*>::const_iterator i = kills.begin(); i != kills.end(); ++i)
-				node["kills"].push_back((*i)->save());
+			for (const auto* buk : kills)
+			{
+				node["kills"].push_back(buk->save());
+			}
 		}
 		if (shotAtCounter) node["shotAtCounter"] = shotAtCounter;
 		if (hitCounter) node["hitCounter"] = hitCounter;

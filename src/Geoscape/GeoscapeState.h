@@ -98,6 +98,7 @@ public:
 	void baseHunting();
 	/// Trigger whenever 30 minutes pass.
 	void time30Minutes();
+	void ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCrafts);
 	/// Trigger whenever 1 hour passes.
 	void time1Hour();
 	/// Trigger whenever 1 day passes.
@@ -124,6 +125,8 @@ public:
 	void btnGlobalProductionClick(Action *action);
 	/// Handler for clicking the [GlobalResearch] key.
 	void btnGlobalResearchClick(Action *action);
+	/// Handler for clicking the [GlobalAlienContainment] key.
+	void btnGlobalAlienContainmentClick(Action *action);
 	/// Handler for clicking the [DogfightExperience] key.
 	void btnDogfightExperienceClick(Action *action);
 	/// Handler for clicking the [Debug] key.

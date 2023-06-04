@@ -72,24 +72,24 @@ std::string Texture::getRandomTerrain(Target *target) const
 {
 	int totalWeight = 0;
 	std::map<int, std::string> possibilities;
-	for (std::vector<TerrainCriteria>::const_iterator i = _terrain.begin(); i != _terrain.end(); ++i)
+	for (const auto& terrainCrit : _terrain)
 	{
-		if (i->weight > 0 &&
-			target->getLongitude() >= i->lonMin && target->getLongitude() < i->lonMax &&
-			target->getLatitude() >= i->latMin && target->getLatitude() < i->latMax)
+		if (terrainCrit.weight > 0 &&
+			target->getLongitude() >= terrainCrit.lonMin && target->getLongitude() < terrainCrit.lonMax &&
+			target->getLatitude() >= terrainCrit.latMin && target->getLatitude() < terrainCrit.latMax)
 		{
-			totalWeight += i->weight;
-			possibilities[totalWeight] = i->name;
+			totalWeight += terrainCrit.weight;
+			possibilities[totalWeight] = terrainCrit.name;
 		}
 	}
 	if (totalWeight > 0)
 	{
 		int pick = RNG::generate(1, totalWeight);
-		for (std::map<int, std::string>::const_iterator i = possibilities.begin(); i != possibilities.end(); ++i)
+		for (const auto& pair : possibilities)
 		{
-			if (pick <= i->first)
+			if (pick <= pair.first)
 			{
-				return i->second;
+				return pair.second;
 			}
 		}
 	}
@@ -116,22 +116,22 @@ std::string Texture::getRandomBaseTerrain(Target *target) const
 {
 	int totalWeight = 0;
 	std::map<int, std::string> possibilities;
-	for (std::vector<TerrainCriteria>::const_iterator i = _baseTerrain.begin(); i != _baseTerrain.end(); ++i)
+	for (const auto& terrainCrit : _baseTerrain)
 	{
-		if (i->weight > 0 &&
-			target->getLongitude() >= i->lonMin && target->getLongitude() < i->lonMax &&
-			target->getLatitude() >= i->latMin && target->getLatitude() < i->latMax)
+		if (terrainCrit.weight > 0 &&
+			target->getLongitude() >= terrainCrit.lonMin && target->getLongitude() < terrainCrit.lonMax &&
+			target->getLatitude() >= terrainCrit.latMin && target->getLatitude() < terrainCrit.latMax)
 		{
-			totalWeight += i->weight;
-			possibilities[totalWeight] = i->name;
+			totalWeight += terrainCrit.weight;
+			possibilities[totalWeight] = terrainCrit.name;
 		}
 	}
 	int pick = RNG::generate(1, totalWeight);
-	for (std::map<int, std::string>::const_iterator i = possibilities.begin(); i != possibilities.end(); ++i)
+	for (const auto& pair : possibilities)
 	{
-		if (pick <= i->first)
+		if (pick <= pair.first)
 		{
-			return i->second;
+			return pair.second;
 		}
 	}
 	return "";
@@ -158,32 +158,29 @@ std::string Texture::getRandomDeployment() const
 	{
 		return "";
 	}
-
-	std::map<std::string, int>::const_iterator i = _deployments.begin();
-
 	if (_deployments.size() == 1)
 	{
-		return i->first;
+		return _deployments.begin()->first;
 	}
-	int totalWeight = 0;
 
-	for (; i != _deployments.end(); ++i)
+	int totalWeight = 0;
+	for (const auto& pair : _deployments)
 	{
-		totalWeight += i->second;
+		totalWeight += pair.second;
 	}
 
 	if (totalWeight >= 1)
 	{
 		int pick = RNG::generate(1, totalWeight);
-		for (i = _deployments.begin(); i != _deployments.end(); ++i)
+		for (const auto& pair : _deployments)
 		{
-			if (pick <= i->second)
+			if (pick <= pair.second)
 			{
-				return i->first;
+				return pair.first;
 			}
 			else
 			{
-				pick -= i->second;
+				pick -= pair.second;
 			}
 		}
 	}

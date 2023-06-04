@@ -82,6 +82,11 @@ public:
 	{
 		return Position(x / TileXY, y / TileXY, z / TileZ);
 	}
+	/// Clip voxel values to position relative to containing tile.
+	constexpr Position clipVoxel() const
+	{
+		return Position(x % TileXY, y % TileXY, z % TileZ);
+	}
 
 	/// Calculates the distance in 3d.
 	static float distance(Position pos1, Position pos2)
@@ -135,6 +140,19 @@ inline std::ostream& operator<<(std::ostream& out, const Position& pos)
 }
 
 typedef Position Vector3i;
+
+
+/**
+ * Helper class storing last two position from Projectile
+ */
+struct LastPositions
+{
+	LastPositions(Position l) : last{l}, before{l} {};
+	LastPositions(Position l, Position b) : last{l}, before{b} {};
+
+	Position last;
+	Position before;
+};
 
 }
 

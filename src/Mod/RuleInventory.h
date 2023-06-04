@@ -66,11 +66,11 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 
 	/// Creates a blank inventory ruleset.
-	RuleInventory(const std::string &id);
+	RuleInventory(const std::string &id, int listOrder);
 	/// Cleans up the inventory ruleset.
 	~RuleInventory();
 	/// Loads inventory data from YAML.
-	void load(const YAML::Node& node, int listOrder);
+	void load(const YAML::Node& node);
 	/// Gets the inventory's id.
 	const std::string& getId() const;
 	/// Gets the X position of the inventory.

@@ -325,17 +325,20 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		// sort by list order
 		std::sort(_projects.begin(), _projects.end(), [&](RuleResearch* a, RuleResearch* b) { return a->getListOrder() < b->getListOrder(); });
 	}
-	std::vector<RuleResearch*>::iterator it = _projects.begin();
+	auto researchRuleIt = _projects.begin();
+	RuleResearch* rule = nullptr;
 	int row = 0;
 	bool hasUnseen = false;
-	while (it != _projects.end())
+	while (researchRuleIt != _projects.end())
 	{
+		rule = (*researchRuleIt);
+
 		// filter
 		if (_btnShowOnlyNew->getPressed() || selectedSort == 3)
 		{
-			if (!_game->getSavedGame()->isResearchRuleStatusNew((*it)->getName()))
+			if (!_game->getSavedGame()->isResearchRuleStatusNew(rule->getName()))
 			{
-				it = _projects.erase(it);
+				researchRuleIt = _projects.erase(researchRuleIt);
 				continue;
 			}
 		}
@@ -343,11 +346,11 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		// quick search
 		if (!searchString.empty())
 		{
-			std::string projectName = tr((*it)->getName());
+			std::string projectName = tr(rule->getName());
 			Unicode::upperCase(projectName);
 			if (projectName.find(searchString) == std::string::npos)
 			{
-				it = _projects.erase(it);
+				researchRuleIt = _projects.erase(researchRuleIt);
 				continue;
 			}
 		}
@@ -366,33 +369,33 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		// Summary:
 		//  - it would be possible to remove this condition, but more refactoring would be needed
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
-		if ((*it)->getRequirements().empty())
+		if (rule->getRequirements().empty())
 		{
 			if (!_ftaUi)
 			{
-				_lstResearch->addRow(1, tr((*it)->getName()).c_str());
+				_lstResearch->addRow(1, tr(rule->getName()).c_str());
 			}
 			else
 			{
-				_lstResearch->addRow(2, tr((*it)->getName()).c_str(), getProjectCategory(*it).c_str());
+				_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule).c_str());
 			}
 			
 			if (markAllAsSeen)
 			{
 				// mark all (new) research items as normal
-				_game->getSavedGame()->setResearchRuleStatus((*it)->getName(), RuleResearch::RESEARCH_STATUS_NORMAL);
+				_game->getSavedGame()->setResearchRuleStatus(rule->getName(), RuleResearch::RESEARCH_STATUS_NORMAL);
 			}
-			else if (_game->getSavedGame()->isResearchRuleStatusNew((*it)->getName()))
+			else if (_game->getSavedGame()->isResearchRuleStatusNew(rule->getName()))
 			{
 				_lstResearch->setRowColor(row, _colorNew);
 				hasUnseen = true;
 			}
 			row++;
-			++it;
+			++researchRuleIt;
 		}
 		else
 		{
-			it = _projects.erase(it);
+			researchRuleIt = _projects.erase(researchRuleIt);
 		}
 	}
 

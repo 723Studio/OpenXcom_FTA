@@ -142,76 +142,76 @@ void MCDPatch::load(const YAML::Node &node)
  */
 void MCDPatch::modifyData(MapDataSet *dataSet) const
 {
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _bigWalls.begin(); i != _bigWalls.end(); ++i)
+	for (const auto& pair : _bigWalls)
 	{
-		dataSet->getObject(i->first)->setBigWall(i->second);
+		dataSet->getObject(pair.first)->setBigWall(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _TUWalks.begin(); i != _TUWalks.end(); ++i)
+	for (const auto& pair : _TUWalks)
 	{
-		dataSet->getObject(i->first)->setTUWalk(i->second);
+		dataSet->getObject(pair.first)->setTUWalk(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _TUFlys.begin(); i != _TUFlys.end(); ++i)
+	for (const auto& pair : _TUFlys)
 	{
-		dataSet->getObject(i->first)->setTUFly(i->second);
+		dataSet->getObject(pair.first)->setTUFly(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _TUSlides.begin(); i != _TUSlides.end(); ++i)
+	for (const auto& pair : _TUSlides)
 	{
-		dataSet->getObject(i->first)->setTUSlide(i->second);
+		dataSet->getObject(pair.first)->setTUSlide(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _deathTiles.begin(); i != _deathTiles.end(); ++i)
+	for (const auto& pair : _deathTiles)
 	{
-		dataSet->getObject(i->first)->setDieMCD(i->second);
+		dataSet->getObject(pair.first)->setDieMCD(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _terrainHeight.begin(); i != _terrainHeight.end(); ++i)
+	for (const auto& pair : _terrainHeight)
 	{
-		dataSet->getObject(i->first)->setTerrainLevel(i->second);
+		dataSet->getObject(pair.first)->setTerrainLevel(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _specialTypes.begin(); i != _specialTypes.end(); ++i)
+	for (const auto& pair : _specialTypes)
 	{
-		dataSet->getObject(i->first)->setSpecialType(i->second, dataSet->getObject(i->first)->getObjectType());
+		dataSet->getObject(pair.first)->setSpecialType(pair.second, dataSet->getObject(pair.first)->getObjectType());
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _explosives.begin(); i != _explosives.end(); ++i)
+	for (const auto& pair : _explosives)
 	{
-		dataSet->getObject(i->first)->setExplosive(i->second);
+		dataSet->getObject(pair.first)->setExplosive(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _armors.begin(); i != _armors.end(); ++i)
+	for (const auto& pair : _armors)
 	{
-		dataSet->getObject(i->first)->setArmor(i->second);
+		dataSet->getObject(pair.first)->setArmor(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _flammabilities.begin(); i != _flammabilities.end(); ++i)
+	for (const auto& pair : _flammabilities)
 	{
-		dataSet->getObject(i->first)->setFlammable(i->second);
+		dataSet->getObject(pair.first)->setFlammable(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _fuels.begin(); i != _fuels.end(); ++i)
+	for (const auto& pair : _fuels)
 	{
-		dataSet->getObject(i->first)->setFuel(i->second);
+		dataSet->getObject(pair.first)->setFuel(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _HEBlocks.begin(); i != _HEBlocks.end(); ++i)
+	for (const auto& pair : _HEBlocks)
 	{
-		dataSet->getObject(i->first)->setHEBlock(i->second);
+		dataSet->getObject(pair.first)->setHEBlock(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _footstepSounds.begin(); i != _footstepSounds.end(); ++i)
+	for (const auto& pair : _footstepSounds)
 	{
-		dataSet->getObject(i->first)->setFootstepSound(i->second);
+		dataSet->getObject(pair.first)->setFootstepSound(pair.second);
 	}
-	for (std::vector<std::pair<size_t, int> >::const_iterator i = _objectTypes.begin(); i != _objectTypes.end(); ++i)
+	for (const auto& pair : _objectTypes)
 	{
-		dataSet->getObject(i->first)->setObjectType((TilePart)i->second);
+		dataSet->getObject(pair.first)->setObjectType((TilePart)pair.second);
 	}
-	for (std::vector<std::pair<size_t, bool> >::const_iterator i = _noFloors.begin(); i != _noFloors.end(); ++i)
+	for (const auto& pair : _noFloors)
 	{
-		dataSet->getObject(i->first)->setNoFloor(i->second);
+		dataSet->getObject(pair.first)->setNoFloor(pair.second);
 	}
-	for (std::vector<std::pair<size_t, bool> >::const_iterator i = _stopLOSses.begin(); i != _stopLOSses.end(); ++i)
+	for (const auto& pair : _stopLOSses)
 	{
-		dataSet->getObject(i->first)->setStopLOS(i->second);
+		dataSet->getObject(pair.first)->setStopLOS(pair.second);
 	}
-	for (std::vector<std::pair<size_t, std::vector<int> > >::const_iterator i = _LOFTS.begin(); i != _LOFTS.end(); ++i)
+	for (const auto& pair : _LOFTS)
 	{
 		int layer = 0;
-		for (std::vector<int>::const_iterator j = i->second.begin(); j != i->second.end(); ++j)
+		for (int loft : pair.second)
 		{
-			dataSet->getObject(i->first)->setLoftID(*j, layer);
+			dataSet->getObject(pair.first)->setLoftID(loft, layer);
 			++layer;
 		}
 	}

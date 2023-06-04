@@ -110,8 +110,8 @@ namespace OpenXcom
 		{
 			if (pagesNode.IsSequence())
 			{
-				auto size = pagesNode.size();
-				auto firstCopy = _pages[0];
+				size_t size = pagesNode.size();
+				ArticlePage firstCopy = _pages[0];
 				_pages.resize(std::max(size_t{ 1 }, size), firstCopy); //all new pages are copy of old first page
 				for (size_t i = 0; i < size; ++i)
 				{

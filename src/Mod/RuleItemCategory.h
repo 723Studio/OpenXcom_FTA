@@ -37,11 +37,11 @@ private:
 	int _listOrder;
 public:
 	/// Creates a blank item category ruleset.
-	RuleItemCategory(const std::string &type);
+	RuleItemCategory(const std::string &type, int listOrder);
 	/// Cleans up the item category ruleset.
 	~RuleItemCategory();
 	/// Loads item data from YAML.
-	void load(const YAML::Node& node, Mod *mod, int listIndex);
+	void load(const YAML::Node& node, Mod *mod);
 	/// Gets the item category type.
 	const std::string &getType() const;
 	/// Gets the item category type, which should be used instead of this one.

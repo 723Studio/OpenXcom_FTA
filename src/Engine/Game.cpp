@@ -117,9 +117,9 @@ Game::~Game()
 	Sound::stop();
 	Music::stop();
 
-	for (std::list<State*>::iterator i = _states.begin(); i != _states.end(); ++i)
+	for (auto* state : _states)
 	{
-		delete *i;
+		delete state;
 	}
 
 	SDL_FreeCursor(SDL_GetCursor());
@@ -236,9 +236,9 @@ void Game::run()
 							int dX = 0, dY = 0;
 							Screen::updateScale(Options::battlescapeScale, Options::baseXBattlescape, Options::baseYBattlescape, false);
 							Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, false);
-							for (std::list<State*>::iterator i = _states.begin(); i != _states.end(); ++i)
+							for (auto* state : _states)
 							{
-								(*i)->resize(dX, dY);
+								state->resize(dX, dY);
 							}
 							_screen->resetDisplay();
 						}

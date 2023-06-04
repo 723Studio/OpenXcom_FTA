@@ -68,6 +68,7 @@
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
 #include "../Mod/AlienRace.h"
+#include "RankCount.h"
 
 namespace OpenXcom
 {
@@ -175,66 +176,66 @@ SavedGame::SavedGame() :
 SavedGame::~SavedGame()
 {
 	delete _time;
-	for (std::vector<Country*>::iterator i = _countries.begin(); i != _countries.end(); ++i)
+	for (auto* country : _countries)
 	{
-		delete *i;
+		delete country;
 	}
-	for (std::vector<Region*>::iterator i = _regions.begin(); i != _regions.end(); ++i)
+	for (auto* region : _regions)
 	{
-		delete *i;
+		delete region;
 	}
-	for (std::vector<Base*>::iterator i = _bases.begin(); i != _bases.end(); ++i)
+	for (auto* xbase : _bases)
 	{
-		delete *i;
+		delete xbase;
 	}
 	delete _previewBase;
-	for (std::vector<Ufo*>::iterator i = _ufos.begin(); i != _ufos.end(); ++i)
+	for (auto* ufo : _ufos)
 	{
-		delete *i;
+		delete ufo;
 	}
-	for (std::vector<Waypoint*>::iterator i = _waypoints.begin(); i != _waypoints.end(); ++i)
+	for (auto* wp : _waypoints)
 	{
-		delete *i;
+		delete wp;
 	}
-	for (std::vector<MissionSite*>::iterator i = _missionSites.begin(); i != _missionSites.end(); ++i)
+	for (auto* site : _missionSites)
 	{
-		delete *i;
+		delete site;
 	}
-	for (std::vector<AlienBase*>::iterator i = _alienBases.begin(); i != _alienBases.end(); ++i)
+	for (auto* ab : _alienBases)
 	{
-		delete *i;
+		delete ab;
 	}
 	delete _alienStrategy;
-	for (std::vector<AlienMission*>::iterator i = _activeMissions.begin(); i != _activeMissions.end(); ++i)
+	for (auto* am : _activeMissions)
 	{
-		delete *i;
+		delete am;
 	}
-	for (std::vector<GeoscapeEvent*>::iterator i = _geoscapeEvents.begin(); i != _geoscapeEvents.end(); ++i)
+	for (auto* ge : _geoscapeEvents)
 	{
-		delete *i;
+		delete ge;
 	}
-	for (std::vector<DiplomacyFaction*>::iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
+	for (auto* df : _diplomacyFactions)
 	{
-		delete* i;
+		delete df;
 	}
-	for (std::vector<Soldier*>::iterator i = _deadSoldiers.begin(); i != _deadSoldiers.end(); ++i)
+	for (auto* soldier : _deadSoldiers)
 	{
-		delete *i;
+		delete soldier;
 	}
 	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
-		for (std::vector<EquipmentLayoutItem*>::iterator i = _globalEquipmentLayout[j].begin(); i != _globalEquipmentLayout[j].end(); ++i)
+		for (auto* entry : _globalEquipmentLayout[j])
 		{
-			delete *i;
+			delete entry;
 		}
 	}
 	for (int j = 0; j < MAX_CRAFT_LOADOUT_TEMPLATES; ++j)
 	{
 		delete _globalCraftLoadout[j];
 	}
-	for (std::vector<MissionStatistics*>::iterator i = _missionStatistics.begin(); i != _missionStatistics.end(); ++i)
+	for (auto* ms : _missionStatistics)
 	{
-		delete *i;
+		delete ms;
 	}
 
 	delete _battleGame;
@@ -269,9 +270,9 @@ static bool _isCurrentGameType(const SaveInfo &saveInfo, const std::string &curM
 	}
 	else
 	{
-		for (std::vector<std::string>::const_iterator i = saveInfo.mods.begin(); i != saveInfo.mods.end(); ++i)
+		for (const auto& modName : saveInfo.mods)
 		{
-			std::string name = SavedGame::sanitizeModName(*i);
+			std::string name = SavedGame::sanitizeModName(modName);
 			if (name == curMaster)
 			{
 				matchMasterMod = true;
@@ -305,9 +306,9 @@ std::vector<SaveInfo> SavedGame::getList(Language *lang, bool autoquick)
 		auto asaves = CrossPlatform::getFolderContents(Options::getMasterUserFolder(), "asav");
 		saves.insert(saves.begin(), asaves.begin(), asaves.end());
 	}
-	for (auto i = saves.begin(); i != saves.end(); ++i)
+	for (const auto& tuple : saves)
 	{
-		auto filename = std::get<0>(*i);
+		const auto& filename = std::get<0>(tuple);
 		try
 		{
 			SaveInfo saveInfo = getSaveInfo(filename, lang);
@@ -452,6 +453,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_funds = doc["funds"].as< std::vector<int64_t> >(_funds);
 	_maintenance = doc["maintenance"].as< std::vector<int64_t> >(_maintenance);
 	_userNotes = doc["userNotes"].as< std::vector<std::string> >(_userNotes);
+	_geoscapeDebugLog = doc["geoscapeDebugLog"].as<std::vector<std::string> >(_geoscapeDebugLog);
 	_researchScores = doc["researchScores"].as< std::vector<int> >(_researchScores);
 	_incomes = doc["incomes"].as< std::vector<int64_t> >(_incomes);
 	_expenditures = doc["expenditures"].as< std::vector<int64_t> >(_expenditures);
@@ -470,7 +472,7 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		if (mod->getCountry(type))
 		{
 			Country *c = new Country(mod->getCountry(type), false);
-			c->load(*i);
+			c->load(*i, mod->getScriptGlobal());
 			_countries.push_back(c);
 		}
 		else
@@ -675,11 +677,11 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 			}
 
 			Base *base = 0;
-			for (std::vector<Base*>::iterator b = _bases.begin(); b != _bases.end(); ++b)
+			for (auto* xbase : _bases)
 			{
-				if (AreSame(lon, (*b)->getLongitude()) && AreSame(lat, (*b)->getLatitude()) && (*b)->getName() == baseName)
+				if (AreSame(lon, xbase->getLongitude()) && AreSame(lat, xbase->getLatitude()) && xbase->getName() == baseName)
 				{
-					base = (*b);
+					base = xbase;
 					break;
 				}
 			}
@@ -697,11 +699,11 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		if (uniqueUfoId > 0)
 		{
 			Ufo *ufo = 0;
-			for (std::vector<Ufo*>::iterator u = _ufos.begin(); u != _ufos.end(); ++u)
+			for (auto* u : _ufos)
 			{
-				if ((*u)->getUniqueId() == uniqueUfoId)
+				if (u->getUniqueId() == uniqueUfoId)
 				{
-					ufo = (*u);
+					ufo = u;
 					break;
 				}
 			}
@@ -869,11 +871,10 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	}
 
 	// only save mods that work with the current master
-	std::vector<const ModInfo*> activeMods = Options::getActiveMods();
 	std::vector<std::string> modsList;
-	for (std::vector<const ModInfo*>::const_iterator i = activeMods.begin(); i != activeMods.end(); ++i)
+	for (const auto* modInfo : Options::getActiveMods())
 	{
-		modsList.push_back((*i)->getId() + " ver: " + (*i)->getVersion());
+		modsList.push_back(modInfo->getId() + " ver: " + modInfo->getVersion());
 	}
 	brief["mods"] = modsList;
 	if (_ironman)
@@ -896,6 +897,20 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["funds"] = _funds;
 	node["maintenance"] = _maintenance;
 	node["userNotes"] = _userNotes;
+	if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
+	{
+		if (_geoscapeDebugLog.size() > (size_t)Options::oxceGeoscapeDebugLogMaxEntries)
+		{
+			for (size_t j = _geoscapeDebugLog.size() - (size_t)Options::oxceGeoscapeDebugLogMaxEntries; j < _geoscapeDebugLog.size(); ++j)
+			{
+				node["geoscapeDebugLog"].push_back(_geoscapeDebugLog[j]);
+			}
+		}
+		else
+		{
+			node["geoscapeDebugLog"] = _geoscapeDebugLog;
+		}
+	}
 	node["researchScores"] = _researchScores;
 	node["incomes"] = _incomes;
 	node["expenditures"] = _expenditures;
@@ -907,56 +922,56 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["globeLat"] = serializeDouble(_globeLat);
 	node["globeZoom"] = _globeZoom;
 	node["ids"] = _ids;
-	for (std::vector<Country*>::const_iterator i = _countries.begin(); i != _countries.end(); ++i)
+	for (const auto* country : _countries)
 	{
-		node["countries"].push_back((*i)->save());
+		node["countries"].push_back(country->save(mod->getScriptGlobal()));
 	}
-	for (std::vector<Region*>::const_iterator i = _regions.begin(); i != _regions.end(); ++i)
+	for (const auto* region : _regions)
 	{
-		node["regions"].push_back((*i)->save());
+		node["regions"].push_back(region->save());
 	}
-	for (std::vector<Base*>::const_iterator i = _bases.begin(); i != _bases.end(); ++i)
+	for (const auto* xbase : _bases)
 	{
-		node["bases"].push_back((*i)->save());
+		node["bases"].push_back(xbase->save());
 	}
-	for (std::vector<Waypoint*>::const_iterator i = _waypoints.begin(); i != _waypoints.end(); ++i)
+	for (const auto* wp : _waypoints)
 	{
-		node["waypoints"].push_back((*i)->save());
+		node["waypoints"].push_back(wp->save());
 	}
-	for (std::vector<MissionSite*>::const_iterator i = _missionSites.begin(); i != _missionSites.end(); ++i)
+	for (const auto* site : _missionSites)
 	{
-		node["missionSites"].push_back((*i)->save());
+		node["missionSites"].push_back(site->save());
 	}
 	// Alien bases must be saved before alien missions.
-	for (std::vector<AlienBase*>::const_iterator i = _alienBases.begin(); i != _alienBases.end(); ++i)
+	for (const auto* ab : _alienBases)
 	{
-		node["alienBases"].push_back((*i)->save());
+		node["alienBases"].push_back(ab->save());
 	}
 	// Missions must be saved before UFOs, but after alien bases.
-	for (std::vector<AlienMission *>::const_iterator i = _activeMissions.begin(); i != _activeMissions.end(); ++i)
+	for (const auto* am : _activeMissions)
 	{
-		node["alienMissions"].push_back((*i)->save());
+		node["alienMissions"].push_back(am->save());
 	}
 	// UFOs must be after missions
-	for (std::vector<Ufo*>::const_iterator i = _ufos.begin(); i != _ufos.end(); ++i)
+	for (const auto* ufo : _ufos)
 	{
-		node["ufos"].push_back((*i)->save(mod->getScriptGlobal(), getMonthsPassed() == -1));
+		node["ufos"].push_back(ufo->save(mod->getScriptGlobal(), getMonthsPassed() == -1));
 	}
-	for (std::vector<GeoscapeEvent *>::const_iterator i = _geoscapeEvents.begin(); i != _geoscapeEvents.end(); ++i)
+	for (const auto* ge : _geoscapeEvents)
 	{
-		node["geoscapeEvents"].push_back((*i)->save());
+		node["geoscapeEvents"].push_back(ge->save());
 	}
-	for (std::vector<DiplomacyFaction*>::const_iterator i = _diplomacyFactions.begin(); i != _diplomacyFactions.end(); ++i)
+	for (const auto* faction : _diplomacyFactions)
 	{
-		node["diplomacyFactions"].push_back((*i)->save());
+		node["diplomacyFactions"].push_back(faction->save());
 	}
-	for (std::vector<const RuleResearch *>::const_iterator i = _discovered.begin(); i != _discovered.end(); ++i)
+	for (const auto* research : _discovered)
 	{
-		node["discovered"].push_back((*i)->getName());
+		node["discovered"].push_back(research->getName());
 	}
-	for (std::vector<const RuleResearch *>::const_iterator i = _poppedResearch.begin(); i != _poppedResearch.end(); ++i)
+	for (const auto* research : _poppedResearch)
 	{
-		node["poppedResearch"].push_back((*i)->getName());
+		node["poppedResearch"].push_back(research->getName());
 	}
 	for (std::vector<std::string>::const_iterator i = _performedOperations.begin(); i != _performedOperations.end(); ++i)
 	{
@@ -972,9 +987,9 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["hiddenPurchaseItems"] = _hiddenPurchaseItemsMap;
 	node["customRuleCraftDeployments"] = _customRuleCraftDeployments;
 	node["alienStrategy"] = _alienStrategy->save();
-	for (std::vector<Soldier*>::const_iterator i = _deadSoldiers.begin(); i != _deadSoldiers.end(); ++i)
+	for (const auto* soldier : _deadSoldiers)
 	{
-		node["deadSoldiers"].push_back((*i)->save(mod->getScriptGlobal()));
+		node["deadSoldiers"].push_back(soldier->save(mod->getScriptGlobal()));
 	}
 	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
@@ -983,8 +998,8 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 		std::string key = oss.str();
 		if (!_globalEquipmentLayout[j].empty())
 		{
-			for (std::vector<EquipmentLayoutItem*>::const_iterator i = _globalEquipmentLayout[j].begin(); i != _globalEquipmentLayout[j].end(); ++i)
-				node[key].push_back((*i)->save());
+			for (const auto* entry : _globalEquipmentLayout[j])
+				node[key].push_back(entry->save());
 		}
 		std::ostringstream oss2;
 		oss2 << "globalEquipmentLayoutName" << j;
@@ -1020,19 +1035,19 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	}
 	if (Options::soldierDiaries)
 	{
-		for (std::vector<MissionStatistics*>::const_iterator i = _missionStatistics.begin(); i != _missionStatistics.end(); ++i)
+		for (const auto* ms : _missionStatistics)
 		{
-			node["missionStatistics"].push_back((*i)->save());
+			node["missionStatistics"].push_back(ms->save());
 		}
 	}
-	for (std::set<const RuleItem*>::const_iterator i = _autosales.begin(); i != _autosales.end(); ++i)
+	for (const auto* ruleItem : _autosales)
 	{
-		node["autoSales"].push_back((*i)->getName());
+		node["autoSales"].push_back(ruleItem->getName());
 	}
 	// snapshot of the user options (just for debugging purposes)
 	{
 		YAML::Node tmpNode;
-		for (auto& info : Options::getOptionInfo())
+		for (const auto& info : Options::getOptionInfo())
 		{
 			info.save(tmpNode);
 		}
@@ -1243,8 +1258,8 @@ void SavedGame::setGlobeZoom(int zoom)
  */
 void SavedGame::monthlyFunding()
 {
-	auto countryFunding = getCountryFunding();
-	auto baseMaintenance = getBaseMaintenance();
+	int countryFunding = getCountryFunding();
+	int baseMaintenance = getBaseMaintenance();
 	_funds.back() += (countryFunding - baseMaintenance);
 	_funds.push_back(_funds.back());
 	_maintenance.back() = baseMaintenance;
@@ -1318,7 +1333,7 @@ void SavedGame::setTime(const GameTime& time)
  */
 int SavedGame::getId(const std::string &name)
 {
-	std::map<std::string, int>::iterator i = _ids.find(name);
+	auto i = _ids.find(name);
 	if (i != _ids.end())
 	{
 		return i->second++;
@@ -1337,7 +1352,7 @@ int SavedGame::getId(const std::string &name)
  */
 int SavedGame::getLastId(const std::string& name)
 {
-	std::map<std::string, int>::iterator i = _ids.find(name);
+	auto i = _ids.find(name);
 	if (i != _ids.end())
 	{
 		return std::max(1, i->second - 1);
@@ -1356,7 +1371,7 @@ void SavedGame::increaseCustomCounter(const std::string& name)
 {
 	if (!name.empty())
 	{
-		std::map<std::string, int>::iterator i = _ids.find(name);
+		auto i = _ids.find(name);
 		if (i != _ids.end())
 		{
 			i->second++;
@@ -1376,7 +1391,7 @@ void SavedGame::decreaseCustomCounter(const std::string& name)
 {
 	if (!name.empty())
 	{
-		std::map<std::string, int>::iterator i = _ids.find(name);
+		auto i = _ids.find(name);
 		if (i != _ids.end())
 		{
 			// don't go below "zero" (which is saved as one)
@@ -1426,9 +1441,9 @@ std::vector<Country*> *SavedGame::getCountries()
 int SavedGame::getCountryFunding() const
 {
 	int total = 0;
-	for (std::vector<Country*>::const_iterator i = _countries.begin(); i != _countries.end(); ++i)
+	for (auto* country : _countries)
 	{
-		total += (*i)->getFunding().back();
+		total += country->getFunding().back();
 	}
 	return total;
 }
@@ -1493,9 +1508,9 @@ const std::vector<Base*> *SavedGame::getBases() const
 int SavedGame::getBaseMaintenance() const
 {
 	int total = 0;
-	for (std::vector<Base*>::const_iterator i = _bases.begin(); i != _bases.end(); ++i)
+	for (const auto* xbase : _bases)
 	{
-		total += (*i)->getMonthlyMaintenace();
+		total += xbase->getMonthlyMaintenace();
 	}
 	return total;
 }
@@ -1628,7 +1643,7 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 	if (!research->getGetOneFree().empty() || !research->getGetOneFreeProtected().empty())
 	{
 		std::vector<const RuleResearch*> possibilities;
-		for (auto& free : research->getGetOneFree())
+		for (auto* free : research->getGetOneFree())
 		{
 			if (isResearchRuleStatusDisabled(free->getName()))
 			{
@@ -1639,19 +1654,19 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 				possibilities.push_back(free);
 			}
 		}
-		for (auto& itMap : research->getGetOneFreeProtected())
+		for (auto& pair : research->getGetOneFreeProtected())
 		{
-			if (isResearched(itMap.first, false) || selectGetOneFree(itMap.first) != nullptr)
+			if (isResearched(pair.first, false) || selectGetOneFree(pair.first))
 			{
-				for (auto& itVector : itMap.second)
+				for (auto* research : pair.second)
 				{
-					if (isResearchRuleStatusDisabled(itVector->getName()))
+					if (isResearchRuleStatusDisabled(research->getName()))
 					{
 						continue; // skip disabled topics
 					}
-					if (!isResearched(itVector, false))
+					if (!isResearched(research, false))
 					{
-						possibilities.push_back(itVector);
+						possibilities.push_back(research);
 					}
 				}
 			}
@@ -1663,7 +1678,7 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 			{
 				pick = RNG::generate(0, possibilities.size() - 1);
 			}
-			auto ret = possibilities.at(pick);
+			auto* ret = possibilities.at(pick);
 			return ret;
 		}
 	}
@@ -1676,7 +1691,7 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
  */
 void SavedGame::removeDiscoveredResearch(const RuleResearch * research)
 {
-	std::vector<const RuleResearch*>::iterator r = std::find(_discovered.begin(), _discovered.end(), research);
+	auto r = std::find(_discovered.begin(), _discovered.end(), research);
 	if (r != _discovered.end())
 	{
 		_discovered.erase(r);
@@ -1703,7 +1718,7 @@ void SavedGame::addFinishedResearchSimple(const RuleResearch * research)
 void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * mod, Base * base, bool score)
 {
 	// process "re-enables"
-	for (auto& ree : research->getReenabled())
+	for (const auto* ree : research->getReenabled())
 	{
 		if (isResearchRuleStatusDisabled(ree->getName()))
 		{
@@ -1748,7 +1763,7 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 				_game->getMasterMind()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
 			}
 			// process "disables"
-			for (auto& dis : currentQueueItem->getDisabled())
+			for (const auto* dis : currentQueueItem->getDisabled())
 			{
 				removeDiscoveredResearch(dis); // unresearch
 				setResearchRuleStatus(dis->getName(), RuleResearch::RESEARCH_STATUS_DISABLED); // mark as permanently disabled
@@ -1785,16 +1800,16 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			}
 
 			// 3b. Iterate through all available projects and add zero-cost projects to the processing queue
-			for (const RuleResearch *itProjectToTest : availableResearch)
+			for (const RuleResearch* projectToTest : availableResearch)
 			{
 				// We are only interested in zero-cost projects!
-				if (itProjectToTest->getCost() == 0)
+				if (projectToTest->getCost() == 0)
 				{
 					// We are only interested in *new* projects (i.e. not processed or scheduled for processing yet)
 					bool isAlreadyInTheQueue = false;
-					for (const RuleResearch *itQueue : queue)
+					for (const RuleResearch* res : queue)
 					{
-						if (itQueue->getName() == itProjectToTest->getName())
+						if (res->getName() == projectToTest->getName())
 						{
 							isAlreadyInTheQueue = true;
 							break;
@@ -1803,19 +1818,19 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 
 					if (!isAlreadyInTheQueue)
 					{
-						if (itProjectToTest->getRequirements().empty())
+						if (projectToTest->getRequirements().empty())
 						{
 							// no additional checks for "unprotected" topics
-							queue.push_back(itProjectToTest);
+							queue.push_back(projectToTest);
 						}
 						else
 						{
 							// for "protected" topics, we need to check if the currentQueueItem can unlock it or not
-							for (auto& itUnlocks : currentQueueItem->getUnlocked())
+							for (const auto* unl : currentQueueItem->getUnlocked())
 							{
-								if (itProjectToTest == itUnlocks)
+								if (projectToTest == unl)
 								{
-									queue.push_back(itProjectToTest);
+									queue.push_back(projectToTest);
 									break;
 								}
 							}
@@ -1851,17 +1866,17 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 	// This list is used for topics that can be researched even if *not all* dependencies have been discovered yet (e.g. STR_ALIEN_ORIGINS)
 	// Note: all requirements of such topics *have to* be discovered though! This will be handled elsewhere.
 	std::vector<const RuleResearch *> unlocked;
-	for (const RuleResearch *research : _discovered)
+	for (const auto* research : _discovered)
 	{
-		for (auto& itUnlocked : research->getUnlocked())
+		for (const auto* unl : research->getUnlocked())
 		{
-			unlocked.push_back(itUnlocked);
+			unlocked.push_back(unl);
 		}
 		sortReserchVector(unlocked);
 	}
 
 	// Create a list of research topics available for research in the given base
-	for (auto& pair : mod->getResearchMap())
+	for (const auto& pair : mod->getResearchMap())
 	{
 		// This research topic is permanently disabled, ignore it!
 		if (isResearchRuleStatusDisabled(pair.first))
@@ -1985,15 +2000,12 @@ void SavedGame::getNewlyAvailableResearchProjects(std::vector<RuleResearch *> & 
  */
 void SavedGame::getAvailableProductions (std::vector<RuleManufacture *> & productions, const Mod * mod, Base * base, ManufacturingFilterType filter) const
 {
-	const std::vector<std::string> &items = mod->getManufactureList();
-	const std::vector<Production *> &baseProductions = base->getProductions();
-	auto baseFunc = base->getProvidedBaseFunc({});
+	const auto& baseProductions = base->getProductions();
+	RuleBaseFacilityFunctions baseFunc = base->getProvidedBaseFunc({});
 
-	for (std::vector<std::string>::const_iterator iter = items.begin();
-		iter != items.end();
-		++iter)
+	for (const auto& manuf : mod->getManufactureList())
 	{
-		RuleManufacture *m = mod->getManufacture(*iter);
+		RuleManufacture *m = mod->getManufacture(manuf);
 		if (!isResearched(m->getRequirements()))
 		{
 			continue;
@@ -2026,19 +2038,18 @@ void SavedGame::getAvailableProductions (std::vector<RuleManufacture *> & produc
  */
 void SavedGame::getDependableManufacture (std::vector<RuleManufacture *> & dependables, const RuleResearch *research, const Mod * mod, Base *) const
 {
-	const std::vector<std::string> &mans = mod->getManufactureList();
-	for (std::vector<std::string>::const_iterator iter = mans.begin(); iter != mans.end(); ++iter)
+	for (const auto& manuf : mod->getManufactureList())
 	{
 		// don't show previously unlocked (and seen!) manufacturing topics
-		std::map<std::string, int>::const_iterator i = _manufactureRuleStatus.find(*iter);
+		auto i = _manufactureRuleStatus.find(manuf);
 		if (i != _manufactureRuleStatus.end())
 		{
 			if (i->second != RuleManufacture::MANU_STATUS_NEW)
 				continue;
 		}
 
-		RuleManufacture *m = mod->getManufacture(*iter);
-		const auto &reqs = m->getRequirements();
+		RuleManufacture *m = mod->getManufacture(manuf);
+		const auto& reqs = m->getRequirements();
 		if (isResearched(reqs) && std::find(reqs.begin(), reqs.end(), research) != reqs.end())
 		{
 			dependables.push_back(m);
@@ -2054,12 +2065,11 @@ void SavedGame::getDependableManufacture (std::vector<RuleManufacture *> & depen
  */
 void SavedGame::getAvailableTransformations (std::vector<RuleSoldierTransformation *> & transformations, const Mod * mod, Base * base) const
 {
-	const std::vector<std::string> &items = mod->getSoldierTransformationList();
-	auto baseFunc = base->getProvidedBaseFunc({});
+	RuleBaseFacilityFunctions baseFunc = base->getProvidedBaseFunc({});
 
-	for (std::vector<std::string>::const_iterator iter = items.begin(); iter != items.end(); ++iter)
+	for (const auto& transformType : mod->getSoldierTransformationList())
 	{
-		RuleSoldierTransformation *m = mod->getSoldierTransformation(*iter);
+		RuleSoldierTransformation *m = mod->getSoldierTransformation(transformType);
 		if (!isResearched(m->getRequiredResearch()))
 		{
 			continue;
@@ -2081,15 +2091,14 @@ void SavedGame::getAvailableTransformations (std::vector<RuleSoldierTransformati
  */
 void SavedGame::getDependablePurchase(std::vector<RuleItem *> & dependables, const RuleResearch *research, const Mod * mod) const
 {
-	const std::vector<std::string> &itemlist = mod->getItemsList();
-	for (std::vector<std::string>::const_iterator iter = itemlist.begin(); iter != itemlist.end(); ++iter)
+	for (const auto& itemType : mod->getItemsList())
 	{
-		RuleItem *item = mod->getItem(*iter);
+		RuleItem *item = mod->getItem(itemType);
 		if (item->getBuyCost() != 0)
 		{
-			const std::vector<const RuleResearch *> &reqs = item->getRequirements();
+			const auto& reqs = item->getRequirements();
 			bool found = std::find(reqs.begin(), reqs.end(), research) != reqs.end();
-			const std::vector<const RuleResearch *> &reqsBuy = item->getBuyRequirements();
+			const auto& reqsBuy = item->getBuyRequirements();
 			bool foundBuy = std::find(reqsBuy.begin(), reqsBuy.end(), research) != reqsBuy.end();
 			if (found || foundBuy)
 			{
@@ -2110,13 +2119,12 @@ void SavedGame::getDependablePurchase(std::vector<RuleItem *> & dependables, con
  */
 void SavedGame::getDependableCraft(std::vector<RuleCraft *> & dependables, const RuleResearch *research, const Mod * mod) const
 {
-	const std::vector<std::string> &craftlist = mod->getCraftsList();
-	for (std::vector<std::string>::const_iterator iter = craftlist.begin(); iter != craftlist.end(); ++iter)
+	for (const auto& craftType : mod->getCraftsList())
 	{
-		RuleCraft *craftItem = mod->getCraft(*iter);
+		RuleCraft *craftItem = mod->getCraft(craftType);
 		if (craftItem->getBuyCost() != 0)
 		{
-			const std::vector<std::string> &reqs = craftItem->getRequirements();
+			const auto& reqs = craftItem->getRequirements();
 			if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
 			{
 				if (isResearched(craftItem->getRequirements()))
@@ -2136,11 +2144,10 @@ void SavedGame::getDependableCraft(std::vector<RuleCraft *> & dependables, const
  */
 void SavedGame::getDependableFacilities(std::vector<RuleBaseFacility *> & dependables, const RuleResearch *research, const Mod * mod) const
 {
-	const std::vector<std::string> &facilitylist = mod->getBaseFacilitiesList();
-	for (std::vector<std::string>::const_iterator iter = facilitylist.begin(); iter != facilitylist.end(); ++iter)
+	for (const auto& facType : mod->getBaseFacilitiesList())
 	{
-		RuleBaseFacility *facilityItem = mod->getBaseFacility(*iter);
-		const std::vector<std::string> &reqs = facilityItem->getRequirements();
+		RuleBaseFacility *facilityItem = mod->getBaseFacility(facType);
+		const auto& reqs = facilityItem->getRequirements();
 		if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
 		{
 			if (isResearched(facilityItem->getRequirements()))
@@ -2222,15 +2229,15 @@ bool SavedGame::hasUndiscoveredGetOneFree(const RuleResearch * r, bool checkOnly
 	else
 	{
 		// search through getOneFreeProtected topics too
-		for (auto& itMap : r->getGetOneFreeProtected())
+		for (const auto& pair : r->getGetOneFreeProtected())
 		{
-			if (checkOnlyAvailableTopics && !isResearched(itMap.first, false))
+			if (checkOnlyAvailableTopics && !isResearched(pair.first, false))
 			{
 				// skip this group, its prerequisite has not been discovered yet
 			}
 			else
 			{
-				if (!isResearched(itMap.second, false, true))
+				if (!isResearched(pair.second, false, true))
 				{
 					return true; // found something undiscovered (and NOT disabled) already, no need to search further
 				}
@@ -2249,7 +2256,7 @@ bool SavedGame::hasUndiscoveredGetOneFree(const RuleResearch * r, bool checkOnly
 bool SavedGame::hasUndiscoveredProtectedUnlock(const RuleResearch * r, const Mod * mod) const
 {
 	// Note: checking for not yet discovered unlocks protected by "requires" (which also implies cost = 0)
-	for (auto& unlock : r->getUnlocked())
+	for (const auto* unlock : r->getUnlocked())
 	{
 		if (isResearchRuleStatusDisabled(unlock->getName()))
 		{
@@ -2300,9 +2307,9 @@ bool SavedGame::isResearched(const std::vector<std::string> &research, bool cons
 	if (considerDebugMode && _debug)
 		return true;
 
-	for (const std::string &r : research)
+	for (const auto& res : research)
 	{
-		if (!haveReserchVector(_discovered, r))
+		if (!haveReserchVector(_discovered, res))
 		{
 			return false;
 		}
@@ -2328,22 +2335,22 @@ bool SavedGame::isResearched(const std::vector<const RuleResearch *> &research, 
 	if (skipDisabled)
 	{
 		// ignore all disabled topics (as if they didn't exist)
-		for (std::vector<const RuleResearch *>::iterator j = matches.begin(); j != matches.end();)
+		for (auto iter = matches.begin(); iter != matches.end();)
 		{
-			if (isResearchRuleStatusDisabled((*j)->getName()))
+			if (isResearchRuleStatusDisabled((*iter)->getName()))
 			{
-				j = matches.erase(j);
+				iter = matches.erase(iter);
 			}
 			else
 			{
-				++j;
+				++iter;
 			}
 		}
 	}
 
-	for (auto& r : matches)
+	for (const auto* res : matches)
 	{
-		if (!haveReserchVector(_discovered, r))
+		if (!haveReserchVector(_discovered, res))
 		{
 			return false;
 		}
@@ -2360,9 +2367,9 @@ bool SavedGame::isResearched(const std::vector<const RuleResearch *> &research, 
  */
 bool SavedGame::isItemObtained(const std::string &itemType) const
 {
-	for (auto base : _bases)
+	for (auto* xbase : _bases)
 	{
-		if (base->getStorageItems()->getItem(itemType) > 0)
+		if (xbase->getStorageItems()->getItem(itemType) > 0)
 			return true;
 	}
 	return false;
@@ -2374,9 +2381,9 @@ bool SavedGame::isItemObtained(const std::string &itemType) const
  */
 bool SavedGame::isFacilityBuilt(const std::string &facilityType) const
 {
-	for (auto base : _bases)
+	for (auto* xbase : _bases)
 	{
-		for (auto fac : *base->getFacilities())
+		for (auto* fac : *xbase->getFacilities())
 		{
 			if (fac->getBuildTime() == 0 && fac->getRules()->getType() == facilityType)
 			{
@@ -2394,9 +2401,9 @@ bool SavedGame::isFacilityBuilt(const std::string &facilityType) const
  */
 bool SavedGame::isSoldierTypeHired(const std::string& soldierType) const
 {
-	for (auto* base : _bases)
+	for (auto* xbase : _bases)
 	{
-		for (auto* soldier : *base->getSoldiers())
+		for (auto* soldier : *xbase->getSoldiers())
 		{
 			if (soldier->getRules()->getType() == soldierType)
 			{
@@ -2414,21 +2421,21 @@ bool SavedGame::isSoldierTypeHired(const std::string& soldierType) const
  */
 Soldier *SavedGame::getSoldier(int id) const
 {
-	for (std::vector<Base*>::const_iterator i = _bases.begin(); i != _bases.end(); ++i)
+	for (auto* xbase : _bases)
 	{
-		for (std::vector<Soldier*>::const_iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
+		for (auto* soldier : *xbase->getSoldiers())
 		{
-			if ((*j)->getId() == id)
+			if (soldier->getId() == id)
 			{
-				return (*j);
+				return soldier;
 			}
 		}
 	}
-	for (std::vector<Soldier*>::const_iterator j = _deadSoldiers.begin(); j != _deadSoldiers.end(); ++j)
+	for (auto* soldier : _deadSoldiers)
 	{
-		if ((*j)->getId() == id)
+		if (soldier->getId() == id)
 		{
-			return (*j);
+			return soldier;
 		}
 	}
 	return 0;
@@ -2444,91 +2451,35 @@ bool SavedGame::handlePromotions(std::vector<Soldier*> &participants, const Mod 
 {
 	int soldiersPromoted = 0;
 	Soldier *highestRanked = 0;
-	PromotionInfo soldierData;
-	std::vector<Soldier*> soldiers;
-	for (std::vector<Base*>::iterator i = _bases.begin(); i != _bases.end(); ++i)
-	{
-		for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
-		{
-			soldiers.push_back(*j);
-			processSoldier(*j, soldierData);
-		}
-		for (std::vector<Transfer*>::iterator j = (*i)->getTransfers()->begin(); j != (*i)->getTransfers()->end(); ++j)
-		{
-			if ((*j)->getType() == TRANSFER_SOLDIER)
-			{
-				soldiers.push_back((*j)->getSoldier());
-				processSoldier((*j)->getSoldier(), soldierData);
-			}
-		}
-	}
+	std::vector<Soldier*> soldiers = getAllActiveSoldiers();
+	RankCount rankCounts = RankCount(soldiers);
 
-	int totalSoldiers = soldierData.totalSoldiers;
+	int totalSoldiers = rankCounts.getTotalSoldiers();
 
-	if (soldierData.totalCommanders == 0)
+	if (rankCounts[RANK_COMMANDER] == 0 && totalSoldiers >= mod->getSoldiersPerRank(RANK_COMMANDER))
 	{
-		if (totalSoldiers >= mod->getSoldiersPerCommander())
+		highestRanked = inspectSoldiers(soldiers, participants, RANK_COLONEL);
+		if (highestRanked)
 		{
-			highestRanked = inspectSoldiers(soldiers, participants, RANK_COLONEL);
-			if (highestRanked)
-			{
-				// only promote one colonel to commander
-				highestRanked->promoteRank();
-				soldiersPromoted++;
-				soldierData.totalCommanders++;
-				soldierData.totalColonels--;
-			}
+			// only promote one colonel to commander
+			highestRanked->promoteRank();
+			soldiersPromoted++;
+			rankCounts[RANK_COMMANDER]++;
+			rankCounts[RANK_COLONEL]--;
 		}
 	}
 
-	if ((totalSoldiers / mod->getSoldiersPerColonel()) > soldierData.totalColonels)
+	for (SoldierRank rank : { RANK_COLONEL, RANK_CAPTAIN, RANK_SERGEANT })
 	{
-		while ((totalSoldiers / mod->getSoldiersPerColonel()) > soldierData.totalColonels)
+		while ((totalSoldiers / mod->getSoldiersPerRank(rank)) > rankCounts[rank])
 		{
-			highestRanked = inspectSoldiers(soldiers, participants, RANK_CAPTAIN);
+			highestRanked = inspectSoldiers(soldiers, participants, rank - 1);
 			if (highestRanked)
 			{
 				highestRanked->promoteRank();
 				soldiersPromoted++;
-				soldierData.totalColonels++;
-				soldierData.totalCaptains--;
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if ((totalSoldiers / mod->getSoldiersPerCaptain()) > soldierData.totalCaptains)
-	{
-		while ((totalSoldiers / mod->getSoldiersPerCaptain()) > soldierData.totalCaptains)
-		{
-			highestRanked = inspectSoldiers(soldiers, participants, RANK_SERGEANT);
-			if (highestRanked)
-			{
-				highestRanked->promoteRank();
-				soldiersPromoted++;
-				soldierData.totalCaptains++;
-				soldierData.totalSergeants--;
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-
-	if ((totalSoldiers / mod->getSoldiersPerSergeant()) > soldierData.totalSergeants)
-	{
-		while ((totalSoldiers / mod->getSoldiersPerSergeant()) > soldierData.totalSergeants)
-		{
-			highestRanked = inspectSoldiers(soldiers, participants, RANK_SQUADDIE);
-			if (highestRanked)
-			{
-				highestRanked->promoteRank();
-				soldiersPromoted++;
-				soldierData.totalSergeants++;
+				rankCounts[rank]++;
+				rankCounts[(SoldierRank)(rank - 1)]--;
 			}
 			else
 			{
@@ -2538,41 +2489,6 @@ bool SavedGame::handlePromotions(std::vector<Soldier*> &participants, const Mod 
 	}
 
 	return (soldiersPromoted > 0);
-}
-
-/**
- * Processes a soldier, and adds their rank to the promotions data array.
- * @param soldier the soldier to process.
- * @param soldierData the data array to put their info into.
- */
-void SavedGame::processSoldier(Soldier *soldier, PromotionInfo &soldierData)
-{
-	if (soldier->getRules()->getAllowPromotion())
-	{
-		soldierData.totalSoldiers++;
-	}
-	else
-	{
-		return;
-	}
-
-	switch (soldier->getRank())
-	{
-	case RANK_COMMANDER:
-		soldierData.totalCommanders++;
-		break;
-	case RANK_COLONEL:
-		soldierData.totalColonels++;
-		break;
-	case RANK_CAPTAIN:
-		soldierData.totalCaptains++;
-		break;
-	case RANK_SERGEANT:
-		soldierData.totalSergeants++;
-		break;
-	default:
-		break;
-	}
 }
 
 /**
@@ -2586,10 +2502,10 @@ Soldier *SavedGame::inspectSoldiers(std::vector<Soldier*> &soldiers, std::vector
 {
 	int highestScore = 0;
 	Soldier *highestRanked = 0;
-	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+	for (auto* soldier : soldiers)
 	{
-		const std::vector<std::string> &rankStrings = (*i)->getRules()->getRankStrings();
-		bool rankIsMatching = ((*i)->getRank() == rank);
+		const auto& rankStrings = soldier->getRules()->getRankStrings();
+		bool rankIsMatching = (soldier->getRank() == rank);
 		if (!rankStrings.empty())
 		{
 			// if rank is matching, but there are no more higher ranks defined for this soldier type, skip this soldier
@@ -2600,11 +2516,11 @@ Soldier *SavedGame::inspectSoldiers(std::vector<Soldier*> &soldiers, std::vector
 		}
 		if (rankIsMatching)
 		{
-			int score = getSoldierScore(*i);
-			if (score > highestScore && (!Options::fieldPromotions || std::find(participants.begin(), participants.end(), *i) != participants.end()))
+			int score = getSoldierScore(soldier);
+			if (score > highestScore && (!Options::fieldPromotions || std::find(participants.begin(), participants.end(), soldier) != participants.end()))
 			{
 				highestScore = score;
-				highestRanked = (*i);
+				highestRanked = soldier;
 			}
 		}
 	}
@@ -2614,7 +2530,7 @@ Soldier *SavedGame::inspectSoldiers(std::vector<Soldier*> &soldiers, std::vector
 /**
  * Gets the (approximate) number of idle days since the soldier's last mission.
  */
-int SavedGame::getSoldierIdleDays(Soldier *soldier)
+int SavedGame::getSoldierIdleDays(const Soldier *soldier)
 {
 	int lastMissionId = -1;
 	int idleDays = 999;
@@ -2627,7 +2543,7 @@ int SavedGame::getSoldierIdleDays(Soldier *soldier)
 	if (lastMissionId == -1)
 		return idleDays;
 
-	for (auto missionInfo : _missionStatistics)
+	for (const auto* missionInfo : _missionStatistics)
 	{
 		if (missionInfo->id == lastMissionId)
 		{
@@ -2652,7 +2568,7 @@ int SavedGame::getSoldierIdleDays(Soldier *soldier)
  */
 int SavedGame::getSoldierScore(Soldier *soldier)
 {
-	UnitStats *s = soldier->getCurrentStats();
+	const UnitStats *s = soldier->getCurrentStats();
 	int v1 = 2 * s->health + 2 * s->stamina + 4 * s->reactions + 4 * s->bravery;
 	int v2 = v1 + 3*( s->tu + 2*( s->firing ) );
 	int v3 = v2 + s->melee + s->throwing + s->strength;
@@ -2704,7 +2620,7 @@ AlienMission *SavedGame::findAlienMission(const std::string &region, MissionObje
 			if (!retalNames.empty())
 			{
 				// if we made it this far, search by type and region
-				for (auto& missionType : retalNames)
+				for (const auto& missionType : retalNames)
 				{
 					for (auto* mission : _activeMissions)
 					{
@@ -2818,7 +2734,7 @@ private:
  */
 Region *SavedGame::locateRegion(double lon, double lat) const
 {
-	std::vector<Region *>::const_iterator found = std::find_if (_regions.begin(), _regions.end(), ContainsPoint(lon, lat));
+	auto found = std::find_if (_regions.begin(), _regions.end(), ContainsPoint(lon, lat));
 	if (found != _regions.end())
 	{
 		return *found;
@@ -2862,7 +2778,7 @@ private:
  */
 Country* SavedGame::locateCountry(double lon, double lat) const
 {
-	std::vector<Country*>::const_iterator found = std::find_if(_countries.begin(), _countries.end(), CountryContainsPoint(lon, lat));
+	auto found = std::find_if(_countries.begin(), _countries.end(), CountryContainsPoint(lon, lat));
 	if (found != _countries.end())
 	{
 		return *found;
@@ -2930,7 +2846,7 @@ int SavedGame::selectSoldierNationalityByLocation(const Mod* mod, const RuleSold
 
 			// select the nationality from the filtered pool, by weight
 			int tmp = RNG::generate(0, totalFilteredNamePoolWeight);
-			for (auto& namepoolPair : filteredNames)
+			for (const auto& namepoolPair : filteredNames)
 			{
 				if (tmp <= namepoolPair.first->getGlobalWeight())
 				{
@@ -3039,7 +2955,7 @@ bool SavedGame::wasResearchPopped(const RuleResearch* research)
  */
 void SavedGame::removePoppedResearch(const RuleResearch* research)
 {
-	std::vector<const RuleResearch*>::iterator r = std::find(_poppedResearch.begin(), _poppedResearch.end(), research);
+	auto r = std::find(_poppedResearch.begin(), _poppedResearch.end(), research);
 	if (r != _poppedResearch.end())
 	{
 		_poppedResearch.erase(r);
@@ -3142,6 +3058,30 @@ void SavedGame::handleEventScriptTimers()
 std::vector<Soldier*> *SavedGame::getDeadSoldiers()
 {
 	return &_deadSoldiers;
+}
+
+/**
+ * Calculates and returns a list of all active soldiers.
+ * @return All active soldiers.
+*/
+std::vector<Soldier*> SavedGame::getAllActiveSoldiers() const
+{
+	std::vector<Soldier*> soldiers;
+	for (auto* xbase : _bases)
+	{
+		std::vector<Soldier*> baseSoldiers = *xbase->getSoldiers();
+		soldiers.insert(soldiers.end(), baseSoldiers.begin(), baseSoldiers.end());
+
+		for (auto* transfer : *xbase->getTransfers())
+		{
+			if (transfer->getType() == TRANSFER_SOLDIER)
+			{
+				soldiers.push_back(transfer->getSoldier());
+			}
+		}
+	}
+
+	return soldiers;
 }
 
 /**
@@ -3288,20 +3228,20 @@ std::vector<Soldier*>::iterator SavedGame::killSoldier(bool resetArmor, Soldier 
 		// battlescape armor would reset to geoscape armor after save and reload
 	}
 
-	std::vector<Soldier*>::iterator j;
-	for (std::vector<Base*>::const_iterator i = _bases.begin(); i != _bases.end(); ++i)
+	std::vector<Soldier*>::iterator soldierIt;
+	for (auto* xbase : _bases)
 	{
-		for (j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
+		for (soldierIt = xbase->getSoldiers()->begin(); soldierIt != xbase->getSoldiers()->end(); ++soldierIt)
 		{
-			if ((*j) == soldier)
+			if ((*soldierIt) == soldier)
 			{
 				soldier->die(new SoldierDeath(*_time, cause));
 				_deadSoldiers.push_back(soldier);
-				return (*i)->getSoldiers()->erase(j);
+				return xbase->getSoldiers()->erase(soldierIt);
 			}
 		}
 	}
-	return j;
+	return soldierIt;
 }
 
 /**
@@ -3335,9 +3275,9 @@ bool SavedGame::getAutosell(const RuleItem *itype) const
  */
 void SavedGame::removeAllSoldiersFromXcomCraft(Craft *craft)
 {
-	for (auto base : _bases)
+	for (auto* xbase : _bases)
 	{
-		for (auto soldier : *base->getSoldiers())
+		for (auto* soldier : *xbase->getSoldiers())
 		{
 			if (soldier->getCraft() == craft)
 			{
@@ -3352,9 +3292,9 @@ void SavedGame::removeAllSoldiersFromXcomCraft(Craft *craft)
  */
 void SavedGame::stopHuntingXcomCraft(Craft *target)
 {
-	for (std::vector<Ufo*>::iterator u = _ufos.begin(); u != _ufos.end(); ++u)
+	for (auto* ufo : _ufos)
 	{
-		(*u)->resetOriginalDestination(target);
+		ufo->resetOriginalDestination(target);
 	}
 }
 
@@ -3363,11 +3303,11 @@ void SavedGame::stopHuntingXcomCraft(Craft *target)
  */
 void SavedGame::stopHuntingXcomCrafts(Base *base)
 {
-	for (std::vector<Craft*>::iterator c = base->getCrafts()->begin(); c != base->getCrafts()->end(); ++c)
+	for (auto* xcraft : *base->getCrafts())
 	{
-		for (std::vector<Ufo*>::iterator u = _ufos.begin(); u != _ufos.end(); ++u)
+		for (auto* ufo : _ufos)
 		{
-			(*u)->resetOriginalDestination((*c));
+			ufo->resetOriginalDestination(xcraft);
 		}
 	}
 }
@@ -3393,7 +3333,7 @@ void SavedGame::setDisableSoldierEquipment(bool disableSoldierEquipment)
  */
 bool SavedGame::isManaUnlocked(Mod *mod) const
 {
-	auto researchName = mod->getManaUnlockResearch();
+	auto& researchName = mod->getManaUnlockResearch();
 	if (Mod::isEmptyRuleName(researchName) || isResearched(researchName))
 	{
 		return true;
@@ -3410,7 +3350,7 @@ int SavedGame::getCurrentScore(int monthsPassed) const
 	int scoreTotal = _researchScores.at(invertedEntry);
 	if (monthsPassed > 1)
 		scoreTotal += 400;
-	for (auto region : _regions)
+	for (auto* region : _regions)
 	{
 		scoreTotal += region->getActivityXcom().at(invertedEntry) - region->getActivityAlien().at(invertedEntry);
 	}
@@ -3423,7 +3363,7 @@ int SavedGame::getCurrentScore(int monthsPassed) const
 void SavedGame::clearLinksForAlienBase(AlienBase* alienBase, const Mod* mod)
 {
 	// Take care to remove supply missions for this base.
-	for (auto am : _activeMissions)
+	for (auto* am : _activeMissions)
 	{
 		if (am->getAlienBase() == alienBase)
 		{
@@ -3439,11 +3379,11 @@ void SavedGame::clearLinksForAlienBase(AlienBase* alienBase, const Mod* mod)
 	// If there was a pact with this base, cancel it?
 	if (mod->getAllowCountriesToCancelAlienPact() && !alienBase->getPactCountry().empty())
 	{
-		for (auto cntr : _countries)
+		for (auto* country : _countries)
 		{
-			if (cntr->getRules()->getType() == alienBase->getPactCountry())
+			if (country->getRules()->getType() == alienBase->getPactCountry())
 			{
-				cntr->setCancelPact();
+				country->setCancelPact();
 				break;
 			}
 		}
@@ -3455,24 +3395,26 @@ void SavedGame::clearLinksForAlienBase(AlienBase* alienBase, const Mod* mod)
  */
 void SavedGame::deleteRetaliationMission(AlienMission* am, Base* base)
 {
-	for (std::vector<Ufo*>::iterator i = _ufos.begin(); i != _ufos.end();)
+	for (auto iter = _ufos.begin(); iter != _ufos.end();)
 	{
-		if ((*i)->getMission() == am)
+		Ufo* ufo = (*iter);
+		if (ufo->getMission() == am)
 		{
-			delete (*i);
-			i = _ufos.erase(i);
+			delete ufo;
+			iter = _ufos.erase(iter);
 		}
 		else
 		{
-			++i;
+			++iter;
 		}
 	}
-	for (std::vector<AlienMission*>::iterator i = _activeMissions.begin(); i != _activeMissions.end(); ++i)
+	for (auto iter = _activeMissions.begin(); iter != _activeMissions.end(); ++iter)
 	{
-		if ((*i) == am)
+		AlienMission* alienMission = (*iter);
+		if (alienMission == am)
 		{
-			delete (*i);
-			_activeMissions.erase(i);
+			delete alienMission;
+			_activeMissions.erase(iter);
 			break;
 		}
 	}
@@ -3501,6 +3443,15 @@ bool SavedGame::spawnEvent(const RuleEvent* eventRules)
 
 	// remember that it has been generated
 	addGeneratedEvent(eventRules);
+
+	if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
+	{
+		std::ostringstream ss;
+		ss << "gameTime: " << _time->getFullString();
+		ss << " eventSpawn: " << newEvent->getRules().getName();
+		ss << " days/hours: " << (minutes / 60) / 24 << "/" << (minutes / 60) % 24;
+		_geoscapeDebugLog.push_back(ss.str());
+	}
 
 	return true;
 }
@@ -3568,7 +3519,7 @@ bool SavedGame::handleResearchUnlockedByMissions(const RuleResearch* research, c
 		addFinishedResearch(researchVec.back(), mod, base, true);
 	}
 
-	if (auto bonus = selectGetOneFree(research))
+	if (auto* bonus = selectGetOneFree(research))
 	{
 		researchVec.push_back(bonus);
 		addFinishedResearch(bonus, mod, base, true);
@@ -3582,7 +3533,7 @@ bool SavedGame::handleResearchUnlockedByMissions(const RuleResearch* research, c
 	// check and interrupt alien missions if necessary (based on unlocked research)
 	for (auto* am : _activeMissions)
 	{
-		auto& interruptResearchName = am->getRules().getInterruptResearch();
+		const auto& interruptResearchName = am->getRules().getInterruptResearch();
 		if (!interruptResearchName.empty())
 		{
 			auto* interruptResearch = mod->getResearch(interruptResearchName, true);
@@ -3635,7 +3586,7 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 			t->setItems(myResearchRule->getSpawnedItem(), std::max(1, myResearchRule->getSpawnedItemCount()));
 			base->getTransfers()->push_back(t);
 		}
-		for (auto& spawnedItemName2 : myResearchRule->getSpawnedItemList())
+		for (const auto& spawnedItemName2 : myResearchRule->getSpawnedItemList())
 		{
 			RuleItem* spawnedItem2 = mod->getItem(spawnedItemName2);
 			if (spawnedItem2)

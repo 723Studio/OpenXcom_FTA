@@ -66,16 +66,16 @@ TrainingState::TrainingState()
 	_txtTitle->setText(tr("STR_PHYSICAL_TRAINING"));
 
 	int buttons = 0;
-	for (std::vector<Base*>::const_iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if ((*b)->getAvailableTraining())
+		if (xbase->getAvailableTraining())
 		{
 			TextButton *btnBase = new TextButton(160, 14, 80, 40 + 16 * buttons);
 			btnBase->setColor(Palette::blockOffset(15) + 6);
 			btnBase->onMouseClick((ActionHandler)&TrainingState::btnBaseXClick);
-			btnBase->setText((*b)->getName());
+			btnBase->setText(xbase->getName());
 			add(btnBase, "button1", "martialTraining");
-			_bases.push_back(*b);
+			_bases.push_back(xbase);
 			_btnBases.push_back(btnBase);
 			++buttons;
 			if (buttons >= 8)

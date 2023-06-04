@@ -105,21 +105,22 @@ std::string StatString::getString() const
  */
 std::string StatString::calcStatString(UnitStats &currentStats, const std::vector<StatString *> &statStrings, bool psiStrengthEval, bool inTraining)
 {
-	std::string statString;
+	std::string result;
 	std::map<std::string, int> currentStatsMap = getCurrentStats(currentStats);
 	if (inTraining)
 	{
 		currentStatsMap["psiTraining"] = 1;
 	}
-	for (std::vector<StatString *>::const_iterator i = statStrings.begin(); i != statStrings.end(); ++i)
+	for (auto* statStringDef : statStrings)
 	{
 		bool conditionsMet = true;
-		for (std::vector<StatStringCondition*>::const_iterator j = (*i)->getConditions().begin(); j != (*i)->getConditions().end() && conditionsMet; ++j)
+		for (auto* statStringCondition : statStringDef->getConditions())
 		{
-			std::map<std::string, int>::iterator name = currentStatsMap.find((*j)->getConditionName());
+			if (!conditionsMet) break; // loop finished
+			auto name = currentStatsMap.find(statStringCondition->getConditionName());
 			if (name != currentStatsMap.end())
 			{
-				conditionsMet = conditionsMet && (*j)->isMet(name->second, currentStats.psiSkill > 0 || psiStrengthEval);
+				conditionsMet = conditionsMet && statStringCondition->isMet(name->second, currentStats.psiSkill > 0 || psiStrengthEval);
 			}
 			else
 			{
@@ -132,15 +133,15 @@ std::string StatString::calcStatString(UnitStats &currentStats, const std::vecto
 		}
 		if (conditionsMet)
 		{
-			std::string wstring = (*i)->getString();
-			statString += wstring;
+			std::string wstring = statStringDef->getString();
+			result += wstring;
 			if (Unicode::codePointLengthUTF8(wstring) > 1)
 			{
 				break;
 			}
 		}
 	}
-	return statString;
+	return result;
 }
 
 /**

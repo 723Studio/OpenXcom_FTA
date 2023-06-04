@@ -59,6 +59,7 @@ private:
 	Uint8 _ammoColor;
 	bool _reload;
 	bool _returningFromGlobalTemplates;
+	bool _returningFromInventory;
 	bool _firstInit;
 	bool _isNewBattle;
 	/// Updates quantities of item.
@@ -109,7 +110,7 @@ public:
 	void btnInventoryClick(Action *action);
 	/// Methods for handling the global craft loadout save/load hotkeys.
 	void saveGlobalLoadout(int index);
-	void loadGlobalLoadout(int index);
+	void loadGlobalLoadout(int index, bool onlyAddItems = false);
 	/// Handler for clicking the Load button.
 	void btnLoadClick(Action *action);
 	/// Handler for clicking the Save button.

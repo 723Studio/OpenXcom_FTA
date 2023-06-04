@@ -213,7 +213,7 @@ void ExtendedBattlescapeLinksState::btnKillAllClick(Action *)
 	{
 		// kill all
 		_parent->debug("Influenza bacterium dispersed");
-		for (auto unit : *_save->getUnits())
+		for (auto* unit : *_save->getUnits())
 		{
 			if (unit->getOriginalFaction() == FACTION_HOSTILE && !unit->isOut())
 			{

@@ -42,17 +42,17 @@ RuleGlobe::RuleGlobe()
  */
 RuleGlobe::~RuleGlobe()
 {
-	for (std::list<Polygon*>::iterator i = _polygons.begin(); i != _polygons.end(); ++i)
+	for (auto* polygon : _polygons)
 	{
-		delete *i;
+		delete polygon;
 	}
-	for (std::list<Polyline*>::iterator i = _polylines.begin(); i != _polylines.end(); ++i)
+	for (auto* polyline : _polylines)
 	{
-		delete *i;
+		delete polyline;
 	}
-	for (std::map<int, Texture*>::iterator i = _textures.begin(); i != _textures.end(); ++i)
+	for (auto& pair : _textures)
 	{
-		delete i->second;
+		delete pair.second;
 	}
 }
 
@@ -64,18 +64,18 @@ void RuleGlobe::load(const YAML::Node &node)
 {
 	if (node["data"])
 	{
-		for (std::list<Polygon*>::iterator i = _polygons.begin(); i != _polygons.end(); ++i)
+		for (auto* polygon : _polygons)
 		{
-			delete *i;
+			delete polygon;
 		}
 		_polygons.clear();
 		loadDat(node["data"].as<std::string>());
 	}
 	if (node["polygons"])
 	{
-		for (std::list<Polygon*>::iterator i = _polygons.begin(); i != _polygons.end(); ++i)
+		for (auto* polygon : _polygons)
 		{
-			delete *i;
+			delete polygon;
 		}
 		_polygons.clear();
 		for (YAML::const_iterator i = node["polygons"].begin(); i != node["polygons"].end(); ++i)
@@ -87,9 +87,9 @@ void RuleGlobe::load(const YAML::Node &node)
 	}
 	if (node["polylines"])
 	{
-		for (std::list<Polyline*>::iterator i = _polylines.begin(); i != _polylines.end(); ++i)
+		for (auto* polyline : _polylines)
 		{
-			delete *i;
+			delete polyline;
 		}
 		_polylines.clear();
 		for (YAML::const_iterator i = node["polylines"].begin(); i != node["polylines"].end(); ++i)
@@ -104,7 +104,7 @@ void RuleGlobe::load(const YAML::Node &node)
 		if ((*i)["id"])
 		{
 			int id = (*i)["id"].as<int>();
-			std::map<int, Texture*>::const_iterator j = _textures.find(id);
+			auto j = _textures.find(id);
 			Texture *texture;
 			if (j != _textures.end())
 			{
@@ -120,7 +120,7 @@ void RuleGlobe::load(const YAML::Node &node)
 		else if ((*i)["delete"])
 		{
 			int id = (*i)["delete"].as<int>();
-			std::map<int, Texture*>::iterator j = _textures.find(id);
+			auto j = _textures.find(id);
 			if (j != _textures.end())
 			{
 				_textures.erase(j);
@@ -215,7 +215,7 @@ void RuleGlobe::loadDat(const std::string &filename)
  */
 Texture *RuleGlobe::getTexture(int id) const
 {
-	std::map<int, Texture*>::const_iterator i = _textures.find(id);
+	auto i = _textures.find(id);
 	if (_textures.end() != i) return i->second; else return 0;
 }
 
@@ -227,13 +227,13 @@ Texture *RuleGlobe::getTexture(int id) const
 std::vector<std::string> RuleGlobe::getTerrains(const std::string &deployment) const
 {
 	std::vector<std::string> terrains;
-	for (std::map<int, Texture*>::const_iterator i = _textures.begin(); i != _textures.end(); ++i)
+	for (auto& pair : _textures)
 	{
-		if ((deployment.empty() && i->second->getDeployments().empty()) || i->second->getDeployments().find(deployment) != i->second->getDeployments().end())
+		if ((deployment.empty() && pair.second->getDeployments().empty()) || pair.second->getDeployments().find(deployment) != pair.second->getDeployments().end())
 		{
-			for (std::vector<TerrainCriteria>::const_iterator j = i->second->getTerrain()->begin(); j != i->second->getTerrain()->end(); ++j)
+			for (const auto& tc : *pair.second->getTerrain())
 			{
-				terrains.push_back(j->name);
+				terrains.push_back(tc.name);
 			}
 		}
 	}

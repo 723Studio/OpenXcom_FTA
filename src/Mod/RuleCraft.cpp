@@ -33,14 +33,14 @@ const std::string RuleCraft::DEFAULT_CRAFT_DEPLOYMENT_PREVIEW = "STR_CRAFT_DEPLO
  * type of craft.
  * @param type String defining the type.
  */
-RuleCraft::RuleCraft(const std::string &type) :
+RuleCraft::RuleCraft(const std::string &type, int listOrder) :
 	_type(type), _sprite(-1), _marker(-1), _weapons(0), _soldiers(0), _pilots(0), _vehicles(0),
 	_maxSmallSoldiers(-1), _maxLargeSoldiers(-1), _maxSmallVehicles(-1), _maxLargeVehicles(-1),
 	_maxSmallUnits(-1), _maxLargeUnits(-1), _maxSoldiers(-1), _maxVehicles(-1),
 	_monthlyBuyLimit(0), _costBuy(0), _costRent(0), _costSell(0), _costDispose(0), _repairRate(1), _refuelRate(1),
 	_transferTime(24), _score(0), _battlescapeTerrainData(0), _maxSkinIndex(0),
 	_keepCraftAfterFailedMission(false), _allowLanding(true), _spacecraft(false), _notifyWhenRefueled(false), _autoPatrol(false), _undetectable(false),
-	_listOrder(0), _maxItems(0), _maxAltitude(-1), _maxStorageSpace(0.0), _stats(),
+	_listOrder(listOrder), _maxItems(0), _maxAltitude(-1), _maxStorageSpace(0.0), _stats(),
 	_shieldRechargeAtBase(1000),
 	_mapVisible(true), _forceShowInMonthlyCosts(false), _useAllStartTiles(false)
 {
@@ -71,17 +71,17 @@ RuleCraft::~RuleCraft()
  * @param modIndex A value that offsets the sounds and sprite values to avoid conflicts.
  * @param listOrder The list weight for this craft.
  */
-void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModScript &parsers)
+void RuleCraft::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder, parsers);
+		load(parent, mod, parsers);
 	}
-	_type = node["type"].as<std::string>(_type);
 
 	//requires
 	mod->loadUnorderedNames(_type, _requires, node["requires"]);
 	mod->loadBaseFunction(_type, _requiresBuyBaseFunc, node["requiresBuyBaseFunc"]);
+	_requiresBuyCountry = node["requiresBuyCountry"].as<std::string>(_requiresBuyCountry);
 
 	if (node["sprite"])
 	{
@@ -149,10 +149,6 @@ void RuleCraft::load(const YAML::Node &node, Mod *mod, int listOrder, const ModS
 	_autoPatrol = node["autoPatrol"].as<bool>(_autoPatrol);
 	_undetectable = node["undetectable"].as<bool>(_undetectable);
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 	_maxAltitude = node["maxAltitude"].as<int>(_maxAltitude);
 	_maxItems = node["maxItems"].as<int>(_maxItems);
 	_maxStorageSpace = node["maxStorageSpace"].as<double>(_maxStorageSpace);
@@ -483,8 +479,8 @@ bool RuleCraft::notifyWhenRefueled() const
 }
 
 /**
-* Checks if the craft supports auto patrol feature.
-* @return True if auto patrol is supported.
+* Checks if the craft supports auto-patrol feature.
+* @return True if auto-patrol is supported.
 */
 bool RuleCraft::canAutoPatrol() const
 {

@@ -77,7 +77,7 @@ InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 
 	// 1. tally items
 	std::map<std::string, int> summary;
-	for (auto layoutItem : *soldier->getPersonalEquipmentLayout())
+	for (const auto* layoutItem : *soldier->getPersonalEquipmentLayout())
 	{
 		// item
 		summary[layoutItem->getItemType()] += 1;
@@ -96,9 +96,9 @@ InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 	// 2. sort items
 	std::vector<const RuleItem*> sorted;
 	sorted.reserve(summary.size());
-	for (auto info : summary)
+	for (auto& info : summary)
 	{
-		auto itemRule = _game->getMod()->getItem(info.first, false);
+		auto* itemRule = _game->getMod()->getItem(info.first, false);
 		if (itemRule)
 		{
 			sorted.push_back(itemRule);
@@ -114,7 +114,7 @@ InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 	if (Options::oxcePersonalLayoutIncludingArmor)
 	{
 		std::ostringstream ss1, ss2;
-		auto armor = soldier->getPersonalEquipmentArmor();
+		auto* armor = soldier->getPersonalEquipmentArmor();
 		if (armor)
 		{
 			ss1 << tr(armor->getType());
@@ -123,7 +123,7 @@ InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 	}
 
 	// 3. display items
-	for (auto ruleItem : sorted)
+	for (auto* ruleItem : sorted)
 	{
 		std::ostringstream ss1, ss2;
 		if (ruleItem->getBattleType() == BT_AMMO)

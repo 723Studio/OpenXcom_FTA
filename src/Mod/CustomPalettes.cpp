@@ -42,7 +42,6 @@ CustomPalettes::~CustomPalettes()
  */
 void CustomPalettes::load(const YAML::Node &node)
 {
-	_type = node["type"].as<std::string>(_type);
 	_target = node["target"].as<std::string>(_target);
 	_file = node["file"].as<std::string>(_file);
 	_palette = node["palette"].as< std::map<int, Position> >(_palette);

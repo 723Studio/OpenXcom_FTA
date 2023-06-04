@@ -96,7 +96,7 @@ void MeleeAttackBState::init()
 	if (reactionShoot)
 	{
 		// no ammo or target is dead: give the time units back and cancel the shot.
-		auto target = _parent->getSave()->getTile(_action.target)->getUnit();
+		BattleUnit* target = _parent->getSave()->getTile(_action.target)->getUnit();
 		if (!target || target->isOut() || target->isOutThresholdExceed() || target != _parent->getSave()->getSelectedUnit())
 		{
 			_parent->popState();

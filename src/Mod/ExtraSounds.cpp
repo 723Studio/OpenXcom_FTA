@@ -90,22 +90,22 @@ SoundSet *ExtraSounds::loadSoundSet(SoundSet *set) const
 	{
 		Log(LOG_VERBOSE) << "Adding/Replacing items in sound set: " << _type;
 	}
-	for (std::map<int, std::string>::const_iterator j = _sounds.begin(); j != _sounds.end(); ++j)
+	for (const auto& pair : _sounds)
 	{
-		int startSound = j->first;
-		std::string fileName = j->second;
+		int startSound = pair.first;
+		const auto& fileName = pair.second;
 		if (fileName[fileName.length() - 1] == '/')
 		{
 			Log(LOG_VERBOSE) << "Loading sound set from folder: " << fileName << " starting at index: " << startSound;
 			int offset = startSound;
 			std::vector<std::string> contents;
-			for (auto f: FileMap::getVFolderContents(fileName)) { contents.push_back(f); }
+			for (const auto& f: FileMap::getVFolderContents(fileName)) { contents.push_back(f); }
 			std::sort(contents.begin(), contents.end(), Unicode::naturalCompare);
-			for (auto k = contents.begin(); k != contents.end(); ++k)
+			for (const auto& name : contents)
 			{
 				try
 				{
-					loadSound(set, offset, fileName + *k);
+					loadSound(set, offset, fileName + name);
 					offset++;
 				}
 				catch (Exception &e)

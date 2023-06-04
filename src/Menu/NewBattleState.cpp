@@ -190,9 +190,9 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 	else
 	{
 		_missionTypes.reserve(_game->getMod()->getDeploymentsList().size());
-		for (auto &deploymentName : _game->getMod()->getDeploymentsList())
+		for (auto& deploymentName : _game->getMod()->getDeploymentsList())
 		{
-			auto depl = _game->getMod()->getDeployment(deploymentName);
+			auto* depl = _game->getMod()->getDeployment(deploymentName);
 			if (depl && !depl->isHidden())
 			{
 				_missionTypes.push_back(deploymentName);
@@ -210,13 +210,12 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 	_cbxMission->setOptions(_missionTypes, true);
 	_cbxMission->onChange((ActionHandler)&NewBattleState::cbxMissionChange);
 
-	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
-	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
+	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
-		RuleCraft *rule = _game->getMod()->getCraft(*i);
+		RuleCraft *rule = _game->getMod()->getCraft(craftType);
 		if (rule->getMaxUnits() > 0 && rule->getAllowLanding())
 		{
-			_crafts.push_back(*i);
+			_crafts.push_back(craftType);
 		}
 	}
 	_cbxCraft->setOptions(_crafts, true);
@@ -365,13 +364,12 @@ void NewBattleState::load(const std::string &filename)
 
 				// Generate items
 				base->getStorageItems()->getContents()->clear();
-				const std::vector<std::string> &items = mod->getItemsList();
-				for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
+				for (auto& itemType : mod->getItemsList())
 				{
-					RuleItem *rule = _game->getMod()->getItem(*i);
+					RuleItem *rule = _game->getMod()->getItem(itemType);
 					if (rule->getBattleType() != BT_CORPSE && rule->isRecoverable())
 					{
-						base->getStorageItems()->addItem(*i, 1);
+						base->getStorageItems()->addItem(itemType, 1);
 					}
 				}
 
@@ -385,12 +383,12 @@ void NewBattleState::load(const std::string &filename)
 				else
 				{
 					_craft = base->getCrafts()->front();
-					for (std::map<std::string, int>::iterator i = _craft->getItems()->getContents()->begin(); i != _craft->getItems()->getContents()->end(); ++i)
+					for (auto& pair : *_craft->getItems()->getContents())
 					{
-						RuleItem *rule = _game->getMod()->getItem(i->first);
+						RuleItem *rule = _game->getMod()->getItem(pair.first);
 						if (!rule)
 						{
-							i->second = 0;
+							pair.second = 0;
 						}
 					}
 				}
@@ -451,9 +449,15 @@ void NewBattleState::initSave()
 	save->getBases()->push_back(base);
 
 	// Kill everything we don't want in this base
-	for (std::vector<Soldier*>::iterator i = base->getSoldiers()->begin(); i != base->getSoldiers()->end(); ++i) delete (*i);
+	for (auto* soldier : *base->getSoldiers())
+	{
+		delete soldier;
+	}
 	base->getSoldiers()->clear();
-	for (std::vector<Craft*>::iterator i = base->getCrafts()->begin(); i != base->getCrafts()->end(); ++i) delete (*i);
+	for (auto* xcraft : *base->getCrafts())
+	{
+		delete xcraft;
+	}
 	base->getCrafts()->clear();
 	base->getStorageItems()->getContents()->clear();
 
@@ -475,7 +479,7 @@ void NewBattleState::initSave()
 				continue;
 			soldier->promoteRank();
 
-			UnitStats* stats = soldier->getCurrentStats();
+			UnitStats* stats = soldier->getCurrentStatsEditable();
 			stats->tu			+= RNG::generate(0, 5);
 			stats->stamina		+= RNG::generate(0, 5);
 			stats->health		+= RNG::generate(0, 5);
@@ -489,7 +493,7 @@ void NewBattleState::initSave()
 			stats->melee		+= RNG::generate(0, 5);
 			stats->psiSkill		+= RNG::generate(0, 20);
 		}
-		UnitStats* stats = soldier->getCurrentStats();
+		UnitStats* stats = soldier->getCurrentStatsEditable();
 		stats->bravery = (int)ceil(stats->bravery / 10.0) * 10; // keep it a multiple of 10
 
 		// update again, could have been changed since soldier creation
@@ -497,7 +501,7 @@ void NewBattleState::initSave()
 
 		base->getSoldiers()->push_back(soldier);
 
-		auto space = _craft->getSpaceAvailable();
+		int space = _craft->getSpaceAvailable();
 		if (_craft->validateAddingSoldier(space, soldier))
 		{
 			soldier->setCraft(_craft);
@@ -505,17 +509,16 @@ void NewBattleState::initSave()
 	}
 
 	// Generate items
-	const std::vector<std::string> &items = mod->getItemsList();
-	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
+	for (auto& itemType : mod->getItemsList())
 	{
-		RuleItem *rule = _game->getMod()->getItem(*i);
+		RuleItem *rule = _game->getMod()->getItem(itemType);
 		if (rule->getBattleType() != BT_CORPSE && rule->isRecoverable())
 		{
 			int howMany = rule->getBattleType() == BT_AMMO ? 2 : 1;
-			base->getStorageItems()->addItem(*i, howMany);
+			base->getStorageItems()->addItem(itemType, howMany);
 			if (rule->getBattleType() != BT_NONE && rule->isInventoryItem())
 			{
-				_craft->getItems()->addItem(*i, howMany);
+				_craft->getItems()->addItem(itemType, howMany);
 			}
 		}
 	}
@@ -698,20 +701,20 @@ void NewBattleState::cbxMissionChange(Action *)
 	{
 		globeTerrains = _game->getMod()->getGlobe()->getTerrains(ruleDeploy->getType());
 	}
-	for (std::vector<std::string>::const_iterator i = deployTerrains.begin(); i != deployTerrains.end(); ++i)
+	for (const auto& terrain : deployTerrains)
 	{
-		terrains.insert(*i);
+		terrains.insert(terrain);
 	}
-	for (std::vector<std::string>::const_iterator i = globeTerrains.begin(); i != globeTerrains.end(); ++i)
+	for (const auto& terrain : globeTerrains)
 	{
-		terrains.insert(*i);
+		terrains.insert(terrain);
 	}
 	_terrainTypes.clear();
 	std::vector<std::string> terrainStrings;
-	for (std::set<std::string>::const_iterator i = terrains.begin(); i != terrains.end(); ++i)
+	for (const auto& terrain : terrains)
 	{
-		_terrainTypes.push_back(*i);
-		terrainStrings.push_back("MAP_" + *i);
+		_terrainTypes.push_back(terrain);
+		terrainStrings.push_back("MAP_" + terrain);
 	}
 
 	// Hide controls that don't apply to mission
@@ -755,7 +758,7 @@ void NewBattleState::cbxCraftChange(Action *)
 		if (soldier->getCraft() == tmpCraft)
 		{
 			count--;
-			auto space = _craft->getSpaceAvailable();
+			int space = _craft->getSpaceAvailable();
 			if (_craft->validateAddingSoldier(space, soldier))
 			{
 				soldier->setCraft(_craft);
@@ -794,24 +797,25 @@ void NewBattleState::cbxTerrainChange(Action *)
 	// Get races "supported" by this mission
 	_alienRaces = _game->getMod()->getAlienRacesList();
 	int maxAlienRank = ruleDeploy->getMaxAlienRank();
-	for (std::vector<std::string>::iterator i = _alienRaces.begin(); i != _alienRaces.end();)
+	for (auto iter = _alienRaces.begin(); iter != _alienRaces.end();)
 	{
-		if ((*i).find("_UNDERWATER") != std::string::npos)
+		const auto& alienRace = (*iter);
+		if (alienRace.find("_UNDERWATER") != std::string::npos)
 		{
-			i = _alienRaces.erase(i);
+			iter = _alienRaces.erase(iter);
 		}
 		else
 		{
-			std::string raceName = (minDepth != maxDepth) ? (*i) + "_UNDERWATER" : (*i);
-			auto raceRules = _game->getMod()->getAlienRace(raceName);
+			std::string raceName = (minDepth != maxDepth) ? alienRace + "_UNDERWATER" : alienRace;
+			auto* raceRules = _game->getMod()->getAlienRace(raceName);
 			if (!raceRules || maxAlienRank >= raceRules->getMembers())
 			{
 				// not enough members or race doesn't exist
-				i = _alienRaces.erase(i);
+				iter = _alienRaces.erase(iter);
 			}
 			else
 			{
-				++i;
+				++iter;
 			}
 		}
 	}
@@ -854,7 +858,7 @@ void NewBattleState::fillList(NewBattleSelectType selectType, bool isRightClick)
 	if (_surfaceBackup.empty())
 	{
 		firstRun = true;
-		for (auto surface : _surfaces)
+		for (auto* surface : _surfaces)
 		{
 			_surfaceBackup[surface] = surface->getVisible();
 			surface->setVisible(false);

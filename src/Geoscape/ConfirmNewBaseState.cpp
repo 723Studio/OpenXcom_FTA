@@ -76,12 +76,12 @@ ConfirmNewBaseState::ConfirmNewBaseState(Base *base, Globe *globe) : _base(base)
 	_btnCancel->onKeyboardPress((ActionHandler)&ConfirmNewBaseState::btnCancelClick, Options::keyCancel);
 
 	std::string area;
-	for (std::vector<Region*>::iterator i = _game->getSavedGame()->getRegions()->begin(); i != _game->getSavedGame()->getRegions()->end(); ++i)
+	for (const auto* region : *_game->getSavedGame()->getRegions())
 	{
-		if ((*i)->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
+		if (region->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
 		{
-			_cost = (*i)->getRules()->getBaseCost();
-			area = tr((*i)->getRules()->getType());
+			_cost = region->getRules()->getBaseCost();
+			area = tr(region->getRules()->getType());
 			break;
 		}
 	}

@@ -26,7 +26,7 @@ namespace OpenXcom
  * Creates a blank ruleset for a certain item category.
  * @param type String defining the item category.
  */
-RuleItemCategory::RuleItemCategory(const std::string &type) : _type(type), _hidden(false), _listOrder(0)
+RuleItemCategory::RuleItemCategory(const std::string &type, int listOrder) : _type(type), _hidden(false), _listOrder(listOrder)
 {
 }
 
@@ -43,22 +43,17 @@ RuleItemCategory::~RuleItemCategory()
  * @param mod Mod for the item.
  * @param listOrder The list weight for this item.
  */
-void RuleItemCategory::load(const YAML::Node &node, Mod *mod, int listOrder)
+void RuleItemCategory::load(const YAML::Node &node, Mod *mod)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(parent, mod);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_replaceBy = node["replaceBy"].as<std::string>(_replaceBy);
 	_hidden = node["hidden"].as<bool>(_hidden);
 
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 }
 
 /**

@@ -96,37 +96,38 @@ ItemsArrivingState::ItemsArrivingState(GeoscapeState *state) : _state(state), _b
 	_lstTransfers->setBackground(_window);
 	_lstTransfers->setMargin(2);
 
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		for (std::vector<Transfer*>::iterator j = (*i)->getTransfers()->begin(); j != (*i)->getTransfers()->end();)
+		for (auto transferIt = xbase->getTransfers()->begin(); transferIt != xbase->getTransfers()->end();)
 		{
-			if ((*j)->getHours() == 0)
+			Transfer* transfer = (*transferIt);
+			if (transfer->getHours() == 0)
 			{
-				_base = (*i);
+				_base = xbase;
 
 				// Check if we have an automated use for an item
-				if ((*j)->getType() == TRANSFER_ITEM)
+				if (transfer->getType() == TRANSFER_ITEM)
 				{
-					RuleItem *item = _game->getMod()->getItem((*j)->getItems(), true);
+					RuleItem *item = _game->getMod()->getItem(transfer->getItems(), true);
 					if (item->getBattleType() == BT_NONE)
 					{
-						for (std::vector<Craft*>::iterator c = (*i)->getCrafts()->begin(); c != (*i)->getCrafts()->end(); ++c)
+						for (auto* xcraft : *xbase->getCrafts())
 						{
-							(*c)->reuseItem(item);
+							xcraft->reuseItem(item);
 						}
 					}
 				}
 
 				// Remove transfer
 				std::ostringstream ss;
-				ss << (*j)->getQuantity();
-				_lstTransfers->addRow(3, (*j)->getName(_game->getLanguage()).c_str(), ss.str().c_str(), (*i)->getName().c_str());
-				delete *j;
-				j = (*i)->getTransfers()->erase(j);
+				ss << transfer->getQuantity();
+				_lstTransfers->addRow(3, transfer->getName(_game->getLanguage()).c_str(), ss.str().c_str(), xbase->getName().c_str());
+				delete transfer;
+				transferIt = xbase->getTransfers()->erase(transferIt);
 			}
 			else
 			{
-				++j;
+				++transferIt;
 			}
 		}
 	}

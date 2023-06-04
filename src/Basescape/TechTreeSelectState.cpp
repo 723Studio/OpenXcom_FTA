@@ -165,7 +165,7 @@ void TechTreeSelectState::initLists()
 	{
 		for (auto& arcScriptId : *_game->getMod()->getArcScriptList())
 		{
-			auto arcScript = _game->getMod()->getArcScript(arcScriptId, false);
+			auto* arcScript = _game->getMod()->getArcScript(arcScriptId, false);
 			if (arcScript)
 			{
 				for (auto& trigger : arcScript->getResearchTriggers())
@@ -179,7 +179,7 @@ void TechTreeSelectState::initLists()
 	{
 		for (auto& eventScriptId : *_game->getMod()->getEventScriptList())
 		{
-			auto eventScript = _game->getMod()->getEventScript(eventScriptId, false);
+			auto* eventScript = _game->getMod()->getEventScript(eventScriptId, false);
 			if (eventScript)
 			{
 				for (auto& trigger : eventScript->getResearchTriggers())
@@ -193,7 +193,7 @@ void TechTreeSelectState::initLists()
 	{
 		for (auto& missionScriptId : *_game->getMod()->getMissionScriptList())
 		{
-			auto missionScript = _game->getMod()->getMissionScript(missionScriptId, false);
+			auto* missionScript = _game->getMod()->getMissionScript(missionScriptId, false);
 			if (missionScript)
 			{
 				for (auto& trigger : missionScript->getResearchTriggers())
@@ -219,14 +219,13 @@ void TechTreeSelectState::initLists()
 		return;
 	}
 
-	const std::vector<std::string>& researchItems = _game->getMod()->getResearchList();
-	for (std::vector<std::string>::const_iterator i = researchItems.begin(); i != researchItems.end(); ++i)
+	for (auto& res : _game->getMod()->getResearchList())
 	{
-		std::string projectName = tr((*i));
+		std::string projectName = tr(res);
 		Unicode::upperCase(projectName);
 		if (searchString == "SHAZAM")
 		{
-			if (_parent->isDiscoveredResearch(*i))
+			if (_parent->isDiscoveredResearch(res))
 			{
 				continue;
 			}
@@ -236,22 +235,21 @@ void TechTreeSelectState::initLists()
 			continue;
 		}
 
-		_availableTopics.push_back(*i);
-		_lstTopics->addRow(1, tr((*i)).c_str());
-		_lstTopics->setRowColor(row, _parent->getResearchColor(*i));
+		_availableTopics.push_back(res);
+		_lstTopics->addRow(1, tr(res).c_str());
+		_lstTopics->setRowColor(row, _parent->getResearchColor(res));
 		++row;
 	}
 
 	_firstManufacturingTopicIndex = row;
 
-	const std::vector<std::string> &manufacturingItems = _game->getMod()->getManufactureList();
-	for (std::vector<std::string>::const_iterator i = manufacturingItems.begin(); i != manufacturingItems.end(); ++i)
+	for (auto& manuf : _game->getMod()->getManufactureList())
 	{
-		std::string projectName = tr((*i));
+		std::string projectName = tr(manuf);
 		Unicode::upperCase(projectName);
 		if (searchString == "SHAZAM")
 		{
-			if (_parent->isDiscoveredManufacture(*i))
+			if (_parent->isDiscoveredManufacture(manuf))
 			{
 				continue;
 			}
@@ -261,12 +259,12 @@ void TechTreeSelectState::initLists()
 			continue;
 		}
 
-		_availableTopics.push_back(*i);
+		_availableTopics.push_back(manuf);
 		std::ostringstream ss;
-		ss << tr((*i));
+		ss << tr(manuf);
 		ss << tr("STR_M_FLAG");
 		_lstTopics->addRow(1, ss.str().c_str());
-		if (!_parent->isDiscoveredManufacture(*i))
+		if (!_parent->isDiscoveredManufacture(manuf))
 		{
 			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
 		}
@@ -275,14 +273,13 @@ void TechTreeSelectState::initLists()
 
 	_firstFacilitiesTopicIndex = row;
 
-	const std::vector<std::string> &facilityItems = _game->getMod()->getBaseFacilitiesList();
-	for (std::vector<std::string>::const_iterator i = facilityItems.begin(); i != facilityItems.end(); ++i)
+	for (auto& facType : _game->getMod()->getBaseFacilitiesList())
 	{
-		std::string facilityName = tr((*i));
+		std::string facilityName = tr(facType);
 		Unicode::upperCase(facilityName);
 		if (searchString == "SHAZAM")
 		{
-			if (_parent->isDiscoveredFacility(*i))
+			if (_parent->isDiscoveredFacility(facType))
 			{
 				continue;
 			}
@@ -292,12 +289,12 @@ void TechTreeSelectState::initLists()
 			continue;
 		}
 
-		_availableTopics.push_back(*i);
+		_availableTopics.push_back(facType);
 		std::ostringstream ss;
-		ss << tr((*i));
+		ss << tr(facType);
 		ss << tr("STR_F_FLAG");
 		_lstTopics->addRow(1, ss.str().c_str());
-		if (!_parent->isDiscoveredFacility(*i))
+		if (!_parent->isDiscoveredFacility(facType))
 		{
 			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
 		}
@@ -306,19 +303,18 @@ void TechTreeSelectState::initLists()
 
 	_firstItemTopicIndex = row;
 
-	const std::vector<std::string> &itemsList = _game->getMod()->getItemsList();
-	for (std::vector<std::string>::const_iterator i = itemsList.begin(); i != itemsList.end(); ++i)
+	for (auto& itemType : _game->getMod()->getItemsList())
 	{
-		if (!_parent->isProtectedItem(*i))
+		if (!_parent->isProtectedItem(itemType))
 		{
 			// items that are not protected at all are irrelevant for the Tech Tree Viewer!
 			continue;
 		}
-		std::string itemName = tr((*i));
+		std::string itemName = tr(itemType);
 		Unicode::upperCase(itemName);
 		if (searchString == "SHAZAM")
 		{
-			if (_parent->isProtectedAndDiscoveredItem(*i))
+			if (_parent->isProtectedAndDiscoveredItem(itemType))
 			{
 				continue;
 			}
@@ -328,12 +324,12 @@ void TechTreeSelectState::initLists()
 			continue;
 		}
 
-		_availableTopics.push_back(*i);
+		_availableTopics.push_back(itemType);
 		std::ostringstream ss;
-		ss << tr((*i));
+		ss << tr(itemType);
 		ss << tr("STR_I_FLAG");
 		_lstTopics->addRow(1, ss.str().c_str());
-		if (!_parent->isProtectedAndDiscoveredItem(*i))
+		if (!_parent->isProtectedAndDiscoveredItem(itemType))
 		{
 			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
 		}
@@ -342,14 +338,13 @@ void TechTreeSelectState::initLists()
 
 	_firstCraftTopicIndex = row;
 
-	const std::vector<std::string> &craftsList = _game->getMod()->getCraftsList();
-	for (std::vector<std::string>::const_iterator i = craftsList.begin(); i != craftsList.end(); ++i)
+	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
-		std::string craftName = tr((*i));
+		std::string craftName = tr(craftType);
 		Unicode::upperCase(craftName);
 		if (searchString == "SHAZAM")
 		{
-			if (_parent->isDiscoveredCraft(*i))
+			if (_parent->isDiscoveredCraft(craftType))
 			{
 				continue;
 			}
@@ -359,12 +354,12 @@ void TechTreeSelectState::initLists()
 			continue;
 		}
 
-		_availableTopics.push_back(*i);
+		_availableTopics.push_back(craftType);
 		std::ostringstream ss;
-		ss << tr((*i));
+		ss << tr(craftType);
 		ss << tr("STR_C_FLAG");
 		_lstTopics->addRow(1, ss.str().c_str());
-		if (!_parent->isDiscoveredCraft(*i))
+		if (!_parent->isDiscoveredCraft(craftType))
 		{
 			_lstTopics->setRowColor(row, _lstTopics->getSecondaryColor());
 		}

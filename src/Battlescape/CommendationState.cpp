@@ -76,13 +76,16 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 
 	int row = 0;
 	int titleRow = 0;
-	const std::map<std::string, RuleCommendations *> commendationsList = _game->getMod()->getCommendationsList();
+	const auto& commendationsList = _game->getMod()->getCommendationsList();
 	bool modularCommendation;
 	std::string noun;
 	bool titleChosen = true;
 
-	for (std::map<std::string, RuleCommendations *>::const_iterator commList = commendationsList.begin(); commList != commendationsList.end();)
+	for (auto commIter = commendationsList.begin(); commIter != commendationsList.end();)
 	{
+		const auto& commType = (*commIter).first;
+		const auto* commRule = (*commIter).second;
+
 		modularCommendation = false;
 		noun = "noNoun";
 		if (titleChosen)
@@ -94,42 +97,42 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 		titleChosen = false;
 		titleRow = row - 1;
 
-		for (std::vector<Soldier*>::iterator s = soldiersMedalled.begin() ; s != soldiersMedalled.end(); ++s)
+		for (auto* soldier : soldiersMedalled)
 		{
-			for (std::vector<SoldierCommendations*>::const_iterator soldierComm = (*s)->getDiary()->getSoldierCommendations()->begin(); soldierComm != (*s)->getDiary()->getSoldierCommendations()->end(); ++soldierComm)
+			for (auto* soldierComm : *soldier->getDiary()->getSoldierCommendations())
 			{
-				if ((*soldierComm)->getType() == (*commList).first && (*soldierComm)->isNew() && noun == "noNoun")
+				if (soldierComm->getType() == commType && soldierComm->isNew() && noun == "noNoun")
 				{
-					(*soldierComm)->makeOld();
+					soldierComm->makeOld();
 					row++;
 
-					if ((*soldierComm)->getNoun() != "noNoun")
+					if (soldierComm->getNoun() != "noNoun")
 					{
-						noun = (*soldierComm)->getNoun();
+						noun = soldierComm->getNoun();
 						modularCommendation = true;
 					}
 
 					// Soldier name
 					std::ostringstream wssName;
 					wssName << "   ";
-					wssName << (*s)->getName();
+					wssName << soldier->getName();
 					// Decoration level name
 					int skipCounter = 0;
 					int lastInt = -2;
 					int thisInt = -1;
 					int vectorIterator = 0;
-					for (std::vector<int>::const_iterator k = (*commList).second->getCriteria()->begin()->second.begin(); k != (*commList).second->getCriteria()->begin()->second.end(); ++k)
+					for (auto wtf = commRule->getCriteria()->begin()->second.begin(); wtf != commRule->getCriteria()->begin()->second.end(); ++wtf)
 					{
-						if (vectorIterator == (*soldierComm)->getDecorationLevelInt() + 1)
+						if (vectorIterator == soldierComm->getDecorationLevelInt() + 1)
 						{
 							break;
 						}
-						thisInt = *k;
-						if (k != (*commList).second->getCriteria()->begin()->second.begin())
+						thisInt = *wtf;
+						if (wtf != commRule->getCriteria()->begin()->second.begin())
 						{
-							--k;
-							lastInt = *k;
-							++k;
+							--wtf;
+							lastInt = *wtf;
+							++wtf;
 						}
 						if (thisInt == lastInt)
 						{
@@ -137,7 +140,7 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 						}
 						vectorIterator++;
 					}
-					_lstSoldiers->addRow(2, wssName.str().c_str(), tr((*soldierComm)->getDecorationLevelName(skipCounter)).c_str());
+					_lstSoldiers->addRow(2, wssName.str().c_str(), tr(soldierComm->getDecorationLevelName(skipCounter)).c_str());
 					_commendationsNames.push_back("");
 					break;
 				}
@@ -148,19 +151,19 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 			// Medal name
 			if (modularCommendation)
 			{
-				_lstSoldiers->setCellText(titleRow, 0, tr((*commList).first).arg(tr(noun)));
+				_lstSoldiers->setCellText(titleRow, 0, tr(commType).arg(tr(noun)));
 			}
 			else
 			{
-				_lstSoldiers->setCellText(titleRow, 0, tr((*commList).first));
+				_lstSoldiers->setCellText(titleRow, 0, tr(commType));
 			}
 			_lstSoldiers->setRowColor(titleRow, _lstSoldiers->getSecondaryColor());
-			_commendationsNames[titleRow] = (*commList).first;
+			_commendationsNames[titleRow] = commType;
 			titleChosen = true;
 		}
 		if (noun == "noNoun")
 		{
-			++commList;
+			++commIter;
 		}
 	}
 }

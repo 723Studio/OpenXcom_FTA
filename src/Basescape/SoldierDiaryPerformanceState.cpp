@@ -257,11 +257,11 @@ void SoldierDiaryPerformanceState::init()
 		{
 			_lstPerformance->addRow(1, tr(titleArray[i]).c_str());
 			_lstPerformance->setRowColor(_lstPerformance->getLastRowIndex(), _lstPerformance->getSecondaryColor());
-			for (std::map<std::string, int>::const_iterator j = mapArray[i].begin(); j != mapArray[i].end(); ++j)
+			for (const auto& mapItem : mapArray[i])
 			{
 				std::ostringstream ss;
-				ss << (*j).second;
-				_lstPerformance->addRow(2, tr((*j).first).c_str(), ss.str().c_str());
+				ss << mapItem.second;
+				_lstPerformance->addRow(2, tr(mapItem.first).c_str(), ss.str().c_str());
 			}
 			if (i != 2)
 			{
@@ -297,12 +297,12 @@ void SoldierDiaryPerformanceState::init()
 		{
 			_lstPerformance->addRow(1, tr(titleArray[i]).c_str());
 			_lstPerformance->setRowColor(_lstPerformance->getLastRowIndex(), _lstPerformance->getSecondaryColor());
-			for (std::map<std::string, int>::const_iterator j = mapArray[i].begin() ; j != mapArray[i].end() ; ++j)
+			for (const auto& mapItem : mapArray[i])
 			{
-				if ((*j).first == "NO_UFO") continue;
+				if (mapItem.first == "NO_UFO") continue;
 				std::ostringstream ss;
-				ss << (*j).second;
-				_lstPerformance->addRow(2, tr((*j).first).c_str(), ss.str().c_str());
+				ss << mapItem.second;
+				_lstPerformance->addRow(2, tr(mapItem.first).c_str(), ss.str().c_str());
 			}
 			if (i != 2)
 			{
@@ -339,7 +339,7 @@ void SoldierDiaryPerformanceState::init()
 			}
 		);
 		// fill the lists
-		for (auto& pair : _sortedCommendations)
+		for (const auto& pair : _sortedCommendations)
 		{
 			RuleCommendations* commendation = pair.second->getRule();
 			if (pair.second->getNoun() != "noNoun")
@@ -377,16 +377,16 @@ void SoldierDiaryPerformanceState::drawSprites()
 		_commendationDecorations[i]->clear();
 	}
 
-	int vectorIterator = 0; // Where we are currently located in the vector
+	int vectorPosition = 0; // Where we are currently located in the vector
 	int scrollDepth = _lstCommendations->getScroll(); // So we know where to start
 
-	for (auto& pair : _sortedCommendations)
+	for (const auto& pair : _sortedCommendations)
 	{
 		RuleCommendations *commendation = pair.second->getRule();
 		// Skip commendations that are not visible in the textlist
-		if ( vectorIterator < scrollDepth || vectorIterator - scrollDepth >= (int)_commendations.size())
+		if ( vectorPosition < scrollDepth || vectorPosition - scrollDepth >= (int)_commendations.size())
 		{
-			vectorIterator++;
+			vectorPosition++;
 			continue;
 		}
 
@@ -394,15 +394,15 @@ void SoldierDiaryPerformanceState::drawSprites()
 		int _decorationSprite = pair.second->getDecorationLevelInt();
 
 		// Handle commendation sprites
-		commendationSprite->getFrame(_sprite)->blitNShade(_commendations[vectorIterator - scrollDepth], 0, 0);
+		commendationSprite->getFrame(_sprite)->blitNShade(_commendations[vectorPosition - scrollDepth], 0, 0);
 
 		// Handle commendation decoration sprites
 		if (_decorationSprite != 0)
 		{
-			commendationDecoration->getFrame(_decorationSprite)->blitNShade(_commendationDecorations[vectorIterator - scrollDepth], 0, 0);
+			commendationDecoration->getFrame(_decorationSprite)->blitNShade(_commendationDecorations[vectorPosition - scrollDepth], 0, 0);
 		}
 
-		vectorIterator++;
+		vectorPosition++;
 	}
 }
 

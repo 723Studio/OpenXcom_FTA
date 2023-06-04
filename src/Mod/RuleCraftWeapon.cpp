@@ -54,11 +54,11 @@ void RuleCraftWeapon::load(const YAML::Node &node, Mod *mod)
 	{
 		load(parent, mod);
 	}
+
 	if (node["stats"])
 	{
 		_stats.load(node["stats"]);
 	}
-	_type = node["type"].as<std::string>(_type);
 	if (node["sprite"])
 	{
 		// used in

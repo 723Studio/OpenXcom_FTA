@@ -90,7 +90,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	bool pilots = _craft->getRules()->getPilots() > 0;
 	_btnOk = new TextButton((pilots ? 218 : 288) - showNewBattle * 98, 16, pilots ? 86 : 16, 176);
 	_btnNewBattle = new TextButton(92, 16, 212, 176);
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 282 : 14;
 		const int y = top + (i / 2) * top_row;
@@ -105,7 +105,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_txtShield = new Text(100, 17, 120, 24);
 	_txtFuel = new Text(82, 17, 228, 24);
 	_txtSkin = new Text(32, 9, 144, 46);
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 204 : 46;
 		const int y = top + (i / 2) * top_row;
@@ -114,7 +114,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		_txtWAmmo[i] = new Text(75, 24, x, y + 16);
 	}
 	_sprite = new InteractiveSurface(32, 40, 144, 56);
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		const int x = i % 2 ? 184 : 121;
 		const int y = top + 16 + (i / 2) * top_row;
@@ -129,7 +129,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	add(_window, "window", "craftInfo");
 	add(_btnOk, "button", "craftInfo");
 	add(_btnNewBattle, "button", "craftInfo");
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		add(_btnW[i], "button", "craftInfo");
 	}
@@ -142,7 +142,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	add(_txtShield, "text1", "craftInfo");
 	add(_txtFuel, "text1", "craftInfo");
 	add(_txtSkin, "text1", "craftInfo");
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		add(_txtWName[i], "text2", "craftInfo");
 		add(_txtWAmmo[i], "text3", "craftInfo");
@@ -166,7 +166,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_btnNewBattle->onMouseClick((ActionHandler)&CraftInfoState::btnNewBattleClick);
 	_btnNewBattle->setVisible(showNewBattle > 0);
 
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		const char num[] = { char('1' + i), 0 };
 		_btnW[i]->setText(num);
@@ -199,7 +199,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		_txtSkin->setText(tr("STR_CRAFT_SKIN_ID").arg(_craft->getSkinIndex()));
 	}
 
-	for(int i =0; i < _weaponNum; ++i)
+	for (int i =0; i < _weaponNum; ++i)
 	{
 		_txtWName[i]->setWordWrap(true);
 	}
@@ -273,11 +273,11 @@ void CraftInfoState::init()
 
 		SurfaceSet *customArmorPreviews = _game->getMod()->getSurfaceSet("CustomArmorPreviews");
 		int x = 0;
-		for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+		for (const auto* soldier : *_base->getSoldiers())
 		{
-			if ((*i)->getCraft() == _craft)
+			if (soldier->getCraft() == _craft)
 			{
-				for (auto index : (*i)->getArmor()->getCustomArmorPreviewIndex())
+				for (int index : soldier->getArmor()->getCustomArmorPreviewIndex())
 				{
 					Surface *customFrame1 = customArmorPreviews->getFrame(index);
 					if (customFrame1)
@@ -299,9 +299,9 @@ void CraftInfoState::init()
 
 		SurfaceSet *customItemPreviews = _game->getMod()->getSurfaceSet("CustomItemPreviews");
 		x = 0;
-		for (std::vector<Vehicle*>::iterator i = _craft->getVehicles()->begin(); i != _craft->getVehicles()->end(); ++i)
+		for (const auto* vehicle : *_craft->getVehicles())
 		{
-			for (auto index : (*i)->getRules()->getCustomItemPreviewIndex())
+			for (int index : vehicle->getRules()->getCustomItemPreviewIndex())
 			{
 				Surface *customFrame2 = customItemPreviews->getFrame(index);
 				if (customFrame2)
@@ -334,7 +334,7 @@ void CraftInfoState::init()
 		_btnPilots->setVisible(false);
 	}
 
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		CraftWeapon *w1 = _craft->getWeapons()->at(i);
 
@@ -466,10 +466,9 @@ void CraftInfoState::btnNewBattleClick(Action *)
 
 	// index of the craft type in the New Battle combobox
 	size_t idx = 0;
-	const std::vector<std::string>& crafts = _game->getMod()->getCraftsList();
-	for (auto& i : crafts)
+	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
-		const RuleCraft* rule = _game->getMod()->getCraft(i);
+		const RuleCraft* rule = _game->getMod()->getCraft(craftType);
 		if (rule->getMaxUnits() > 0 && rule->getAllowLanding())
 		{
 			if (rule == _craft->getRules())
@@ -513,7 +512,7 @@ void CraftInfoState::btnNewBattleClick(Action *)
  */
 void CraftInfoState::btnWClick(Action * act)
 {
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		if (act->getSender() == _btnW[i])
 		{
@@ -529,7 +528,7 @@ void CraftInfoState::btnWClick(Action * act)
  */
 void CraftInfoState::btnWIconClick(Action *action)
 {
-	for(int i = 0; i < _weaponNum; ++i)
+	for (int i = 0; i < _weaponNum; ++i)
 	{
 		if (action->getSender() == _weapon[i])
 		{

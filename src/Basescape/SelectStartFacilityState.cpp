@@ -65,9 +65,9 @@ SelectStartFacilityState::~SelectStartFacilityState()
 void SelectStartFacilityState::populateBuildList()
 {
 	_lstFacilities->clearList();
-	for (std::vector<RuleBaseFacility*>::iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	for (const auto* rule : _facilities)
 	{
-		_lstFacilities->addRow(1, tr((*i)->getType()).c_str());
+		_lstFacilities->addRow(1, tr(rule->getType()).c_str());
 	}
 }
 
@@ -77,9 +77,9 @@ void SelectStartFacilityState::populateBuildList()
  */
 void SelectStartFacilityState::btnOkClick(Action *)
 {
-	for (std::vector<BaseFacility*>::iterator i = _base->getFacilities()->begin(); i != _base->getFacilities()->end(); ++i)
+	for (auto* fac : *_base->getFacilities())
 	{
-		delete *i;
+		delete fac;
 	}
 	_base->getFacilities()->clear();
 	_game->popState();

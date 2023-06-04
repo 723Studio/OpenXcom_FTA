@@ -71,31 +71,31 @@ AlienBaseState::AlienBaseState(AlienBase *base, GeoscapeState *state) : _state(s
 	_txtTitle->setWordWrap(true);
 
 	// Check location of base
-	std::string region, country;
-	for (std::vector<Country*>::iterator i = _game->getSavedGame()->getCountries()->begin(); i != _game->getSavedGame()->getCountries()->end(); ++i)
+	std::string regionName, countryName;
+	for (const auto* country : *_game->getSavedGame()->getCountries())
 	{
-		if ((*i)->getRules()->insideCountry(_base->getLongitude(), _base->getLatitude()))
+		if (country->getRules()->insideCountry(_base->getLongitude(), _base->getLatitude()))
 		{
-			country = tr((*i)->getRules()->getType());
+			countryName = tr(country->getRules()->getType());
 			break;
 		}
 	}
-	for (std::vector<Region*>::iterator i = _game->getSavedGame()->getRegions()->begin(); i != _game->getSavedGame()->getRegions()->end(); ++i)
+	for (const auto* region : *_game->getSavedGame()->getRegions())
 	{
-		if ((*i)->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
+		if (region->getRules()->insideRegion(_base->getLongitude(), _base->getLatitude()))
 		{
-			region = tr((*i)->getRules()->getType());
+			regionName = tr(region->getRules()->getType());
 			break;
 		}
 	}
 	std::string location;
-	if (!country.empty())
+	if (!countryName.empty())
 	{
-		location = tr("STR_COUNTRIES_COMMA").arg(country).arg(region);
+		location = tr("STR_COUNTRIES_COMMA").arg(countryName).arg(regionName);
 	}
-	else if (!region.empty())
+	else if (!regionName.empty())
 	{
-		location = region;
+		location = regionName;
 	}
 	else
 	{

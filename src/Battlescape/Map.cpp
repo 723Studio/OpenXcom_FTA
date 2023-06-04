@@ -131,6 +131,11 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	{
 		_transparencies = &_game->getMod()->getLUTs()->at(_save->getDepth());
 	}
+	else
+	{
+		const static std::vector<Uint8> dummy;
+		_transparencies = &dummy;
+	}
 
 	_spriteWidth = _game->getMod()->getSurfaceSet("BLANKS.PCK")->getFrame(0)->getWidth();
 	_spriteHeight = _game->getMod()->getSurfaceSet("BLANKS.PCK")->getFrame(0)->getHeight();
@@ -188,7 +193,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_fadeTimer->onTimer((SurfaceHandler)&Map::fadeShade);
 	_fadeTimer->start();
 
-	auto enviro = _save->getEnviroEffects();
+	auto* enviro = _save->getEnviroEffects();
 	if (enviro)
 	{
 		_bgColor = enviro->getMapBackgroundColor();
@@ -384,10 +389,10 @@ void Map::draw()
 	_explosionInFOV = _save->getDebugMode();
 	if (!_explosions.empty())
 	{
-		for (std::list<Explosion*>::iterator i = _explosions.begin(); i != _explosions.end(); ++i)
+		for (auto* explosion : _explosions)
 		{
-			t = _save->getTile((*i)->getPosition().toTile());
-			if (t && ((*i)->isBig() || t->getVisible()))
+			t = _save->getTile(explosion->getPosition().toTile());
+			if (t && (explosion->isBig() || t->getVisible()))
 			{
 				_explosionInFOV = true;
 				break;
@@ -414,9 +419,9 @@ void Map::draw()
 void Map::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 {
 	Surface::setPalette(colors, firstcolor, ncolors);
-	for (std::vector<MapDataSet*>::const_iterator i = _save->getMapDataSets()->begin(); i != _save->getMapDataSets()->end(); ++i)
+	for (auto* mds : *_save->getMapDataSets())
 	{
-		(*i)->getSurfaceset()->setPalette(colors, firstcolor, ncolors);
+		mds->getSurfaceset()->setPalette(colors, firstcolor, ncolors);
 	}
 	_message->setPalette(colors, firstcolor, ncolors);
 	_message->setBackground(_game->getMod()->getSurface(_save->getHiddenMovementBackground()));
@@ -527,7 +532,7 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	}
 	else if (movingUnit && unitTile == currTile)
 	{
-		auto upperTile = _save->getAboveTile(unitTile);
+		auto* upperTile = _save->getAboveTile(unitTile);
 		if (upperTile && upperTile->hasNoFloor(_save))
 		{
 			bu = upperTile->getUnit();
@@ -721,15 +726,15 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	};
 
 	// draw unit
-	auto shade = 0;
-	auto offsets = calculateWalkingOffset(bu);
+	int shade = 0;
+	UnitWalkingOffset offsets = calculateWalkingOffset(bu);
 	if (moving)
 	{
-		const auto start = bu->getPosition();
-		const auto end = bu->getDestination();
-		const auto minLevel = std::min(start.z, end.z);
-		const auto startShade = getMixedTileShade(_save->getTile(start), start.z == minLevel ? offsets.TerrainLevelOffset : 0, false);
-		const auto endShade = getMixedTileShade(_save->getTile(end), end.z == minLevel ? offsets.TerrainLevelOffset : 0, false);
+		const Position start = bu->getPosition();
+		const Position end = bu->getDestination();
+		const auto minLevel = std::min(start.z, end.z); // Sint16
+		const int startShade = getMixedTileShade(_save->getTile(start), start.z == minLevel ? offsets.TerrainLevelOffset : 0, false);
+		const int endShade = getMixedTileShade(_save->getTile(end), end.z == minLevel ? offsets.TerrainLevelOffset : 0, false);
 		shade = Interpolate(startShade, endShade, offsets.NormalizedMovePhase, 16);
 	}
 	else
@@ -907,7 +912,7 @@ void Map::drawTerrain(Surface *surface)
 	}
 
 	surface->lock();
-	const auto cameraPos = _camera->getMapOffset();
+	const Position cameraPos = _camera->getMapOffset();
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
@@ -924,7 +929,7 @@ void Map::drawTerrain(Surface *surface)
 				if (screenPosition.x > -_spriteWidth && screenPosition.x < surface->getWidth() + _spriteWidth &&
 					screenPosition.y > -_spriteHeight && screenPosition.y < surface->getHeight() + _spriteHeight )
 				{
-					auto isUnitMovingNearby = movingUnit && positionInRangeXY(movingUnitPosition, mapPosition, 2);
+					bool isUnitMovingNearby = movingUnit && positionInRangeXY(movingUnitPosition, mapPosition, 2);
 
 					if (tile->isDiscovered(O_FLOOR))
 					{
@@ -956,7 +961,7 @@ void Map::drawTerrain(Surface *surface)
 							Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR), tileShade, false, _nvColor);
 					}
 
-					auto unit = tile->getUnit();
+					auto* unit = tile->getUnit();
 					auto battleObject = tile->getBattleObject();
 
 					// Draw cursor back
@@ -1024,7 +1029,7 @@ void Map::drawTerrain(Surface *surface)
 						tmpSurface = tile->getSprite(O_WESTWALL);
 						if (tmpSurface)
 						{
-							auto wallShade = getWallShade(O_WESTWALL, tile);
+							int wallShade = getWallShade(O_WESTWALL, tile);
 							if (tile->getObstacle(O_WESTWALL))
 								Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL), obstacleShade, false, _nvColor);
 							else
@@ -1034,7 +1039,7 @@ void Map::drawTerrain(Surface *surface)
 						tmpSurface = tile->getSprite(O_NORTHWALL);
 						if (tmpSurface)
 						{
-							auto wallShade = getWallShade(O_NORTHWALL, tile);
+							int wallShade = getWallShade(O_NORTHWALL, tile);
 							if (tile->getObstacle(O_NORTHWALL))
 								Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL), obstacleShade, bool(tile->getSprite(O_WESTWALL)), _nvColor);
 							else
@@ -1193,6 +1198,36 @@ void Map::drawTerrain(Surface *surface)
 							}
 						}
 					}
+
+					//draw particle clouds
+					int pixelMaskArray[] = { 0, 2, 1, 3 };
+					SurfaceRaw<int> pixelMask(pixelMaskArray, 2, 2);
+					const int vaporScreenOriginX = screenPosition.x + _spriteWidth / 2;
+					const int vaporScreenOriginY = screenPosition.y + _spriteHeight - _spriteWidth / 2 + tile->getPosition().toVoxel().z;
+					const Uint8* const transparetPtr = _transparencies->data();
+
+					//draw particle clouds behind solder
+					for (const Particle& p : getVaporParticle(tile, 0))
+					{
+						int vaporX = vaporScreenOriginX + p.getOffsetX();
+						int vaporY = vaporScreenOriginY + p.getOffsetY();
+						auto transparetOffsets = transparetPtr
+							+ (p.getColor() * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
+							+ (p.getOpacity() * Mod::TransparenciesPaletteColors);
+
+						ShaderDrawFunc(
+							[&](Uint8& dest, int size)
+							{
+								if (p.getSize() <= size)
+								{
+									dest = transparetOffsets[dest];
+								}
+							},
+							ShaderSurface(this),
+							ShaderMove(pixelMask, vaporX, vaporY)
+						);
+					}
+
 					unit = tile->getUnit();
 					// Draw soldier from this tile, below or above
 					drawUnit(unitSprite, tile, tile, screenPosition, topLayer, isUnitMovingNearby ? movingUnit : nullptr);
@@ -1246,29 +1281,26 @@ void Map::drawTerrain(Surface *surface)
 						Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, shade, false, _nvColor);
 					}
 
-					//draw particle clouds
-					int pixelMaskArray[] = { 0, 2, 1, 3 };
-					SurfaceRaw<int> pixelMask(pixelMaskArray, 2, 2);
-					for (const auto& p : getVaporParticle(tile, topLayer))
+					//draw particle clouds on front of solder
+					for (const Particle& p : getVaporParticle(tile, topLayer ? 3 : 1))
 					{
-						if ((int)(_transparencies->size()) >= (p.getColor() + 1) * 1024)
-						{
-							auto vaporX = p.getX() + cameraPos.x;
-							auto vaporY = p.getY() + cameraPos.y;
-							auto transparetOffsets = _transparencies->data() + (p.getColor() * 1024) + (p.getOpacity() * 256);
+						int vaporX = vaporScreenOriginX + p.getOffsetX();
+						int vaporY = vaporScreenOriginY + p.getOffsetY();
+						auto transparetOffsets = transparetPtr
+							+ (p.getColor() * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
+							+ (p.getOpacity() * Mod::TransparenciesPaletteColors);
 
-							ShaderDrawFunc(
-								[&](Uint8& dest, int size)
+						ShaderDrawFunc(
+							[&](Uint8& dest, int size)
+							{
+								if (p.getSize() <= size)
 								{
-									if (p.getSize() <= size)
-									{
-										dest = transparetOffsets[dest];
-									}
-								},
-								ShaderSurface(this),
-								ShaderMove(pixelMask, vaporX, vaporY)
-							);
-						}
+									dest = transparetOffsets[dest];
+								}
+							},
+							ShaderSurface(this),
+							ShaderMove(pixelMask, vaporX, vaporY)
+						);
 					}
 
 					// Draw Path Preview
@@ -1344,7 +1376,7 @@ void Map::drawTerrain(Surface *surface)
 								BattleAction *action = _save->getBattleGame()->getCurrentAction();
 								const RuleItem *weapon = action->weapon->getRules();
 								std::ostringstream ss;
-								auto attack = BattleActionAttack::GetBeforeShoot(*action);
+								BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(*action);
 								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
 								int distance = (int)std::ceil(sqrt(float(distanceSq)));
 
@@ -1443,7 +1475,7 @@ void Map::drawTerrain(Surface *surface)
 									}
 									else if (action->weapon->needsAmmoForAction(action->type))
 									{
-										auto ammo = attack.damage_item;
+										auto* ammo = attack.damage_item;
 										if (ammo != nullptr)
 										{
 											rule = ammo->getRules();
@@ -1569,9 +1601,9 @@ void Map::drawTerrain(Surface *surface)
 					int waypXOff = 2;
 					int waypYOff = 2;
 
-					for (std::vector<Position>::const_iterator i = _waypoints.begin(); i != _waypoints.end(); ++i)
+					for (const auto& waypoint : _waypoints)
 					{
-						if ((*i) == mapPosition)
+						if (waypoint == mapPosition)
 						{
 							if (waypXOff == 2 && waypYOff == 2)
 							{
@@ -1694,7 +1726,7 @@ void Map::drawTerrain(Surface *surface)
 		}
 	}
 
-	auto selectedUnit = _save->getSelectedUnit();
+	auto* selectedUnit = _save->getSelectedUnit();
 	if (selectedUnit && (_save->getSide() == FACTION_PLAYER || _save->getDebugMode()) && selectedUnit->getPosition().z <= _camera->getViewLevel())
 	{
 		_camera->convertMapToScreen(selectedUnit->getPosition(), &screenPosition);
@@ -1718,7 +1750,7 @@ void Map::drawTerrain(Surface *surface)
 	// Draw motion scanner arrows
 	if (_isAltPressed && _save->getSide() == FACTION_PLAYER && this->getCursorType() != CT_NONE)
 	{
-		for (auto myUnit : *_save->getUnits())
+		for (auto* myUnit : *_save->getUnits())
 		{
 			if (myUnit->getScannedTurn() == _save->getTurn() && myUnit->getFaction() != FACTION_PLAYER && !myUnit->isOut())
 			{
@@ -1836,25 +1868,25 @@ void Map::drawTerrain(Surface *surface)
 		}
 		else
 		{
-			for (std::list<Explosion*>::const_iterator i = _explosions.begin(); i != _explosions.end(); ++i)
+			for (const auto* explosion : _explosions)
 			{
-				_camera->convertVoxelToScreen((*i)->getPosition(), &bulletPositionScreen);
-				if ((*i)->isBig())
+				_camera->convertVoxelToScreen(explosion->getPosition(), &bulletPositionScreen);
+				if (explosion->isBig())
 				{
-					if ((*i)->getCurrentFrame() >= 0)
+					if (explosion->getCurrentFrame() >= 0)
 					{
-						tmpSurface = _game->getMod()->getSurfaceSet("X1.PCK")->getFrame((*i)->getCurrentFrame());
+						tmpSurface = _game->getMod()->getSurfaceSet("X1.PCK")->getFrame(explosion->getCurrentFrame());
 						Surface::blitRaw(surface, tmpSurface, bulletPositionScreen.x - (tmpSurface.getWidth() / 2), bulletPositionScreen.y - (tmpSurface.getHeight() / 2), 0, false, _nvColor);
 					}
 				}
-				else if ((*i)->isHit())
+				else if (explosion->isHit())
 				{
-					tmpSurface = _game->getMod()->getSurfaceSet("HIT.PCK")->getFrame((*i)->getCurrentFrame());
+					tmpSurface = _game->getMod()->getSurfaceSet("HIT.PCK")->getFrame(explosion->getCurrentFrame());
 					Surface::blitRaw(surface, tmpSurface, bulletPositionScreen.x - 15, bulletPositionScreen.y - 25, 0, false, _nvColor);
 				}
 				else
 				{
-					tmpSurface = _game->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame((*i)->getCurrentFrame());
+					tmpSurface = _game->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame(explosion->getCurrentFrame());
 					Surface::blitRaw(surface, tmpSurface, bulletPositionScreen.x - 15, bulletPositionScreen.y - 15, 0, false, _nvColor);
 				}
 			}
@@ -1979,11 +2011,11 @@ int Map::reShade(Tile *tile)
 	}
 
 	// hybrid night vision (local)
-	for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+	for (const auto* bu : *_save->getUnits())
 	{
-		if ((*i)->getFaction() == FACTION_PLAYER && !(*i)->isOut())
+		if (bu->getFaction() == FACTION_PLAYER && !bu->isOut())
 		{
-			if (Position::distance2dSq(tile->getPosition(), (*i)->getPosition()) <= (*i)->getMaxViewDistanceAtDarkSquared())
+			if (Position::distance2dSq(tile->getPosition(), bu->getPosition()) <= bu->getMaxViewDistanceAtDarkSquared())
 			{
 				return tile->getShade() > _fadeShade ? _fadeShade : tile->getShade();
 			}
@@ -2065,6 +2097,35 @@ void Map::animate(bool redraw)
 		_save->getTile(i)->animate();
 	}
 
+	// animate vapor
+	for (auto i : Collections::rangeValueLess(_vaporParticles.size()))
+	{
+		auto& v = _vaporParticles[i];
+		int posX = i % _camera->getMapSizeX();
+		int posY = i / _camera->getMapSizeX();
+
+		Collections::removeIf(
+			v,
+			[&](Particle& p)
+			{
+				if (p.animate())
+				{
+					Position tileOffset = p.updateScreenPosition();
+					if (tileOffset != Position(0,0,0))
+					{
+						addVaporParticle(Position(posX,posY,0) + tileOffset, p);
+						return true;
+					}
+					return false;
+				}
+				else
+				{
+					return true;
+				}
+			}
+		);
+	}
+
 	// init vapor vector
 	for (auto i : Collections::rangeValueLess(_vaporParticlesInit.size()))
 	{
@@ -2084,37 +2145,26 @@ void Map::animate(bool redraw)
 			vDest.insert(std::begin(vDest), std::begin(vi), std::end(vi));
 		}
 
-		std::sort(std::begin(vDest), std::end(vDest), [](const Particle& a, const Particle& b){ return a.getVoxelZ() < b.getVoxelZ(); });
 
 		Collections::removeAll(vi);
 	}
 
-	// animate vapor
 	for (auto& tilePar : _vaporParticles)
 	{
 		if (tilePar.empty())
 		{
-			continue;
-		}
-
-		auto left = Collections::removeIf(
-			tilePar,
-			[](Particle& p)
-			{
-				return p.animate() == false;
-			}
-		);
-		if (!left)
-		{
-			//clean all allocated memory, after every particle expire.
 			Collections::removeAll(tilePar);
+		}
+		else
+		{
+			std::sort(std::begin(tilePar), std::end(tilePar), [](const Particle& a, const Particle& b){ return a.getLayerZ() < b.getLayerZ(); });
 		}
 	}
 
 	// animate certain units (large flying units have a propulsion animation)
-	for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+	for (auto* bu : *_save->getUnits())
 	{
-		const auto pos = (*i)->getPosition();
+		const Position pos = bu->getPosition();
 
 		// skip units that do not have position
 		if (pos == TileEngine::invalid)
@@ -2124,7 +2174,7 @@ void Map::animate(bool redraw)
 
 		if (_save->getDepth() > 0)
 		{
-			(*i)->setFloorAbove(false);
+			bu->setFloorAbove(false);
 
 			// make sure this unit isn't obscured by the floor above him, otherwise it looks weird.
 			if (_camera->getViewLevel() > pos.z)
@@ -2133,14 +2183,14 @@ void Map::animate(bool redraw)
 				{
 					if (!_save->getTile(Position(pos.x, pos.y, z))->hasNoFloor(0))
 					{
-						(*i)->setFloorAbove(true);
+						bu->setFloorAbove(true);
 						break;
 					}
 				}
 			}
 		}
 
-		(*i)->breathe();
+		bu->breathe();
 	}
 
 	if (redraw) _redraw = true;
@@ -2212,9 +2262,9 @@ UnitWalkingOffset Map::calculateWalkingOffset(const BattleUnit *unit) const
 	// If we are walking in between tiles, interpolate it's terrain level.
 	if (unit->getStatus() == STATUS_WALKING || unit->getStatus() == STATUS_FLYING)
 	{
-		const auto posCurr = unit->getPosition();
-		const auto posDest = unit->getDestination();
-		const auto posLast = unit->getLastPosition();
+		const Position posCurr = unit->getPosition();
+		const Position posDest = unit->getDestination();
+		const Position posLast = unit->getLastPosition();
 		if (phase < midphase)
 		{
 			int fromLevel = getTerrainLevel(posCurr, size);
@@ -2335,10 +2385,32 @@ Projectile *Map::getProjectile() const
 
 /**
  * Add new vapor particle.
+ * @param pos Tile position of particle.
+ * @param particle Particle to add.
  */
-void Map::addVaporParticle(const Tile* tile, Particle particle)
+void Map::addVaporParticle(Position pos, Particle particle)
 {
-	auto& v = _vaporParticlesInit[_camera->getMapSizeX() * tile->getPosition().y + tile->getPosition().x];
+	if ((int)(_transparencies->size()) < (particle.getColor() + 1) * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
+	{
+		return;
+	}
+	if (pos.x >= _camera->getMapSizeX() || pos.y >= _camera->getMapSizeY())
+	{
+		return;
+	}
+	if (pos.x < 0 || pos.y < 0)
+	{
+		return;
+	}
+
+	auto& v = _vaporParticlesInit[_camera->getMapSizeX() * pos.y + pos.x];
+
+	// as there will usually be more than one Particle, we prepare more space
+	if (v.capacity() < 64)
+	{
+		v.reserve(64);
+	}
+
 	v.push_back(particle);
 }
 
@@ -2348,14 +2420,14 @@ void Map::addVaporParticle(const Tile* tile, Particle particle)
  * @param topLayer if tile is top visible layer, if true then will return particles belongs to upper tiles.
  * @return range of particles that should be drawn.
  */
-Collections::Range<const Particle*> Map::getVaporParticle(const Tile* tile, bool topLayer) const
+Collections::Range<const Particle*> Map::getVaporParticle(const Tile* tile, int topLayer) const
 {
-	auto pos = tile->getPosition();
+	Position pos = tile->getPosition();
 	auto& v = _vaporParticles[_camera->getMapSizeX() * pos.y + pos.x];
-	auto startZ = pos.z * Position::TileZ;
-	auto endZ = startZ + Position::TileZ;
-	auto s = std::partition_point(v.data(), v.data() + v.size(), [&](const Particle& a){ return a.getVoxelZ() < startZ; });
-	auto e = topLayer ? v.data() + v.size() : std::partition_point(s, v.data() + v.size(), [&](const Particle& a){ return a.getVoxelZ() < endZ; });
+	int startZ = pos.z * Particle::LayerAccuracy + (topLayer & 1);
+	int endZ = startZ + Particle::LayerAccuracy / 2;
+	auto* s = std::partition_point(v.data(), v.data() + v.size(), [&](const Particle& a){ return a.getLayerZ() < startZ; });
+	auto* e = (topLayer & 2) ? v.data() + v.size() : std::partition_point(s, v.data() + v.size(), [&](const Particle& a){ return a.getLayerZ() < endZ; });
 	return Collections::Range{ s, e };
 }
 

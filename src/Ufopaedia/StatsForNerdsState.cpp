@@ -142,7 +142,7 @@ const std::map<std::string, std::string> StatsForNerdsState::shortTranslationMap
  */
 StatsForNerdsState::StatsForNerdsState(std::shared_ptr<ArticleCommonState> state, bool debug, bool ids, bool defaults) : _state{ std::move(state) }, _counter(0), _indent(false)
 {
-	auto article = _state->getCurrentArticle();
+	auto* article = _state->getCurrentArticle();
 	_typeId = article->getType();
 	_topicId = article->id;
 	_mainArticle = true;
@@ -346,22 +346,22 @@ void StatsForNerdsState::cbxAmmoSelect(Action *)
 		if (_typeId == UFOPAEDIA_TYPE_ITEM || _typeId == UFOPAEDIA_TYPE_TFTD_ITEM)
 		{
 			// perform same checks as in ArticleStateItem.cpp
-			auto ammoId = _filterOptions.at(selIdx);
-			auto ammo_article = _game->getMod()->getUfopaediaArticle(ammoId, true);
+			const auto& ammoId = _filterOptions.at(selIdx);
+			auto* ammo_article = _game->getMod()->getUfopaediaArticle(ammoId, true);
 			if (Ufopaedia::isArticleAvailable(_game->getSavedGame(), ammo_article))
 			{
-				auto ammo_rule = _game->getMod()->getItem(ammoId, true);
+				auto* ammo_rule = _game->getMod()->getItem(ammoId, true);
 				_game->pushState(new StatsForNerdsState(UFOPAEDIA_TYPE_ITEM, ammo_rule->getType(), _btnIncludeDebug->getPressed(), _btnIncludeIds->getPressed(), _btnIncludeDefaults->getPressed()));
 			}
 		}
 		else if(_typeId == UFOPAEDIA_TYPE_ARMOR || _typeId == UFOPAEDIA_TYPE_TFTD_ARMOR)
 		{
 			// perform similar checks as above, but don't crash if article is not found
-			auto builtInItemId = _filterOptions.at(selIdx);
-			auto builtInItem_article = _game->getMod()->getUfopaediaArticle(builtInItemId, false);
+			const auto& builtInItemId = _filterOptions.at(selIdx);
+			auto* builtInItem_article = _game->getMod()->getUfopaediaArticle(builtInItemId, false);
 			if (builtInItem_article && Ufopaedia::isArticleAvailable(_game->getSavedGame(), builtInItem_article))
 			{
-				auto builtInItem_rule = _game->getMod()->getItem(builtInItemId, true);
+				auto* builtInItem_rule = _game->getMod()->getItem(builtInItemId, true);
 				_game->pushState(new StatsForNerdsState(UFOPAEDIA_TYPE_ITEM, builtInItem_rule->getType(), _btnIncludeDebug->getPressed(), _btnIncludeIds->getPressed(), _btnIncludeDefaults->getPressed()));
 			}
 		}
@@ -699,7 +699,7 @@ void StatsForNerdsState::addVectorOfGeneric(std::ostringstream &ss, const std::v
 	resetStream(ss);
 	int i = 0;
 	ss << "{";
-	for (auto &item : vec)
+	for (auto& item : vec)
 	{
 		if (i > 0)
 		{
@@ -827,7 +827,7 @@ void StatsForNerdsState::addScriptTags(std::ostringstream &ss, const ScriptValue
 {
 	auto& tagValues = values.getValuesRaw();
 	ArgEnum index = ScriptParserBase::getArgType<ScriptTag<T, I>>();
-	auto tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
+	auto& tagNames = _game->getMod()->getScriptGlobal()->getTagNames().at(index);
 	for (size_t i = 0; i < tagValues.size(); ++i)
 	{
 		auto nameAsString = tagNames.values[i].name.toString().substr(4);
@@ -844,7 +844,7 @@ void StatsForNerdsState::addIntegerScript(const std::string &propertyName, const
 
 void StatsForNerdsState::addTextScript(const std::string &propertyName, const std::string &value)
 {
-	auto text = _showDebug ? value : std::string(tr(value));
+	std::string text = _showDebug ? value : std::string(tr(value));
 	_lstRawData->addRow(2, trp(propertyName).c_str(), text.c_str());
 	_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	++_counter;
@@ -852,7 +852,7 @@ void StatsForNerdsState::addTextScript(const std::string &propertyName, const st
 
 void StatsForNerdsState::addTextFormat1Script(const std::string &propertyName, const std::string &format, const int &value1)
 {
-	auto text = tr(format).arg(value1);
+	std::string text = tr(format).arg(value1);
 	_lstRawData->addRow(2, trp(propertyName).c_str(), text.c_str());
 	_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	++_counter;
@@ -860,7 +860,7 @@ void StatsForNerdsState::addTextFormat1Script(const std::string &propertyName, c
 
 void StatsForNerdsState::addTextFormat2Script(const std::string &propertyName, const std::string &format, const int &value1, const int &value2)
 {
-	auto text = tr(format).arg(value1).arg(value2);
+	std::string text = tr(format).arg(value1).arg(value2);
 	_lstRawData->addRow(2, trp(propertyName).c_str(), text.c_str());
 	_lstRawData->setCellColor(_lstRawData->getLastRowIndex(), 1, _pink);
 	++_counter;
@@ -1140,7 +1140,7 @@ void StatsForNerdsState::addVectorOfIntegers(std::ostringstream &ss, const std::
 	resetStream(ss);
 	int i = 0;
 	ss << "{";
-	for (auto &item : vec)
+	for (auto& item : vec)
 	{
 		if (i > 0)
 		{
@@ -1618,7 +1618,7 @@ void StatsForNerdsState::addRuleStatBonus(std::ostringstream &ss, const RuleStat
 	}
 	resetStream(ss);
 	bool isFirst = true;
-	for (RuleStatBonusDataOrig item : *value.getBonusRaw())
+	for (const auto& item : *value.getBonusRaw())
 	{
 		int power = 0;
 		for (float number : item.second)
@@ -1705,15 +1705,15 @@ void StatsForNerdsState::addRuleArmorMoveCost(std::ostringstream &ss, const Armo
  */
 void StatsForNerdsState::addSpriteResourcePath(std::ostringstream &ss, Mod *mod, const std::string &resourceSetName, const int &resourceId)
 {
-	std::map<std::string, std::vector<ExtraSprites *> >::const_iterator i = mod->getExtraSprites().find(resourceSetName);
+	auto i = mod->getExtraSprites().find(resourceSetName);
 	if (i != mod->getExtraSprites().end())
 	{
-		for (auto extraSprite : i->second)
+		for (auto* extraSprite : i->second)
 		{
 			// strip mod offset from the in-game ID
 			int originalSpriteId = resourceId - (extraSprite->getModOwner()->offset);
 
-			auto mapOfSprites = extraSprite->getSprites();
+			auto* mapOfSprites = extraSprite->getSprites();
 			auto individualSprite = mapOfSprites->find(originalSpriteId);
 			if (individualSprite != mapOfSprites->end())
 			{
@@ -1744,17 +1744,17 @@ void StatsForNerdsState::addSoundVectorResourcePaths(std::ostringstream &ss, Mod
 	}
 
 	// go through all extra sounds from all mods
-	for (auto resourceSet : mod->getExtraSounds())
+	for (auto& resourceSet : mod->getExtraSounds())
 	{
 		// only check the relevant ones (e.g. "BATTLE.CAT")
 		if (resourceSet.first == resourceSetName)
 		{
-			for (auto resourceId : resourceIds)
+			for (int resourceId : resourceIds)
 			{
 				// strip mod offset from the in-game ID
 				int originalSoundId = resourceId - (resourceSet.second->getModOwner()->offset);
 
-				auto mapOfSounds = resourceSet.second->getSounds();
+				auto* mapOfSounds = resourceSet.second->getSounds();
 				auto individualSound = mapOfSounds->find(originalSoundId);
 				if (individualSound != mapOfSounds->end())
 				{
@@ -1800,7 +1800,7 @@ void StatsForNerdsState::initItemList()
 	_filterOptions.push_back("STR_COMPATIBLE_AMMO");
 	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 	{
-		for (auto ammo : *itemRule->getCompatibleAmmoForSlot(slot))
+		for (auto* ammo : *itemRule->getCompatibleAmmoForSlot(slot))
 		{
 			_filterOptions.push_back(ammo->getType());
 		}
@@ -2187,6 +2187,7 @@ void StatsForNerdsState::initItemList()
 
 		addSection("{Naming}", "", _white);
 		addSingleString(ss, itemRule->getType(), "type");
+		addSingleString(ss, itemRule->getUfopediaType(), "ufopediaType");
 		addSingleString(ss, itemRule->getName(), "name", itemRule->getType());
 		addSingleString(ss, itemRule->getNameAsAmmo(), "nameAsAmmo");
 		addInteger(ss, itemRule->getListOrder(), "listOrder");
@@ -2249,12 +2250,19 @@ void StatsForNerdsState::initItemList()
 			endHeading();
 		}
 		addIntegerPercent(ss, itemRule->getSpecialChance(), "specialChance", 100);
+
+		addSection("{Spawning}", "", _white);
 		addBoolean(ss, !itemRule->getZombieUnitByArmorMaleRaw().empty(), "zombieUnitByArmorMale*", false); // just say if there are any or not
 		addBoolean(ss, !itemRule->getZombieUnitByArmorFemaleRaw().empty(), "zombieUnitByArmorFemale*", false); // just say if there are any or not
 		addBoolean(ss, !itemRule->getZombieUnitByTypeRaw().empty(), "zombieUnitByType*", false); // just say if there are any or not
 		addSingleString(ss, itemRule->getZombieUnit(nullptr), "zombieUnit");
-		addSingleString(ss, itemRule->getSpawnUnit(), "spawnUnit");
-		addInteger(ss, itemRule->getSpawnUnitFaction(), "spawnUnitFaction", -1);
+		addIntegerPercent(ss, itemRule->getZombieUnitChance(), "zombieUnitChance", 100); // default -1 means same as "specialChance"
+		addInteger(ss, itemRule->getZombieUnitFaction(), "zombieUnitFaction", 1); // hostile
+		addRule(ss, itemRule->getSpawnUnit(), "spawnUnit");
+		addIntegerPercent(ss, itemRule->getSpawnUnitChance(), "spawnUnitChance", 100); // default -1 means same as "specialChance"
+		addInteger(ss, itemRule->getSpawnUnitFaction(), "spawnUnitFaction", -1); // none (i.e. same faction as attacker)
+		addRule(ss, itemRule->getSpawnItem(), "spawnItem");
+		addIntegerPercent(ss, itemRule->getSpawnItemChance(), "spawnItemChance", 100); // default -1 means same as "specialChance"
 
 		addSection("{Sprites}", "", _white);
 		addBoolean(ss, itemRule->getFixedShow(), "fixedWeaponShow");
@@ -2365,6 +2373,13 @@ void StatsForNerdsState::initItemList()
 			addScriptTags(ss, itemRule->getScriptValuesRaw());
 			endHeading();
 		}
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(itemRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(itemRule)->name, "updatedByMod");
+			endHeading();
+		}
 	}
 }
 
@@ -2421,7 +2436,7 @@ void StatsForNerdsState::addUnitStatBonus(std::ostringstream &ss, const UnitStat
 void StatsForNerdsState::addArmorDamageModifiers(std::ostringstream &ss, const std::vector<float> &vec, const std::string &propertyName)
 {
 	bool isDefault = true;
-	for (auto &item : vec)
+	for (auto& item : vec)
 	{
 		if (!AreSame(item, 1.0f))
 		{
@@ -2436,7 +2451,7 @@ void StatsForNerdsState::addArmorDamageModifiers(std::ostringstream &ss, const s
 	int index = 0;
 	bool isFirst = true;
 	ss << "{";
-	for (auto &item : vec)
+	for (auto& item : vec)
 	{
 		if (!AreSame(item, 1.0f) || _showDefaults)
 		{
@@ -2562,7 +2577,7 @@ void StatsForNerdsState::addForcedTorso(std::ostringstream &ss, const ForcedTors
 	}
 	if (_showIds)
 	{
-		ss << " [" << value << "]";
+		ss << " [" << (int)value << "]";
 	}
 	_lstRawData->addRow(2, trp(propertyName).c_str(), ss.str().c_str());
 	++_counter;
@@ -2688,7 +2703,7 @@ void StatsForNerdsState::initArmorList()
 	addBoolean(ss, armorRule->getCreatesMeleeThreat(), "createsMeleeThreat", createsMeleeThreatDefault);
 
 	_filterOptions.clear();
-	for (auto biw : armorRule->getBuiltInWeapons())
+	for (auto* biw : armorRule->getBuiltInWeapons())
 	{
 		// ignore dummy inventory padding
 		if (biw->getType().find("INV_NULL") == std::string::npos || _showDebug)
@@ -2823,6 +2838,7 @@ void StatsForNerdsState::initArmorList()
 		{
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostBase(), "basePercent", { 100, 100 });
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostBaseFly(), "baseFlyPercent", { 100, 100 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostBaseClimb(), "baseClimbPercent", { 100, 100 });
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostBaseNormal(), "baseNormalPercent", { 100, 100 });
 
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostWalk(), "walkPercent", { 100, 50 });
@@ -2836,6 +2852,9 @@ void StatsForNerdsState::initArmorList()
 
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyUp(), "flyUpPercent", { 100, 0 });
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostFlyDown(), "flyDownPercent", { 100, 0 });
+
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostClimbUp(), "climbUpPercent", { 100, 50 });
+			addRuleArmorMoveCost(ss, armorRule->getMoveCostClimbDown(), "climbDownPercent", { 100, 50 });
 
 			addRuleArmorMoveCost(ss, armorRule->getMoveCostGravLift(), "gravLiftPercent", { 100, 0 });
 
@@ -2854,6 +2873,13 @@ void StatsForNerdsState::initArmorList()
 		addSection("{Script tags}", "", _white, true);
 		{
 			addScriptTags(ss, armorRule->getScriptValuesRaw());
+			endHeading();
+		}
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(armorRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(armorRule)->name, "updatedByMod");
 			endHeading();
 		}
 	}
@@ -2914,6 +2940,13 @@ void StatsForNerdsState::initSoldierBonusList()
 			addScriptTags(ss, bonusRule->getScriptValuesRaw());
 			endHeading();
 		}
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(bonusRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(bonusRule)->name, "updatedByMod");
+			endHeading();
+		}
 	}
 }
 
@@ -2929,7 +2962,7 @@ void StatsForNerdsState::addVectorOfPositions(std::ostringstream &ss, const std:
 	resetStream(ss);
 	int i = 0;
 	ss << "{";
-	for (auto &item : vec)
+	for (auto& item : vec)
 	{
 		if (i > 0)
 		{
@@ -3121,6 +3154,13 @@ void StatsForNerdsState::initFacilityList()
 		tmpSoundVector.clear();
 		tmpSoundVector.push_back(facilityRule->getPlaceSound());
 		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", tmpSoundVector);
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(facilityRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(facilityRule)->name, "updatedByMod");
+			endHeading();
+		}
 	}
 }
 
@@ -3153,6 +3193,7 @@ void StatsForNerdsState::initCraftList()
 
 	addVectorOfStrings(ss, craftRule->getRequirements(), "requires");
 	addVectorOfStrings(ss, mod->getBaseFunctionNames(craftRule->getRequiresBuyBaseFunc()), "requiresBuyBaseFunc");
+	addSingleString(ss, craftRule->getRequiresBuyCountry(), "requiresBuyCountry");
 
 	addInteger(ss, craftRule->getBuyCost(), "costBuy", 0, true);
 	addInteger(ss, craftRule->getMonthlyBuyLimit(), "monthlyBuyLimit");
@@ -3246,7 +3287,7 @@ void StatsForNerdsState::initCraftList()
 		for (int i = 0; i < RuleCraft::WeaponMax; ++i)
 		{
 			std::ostringstream ss2;
-			auto weaponType = craftRule->getWeaponTypesRaw(i, 0);
+			int weaponType = craftRule->getWeaponTypesRaw(i, 0);
 			ss2 << "{" << weaponType;
 			for (int j = 1; j < RuleCraft::WeaponTypeMax; ++j)
 			{
@@ -3355,7 +3396,7 @@ void StatsForNerdsState::initCraftList()
 		{
 			addHeading("deployment");
 			{
-				for (auto &d : craftRule->getDeployment())
+				for (auto& d : craftRule->getDeployment())
 				{
 					addVectorOfIntegers(ss, d, "");
 				}
@@ -3366,6 +3407,13 @@ void StatsForNerdsState::initCraftList()
 		addSection("{Script tags}", "", _white, true);
 		{
 			addScriptTags(ss, craftRule->getScriptValuesRaw());
+			endHeading();
+		}
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(craftRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(craftRule)->name, "updatedByMod");
 			endHeading();
 		}
 	}
@@ -3533,7 +3581,7 @@ void StatsForNerdsState::initUfoList()
 		endHeading();
 	}
 
-	for (auto raceBonus : ufoRule->getRaceBonusRaw())
+	for (auto& raceBonus : ufoRule->getRaceBonusRaw())
 	{
 		if (!raceBonus.first.empty())
 		{
@@ -3605,6 +3653,13 @@ void StatsForNerdsState::initUfoList()
 		addSection("{Script tags}", "", _white, true);
 		{
 			addScriptTags(ss, ufoRule->getScriptValuesRaw());
+			endHeading();
+		}
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(ufoRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(ufoRule)->name, "updatedByMod");
 			endHeading();
 		}
 	}
@@ -3714,6 +3769,13 @@ void StatsForNerdsState::initCraftWeaponList()
 		std::vector<int> tmpSoundVector;
 		tmpSoundVector.push_back(craftWeaponRule->getSound());
 		addSoundVectorResourcePaths(ss, mod, "GEO.CAT", tmpSoundVector);
+
+		addSection("{Mod info}", "", _white);
+		{
+			addSingleString(ss, mod->getModCreatingRule(craftWeaponRule)->name, "createdByMod");
+			addSingleString(ss, mod->getModLastUpdatingRule(craftWeaponRule)->name, "updatedByMod");
+			endHeading();
+		}
 	}
 }
 

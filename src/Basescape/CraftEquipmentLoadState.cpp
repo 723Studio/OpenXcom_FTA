@@ -23,6 +23,7 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
@@ -43,7 +44,8 @@ CraftEquipmentLoadState::CraftEquipmentLoadState(CraftEquipmentState *parent) : 
 	_window = new Window(this, 240, 136, 40, 36+1, POPUP_BOTH);
 	_txtTitle = new Text(230, 16, 45, 44+3);
 	_lstLoadout = new TextList(208, 80, 48, 60);
-	_btnCancel = new TextButton(120, 16, 90, 148);
+	_btnOnlyAdd = new ToggleTextButton(100, 16, 56, 148);
+	_btnCancel = new TextButton(100, 16, 164, 148);
 
 	// Set palette
 	setInterface("craftEquipmentLoad");
@@ -51,6 +53,7 @@ CraftEquipmentLoadState::CraftEquipmentLoadState(CraftEquipmentState *parent) : 
 	add(_window, "window", "craftEquipmentLoad");
 	add(_txtTitle, "text", "craftEquipmentLoad");
 	add(_lstLoadout, "list", "craftEquipmentLoad");
+	add(_btnOnlyAdd, "button", "craftEquipmentLoad");
 	add(_btnCancel, "button", "craftEquipmentLoad");
 
 	centerAllSurfaces();
@@ -66,6 +69,8 @@ CraftEquipmentLoadState::CraftEquipmentLoadState(CraftEquipmentState *parent) : 
 	_lstLoadout->setBackground(_window);
 	_lstLoadout->setMargin(8);
 	_lstLoadout->onMouseClick((ActionHandler)&CraftEquipmentLoadState::lstLoadoutClick);
+
+	_btnOnlyAdd->setText(tr("STR_ADD_ON_TOP"));
 
 	_btnCancel->setText(tr("STR_CANCEL_UC"));
 	_btnCancel->onMouseClick((ActionHandler)&CraftEquipmentLoadState::btnCancelClick);
@@ -117,7 +122,8 @@ void CraftEquipmentLoadState::btnCancelClick(Action *)
 void CraftEquipmentLoadState::lstLoadoutClick(Action *)
 {
 	_game->popState();
-	_parent->loadGlobalLoadout(_lstLoadout->getSelectedRow());
+	bool addOnTop = _btnOnlyAdd->getPressed() || _game->isCtrlPressed();
+	_parent->loadGlobalLoadout(_lstLoadout->getSelectedRow(), addOnTop);
 }
 
 }

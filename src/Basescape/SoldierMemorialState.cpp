@@ -97,9 +97,9 @@ SoldierMemorialState::SoldierMemorialState()
 
 	size_t lost = _game->getSavedGame()->getDeadSoldiers()->size();
 	size_t recruited = lost;
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (const auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		recruited += (*i)->getTotalSoldiers();
+		recruited += xbase->getTotalSoldiers();
 	}
 
 	_txtRecruited->setText(tr("STR_SOLDIERS_RECRUITED_UC").arg(recruited));
@@ -215,11 +215,12 @@ void SoldierMemorialState::fillMemorialList()
 	for (std::vector<Soldier *>::reverse_iterator i = _game->getSavedGame()->getDeadSoldiers()->rbegin(); i != _game->getSavedGame()->getDeadSoldiers()->rend(); ++i)
 	{
 		++index;
+		const Soldier* deadSoldier = (*i);
 
 		// quick search
 		if (!searchString.empty())
 		{
-			std::string soldierName = (*i)->getName();
+			std::string soldierName = deadSoldier->getName();
 			Unicode::upperCase(soldierName);
 			if (soldierName.find(searchString) == std::string::npos)
 			{
@@ -227,14 +228,13 @@ void SoldierMemorialState::fillMemorialList()
 			}
 		}
 
-		SoldierDeath *death = (*i)->getDeath();
+		const SoldierDeath *death = deadSoldier->getDeath();
 
 		std::ostringstream saveDay, saveMonth, saveYear;
 		saveDay << death->getTime()->getDayString(_game->getLanguage());
 		saveMonth << tr(death->getTime()->getMonthString());
 		saveYear << death->getTime()->getYear();
-		bool fta = _game->getMod()->isFTAGame();
-		_lstSoldiers->addRow(5, (*i)->getName().c_str(), tr((*i)->getRankString(fta)).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
+		_lstSoldiers->addRow(5, deadSoldier->getName().c_str(), tr(deadSoldier->getRankString(_game->getMod()->isFTAGame())).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
 		_indices.push_back(index);
 	}
 }

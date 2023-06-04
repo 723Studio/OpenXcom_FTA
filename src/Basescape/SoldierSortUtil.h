@@ -25,7 +25,7 @@
 namespace OpenXcom
 {
 
-typedef int (*getStatFn_t)(Game *, Soldier *);
+typedef int (*getStatFn_t)(const Game*, const Soldier*);
 
 struct SortFunctor
 {
@@ -48,7 +48,7 @@ struct SortFunctor
 };
 
 #define GET_ATTRIB_STAT_FN(attrib) \
-	int attrib##Stat(Game *game, Soldier *s);
+	int attrib##Stat(const Game *game, const Soldier *s);
 GET_ATTRIB_STAT_FN(tu)
 GET_ATTRIB_STAT_FN(stamina)
 GET_ATTRIB_STAT_FN(health)
@@ -102,7 +102,7 @@ GET_ATTRIB_STAT_FN(interrogation)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
-	int attrib##StatBase(Game *game, Soldier *s);
+	int attrib##StatBase(const Game *game, const Soldier *s);
 GET_ATTRIB_STAT_FN(tu)
 GET_ATTRIB_STAT_FN(stamina)
 GET_ATTRIB_STAT_FN(health)
@@ -155,7 +155,7 @@ GET_ATTRIB_STAT_FN(interrogation)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_ATTRIB_STAT_FN(attrib) \
-	int attrib##StatPlus(Game *game, Soldier *s);
+	int attrib##StatPlus(const Game *game, const Soldier *s);
 GET_ATTRIB_STAT_FN(tu)
 GET_ATTRIB_STAT_FN(stamina)
 GET_ATTRIB_STAT_FN(health)
@@ -208,9 +208,10 @@ GET_ATTRIB_STAT_FN(interrogation)
 #undef GET_ATTRIB_STAT_FN
 
 #define GET_SOLDIER_STAT_FN(attrib, camelCaseAttrib) \
-	int attrib##Stat(Game *game, Soldier *s);
+	int attrib##Stat(const Game *game, const Soldier *s);
 GET_SOLDIER_STAT_FN(id, Id)
 GET_SOLDIER_STAT_FN(name, Name)
+GET_SOLDIER_STAT_FN(craftId, CraftId)
 GET_SOLDIER_STAT_FN(type, Type)
 GET_SOLDIER_STAT_FN(role, Role)
 GET_SOLDIER_STAT_FN(roleRank, RoleRank)

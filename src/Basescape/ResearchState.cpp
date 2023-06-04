@@ -273,24 +273,24 @@ void ResearchState::init()
  */
 void ResearchState::fillProjectList(size_t scrl)
 {
-	const std::vector<ResearchProject *> & baseProjects(_base->getResearch());
 	_lstResearch->clearList();
-	for (std::vector<ResearchProject *>::const_iterator iter = baseProjects.begin(); iter != baseProjects.end(); ++iter)
+	for (const auto* proj : _base->getResearch())
 	{
 		std::ostringstream sstr, sspr;
+		const RuleResearch *r = proj->getRules();
 		if (_ftaUi)
 		{
 			size_t n = 0;
 			for (auto s : *_base->getSoldiers())
 			{
-				if (s->getResearchProject() == (*iter))
+				if (s->getResearchProject() == proj)
 				{
 					n++;
 				}
 			}
 			sstr << n;
 
-			float progress = static_cast<float>((*iter)->getSpent()) / (*iter)->getRules()->getCost();
+			float progress = static_cast<float>(proj->getSpent()) / proj->getRules()->getCost();
 			if (n == 0)
 			{
 				sspr << tr("STR_NONE");

@@ -46,7 +46,7 @@ namespace OpenXcom
 		_txtTitle = new Text(300, 17, 5, 24);
 
 		// Set palette
-		auto customArmorSprite = defs->image_id.empty() ? nullptr : _game->getMod()->getSurface(defs->image_id, true);
+		Surface* customArmorSprite = defs->image_id.empty() ? nullptr : _game->getMod()->getSurface(defs->image_id, true);
 		if (defs->customPalette && customArmorSprite)
 		{
 			setCustomPalette(customArmorSprite->getPalette(), Mod::BATTLESCAPE_CURSOR);
@@ -93,7 +93,7 @@ namespace OpenXcom
 
 			for (const auto& layer : s->getArmorLayers())
 			{
-				auto surf = _game->getMod()->getSurface(layer, true);
+				auto* surf = _game->getMod()->getSurface(layer, true);
 				surf->blitNShade(_bg, 0, 0);
 			}
 			delete s;

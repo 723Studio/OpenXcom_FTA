@@ -63,9 +63,9 @@ private:
 	void loadRoleRequirements(const std::map<int, int> &r);
 public:
 	/// Default constructor
-	RuleSoldierTransformation(const std::string &name);
+	RuleSoldierTransformation(const std::string &name, int listOrder);
 	/// Loads the project data from YAML
-	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	void load(const YAML::Node& node, Mod* mod);
 	/// Gets the unique name id of the project
 	const std::string &getName() const;
 	/// Gets the description of the project

@@ -267,9 +267,9 @@ int Text::getTextHeight(int line) const
 	if (line == -1)
 	{
 		int height = 0;
-		for (std::vector<int>::const_iterator i = _lineHeight.begin(); i != _lineHeight.end(); ++i)
+		for (int lh : _lineHeight)
 		{
-			height += *i;
+			height += lh;
 		}
 		return height;
 	}
@@ -289,11 +289,11 @@ int Text::getTextWidth(int line) const
 	if (line == -1)
 	{
 		int width = 0;
-		for (std::vector<int>::const_iterator i = _lineWidth.begin(); i != _lineWidth.end(); ++i)
+		for (int lw : _lineWidth)
 		{
-			if (*i > width)
+			if (lw > width)
 			{
-				width = *i;
+				width = lw;
 			}
 		}
 		return width;

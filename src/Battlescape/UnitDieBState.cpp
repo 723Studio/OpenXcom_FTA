@@ -95,11 +95,11 @@ UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const Ru
 		std::vector<Node *> *nodes = _parent->getSave()->getNodes();
 		if (!nodes) return; // this better not happen.
 
-		for (std::vector<Node*>::iterator  n = nodes->begin(); n != nodes->end(); ++n)
+		for (auto* node : *nodes)
 		{
-			if (!(*n)->isDummy() && Position::distanceSq((*n)->getPosition(), _unit->getPosition()) < 4)
+			if (!node->isDummy() && Position::distanceSq(node->getPosition(), _unit->getPosition()) < 4)
 			{
-				(*n)->setType((*n)->getType() | Node::TYPE_DANGEROUS);
+				node->setType(node->getType() | Node::TYPE_DANGEROUS);
 			}
 		}
 	}
@@ -290,15 +290,14 @@ void UnitDieBState::convertUnitToCorpse()
 		else
 		{
 			// replace the unconscious body item with a corpse in the carrying unit's inventory
-			for (std::vector<BattleItem*>::iterator it = _parent->getSave()->getItems()->begin(); it != _parent->getSave()->getItems()->end(); )
+			for (auto* bi : *_parent->getSave()->getItems())
 			{
-				if ((*it)->getUnit() == _unit)
+				if (bi->getUnit() == _unit)
 				{
-					auto corpseRules = _unit->getArmor()->getCorpseBattlescape()[0]; // we're in an inventory, so we must be a 1x1 unit
-					(*it)->convertToCorpse(corpseRules);
+					auto* corpseRules = _unit->getArmor()->getCorpseBattlescape()[0]; // we're in an inventory, so we must be a 1x1 unit
+					bi->convertToCorpse(corpseRules);
 					break;
 				}
-				++it;
 			}
 		}
 	}

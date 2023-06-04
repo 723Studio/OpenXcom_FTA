@@ -216,7 +216,7 @@ void ProductionCompleteState::lstSummaryClick(Action *)
 	int itemCount = _randomProductionInfo[itemName];
 
 	// 2. deal with it
-	auto itemRule = _game->getMod()->getItem(itemName, false);
+	auto* itemRule = _game->getMod()->getItem(itemName, false);
 	if (itemRule)
 	{
 		// check if we sold something in the meantime
@@ -242,7 +242,7 @@ void ProductionCompleteState::lstSummaryClick(Action *)
 
 	// 3. refresh UI
 	_lstSummary->clearList();
-	for (auto& name : _index)
+	for (const auto& name : _index)
 	{
 		std::ostringstream ss;
 		ss << _randomProductionInfo[name];

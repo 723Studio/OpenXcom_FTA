@@ -38,9 +38,9 @@ RuleRegion::RuleRegion(const std::string &type): _type(type), _cost(0), _regionW
  */
 RuleRegion::~RuleRegion()
 {
-	for (std::vector<City*>::iterator i = _cities.begin(); i != _cities.end(); ++i)
+	for (auto* city : _cities)
 	{
-		delete *i;
+		delete city;
 	}
 }
 
@@ -54,7 +54,7 @@ void RuleRegion::load(const YAML::Node &node)
 	{
 		load(parent);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_cost = node["cost"].as<int>(_cost);
 
 	if (node["deleteOldAreas"].as<bool>(false))
@@ -81,7 +81,7 @@ void RuleRegion::load(const YAML::Node &node)
 	_missionZones = node["missionZones"].as< std::vector<MissionZone> >(_missionZones);
 	{
 		int zn = 0;
-		for (auto &z : _missionZones)
+		for (auto& z : _missionZones)
 		{
 			if (z.areas.size() < 1)
 			{
@@ -90,7 +90,7 @@ void RuleRegion::load(const YAML::Node &node)
 			}
 			int an = 0;
 			bool firstAreaType = z.areas.at(0).isPoint();
-			for (auto &a : z.areas)
+			for (auto& a : z.areas)
 			{
 				if (a.isPoint() != firstAreaType)
 				{
@@ -174,13 +174,13 @@ std::vector<City*> *RuleRegion::getCities()
 	// Saves us from constantly searching for them
 	if (_cities.empty())
 	{
-		for (std::vector<MissionZone>::iterator i = _missionZones.begin(); i != _missionZones.end(); ++i)
+		for (const auto& mz : _missionZones)
 		{
-			for (std::vector<MissionArea>::iterator j = i->areas.begin(); j != i->areas.end(); ++j)
+			for (const auto& ma : mz.areas)
 			{
-				if (j->isPoint() && !j->name.empty())
+				if (ma.isPoint() && !ma.name.empty())
 				{
-					_cities.push_back(new City(j->name, j->lonMin, j->latMin));
+					_cities.push_back(new City(ma.name, ma.lonMin, ma.latMin));
 				}
 			}
 		}

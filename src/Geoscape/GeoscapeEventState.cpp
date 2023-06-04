@@ -23,7 +23,9 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Action.h"
 #include "../Interface/Text.h"
+#include "../Interface/TextList.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/City.h"
@@ -34,6 +36,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/ItemContainer.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
@@ -57,7 +60,11 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_window = new Window(this, 256, 176, 32, 12, POPUP_BOTH);
 	_txtTitle = new Text(236, 32, 42, 26);
 	_txtMessage = new Text(236, 94, 42, 61);
-	_btnOk = new TextButton(100, 18, 110, 158);
+	_btnOk = new TextButton(108, 18, 48, 158);
+	_btnItemsArriving = new ToggleTextButton(108, 18, 164, 158);
+	_txtItem = new Text(114, 9, 44, 61);
+	_txtQuantity = new Text(94, 9, 182, 61);
+	_lstTransfers = new TextList(216, 80, 42, 72);
 
 	_btnAnswerOne = new TextButton(115, 18, 42, 158);
 	_btnAnswerTwo = new TextButton(115, 18, 163, 158);
@@ -73,6 +80,10 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	add(_txtTitle, "text1", "geoscapeEvent");
 	add(_txtMessage, "text2", "geoscapeEvent");
 	add(_btnOk, "button", "geoscapeEvent");
+	add(_btnItemsArriving, "button", "geoscapeEvent");
+	add(_txtItem, "text2", "geoscapeEvent");
+	add(_txtQuantity, "text2", "geoscapeEvent");
+	add(_lstTransfers, "list", "geoscapeEvent");
 
 	add(_btnAnswerOne, "button", "geoscapeEvent");
 	add(_btnAnswerTwo, "button", "geoscapeEvent");
@@ -178,13 +189,33 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerFourClickRight, SDL_BUTTON_RIGHT);
 	_btnAnswerFour->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
 	_btnAnswerFour->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnItemsArriving->setText(tr("STR_ITEMS_ARRIVING"));
+	_btnItemsArriving->onMouseClick((ActionHandler)&GeoscapeEventState::btnItemsArrivingClick);
+
+	_txtItem->setText(tr("STR_ITEM"));
+	_txtQuantity->setText(tr("STR_QUANTITY_UC"));
+
+	_lstTransfers->setColumns(2, 155, 41);
+	_lstTransfers->setSelectable(true);
+	_lstTransfers->setBackground(_window);
+	_lstTransfers->setMargin(2);
 
 	eventLogic();
+
+	_txtItem->setVisible(false);
+	_txtQuantity->setVisible(false);
+	_lstTransfers->setVisible(false);
+
+	if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery)
+	{
+		_btnOk->setX((_btnOk->getX() + _btnItemsArriving->getX()) / 2);
+		_btnItemsArriving->setVisible(false);
+	}
 }
 
 /**
-	* Helper performing event logic.
-	*/
+* Helper performing event logic.
+*/
 void GeoscapeEventState::eventLogic()
 {
 	SavedGame* save = _game->getSavedGame();
@@ -197,7 +228,7 @@ void GeoscapeEventState::eventLogic()
 	if (!rule.getRegionList().empty())
 	{
 		size_t pickRegion = RNG::generate(0, rule.getRegionList().size() - 1);
-		auto regionName = rule.getRegionList().at(pickRegion);
+		auto& regionName = rule.getRegionList().at(pickRegion);
 		regionRule = _game->getMod()->getRegion(regionName, true);
 		std::string place = tr(regionName);
 
@@ -239,7 +270,7 @@ void GeoscapeEventState::eventLogic()
 	{
 		if (regionRule)
 		{
-			for (auto region : *_game->getSavedGame()->getRegions())
+			for (auto *region : *_game->getSavedGame()->getRegions())
 			{
 				if (region->getRules() == regionRule)
 				{
@@ -369,12 +400,26 @@ void GeoscapeEventState::eventLogic()
 
 	for (auto& ti : itemsToTransfer)
 	{
-		Transfer* t = new Transfer(1);
-		t->setItems(ti.first, ti.second);
-		hq->getTransfers()->push_back(t);
+		if (Options::oxceGeoscapeEventsInstantDelivery)
+		{
+			hq->getStorageItems()->addItem(ti.first, ti.second);
+		}
+		else
+		{
+			Transfer* t = new Transfer(1);
+			t->setItems(ti.first, ti.second);
+			hq->getTransfers()->push_back(t);
+		}
+
+		std::ostringstream ss;
+		ss << ti.second;
+		_lstTransfers->addRow(2, tr(ti.first).c_str(), ss.str().c_str());
 	}
 
 	// 6. give bonus research
+	std::vector<const RuleResearch*> possibilities;
+
+	for (auto& rName : rule.getResearchList())
 	{
 		std::vector<const RuleResearch*> researches;
 		for (const auto &rName : rule.getResearchList())
@@ -404,12 +449,26 @@ void GeoscapeEventState::eventLogic()
 			}
 		}
 	}
+
+	// // Side effects:
+	// // 1. remove obsolete research projects from all bases
+	// // 2. handle items spawned by research
+	// // 3. handle events spawned by research
+	// save->handlePrimaryResearchSideEffects(topicsToCheck, mod, hq); #FINNIKTODO
+
+	if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
+	{
+		std::ostringstream ss;
+		ss << "gameTime: " << save->getTime()->getFullString();
+		ss << " eventPopup: " << rule.getName();
+		save->getGeoscapeDebugLog().push_back(ss.str());
+	}
 }
 /**
-	* Spawns custom events based on the chosen button.
-	* After that closes the window and shows a pedia article if needed.
-	* @param int playerChoice - an index of the pressed button
-	*/
+* Spawns custom events based on the chosen button.
+* After that closes the window and shows a pedia article if needed.
+* @param int playerChoice - an index of the pressed button
+*/
 void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 {
 	for (const auto &eventName : _customAnswers[playerChoice].spawnEvents)
@@ -417,17 +476,15 @@ void GeoscapeEventState::spawnCustomEvents(int playerChoice)
 		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
 	}
 }
-/**
-	*
-	*/
+
 GeoscapeEventState::~GeoscapeEventState()
 {
 	// Empty by design
 }
 
 /**
-	* Initializes the state.
-	*/
+* Initializes the state.
+*/
 void GeoscapeEventState::init()
 {
 	State::init();
@@ -439,9 +496,9 @@ void GeoscapeEventState::init()
 }
 
 /**
-	* Closes the window and shows a pedia article if needed.
-	* @param action Pointer to an action.
-	*/
+* Closes the window and shows a pedia article if needed.
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
@@ -468,9 +525,9 @@ void GeoscapeEventState::btnOkClick(Action*)
 }
 
 /**
-	* Calls spawning of events for custom button 1
-	* @param action Pointer to an action.
-	*/
+* Calls spawning of events for custom button 1
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerOneClick(Action* action)
 {
 	spawnCustomEvents(0);
@@ -478,9 +535,33 @@ void GeoscapeEventState::btnAnswerOneClick(Action* action)
 }
 
 /**
-	* Shows description for custom button 1 if present
-	* @param action Pointer to an action.
-	*/
+ * Toggles the view between the description and the ItemsArriving list.
+ * @param action Pointer to an action.
+ */
+void GeoscapeEventState::btnItemsArrivingClick(Action *)
+{
+	if (_btnItemsArriving->getPressed())
+	{
+		_txtMessage->setVisible(false);
+
+		_txtItem->setVisible(true);
+		_txtQuantity->setVisible(true);
+		_lstTransfers->setVisible(true);
+	}
+	else
+	{
+		_txtItem->setVisible(false);
+		_txtQuantity->setVisible(false);
+		_lstTransfers->setVisible(false);
+
+		_txtMessage->setVisible(true);
+	}
+}
+
+/**
+* Shows description for custom button 1 if present
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerOneClickRight(Action* action)
 {
 	if (!_customAnswers[0].description.empty())
@@ -490,9 +571,9 @@ void GeoscapeEventState::btnAnswerOneClickRight(Action* action)
 }
 
 /**
-	* Calls spawning of events for custom button 2
-	* @param action Pointer to an action.
-	*/
+* Calls spawning of events for custom button 2
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerTwoClick(Action* action)
 {
 	spawnCustomEvents(1);
@@ -500,9 +581,9 @@ void GeoscapeEventState::btnAnswerTwoClick(Action* action)
 }
 
 /**
-	* Shows description for custom button 2 if present
-	* @param action Pointer to an action.
-	*/
+* Shows description for custom button 2 if present
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerTwoClickRight(Action* action)
 {
 	if (!_customAnswers[1].description.empty())
@@ -512,9 +593,9 @@ void GeoscapeEventState::btnAnswerTwoClickRight(Action* action)
 }
 
 /**
-	* Calls spawning of events for custom button 3
-	* @param action Pointer to an action.
-	*/
+* Calls spawning of events for custom button 3
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerThreeClick(Action* action)
 {
 	spawnCustomEvents(2);
@@ -522,9 +603,9 @@ void GeoscapeEventState::btnAnswerThreeClick(Action* action)
 }
 
 /**
-	* Shows description for custom button 3 if present
-	* @param action Pointer to an action.
-	*/
+* Shows description for custom button 3 if present
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerThreeClickRight(Action* action)
 {
 	if (!_customAnswers[2].description.empty())
@@ -534,9 +615,9 @@ void GeoscapeEventState::btnAnswerThreeClickRight(Action* action)
 }
 
 /**
-	* Calls spawning of events for custom button 4
-	* @param action Pointer to an action.
-	*/
+* Calls spawning of events for custom button 4
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerFourClick(Action* action)
 {
 	spawnCustomEvents(3);
@@ -544,9 +625,9 @@ void GeoscapeEventState::btnAnswerFourClick(Action* action)
 }
 
 /**
-	* Shows description for custom button 4 if present
-	* @param action Pointer to an action.
-	*/
+* Shows description for custom button 4 if present
+* @param action Pointer to an action.
+*/
 void GeoscapeEventState::btnAnswerFourClickRight(Action* action)
 {
 	if (!_customAnswers[3].description.empty())
@@ -625,4 +706,3 @@ void GeoscapeEventAnswerInfoState::btnOkClick(Action*)
 }
 
 }
-

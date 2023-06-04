@@ -199,13 +199,13 @@ AlienDeployment::AlienDeployment(const std::string &type) :
  */
 AlienDeployment::~AlienDeployment()
 {
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _huntMissionDistribution.begin(); i != _huntMissionDistribution.end(); ++i)
+	for (auto& pair : _huntMissionDistribution)
 	{
-		delete i->second;
+		delete pair.second;
 	}
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _alienBaseUpgrades.begin(); i != _alienBaseUpgrades.end(); ++i)
+	for (auto& pair : _alienBaseUpgrades)
 	{
-		delete i->second;
+		delete pair.second;
 	}
 }
 
@@ -220,7 +220,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	{
 		load(parent, mod);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_customUfo = node["customUfo"].as<std::string>(_customUfo);
 	_enviroEffects = node["enviroEffects"].as<std::string>(_enviroEffects);
 	_startingCondition = node["startingCondition"].as<std::string>(_startingCondition);

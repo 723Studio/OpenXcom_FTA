@@ -210,7 +210,7 @@ CraftWeaponProjectile* CraftWeapon::fire() const
 int CraftWeapon::getClipsLoaded() const
 {
 	int retVal = (int)floor((double)_ammo / _rules->getRearmRate());
-	auto *clip = _rules->getClipItem();
+	auto* clip = _rules->getClipItem();
 
 	if (clip && clip->getClipSize() > 0)
 	{

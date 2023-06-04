@@ -88,8 +88,15 @@ private:
 
 	SavedBattleGame *_save;
 	const std::vector<Uint16> *_voxelData;
+
+	/// Cache for tile visibility and light propagation.
 	std::vector<VisibilityBlockCache> _blockVisibility;
-	RuleInventory *_inventorySlotGround;
+	/// Cache dedicated for speedup for light propagation calculation.
+	std::vector<Uint32> _lightPropagationTerrainBlocking;
+	/// Cache for marking tiles that need light updated.
+	std::vector<Uint32> _lightPropagationTempNeedUpdate;
+
+	const RuleInventory *_inventorySlotGround;
 	constexpr static int heightFromCenter[11] = {0,-2,+2,-4,+4,-6,+6,-8,+8,-12,+12};
 	bool _personalLighting;
 	Tile *_cacheTile;

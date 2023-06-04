@@ -314,6 +314,23 @@ std::vector<std::string> findDataFolders()
 #endif
 
 #endif
+
+#ifdef __linux
+	{
+		char buffer[PATH_MAX];
+		const ssize_t count = readlink("/proc/self/exe", buffer, PATH_MAX);
+		// Get absolute executable path
+		if (count != 0) {
+			const std::string exe_path = std::string(buffer, count);
+			// Get folder path
+			const size_t dir_pos = exe_path.find_last_of("/");
+			if (dir_pos != std::string::npos) {
+				std::string dir = exe_path.substr(0, dir_pos);
+				list.push_back( dir.append("/") );
+			}
+		}
+	}
+#endif
 	// Get working directory
 	list.push_back("./");
 #endif
@@ -451,12 +468,12 @@ std::string searchDataFile(const std::string &filename)
 	}
 
 	// Check every other path
-	for (std::vector<std::string>::const_iterator i = Options::getDataList().begin(); i != Options::getDataList().end(); ++i)
+	for (auto& dataPath : Options::getDataList())
 	{
-		path = *i + name;
+		path = dataPath + name;
 		if (fileExists(path))
 		{
-			Options::setDataFolder(*i);
+			Options::setDataFolder(dataPath);
 			return path;
 		}
 	}
@@ -478,12 +495,12 @@ std::string searchDataFolder(const std::string &foldername)
 	}
 
 	// Check every other path
-	for (std::vector<std::string>::const_iterator i = Options::getDataList().begin(); i != Options::getDataList().end(); ++i)
+	for (auto& dataPath : Options::getDataList())
 	{
-		path = *i + name;
+		path = dataPath + name;
 		if (folderExists(path))
 		{
-			Options::setDataFolder(*i);
+			Options::setDataFolder(dataPath);
 			return path;
 		}
 	}
@@ -1444,7 +1461,7 @@ void crashDump(void *ex, const std::string &err)
 	std::ostringstream msg;
 	msg << "OpenXcom has crashed: " << error.str() << std::endl;
 	msg << "Log file: " << getLogFileName() << std::endl;
-	msg << "If this error was unexpected, please report it on OpenXcom forum or discord." << std::endl;
+	msg << "If this error was unexpected, please report it on the OpenXcom forum (OXCE board)." << std::endl;
 	msg << "The following can help us solve the problem:" << std::endl;
 	msg << "1. a saved game from just before the crash (helps 98%)" << std::endl;
 	msg << "2. a detailed description how to reproduce the crash (helps 80%)" << std::endl;

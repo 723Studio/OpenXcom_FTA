@@ -193,7 +193,7 @@ void NewGameState::btnOkClick(Action *)
 	else //vanilla
 	{
 		gs->init();
-		auto base = _game->getSavedGame()->getBases()->back();
+		auto* base = _game->getSavedGame()->getBases()->back();
 		if (base->getMarker() != -1)
 		{
 		  // center and rotate 35 degrees down (to see the base location while typoing its name)

@@ -107,7 +107,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 
 	// Note: un-hardcoded the color from 15 to ruleset value, default 15
 	int bgColor = 15;
-	auto sc = _battleGame->getEnviroEffects();
+	auto* sc = _battleGame->getEnviroEffects();
 	if (sc)
 	{
 		bgColor = sc->getMapBackgroundColor();
@@ -211,9 +211,9 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 		{
 			// beginning of alien's and neutral's turn
 			bool anyoneStanding = false;
-			for (std::vector<BattleUnit*>::iterator j = _battleGame->getUnits()->begin(); j != _battleGame->getUnits()->end(); ++j)
+			for (const auto* bu : *_battleGame->getUnits())
 			{
-				if ((*j)->getOriginalFaction() == FACTION_HOSTILE && !(*j)->isOut())
+				if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
 				{
 					anyoneStanding = true;
 				}
@@ -335,25 +335,25 @@ void NextTurnState::checkBugHuntMode()
 	if (_battleGame->getBughuntMode()) return;
 
 	int count = 0;
-	for (std::vector<BattleUnit*>::iterator j = _battleGame->getUnits()->begin(); j != _battleGame->getUnits()->end(); ++j)
+	for (const auto* bu : *_battleGame->getUnits())
 	{
-		if (!(*j)->isOut())
+		if (!bu->isOut())
 		{
-			if ((*j)->getOriginalFaction() == FACTION_HOSTILE)
+			if (bu->getOriginalFaction() == FACTION_HOSTILE)
 			{
 				// we can see them, duh!
-				if ((*j)->getVisible()) return;
+				if (bu->getVisible()) return;
 
 				// VIPs are still in the game
-				if ((*j)->getRankInt() <= _game->getMod()->getBughuntRank()) return; // AR_COMMANDER = 0, AR_LEADER = 1, ...
+				if (bu->getRankInt() <= _game->getMod()->getBughuntRank()) return; // AR_COMMANDER = 0, AR_LEADER = 1, ...
 
 				count++;
 				// too many enemies are still in the game
 				if (count > _game->getMod()->getBughuntMaxEnemies()) return;
 
-				bool hasWeapon = (*j)->getLeftHandWeapon() || (*j)->getRightHandWeapon();
-				bool hasLowMorale = (*j)->getMorale() < _game->getMod()->getBughuntLowMorale();
-				bool hasTooManyTUsLeft = (*j)->getTimeUnits() > ((*j)->getUnitRules()->getStats()->tu * _game->getMod()->getBughuntTimeUnitsLeft() / 100);
+				bool hasWeapon = bu->getLeftHandWeapon() || bu->getRightHandWeapon();
+				bool hasLowMorale = bu->getMorale() < _game->getMod()->getBughuntLowMorale();
+				bool hasTooManyTUsLeft = bu->getTimeUnits() > (bu->getUnitRules()->getStats()->tu * _game->getMod()->getBughuntTimeUnitsLeft() / 100);
 				if (!hasWeapon || hasLowMorale || hasTooManyTUsLeft)
 				{
 					continue; // this unit is powerless, check next unit...
@@ -414,9 +414,9 @@ bool NextTurnState::applyEnvironmentalConditionToFaction(UnitFaction faction, En
 			bodypart = (UnitBodyPart)condition.bodyPart;
 		}
 
-		for (std::vector<BattleUnit*>::iterator j = _battleGame->getUnits()->begin(); j != _battleGame->getUnits()->end(); ++j)
+		for (auto* bu : *_battleGame->getUnits())
 		{
-			if ((*j)->getOriginalFaction() == faction && (*j)->getStatus() != STATUS_DEAD && !(*j)->isIgnored())
+			if (bu->getOriginalFaction() == faction && bu->getStatus() != STATUS_DEAD && !bu->isIgnored())
 			{
 				if (RNG::percent(condition.chancePerTurn))
 				{
@@ -428,7 +428,7 @@ bool NextTurnState::applyEnvironmentalConditionToFaction(UnitFaction faction, En
 					{
 						bodypart = (UnitBodyPart)RNG::generate(BODYPART_HEAD, BODYPART_LEFTLEG);
 					}
-					(*j)->damage(Position(0, 0, 0), type->getRandomDamage(power), type, _battleGame, { }, side, bodypart);
+					bu->damage(Position(0, 0, 0), type->getRandomDamage(power), type, _battleGame, { }, side, bodypart);
 					showMessage = true;
 				}
 			}
@@ -494,7 +494,7 @@ void NextTurnState::close()
 	_battleGame->getBattleGame()->cleanupDeleted();
 	_game->popState();
 
-	auto tally = _state->getBattleGame()->tallyUnits();
+	BattlescapeTally tally = _state->getBattleGame()->tallyUnits();
 
 	if (_battleGame->getBattleGame()->areAllEnemiesNeutralized())
 	{
@@ -502,7 +502,7 @@ void NextTurnState::close()
 		tally.liveAliens = 0;
 
 		// mind control anyone who was revived (needed for correct recovery in the debriefing)
-		for (auto bu : *_battleGame->getUnits())
+		for (auto* bu : *_battleGame->getUnits())
 		{
 			if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
 			{
@@ -699,10 +699,10 @@ bool NextTurnState::determineReinforcements()
 					{
 						if (checkGroups)
 						{
-							auto terrain = _game->getMod()->getTerrain(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
+							auto* terrain = _game->getMod()->getTerrain(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
 							if (!terrain)
 							{
-								auto craft = _game->getMod()->getCraft(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
+								auto* craft = _game->getMod()->getCraft(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
 								if (craft)
 								{
 									terrain = craft->getBattlescapeTerrainData();
@@ -710,7 +710,7 @@ bool NextTurnState::determineReinforcements()
 							}
 							if (!terrain)
 							{
-								auto ufo = _game->getMod()->getUfo(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
+								auto* ufo = _game->getMod()->getUfo(_battleGame->getFlattenedMapTerrainNames()[x][y], false);
 								if (ufo)
 								{
 									terrain = ufo->getBattlescapeTerrainData();
@@ -718,11 +718,11 @@ bool NextTurnState::determineReinforcements()
 							}
 							if (terrain)
 							{
-								auto mapblock = terrain->getMapBlock(_battleGame->getFlattenedMapBlockNames()[x][y]);
+								auto* mapblock = terrain->getMapBlock(_battleGame->getFlattenedMapBlockNames()[x][y]);
 								if (mapblock)
 								{
 									bool groupMatched = false;
-									for (auto group : wave.spawnBlockGroups)
+									for (int group : wave.spawnBlockGroups)
 									{
 										if (mapblock->isInGroup(group))
 										{
@@ -749,7 +749,7 @@ bool NextTurnState::determineReinforcements()
 				for (int y = 0; y < _battleGame->getMapSizeY() / 10; ++y)
 					_compliantBlocksMap[x][y] = 0;
 
-			for (auto& pos : _compliantBlocksList)
+			for (const auto& pos : _compliantBlocksList)
 				_compliantBlocksMap[pos.x][pos.y] = 1;
 		}
 
@@ -763,7 +763,7 @@ bool NextTurnState::determineReinforcements()
 
 			_compliantNodesList.reserve(_battleGame->getNodes()->size());
 
-			for (auto node : *_battleGame->getNodes())
+			for (auto* node : *_battleGame->getNodes())
 			{
 				if (node->isDummy())
 				{
@@ -781,7 +781,7 @@ bool NextTurnState::determineReinforcements()
 				{
 					continue;
 				}
-				auto tileToCheck = _battleGame->getTile(node->getPosition());
+				auto* tileToCheck = _battleGame->getTile(node->getPosition());
 				if (tileToCheck && tileToCheck->getUnit())
 				{
 					continue;
@@ -789,7 +789,7 @@ bool NextTurnState::determineReinforcements()
 				if (wave.minDistanceFromXcomUnits > 1)
 				{
 					bool foundXcomUnitNearby = false;
-					for (auto xcomUnit : *_battleGame->getUnits())
+					for (auto* xcomUnit : *_battleGame->getUnits())
 					{
 						if (xcomUnit->getOriginalFaction() == FACTION_PLAYER &&
 							!xcomUnit->isOut() &&
@@ -853,38 +853,38 @@ bool NextTurnState::deployReinforcements(const ReinforcementsData &wave)
 	const int month = _battleGame->getReinforcementsItemLevel();
 	bool success = false;
 
-	for (auto& d : wave.data)
+	for (const auto& dd : wave.data)
 	{
 		int quantity;
 
 		switch (_game->getSavedGame()->getDifficulty())
 		{
 		case DIFF_BEGINNER:
-			quantity = d.lowQty;
+			quantity = dd.lowQty;
 			break;
 		case DIFF_EXPERIENCED:
-			quantity = d.medQty > 0 ? d.lowQty + ((d.medQty - d.lowQty) / 2) : d.lowQty;
+			quantity = dd.medQty > 0 ? dd.lowQty + ((dd.medQty - dd.lowQty) / 2) : dd.lowQty;
 			break;
 		case DIFF_VETERAN:
-			quantity = d.medQty > 0 ? d.medQty : d.lowQty + ((d.highQty - d.lowQty) / 2);
+			quantity = dd.medQty > 0 ? dd.medQty : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
 			break;
 		case DIFF_GENIUS:
-			quantity = d.medQty > 0 ? d.medQty + ((d.highQty - d.medQty) / 2) : d.lowQty + ((d.highQty - d.lowQty) / 2);
+			quantity = dd.medQty > 0 ? dd.medQty + ((dd.highQty - dd.medQty) / 2) : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
 			break;
 		case DIFF_SUPERHUMAN:
 		default:
-			quantity = d.highQty;
+			quantity = dd.highQty;
 		}
 
-		quantity += RNG::generate(0, d.dQty);
-		quantity += RNG::generate(0, d.extraQty);
+		quantity += RNG::generate(0, dd.dQty);
+		quantity += RNG::generate(0, dd.extraQty);
 
 		for (int i = 0; i < quantity; ++i)
 		{
-			std::string alienName = d.customUnitType.empty() ? race->getMember(d.alienRank) : d.customUnitType;
+			std::string alienName = dd.customUnitType.empty() ? race->getMember(dd.alienRank) : dd.customUnitType;
 			Unit* rule = _game->getMod()->getUnit(alienName, true);
-			bool civilian = d.percentageOutsideUfo != 0; // small misuse of an unused attribute ;) pls don't kill me
-			BattleUnit* unit = addReinforcement(wave, rule, d.alienRank, civilian);
+			bool civilian = dd.percentageOutsideUfo != 0; // small misuse of an unused attribute ;) pls don't kill me
+			BattleUnit* unit = addReinforcement(wave, rule, dd.alienRank, civilian);
 			size_t itemLevel = (size_t)(_game->getMod()->getAlienItemLevels().at(month).at(RNG::generate(0, 9)));
 			if (unit)
 			{
@@ -892,27 +892,27 @@ bool NextTurnState::deployReinforcements(const ReinforcementsData &wave)
 				_battleGame->initUnit(unit, itemLevel);
 				if (!rule->isLivingWeapon())
 				{
-					if (d.itemSets.empty())
+					if (dd.itemSets.empty())
 					{
 						throw Exception("Reinforcements generator encountered an error: item set not defined");
 					}
-					if (itemLevel >= d.itemSets.size())
+					if (itemLevel >= dd.itemSets.size())
 					{
-						itemLevel = d.itemSets.size() - 1;
+						itemLevel = dd.itemSets.size() - 1;
 					}
-					for (auto& it : d.itemSets.at(itemLevel).items)
+					for (auto& itemType : dd.itemSets.at(itemLevel).items)
 					{
-						RuleItem* ruleItem = _game->getMod()->getItem(it);
+						RuleItem* ruleItem = _game->getMod()->getItem(itemType);
 						if (ruleItem)
 						{
 							_battleGame->createItemForUnit(ruleItem, unit);
 						}
 					}
-					for (auto& iset : d.extraRandomItems)
+					for (auto& iset : dd.extraRandomItems)
 					{
 						if (iset.items.empty())
 							continue;
-						auto pick = RNG::generate(0, iset.items.size() - 1);
+						int pick = RNG::generate(0, iset.items.size() - 1);
 						RuleItem* ruleItem = _game->getMod()->getItem(iset.items[pick]);
 						if (ruleItem)
 						{
@@ -943,7 +943,7 @@ BattleUnit* NextTurnState::addReinforcement(const ReinforcementsData &wave, Unit
 	bool unitPlaced = false;
 	if (wave.useSpawnNodes && !_compliantNodesList.empty())
 	{
-		for (auto node : _compliantNodesList)
+		for (auto* node : _compliantNodesList)
 		{
 			if (_battleGame->setUnitPosition(unit, node->getPosition()))
 			{
@@ -960,7 +960,7 @@ BattleUnit* NextTurnState::addReinforcement(const ReinforcementsData &wave, Unit
 	// 2. then try random positions on compliant blocks
 	if (!unitPlaced && !_compliantBlocksList.empty())
 	{
-		auto tmpZList = wave.spawnZLevels;
+		std::vector<int> tmpZList = wave.spawnZLevels; // copy
 		if (tmpZList.empty())
 		{
 			tmpZList.reserve(_battleGame->getMapSizeZ());
@@ -1019,7 +1019,7 @@ BattleUnit* NextTurnState::addReinforcement(const ReinforcementsData &wave, Unit
 			bool foundXcomUnitNearby = false;
 			if (wave.minDistanceFromXcomUnits > 1)
 			{
-				for (auto xcomUnit : *_battleGame->getUnits())
+				for (auto* xcomUnit : *_battleGame->getUnits())
 				{
 					if (xcomUnit->getOriginalFaction() == FACTION_PLAYER &&
 						!xcomUnit->isOut() &&
@@ -1032,7 +1032,7 @@ BattleUnit* NextTurnState::addReinforcement(const ReinforcementsData &wave, Unit
 			}
 			if (!foundXcomUnitNearby)
 			{
-				for (auto tryZ : tmpZList)
+				for (int tryZ : tmpZList)
 				{
 					Position finalPos = randomPos + Position(0, 0, tryZ);
 					if (unit->getMovementType() != MT_FLY)

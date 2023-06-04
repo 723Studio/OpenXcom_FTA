@@ -111,10 +111,9 @@ CraftWeaponsState::CraftWeaponsState(Base *base, size_t craft, size_t weapon) : 
 	_lstWeapons->addRow(1, tr("STR_NONE_UC").c_str());
 	_weapons.push_back(0);
 
-	const std::vector<std::string> &weapons = _game->getMod()->getCraftWeaponsList();
-	for (std::vector<std::string>::const_iterator i = weapons.begin(); i != weapons.end(); ++i)
+	for (auto& craftWeaponType : _game->getMod()->getCraftWeaponsList())
 	{
-		RuleCraftWeapon *w = _game->getMod()->getCraftWeapon(*i);
+		RuleCraftWeapon *w = _game->getMod()->getCraftWeapon(craftWeaponType);
 		const RuleCraft *c = _craft->getRules();
 		bool isResearched = true;
 		if (w->getClipItem())

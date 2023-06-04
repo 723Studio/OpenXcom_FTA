@@ -56,6 +56,7 @@ private:
 	std::vector<const RuleResearch*> _requires;
 	int _space, _time, _cost;
 	UnitStats _stats;
+	int _points;
 	bool _refund;
 	std::map<std::string, int> _requiredItemsNames, _producedItemsNames;
 	std::map<const RuleItem*, int> _requiredItems, _producedItems;
@@ -70,10 +71,10 @@ public:
 	static const int MANU_STATUS_HIDDEN = 2;
 	static const int MANU_STATUSES = 3;
 	/// Creates a new manufacture.
-	RuleManufacture(const std::string &name);
+	RuleManufacture(const std::string &name, int listOrder);
 
 	/// Loads the manufacture from YAML.
-	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	void load(const YAML::Node& node, Mod* mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Change the name and break down the sub-projects into simpler components.
@@ -97,6 +98,8 @@ public:
 	UnitStats getStats() const { return _stats; };
 	/// Checks if there's enough funds to manufacture one object.
 	bool haveEnoughMoneyForOneMoreUnit(int64_t funds) const;
+	/// Gets the points earned for manufacturing one production object.
+	int getPoints() const { return _points; }
 	/// Should all resources of a cancelled project be refunded?
 	bool getRefund() const;
 	/// Gets the list of items required to manufacture one object.

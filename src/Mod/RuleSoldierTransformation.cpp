@@ -26,11 +26,11 @@ namespace OpenXcom
  * Constructor for a soldier transformation project (necromancy, cloning, ascending!)
  * @param name The unique project name id
  */
-RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name)
+RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name, int listOrder)
 	: _name(name),
 	  _keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
 	  _allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
-	  _listOrder(0), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
+	  _listOrder(listOrder), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
 	  _showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE), _forbiddenRole(ROLE_NONE),
 	  _reset(false)
 {
@@ -41,17 +41,14 @@ RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name)
  * @param node YAML node.
  * @param listOrder The list weight for this transformation project.
  */
-void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod, int listOrder)
+void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(parent, mod);
 	}
+
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 
 	mod->loadUnorderedNames(_name, _requires, node["requires"]);
 	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);

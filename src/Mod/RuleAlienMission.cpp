@@ -80,13 +80,13 @@ RuleAlienMission::RuleAlienMission(const std::string &type) :
  */
 RuleAlienMission::~RuleAlienMission()
 {
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::const_iterator ii = _raceDistribution.begin(); ii != _raceDistribution.end(); ++ii)
+	for (auto& pair : _raceDistribution)
 	{
-		delete ii->second;
+		delete pair.second;
 	}
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::const_iterator ii = _regionWeights.begin(); ii != _regionWeights.end(); ++ii)
+	for (auto& pair : _regionWeights)
 	{
-		delete ii->second;
+		delete pair.second;
 	}
 }
 
@@ -100,7 +100,7 @@ void RuleAlienMission::load(const YAML::Node &node)
 	{
 		load(parent);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	_points = node["points"].as<int>(_points);
 	_waves = node["waves"].as< std::vector<MissionWave> >(_waves);
 	_objective = (MissionObjective)node["objective"].as<int>(_objective);
@@ -225,13 +225,13 @@ int RuleAlienMission::getWeight(const size_t monthsPassed) const
 		return 1;
 	}
 	int weight = 0;
-	for (std::map<size_t, int>::const_iterator i = _weights.begin(); i != _weights.end(); ++i)
+	for (auto& pair : _weights)
 	{
-		if (i->first > monthsPassed)
+		if (pair.first > monthsPassed)
 		{
 			break;
 		}
-		weight = i->second;
+		weight = pair.second;
 	}
 	return weight;
 }

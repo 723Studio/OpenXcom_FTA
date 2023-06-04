@@ -67,7 +67,7 @@ namespace OpenXcom
  */
 CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_lstScroll(0), _sel(0), _craft(craft), _base(base), _totalItems(0), _totalItemStorageSize(0.0), _ammoColor(0),
-	_reload(true), _returningFromGlobalTemplates(false), _firstInit(true), _isNewBattle(false)
+	_reload(true), _returningFromGlobalTemplates(false), _returningFromInventory(false), _firstInit(true), _isNewBattle(false)
 {
 	Craft *c = _base->getCrafts()->at(_craft);
 	bool craftHasACrew = c->getNumTotalSoldiers() > 0;
@@ -147,16 +147,15 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_categoryStrings.push_back("STR_ALL");
 	_categoryStrings.push_back("STR_EQUIPPED");
 	bool hasUnassigned = false;
-	const std::vector<std::string> &items = _game->getMod()->getItemsList();
-	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
+	for (auto& itemType : _game->getMod()->getItemsList())
 	{
-		RuleItem *rule = _game->getMod()->getItem(*i);
-		auto isVehicle = rule->getVehicleUnit();
-		int cQty = isVehicle ? c->getVehicleCount(*i) : c->getItems()->getItem(*i);
+		RuleItem *rule = _game->getMod()->getItem(itemType);
+		Unit* isVehicle = rule->getVehicleUnit();
+		int cQty = isVehicle ? c->getVehicleCount(itemType) : c->getItems()->getItem(itemType);
 
 		if ((isVehicle || rule->isInventoryItem()) && rule->canBeEquippedToCraftInventory() &&
 			_game->getSavedGame()->isResearched(rule->getRequirements()) &&
-			(_base->getStorageItems()->getItem(*i) > 0 || cQty > 0))
+			(_base->getStorageItems()->getItem(itemType) > 0 || cQty > 0))
 		{
 			if (rule->getCategories().empty())
 			{
@@ -164,21 +163,21 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 			}
 			else
 			{
-				for (std::vector<std::string>::const_iterator j = rule->getCategories().begin(); j != rule->getCategories().end(); ++j)
+				for (auto& itemCategoryName : rule->getCategories())
 				{
-					_usedCategoryStrings[(*j)] = true;
+					_usedCategoryStrings[itemCategoryName] = true;
 				}
 			}
 		}
 	}
-	const std::vector<std::string> &itemCategories = _game->getMod()->getItemCategoriesList();
-	for (std::vector<std::string>::const_iterator i = itemCategories.begin(); i != itemCategories.end(); ++i)
+	auto& itemCategories = _game->getMod()->getItemCategoriesList();
+	for (auto& categoryName : itemCategories)
 	{
-		if (_usedCategoryStrings[(*i)])
+		if (_usedCategoryStrings[categoryName])
 		{
-			if (!_game->getMod()->getItemCategory((*i))->isHidden())
+			if (!_game->getMod()->getItemCategory(categoryName)->isHidden())
 			{
-				_categoryStrings.push_back((*i));
+				_categoryStrings.push_back(categoryName);
 			}
 		}
 	}
@@ -257,11 +256,21 @@ void CraftEquipmentState::init()
 			{
 				c->calculateTotalSoldierEquipment();
 			}
+			if (_returningFromInventory)
+			{
+				// now that we're back from the inventory screen, we need to remove all the excess base gear
+				for (_sel = 0; _sel != _items.size(); ++_sel)
+				{
+					int excessQty = c->getItems()->getItem(_items[_sel]) - (c->getExtraItems()->getItem(_items[_sel]) + c->getSoldierItems()->getItem(_items[_sel]));
+					moveLeftByValue(excessQty);
+				}
+			}
 		}
 		initList();
 	}
 	_reload = true;
 	_returningFromGlobalTemplates = false;
+	_returningFromInventory = false;
 	_firstInit = false;
 }
 
@@ -322,29 +331,28 @@ void CraftEquipmentState::initList()
 	_lstEquipment->clearList();
 
 	int row = 0;
-	const std::vector<std::string> &items = _game->getMod()->getItemsList();
-	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
+	for (auto& itemType : _game->getMod()->getItemsList())
 	{
-		RuleItem *rule = _game->getMod()->getItem(*i);
+		RuleItem *rule = _game->getMod()->getItem(itemType);
 
-		auto isVehicle = rule->getVehicleUnit();
+		Unit* isVehicle = rule->getVehicleUnit();
 		int cQty = 0;
 		if (isVehicle)
 		{
-			cQty = c->getVehicleCount(*i);
+			cQty = c->getVehicleCount(itemType);
 		}
 		else
 		{
-			cQty = c->getItems()->getItem(*i);
+			cQty = c->getItems()->getItem(itemType);
 			_totalItems += cQty;
 			_totalItemStorageSize += cQty * rule->getSize();
 		}
 
-		int bQty = _base->getStorageItems()->getItem(*i);
+		int bQty = _base->getStorageItems()->getItem(itemType);
 		int reserved = 0;
 		if (Options::oxceAlternateCraftEquipmentManagement && !_isNewBattle)
 		{
-			reserved = c->getSoldierItems()->getItem(*i);
+			reserved = c->getSoldierItems()->getItem(itemType);
 		}
 		if ((isVehicle || rule->isInventoryItem()) && rule->canBeEquippedToCraftInventory() &&
 			(bQty > 0 || cQty > 0 || reserved > 0))
@@ -403,7 +411,7 @@ void CraftEquipmentState::initList()
 			// quick search
 			if (!searchString.empty())
 			{
-				std::string projectName = tr((*i));
+				std::string projectName = tr(itemType);
 				Unicode::upperCase(projectName);
 				if (projectName.find(searchString) == std::string::npos)
 				{
@@ -411,7 +419,7 @@ void CraftEquipmentState::initList()
 				}
 			}
 
-			_items.push_back(*i);
+			_items.push_back(itemType);
 			std::ostringstream ss, ss2;
 			if (Options::oxceAlternateCraftEquipmentManagement && !_isNewBattle)
 			{
@@ -423,9 +431,9 @@ void CraftEquipmentState::initList()
 					int itemsToAdd = std::min(bQty, reserved - cQty);
 					if (itemsToAdd > 0)
 					{
-						_base->getStorageItems()->removeItem(*i, itemsToAdd);
+						_base->getStorageItems()->removeItem(itemType, itemsToAdd);
 						bQty -= itemsToAdd;
-						c->getItems()->addItem(*i, itemsToAdd);
+						c->getItems()->addItem(itemType, itemsToAdd);
 						cQty += itemsToAdd;
 						_totalItems += itemsToAdd;
 						_totalItemStorageSize += itemsToAdd * rule->getSize();
@@ -453,7 +461,7 @@ void CraftEquipmentState::initList()
 				ss << "-";
 			}
 
-			std::string s = tr(*i);
+			std::string s = tr(itemType);
 			if (rule->getBattleType() == BT_AMMO)
 			{
 				s.insert(0, "  ");
@@ -616,7 +624,7 @@ void CraftEquipmentState::lstEquipmentMousePress(Action *action)
 	{
 		_lstScroll = _lstEquipment->getScroll();
 		RuleItem *rule = _game->getMod()->getItem(_items[_sel]);
-		std::string articleId = rule->getType();
+		std::string articleId = rule->getUfopediaType();
 		Ufopaedia::openArticle(_game, articleId);
 	}
 }
@@ -935,6 +943,35 @@ void CraftEquipmentState::btnInventoryClick(Action *)
 	Craft *craft = _base->getCrafts()->at(_craft);
 	if (craft->getNumTotalSoldiers() > 0)
 	{
+		if (Options::oxceAlternateCraftEquipmentManagement && !_isNewBattle)
+		{
+			// This is a bit tricky... here's what we're doing:
+			// * Remember the extra craft items (i.e. items that are on the craft, but not equipped by soldiers)
+			// * Move all equipment from the base into the craft.
+			// * Run the inventory screen.
+			// * Remove excess items from the craft when CraftEquipmentState::init() is called after leaving the inventory screen.
+			// (After this, the craft should have all the updated soldier equipment, and the same extra items as before.)
+
+			// Note: the current implementation assumes no limit to the number or size of items a craft can hold.
+			//       If the craft has limited space, then we just won't have all the base items available on the inventory screen.
+
+			auto& extras = *craft->getExtraItems()->getContents();
+			extras.clear();
+			for (_sel = 0; _sel != _items.size(); ++_sel)
+			{
+				const auto& itemType = _items[_sel];
+				if (craft->getItems()->getItem(itemType) > 0)
+				{
+					extras[itemType] = craft->getItems()->getItem(itemType) - craft->getSoldierItems()->getItem(itemType);
+				}
+				RuleItem* rule = _game->getMod()->getItem(itemType);
+				if (!rule->getVehicleUnit() && rule->canBeEquippedBeforeBaseDefense())
+				{
+					moveRightByValue(INT_MAX, true);
+				}
+			}
+		}
+
 		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
 		_game->getSavedGame()->setBattleGame(bgame);
 
@@ -947,6 +984,7 @@ void CraftEquipmentState::btnInventoryClick(Action *)
 
 		_game->getScreen()->clear();
 		_game->pushState(new InventoryState(false, 0, _base));
+		_returningFromInventory = true;
 	}
 }
 
@@ -958,26 +996,26 @@ void CraftEquipmentState::saveGlobalLoadout(int index)
 
 	Craft *c = _base->getCrafts()->at(_craft);
 	// save only what is visible on the screen (can be DIFFERENT than what's really in the craft for various reasons)
-	for (auto& itemRule : _items)
+	for (const auto& itemType : _items)
 	{
-		RuleItem *item = _game->getMod()->getItem(itemRule, true);
+		RuleItem *item = _game->getMod()->getItem(itemType, true);
 		int cQty = 0;
 		if (item->getVehicleUnit())
 		{
-			cQty = c->getVehicleCount(itemRule);
+			cQty = c->getVehicleCount(itemType);
 		}
 		else
 		{
-			cQty = c->getItems()->getItem(itemRule);
+			cQty = c->getItems()->getItem(itemType);
 		}
 		if (cQty > 0)
 		{
-			tmpl->addItem(itemRule, cQty);
+			tmpl->addItem(itemType, cQty);
 		}
 	}
 }
 
-void CraftEquipmentState::loadGlobalLoadout(int index)
+void CraftEquipmentState::loadGlobalLoadout(int index, bool onlyAddItems)
 {
 	// temporarily turn off alternate craft equipment management to allow removing all items from the craft
 	bool backup = Options::oxceAlternateCraftEquipmentManagement;
@@ -988,10 +1026,23 @@ void CraftEquipmentState::loadGlobalLoadout(int index)
 	_cbxFilterBy->setSelected(0);
 	initList();
 
-	// first move everything visible back to base
-	for (_sel = 0; _sel != _items.size(); ++_sel)
+	Craft* c = _base->getCrafts()->at(_craft);
+
+	ItemContainer craftItemsBackup;
+	std::vector<Vehicle*> craftVehiclesBackup;
+	if (onlyAddItems)
 	{
-		moveLeftByValue(INT_MAX);
+		// remember for later, make copies
+		craftItemsBackup = *c->getItems();
+		craftVehiclesBackup = *c->getVehicles();
+	}
+	else
+	{
+		// first move everything visible back to base
+		for (_sel = 0; _sel != _items.size(); ++_sel)
+		{
+			moveLeftByValue(INT_MAX);
+		}
 	}
 
 	// now start applying the template (consider ONLY items visible on the GUI)
@@ -1004,10 +1055,9 @@ void CraftEquipmentState::loadGlobalLoadout(int index)
 	}
 
 	// lastly check and report what's missing
-	Craft *c = _base->getCrafts()->at(_craft);
 	std::string craftName = c->getName(_game->getLanguage());
 	std::vector<ReequipStat> _missingItems;
-	for (auto& templateItem : *tmpl->getContents())
+	for (const auto& templateItem : *tmpl->getContents())
 	{
 		RuleItem *item = _game->getMod()->getItem(templateItem.first, false);
 		if (item)
@@ -1020,10 +1070,26 @@ void CraftEquipmentState::loadGlobalLoadout(int index)
 				// - if there is not enough ammo to arm them
 				// - if there is not enough cargo space in the craft
 				cQty = c->getVehicleCount(item->getName());
+				if (onlyAddItems)
+				{
+					int total = 0;
+					for (const auto* vehicle : craftVehiclesBackup)
+					{
+						if (vehicle->getRules()->getType() == item->getName())
+						{
+							total++;
+						}
+					}
+					cQty -= total; // i.e. only count newly added vehicles
+				}
 			}
 			else
 			{
 				cQty = c->getItems()->getItem(item->getName());
+				if (onlyAddItems)
+				{
+					cQty -= craftItemsBackup.getItem(item->getName()); // i.e. only count newly added items
+				}
 			}
 			int missing = tQty - cQty;
 			if (missing > 0)
@@ -1042,7 +1108,6 @@ void CraftEquipmentState::loadGlobalLoadout(int index)
 			}
 		);
 		_game->pushState(new CannotReequipState(_missingItems, _base));
-		_reload = false;
 	}
 
 	// turn back the original setting

@@ -33,9 +33,9 @@ AlienRace::AlienRace(const std::string &id) : _id(id), _retaliationAggression(0)
 
 AlienRace::~AlienRace()
 {
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _retaliationMissionDistribution.begin(); i != _retaliationMissionDistribution.end(); ++i)
+	for (auto& pair : _retaliationMissionDistribution)
 	{
-		delete i->second;
+		delete pair.second;
 	}
 }
 
@@ -49,7 +49,7 @@ void AlienRace::load(const YAML::Node &node)
 	{
 		load(parent);
 	}
-	_id = node["id"].as<std::string>(_id);
+
 	_baseCustomDeploy = node["baseCustomDeploy"].as<std::string>(_baseCustomDeploy);
 	_baseCustomMission = node["baseCustomMission"].as<std::string>(_baseCustomMission);
 	_members = node["members"].as< std::vector<std::string> >(_members);

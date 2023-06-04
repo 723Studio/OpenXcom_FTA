@@ -200,6 +200,8 @@ private:
 	SoldierRank getRank() const;
 	/// Increase the soldier's military rank.
 	void promoteRank();
+	/// Promotes/demotes a soldier to a specific rank.
+	void setRank(const SoldierRank newRank);
 	/// Gets the soldier's missions.
 	int getMissions() const;
 	/// Gets the soldier's kills.
@@ -231,9 +233,10 @@ private:
 	/// Gets the soldier's hire value.
 	int getHireValue() const;
 	/// Get pointer to initial stats.
-	UnitStats *getInitStats();
+	const UnitStats* getInitStats() const;
 	/// Get pointer to current stats.
-	UnitStats *getCurrentStats();
+	UnitStats *getCurrentStatsEditable();
+	const UnitStats* getCurrentStats() const;
 	/// Set initial and current stats.
 	void setBothStats(UnitStats *stats);
 	/// Get whether the unit was recently promoted.
@@ -325,6 +328,7 @@ private:
 	void clearEquipmentLayout();
 	/// Gets the soldier's diary.
 	SoldierDiary *getDiary();
+	const SoldierDiary* getDiary() const;
 	/// Resets the soldier's diary.
 	void resetDiary();
 	/// Calculate statString.
@@ -332,9 +336,9 @@ private:
 	/// Trains a soldier's physical stats
 	void trainPhys(int customTrainingFactor);
 	/// Is the soldier already fully trained?
-	bool isFullyTrained();
+	bool isFullyTrained() const;
 	/// Returns whether the unit is in training or not
-	bool isInTraining();
+	bool isInTraining() const;
 	/// Set the training status
 	void setTraining(bool training);
 	/// Returns whether the soldier was just saved
@@ -358,7 +362,7 @@ private:
 	/// Gets the previous transformations performed on this soldier
 	std::map<std::string, int> &getPreviousTransformations();
 	/// Returns whether the unit is eligible for a certain transformation
-	bool isEligibleForTransformation(RuleSoldierTransformation *transformationRule);
+	bool isEligibleForTransformation(const RuleSoldierTransformation *transformationRule) const;
 	/// Performs a transformation on this soldier
 	void transform(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, Base *base);
 	/// Create pending transformation on this soldier
@@ -417,9 +421,9 @@ private:
 	/// Gets all the soldier bonuses
 	const std::vector<const RuleSoldierBonus*> *getBonuses(const Mod *mod);
 	/// Get pointer to current stats with soldier bonuses, but without armor bonuses.
-	UnitStats *getStatsWithSoldierBonusesOnly();
+	const UnitStats *getStatsWithSoldierBonusesOnly() const;
 	/// Get pointer to current stats with armor and soldier bonuses.
-	UnitStats *getStatsWithAllBonuses();
+	const UnitStats *getStatsWithAllBonuses() const;
 	/// Pre-calculates soldier stats with various bonuses.
 	bool prepareStatsWithBonuses(const Mod *mod);
 	/// Gets a pointer to the daily dogfight experience cache.

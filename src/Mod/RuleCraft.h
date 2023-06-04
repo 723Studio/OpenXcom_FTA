@@ -165,6 +165,7 @@ private:
 	std::string _type;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
+	std::string _requiresBuyCountry;
 	int _sprite, _marker;
 	std::vector<int> _skinSprites;
 	int _weapons, _soldiers, _pilots, _vehicles;
@@ -198,17 +199,19 @@ private:
 
 public:
 	/// Creates a blank craft ruleset.
-	RuleCraft(const std::string &type);
+	RuleCraft(const std::string &type, int listOrder);
 	/// Cleans up the craft ruleset.
 	~RuleCraft();
 	/// Loads craft data from YAML.
-	void load(const YAML::Node& node, Mod *mod, int listOrder, const ModScript &parsers);
+	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
 	/// Gets the craft's type.
 	const std::string &getType() const;
 	/// Gets the craft's requirements.
 	const std::vector<std::string> &getRequirements() const;
 	/// Gets the base functions required to buy craft.
 	RuleBaseFacilityFunctions getRequiresBuyBaseFunc() const { return _requiresBuyBaseFunc; }
+	/// Gets the allied country name required to buy this craft.
+	const std::string& getRequiresBuyCountry() const { return _requiresBuyCountry; }
 	/// Gets the craft's sprite.
 	int getSprite(int skinIndex) const;
 	const std::vector<int> &getSkinSpritesRaw() const { return _skinSprites; }
@@ -285,7 +288,7 @@ public:
 	bool getSpacecraft() const;
 	/// Should notification be displayed when the craft is refueled?
 	bool notifyWhenRefueled() const;
-	/// Does this craft support auto patrol?
+	/// Does this craft support auto-patrol?
 	bool canAutoPatrol() const;
 	/// Is this craft immune to detection by HKs and alien bases?
 	bool isUndetectable() const { return _undetectable; }

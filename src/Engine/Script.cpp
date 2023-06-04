@@ -1673,7 +1673,7 @@ constexpr CharClasses CC_quote = 0x80;
 constexpr std::array<CharClasses, 256> charDecoderInit()
 {
 	std::array<CharClasses, 256> r = { };
-	for(int i = 0; i < 256; ++i)
+	for (int i = 0; i < 256; ++i)
 	{
 		if (i == '#' || i == ' ' || i == '\r' || i == '\n' || i == '\t')	r[i] |= CC_none;
 		if (i == ':' || i == ';')	r[i] |= CC_spec;

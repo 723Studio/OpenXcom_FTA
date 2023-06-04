@@ -26,7 +26,7 @@
 namespace OpenXcom
 {
 
-RuleSoldierBonus::RuleSoldierBonus(const std::string &name) : _name(name), _visibilityAtDark(0), _frontArmor(0), _sideArmor(0), _leftArmorDiff(0), _rearArmor(0), _underArmor(0), _listOrder(0)
+RuleSoldierBonus::RuleSoldierBonus(const std::string &name, int listOrder) : _name(name), _visibilityAtDark(0), _frontArmor(0), _sideArmor(0), _leftArmorDiff(0), _rearArmor(0), _underArmor(0), _listOrder(listOrder)
 {
 }
 
@@ -34,13 +34,13 @@ RuleSoldierBonus::RuleSoldierBonus(const std::string &name) : _name(name), _visi
  * Loads the soldier bonus definition from YAML.
  * @param node YAML node.
  */
-void RuleSoldierBonus::load(const YAML::Node &node, const ModScript &parsers, int listOrder)
+void RuleSoldierBonus::load(const YAML::Node &node, Mod* mod, const ModScript &parsers)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, parsers, listOrder);
+		load(parent, mod, parsers);
 	}
-	_name = node["name"].as<std::string>(_name);
+
 	_visibilityAtDark = node["visibilityAtDark"].as<int>(_visibilityAtDark);
 	_frontArmor = node["frontArmor"].as<int>(_frontArmor);
 	_sideArmor = node["sideArmor"].as<int>(_sideArmor);
@@ -62,10 +62,6 @@ void RuleSoldierBonus::load(const YAML::Node &node, const ModScript &parsers, in
 	_scriptValues.load(node, parsers.getShared());
 
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 }
 
 /**

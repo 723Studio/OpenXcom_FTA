@@ -38,16 +38,13 @@ Target::Target() : _lon(0.0), _lat(0.0), _id(0)
  */
 Target::~Target()
 {
-	std::vector<Craft*> followers = getCraftFollowers();
-	for (std::vector<Craft*>::iterator i = followers.begin(); i != followers.end(); ++i)
+	for (auto* follower : getCraftFollowers())
 	{
-		(*i)->returnToBase();
+		follower->returnToBase();
 	}
-
-	std::vector<Ufo*> ufoFollowers = getUfoFollowers();
-	for (std::vector<Ufo*>::iterator j = ufoFollowers.begin(); j != ufoFollowers.end(); ++j)
+	for (auto* ufoFollower : getUfoFollowers())
 	{
-		(*j)->resetOriginalDestination(false);
+		ufoFollower->resetOriginalDestination(false);
 	}
 }
 
@@ -235,9 +232,9 @@ std::vector<MovingTarget*> *Target::getFollowers()
 std::vector<Craft*> Target::getCraftFollowers() const
 {
 	std::vector<Craft*> crafts;
-	for (std::vector<MovingTarget*>::const_iterator i = _followers.begin(); i != _followers.end(); ++i)
+	for (auto* mt : _followers)
 	{
-		Craft *craft = dynamic_cast<Craft*>(*i);
+		Craft *craft = dynamic_cast<Craft*>(mt);
 		if (craft)
 		{
 			crafts.push_back(craft);
@@ -254,9 +251,9 @@ std::vector<Craft*> Target::getCraftFollowers() const
 std::vector<Ufo*> Target::getUfoFollowers() const
 {
 	std::vector<Ufo*> ufos;
-	for (std::vector<MovingTarget*>::const_iterator i = _followers.begin(); i != _followers.end(); ++i)
+	for (auto* mt : _followers)
 	{
-		Ufo *ufo = dynamic_cast<Ufo*>(*i);
+		Ufo *ufo = dynamic_cast<Ufo*>(mt);
 		if (ufo)
 		{
 			ufos.push_back(ufo);

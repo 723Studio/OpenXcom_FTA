@@ -121,13 +121,13 @@ void CannotReequipState::init()
 
 	_lstItems->clearList();
 
-	for (std::vector<ReequipStat>::iterator i = _missingItems.begin(); i != _missingItems.end(); ++i)
+	for (const auto& reequipStat : _missingItems)
 	{
-		if (i->qty > 0)
+		if (reequipStat.qty > 0)
 		{
 			std::ostringstream ss;
-			ss << i->qty;
-			_lstItems->addRow(3, tr(i->item).c_str(), ss.str().c_str(), i->craft.c_str());
+			ss << reequipStat.qty;
+			_lstItems->addRow(3, tr(reequipStat.item).c_str(), ss.str().c_str(), reequipStat.craft.c_str());
 		}
 	}
 }
@@ -181,11 +181,11 @@ const std::vector<ReequipStat>& CannotReequipState::getMissingItems() const
  */
 void CannotReequipState::decreaseMissingItemCount(const RuleItem* rule, int amount)
 {
-	for (auto& i : _missingItems)
+	for (auto& reequipStat : _missingItems)
 	{
-		if (i.item == rule->getType())
+		if (reequipStat.item == rule->getType())
 		{
-			i.qty = std::max(0, i.qty - amount);
+			reequipStat.qty = std::max(0, reequipStat.qty - amount);
 			break;
 		}
 	}

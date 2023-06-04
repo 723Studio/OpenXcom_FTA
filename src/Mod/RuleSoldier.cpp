@@ -38,7 +38,7 @@ namespace OpenXcom
  * type of soldier.
  * @param type String defining the type.
  */
-RuleSoldier::RuleSoldier(const std::string &type) : _type(type), _listOrder(0), _armor(nullptr), _specWeapon(nullptr), 
+RuleSoldier::RuleSoldier(const std::string &type, int listOrder) : _type(type), _listOrder(listOrder), _armor(nullptr), _specWeapon(nullptr),
 	_monthlyBuyLimit(0), _costBuy(0), _costSalary(0),
 	_costSalarySquaddie(0), _costSalarySergeant(0), _costSalaryCaptain(0), _costSalaryColonel(0), _costSalaryCommander(0),
 	_standHeight(0), _kneelHeight(0), _floatHeight(0), _femaleFrequency(50), _value(20), _transferTime(0), _moraleLossWhenKilled(100),
@@ -59,13 +59,13 @@ RuleSoldier::RuleSoldier(const std::string &type) : _type(type), _listOrder(0), 
  */
 RuleSoldier::~RuleSoldier()
 {
-	for (std::vector<SoldierNamePool*>::iterator i = _names.begin(); i != _names.end(); ++i)
+	for (auto* namepool : _names)
 	{
-		delete *i;
+		delete namepool;
 	}
-	for (std::vector<StatString*>::iterator i = _statStrings.begin(); i != _statStrings.end(); ++i)
+	for (auto* statString : _statStrings)
 	{
-		delete *i;
+		delete statString;
 	}
 }
 
@@ -74,11 +74,11 @@ RuleSoldier::~RuleSoldier()
  * @param node YAML node.
  * @param mod Mod for the unit.
  */
-void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const ModScript &parsers)
+void RuleSoldier::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder, parsers);
+		load(parent, mod, parsers);
 	}
 	_type = node["type"].as<std::string>(_type);
 	if (node["roles"])
@@ -90,6 +90,7 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 	//requires
 	mod->loadUnorderedNames(_type, _requires, node["requires"]);
 	mod->loadBaseFunction(_type, _requiresBuyBaseFunc, node["requiresBuyBaseFunc"]);
+	_requiresBuyCountry = node["requiresBuyCountry"].as<std::string>(_requiresBuyCountry);
 
 
 	_minStats.merge(node["minStats"].as<UnitStats>(_minStats));
@@ -169,9 +170,9 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 		std::string fileName = (*i).as<std::string>();
 		if (fileName == "delete")
 		{
-			for (std::vector<SoldierNamePool*>::iterator j = _names.begin(); j != _names.end(); ++j)
+			for (auto* namepool : _names)
 			{
-				delete *j;
+				delete namepool;
 			}
 			_names.clear();
 		}
@@ -181,11 +182,11 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 			{
 				// load all *.nam files in given directory
 				std::vector<std::string> names;
-				for (auto f: FileMap::filterFiles(FileMap::getVFolderContents(fileName), "nam")) { names.push_back(f); }
+				for (const auto& f: FileMap::filterFiles(FileMap::getVFolderContents(fileName), "nam")) { names.push_back(f); }
 				std::sort(names.begin(), names.end(), Unicode::naturalCompare);
-				for (auto j = names.begin(); j != names.end(); ++j)
+				for (const auto& name : names)
 				{
-					addSoldierNamePool(fileName + *j);
+					addSoldierNamePool(fileName + name);
 				}
 			}
 			else
@@ -229,10 +230,6 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, int listOrder, const Mo
 	mod->loadNames(_type, _skillNames, node["skills"]);
 
 	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
 
 	_scriptValues.load(node, parsers.getShared());
 }

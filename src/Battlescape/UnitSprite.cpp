@@ -93,7 +93,7 @@ const BattleItem *getIfVisible(const BattleItem *item)
 void UnitSprite::selectItem(Part& p, const BattleItem *item, int dir)
 {
 	const auto* rule = item->getRules();
-	auto index = item->getRules()->getHandSprite();
+	int index = item->getRules()->getHandSprite();
 
 	//enforce compatibility with basic version
 	if (!_itemSurface->getFrame(index + dir))
@@ -101,7 +101,7 @@ void UnitSprite::selectItem(Part& p, const BattleItem *item, int dir)
 		throw Exception("Frame(s) missing in 'HANDOB.PCK' for item '" + item->getRules()->getName() + "'");
 	}
 
-	auto result = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
+	int result = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
 		rule,
 		index, dir,
 		item, _save, p.bodyPart, _animationFrame, _shade
@@ -125,7 +125,7 @@ void UnitSprite::selectUnit(Part& p, int index, int dir)
 		throw Exception("Frame(s) missing in '" + armor->getSpriteSheet() + "' for armor '" + armor->getType() + "'");
 	}
 
-	auto result = ModScript::scriptFunc2<ModScript::SelectUnitSprite>(
+	int result = ModScript::scriptFunc2<ModScript::SelectUnitSprite>(
 		armor,
 		index, dir,
 		_unit, _save, p.bodyPart, _animationFrame, _shade
@@ -254,7 +254,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	}
 	if (_breathSurface && _helmet && unit->getBreathExhaleFrame() >= 0 && armor->drawBubbles() && !unit->getFloorAbove())
 	{
-		auto tmpSurface = _breathSurface->getFrame(unit->getBreathExhaleFrame());
+		auto* tmpSurface = _breathSurface->getFrame(unit->getBreathExhaleFrame());
 		if (tmpSurface)
 		{
 			// lower the bubbles for shorter or kneeling units.
@@ -264,7 +264,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	if (isAltPressed)
 	{
 		// draw unit facing indicator
-		auto tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
+		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
 		tmpSurface->blitNShade(_dest, _x, _y, 0);
 	}
 	drawUnitIcon();

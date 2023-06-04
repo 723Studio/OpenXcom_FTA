@@ -94,9 +94,9 @@ TargetInfoState::TargetInfoState(Target *target, Globe *globe) : _target(target)
 	_txtTargetted->setText(tr("STR_TARGETTED_BY"));
 	_txtFollowers->setAlign(ALIGN_CENTER);
 	std::ostringstream ss;
-	for (std::vector<MovingTarget*>::iterator i = _target->getFollowers()->begin(); i != _target->getFollowers()->end(); ++i)
+	for (const auto* follower : *_target->getFollowers())
 	{
-		ss << (*i)->getName(_game->getLanguage()) << '\n';
+		ss << follower->getName(_game->getLanguage()) << '\n';
 	}
 	_txtFollowers->setText(ss.str());
 

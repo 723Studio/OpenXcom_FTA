@@ -99,7 +99,7 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 	// priming
 	if (weapon->getFuseTimerType() != BFT_NONE)
 	{
-		auto normalWeapon = weapon->getBattleType() != BT_GRENADE && weapon->getBattleType() != BT_FLARE && weapon->getBattleType() != BT_PROXIMITYGRENADE;
+		bool normalWeapon = weapon->getBattleType() != BT_GRENADE && weapon->getBattleType() != BT_FLARE && weapon->getBattleType() != BT_PROXIMITYGRENADE;
 		if (_action->weapon->getFuseTimer() == -1)
 		{
 			if (weapon->getCostPrime().Time > 0)
@@ -118,10 +118,10 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 
 	if (weapon->getBattleType() == BT_FIREARM)
 	{
-		auto isLauncher = _action->weapon->getCurrentWaypoints() != 0;
-		auto slotLauncher = _action->weapon->getActionConf(BA_LAUNCH)->ammoSlot;
-		auto slotSnap = _action->weapon->getActionConf(BA_SNAPSHOT)->ammoSlot;
-		auto slotAuto = _action->weapon->getActionConf(BA_AUTOSHOT)->ammoSlot;
+		bool isLauncher = _action->weapon->getCurrentWaypoints() != 0;
+		int slotLauncher = _action->weapon->getActionConf(BA_LAUNCH)->ammoSlot;
+		int slotSnap = _action->weapon->getActionConf(BA_SNAPSHOT)->ammoSlot;
+		int slotAuto = _action->weapon->getActionConf(BA_AUTOSHOT)->ammoSlot;
 
 		if ((!isLauncher || slotLauncher != slotAuto) && weapon->getCostAuto().Time > 0)
 		{
@@ -344,22 +344,26 @@ void ActionMenuState::handleAction()
 		{
 			BattleUnit *targetUnit = 0;
 			TileEngine *tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
-			const std::vector<BattleUnit*> *units = _game->getSavedGame()->getSavedBattle()->getUnits();
-			for (std::vector<BattleUnit*>::const_iterator i = units->begin(); i != units->end() && !targetUnit; ++i)
+			for (auto* bu : *_game->getSavedGame()->getSavedBattle()->getUnits())
 			{
 				// we can heal a unit that is at the same position, unconscious and healable(=woundable)
-				if ((*i)->getPosition() == _action->actor->getPosition() && *i != _action->actor && (*i)->getStatus() == STATUS_UNCONSCIOUS && ((*i)->isWoundable() || weapon->getAllowTargetImmune()) && weapon->getAllowTargetGround())
+				if (bu->getPosition() == _action->actor->getPosition() &&
+					bu != _action->actor &&
+					bu->getStatus() == STATUS_UNCONSCIOUS &&
+					(bu->isWoundable() || weapon->getAllowTargetImmune()) &&
+					weapon->getAllowTargetGround())
 				{
-					if ((*i)->isBigUnit())
+					if (bu->isBigUnit())
 					{
 						// never EVER apply anything to 2x2 units on the ground
 						continue;
 					}
-					if ((weapon->getAllowTargetFriendGround() && (*i)->getOriginalFaction() == FACTION_PLAYER) ||
-						(weapon->getAllowTargetNeutralGround() && (*i)->getOriginalFaction() == FACTION_NEUTRAL) ||
-						(weapon->getAllowTargetHostileGround() && (*i)->getOriginalFaction() == FACTION_HOSTILE))
+					if ((weapon->getAllowTargetFriendGround() && bu->getOriginalFaction() == FACTION_PLAYER) ||
+						(weapon->getAllowTargetNeutralGround() && bu->getOriginalFaction() == FACTION_NEUTRAL) ||
+						(weapon->getAllowTargetHostileGround() && bu->getOriginalFaction() == FACTION_HOSTILE))
 					{
-						targetUnit = *i;
+						targetUnit = bu;
+						break; // loop finished
 					}
 				}
 			}

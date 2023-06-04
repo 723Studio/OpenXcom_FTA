@@ -242,13 +242,13 @@ void PlaceFacilityState::viewClick(Action *)
 		}
 		else
 		{
-			for (const auto& i: _rule->getBuildCostItems())
+			for (const auto& item: _rule->getBuildCostItems())
 			{
-				int needed = i.second.first - _base->getStorageItems()->getItem(i.first);
+				int needed = item.second.first - _base->getStorageItems()->getItem(item.first);
 				if (needed > 0)
 				{
 					_game->popState();
-					_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_ITEMS").arg(tr(i.first)).arg(needed), _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("placeFacility")->getElement("errorPalette")->color));
+					_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_ITEMS").arg(tr(item.first)).arg(needed), _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("placeFacility")->getElement("errorPalette")->color));
 					return;
 				}
 			}
@@ -268,18 +268,18 @@ void PlaceFacilityState::viewClick(Action *)
 					{
 						// Give full refund if this is a (not yet started) queued build.
 						_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + checkFacility->getRules()->getBuildCost());
-						for (std::map<std::string, std::pair<int, int> >::const_iterator j = itemCost.begin(); j != itemCost.end(); ++j)
+						for (auto& item : itemCost)
 						{
-							_base->getStorageItems()->addItem(j->first, j->second.first);
+							_base->getStorageItems()->addItem(item.first, item.second.first);
 						}
 					}
 					else
 					{
 						// Give partial refund if this is a started build or a completed facility.
 						_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + checkFacility->getRules()->getRefundValue());
-						for (std::map<std::string, std::pair<int, int> >::const_iterator j = itemCost.begin(); j != itemCost.end(); ++j)
+						for (auto& item : itemCost)
 						{
-							_base->getStorageItems()->addItem(j->first, j->second.second);
+							_base->getStorageItems()->addItem(item.first, item.second.second);
 						}
 
 						// Reduce the build time of the new facility
@@ -325,9 +325,9 @@ void PlaceFacilityState::viewClick(Action *)
 			}
 			_view->setBase(_base);
 			_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _rule->getBuildCost());
-			for (const auto& i: _rule->getBuildCostItems())
+			for (const auto& item: _rule->getBuildCostItems())
 			{
-				_base->getStorageItems()->removeItem(i.first, i.second.first);
+				_base->getStorageItems()->removeItem(item.first, item.second.first);
 			}
 			//Making production for FtA game logic
 			if (_ftaUi)

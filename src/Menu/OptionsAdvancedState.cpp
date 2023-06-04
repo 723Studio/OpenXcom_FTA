@@ -45,11 +45,11 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 	_lstOptions = new TextList(200, 136, 94, 8);
 
 	_isTFTD = false;
-	for (std::vector< std::pair<std::string, bool> >::const_iterator i = Options::mods.begin(); i != Options::mods.end(); ++i)
+	for (const auto& pair : Options::mods)
 	{
-		if (i->second)
+		if (pair.second)
 		{
-			if (i->first == "xcom2")
+			if (pair.first == "xcom2")
 			{
 				_isTFTD = true;
 				break;
@@ -92,26 +92,25 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 
 	_colorGroup = _lstOptions->getSecondaryColor();
 
-	const std::vector<OptionInfo> &options = Options::getOptionInfo();
-	for (std::vector<OptionInfo>::const_iterator i = options.begin(); i != options.end(); ++i)
+	for (const auto& optionInfo : Options::getOptionInfo())
 	{
-		if (i->type() != OPTION_KEY && !i->description().empty())
+		if (optionInfo.type() != OPTION_KEY && !optionInfo.description().empty())
 		{
-			if (i->category() == "STR_GENERAL")
+			if (optionInfo.category() == "STR_GENERAL")
 			{
-				_settingsGeneral.push_back(*i);
+				_settingsGeneral.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_GEOSCAPE")
+			else if (optionInfo.category() == "STR_GEOSCAPE")
 			{
-				_settingsGeo.push_back(*i);
+				_settingsGeo.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_BATTLESCAPE")
+			else if (optionInfo.category() == "STR_BATTLESCAPE")
 			{
-				_settingsBattle.push_back(*i);
+				_settingsBattle.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_OXCE")
+			else if (optionInfo.category() == "STR_OXCE")
 			{
-				_settingsOxce.push_back(*i);
+				_settingsOxce.push_back(optionInfo);
 			}
 			else if (i->category() == "STR_FTA")
 			{
@@ -163,25 +162,25 @@ void OptionsAdvancedState::init()
  */
 void OptionsAdvancedState::addSettings(const std::vector<OptionInfo> &settings)
 {
-	auto fixeduserOptions = _game->getMod()->getFixedUserOptions();
-	for (std::vector<OptionInfo>::const_iterator i = settings.begin(); i != settings.end(); ++i)
+	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
+	for (const auto& optionInfo : settings)
 	{
-		std::string name = tr(i->description());
+		std::string name = tr(optionInfo.description());
 		std::string value;
-		if (i->type() == OPTION_BOOL)
+		if (optionInfo.type() == OPTION_BOOL)
 		{
-			value = *i->asBool() ? tr("STR_YES") : tr("STR_NO");
+			value = *optionInfo.asBool() ? tr("STR_YES") : tr("STR_NO");
 		}
-		else if (i->type() == OPTION_INT)
+		else if (optionInfo.type() == OPTION_INT)
 		{
 			std::ostringstream ss;
-			ss << *i->asInt();
+			ss << *optionInfo.asInt();
 			value = ss.str();
 		}
 		_lstOptions->addRow(2, name.c_str(), value.c_str());
 		// grey out fixed options
-		std::map<std::string, std::string>::const_iterator it = fixeduserOptions.find(i->id());
-		if (it != fixeduserOptions.end())
+		auto search = fixeduserOptions.find(optionInfo.id());
+		if (search != fixeduserOptions.end())
 		{
 			_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 		}
@@ -242,8 +241,8 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 	if (!setting) return;
 
 	// greyed out options are fixed, cannot be changed by the user
-	auto fixeduserOptions = _game->getMod()->getFixedUserOptions();
-	std::map<std::string, std::string>::const_iterator it = fixeduserOptions.find(setting->id());
+	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
+	auto it = fixeduserOptions.find(setting->id());
 	if (it != fixeduserOptions.end())
 	{
 		return;

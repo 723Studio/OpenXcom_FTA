@@ -56,6 +56,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../fallthrough.h"
+#include "../fmath.h"
 #include "../Engine/Language.h"
 
 namespace OpenXcom
@@ -95,40 +96,37 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
  */
 SavedBattleGame::~SavedBattleGame()
 {
-	for (std::vector<MapDataSet*>::iterator i = _mapDataSets.begin(); i != _mapDataSets.end(); ++i)
+	for (auto* mds : _mapDataSets)
 	{
-		(*i)->unloadData();
+		mds->unloadData();
 	}
-
-	for (std::vector<Node*>::iterator i = _nodes.begin(); i != _nodes.end(); ++i)
+	for (auto* node : _nodes)
 	{
-		delete *i;
+		delete node;
 	}
-
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		delete *i;
+		delete bu;
 	}
-
-	for (std::vector<BattleItem*>::iterator i = _items.begin(); i != _items.end(); ++i)
+	for (auto bi : _items)
 	{
-		delete *i;
+		delete bi;
 	}
-	for (std::vector<BattleItem*>::iterator i = _recoverGuaranteed.begin(); i != _recoverGuaranteed.end(); ++i)
+	for (auto* bi : _recoverGuaranteed)
 	{
-		delete *i;
+		delete bi;
 	}
-	for (std::vector<BattleItem*>::iterator i = _recoverConditional.begin(); i != _recoverConditional.end(); ++i)
+	for (auto* bi : _recoverConditional)
 	{
-		delete *i;
+		delete bi;
 	}
-	for (std::vector<BattleItem*>::iterator i = _deleted.begin(); i != _deleted.end(); ++i)
+	for (auto* bi : _deleted)
 	{
-		delete *i;
+		delete bi;
 	}
-	for (std::vector<BattleObject*>::iterator i = _battleObjects.begin(); i != _battleObjects.end(); ++i)
+	for (auto* bi : _battleObjects)
 	{
-		delete* i;
+		delete bi;
 	}
 
 	delete _pathfinding;
@@ -169,6 +167,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_ecEnabledNeutral = node["ecEnabledNeutral"].as<bool>(_ecEnabledNeutral);
 	_alienCustomDeploy = node["alienCustomDeploy"].as<std::string>(_alienCustomDeploy);
 	_alienCustomMission = node["alienCustomMission"].as<std::string>(_alienCustomMission);
+	_alienItemLevel = node["alienItemLevel"].as<int>(_alienItemLevel);
 	_lastUsedMapScript = node["lastUsedMapScript"].as<std::string>(_lastUsedMapScript);
 	_reinforcementsDeployment = node["reinforcementsDeployment"].as<std::string>(_reinforcementsDeployment);
 	_reinforcementsRace = node["reinforcementsRace"].as<std::string>(_reinforcementsRace);
@@ -350,35 +349,38 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 				int unit = (*i)["unit"].as<int>(-1);
 
 				// match up items and units
-				for (std::vector<BattleUnit*>::iterator bu = _units.begin(); bu != _units.end() && owner != -1; ++bu)
+				for (auto* bu : _units)
 				{
-					if ((*bu)->getId() == owner)
+					if (owner == -1) break; // loop finished
+					if (bu->getId() == owner)
 					{
-						item->setOwner(*bu);
+						item->setOwner(bu);
 						if (item->isSpecialWeapon())
 						{
-							(*bu)->addLoadedSpecialWeapon(item);
+							bu->addLoadedSpecialWeapon(item);
 						}
 						else
 						{
-							(*bu)->getInventory()->push_back(item);
+							bu->getInventory()->push_back(item);
 						}
 						break;
 					}
 				}
-				for (std::vector<BattleUnit*>::iterator bu = _units.begin(); bu != _units.end() && prevOwner != -1; ++bu)
+				for (auto* bu : _units)
 				{
-					if ((*bu)->getId() == prevOwner)
+					if (prevOwner == -1) break; // loop finished
+					if (bu->getId() == prevOwner)
 					{
-						item->setPreviousOwner(*bu);
+						item->setPreviousOwner(bu);
 						break;
 					}
 				}
-				for (std::vector<BattleUnit*>::iterator bu = _units.begin(); bu != _units.end() && unit != -1; ++bu)
+				for (auto* bu : _units)
 				{
-					if ((*bu)->getId() == unit)
+					if (unit == -1) break; // loop finished
+					if (bu->getId() == unit)
 					{
-						item->setUnit(*bu);
+						item->setUnit(bu);
 						break;
 					}
 				}
@@ -511,9 +513,9 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
  */
 void SavedBattleGame::loadMapResources(Mod *mod)
 {
-	for (std::vector<MapDataSet*>::const_iterator i = _mapDataSets.begin(); i != _mapDataSets.end(); ++i)
+	for (auto* mds : _mapDataSets)
 	{
-		(*i)->loadData(mod->getMCDPatch((*i)->getName()));
+		mds->loadData(mod->getMCDPatch(mds->getName()));
 	}
 
 	int mdsID, mdID;
@@ -586,6 +588,7 @@ YAML::Node SavedBattleGame::save() const
 	node["ecEnabledNeutral"] = _ecEnabledNeutral;
 	node["alienCustomDeploy"] = _alienCustomDeploy;
 	node["alienCustomMission"] = _alienCustomMission;
+	node["alienItemLevel"] = _alienItemLevel;
 	node["lastUsedMapScript"] = _lastUsedMapScript;
 	node["reinforcementsDeployment"] = _reinforcementsDeployment;
 	node["reinforcementsRace"] = _reinforcementsRace;
@@ -603,9 +606,9 @@ YAML::Node SavedBattleGame::save() const
 	node["animFrame"] = _animFrame;
 	node["bughuntMode"] = _bughuntMode;
 	node["selectedUnit"] = (_selectedUnit?_selectedUnit->getId():-1);
-	for (std::vector<MapDataSet*>::const_iterator i = _mapDataSets.begin(); i != _mapDataSets.end(); ++i)
+	for (const auto* mds : _mapDataSets)
 	{
-		node["mapdatasets"].push_back((*i)->getName());
+		node["mapdatasets"].push_back(mds->getName());
 	}
 #if 0
 	for (int i = 0; i < _mapsize_z * _mapsize_y * _mapsize_x; ++i)
@@ -645,27 +648,27 @@ YAML::Node SavedBattleGame::save() const
 	node["binTiles"] = YAML::Binary(tileData, tileDataSize);
 	free(tileData);
 #endif
-	for (std::vector<Node*>::const_iterator i = _nodes.begin(); i != _nodes.end(); ++i)
+	for (const auto* nn : _nodes)
 	{
-		node["nodes"].push_back((*i)->save());
+		node["nodes"].push_back(nn->save());
 	}
 	if (_missionType == "STR_BASE_DEFENSE")
 	{
 		node["moduleMap"] = _baseModules;
 	}
-	for (std::vector<BattleUnit*>::const_iterator i = _units.begin(); i != _units.end(); ++i)
+	for (const auto* bu : _units)
 	{
-		node["units"].push_back((*i)->save(this->getMod()->getScriptGlobal()));
+		node["units"].push_back(bu->save(this->getMod()->getScriptGlobal()));
 	}
-	for (std::vector<BattleItem*>::const_iterator i = _items.begin(); i != _items.end(); ++i)
+	for (const auto* bi : _items)
 	{
-		if ((*i)->isSpecialWeapon())
+		if (bi->isSpecialWeapon())
 		{
-			node["itemsSpecial"].push_back((*i)->save(this->getMod()->getScriptGlobal()));
+			node["itemsSpecial"].push_back(bi->save(this->getMod()->getScriptGlobal()));
 		}
 		else
 		{
-			node["items"].push_back((*i)->save(this->getMod()->getScriptGlobal()));
+			node["items"].push_back(bi->save(this->getMod()->getScriptGlobal()));
 		}
 	}
 	for (std::vector<BattleObject*>::const_iterator i = _battleObjects.begin(); i != _battleObjects.end(); ++i)
@@ -684,13 +687,13 @@ YAML::Node SavedBattleGame::save() const
 	node["minAmbienceRandomDelay"] = _minAmbienceRandomDelay;
 	node["maxAmbienceRandomDelay"] = _maxAmbienceRandomDelay;
 	node["currentAmbienceDelay"] = _currentAmbienceDelay;
-	for (std::vector<BattleItem*>::const_iterator i = _recoverGuaranteed.begin(); i != _recoverGuaranteed.end(); ++i)
+	for (const auto* bi : _recoverGuaranteed)
 	{
-		node["recoverGuaranteed"].push_back((*i)->save(this->getMod()->getScriptGlobal()));
+		node["recoverGuaranteed"].push_back(bi->save(this->getMod()->getScriptGlobal()));
 	}
-	for (std::vector<BattleItem*>::const_iterator i = _recoverConditional.begin(); i != _recoverConditional.end(); ++i)
+	for (const auto* bi : _recoverConditional)
 	{
-		node["recoverConditional"].push_back((*i)->save(this->getMod()->getScriptGlobal()));
+		node["recoverConditional"].push_back(bi->save(this->getMod()->getScriptGlobal()));
 	}
 	node["music"] = _music;
 	node["baseItems"] = _baseItems->save();
@@ -714,12 +717,12 @@ YAML::Node SavedBattleGame::save() const
 void SavedBattleGame::initMap(int mapsize_x, int mapsize_y, int mapsize_z, bool resetTerrain)
 {
 	// Clear old map data
-		for (std::vector<Node*>::iterator i = _nodes.begin(); i != _nodes.end(); ++i)
-		{
-			delete *i;
-		}
+	for (auto* node : _nodes)
+	{
+		delete node;
+	}
 
-		_nodes.clear();
+	_nodes.clear();
 
 	if (resetTerrain)
 	{
@@ -1071,7 +1074,7 @@ BattleUnit *SavedBattleGame::selectPlayerUnit(int dir, bool checkReselect, bool 
 		end = _units.begin();
 	}
 
-	std::vector<BattleUnit*>::iterator i = std::find(_units.begin(), _units.end(), _selectedUnit);
+	auto i = std::find(_units.begin(), _units.end(), _selectedUnit);
 	do
 	{
 		// no unit selected
@@ -1308,14 +1311,14 @@ void SavedBattleGame::startFirstTurn()
 
 
 	// initialize xcom units for battle
-	for (auto u : *getUnits())
+	for (auto* bu : *getUnits())
 	{
-		if (u->getOriginalFaction() != FACTION_PLAYER || u->isOut())
+		if (bu->getOriginalFaction() != FACTION_PLAYER || bu->isOut())
 		{
 			continue;
 		}
 
-		u->prepareNewTurn(false);
+		bu->prepareNewTurn(false);
 	}
 
 	_turn = 1;
@@ -1333,17 +1336,17 @@ void SavedBattleGame::newTurnUpdateScripts()
 		return;
 	}
 
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		if ((*i)->isIgnored())
+		if (bu->isIgnored())
 		{
 			continue;
 		}
 
-		ModScript::scriptCallback<ModScript::NewTurnUnit>((*i)->getArmor(), (*i), this, this->getTurn(), _side);
+		ModScript::scriptCallback<ModScript::NewTurnUnit>(bu->getArmor(), bu, this, this->getTurn(), _side);
 	}
 
-	for (auto& item : _items)
+	for (auto* item : _items)
 	{
 		if (item->isOwnerIgnored())
 		{
@@ -1424,7 +1427,7 @@ BattlescapeTally SavedBattleGame::tallyUnitsForPreview()
 					{
 						tmp = Position(x + unit->getPosition().x, y + unit->getPosition().y, unit->getPosition().z);
 						bool found = false;
-						for (auto& pos : _craftTiles)
+						for (const auto& pos : _craftTiles)
 						{
 							if (pos == tmp)
 							{
@@ -1474,7 +1477,7 @@ void SavedBattleGame::saveCustomCraftDeployment()
 	auto& customVehicleDeployment = _craftForPreview->getCustomVehicleDeployment();
 
 	Position tmp;
-	for (auto* unit : _units)
+	for (const auto* unit : _units)
 	{
 		if (unit->getOriginalFaction() == FACTION_PLAYER)
 		{
@@ -1508,13 +1511,13 @@ void SavedBattleGame::saveDummyCraftDeployment()
 	auto* save = getGeoscapeSave();
 
 	// don't forget to invalidate custom deployments of all real craft of this type
-	for (auto* base : *save->getBases())
+	for (auto* xbase : *save->getBases())
 	{
-		for (auto* craft : *base->getCrafts())
+		for (auto* xcraft : *xbase->getCrafts())
 		{
-			if (craft->getRules() == _craftForPreview->getRules())
+			if (xcraft->getRules() == _craftForPreview->getRules())
 			{
-				craft->resetCustomDeployment();
+				xcraft->resetCustomDeployment();
 			}
 		}
 	}
@@ -1531,7 +1534,7 @@ void SavedBattleGame::saveDummyCraftDeployment()
 		// save
 		RuleCraftDeployment customDeployment;
 		Position tmp;
-		for (auto* unit : _units)
+		for (const auto* unit : _units)
 		{
 			if (unit->getOriginalFaction() == FACTION_PLAYER)
 			{
@@ -1600,11 +1603,11 @@ const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft*
 void SavedBattleGame::endTurn()
 {
 	// reset turret direction for all hostile and neutral units (as it may have been changed during reaction fire)
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		if ((*i)->getOriginalFaction() != FACTION_PLAYER)
+		if (bu->getOriginalFaction() != FACTION_PLAYER)
 		{
-			(*i)->setDirection((*i)->getDirection()); // this is not pointless, the method sets more than just the direction
+			bu->setDirection(bu->getDirection()); // this is not pointless, the method sets more than just the direction
 		}
 	}
 
@@ -1651,7 +1654,7 @@ void SavedBattleGame::endTurn()
 			selectNextPlayerUnit();
 	}
 
-	auto tally = _battleState->getBattleGame()->tallyUnits();
+	BattlescapeTally tally = _battleState->getBattleGame()->tallyUnits();
 
 	if ((_turn > _cheatTurn / 2 && tally.liveAliens <= 2) || _turn > _cheatTurn)
 	{
@@ -1661,47 +1664,47 @@ void SavedBattleGame::endTurn()
 	if (_side == FACTION_PLAYER)
 	{
 		// update the "number of turns since last spotted" and the number of turns left sniper AI knows about player units
-		for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+		for (auto* bu : _units)
 		{
-			if ((*i)->getTurnsSinceSpotted() < 255)
+			if (bu->getTurnsSinceSpotted() < 255)
 			{
-				(*i)->setTurnsSinceSpotted((*i)->getTurnsSinceSpotted() +	1);
+				bu->setTurnsSinceSpotted(bu->getTurnsSinceSpotted() +	1);
 			}
-			if (_cheating && (*i)->getFaction() == FACTION_PLAYER && !(*i)->isOut())
+			if (_cheating && bu->getFaction() == FACTION_PLAYER && !bu->isOut())
 			{
-				(*i)->setTurnsSinceSpotted(0);
+				bu->setTurnsSinceSpotted(0);
 			}
-			if ((*i)->getAIModule())
+			if (bu->getAIModule())
 			{
-				(*i)->getAIModule()->reset(); // clean up AI state
+				bu->getAIModule()->reset(); // clean up AI state
 			}
 
-			if ((*i)->getTurnsLeftSpottedForSnipers() != 0)
+			if (bu->getTurnsLeftSpottedForSnipers() != 0)
 			{
-				(*i)->setTurnsLeftSpottedForSnipers((*i)->getTurnsLeftSpottedForSnipers() - 1);
+				bu->setTurnsLeftSpottedForSnipers(bu->getTurnsLeftSpottedForSnipers() - 1);
 			}
 		}
 	}
 
 	// hide all aliens (VOF calculations below will turn them visible again)
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		if ((*i)->isIgnored())
+		if (bu->isIgnored())
 		{
 			continue;
 		}
 
-		if ((*i)->getFaction() == _side)
+		if (bu->getFaction() == _side)
 		{
-			(*i)->prepareNewTurn();
+			bu->prepareNewTurn();
 		}
-		else if ((*i)->getOriginalFaction() == _side)
+		else if (bu->getOriginalFaction() == _side)
 		{
-			(*i)->updateUnitStats(false, true);
+			bu->updateUnitStats(false, true);
 		}
-		if ((*i)->getFaction() != FACTION_PLAYER)
+		if (bu->getFaction() != FACTION_PLAYER)
 		{
-			(*i)->setVisible(false);
+			bu->setVisible(false);
 		}
 	}
 
@@ -1874,15 +1877,15 @@ bool SavedBattleGame::isShiftPressed(bool considerTouchButtons) const
  */
 void SavedBattleGame::resetUnitTiles()
 {
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		if (!(*i)->isOut())
+		if (!bu->isOut())
 		{
-			(*i)->setTile(getTile((*i)->getPosition()), this);
+			bu->setTile(getTile(bu->getPosition()), this);
 		}
-		if ((*i)->getFaction() == FACTION_PLAYER)
+		if (bu->getFaction() == FACTION_PLAYER)
 		{
-			(*i)->setVisible(true);
+			bu->setVisible(true);
 		}
 	}
 	_beforeGame = false;
@@ -1905,16 +1908,17 @@ void SavedBattleGame::randomizeItemLocations(Tile *t)
 {
 	if (!_storageSpace.empty())
 	{
-		for (std::vector<BattleItem*>::iterator it = t->getInventory()->begin(); it != t->getInventory()->end();)
+		for (auto iter = t->getInventory()->begin(); iter != t->getInventory()->end();)
 		{
-			if ((*it)->getSlot()->getType() == INV_GROUND)
+			BattleItem* bi = (*iter);
+			if (bi->getSlot()->getType() == INV_GROUND)
 			{
-				getTile(_storageSpace.at(RNG::generate(0, _storageSpace.size() -1)))->addItem(*it, (*it)->getSlot());
-				it = t->getInventory()->erase(it);
+				getTile(_storageSpace.at(RNG::generate(0, _storageSpace.size() -1)))->addItem(bi, bi->getSlot());
+				iter = t->getInventory()->erase(iter);
 			}
 			else
 			{
-				++it;
+				++iter;
 			}
 		}
 	}
@@ -1937,9 +1941,8 @@ void SavedBattleGame::removeItem(BattleItem *item)
 {
 	auto purge = [](std::vector<BattleItem*> &inventory, BattleItem* forDelete)
 	{
-		auto begin = inventory.begin();
 		auto end = inventory.end();
-		for (auto i = begin; i != end; ++i)
+		for (auto i = inventory.begin(); i != end; ++i)
 		{
 			if (*i == forDelete)
 			{
@@ -1969,7 +1972,7 @@ void SavedBattleGame::removeItem(BattleItem *item)
 
 	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 	{
-		auto ammo = item->getAmmoForSlot(slot);
+		auto* ammo = item->getAmmoForSlot(slot);
 		if (ammo && ammo != item)
 		{
 			if (purge(_items, ammo))
@@ -1990,7 +1993,7 @@ void SavedBattleGame::addFixedItems(BattleUnit *unit, const std::vector<const Ru
 	if (!fixed.empty())
 	{
 		std::vector<const RuleItem*> ammo;
-		for (const auto& ruleItem : fixed)
+		for (const auto* ruleItem : fixed)
 		{
 			if (ruleItem)
 			{
@@ -2002,7 +2005,7 @@ void SavedBattleGame::addFixedItems(BattleUnit *unit, const std::vector<const Ru
 				createItemForUnit(ruleItem, unit, true);
 			}
 		}
-		for (const auto& ruleItem : ammo)
+		for (const auto* ruleItem : ammo)
 		{
 			createItemForUnit(ruleItem, unit, true);
 		}
@@ -2029,7 +2032,7 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 	// For aliens and HWP
 	if (rule)
 	{
-		auto &buildin = rule->getBuiltInWeapons();
+		auto& buildin = rule->getBuiltInWeapons();
 		if (!buildin.empty())
 		{
 			if (itemLevel >= buildin.size())
@@ -2059,9 +2062,9 @@ void SavedBattleGame::initUnit(BattleUnit *unit, size_t itemLevel)
 
 	ModScript::scriptCallback<ModScript::CreateUnit>(armor, unit, this, this->getTurn());
 
-	if (auto solder = unit->getGeoscapeSoldier())
+	if (auto* solder = unit->getGeoscapeSoldier())
 	{
-		for (auto bonus : *solder->getBonuses(nullptr))
+		for (const auto* bonus : *solder->getBonuses(nullptr))
 		{
 			ModScript::scriptCallback<ModScript::ApplySoldierBonuses>(bonus, unit, this, bonus);
 		}
@@ -2150,6 +2153,16 @@ BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile)
 }
 
 /**
+ * Create new temporary item. Item is not added to unit list and is not initialized fully.
+ * @param rule Item config
+ * @return New temporary item.
+ */
+BattleItem *SavedBattleGame::createTempItem(const RuleItem *rule)
+{
+	return new BattleItem(rule, getCurrentItemId());
+}
+
+/**
  * Create new temporary unit. Unit is not added to unit list and is not initialized fully.
  * @param rules Unit config
  * @param faction Faction of unit
@@ -2207,10 +2220,10 @@ BattleUnit *SavedBattleGame::convertUnit(BattleUnit *unit)
 
 	unit->instaKill();
 
-	auto tile = unit->getTile();
+	auto* tile = unit->getTile();
 	if (tile == nullptr)
 	{
-		auto pos = unit->getPosition();
+		Position pos = unit->getPosition();
 		if (pos != TileEngine::invalid)
 		{
 			tile = getTile(pos);
@@ -2345,19 +2358,19 @@ Node *SavedBattleGame::getSpawnNode(int nodeRank, BattleUnit *unit)
 	int lowestPriority = INT16_MAX;
 	std::vector<Node*> compliantNodes;
 
-	for (std::vector<Node*>::iterator i = getNodes()->begin(); i != getNodes()->end(); ++i)
+	for (auto* node : *getNodes())
 	{
-		if ((*i)->isDummy())
+		if (node->isDummy())
 		{
 			continue;
 		}
-		if ((*i)->getRank() == nodeRank								// ranks must match
-			&& (!((*i)->getType() & Node::TYPE_SMALL)
+		if (node->getRank() == nodeRank								// ranks must match
+			&& (!(node->getType() & Node::TYPE_SMALL)
 				|| unit->isSmallUnit())								// the small unit bit is not set or the unit is small
-			&& (!((*i)->getType() & Node::TYPE_FLYING)
+			&& (!(node->getType() & Node::TYPE_FLYING)
 				|| unit->getMovementType() == MT_FLY)				// the flying unit bit is not set or the unit can fly
-			&& (*i)->getPriority() > 0								// priority 0 is no spawn place
-			&& setUnitPosition(unit, (*i)->getPosition(), true))	// check if not already occupied
+			&& node->getPriority() > 0								// priority 0 is no spawn place
+			&& setUnitPosition(unit, node->getPosition(), true))	// check if not already occupied
 		{
 			bool civ = false;
 			if (unit->getGeoscapeSoldier())
@@ -2370,26 +2383,26 @@ Node *SavedBattleGame::getSpawnNode(int nodeRank, BattleUnit *unit)
 			}
 			if (!civ) //vanilla case
 			{
-				if ((*i)->getPriority() > highestPriority)
+				if (node->getPriority() > highestPriority)
 				{
-					highestPriority = (*i)->getPriority();
+					highestPriority = node->getPriority();
 					compliantNodes.clear(); // drop the last nodes, as we found a higher priority now
 				}
-				if ((*i)->getPriority() == highestPriority)
+				if (node->getPriority() == highestPriority)
 				{
-					compliantNodes.push_back(*i);
+					compliantNodes.push_back(node);
 				}
 			}
 			else
 			{
-				if ((*i)->getPriority() < lowestPriority)
+				if (node->getPriority() < lowestPriority)
 				{
-					lowestPriority = (*i)->getPriority();
+					lowestPriority = node->getPriority();
 					compliantNodes.clear(); // drop the last nodes, as we found a lower priority now
 				}
-				if ((*i)->getPriority() == lowestPriority)
+				if (node->getPriority() == lowestPriority)
 				{
-					compliantNodes.push_back(*i);
+					compliantNodes.push_back(node);
 				}
 			}
 		}
@@ -2500,61 +2513,61 @@ void SavedBattleGame::prepareNewTurn()
 	}
 
 	// first: fires spread
-	for (std::vector<Tile*>::iterator i = tilesOnFire.begin(); i != tilesOnFire.end(); ++i)
+	for (auto* tileOnFire : tilesOnFire)
 	{
 		// if we haven't added fire here this turn
-		if ((*i)->getOverlaps() == 0)
+		if (tileOnFire->getOverlaps() == 0)
 		{
 			// reduce the fire timer
-			(*i)->setFire((*i)->getFire() -1);
+			tileOnFire->setFire(tileOnFire->getFire() -1);
 
 			// if we're still burning
-			if ((*i)->getFire())
+			if (tileOnFire->getFire())
 			{
 				// propagate in four cardinal directions (0, 2, 4, 6)
 				for (int dir = 0; dir <= 6; dir += 2)
 				{
 					Position pos;
 					Pathfinding::directionToVector(dir, &pos);
-					Tile *t = getTile((*i)->getPosition() + pos);
+					Tile *t = getTile(tileOnFire->getPosition() + pos);
 					// if there's no wall blocking the path of the flames...
-					if (t && getTileEngine()->horizontalBlockage((*i), t, DT_IN) == 0)
+					if (t && getTileEngine()->horizontalBlockage(tileOnFire, t, DT_IN) == 0)
 					{
 						// attempt to set this tile on fire
-						t->ignite((*i)->getSmoke());
+						t->ignite(tileOnFire->getSmoke());
 					}
 				}
 			}
 			// fire has burnt out
 			else
 			{
-				(*i)->setSmoke(0);
+				tileOnFire->setSmoke(0);
 				// burn this tile, and any object in it, if it's not fireproof/indestructible.
-				if ((*i)->getMapData(O_OBJECT))
+				if (tileOnFire->getMapData(O_OBJECT))
 				{
-					if ((*i)->getMapData(O_OBJECT)->getFlammable() != 255 && (*i)->getMapData(O_OBJECT)->getArmor() != 255)
+					if (tileOnFire->getMapData(O_OBJECT)->getFlammable() != 255 && tileOnFire->getMapData(O_OBJECT)->getArmor() != 255)
 					{
-						if ((*i)->destroy(O_OBJECT, getObjectiveType()))
+						if (tileOnFire->destroy(O_OBJECT, getObjectiveType()))
 						{
 							addDestroyedObjective();
 						}
-						if ((*i)->destroy(O_FLOOR, getObjectiveType()))
+						if (tileOnFire->destroy(O_FLOOR, getObjectiveType()))
 						{
 							addDestroyedObjective();
 						}
 					}
 				}
-				else if ((*i)->getMapData(O_FLOOR))
+				else if (tileOnFire->getMapData(O_FLOOR))
 				{
-					if ((*i)->getMapData(O_FLOOR)->getFlammable() != 255 && (*i)->getMapData(O_FLOOR)->getArmor() != 255)
+					if (tileOnFire->getMapData(O_FLOOR)->getFlammable() != 255 && tileOnFire->getMapData(O_FLOOR)->getArmor() != 255)
 					{
-						if ((*i)->destroy(O_FLOOR, getObjectiveType()))
+						if (tileOnFire->destroy(O_FLOOR, getObjectiveType()))
 						{
 							addDestroyedObjective();
 						}
 					}
 				}
-				getTileEngine()->applyGravity(*i);
+				getTileEngine()->applyGravity(tileOnFire);
 			}
 		}
 	}
@@ -2570,29 +2583,29 @@ void SavedBattleGame::prepareNewTurn()
 	}
 
 	// now make the smoke spread.
-	for (std::vector<Tile*>::iterator i = tilesOnSmoke.begin(); i != tilesOnSmoke.end(); ++i)
+	for (auto* tileOnSmoke : tilesOnSmoke)
 	{
 		// smoke and fire follow slightly different rules.
-		if ((*i)->getFire() == 0)
+		if (tileOnSmoke->getFire() == 0)
 		{
 			// reduce the smoke counter
-			(*i)->setSmoke((*i)->getSmoke() - 1);
+			tileOnSmoke->setSmoke(tileOnSmoke->getSmoke() - 1);
 			// if we're still smoking
-			if ((*i)->getSmoke())
+			if (tileOnSmoke->getSmoke())
 			{
 				// spread in four cardinal directions
 				for (int dir = 0; dir <= 6; dir += 2)
 				{
 					Position pos;
 					Pathfinding::directionToVector(dir, &pos);
-					Tile *t = getTile((*i)->getPosition() + pos);
+					Tile *t = getTile(tileOnSmoke->getPosition() + pos);
 					// as long as there are no walls blocking us
-					if (t && getTileEngine()->horizontalBlockage((*i), t, DT_SMOKE) == 0)
+					if (t && getTileEngine()->horizontalBlockage(tileOnSmoke, t, DT_SMOKE) == 0)
 					{
 						// only add smoke to empty tiles, or tiles with no fire, and smoke that was added this turn
 						if (t->getSmoke() == 0 || (t->getFire() == 0 && t->getOverlaps() != 0))
 						{
-							t->addSmoke((*i)->getSmoke());
+							t->addSmoke(tileOnSmoke->getSmoke());
 						}
 					}
 				}
@@ -2602,20 +2615,20 @@ void SavedBattleGame::prepareNewTurn()
 		{
 			// smoke from fire spreads upwards one level if there's no floor blocking it.
 			Position pos = Position(0,0,1);
-			Tile *t = getTile((*i)->getPosition() + pos);
+			Tile *t = getTile(tileOnSmoke->getPosition() + pos);
 			if (t && t->hasNoFloor(this))
 			{
 				// only add smoke equal to half the intensity of the fire
-				t->addSmoke((*i)->getSmoke()/2);
+				t->addSmoke(tileOnSmoke->getSmoke()/2);
 			}
 			// then it spreads in the four cardinal directions.
 			for (int dir = 0; dir <= 6; dir += 2)
 			{
 				Pathfinding::directionToVector(dir, &pos);
-				t = getTile((*i)->getPosition() + pos);
-				if (t && getTileEngine()->horizontalBlockage((*i), t, DT_SMOKE) == 0)
+				t = getTile(tileOnSmoke->getPosition() + pos);
+				if (t && getTileEngine()->horizontalBlockage(tileOnSmoke, t, DT_SMOKE) == 0)
 				{
-					t->addSmoke((*i)->getSmoke()/2);
+					t->addSmoke(tileOnSmoke->getSmoke()/2);
 				}
 			}
 		}
@@ -2632,9 +2645,9 @@ void SavedBattleGame::prepareNewTurn()
 	}
 
 	Mod *mod = getBattleState()->getGame()->getMod();
-	for (std::vector<BattleUnit*>::iterator i = getUnits()->begin(); i != getUnits()->end(); ++i)
+	for (auto* bu : *getUnits())
 	{
-		(*i)->calculateEnviDamage(mod, this);
+		bu->calculateEnviDamage(mod, this);
 	}
 
 	//fov and light udadates are done in `BattlescapeGame::endTurn`
@@ -2649,45 +2662,45 @@ void SavedBattleGame::prepareNewTurn()
  */
 void SavedBattleGame::reviveUnconsciousUnits(bool noTU)
 {
-	for (std::vector<BattleUnit*>::iterator i = getUnits()->begin(); i != getUnits()->end(); ++i)
+	for (auto* bu : *getUnits())
 	{
-		if ((*i)->isSmallUnit() && !(*i)->isIgnored())
+		if (bu->isSmallUnit() && !bu->isIgnored())
 		{
-			Position originalPosition = (*i)->getPosition();
+			Position originalPosition = bu->getPosition();
 			if (originalPosition == Position(-1, -1, -1))
 			{
-				for (std::vector<BattleItem*>::iterator j = _items.begin(); j != _items.end(); ++j)
+				for (auto* bi : _items)
 				{
-					if ((*j)->getUnit() && (*j)->getUnit() == *i && (*j)->getOwner())
+					if (bi->getUnit() && bi->getUnit() == bu && bi->getOwner())
 					{
-						originalPosition = (*j)->getOwner()->getPosition();
+						originalPosition = bi->getOwner()->getPosition();
 					}
 				}
 			}
-			if ((*i)->getStatus() == STATUS_UNCONSCIOUS && !(*i)->isOutThresholdExceed())
+			if (bu->getStatus() == STATUS_UNCONSCIOUS && !bu->isOutThresholdExceed())
 			{
 				Tile *targetTile = getTile(originalPosition);
-				bool largeUnit =  targetTile && targetTile->getUnit() && targetTile->getUnit() != *i && targetTile->getUnit()->isBigUnit();
-				if (placeUnitNearPosition((*i), originalPosition, largeUnit))
+				bool largeUnit = targetTile && targetTile->getUnit() && targetTile->getUnit() != bu && targetTile->getUnit()->isBigUnit();
+				if (placeUnitNearPosition(bu, originalPosition, largeUnit))
 				{
 					// recover from unconscious
-					(*i)->turn(false); // makes the unit stand up again
-					(*i)->kneel(false);
-					(*i)->setAlreadyExploded(false);
+					bu->turn(false); // makes the unit stand up again
+					bu->kneel(false);
+					bu->setAlreadyExploded(false);
 					if (noTU)
 					{
-						(*i)->clearTimeUnits();
+						bu->clearTimeUnits();
 					}
 					else
 					{
-						(*i)->updateUnitStats(true, false);
+						bu->updateUnitStats(true, false);
 						if (getMod()->getTURecoveryWakeUpNewTurn() < 100)
 						{
-							int newTU = (*i)->getTimeUnits() * getMod()->getTURecoveryWakeUpNewTurn() / 100;
-							(*i)->setTimeUnits(newTU);
+							int newTU = bu->getTimeUnits() * getMod()->getTURecoveryWakeUpNewTurn() / 100;
+							bu->setTimeUnits(newTU);
 						}
 					}
-					removeUnconsciousBodyItem((*i));
+					removeUnconsciousBodyItem(bu);
 				}
 			}
 		}
@@ -2702,16 +2715,16 @@ void SavedBattleGame::removeUnconsciousBodyItem(BattleUnit *bu)
 	int size = bu->getArmor()->getSize();
 	size *= size;
 	// remove the unconscious body item corresponding to this unit
-	for (std::vector<BattleItem*>::iterator it = getItems()->begin(); it != getItems()->end(); )
+	for (auto iter = getItems()->begin(); iter != getItems()->end(); )
 	{
-		if ((*it)->getUnit() == bu)
+		if ((*iter)->getUnit() == bu)
 		{
-			removeItem((*it));
+			removeItem((*iter));
 			if (--size == 0) break;
 		}
 		else
 		{
-			++it;
+			++iter;
 		}
 	}
 }
@@ -2780,11 +2793,11 @@ bool SavedBattleGame::setUnitPosition(BattleUnit *bu, Position position, bool te
  */
 bool SavedBattleGame::eyesOnTarget(UnitFaction faction, BattleUnit* unit)
 {
-	for (std::vector<BattleUnit*>::iterator i = getUnits()->begin(); i != getUnits()->end(); ++i)
+	for (auto* bu : *getUnits())
 	{
-		if ((*i)->getFaction() != faction) continue;
+		if (bu->getFaction() != faction) continue;
 
-		std::vector<BattleUnit*> *vis = (*i)->getVisibleUnits();
+		auto* vis = bu->getVisibleUnits();
 		if (std::find(vis->begin(), vis->end(), unit) != vis->end()) return true;
 		// aliens know the location of all XCom agents sighted by all other aliens due to sharing locations over their space-walkie-talkies
 	}
@@ -2801,9 +2814,9 @@ bool SavedBattleGame::eyesOnTarget(UnitFaction faction, BattleUnit* unit)
 bool SavedBattleGame::addFallingUnit(BattleUnit* unit)
 {
 	bool add = true;
-	for (std::list<BattleUnit*>::iterator i = _fallingUnits.begin(); i != _fallingUnits.end(); ++i)
+	for (auto* bu : _fallingUnits)
 	{
-		if (unit == *i)
+		if (unit == bu)
 		{
 			add = false;
 			break;
@@ -2851,13 +2864,13 @@ bool SavedBattleGame::getUnitsFalling() const
 BattleUnit* SavedBattleGame::getHighestRankedXCom()
 {
 	BattleUnit* highest = 0;
-	for (std::vector<BattleUnit*>::iterator j = _units.begin(); j != _units.end(); ++j)
+	for (auto* bu : _units)
 	{
-		if ((*j)->getOriginalFaction() == FACTION_PLAYER && !(*j)->isOut())
+		if (bu->getOriginalFaction() == FACTION_PLAYER && !bu->isOut())
 		{
-			if (highest == 0 || (*j)->getRankInt() > highest->getRankInt())
+			if (highest == 0 || bu->getRankInt() > highest->getRankInt())
 			{
-				highest = *j;
+				highest = bu;
 			}
 		}
 	}
@@ -2959,9 +2972,9 @@ int SavedBattleGame::getFactionMoraleModifier(bool player)
 	else
 	{
 		int number = 0;
-		for (std::vector<BattleUnit*>::iterator j = _units.begin(); j != _units.end(); ++j)
+		for (auto* bu : _units)
 		{
-			if ((*j)->getOriginalFaction() == FACTION_HOSTILE && !(*j)->isOut())
+			if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
 			{
 				++number;
 			}
@@ -3554,9 +3567,9 @@ const HitLog *SavedBattleGame::getHitLog() const
  */
 void SavedBattleGame::resetUnitHitStates()
 {
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto* bu : _units)
 	{
-		(*i)->resetHitState();
+		bu->resetHitState();
 	}
 }
 
@@ -3679,6 +3692,22 @@ void getTileScript(const SavedBattleGame* sbg, const Tile*& t, int x, int y, int
 	}
 }
 
+void setAlienItemLevelScript(SavedBattleGame* sbg, int val)
+{
+	if (sbg)
+	{
+		sbg->setAlienItemLevel(Clamp(val, 0, (int)sbg->getMod()->getAlienItemLevels().size()));
+	}
+}
+
+void setReinforcementsItemLevelScript(SavedBattleGame* sbg, int val)
+{
+	if (sbg)
+	{
+		sbg->setReinforcementsItemLevel(Clamp(val, 0, (int)sbg->getMod()->getAlienItemLevels().size()));
+	}
+}
+
 void tryConcealUnitScript(SavedBattleGame* sbg, BattleUnit* bu, int& val)
 {
 	if (sbg && bu)
@@ -3724,6 +3753,11 @@ void SavedBattleGame::ScriptRegister(ScriptParserBase* parser)
 	sbg.add<&SavedBattleGame::getTurn>("getTurn", "Current turn, 0 - before battle, 1 - first turn, each stage reset this value.");
 	sbg.add<&SavedBattleGame::getAnimFrame>("getAnimFrame");
 	sbg.add<&getTileScript>("getTile", "Get tile on position x, y, z");
+
+	sbg.add<&SavedBattleGame::getAlienItemLevel>("getAlienItemLevel");
+	sbg.add<&setAlienItemLevelScript>("setAlienItemLevel");
+	sbg.add<&SavedBattleGame::getReinforcementsItemLevel>("getReinforcementsItemLevel");
+	sbg.add<&setReinforcementsItemLevelScript>("setReinforcementsItemLevel");
 
 	sbg.addPair<SavedGame, &getGeoscapeSaveScript, &getGeoscapeSaveScript>("getGeoscapeGame");
 

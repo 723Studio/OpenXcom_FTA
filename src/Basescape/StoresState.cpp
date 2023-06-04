@@ -40,6 +40,7 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleResearch.h"
+#include "../Ufopaedia/Ufopaedia.h"
 #include <algorithm>
 #include <locale>
 
@@ -179,6 +180,7 @@ StoresState::StoresState(Base *base) : _base(base)
 	_lstStores->setSelectable(true);
 	_lstStores->setBackground(_window);
 	_lstStores->setMargin(2);
+	_lstStores->onMouseClick((ActionHandler)&StoresState::lstStoresClick, SDL_BUTTON_MIDDLE);
 
 	_sortName->setX(_sortName->getX() + _txtItem->getTextWidth() + 4);
 	_sortName->onMouseClick((ActionHandler)&StoresState::sortNameClick);
@@ -260,13 +262,12 @@ void StoresState::initList(bool grandTotal)
 	_itemList.clear();
 
 	// find relevant items
-	const std::vector<std::string> &items = _game->getMod()->getItemsList();
-	for (auto& item : items)
+	for (auto& itemType : _game->getMod()->getItemsList())
 	{
 		// quick search
 		if (!searchString.empty())
 		{
-			std::string projectName = tr(item);
+			std::string projectName = tr(itemType);
 			Unicode::upperCase(projectName);
 			if (projectName.find(searchString) == std::string::npos)
 			{
@@ -275,29 +276,29 @@ void StoresState::initList(bool grandTotal)
 		}
 
 		int qty = 0;
-		auto rule = _game->getMod()->getItem(item, true);
+		auto* rule = _game->getMod()->getItem(itemType, true);
 		if (!grandTotal)
 		{
 			// items in stores from this base only
-			qty += _base->getStorageItems()->getItem(item);
+			qty += _base->getStorageItems()->getItem(itemType);
 		}
 		else
 		{
 
 			// items from all bases
-			for (auto* base : *_game->getSavedGame()->getBases())
+			for (auto* xbase : *_game->getSavedGame()->getBases())
 			{
 				// 1. items in base stores
-				qty += base->getStorageItems()->getItem(rule);
+				qty += xbase->getStorageItems()->getItem(rule);
 
 				// 2. items from craft
-				for (auto* craft : *base->getCrafts())
+				for (const auto* craft : *xbase->getCrafts())
 				{
 					qty += craft->getTotalItemCount(rule);
 				}
 
 				// 3. armor in use (worn by soldiers)
-				for (auto* soldier : *base->getSoldiers())
+				for (const auto* soldier : *xbase->getSoldiers())
 				{
 					if (soldier->getArmor()->getStoreItem() == rule)
 					{
@@ -306,9 +307,9 @@ void StoresState::initList(bool grandTotal)
 				}
 
 				// 4. items/aliens in research
-				for (auto* research : base->getResearch())
+				for (const auto* research : xbase->getResearch())
 				{
-					if (research->getRules()->needItem() && research->getRules()->getName() == item)
+					if (research->getRules()->needItem() && research->getRules()->getName() == itemType)
 					{
 						if (research->getRules()->destroyItem())
 						{
@@ -319,7 +320,7 @@ void StoresState::initList(bool grandTotal)
 				}
 
 				// 5. items in transfer
-				for (auto* transfer : *base->getTransfers())
+				for (auto* transfer : *xbase->getTransfers())
 				{
 					if (transfer->getCraft())
 					{
@@ -334,7 +335,7 @@ void StoresState::initList(bool grandTotal)
 							qty += 1;
 						}
 					}
-					else if (transfer->getItems() == item)
+					else if (transfer->getItems() == itemType)
 					{
 						// 5b. items in transfer
 						qty += transfer->getQuantity();
@@ -345,7 +346,7 @@ void StoresState::initList(bool grandTotal)
 
 		if (qty > 0)
 		{
-			_itemList.push_back(StoredItem(tr(item), qty, rule->getSize(), qty * rule->getSize()));
+			_itemList.push_back(StoredItem(rule, tr(itemType), qty, rule->getSize(), qty * rule->getSize()));
 		}
 	}
 
@@ -458,7 +459,7 @@ void StoresState::sortList(ItemSort sort)
  */
 void StoresState::updateList()
 {
-	for (auto& item : _itemList)
+	for (const auto& item : _itemList)
 	{
 		std::ostringstream ss, ss2, ss3;
 		ss << item.quantity;
@@ -542,6 +543,21 @@ void StoresState::sortSpaceUsedClick(Action *)
 	updateArrows();
 	_lstStores->clearList();
 	sortList(itemOrder);
+}
+
+/**
+ * Handles mouse clicks.
+ * @param action Pointer to an action.
+ */
+void StoresState::lstStoresClick(Action* action)
+{
+	if (_game->isMiddleClick(action))
+	{
+		auto* rule = _itemList[_lstStores->getSelectedRow()].rule;
+
+		std::string articleId = rule->getUfopediaType();
+		Ufopaedia::openArticle(_game, articleId);
+	}
 }
 
 }

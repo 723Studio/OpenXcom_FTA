@@ -90,7 +90,7 @@ PromotionsState::PromotionsState()
 	bool fta = _game->getMod()->isFTAGame();
 	int it = 0;
 
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		it = 0;
 		for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
@@ -105,14 +105,20 @@ PromotionsState::PromotionsState()
 		// special case for soldiers, recovered from VIPs
 		if (!fta)
 		{ //in FtA we don't have this case basically =)
-			for (std::vector<Transfer *>::iterator k = (*i)->getTransfers()->begin(); k != (*i)->getTransfers()->end(); ++k)
+			for (auto* soldier : *xbase->getSoldiers())
 			{
-				if ((*k)->getType() == TRANSFER_SOLDIER)
+				if (soldier->isPromoted())
 				{
-					Soldier *sol = (*k)->getSoldier();
-					if (sol->isPromoted())
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
+				}
+			}
+			for (auto* transfer : *xbase->getTransfers())
+			{
+				if (transfer->getType() == TRANSFER_SOLDIER)
+				{
+					if (transfer->getSoldier()->isPromoted())
 					{
-						_lstSoldiers->addRow(3, sol->getName().c_str(), tr(sol->getRankString(fta)).c_str(), (*i)->getName().c_str());
+						_lstSoldiers->addRow(3, transfer->getSoldier()->getName().c_str(), tr(transfer->getSoldier()->getRankString()).c_str(), xbase->getName().c_str());
 					}
 				}
 			}

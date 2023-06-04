@@ -213,8 +213,6 @@ namespace OpenXcom
 		std::string searchString = _btnQuickSearch->getText();
 		Unicode::upperCase(searchString);
 
-		ArticleDefinitionList::iterator it;
-
 		_lstSelection->clearList();
 		_article_list.clear();
 		Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
@@ -222,21 +220,21 @@ namespace OpenXcom
 
 		int row = 0;
 		bool hasUnseen = false;
-		for (it = _article_list.begin(); it!=_article_list.end(); ++it)
+		for (auto* articleDef : _article_list)
 		{
 			// filter
 			if (_btnShowOnlyNew->getPressed())
 			{
 				if (isCommendationsSection)
 				{
-					if (Ufopaedia::isAwardedCommendation(_game->getSavedGame(), (*it)))
+					if (Ufopaedia::isAwardedCommendation(_game->getSavedGame(), articleDef))
 					{
 						continue;
 					}
 				}
 				else
 				{
-					if (_game->getSavedGame()->getUfopediaRuleStatus((*it)->id) != ArticleDefinition::PEDIA_STATUS_NEW)
+					if (_game->getSavedGame()->getUfopediaRuleStatus(articleDef->id) != ArticleDefinition::PEDIA_STATUS_NEW)
 					{
 						continue;
 					}
@@ -246,7 +244,7 @@ namespace OpenXcom
 			// quick search
 			if (!searchString.empty())
 			{
-				std::string projectName = tr((*it)->getMainTitle());
+				std::string projectName = tr(articleDef->getMainTitle());
 				Unicode::upperCase(projectName);
 				if (projectName.find(searchString) == std::string::npos)
 				{
@@ -254,15 +252,15 @@ namespace OpenXcom
 				}
 			}
 
-			_filtered_article_list.push_back((*it));
-			_lstSelection->addRow(1, tr((*it)->getMainTitle()).c_str());
+			_filtered_article_list.push_back(articleDef);
+			_lstSelection->addRow(1, tr(articleDef->getMainTitle()).c_str());
 
 			if (markAllAsSeen)
 			{
 				// remember all listed articles as seen/normal
-				_game->getSavedGame()->setUfopediaRuleStatus((*it)->id, ArticleDefinition::PEDIA_STATUS_NORMAL);
+				_game->getSavedGame()->setUfopediaRuleStatus(articleDef->id, ArticleDefinition::PEDIA_STATUS_NORMAL);
 			}
-			else if (_game->getSavedGame()->getUfopediaRuleStatus((*it)->id) == ArticleDefinition::PEDIA_STATUS_NEW)
+			else if (_game->getSavedGame()->getUfopediaRuleStatus(articleDef->id) == ArticleDefinition::PEDIA_STATUS_NEW)
 			{
 				// highlight as new
 				_lstSelection->setCellColor(row, 0, _colorNew);

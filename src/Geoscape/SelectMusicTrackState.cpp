@@ -88,14 +88,14 @@ SelectMusicTrackState::SelectMusicTrackState(SelectMusicTrackOrigin origin) : _o
 	const std::string search = _origin == SMT_BATTLESCAPE ? "GMTAC" : "GMGEO";
 	const std::string& currentName = _game->getMod()->getCurrentMusicTrack();
 	int currentTrackIndex = -1;
-	for (auto& i : _game->getMod()->getMusicTrackList())
+	for (auto& pair : _game->getMod()->getMusicTrackList())
 	{
-		if (i.first == currentName || i.first.find(search) != std::string::npos)
+		if (pair.first == currentName || pair.first.find(search) != std::string::npos)
 		{
-			_lstTracks->addRow(1, tr(i.first).c_str());
-			_tracks.push_back(i.second);
-			_trackNames.push_back(i.first);
-			if (i.first == currentName)
+			_lstTracks->addRow(1, tr(pair.first).c_str());
+			_tracks.push_back(pair.second);
+			_trackNames.push_back(pair.first);
+			if (pair.first == currentName)
 			{
 				currentTrackIndex = _lstTracks->getLastRowIndex();
 				_lstTracks->setRowColor(currentTrackIndex, _lstTracks->getSecondaryColor());

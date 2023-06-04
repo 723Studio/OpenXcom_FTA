@@ -55,6 +55,22 @@ namespace OpenXcom
 {
 
 /**
+ * @brief Combines any number of functions into a function that returns true if all of them are true.
+ * Short circuits as well.
+ * @tparam ...Functions type of the function to combine.
+ * @param ...funcs the functions to combine.
+ * @return a new function that is true only if all predicates are satisfied. 
+*/
+template <typename... Functions>
+inline constexpr auto allOf(Functions... funcs)
+{
+	return [=](const auto& x)
+	{
+		return (... and funcs(x));
+	};
+}
+
+/**
  * Initializes all the elements in the Purchase/Hire screen.
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
@@ -159,13 +175,47 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 		_cats.push_back("STR_FILTER_MISSING");
 	}
 
-	auto providedBaseFunc = _base->getProvidedBaseFunc({});
-	const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
-	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+	RuleBaseFacilityFunctions providedBaseFunc = _base->getProvidedBaseFunc({});
+
+	// setup the filter methods to be used in various situations (craft, soldiers, items).
+	constexpr auto costIsNotZero = [](const auto* rule)
 	{
-		const RuleSoldier *rule = _game->getMod()->getSoldier(*i);
-		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
-		if (rule->getBuyCost() != 0 && _game->getSavedGame()->isResearched(rule->getRequirements()) && (~providedBaseFunc & purchaseBaseFunc).none())
+		return rule->getBuyCost() != 0;
+	};
+	constexpr auto requirementsAreResearched = [](const auto* rule)
+	{
+		return _game->getSavedGame()->isResearched(rule->getRequirements());
+	};
+	constexpr auto buyRequirementsAreResearched = [](const auto* rule)
+	{
+		return _game->getSavedGame()->isResearched(rule->getBuyRequirements());
+	};
+	auto necessaryBaseFunctionsPresent = [&providedBaseFunc](const auto* rule)
+	{
+		return (~providedBaseFunc & rule->getRequiresBuyBaseFunc()).none();
+	};
+	constexpr auto requiredCountryAllied = [](const auto* rule)
+	{
+		if (!rule->getRequiresBuyCountry().empty())
+		{
+			for (const auto* country : *_game->getSavedGame()->getCountries())
+			{
+				if (country->getPact() && country->getRules()->getType() == rule->getRequiresBuyCountry())
+				{
+					return false;
+				}
+			}
+		}
+		return true;
+	};
+
+	auto craftAndSoldierFilter = allOf(costIsNotZero, requirementsAreResearched, necessaryBaseFunctionsPresent, requiredCountryAllied);
+	auto itemFilter = allOf(costIsNotZero, requirementsAreResearched, buyRequirementsAreResearched, necessaryBaseFunctionsPresent, requiredCountryAllied);
+
+	for (auto& soldierType : _game->getMod()->getSoldiersList())
+	{
+		RuleSoldier *rule = _game->getMod()->getSoldier(soldierType);
+		if (craftAndSoldierFilter(rule))
 		{
 			TransferRow row = { TRANSFER_SOLDIER, rule, tr(rule->getType()), rule->getBuyCost(), _base->getSoldierCountAndSalary(rule->getType()).first, 0, 0, 1, -4, 0, 0, 0 };
 			_items.push_back(row);
@@ -198,12 +248,10 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			_cats.push_back(cat);
 		}
 	}
-	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
-	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
+	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
-		RuleCraft *rule = _game->getMod()->getCraft(*i);
-		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
-		if (rule->getBuyCost() != 0 && _game->getSavedGame()->isResearched(rule->getRequirements()) && (~providedBaseFunc & purchaseBaseFunc).none())
+		RuleCraft *rule = _game->getMod()->getCraft(craftType);
+		if (craftAndSoldierFilter(rule))
 		{
 			TransferRow row = { TRANSFER_CRAFT, rule, tr(rule->getType()), rule->getBuyCost(), _base->getCraftCount(rule), 0, 0, 1, -1, 0, 0, 0 };
 			_items.push_back(row);
@@ -214,12 +262,10 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			}
 		}
 	}
-	const std::vector<std::string> &items = _game->getMod()->getItemsList();
-	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
+	for (auto& itemType : _game->getMod()->getItemsList())
 	{
-		RuleItem *rule = _game->getMod()->getItem(*i);
-		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
-		if (rule->getBuyCost() != 0 && _game->getSavedGame()->isResearched(rule->getRequirements()) && _game->getSavedGame()->isResearched(rule->getBuyRequirements()) && (~providedBaseFunc & purchaseBaseFunc).none())
+		RuleItem *rule = _game->getMod()->getItem(itemType);
+		if (itemFilter(rule))
 		{
 			TransferRow row = { TRANSFER_ITEM, rule, tr(rule->getType()), rule->getBuyCost(), _base->getStorageItems()->getItem(rule), 0, 0, 1, rule->getListOrder(), 0, 0, 0 };
 			_items.push_back(row);
@@ -238,20 +284,20 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 		// first find all relevant item categories
 		std::vector<std::string> tempCats;
-		for (std::vector<TransferRow>::iterator i = _items.begin(); i != _items.end(); ++i)
+		for (const auto& transferRow : _items)
 		{
-			if ((*i).type == TRANSFER_ITEM)
+			if (transferRow.type == TRANSFER_ITEM)
 			{
-				RuleItem *rule = (RuleItem*)((*i).rule);
+				RuleItem *rule = (RuleItem*)(transferRow.rule);
 				if (rule->getCategories().empty())
 				{
 					hasUnassigned = true;
 				}
-				for (std::vector<std::string>::const_iterator j = rule->getCategories().begin(); j != rule->getCategories().end(); ++j)
+				for (auto& itemCategoryName : rule->getCategories())
 				{
-					if (std::find(tempCats.begin(), tempCats.end(), (*j)) == tempCats.end())
+					if (std::find(tempCats.begin(), tempCats.end(), itemCategoryName) == tempCats.end())
 					{
-						tempCats.push_back((*j));
+						tempCats.push_back(itemCategoryName);
 					}
 				}
 			}
@@ -268,12 +314,11 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			}
 			_vanillaCategories = _cats.size();
 		}
-		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
-		for (std::vector<std::string>::const_iterator k = categories.begin(); k != categories.end(); ++k)
+		for (auto& categoryName : _game->getMod()->getItemCategoriesList())
 		{
-			if (std::find(tempCats.begin(), tempCats.end(), (*k)) != tempCats.end())
+			if (std::find(tempCats.begin(), tempCats.end(), categoryName) != tempCats.end())
 			{
-				_cats.push_back((*k));
+				_cats.push_back(categoryName);
 			}
 		}
 		if (hasUnassigned)
@@ -440,7 +485,7 @@ bool PurchaseState::isHidden(int sel) const
 		if (!itemName.empty())
 		{
 			auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
-			std::map<std::string, bool>::const_iterator iter = hiddenMap.find(itemName);
+			auto iter = hiddenMap.find(itemName);
 			if (iter != hiddenMap.end())
 			{
 				return iter->second;
@@ -474,7 +519,7 @@ int PurchaseState::getMissingQty(int sel) const
 		RuleItem* rule = (RuleItem*)_items[sel].rule;
 		if (rule)
 		{
-			std::map<RuleItem*, int>::const_iterator iter = _missingItemsMap.find(rule);
+			auto iter = _missingItemsMap.find(rule);
 			if (iter != _missingItemsMap.end())
 			{
 				return iter->second;
@@ -619,24 +664,6 @@ void PurchaseState::updateList()
 		if (_items[i].type == TRANSFER_ITEM)
 		{
 			RuleItem *rule = (RuleItem*)_items[i].rule;
-			if (!rule->getRequiresBuyCountry().empty())
-			{
-				// required allied country
-				bool allied = true;
-				auto* countries = _game->getSavedGame()->getCountries();
-				for (auto* country : *countries)
-				{
-					if (country->getPact() && country->getRules()->getType() == rule->getRequiresBuyCountry())
-					{
-						allied = false;
-						break;
-					}
-				}
-				if (!allied)
-				{
-					continue;
-				}
-			}
 			ammo = (rule->getBattleType() == BT_AMMO || (rule->getBattleType() == BT_NONE && rule->getClipSize() > 0));
 			if (ammo)
 			{
@@ -685,17 +712,17 @@ void PurchaseState::btnOkClick(Action *)
 	}
 
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _total);
-	for (std::vector<TransferRow>::const_iterator i = _items.begin(); i != _items.end(); ++i)
+	for (const auto& transferRow : _items)
 	{
-		if (i->amount > 0)
+		if (transferRow.amount > 0)
 		{
 			Transfer *t = 0;
-			switch (i->type)
+			switch (transferRow.type)
 			{
 			case TRANSFER_SOLDIER:
-				for (int s = 0; s < i->amount; s++)
+				for (int s = 0; s < transferRow.amount; s++)
 				{
-					RuleSoldier *rule = (RuleSoldier*)i->rule;
+					RuleSoldier *rule = (RuleSoldier*)transferRow.rule;
 					if (rule->getMonthlyBuyLimit() > 0)
 					{
 						// remember the hire for the limit check
@@ -713,18 +740,18 @@ void PurchaseState::btnOkClick(Action *)
 				break;
 			case TRANSFER_SCIENTIST:
 				t = new Transfer(_game->getMod()->getPersonnelTime());
-				t->setScientists(i->amount);
+				t->setScientists(transferRow.amount);
 				_base->getTransfers()->push_back(t);
 				break;
 			case TRANSFER_ENGINEER:
 				t = new Transfer(_game->getMod()->getPersonnelTime());
-				t->setEngineers(i->amount);
+				t->setEngineers(transferRow.amount);
 				_base->getTransfers()->push_back(t);
 				break;
 			case TRANSFER_CRAFT:
-				for (int c = 0; c < i->amount; c++)
+				for (int c = 0; c < transferRow.amount; c++)
 				{
-					RuleCraft *rule = (RuleCraft*)i->rule;
+					RuleCraft *rule = (RuleCraft*)transferRow.rule;
 					if (rule->getMonthlyBuyLimit() > 0)
 					{
 						// remember the purchase for the limit check
@@ -741,20 +768,20 @@ void PurchaseState::btnOkClick(Action *)
 				break;
 			case TRANSFER_ITEM:
 				{
-					RuleItem *rule = (RuleItem*)i->rule;
+					RuleItem *rule = (RuleItem*)transferRow.rule;
 					if (rule->getMonthlyBuyLimit() > 0)
 					{
 						// remember the purchase for the limit check
 						auto& itemPurchaseLimitLog = _game->getSavedGame()->getMonthlyPurchaseLimitLog();
-						itemPurchaseLimitLog[rule->getType()] += i->amount;
+						itemPurchaseLimitLog[rule->getType()] += transferRow.amount;
 					}
 					t = new Transfer(rule->getTransferTime());
-					t->setItems(rule->getType(), i->amount);
+					t->setItems(rule->getType(), transferRow.amount);
 					_base->getTransfers()->push_back(t);
 					if (_parent && !_missingItemsMap.empty() && _missingItemsMap.find(rule) != _missingItemsMap.end())
 					{
 						// remember the decreased amount for next buy
-						_parent->decreaseMissingItemCount(rule, i->amount);
+						_parent->decreaseMissingItemCount(rule, transferRow.amount);
 					}
 				}
 				break;
@@ -883,7 +910,7 @@ void PurchaseState::lstItemsMousePress(Action *action)
 			RuleItem *rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				std::string articleId = rule->getType();
+				std::string articleId = rule->getUfopediaType();
 				Ufopaedia::openArticle(_game, articleId);
 			}
 		}
@@ -923,8 +950,8 @@ void PurchaseState::lstItemsMousePress(Action *action)
 		}
 		if (!itemName.empty())
 		{
-			std::map<std::string, bool> hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
-			std::map<std::string, bool>::iterator iter = hiddenMap.find(itemName);
+			auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
+			auto iter = hiddenMap.find(itemName);
 			if (iter != hiddenMap.end())
 			{
 				// found => flip it

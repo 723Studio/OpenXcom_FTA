@@ -119,7 +119,7 @@ void OptionInfo::load(const std::map<std::string, std::string> &map, bool makeLo
 	{
 		std::transform(id.begin(), id.end(), id.begin(), ::tolower);
 	}
-	std::map<std::string, std::string>::const_iterator it = map.find(id);
+	auto it = map.find(id);
 	if (it != map.end())
 	{
 		std::string value = it->second;

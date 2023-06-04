@@ -178,12 +178,12 @@ void GlobalResearchState::fillProjectList()
 	int allocatedScientists = 0;
 	int freeLaboratories = 0;
 
-	for (Base *base : *_game->getSavedGame()->getBases())
+	for (Base *xbase : *_game->getSavedGame()->getBases())
 	{
-		const std::vector<ResearchProject *> & baseProjects(base->getResearch());
+		auto& baseProjects = xbase->getResearch();
 		if (!baseProjects.empty())
 		{
-			std::string baseName = base->getName(_game->getLanguage());
+			std::string baseName = xbase->getName(_game->getLanguage());
 			_lstResearch->addRow(3, baseName.c_str(), "", "");
 			_lstResearch->setRowColor(_lstResearch->getLastRowIndex(), _lstResearch->getSecondaryColor());
 
@@ -191,22 +191,22 @@ void GlobalResearchState::fillProjectList()
 			_bases.push_back(0);
 			_topics.push_back(0);
 		}
-		for (std::vector<ResearchProject *>::const_iterator iter = baseProjects.begin(); iter != baseProjects.end(); ++iter)
+		for (const auto* proj : baseProjects)
 		{
 			std::ostringstream sstr;
-			sstr << (*iter)->getAssigned();
-			const RuleResearch *r = (*iter)->getRules();
+			sstr << proj->getAssigned();
+			const RuleResearch *r = proj->getRules();
 
 			std::string wstr = tr(r->getName());
-			_lstResearch->addRow(3, wstr.c_str(), sstr.str().c_str(), tr((*iter)->getResearchProgress()).c_str());
+			_lstResearch->addRow(3, wstr.c_str(), sstr.str().c_str(), tr(proj->getResearchProgress()).c_str());
 
-			_bases.push_back(base);
-			_topics.push_back(_game->getMod()->getResearch(r->getName()));
+			_bases.push_back(xbase);
+			_topics.push_back(r);
 		}
 
-		availableScientists += base->getAvailableScientists();
-		allocatedScientists += base->getAllocatedScientists();
-		freeLaboratories += base->getFreeLaboratories(_game->getMod()->isFTAGame());
+		availableScientists += xbase->getAvailableScientists();
+		allocatedScientists += xbase->getAllocatedScientists();
+		freeLaboratories += xbase->getFreeLaboratories(_game->getMod()->isFTAGame());
 	}
 
 	_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(availableScientists));

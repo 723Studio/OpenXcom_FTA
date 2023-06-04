@@ -708,7 +708,7 @@ static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwop
 
 void clear(bool clearOnly, bool embeddedOnly) {
 	TheVFS.clear();
-	for(auto i : ModsAvailable ) { delete i.second; }
+	for (auto i : ModsAvailable ) { delete i.second; }
 	ModsAvailable.clear();
 	for (auto i : MappedVFSLayers ) { delete i; }
 	MappedVFSLayers.clear();
@@ -738,13 +738,13 @@ void setup(const std::vector<const ModInfo* >& active, bool embeddedOnly)
 	std::string log_ctx = "FileMap::setup(): ";
 
 	Log(LOG_VERBOSE) << log_ctx << "Active mods per options:";
-	for(auto i = active.cbegin(); i != active.cend(); ++i) {
+	for (auto i = active.cbegin(); i != active.cend(); ++i) {
 		Log(LOG_VERBOSE) << log_ctx << "    " << (*i)->getId();
 	}
 	// expand the mod list into map order
 	// listing all the mod dependencies
 	std::vector<std::string> map_order;
-	for(auto i = active.begin(); i != active.end(); ++i) {
+	for (auto i = active.begin(); i != active.end(); ++i) {
 		std::string currentId = (*i)-> getId();
 		std::string masterId;
 		auto insert_before = map_order.end();
@@ -1025,6 +1025,8 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 	const std::set<std::string> standardMods = {
 		"Aliens_Pick_Up_Weapons",
 		"Aliens_Pick_Up_Weapons_TFTD",
+		"Demigod_Difficulty",
+		"Demigod_Difficulty_TFTD",
 		"Limit_Craft_Item_Capacities",
 		"Limit_Craft_Item_Capacities_TFTD",
 		"OpenXCom_Unlimited_Waypoints",

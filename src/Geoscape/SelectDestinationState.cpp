@@ -129,9 +129,10 @@ SelectDestinationState::SelectDestinationState(std::vector<Craft*> crafts, Globe
 	_txtTitle->setVerticalAlign(ALIGN_MIDDLE);
 	_txtTitle->setWordWrap(true);
 
-	if (_crafts.size() != 1 || 
-		_crafts.front()->getFuelPercentage() < 100 || 
-		!_crafts.front()->getRules()->getSpacecraft() || 
+	if (_crafts.size() != 1 ||
+		_crafts.front()->getFuelPercentage() < 100 ||
+		!_crafts.front()->getRules()->getSpacecraft() ||
+		!_game->getMod()->getFinalResearch() ||
 		!_game->getSavedGame()->isResearched(_game->getMod()->getFinalResearch()))
 	{
 		_btnCydonia->setVisible(false);
@@ -364,12 +365,12 @@ void SelectDestinationState::btnCydoniaClick(Action *)
  */
 void SelectDestinationState::resize(int &dX, int &dY)
 {
-	for (std::vector<Surface*>::const_iterator i = _surfaces.begin(); i != _surfaces.end(); ++i)
+	for (auto* surface : _surfaces)
 	{
-		(*i)->setX((*i)->getX() + dX / 2);
-		if (*i != _window && *i != _btnCancel && *i != _txtTitle && *i != _btnCydonia)
+		surface->setX(surface->getX() + dX / 2);
+		if (surface != _window && surface != _btnCancel && surface != _txtTitle && surface != _btnCydonia)
 		{
-			(*i)->setY((*i)->getY() + dY / 2);
+			surface->setY(surface->getY() + dY / 2);
 		}
 	}
 }

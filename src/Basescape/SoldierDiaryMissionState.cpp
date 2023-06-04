@@ -154,11 +154,11 @@ void SoldierDiaryMissionState::init()
 	int kills = 0;
 	bool stunOrKill = false;
 
-	for (std::vector<BattleUnitKills*>::iterator i = _soldier->getDiary()->getKills().begin() ; i != _soldier->getDiary()->getKills().end() ; ++i)
+	for (const auto* battleUnitKills : _soldier->getDiary()->getKills())
 	{
-		if ((unsigned int)(*i)->mission != missionId) continue;
+		if ((unsigned int)battleUnitKills->mission != missionId) continue;
 
-		switch ((*i)->status)
+		switch (battleUnitKills->status)
 		{
 		case STATUS_DEAD:
 			kills++;
@@ -171,9 +171,9 @@ void SoldierDiaryMissionState::init()
 			break;
 		}
 
-		_lstKills->addRow(3, tr((*i)->getKillStatusString()).c_str(),
-							 (*i)->getUnitName(_game->getLanguage()).c_str(),
-							 tr((*i)->weapon).c_str());
+		_lstKills->addRow(3, tr(battleUnitKills->getKillStatusString()).c_str(),
+							 battleUnitKills->getUnitName(_game->getLanguage()).c_str(),
+							 tr(battleUnitKills->weapon).c_str());
 	}
 
 	_txtNoRecord->setAlign(ALIGN_CENTER);

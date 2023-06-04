@@ -106,6 +106,7 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
+	PUSH_IN("STR_CRAFT", craftIdStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
 	PUSH_IN("STR_RANK", rankStat);
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
@@ -157,9 +158,9 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
  */
 CraftArmorState::~CraftArmorState()
 {
-	for (std::vector<SortFunctor *>::iterator it = _sortFunctors.begin(); it != _sortFunctors.end(); ++it)
+	for (auto* sortFunctor : _sortFunctors)
 	{
-		delete(*it);
+		delete sortFunctor;
 	}
 }
 
@@ -180,7 +181,7 @@ void CraftArmorState::cbxSortByChange(Action *action)
 	_dynGetter = NULL;
 	if (compFunc)
 	{
-		if (selIdx != 2)
+		if (selIdx != 2 && selIdx != 3)
 		{
 			_dynGetter = compFunc->getGetter();
 		}
@@ -194,6 +195,33 @@ void CraftArmorState::cbxSortByChange(Action *action)
 					[](const Soldier* a, const Soldier* b)
 					{
 						return Unicode::naturalCompare(a->getName(), b->getName());
+					}
+				);
+			}
+			else if (selIdx == 3)
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+					[](const Soldier* a, const Soldier* b)
+					{
+						if (a->getCraft())
+						{
+							if (b->getCraft())
+							{
+								if (a->getCraft()->getRules() == b->getCraft()->getRules())
+								{
+									return a->getCraft()->getId() < b->getCraft()->getId();
+								}
+								else
+								{
+									return a->getCraft()->getRules() < b->getCraft()->getRules();
+								}
+							}
+							else
+							{
+								return true; // a < b
+							}
+						}
+						return false; // b > a
 					}
 				);
 			}
@@ -211,11 +239,9 @@ void CraftArmorState::cbxSortByChange(Action *action)
 	{
 		// restore original ordering, ignoring (of course) those
 		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier *>::const_iterator it = _origSoldierOrder.begin();
-		it != _origSoldierOrder.end(); ++it)
+		for (const auto* origSoldier : _origSoldierOrder)
 		{
-			std::vector<Soldier *>::iterator soldierIt =
-			std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
+			auto soldierIt = std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), origSoldier);
 			if (soldierIt != _base->getSoldiers()->end())
 			{
 				Soldier *s = *soldierIt;
@@ -239,9 +265,9 @@ void CraftArmorState::init()
 	initList(_savedScrollPosition);
 
 	int row = 0;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (const auto* soldier : *_base->getSoldiers())
 	{
-		_lstSoldiers->setCellText(row, 2, tr((*i)->getArmor()->getType()));
+		_lstSoldiers->setCellText(row, 2, tr(soldier->getArmor()->getType()));
 		row++;
 	}
 }
@@ -267,30 +293,30 @@ void CraftArmorState::initList(size_t scrl)
 	}
 
 	Craft *c = _base->getCrafts()->at(_craft);
-	auto recovery = _base->getSumRecoveryPerDay();
+	BaseSumDailyRecovery recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (const auto* soldier : *_base->getSoldiers())
 	{
-		std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		std::string duty = soldier->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *i);
+			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), duty.c_str(), tr(soldier->getArmor()->getType()).c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*i)->getName(true).c_str(), duty.c_str(), tr((*i)->getArmor()->getType()).c_str());
+			_lstSoldiers->addRow(3, soldier->getName(true).c_str(), duty.c_str(), tr(soldier->getArmor()->getType()).c_str());
 		}
 
 		Uint8 color;
-		if ((*i)->getCraft() == c)
+		if (soldier->getCraft() == c)
 		{
 			color = _lstSoldiers->getSecondaryColor();
 		}
-		else if ((*i)->getCraft() != 0)
+		else if (soldier->getCraft() != 0)
 		{
 			color = otherCraftColor;
 		}
@@ -445,8 +471,8 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 				}
 				else
 				{
-					Craft *c = _base->getCrafts()->at(_craft);
-					if (s->getCraft() == c)
+					int space = c->getSpaceAvailable();
+					if (c->validateAddingSoldier(space, s))
 					{
 						s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 						_lstSoldiers->setCellText(_lstSoldiers->getSelectedRow(), 1, c->getName(_game->getLanguage()));
@@ -566,13 +592,13 @@ void CraftArmorState::lstSoldiersMousePress(Action *action)
 void CraftArmorState::btnDeequipAllArmorClick(Action *action)
 {
 	int row = 0;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (auto* soldier : *_base->getSoldiers())
 	{
-		if (!((*i)->getCraft() && (*i)->getCraft()->getStatus() == "STR_OUT"))
+		if (!(soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT"))
 		{
-			Armor *a = (*i)->getRules()->getDefaultArmor();
+			Armor *a = soldier->getRules()->getDefaultArmor();
 
-			if ((*i)->getCraft() && !(*i)->getCraft()->validateArmorChange((*i)->getArmor()->getSize(), a->getSize()))
+			if (soldier->getCraft() && !soldier->getCraft()->validateArmorChange(soldier->getArmor()->getSize(), a->getSize()))
 			{
 				// silently ignore
 				row++;
@@ -580,17 +606,17 @@ void CraftArmorState::btnDeequipAllArmorClick(Action *action)
 			}
 			if (a->getStoreItem() == nullptr || _base->getStorageItems()->getItem(a->getStoreItem()) > 0)
 			{
-				if ((*i)->getArmor()->getStoreItem())
+				if (soldier->getArmor()->getStoreItem())
 				{
-					_base->getStorageItems()->addItem((*i)->getArmor()->getStoreItem());
+					_base->getStorageItems()->addItem(soldier->getArmor()->getStoreItem());
 				}
 				if (a->getStoreItem())
 				{
 					_base->getStorageItems()->removeItem(a->getStoreItem());
 				}
 
-				(*i)->setArmor(a, true);
-				(*i)->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
+				soldier->setArmor(a, true);
+				soldier->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
 				_lstSoldiers->setCellText(row, 2, tr(a->getType()));
 			}
 		}
@@ -606,7 +632,7 @@ void CraftArmorState::btnDeequipCraftArmorClick(Action *action)
 {
 	Craft *c = _base->getCrafts()->at(_craft);
 	int row = 0;
-	for (auto s : *_base->getSoldiers())
+	for (auto* s : *_base->getSoldiers())
 	{
 		if ((s->getCraft() == c || s->getCraft() == 0) && s->getCovertOperation() == 0)
 		{

@@ -155,7 +155,7 @@ void Ufo::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod &mo
 	if (game.getMonthsPassed() != -1)
 	{
 		int missionID = node["mission"].as<int>();
-		std::vector<AlienMission *>::const_iterator found = std::find_if (game.getAlienMissions().begin(), game.getAlienMissions().end(), matchMissionID(missionID));
+		auto found = std::find_if (game.getAlienMissions().begin(), game.getAlienMissions().end(), matchMissionID(missionID));
 		if (found == game.getAlienMissions().end())
 		{
 			// Corrupt save file.
@@ -203,11 +203,11 @@ void Ufo::finishLoading(const YAML::Node &node, SavedGame &save)
 			std::string type = dest["type"].as<std::string>();
 			int id = dest["id"].as<int>();
 			bool found = false;
-			for (std::vector<Base*>::iterator b = save.getBases()->begin(); b != save.getBases()->end(); ++b)
+			for (auto* xbase : *save.getBases())
 			{
-				for (std::vector<Craft*>::iterator c = (*b)->getCrafts()->begin(); c != (*b)->getCrafts()->end(); ++c)
+				for (auto* xcraft : *xbase->getCrafts())
 				{
-					if ((*c)->getId() == id && (*c)->getRules()->getType() == type)
+					if (xcraft->getId() == id && xcraft->getRules()->getType() == type)
 					{
 						if (_dest)
 						{
@@ -215,7 +215,7 @@ void Ufo::finishLoading(const YAML::Node &node, SavedGame &save)
 							delete _dest;
 							_dest = 0;
 						}
-						setDestination((*c));
+						setDestination(xcraft);
 						found = true;
 						break;
 					}
@@ -234,9 +234,9 @@ void Ufo::finishLoading(const YAML::Node &node, SavedGame &save)
 				int uniqueUfoId = dest["uniqueId"].as<int>(0);
 				if (uniqueUfoId > 0)
 				{
-					for (std::vector<Ufo*>::iterator u = save.getUfos()->begin(); u != save.getUfos()->end(); ++u)
+					for (auto* ufo : *save.getUfos())
 					{
-						if ((*u)->getUniqueId() == uniqueUfoId)
+						if (ufo->getUniqueId() == uniqueUfoId)
 						{
 							if (_dest)
 							{
@@ -244,7 +244,7 @@ void Ufo::finishLoading(const YAML::Node &node, SavedGame &save)
 								delete _dest;
 								_dest = 0;
 							}
-							setDestination((*u));
+							setDestination(ufo);
 							break;
 						}
 					}

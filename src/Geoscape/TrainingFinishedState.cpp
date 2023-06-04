@@ -77,9 +77,9 @@ TrainingFinishedState::TrainingFinishedState(Base *base, const std::vector<Soldi
 	_lstPossibilities->setBig();
 	_lstPossibilities->setAlign(ALIGN_CENTER);
 	_lstPossibilities->setScrolling(true, 0);
-	for (std::vector<Soldier *>::const_iterator iter = list.begin(); iter != list.end(); ++iter)
+	for (const auto* soldier : list)
 	{
-		_lstPossibilities->addRow (1, (*iter)->getName().c_str());
+		_lstPossibilities->addRow (1, soldier->getName().c_str());
 	}
 }
 

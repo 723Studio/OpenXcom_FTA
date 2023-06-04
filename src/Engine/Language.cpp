@@ -162,13 +162,13 @@ void Language::getList(std::vector<std::string> &ids, std::vector<std::string> &
 {
 	auto nset = FileMap::filterFiles(FileMap::getVFolderContents("Language", 0), "yml");
 	ids.clear();
-	for (auto filename : nset) {
+	for (const auto& filename : nset) {
 		ids.push_back(fileNameToId(filename));
 	}
 	std::sort(ids.begin(), ids.end());
 	names.clear();
 
-	for (auto id: ids)
+	for (const auto& id: ids)
 	{
 		if (_names.find(id) != _names.end()) {
 			names.push_back(_names[id]);
@@ -232,13 +232,12 @@ void Language::loadFile(const FileMap::FileRecord *frec)
  */
 void Language::loadRule(const std::map<std::string, ExtraStrings*> &extraStrings, const std::string &id)
 {
-	std::map<std::string, ExtraStrings*>::const_iterator it = extraStrings.find(id);
+	auto it = extraStrings.find(id);
 	if (it != extraStrings.end())
 	{
-		ExtraStrings *extras = it->second;
-		for (std::map<std::string, std::string>::const_iterator i = extras->getStrings()->begin(); i != extras->getStrings()->end(); ++i)
+		for (const auto& pair : *it->second->getStrings())
 		{
-			_strings[i->first] = loadString(i->second);
+			_strings[pair.first] = loadString(pair.second);
 		}
 	}
 }
@@ -269,7 +268,7 @@ LocalizedText Language::getString(const std::string &id) const
 	{
 		return id;
 	}
-	std::map<std::string, LocalizedText>::const_iterator s = _strings.find(id);
+	auto s = _strings.find(id);
 	// Check if translation strings recently learned pluralization.
 	if (s == _strings.end())
 	{
@@ -293,7 +292,7 @@ LocalizedText Language::getString(const std::string &id, unsigned n) const
 {
 	assert(!id.empty());
 	static std::set<std::string> notFoundIds;
-	std::map<std::string, LocalizedText>::const_iterator s = _strings.end();
+	auto s = _strings.end();
 	// Try specialized form.
 	if (n == 0)
 	{
@@ -371,10 +370,10 @@ void Language::toHtml(const std::string &filename) const
 	std::stringstream htmlFile;
 	htmlFile << "<table border=\"1\" width=\"100%\">" << std::endl;
 	htmlFile << "<tr><th>ID String</th><th>English String</th></tr>" << std::endl;
-	for (std::map<std::string, LocalizedText>::const_iterator i = _strings.begin(); i != _strings.end(); ++i)
+	for (auto& pair : _strings)
 	{
-		htmlFile << "<tr><td>" << i->first << "</td><td>";
-		std::string s = i->second;
+		htmlFile << "<tr><td>" << pair.first << "</td><td>";
+		std::string s = pair.second;
 		for (std::string::const_iterator j = s.begin(); j != s.end(); ++j)
 		{
 			if (*j == Unicode::TOK_NL_SMALL || *j == '\n')

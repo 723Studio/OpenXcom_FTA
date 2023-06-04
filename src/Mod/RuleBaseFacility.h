@@ -89,11 +89,11 @@ private:
 
 public:
 	/// Creates a blank facility ruleset.
-	RuleBaseFacility(const std::string &type);
+	RuleBaseFacility(const std::string &type, int listOrder);
 	/// Cleans up the facility ruleset.
 	~RuleBaseFacility();
 	/// Loads the facility from YAML.
-	void load(const YAML::Node& node, Mod *mod, int listOrder);
+	void load(const YAML::Node& node, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the facility's type.

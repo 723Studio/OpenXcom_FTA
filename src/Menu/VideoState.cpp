@@ -405,7 +405,7 @@ void VideoState::init()
 	int prevSoundVol = Options::soundVolume;
 	if (_useUfoAudioSequence)
 	{
-		auto soundDir = FileMap::getVFolderContents("SOUND");
+		const auto& soundDir = FileMap::getVFolderContents("SOUND");
 		ufoIntroSoundFileDosExists = soundDir.end() != soundDir.find("intro.cat");
 		ufoIntroSoundFileWinExists = soundDir.end() != soundDir.find("sample3.cat");
 
@@ -432,7 +432,7 @@ void VideoState::init()
 
 	FlcPlayer *flcPlayer = NULL;
 	size_t audioCounter = 0;
-	for (std::vector<std::string>::const_iterator it = _videos->begin(); it != _videos->end(); ++it)
+	for (const auto& videoFileName : *_videos)
 	{
 		bool useInternalAudio = true;
 		if (!_tracks->empty() && _tracks->size() > audioCounter && _game->getMod()->getMusic(_tracks->at(audioCounter)))
@@ -441,7 +441,6 @@ void VideoState::init()
 			useInternalAudio = false;
 		}
 		audioCounter++;
-		const std::string& videoFileName = *it;
 
 		if (!FileMap::fileExists(videoFileName))
 		{

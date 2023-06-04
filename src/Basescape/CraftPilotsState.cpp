@@ -127,11 +127,11 @@ CraftPilotsState::CraftPilotsState(Base *base, size_t craft) : _base(base), _cra
 	_txtDodgeBonus->setText(tr("STR_DODGE_BONUS"));
 	_txtApproachSpeed->setText(tr("STR_APPROACH_SPEED"));
 
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (auto* soldier : *_base->getSoldiers())
 	{
-		if ((*i)->getCraft() == c)
+		if (soldier->getCraft() == c)
 		{
-			(*i)->prepareStatsWithBonuses(_game->getMod()); // refresh soldier bonuses
+			soldier->prepareStatsWithBonuses(_game->getMod()); // refresh soldier bonuses
 		}
 	}
 }
@@ -163,15 +163,15 @@ void CraftPilotsState::updateUI()
 	Craft *c = _base->getCrafts()->at(_craft);
 
 	const std::vector<Soldier*> pilots = c->getPilotList(false);
-	for (std::vector<Soldier*>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
+	for (const auto* pilot : pilots)
 	{
 		std::ostringstream ss1;
-		ss1 << (*i)->getStatsWithSoldierBonusesOnly()->firing;
+		ss1 << pilot->getStatsWithSoldierBonusesOnly()->firing;
 		std::ostringstream ss2;
-		ss2 << (*i)->getStatsWithSoldierBonusesOnly()->reactions;
+		ss2 << pilot->getStatsWithSoldierBonusesOnly()->reactions;
 		std::ostringstream ss3;
-		ss3 << (*i)->getStatsWithSoldierBonusesOnly()->bravery;
-		_lstPilots->addRow(5, (*i)->getName(false).c_str(), ss1.str().c_str(), ss2.str().c_str(), ss3.str().c_str(), "");
+		ss3 << pilot->getStatsWithSoldierBonusesOnly()->bravery;
+		_lstPilots->addRow(5, pilot->getName(false).c_str(), ss1.str().c_str(), ss2.str().c_str(), ss3.str().c_str(), "");
 	}
 
 	std::ostringstream ss1;
@@ -209,7 +209,7 @@ void CraftPilotsState::updateUI()
 	_btnAdd->setVisible((int)(_lstPilots->getTexts()) < c->getRules()->getPilots());
 
 	int availablePilots = 0;
-	for (auto soldier : *_base->getSoldiers())
+	for (const auto* soldier : *_base->getSoldiers())
 	{
 		// must be on board & able to drive
 		if (soldier->getCraft() == c && soldier->getRules()->getAllowPiloting())

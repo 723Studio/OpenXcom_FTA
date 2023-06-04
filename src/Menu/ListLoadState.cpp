@@ -87,9 +87,9 @@ void ListLoadState::loadSave(size_t list_idx)
 {
 	bool confirm = false;
 	const SaveInfo &saveInfo(_saves[list_idx]);
-	for (std::vector<std::string>::const_iterator i = saveInfo.mods.begin(); i != saveInfo.mods.end(); ++i)
+	for (const auto& modName : saveInfo.mods)
 	{
-		std::string name = SavedGame::sanitizeModName(*i);
+		std::string name = SavedGame::sanitizeModName(modName);
 		if (std::find(Options::mods.begin(), Options::mods.end(), std::make_pair(name, true)) == Options::mods.end())
 		{
 			confirm = true;

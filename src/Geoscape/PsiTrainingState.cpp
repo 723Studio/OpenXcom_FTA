@@ -62,15 +62,15 @@ PsiTrainingState::PsiTrainingState()
 	_txtTitle->setText(tr("STR_PSIONIC_TRAINING"));
 
 	int buttons = 0;
-	for (std::vector<Base*>::const_iterator b = _game->getSavedGame()->getBases()->begin(); b != _game->getSavedGame()->getBases()->end(); ++b)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if ((*b)->getAvailablePsiLabs())
+		if (xbase->getAvailablePsiLabs())
 		{
 			TextButton *btnBase = new TextButton(160, 14, 80, 40 + 16 * buttons);
 			btnBase->onMouseClick((ActionHandler)&PsiTrainingState::btnBaseXClick);
-			btnBase->setText((*b)->getName());
+			btnBase->setText(xbase->getName());
 			add(btnBase, "button1", "psiTraining");
-			_bases.push_back(*b);
+			_bases.push_back(xbase);
 			_btnBases.push_back(btnBase);
 			++buttons;
 			if (buttons >= 8)

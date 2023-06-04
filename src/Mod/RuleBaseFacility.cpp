@@ -42,7 +42,7 @@ RuleBaseFacility::RuleBaseFacility(const std::string &type)
 	  _size(1), _buildCost(0), _refundValue(0), _buildTime(0), _monthlyCost(0),
 	  _storage(0), _personnel(0), _aliens(0), _crafts(0), _labs(0), _workshops(0), _psiLabs(0), _ftaPrisonSpace(0),
 	  _sightRange(0), _sightChance(0), _radarRange(0), _radarChance(0),
-	  _defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _placeSound(-1), _ammoNeeded(1), _project(0), _interrogationSpace(0), _listOrder(0),
+	  _defense(0), _hitRatio(0), _fireSound(0), _hitSound(0), _placeSound(-1), _ammoNeeded(1), _project(0), _interrogationSpace(0), _listOrder(listOrder),
 	  _trainingRooms(0), _maxAllowedPerBase(0), _sickBayAbsoluteBonus(0.0f), _sickBayRelativeBonus(0.0f),
 	  _prisonType(0), _rightClickActionType(0), _verticalLevels(), _removalTime(0), _canBeBuiltOver(false), _destroyedFacility(0)
 {
@@ -61,13 +61,13 @@ RuleBaseFacility::~RuleBaseFacility()
  * @param mod Mod for the facility.
  * @param listOrder The list weight for this facility.
  */
-void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
+void RuleBaseFacility::load(const YAML::Node &node, Mod *mod)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(parent, mod);
 	}
-	_type = node["type"].as<std::string>(_type);
+
 	mod->loadUnorderedNames(_type, _requires, node["requires"]);
 
 	mod->loadBaseFunction(_type, _requiresBaseFunc, node["requiresBaseFunc"]);
@@ -124,10 +124,7 @@ void RuleBaseFacility::load(const YAML::Node &node, Mod *mod, int listOrder)
 	_sickBayRelativeBonus = node["sickBayRelativeBonus"].as<float>(_sickBayRelativeBonus);
 	_prisonType = node["prisonType"].as<int>(_prisonType);
 	_rightClickActionType = node["rightClickActionType"].as<int>(_rightClickActionType);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
+
 	if (const YAML::Node &items = node["buildCostItems"])
 	{
 		for (YAML::const_iterator i = items.begin(); i != items.end(); ++i)
@@ -195,7 +192,7 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 	if (_leavesBehindOnSellNames.size())
 	{
 		_leavesBehindOnSell.reserve(_leavesBehindOnSellNames.size());
-		auto first = mod->getBaseFacility(_leavesBehindOnSellNames.at(0), true);
+		auto* first = mod->getBaseFacility(_leavesBehindOnSellNames.at(0), true);
 		if (first->getSize() == _size)
 		{
 			if (_leavesBehindOnSellNames.size() != 1)
@@ -208,7 +205,7 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 		{
 			for (const auto& n : _leavesBehindOnSellNames)
 			{
-				auto r = mod->getBaseFacility(n, true);
+				auto* r = mod->getBaseFacility(n, true);
 				if (r->getSize() != 1)
 				{
 					throw Exception("All replacement facilities must have size=1 (when using different size as the original facility).");
@@ -230,7 +227,7 @@ void RuleBaseFacility::afterLoad(const Mod* mod)
 	{
 		if (_storageTiles.size() != 1 || _storageTiles[0] != TileEngine::invalid)
 		{
-			const auto size = 10 * _size;
+			const int size = 10 * _size;
 			for (const auto& p : _storageTiles)
 			{
 				if (p.x < 0 || p.x > size ||

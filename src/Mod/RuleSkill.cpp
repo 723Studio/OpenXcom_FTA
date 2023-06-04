@@ -40,7 +40,6 @@ void RuleSkill::load(const YAML::Node& node, Mod *mod, const ModScript& parsers)
 	{
 		load(parent, mod, parsers);
 	}
-	_type = node["type"].as<std::string>(_type);
 
 	int targetMode = node["targetMode"].as<int>(_targetMode);
 	targetMode = targetMode < 0 ? 0 : targetMode;
