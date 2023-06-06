@@ -507,7 +507,7 @@ void ExplosionBState::explode()
 	if (_attack.damage_item)
 	{
 		//handle unit spawn
-		if (!_attack.damage_item->getRules()->getSpawnUnit().empty())
+		if (!_attack.damage_item->getRules()->getSpawnUnit())
 		{
 			_parent->spawnNewUnit(_attack, _before.toTile());
 		}

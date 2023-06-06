@@ -256,11 +256,11 @@ int OpenXcom::typeStat(const Game *game, const Soldier *s)
 	return s->getRules()->getListOrder();
 }
 GET_SOLDIER_STAT_FN(rank, Rank)
-int OpenXcom::roleStat(Game *game, Soldier *s)
+int OpenXcom::roleStat(const Game *game, const Soldier *s)
 {
 	return static_cast<int>(s->getBestRoleRank().first);
 }
-int OpenXcom::roleRankStat(Game *game, Soldier *s)
+int OpenXcom::roleRankStat(const Game *game, const Soldier *s)
 {
 	return s->getBestRoleRank().second;
 }

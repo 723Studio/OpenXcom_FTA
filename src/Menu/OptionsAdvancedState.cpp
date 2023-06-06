@@ -112,9 +112,9 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_settingsOxce.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_FTA")
+			else if (optionInfo.category() == "STR_FTA")
 			{
-				_settingsFtA.push_back(*i);
+				_settingsFtA.push_back(optionInfo);
 			}
 		}
 	}

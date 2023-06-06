@@ -214,7 +214,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 	for (auto& soldierType : _game->getMod()->getSoldiersList())
 	{
-		RuleSoldier *rule = _game->getMod()->getSoldier(soldierType);
+		const RuleSoldier *rule = _game->getMod()->getSoldier(soldierType);
 		if (craftAndSoldierFilter(rule))
 		{
 			TransferRow row = { TRANSFER_SOLDIER, rule, tr(rule->getType()), rule->getBuyCost(), _base->getSoldierCountAndSalary(rule->getType()).first, 0, 0, 1, -4, 0, 0, 0 };

@@ -627,17 +627,17 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{
-		if ((*i)->getCovertOperation() != 0)
+		if (soldier->getCovertOperation() != 0)
 		{ }
 		else
 		{
 			color = _lstSoldiers->getColor();
-			if ((*i)->getCraft() && (*i)->getCraft()->getStatus() != "STR_OUT")
+			if (soldier->getCraft() && soldier->getCraft()->getStatus() != "STR_OUT")
 			{
-				(*i)->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
+				soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 				_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 			}
-			else if ((*i)->getCraft() && (*i)->getCraft()->getStatus() == "STR_OUT")
+			else if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
 			{
 				color = _otherCraftColor;
 			}

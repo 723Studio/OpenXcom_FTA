@@ -34,8 +34,9 @@ namespace OpenXcom
  * Creates a blank ruleset for a certain
  * type of base facility.
  * @param type String defining the type.
+ * @param listOrder
  */
-RuleBaseFacility::RuleBaseFacility(const std::string &type)
+RuleBaseFacility::RuleBaseFacility(const std::string &type, int listOrder)
 	: _type(type), _spriteShape(-1), _spriteFacility(-1), _connectorsDisabled(false),
 	  _missileAttraction(100), _fakeUnderwater(-1),
 	  _lift(false), _hyper(false), _mind(false), _grav(false), _globalRadar(false), _mindPower(1),

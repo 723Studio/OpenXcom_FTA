@@ -679,22 +679,22 @@ void BattlescapeGenerator::nextStage()
 				}
 			}
 		}
-		else if ((*j)->getStatus() == STATUS_UNCONSCIOUS) // transit stunned enemies
+		else if (bu->getStatus() == STATUS_UNCONSCIOUS) // transit stunned enemies
 		{
-			Node *node = _save->getSpawnNode(NR_XCOM, (*j));
-			if (node || placeUnitNearFriend(*j))
+			Node *node = _save->getSpawnNode(NR_XCOM, bu);
+			if (node || placeUnitNearFriend(bu))
 			{
 				if (node)
 				{
-					_save->setUnitPosition((*j), node->getPosition());
+					_save->setUnitPosition(bu, node->getPosition());
 				}
 
 				if (!_craftInventoryTile)
 				{
-					_craftInventoryTile = (*j)->getTile();
+					_craftInventoryTile = bu->getTile();
 				}
 
-				(*j)->setInventoryTile(_craftInventoryTile);
+				bu->setInventoryTile(_craftInventoryTile);
 			}
 		}
 	}
@@ -1115,7 +1115,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		for (auto* soldier : *_base->getSoldiers())
 		{
 			if ((_craft != 0 && soldier->getCraft() == _craft) ||
-				(_covertOperation != 0 && (*i)->getCovertOperation() == _covertOperation) ||
+				(_covertOperation != 0 && soldier->getCovertOperation() == _covertOperation) ||
 				((_craft == 0 && _covertOperation == 0)
 					&& (soldier->hasFullHealth() || soldier->canDefendBase())
 					&& (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")
@@ -1476,7 +1476,7 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 						{
 							if (bu->addItem(bi, mod, allowSecondClip, allowAutoLoadout))
 							{
-								j = craftInv->erase(j);
+								iter = craftInv->erase(iter);
 								placed = true;
 							}
 							else
@@ -1484,7 +1484,7 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 								break; // if we can't fit even one no point in trying to equip more
 							}
 							// if there are no more items of this type or we reached the end of the craft inventory then break
-							if (j == craftInv->end() || itemType != bi->getRules()->getType()) // Using shortcut evaluation trick here. Wonder if it's better to separate these two conditions
+							if (iter == craftInv->end() || itemType != bi->getRules()->getType()) // Using shortcut evaluation trick here. Wonder if it's better to separate these two conditions
 							{
 								break;
 							}

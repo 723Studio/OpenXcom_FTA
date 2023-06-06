@@ -212,7 +212,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 		int i = 0;
 		for (auto& soldierType : list)
 		{
-			RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier(soldierType, false);
+			auto soldierTypeRule = _game->getMod()->getSoldier(soldierType, false);
 			if (soldierTypeRule && _game->getSavedGame()->isResearched(soldierTypeRule->getRequirements()))
 			{
 				if (i > 0)

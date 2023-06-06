@@ -63,7 +63,7 @@ public:
 	std::vector<Soldier*> getAssignedSoldiers(Base* b);
 	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
 	void setFacility(BaseFacility* facility) { _facility = facility; }
-	BaseFacility* getFacility() { return _facility; }
+	BaseFacility* getFacility(){ return _facility; }
 	int getTimeLeft();
 	
 	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);

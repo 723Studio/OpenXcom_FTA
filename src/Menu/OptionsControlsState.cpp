@@ -86,9 +86,9 @@ OptionsControlsState::OptionsControlsState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_controlsOxce.push_back(optionInfo);
 			}
-			else if (i->category() == "STR_FTA")
+			else if (optionInfo.category() == "STR_FTA")
 			{
-				_controlsFtA.push_back(*i);
+				_controlsFtA.push_back(optionInfo);
 			}
 		}
 	}

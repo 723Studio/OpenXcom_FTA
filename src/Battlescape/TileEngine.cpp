@@ -2556,21 +2556,20 @@ void TileEngine::calculateFOV(Position position, int eventRadius, const bool upd
 void TileEngine::checkForSuspiciousItems(BattleUnit* unit)
 {
 	auto tiles = unit->getVisibleTiles();
-
-	for (std::vector<Tile*>::const_iterator i = tiles->begin(); i != tiles->end(); ++i)
+	for (auto* tile : *tiles)
 	{
-		for (std::vector<BattleItem*>::iterator j = bu->getInventory()->begin(); j != bu->getInventory()->end(); ++j)
+		for (auto* bi : *unit->getInventory())
 		{
-			if ((*j)->getXCOMProperty()
-				|| (*j)->getRules()->getBattleType() == BT_CORPSE
-				|| ((*j)->getFuseTimer() > -1 && (*j)->getRules()->getSpawnUnit().empty()))
+			if (bi->getXCOMProperty()
+				|| bi->getRules()->getBattleType() == BT_CORPSE
+				|| (bi->getFuseTimer() > -1 && bi->getRules()->getSpawnUnit()))
 			{
 				unit->setUnitWarned(true);
-				Log(LOG_INFO) << "Unit is warned because checkForSuspiciousItems (xcom propert, corpse or fused item)"; //#FINNIKTODO #CLEARLOGS
+				Log(LOG_INFO) << "Unit is warned because checkForSuspiciousItems (xcom property, corpse or fused item)"; //#FINNIKTODO #CLEARLOGS
 			}
-			if ((*j)->getPreviousOwner() != nullptr)
+			if (bi->getPreviousOwner() != nullptr)
 			{
-				if ((*j)->getPreviousOwner()->getOriginalFaction() == FACTION_PLAYER)
+				if (bi->getPreviousOwner()->getOriginalFaction() == FACTION_PLAYER)
 				{
 					unit->setUnitWarned(true);
 					Log(LOG_INFO) << "Unit is warned because checkForSuspiciousItems (previous owner == FACTION_PLAYER)"; //#FINNIKTODO #CLEARLOGS

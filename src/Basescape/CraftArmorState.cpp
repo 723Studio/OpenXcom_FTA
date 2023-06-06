@@ -459,6 +459,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 	}
 
 	Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
+	Craft* c = _base->getCrafts()->at(_craft);
 	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0)
 	{
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
@@ -480,7 +481,6 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 					}
 					else if (s->hasFullHealth())
 					{
-						auto space = c->getSpaceAvailable();
 						if (c->validateAddingSoldier(space, s))
 						{
 							s->setCraft(c);

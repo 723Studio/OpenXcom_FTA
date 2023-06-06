@@ -344,9 +344,9 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_YES").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		}
-		else if ((*s)->getCovertOperation() != 0 || (*s)->hasPendingTransformation())
+		else if (soldier->getCovertOperation() != 0 || soldier->hasPendingTransformation())
 		{
-			_lstSoldiers->addRow(4, (*s)->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_UNAVAILABLE_TRAINING").c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_UNAVAILABLE_TRAINING").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
 		else

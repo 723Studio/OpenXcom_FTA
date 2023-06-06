@@ -143,8 +143,9 @@ const float TilesToVexels = 16.0f;
 /**
  * Creates a blank ruleset for a certain type of item.
  * @param type String defining the type.
+ * @param listOrder
  */
-RuleItem::RuleItem(const std::string &type)
+RuleItem::RuleItem(const std::string &type, int listOrder)
 	: _type(type), _name(type), _vehicleUnit(nullptr), _size(0.0),
 	  _monthlyBuyLimit(0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _costDispose(0), _throwRange(0), _underwaterThrowRange(0), _stackSize(1),
 	  _bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),

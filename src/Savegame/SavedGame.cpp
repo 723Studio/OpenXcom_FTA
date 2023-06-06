@@ -987,7 +987,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	node["hiddenPurchaseItems"] = _hiddenPurchaseItemsMap;
 	node["customRuleCraftDeployments"] = _customRuleCraftDeployments;
 	node["alienStrategy"] = _alienStrategy->save();
-	for (const auto* soldier : _deadSoldiers)
+	for (auto* soldier : _deadSoldiers)
 	{
 		node["deadSoldiers"].push_back(soldier->save(mod->getScriptGlobal()));
 	}

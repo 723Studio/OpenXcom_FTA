@@ -128,6 +128,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 
 	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
+		auto craft = _game->getMod()->getCraft(craftType);
 		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->isFTAGame()))
 		{
 			int count = _base->getCraftCount(craft);
@@ -160,7 +161,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 		// vanilla
 		for (auto& soldierType : soldierTypes)
 		{
-			RuleSoldier *soldier = _game->getMod()->getSoldier(soldierType);
+			const RuleSoldier *soldier = _game->getMod()->getSoldier(soldierType);
 			if (soldier->getSalaryCost(0) != 0 && _game->getSavedGame()->isResearched(soldier->getRequirements()))
 			{
 				std::pair<int, int> info = _base->getSoldierCountAndSalary(soldierType);

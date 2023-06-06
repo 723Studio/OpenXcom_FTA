@@ -383,7 +383,7 @@ private:
 	/// Adds role or increase rank in role
 	void addExperience(SoldierRole role, int exp = 1);
 	/// Gets rank of role.
-	int getRoleRank(SoldierRole role);
+	int getRoleRank(SoldierRole role) const;
 	/// Gets the role with highest rank and rank value.
 	std::pair<SoldierRole, int> getBestRoleRank() const;
 	/// Gets the role with highest rank.

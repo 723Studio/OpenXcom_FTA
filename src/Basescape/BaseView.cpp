@@ -537,9 +537,9 @@ void BaseView::draw()
 		// Update manufacturing data
 		for (auto project : _base->getProductions())
 		{
-			if (project->getRules() == (*i)->getRules()->getProjectRules())
+			if (project->getRules() == fac->getRules()->getProjectRules())
 			{
-				(*i)->setProductionProject(project);
+				fac->setProductionProject(project);
 			}
 		}
 		// Draw facility graphic
@@ -589,29 +589,30 @@ void BaseView::draw()
 			text->setBig();
 			std::ostringstream ss;
 			if (fac->getDisabled())
+			{
 				ss << "X";
 			}
 			else
 			{
-				auto project = (*i)->getProductionProject();
+				auto project = fac->getProductionProject();
 				if (project != nullptr)
 				{
-					if (project->getAssignedSoldiers(_base).size() == 0)
+					if (project->getAssignedSoldiers(_base).empty())
 					{
 						ss << "∞";
 					}
 					else
 					{
-						float time = (float)(*i)->getBuildTime() / 24;
+						float time = (float)fac->getBuildTime() / 24;
 						ss << ceil(time);
 					}
 				}
 				else
 				{
-					ss << (*i)->getBuildTime();
+					ss << fac->getBuildTime();
 				}
 			}
-			if ((*i)->getIfHadPreviousFacility()) // Indicate that this facility still counts for connectivity
+			if (fac->getIfHadPreviousFacility()) // Indicate that this facility still counts for connectivity
 			{
 				ss << "*";
 			}

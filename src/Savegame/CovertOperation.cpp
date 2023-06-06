@@ -554,7 +554,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		mission->setRace(missionRace); 
 		mission->setId(save.getId("ALIEN_MISSIONS"));
 		mission->setRegion(targetRegion, mod);
-		mission->setMissionSiteZone(targetZone);
+		mission->setMissionSiteZoneArea(targetZone);
 		mission->start(engine, globe, 0);
 		save.getAlienMissions().push_back(mission);
 	}
@@ -902,9 +902,9 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 
 			//also improve secondary stats
 			int rate = 0;
-			(*i)->getCurrentStats()->tu += Soldier::improveStat(exp->tu, rate, false);
-			(*i)->getCurrentStats()->stamina += Soldier::improveStat(exp->stamina, rate, false);
-			(*i)->getCurrentStats()->mana += Soldier::improveStat(exp->mana, rate, false);
+			(*i)->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
+			(*i)->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
+			(*i)->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
 			
 			UnitStats improvement = *(*i)->getCurrentStats() - origStat;
 			_results->addSoldierImprovement((*i)->getName(), &improvement);

@@ -92,18 +92,20 @@ PromotionsState::PromotionsState()
 
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		it = 0;
-		for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
+		if (fta)
 		{
-			_soldierNumbersAtBase.push_back(std::make_pair((*i), it));
-			it++;
-			if ((*j)->isPromoted())
+			it = 0;
+			for (auto* soldier : *xbase->getSoldiers())
 			{
-				_lstSoldiers->addRow(3, (*j)->getName().c_str(), tr((*j)->getRankString(fta)).c_str(), (*i)->getName().c_str());
+				_soldierNumbersAtBase.push_back(std::make_pair(xbase, it));
+				it++;
+				if (soldier->isPromoted())
+				{
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(fta)).c_str(), xbase->getName().c_str());
+				}
 			}
 		}
-		// special case for soldiers, recovered from VIPs
-		if (!fta)
+		else
 		{ //in FtA we don't have this case basically =)
 			for (auto* soldier : *xbase->getSoldiers())
 			{

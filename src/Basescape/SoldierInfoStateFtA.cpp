@@ -1057,8 +1057,8 @@ void SoldierInfoStateFtA::nameBars()
 void SoldierInfoStateFtA::fillNumbers()
 {
 	UnitStats withArmor = *_soldier->getStatsWithAllBonuses();
-	UnitStats *current = _soldier->getCurrentStats();
-	UnitStats *initial = _soldier->getInitStats();
+	const UnitStats *current = _soldier->getCurrentStats();
+	const UnitStats *initial = _soldier->getInitStats();
 
 	std::ostringstream ss1;
 	ss1 << withArmor.tu;

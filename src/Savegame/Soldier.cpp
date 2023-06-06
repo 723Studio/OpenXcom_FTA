@@ -63,7 +63,7 @@ int Soldier::generateScienceStat(int min, int max)
 }
 
 /**
- * Gets possible stat inprovement
+ * Gets possible stat improvement
  * @param exp - stats experience points
  * @param rate - pointer for role rank experience calculations
  * @param bravery - if this is a special calculation for bravery increase
@@ -108,6 +108,7 @@ int Soldier::improveStat(int exp, int &rate, bool bravery)
  * Initializes a new soldier, either blank or randomly generated.
  * @param rules Soldier ruleset.
  * @param armor Soldier armor.
+ * @param nationality
  * @param id Unique soldier id for soldier generation.
  */
 Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id) :
@@ -2400,7 +2401,7 @@ void Soldier::addExperience(SoldierRole role, int exp)
 	}
 }
 
-int Soldier::getRoleRank(SoldierRole role)
+int Soldier::getRoleRank(SoldierRole role) const
 {
 	int rank = 0;
 	for (auto i : _roles)
@@ -2732,7 +2733,7 @@ void Soldier::resetMonthlyExperienceCache()
 
 void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 {
-	UnitStats *stats = getCurrentStats();
+	UnitStats *stats = getCurrentStatsEditable();
 	const UnitStats caps = getRules()->getStatCaps();
 	UnitStats origStats = *getCurrentStats();
 	int rate = 0;

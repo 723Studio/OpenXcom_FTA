@@ -220,31 +220,31 @@ void ManufactureState::btnNewProductionClick(Action *)
 void ManufactureState::fillProductionList(size_t scrl)
 {
 	_lstManufacture->clearList();
-	for (const auto* prod : _base->getProductions())
+	for (auto* prod : _base->getProductions())
 	{
-		auto facility = (*iter)->getFacility();
+		auto facility = prod->getFacility();
 		std::ostringstream s1;
-		size_t engineers = (*iter)->getAssignedSoldiers(_base).size();
+		size_t engineers = prod->getAssignedSoldiers(_base).size();
 		if (_ftaUi)
 		{
 			s1 << engineers;
 		}
 		else
 		{
-			s1 << (*iter)->getAssignedEngineers();
+			s1 << prod->getAssignedEngineers();
 		}
 		std::ostringstream s2;
-		s2 << (*iter)->getAmountProduced() << "/";
-		if ((*iter)->getInfiniteAmount())
+		s2 << prod->getAmountProduced() << "/";
+		if (prod->getInfiniteAmount())
 		{
 			s2 << "∞";
 		}
 		else
 		{
-			s2 << (*iter)->getAmountTotal();
+			s2 << prod->getAmountTotal();
 		}
 
-		if ((*iter)->getSellItems())
+		if (prod->getSellItems())
 		{
 			s2 << " $";
 		}
@@ -256,13 +256,13 @@ void ManufactureState::fillProductionList(size_t scrl)
 		{
 			s4 << "∞";
 		}
-		else if ((*iter)->getAssignedEngineers() > 0 || engineers > 0)
+		else if (prod->getAssignedEngineers() > 0 || engineers > 0)
 		{
-			int timeLeft = (*iter)->getAmountTotal() * (*iter)->getRules()->getManufactureTime() - (*iter)->getTimeSpent();
-			int numEffectiveEngineers = (*iter)->getAssignedEngineers();
+			int timeLeft = prod->getAmountTotal() * prod->getRules()->getManufactureTime() - prod->getTimeSpent();
+			int numEffectiveEngineers = prod->getAssignedEngineers();
 			if (_ftaUi)
 			{
-				numEffectiveEngineers = (*iter)->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
@@ -280,7 +280,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		}
 		else
 		{
-			_lstManufacture->addRow(5, tr((*iter)->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
+			_lstManufacture->addRow(5, tr(prod->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
 		}
 	}
 

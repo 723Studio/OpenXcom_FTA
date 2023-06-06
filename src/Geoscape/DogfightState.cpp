@@ -275,7 +275,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_pilotMissileAccuracyBonus = 0; _pilotCannonAccuracyBonus = 0;
 	_crewBravery = 2; _squadTacticBonus = 0;
 	_pilots = _craft->getPilotList(false);
-	for (auto* pilot : pilots)
+	for (auto* pilot : _pilots)
 	{
 		pilot->prepareStatsWithBonuses(_game->getMod()); // refresh soldier bonuses
 	}

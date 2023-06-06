@@ -386,7 +386,7 @@ void Inventory::drawItems()
 			{
 				primers(x, y, invItem->isFuseEnabled());
 			}
-			drawStackNumber(*i, color, stackLayer);
+			drawStackNumber(invItem, color, stackLayer);
 		}
 
 		// Ground items
@@ -467,7 +467,7 @@ void Inventory::drawItems()
 			}
 
 			// draw item stack number
-			drawStackNumber(*i, color, stackLayer);
+			drawStackNumber(groundItem, color, stackLayer);
 		}
 
 		stackLayer.blitNShade(_items, 0, 0);

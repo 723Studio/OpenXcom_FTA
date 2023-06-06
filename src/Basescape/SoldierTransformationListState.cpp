@@ -240,7 +240,7 @@ void SoldierTransformationListState::initList()
 		}
 
 		int eligibleSoldiers = 0;
-		for (const auto* soldier : *_base->getSoldiers())
+		for (auto* soldier : *_base->getSoldiers())
 		{
 			bool roleRankPassed = true;
 			if (!transformationRule->getRoleRankRequirments().empty())

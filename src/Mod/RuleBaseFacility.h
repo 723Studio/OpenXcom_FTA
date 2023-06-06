@@ -90,6 +90,7 @@ private:
 public:
 	/// Creates a blank facility ruleset.
 	RuleBaseFacility(const std::string &type, int listOrder);
+	RuleBaseFacility(const std::string& type);
 	/// Cleans up the facility ruleset.
 	~RuleBaseFacility();
 	/// Loads the facility from YAML.

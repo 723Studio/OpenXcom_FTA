@@ -520,7 +520,7 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 	mission->setRace(missionRace); 
 	mission->setId(save.getId("ALIEN_MISSIONS"));
 	mission->setRegion(targetRegion, mod);
-	mission->setMissionSiteZone(targetZone);
+	mission->setMissionSiteZoneArea(targetZone);
 	mission->start(*_game, globe, 0);
 	save.getAlienMissions().push_back(mission);
 

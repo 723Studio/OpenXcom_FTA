@@ -2625,7 +2625,7 @@ void BattlescapeGame::spawnFromPrimedItems()
 			&& !bi->getXCOMProperty()
 			&& !bi->isSpecialWeapon())
 		{
-			if (!bi->getRules()->getSpawnUnit().empty())
+			if (!bi->getRules()->getSpawnUnit())
 			{
 				itemsSpawningUnits.push_back(bi);
 			}
@@ -2695,7 +2695,7 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 
 				bu->setTile(nullptr, _save);
 				delete bu;
-				unit = _save->getUnits()->erase(unit);
+				buIt = _save->getUnits()->erase(buIt);
 			}
 		}
 		else

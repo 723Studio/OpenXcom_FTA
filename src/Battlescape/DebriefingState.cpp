@@ -449,7 +449,7 @@ void DebriefingState::init()
 		{
 			tmp = sse.second.mana;
 		}
-		auto soldier = (*i).first;
+		auto soldier = sse.first;
 		_lstSoldierStats->addRow(13, soldier->getName().c_str(),
 				makeSoldierString(sse.second.tu).c_str(),
 				makeSoldierString(sse.second.stamina).c_str(),
@@ -1632,7 +1632,7 @@ void DebriefingState::prepareDebriefing()
 	}
 
 	// time to care for units.
-	bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(_game->getMod()->getPsiRequirements()));
+	//bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(_game->getMod()->getPsiRequirements()));
 	for (auto* bunit : *battle->getUnits())
 	{
 		UnitStatus status = bunit->getStatus();
@@ -1722,7 +1722,7 @@ void DebriefingState::prepareDebriefing()
 				}
 				else if (evacObj) //friendly vip case
 				{
-					if ((*j)->killedBy() == FACTION_PLAYER)
+					if (bunit->killedBy() == FACTION_PLAYER)
 					{
 						addStat("STR_VIP_KILLED_BY_XCOM_OPERATIVES", 1, -(value * 3));
 					}
@@ -1772,27 +1772,27 @@ void DebriefingState::prepareDebriefing()
 					else if (soldier && soldier->isJustSaved())
 					{
 						addStat("STR_VIP_SAVED", 1, value);
-						if (!(*j)->wasFriendlyFired())
+						if (!bunit->wasFriendlyFired())
 						{
 							auto role = soldier->getBestRole();
 							switch (role) {
 							case ROLE_SOLDIER:
-								addStat("STR_SOLDIER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_SOLDIER_JOINED_XCOM", 1, value / 3);
 								break;
 							case ROLE_PILOT:
-								addStat("STR_PILOT_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_PILOT_JOINED_XCOM", 1, value / 3);
 								break;
 							case ROLE_AGENT:
-								addStat("STR_AGENT_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_AGENT_JOINED_XCOM", 1, value / 3);
 								break;
 							case ROLE_SCIENTIST:
-								addStat("STR_SCIENTIST_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_SCIENTIST_JOINED_XCOM", 1, value / 3);
 								break;
 							case ROLE_ENGINEER:
-								addStat("STR_ENGINEER_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_ENGINEER_JOINED_XCOM", 1, value / 3);
 								break;
 							case ROLE_NONE:
-								addStat("STR_CIVILIAN_JOINED_XCOM", 1, (*j)->getUnitRules()->getValue() / 3);
+								addStat("STR_CIVILIAN_JOINED_XCOM", 1, value / 3);
 								break;
 							default: ;
 							}

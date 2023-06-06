@@ -512,7 +512,7 @@ YAML::Node Base::save() const
 	{
 		node["facilities"].push_back(fac->save());
 	}
-	for (const auto* soldier : _soldiers)
+	for (auto* soldier : _soldiers)
 	{
 		node["soldiers"].push_back(soldier->save(_mod->getScriptGlobal()));
 	}
@@ -520,17 +520,17 @@ YAML::Node Base::save() const
 	{
 		node["crafts"].push_back(xcraft->save(_mod->getScriptGlobal()));
 	}
-	for (std::vector<CovertOperation*>::const_iterator i = _covertOperations.begin(); i != _covertOperations.end(); ++i)
+	for (const auto* operation : _covertOperations)
 	{
-		node["covertOperations"].push_back((*i)->save());
+		node["covertOperations"].push_back(operation->save());
 	}
-	for (std::vector<IntelProject*>::const_iterator i = _intelProjects.begin(); i != _intelProjects.end(); ++i)
+	for (const auto* proj : _intelProjects)
 	{
-		node["intelProjects"].push_back((*i)->save());
+		node["intelProjects"].push_back(proj->save());
 	}
-	for (std::vector<BasePrisoner*>::const_iterator i = _prisoners.begin(); i != _prisoners.end(); ++i)
+	for (const auto* prisoner : _prisoners)
 	{
-		node["prisoners"].push_back((*i)->save());
+		node["prisoners"].push_back(prisoner->save());
 	}
 	node["items"] = _items->save();
 	node["scientists"] = _scientists;
@@ -868,7 +868,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) const
 {
 	int total = 0;
-	for (const auto* soldier : _soldiers)
+	for (auto* soldier : _soldiers)
 	{
 		if (soldier->getCovertOperation() != 0 || soldier->getRoleRank(ROLE_SOLDIER) == 0)
 		{
@@ -876,12 +876,12 @@ int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) c
 		}
 		else
 		{
-			if (!checkCombatReadiness && (*i)->getCraft() == 0)
+			if (!checkCombatReadiness && soldier->getCraft() == 0)
 			{
 				total++;
 			}
-			else if (checkCombatReadiness && (((*i)->getCraft() != 0 && (*i)->getCraft()->getStatus() != "STR_OUT") ||
-				((*i)->getCraft() == 0 && ((*i)->hasFullHealth() || (includeWounded && (*i)->canDefendBase())))))
+			else if (checkCombatReadiness && ((soldier->getCraft() != 0 && soldier->getCraft()->getStatus() != "STR_OUT") ||
+				(soldier->getCraft() == 0 && (soldier->hasFullHealth() || (includeWounded && soldier->canDefendBase())))))
 			{
 				total++;
 			}

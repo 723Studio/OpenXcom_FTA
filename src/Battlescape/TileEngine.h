@@ -96,7 +96,7 @@ private:
 	/// Cache for marking tiles that need light updated.
 	std::vector<Uint32> _lightPropagationTempNeedUpdate;
 
-	const RuleInventory *_inventorySlotGround;
+	RuleInventory *_inventorySlotGround;
 	constexpr static int heightFromCenter[11] = {0,-2,+2,-4,+4,-6,+6,-8,+8,-12,+12};
 	bool _personalLighting;
 	Tile *_cacheTile;

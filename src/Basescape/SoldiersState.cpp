@@ -571,7 +571,7 @@ void SoldiersState::initList(size_t scrl)
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *s);
+			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
 			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());

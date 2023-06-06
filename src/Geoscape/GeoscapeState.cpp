@@ -2016,78 +2016,7 @@ void GeoscapeState::time30Minutes()
 			}
 
 			// Detection ufo state
-			{
-				auto maskTest = [](UfoDetection value, UfoDetection mask)
-				{
-					return (value & mask) == mask;
-				};
-				auto maskBitOr = [](UfoDetection value, UfoDetection mask)
-				{
-					return (UfoDetection)(value | mask);
-				};
-
-				UfoDetection detected = DETECTION_NONE;
-				bool alreadyTracked = ufo->getDetected();
-				SavedGame *save = _game->getSavedGame();
-
-				for (auto base : *_game->getSavedGame()->getBases())
-				{
-					detected = maskBitOr(detected, base->detect(ufo, save, alreadyTracked, save->getTime()->getHour() % 2));
-				}
-
-				for (auto craft : *activeCrafts)
-				{
-					int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
-					detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
-					if (!alreadyTracked && detected == DETECTION_RADAR && tracking < 100)
-					{
-						int exp = RNG::generate(1, static_cast<int>(ceil((100 - tracking) / 20)));
-						for (auto s : craft->getPilotList(false))
-						{
-							s->getDogfightExperience()->tracking += exp;
-						}
-					}
-				}
-
-				if (!alreadyTracked)
-				{
-					if (maskTest(detected, DETECTION_RADAR))
-					{
-						if (maskTest(detected, DETECTION_HYPERWAVE))
-						{
-							ufo->setHyperDetected(true);
-						}
-						ufo->setDetected(true);
-						// don't show if player said he doesn't want to see this UFO anymore
-						if (!_game->getSavedGame()->isUfoOnIgnoreList(ufo->getId()))
-						{
-							popup(new UfoDetectedState(ufo, this, true, ufo->getHyperDetected()));
-						}
-					}
-				}
-				else
-				{
-					if (maskTest(detected, DETECTION_HYPERWAVE))
-					{
-						ufo->setHyperDetected(true);
-					}
-					// TODO: rethink: hunting UFOs stay visible even outside of radar range?
-					if (!maskTest(detected, DETECTION_RADAR) && !ufo->isHunting())
-					{
-						ufo->setDetected(false);
-						ufo->setHyperDetected(false);
-						if (!ufo->getFollowers()->empty())
-						{
-							popup(new UfoLostState(ufo->getName(_game->getLanguage())));
-						}
-					}
-				}
-			}
-			if (ufo->getDetected())
-			{
-				_game->getMasterMind()->updateLoyalty(points, ALIEN_UFO_ACTIVITY);
-			}
-			//ufoDetection(ufo, activeCrafts); //#FINNIKTODO use this instead of the code above
+			ufoDetection(ufo, activeCrafts); //#FINNIKTODO use this instead of the code above
 
 			break;
 		case Ufo::CRASHED:
@@ -2153,18 +2082,27 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 		return (UfoDetection)(value | mask);
 	};
 
-	auto detected = DETECTION_NONE;
-	auto alreadyTracked = ufo->getDetected();
-	auto save = _game->getSavedGame();
+	UfoDetection detected = DETECTION_NONE;
+	bool alreadyTracked = ufo->getDetected();
+	SavedGame* save = _game->getSavedGame();
 
-	for (auto* base : *_game->getSavedGame()->getBases())
+	for (auto base : *_game->getSavedGame()->getBases())
 	{
-		detected = maskBitOr(detected, base->detect(ufo, save, alreadyTracked));
+		detected = maskBitOr(detected, base->detect(ufo, save, alreadyTracked, save->getTime()->getHour() % 2));
 	}
 
-	for (auto* craft : *activeCrafts)
+	for (auto craft : *activeCrafts)
 	{
-		detected = maskBitOr(detected, craft->detect(ufo, save, alreadyTracked));
+		int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
+		detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
+		if (!alreadyTracked && detected == DETECTION_RADAR && tracking < 100)
+		{
+			int exp = RNG::generate(1, static_cast<int>(ceil((100 - tracking) / 20)));
+			for (auto s : craft->getPilotList(false))
+			{
+				s->getDogfightExperience()->tracking += exp;
+			}
+		}
 	}
 
 	if (!alreadyTracked)
@@ -2199,6 +2137,10 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 				popup(new UfoLostState(ufo->getName(_game->getLanguage())));
 			}
 		}
+	}
+	if (ufo->getDetected())
+	{
+		_game->getMasterMind()->updateLoyalty(ufo->getRules()->getMissionScore(), ALIEN_UFO_ACTIVITY);
 	}
 }
 
@@ -2260,7 +2202,7 @@ void GeoscapeState::time1Hour()
 	{
 		// Handle Research
 		if (_fta)
-			handleResearch(*i);
+			handleResearch(xbase);
 
 		// Handle Production
 		std::map<Production*, productionProgress_e> toRemove;
@@ -2348,31 +2290,31 @@ void GeoscapeState::time1Hour()
 	}
 
 	// Handle pending transformations
-	for (std::vector<Base*>::iterator i = _game->getSavedGame()->getBases()->begin(); i != _game->getSavedGame()->getBases()->end(); ++i)
+	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		std::vector<std::pair<Soldier*, RuleSoldierTransformation*>> trainingFinishedList;
-		for (std::vector<Soldier*>::iterator j = (*i)->getSoldiers()->begin(); j != (*i)->getSoldiers()->end(); ++j)
+		for (auto* soldier : *xbase->getSoldiers())
 		{
-			if ((*j)->hasPendingTransformation())
+			if (soldier->hasPendingTransformation())
 			{
-				auto rules = _game->getMod()->getSoldierTransformation((*j)->getPendingTransformation());
-				if ((*j)->handlePendingTransformation())
+				auto rules = _game->getMod()->getSoldierTransformation(soldier->getPendingTransformation());
+				if (soldier->handlePendingTransformation())
 				{
 					if (rules)
 					{
-						(*j)->transform(_game->getMod(), rules, (*j), (*i));
-						trainingFinishedList.push_back(std::make_pair(*j, rules));
+						soldier->transform(_game->getMod(), rules, soldier, xbase);
+						trainingFinishedList.push_back(std::make_pair(soldier, rules));
 					}
 					else
 					{
-						throw Exception("Attempting to transform soldier " + (*j)->getName() + ". ERROR! No rules found for transformation!");
+						throw Exception("Attempting to transform soldier " + soldier->getName() + ". ERROR! No rules found for transformation!");
 					}			
 				}
 			}
 		}
 		if (!trainingFinishedList.empty())
 		{
-			popup(new TransformationFinishedState((*i), std::move(trainingFinishedList)));
+			popup(new TransformationFinishedState(xbase, std::move(trainingFinishedList)));
 		}
 	}
 	_game->getSavedGame()->setAlienContainmentChecked(true); // check only once after reload
@@ -2520,6 +2462,7 @@ void GeoscapeState::time1Day()
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	bool availableIntelInformed = false, completedIntelInformed = false;
+	std::vector<Soldier*> promotedSoldiers;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2529,16 +2472,12 @@ void GeoscapeState::time1Day()
 			std::map<const RuleBaseFacility*, int> finishedFacilities;
 			for (auto* facility : *xbase->getFacilities())
 			{
-				std::map<const RuleBaseFacility*, int> finishedFacilities;
-				for (BaseFacility* facility : *base->getFacilities())
+				if (facility->getBuildTime() > 0)
 				{
-					if (facility->getBuildTime() > 0)
+					facility->build();
+					if (facility->getBuildTime() == 0)
 					{
-						facility->build();
-						if (facility->getBuildTime() == 0)
-						{
-							finishedFacilities[facility->getRules()] += 1;
-						}
+						finishedFacilities[facility->getRules()] += 1;
 					}
 				}
 			}
@@ -2559,29 +2498,29 @@ void GeoscapeState::time1Day()
 		
 		// Handle science project
 		if (!_fta)
-			handleResearch(base);
+			handleResearch(xbase);
 
 		// Handle intelligence projects
 		bool intelProjectFinished = false;
-		auto projects = base->getIntelProjects();
-		base->setDeploymentsHintsBonus(false);
-		base->setOperationBonus(0);
-		base->setTrackingBonus(0);
+		auto projects = xbase->getIntelProjects();
+		xbase->setDeploymentsHintsBonus(false);
+		xbase->setOperationBonus(0);
+		xbase->setTrackingBonus(0);
 		for (auto project : projects)
 		{
 			std::map<Soldier*, int> soldiers;
-			for (std::vector<Soldier*>::iterator j = base->getSoldiers()->begin(); j != base->getSoldiers()->end(); ++j)
+			for (auto* soldier : *xbase->getSoldiers())
 			{
-				if ((*j)->getIntelProject() == 0)
+				if (soldier->getIntelProject() == 0)
 					continue;
-				if ((*j)->getIntelProject()->getName() == project->getName())
+				if (soldier->getIntelProject()->getName() == project->getName())
 				{
 					int roleCoef = 100;
-					if ((*j)->getRoleRank(ROLE_AGENT) < 1)
+					if (soldier->getRoleRank(ROLE_AGENT) < 1)
 					{
 						roleCoef = 50;
 					}
-					soldiers.emplace(std::make_pair((*j), roleCoef));
+					soldiers.emplace(std::make_pair(soldier, roleCoef));
 				}
 			}
 			std::string desc = "";
@@ -2592,19 +2531,19 @@ void GeoscapeState::time1Day()
 
 			if (project->roll(_game, *_globe, progress,	intelProjectFinished))
 			{
-				for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
+				for (auto* soldier : *xbase->getSoldiers())
 				{
-					if ((*s)->getIntelProject() == project)
+					if (soldier->getIntelProject() == project)
 					{
-						(*s)->improvePrimaryStats((*s)->getIntelExperience(), ROLE_AGENT);
-						(*s)->clearIntelExperience();
-						if ((*s)->rolePromoteSoldier(ROLE_AGENT))
+						soldier->improvePrimaryStats(soldier->getIntelExperience(), ROLE_AGENT);
+						soldier->clearIntelExperience();
+						if (soldier->rolePromoteSoldier(ROLE_AGENT))
 						{
-							promotedSoldiers.push_back((*s));
+							promotedSoldiers.push_back(soldier);
 						}
 						if (intelProjectFinished)
 						{
-							(*s)->setIntelProject(0);
+							soldier->setIntelProject(0);
 						}
 					}
 				}
@@ -2615,27 +2554,27 @@ void GeoscapeState::time1Day()
 			case INTEL_NONE:
 				break;
 			case INTEL_UFO_TRACKING:
-				base->setTrackingBonus(progress);
+				xbase->setTrackingBonus(progress);
 				break;
 			case INTEL_COVERT_OPERATIONS:
-				base->setOperationBonus(progress);
+				xbase->setOperationBonus(progress);
 				break;
 			case INTEL_DEPLOYMENT_HINTS:
-				base->setDeploymentsHintsBonus(progress);
+				xbase->setDeploymentsHintsBonus(progress);
 				break;
 			default: ;
 			}
 			
 			if (intelProjectFinished)
 			{
-				_game->pushState(new IntelCompleteState(project, this, base));
+				_game->pushState(new IntelCompleteState(project, this, xbase));
 			}
 		}
 
 		// now check if there are new projects available and add it to the base;
-		for (auto *intel : _game->getMod()->getIntelProjectsList())
+		for (auto& intel : _game->getMod()->getIntelProjectsList())
 		{
-			auto rule = _game->getMod()->getIntelProject(*intel);
+			auto rule = _game->getMod()->getIntelProject(intel);
 			bool found = false;
 			for (auto baseProject : projects)
 			{
@@ -2651,15 +2590,15 @@ void GeoscapeState::time1Day()
 				//let's try to make a project
 				double minCost = static_cast<double>(rule->getCost()) / 2;
 				double maxCost = rule->getCost() * 1.5;
-				IntelProject* project = new IntelProject(rule, base, RNG::generate(minCost, maxCost));
+				IntelProject* project = new IntelProject(rule, xbase, RNG::generate(minCost, maxCost));
 				// there are much more conditions depending on various properies
 				if (project->getAvailableStages(_game->getSavedGame()).size() > 0)
 				{
 					// we want to auto-add the project
-					base->addIntelProject(project);
+					xbase->addIntelProject(project);
 					if (!availableIntelInformed)
 					{
-						_game->pushState(new IntelAvailableState(project, base, this));
+						_game->pushState(new IntelAvailableState(project, xbase, this));
 						availableIntelInformed = true; //show it only once for all bases
 					}
 				}
@@ -2671,19 +2610,19 @@ void GeoscapeState::time1Day()
 		}
 
 		// Handle prisoner
-		for (auto *prisoner : base->getPrisoners())
+		for (auto *prisoner : xbase->getPrisoners())
 		{
 			if (prisoner->think(*_game))
 			{
-				for (std::vector<Soldier*>::const_iterator s = base->getSoldiers()->begin(); s != base->getSoldiers()->end(); ++s)
+				for (auto* soldier : *xbase->getSoldiers())
 				{
-					if ((*s)->getActivePrisoner() == prisoner)
+					if (soldier->getActivePrisoner() == prisoner)
 					{
-						(*s)->improvePrimaryStats((*s)->getIntelExperience(), ROLE_AGENT);
-						(*s)->clearEngineerExperience();
-						if ((*s)->rolePromoteSoldier(ROLE_AGENT))
+						soldier->improvePrimaryStats(soldier->getIntelExperience(), ROLE_AGENT);
+						soldier->clearEngineerExperience();
+						if (soldier->rolePromoteSoldier(ROLE_AGENT))
 						{
-							promotedSoldiers.push_back((*s));
+							promotedSoldiers.push_back(soldier);
 						}
 					}
 				}
@@ -4850,7 +4789,7 @@ void GeoscapeState::handleResearch(Base* base)
 			}
 		}
 		// 3e. handle research complete popup + ufopedia article popups (topic+bonus)
-		popup(new ResearchCompleteState(newResearch, bonus, research));
+		popup(new ResearchCompleteState(newResearch, bonus, research, base));
 		// 3f. reset timer
 		timerReset();
 

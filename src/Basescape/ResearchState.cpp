@@ -318,10 +318,9 @@ void ResearchState::fillProjectList(size_t scrl)
 		}
 		else
 		{
-			sstr << (*iter)->getAssigned();
-			sspr << tr((*iter)->getResearchProgress());
+			sstr << proj->getAssigned();
+			sspr << tr(proj->getResearchProgress());
 		}
-		const RuleResearch *r = (*iter)->getRules();
 		std::string wstr = tr(r->getName());
 		_lstResearch->addRow(3, wstr.c_str(), sstr.str().c_str(), sspr.str().c_str());
 	}
