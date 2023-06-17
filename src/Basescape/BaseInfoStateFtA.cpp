@@ -391,9 +391,8 @@ void BaseInfoStateFtA::init()
 	_barRadar->setMax(i);
 	_barRadar->setValue(i);
 
-	//#FINNIKTODO global detection here
-	std::ostringstream ss14; //global detection placeholder, https://github.com/723Studio/OpenXcom_FTA/issues/215
-	int j = _base->getGlobalRadarStrenght();
+	std::ostringstream ss14;
+	int j = _base->getGlobalRadarStrength();
 	ss14 << j;
 	_numGlobalDetection->setText(ss14.str());
 	_barGlobalDetection->setMax(j);

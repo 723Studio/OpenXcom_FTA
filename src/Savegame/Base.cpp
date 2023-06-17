@@ -23,7 +23,6 @@
 #include "BaseFacility.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "Craft.h"
-#include "CraftWeapon.h"
 #include "CovertOperation.h"
 #include "IntelProject.h"
 #include "BasePrisoner.h"
@@ -32,7 +31,6 @@
 #include "../Mod/Mod.h"
 #include "ItemContainer.h"
 #include "Soldier.h"
-#include "BasePrisoner.h"
 #include "../Engine/Language.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RulePrisoner.h"
@@ -2906,6 +2904,18 @@ std::vector<Craft*>::iterator Base::removeCraft(Craft *craft, bool unload)
 	return c;
 }
 
+int Base::getTrackingBonusReal() const
+{
+	int bonus = getTrackingBonus();
+	double realBonus = 0;
+	if (bonus > 0)
+	{
+		realBonus = -0.6 + 2.1 * std::log10(bonus);
+	}
+
+	return ceil(realBonus);
+}
+
 int Base::getRadarStrength() const
 {
 	int power = 0;
@@ -2920,7 +2930,7 @@ int Base::getRadarStrength() const
 	return power;
 }
 
-int Base::getGlobalRadarStrenght() const
+int Base::getGlobalRadarStrength() const
 {
 	int power = 0;
 	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
@@ -2931,7 +2941,8 @@ int Base::getGlobalRadarStrenght() const
 		}
 		power += (*i)->getRules()->getRadarChance();
 	}
-	power += getTrackingBonusReal();
+	auto test = getTrackingBonusReal();
+	power += test;
 
 	return power;
 }

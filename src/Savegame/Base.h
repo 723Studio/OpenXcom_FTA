@@ -352,12 +352,12 @@ public:
 	int getOperationBoost() const { return _operationsBonus; }
 	void setOperationBonus(int bonus) { _operationsBonus = bonus; }
 	int getTrackingBonus() const { return _trackingBonus; }
-	int getTrackingBonusReal () const { return ceil(0.8 + 3.5 * std::log10(getTrackingBonus())); }
+	int getTrackingBonusReal() const;
 	void setTrackingBonus(int bonus) { _trackingBonus = bonus; }
 	int getDeploymentsHints() const { return _deploymentHintsBonus; }
 	void setDeploymentsHintsBonus(int bonus) { _deploymentHintsBonus = bonus; }
 	int getRadarStrength() const;
-	int getGlobalRadarStrenght() const;
+	int getGlobalRadarStrength() const;
 };
 
 }
