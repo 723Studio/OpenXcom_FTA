@@ -153,9 +153,9 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		_txtMessage->setHeight(78);
 		_btnAnswerOne->setHeight(16);
 		_btnAnswerTwo->setHeight(16);
-		_btnAnswerOne->setY(142);
-		_btnAnswerTwo->setY(142);
-		_txtTooltip->setY(132);
+		_btnAnswerOne->setY(_btnAnswerOne->getY() - 16);
+		_btnAnswerTwo->setY(_btnAnswerTwo->getY() - 16);
+		_txtTooltip->setY(_txtTooltip->getY() - 16);
 	}
 
 	if (_customAnswers.size() >= 4)
