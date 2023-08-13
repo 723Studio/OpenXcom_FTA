@@ -2397,7 +2397,7 @@ int RuleItem::getMeleePower() const
 
 /**
  * Checks if this item can be used to target a given faction.
- * Usage #1: checks the psiamp's allowed targets.
+ * Usage #1: checks the psiamp's and hacking tool allowed targets.
  * - Not used in AI.
  * - Mind control of the same faction is hardcoded disabled.
  * Usage #2: checks if a death trap item applies to a given faction (it use `attacker == FACTION_PLAYER`).

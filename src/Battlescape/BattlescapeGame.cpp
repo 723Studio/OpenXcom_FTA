@@ -1986,7 +1986,7 @@ void BattlescapeGame::primaryAction(Position pos)
 			if (targetUnit && targetUnit->getVisible())
 			{
 				auto targetFaction = targetUnit->getFaction();
-				hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction);
+				hackTargetAllowed = _currentAction.weapon->getRules()->isTargetAllowed(targetFaction, _currentAction.actor->getFaction());
 				if (_currentAction.type == BA_HACK && targetFaction == FACTION_PLAYER)
 				{
 					// no hacking allies
