@@ -121,34 +121,10 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 
 	bool bTooltipIsPresent = false;
 	_customAnswers = _eventRule.getCustomAnswers();
-	switch (_customAnswers.size())
+	_btnOk->setVisible(_customAnswers.empty());
+
+	if (_customAnswers.size() >= 2)
 	{
-	case 4:
-		_btnAnswerFour->setText(tr(_customAnswers[3].title));
-		_btnAnswerFour->setVisible(true);
-		if (!_customAnswers[3].description.empty())
-		{
-			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
-		}
-		_btnAnswerThree->setWidth(115);
-		//[[clang::fallthrough]];
-		break;
-	case 3:
-		_btnAnswerThree->setText(tr(_customAnswers[2].title));
-		_btnAnswerThree->setVisible(true);
-		if (!_customAnswers[2].description.empty())
-		{
-			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
-		}
-		_txtMessage->setHeight(78);
-		_btnAnswerOne->setHeight(16);
-		_btnAnswerTwo->setHeight(16);
-		_btnAnswerOne->setY(142);
-		_btnAnswerTwo->setY(142);
-		_txtTooltip->setY(132);
-		//[[clang::fallthrough]];
-		break;
-	case 2:
 		_btnAnswerOne->setText(tr(_customAnswers[0].title));
 		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
 		if (!_customAnswers[0].description.empty())
@@ -163,14 +139,40 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 		}
 		_btnAnswerOne->setVisible(true);
 		_btnAnswerTwo->setVisible(true);
-		_btnOk->setVisible(false);
-		if (bTooltipIsPresent)
+	}
+
+	if (_customAnswers.size() >= 3)
+	{
+		_btnAnswerThree->setText(tr(_customAnswers[2].title));
+		_btnAnswerThree->setVisible(true);
+		if (!_customAnswers[2].description.empty())
 		{
-			_txtMessage->setHeight(_txtMessage->getHeight() - _txtTooltip->getHeight());
+			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
 		}
-		break;
-	default:
-		break;
+		_txtMessage->setHeight(78);
+		_btnAnswerOne->setHeight(16);
+		_btnAnswerTwo->setHeight(16);
+		_btnAnswerOne->setY(142);
+		_btnAnswerTwo->setY(142);
+		_txtTooltip->setY(132);
+	}
+
+	if (_customAnswers.size() >= 4)
+	{
+		_btnAnswerFour->setText(tr(_customAnswers[3].title));
+		_btnAnswerFour->setVisible(true);
+		if (!_customAnswers[3].description.empty())
+		{
+			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
+		}
+		_btnAnswerThree->setWidth(115);
+	}
+
+	if (bTooltipIsPresent)
+	{
+		_txtMessage->setHeight(_txtMessage->getHeight() - _txtTooltip->getHeight());
 	}
 
 	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerOneClick);
@@ -206,7 +208,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_txtQuantity->setVisible(false);
 	_lstTransfers->setVisible(false);
 
-	if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery)
+	if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery || !_customAnswers.empty())
 	{
 		_btnOk->setX((_btnOk->getX() + _btnItemsArriving->getX()) / 2);
 		_btnItemsArriving->setVisible(false);
@@ -427,7 +429,6 @@ void GeoscapeEventState::eventLogic()
 			const RuleResearch* rRule = mod->getResearch(rName, true);
 			researches.push_back(rRule);
 		}
-		std::vector<const RuleResearch*> possibilities;
 		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
