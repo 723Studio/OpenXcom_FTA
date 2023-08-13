@@ -88,7 +88,7 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
 	_baseItems = new ItemContainer();
 	_hitLog = new HitLog(lang);
 
-	setRandomHiddenMovementBackground(0);
+	setRandomHiddenMovementBackground(_rule);
 }
 
 /**
@@ -256,7 +256,51 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		_nodes.push_back(n);
 	}
 
-	for (YAML::const_iterator i = node["units"].begin(); i != node["units"].end(); ++i)
+
+
+	using NodeIterator = Collections::Range<Collections::ValueIterator<YAML::const_iterator>>;
+	using ItemVec = std::vector<BattleItem*>&;
+	using UnitVec = std::vector<BattleUnit*>&;
+
+	auto getNodeIterator = [&](const char* name) -> NodeIterator
+	{
+		auto& n = node[name];
+		return Collections::nonDeref(Collections::range(n.begin(), n.end()));
+	};
+
+	auto findUnitById = [&](const YAML::Node& n) -> BattleUnit*
+	{
+		if (!n) return nullptr;
+
+		auto id = n.as<int>(-1);
+
+		if (id == -1) return nullptr;
+
+		for (auto* bu : _units)
+		{
+			if (bu->getId() == id)
+			{
+				return bu;
+			}
+		}
+		return nullptr;
+	};
+
+	// node to load from, vector to load into, offset for second pass processing
+	std::tuple<NodeIterator, UnitVec, size_t> toUnits = std::make_tuple(getNodeIterator("units"), std::ref(_units), 0u);
+
+
+	// node to load from, vector to load into, offset for second pass processing
+	std::tuple<NodeIterator, ItemVec, size_t> toContainer[] =
+	{
+		std::make_tuple(getNodeIterator("items"), std::ref(_items), 0u),
+		std::make_tuple(getNodeIterator("recoverConditional"), std::ref(_recoverConditional), 0u),
+		std::make_tuple(getNodeIterator("recoverGuaranteed"), std::ref(_recoverGuaranteed), 0u),
+		std::make_tuple(getNodeIterator("itemsSpecial"), std::ref(_items), 0u),
+	};
+
+
+	for (YAML::const_iterator i : std::get<NodeIterator>(toUnits))
 	{
 		UnitFaction faction = (UnitFaction)(*i)["faction"].as<int>();
 		UnitFaction originalFaction = (UnitFaction)(*i)["originalFaction"].as<int>(faction);
@@ -278,7 +322,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		unit->load(*i, this->getMod(), this->getMod()->getScriptGlobal());
 		// Handling of special built-in weapons will be done during and after the load of items
 		// unit->setSpecialWeapon(this, true);
-		_units.push_back(unit);
+		std::get<UnitVec>(toUnits).push_back(unit);
 		if (faction == FACTION_PLAYER)
 		{
 			if ((unit->getId() == selectedUnit) || (_selectedUnit == 0 && !unit->isOut()))
@@ -303,39 +347,12 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		}
 	}
 
-	for (YAML::const_iterator i = node["battleObjects"].begin(); i != node["battleObjects"].end(); ++i)
-	{
-		BattleObject* object;
-		std::string type = (*i)["type"].as<std::string>();
-		if (!mod->getObject(type))
-			continue;
-		object = new BattleObject(mod->getObject(type));
-		object->load(*i, mod);
-		
-		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));
-		getTile(pos)->setBattleObject(object);
-
-		_battleObjects.push_back(object);
-
-	}
-
-	using ItemVec = std::vector<BattleItem*>&;
-
-	// node to load from, vector to load into, offset for matching ammo
-	std::tuple<YAML::Node, ItemVec, size_t> toContainer[] =
-	{
-		std::make_tuple(node["items"], std::ref(_items), 0u),
-		std::make_tuple(node["recoverConditional"], std::ref(_recoverConditional), 0u),
-		std::make_tuple(node["recoverGuaranteed"], std::ref(_recoverGuaranteed), 0u),
-		std::make_tuple(node["itemsSpecial"], std::ref(_items), 0u),
-	};
-
 	for (auto& pass : toContainer)
 	{
 		// update start point for matching ammo
 		std::get<size_t>(pass) = std::get<ItemVec>(pass).size();
 
-		for (YAML::const_iterator i = std::get<YAML::Node>(pass).begin(); i != std::get<YAML::Node>(pass).end(); ++i)
+		for (YAML::const_iterator i : std::get<NodeIterator>(pass))
 		{
 			std::string type = (*i)["type"].as<std::string>();
 			if (mod->getItem(type))
@@ -344,15 +361,11 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 				_itemId = std::max(_itemId, id);
 				BattleItem *item = new BattleItem(mod->getItem(type), &id);
 				item->load(*i, mod, this->getMod()->getScriptGlobal());
-				int owner = (*i)["owner"].as<int>(-1);
-				int prevOwner = (*i)["previousOwner"].as<int>(-1);
-				int unit = (*i)["unit"].as<int>(-1);
 
 				// match up items and units
-				for (auto* bu : _units)
 				{
-					if (owner == -1) break; // loop finished
-					if (bu->getId() == owner)
+					BattleUnit* bu = findUnitById((*i)["owner"]);
+					if (bu)
 					{
 						item->setOwner(bu);
 						if (item->isSpecialWeapon())
@@ -363,25 +376,22 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 						{
 							bu->getInventory()->push_back(item);
 						}
-						break;
 					}
 				}
-				for (auto* bu : _units)
+
 				{
-					if (prevOwner == -1) break; // loop finished
-					if (bu->getId() == prevOwner)
+					BattleUnit* bu = findUnitById((*i)["previousOwner"]);
+					if (bu)
 					{
 						item->setPreviousOwner(bu);
-						break;
 					}
 				}
-				for (auto* bu : _units)
+
 				{
-					if (unit == -1) break; // loop finished
-					if (bu->getId() == unit)
+					BattleUnit* bu = findUnitById((*i)["unit"]);
+					if (bu)
 					{
 						item->setUnit(bu);
-						break;
 					}
 				}
 
@@ -414,15 +424,29 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		unit->setSpecialWeapon(this, true);
 	}
 
+
+	// tie units to its owner, running through the units again
+	for (YAML::const_iterator i : std::get<NodeIterator>(toUnits))
+	{
+		// get next unit to match owners
+		auto* unit = std::get<UnitVec>(toUnits)[std::get<size_t>(toUnits)++];
+
+		assert((*i)["id"].as<int>() == unit->getId());
+
+		unit->setPreviousOwner(findUnitById((*i)["previousOwner"]));
+	}
+
 	// tie ammo items to their weapons, running through the items again
 	for (auto& pass : toContainer)
 	{
-		for (YAML::const_iterator i = std::get<YAML::Node>(pass).begin(); i != std::get<YAML::Node>(pass).end(); ++i)
+		for (YAML::const_iterator i : std::get<NodeIterator>(pass))
 		{
 			if (mod->getItem((*i)["type"].as<std::string>()))
 			{
 				// get next weapon to match ammo
 				auto* weapon = std::get<ItemVec>(pass)[std::get<size_t>(pass)++];
+
+				assert((*i)["id"].as<int>() == weapon->getId());
 
 				auto setItem = [&](int slot, const YAML::Node& n)
 				{
@@ -475,6 +499,21 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 				return itemA->getId() < itemB->getId();
 			}
 		);
+	}
+
+	for (YAML::const_iterator i = node["battleObjects"].begin(); i != node["battleObjects"].end(); ++i)
+	{
+		BattleObject* object;
+		std::string type = (*i)["type"].as<std::string>();
+		if (!mod->getObject(type))
+			continue;
+		object = new BattleObject(mod->getObject(type));
+		object->load(*i, mod);
+		
+		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));
+		getTile(pos)->setBattleObject(object);
+
+		_battleObjects.push_back(object);
 	}
 
 	_vipEscapeType = (EscapeType)(node["vipEscapeType"].as<int>(_vipEscapeType));
@@ -1015,6 +1054,21 @@ BattleUnit *SavedBattleGame::getSelectedUnit() const
 void SavedBattleGame::setSelectedUnit(BattleUnit *unit)
 {
 	_selectedUnit = unit;
+}
+
+/**
+ * Clear state that given unit is selected.
+ */
+void SavedBattleGame::clearUnitSelection(BattleUnit *unit)
+{
+	if (_selectedUnit == unit)
+	{
+		_selectedUnit = nullptr;
+	}
+	if (_lastSelectedUnit == unit)
+	{
+		_lastSelectedUnit = nullptr;
+	}
 }
 
 /**
@@ -1615,6 +1669,8 @@ void SavedBattleGame::endTurn()
 	{
 		if (_selectedUnit && _selectedUnit->getOriginalFaction() == FACTION_PLAYER)
 			_lastSelectedUnit = _selectedUnit;
+		else
+			_lastSelectedUnit = nullptr;
 		_selectedUnit =  0;
 		_side = FACTION_HOSTILE;
 	}
@@ -1652,6 +1708,8 @@ void SavedBattleGame::endTurn()
 			selectNextPlayerUnit();
 		while (_selectedUnit && _selectedUnit->getFaction() != FACTION_PLAYER)
 			selectNextPlayerUnit();
+
+		_lastSelectedUnit = nullptr;
 	}
 
 	BattlescapeTally tally = _battleState->getBattleGame()->tallyUnits();
@@ -2137,7 +2195,7 @@ BattleItem *SavedBattleGame::createItemForTile(const std::string& type, Tile *ti
 /**
  * Create new item for tile;
  */
-BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile)
+BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile, BattleUnit *corpseFor)
 {
 	// Note: this is allowed also in preview mode; for items spawned from map blocks (and friendly units spawned from such items)
 
@@ -2147,6 +2205,7 @@ BattleItem *SavedBattleGame::createItemForTile(const RuleItem *rule, Tile *tile)
 		RuleInventory *ground = _rule->getInventoryGround();
 		tile->addItem(item, ground);
 	}
+	item->setUnit(corpseFor);
 	_items.push_back(item);
 	initItem(item);
 	return item;
@@ -2210,10 +2269,7 @@ BattleUnit *SavedBattleGame::convertUnit(BattleUnit *unit)
 
 	bool visible = unit->getVisible();
 
-	if (getSelectedUnit() == unit)
-	{
-		setSelectedUnit(nullptr);
-	}
+	clearUnitSelection(unit);
 
 	// in case the unit was unconscious
 	removeUnconsciousBodyItem(unit);
@@ -2719,7 +2775,7 @@ void SavedBattleGame::removeUnconsciousBodyItem(BattleUnit *bu)
 	{
 		if ((*iter)->getUnit() == bu)
 		{
-			removeItem((*iter));
+			removeItem((*iter)); //TODO: if used on anything other that corpse it will crash as it could remove MORE than one item from `getItems()` and them go pass `!= end()`
 			if (--size == 0) break;
 		}
 		else
@@ -3530,7 +3586,7 @@ void SavedBattleGame::setRandomHiddenMovementBackground(const Mod *mod)
  * Gets the hidden movement background ID.
  * @return hidden movement background ID
  */
-std::string SavedBattleGame::getHiddenMovementBackground() const
+const std::string& SavedBattleGame::getHiddenMovementBackground() const
 {
 	return _hiddenMovementBackground;
 }

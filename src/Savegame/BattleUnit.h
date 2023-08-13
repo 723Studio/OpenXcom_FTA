@@ -119,6 +119,7 @@ private:
 	int _moraleRestored;
 	BattleUnit *_charging;
 	int _turnsSinceSpotted, _turnsLeftSpottedForSnipers, _turnsSinceStunned = 255;
+	BattleUnit* _previousOwner = nullptr;
 	const Unit *_spawnUnit = nullptr;
 	std::string _activeHand;
 	std::string _preferredHandForReactions;
@@ -454,6 +455,13 @@ public:
 	void setInventoryTile(Tile *tile);
 	/// Gets the unit's tile.
 	Tile *getTile() const;
+
+	/// Gets the unit's creator.
+	BattleUnit *getPreviousOwner();
+	/// Gets the unit's creator.
+	const BattleUnit *getPreviousOwner() const;
+	/// Sets the unit's creator.
+	void setPreviousOwner(BattleUnit *owner);
 
 	/// Gets the item in the specified slot.
 	BattleItem *getItem(RuleInventory *slot, int x = 0, int y = 0) const;

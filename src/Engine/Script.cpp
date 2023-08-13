@@ -718,19 +718,26 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 {
 	//groups of different types of ASCII characters
 	using CharClasses = Uint8;
-	constexpr CharClasses CC_none = 0x1;
-	constexpr CharClasses CC_spec = 0x2;
-	constexpr CharClasses CC_digit = 0x4;
-	constexpr CharClasses CC_digitHex = 0x8;
-	constexpr CharClasses CC_charRest = 0x10;
-	constexpr CharClasses CC_digitSign = 0x20;
-	constexpr CharClasses CC_digitHexX = 0x40;
-	constexpr CharClasses CC_quote = 0x80;
+	struct Array // workaround for MSVC v19.20 bug where `std::array` is not `constexpr`
+	{
+		CharClasses arr[256];
 
-	constexpr std::array<CharClasses, 256> charDecoder = (
+		constexpr CharClasses& operator[](size_t t) { return arr[t]; }
+		constexpr const CharClasses& operator[](size_t t) const { return arr[t]; }
+	};
+	static constexpr CharClasses CC_none = 0x1;
+	static constexpr CharClasses CC_spec = 0x2;
+	static constexpr CharClasses CC_digit = 0x4;
+	static constexpr CharClasses CC_digitHex = 0x8;
+	static constexpr CharClasses CC_charRest = 0x10;
+	static constexpr CharClasses CC_digitSign = 0x20;
+	static constexpr CharClasses CC_digitHexX = 0x40;
+	static constexpr CharClasses CC_quote = 0x80;
+
+	static constexpr Array charDecoder = (
 		[]
 		{
-			std::array<CharClasses, 256> r = { };
+			Array r = { };
 			for (int i = 0; i < 256; ++i)
 			{
 				if (i == '#' || i == ' ' || i == '\r' || i == '\n' || i == '\t')	r[i] |= CC_none;

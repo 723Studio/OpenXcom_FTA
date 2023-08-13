@@ -1419,8 +1419,7 @@ void DebriefingState::prepareDebriefing()
 			//spawn corpse/body for unit to recover
 			for (int i = unit->getArmor()->getTotalSize() - 1; i >= 0; --i)
 			{
-				auto* corpse = battle->createItemForTile(unit->getArmor()->getCorpseBattlescape()[i], nullptr);
-				corpse->setUnit(unit);
+				auto* corpse = battle->createItemForTile(unit->getArmor()->getCorpseBattlescape()[i], nullptr, unit);
 				battle->getTileEngine()->itemDrop(unit->getTile(), corpse, false);
 			}
 		}
