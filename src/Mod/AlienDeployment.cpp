@@ -183,7 +183,7 @@ namespace OpenXcom
  */
 AlienDeployment::AlienDeployment(const std::string &type) :
 	_type(type), _missionBountyItemCount(1), _bughuntMinTurn(0), _width(0), _length(0), _height(0), _civilians(0), _markCiviliansAsVIP(false), _civilianSpawnNodeRank(0),
-	_shade(-1), _minShade(-1), _maxShade(-1), _finalDestination(false), _isAlienBase(false), _isHidden(false), _isHiddenAlienBase(false), _fakeUnderwaterSpawnChance(0),
+	_shade(-1), _minShade(-1), _maxShade(-1), _finalDestination(false), _isAlienBase(false), _isHidden(false), _isHiddenAlienBase(false), _isHiddentXcomBase(false), _fakeUnderwaterSpawnChance(0),
 	_alert("STR_ALIENS_TERRORISE"), _alertBackground("BACK03.SCR"), _alertDescription(""), _alertSound(-1),
 	_markerName("STR_TERROR_SITE"), _markerIcon(-1), _durationMin(0), _durationMax(0), _minDepth(0), _maxDepth(0),
 	_genMissionFrequency(0), _genMissionLimit(1000), _genMissionRaceFromAlienBase(true),
@@ -323,6 +323,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_isAlienBase = node["alienBase"].as<bool>(_isAlienBase);
 	_isHidden = node["isHidden"].as<bool>(_isHidden);
 	_isHiddenAlienBase = node["isHiddenAlienBase"].as<bool>(_isHiddenAlienBase);
+	_isHiddentXcomBase = node["isHiddentXcomBase"].as<bool>(_isHiddentXcomBase);
 	_fakeUnderwaterSpawnChance = node["fakeUnderwaterSpawnChance"].as<int>(_fakeUnderwaterSpawnChance);
 	_keepCraftAfterFailedMission = node["keepCraftAfterFailedMission"].as<bool>(_keepCraftAfterFailedMission);
 	_allowObjectiveRecovery = node["allowObjectiveRecovery"].as<bool>(_allowObjectiveRecovery);

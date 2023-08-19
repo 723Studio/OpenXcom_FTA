@@ -3045,6 +3045,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	loadStartingBase("startingBaseVeteran", _startingBaseVeteran);
 	loadStartingBase("startingBaseGenius", _startingBaseGenius);
 	loadStartingBase("startingBaseSuperhuman", _startingBaseSuperhuman);
+	loadStartingBase("hiddenBase", _hiddenBase);
 
 	if (doc["startingTime"])
 	{

@@ -112,7 +112,7 @@ private:
 	std::vector<std::string> _mapScripts;
 	std::vector<std::string> _randomRaces;
 	std::vector<std::string> _undercoverArmors;
-	bool _finalDestination, _isAlienBase, _isHidden, _isHiddenAlienBase;
+	bool _finalDestination, _isAlienBase, _isHidden, _isHiddenAlienBase, _isHiddentXcomBase;
 	int _fakeUnderwaterSpawnChance;
 	std::string _winCutscene, _loseCutscene, _abortCutscene;
 	std::string _alert, _alertBackground, _alertDescription;
@@ -278,6 +278,8 @@ public:
 	ChronoTrigger getChronoTrigger() const;
 	/// Gets which turn the aliens start cheating on.
 	int getCheatTurn() const;
+	/// Gets whether or not this is a hidden xcom base to spawn in on geoscape
+	bool isHiddentXcomBase() const { return _isHiddentXcomBase; }
 	/// Gets whether or not this is an alien base (purely for new battle mode)
 	bool isAlienBase() const;
 	/// Gets whether or not this mission should be hidden (purely for new battle mode)

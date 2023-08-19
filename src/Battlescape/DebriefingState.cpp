@@ -1591,6 +1591,18 @@ void DebriefingState::prepareDebriefing()
 		}
 	}
 
+	if (success && ruleDeploy && ruleDeploy->isHiddentXcomBase() && craft)
+	{
+		// Set up starting base
+		Base* hiddenBase = new Base(_game->getMod());
+		hiddenBase->load(_game->getMod()->getHiddenXcomBase(), save, true);
+		hiddenBase->setLongitude(craft->getLongitude());
+		hiddenBase->setLatitude(craft->getLatitude());
+		
+		hiddenBase->setName(_game->getLanguage()->getString(ruleDeploy->getType()));
+		save->getBases()->push_back(hiddenBase);
+	}
+
 	// transform all zombie-like units to spawned ones
 	std::vector<BattleUnit*> waitingTransformations;
 	for (auto* bu : *battle->getUnits())

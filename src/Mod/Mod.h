@@ -295,6 +295,7 @@ private:
 
 	std::string _destroyedFacility;
 	YAML::Node _startingBaseDefault, _startingBaseBeginner, _startingBaseExperienced, _startingBaseVeteran, _startingBaseGenius, _startingBaseSuperhuman;
+	YAML::Node _hiddenBase;
 	Collections::NamesToIndex _baseFunctionNames;
 
 	GameTime _startingTime;
@@ -1113,6 +1114,7 @@ public:
 	/// Gets the player starting base.
 	const YAML::Node &getDefaultStartingBase() const;
 	const YAML::Node &getStartingBase(GameDifficulty diff) const;
+	const YAML::Node& getHiddenXcomBase() const { return _hiddenBase; }
 	/// Gets the game starting time.
 	const GameTime &getStartingTime() const;
 	/// Gets the game starting difficulty.
