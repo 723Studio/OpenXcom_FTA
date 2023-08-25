@@ -52,6 +52,7 @@ private:
 	UnitStats _stats;
 	int _intelligence, _aggression, _morale, _cooperation;
 	int _interrogationProgress, _recruitingProgress;
+	bool _spawnedTortureEvent = false;
 	Armor *_armor = nullptr;
 	Soldier* _geoscapeSoldier = nullptr;
 	std::vector<Soldier*> _agents;

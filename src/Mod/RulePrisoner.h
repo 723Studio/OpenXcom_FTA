@@ -84,6 +84,7 @@ class PrisonerTortureRules
 {
 private:
 	int _difficulty, _loyaltyChange, _moraleChange, _cooperationChange, _eventChance;
+	bool _isMultipleEventsPossible;
 	std::vector<std::string> _spawnEvents;
 	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
 
@@ -98,6 +99,7 @@ public:
 	int getMorale() { return _moraleChange; }
 	int getCooperation() { return _cooperationChange; }
 	int getEventChance() { return _eventChance; }
+	bool isMultipleEventsPossible() { return _isMultipleEventsPossible; }
 	const std::vector<std::string>& getSpawnedEvents() { return _spawnEvents; }
 	/// Generates an event based on the month.
 	std::string getWeightedEvent(const size_t monthsPassed) const;

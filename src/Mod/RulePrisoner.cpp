@@ -80,7 +80,8 @@ void PrisonerRecruitingRules::afterLoad(const Mod* mod)
 	Collections::removeAll(_spawnedSoldierRuleName);
 }
 
-PrisonerTortureRules::PrisonerTortureRules() : _difficulty(100), _loyaltyChange(0), _moraleChange(-5), _cooperationChange(-30), _eventChance(100)
+PrisonerTortureRules::PrisonerTortureRules() : _difficulty(100), _loyaltyChange(0), _moraleChange(-5), _cooperationChange(-30),
+	_eventChance(100), _isMultipleEventsPossible(false)
 {
 }
 
@@ -99,6 +100,7 @@ void PrisonerTortureRules::load(const YAML::Node& node)
 	_moraleChange = node["moraleChange"].as<int>(_moraleChange);
 	_cooperationChange = node["cooperationChange"].as<int>(_cooperationChange);
 	_eventChance = node["eventChance"].as<int>(_eventChance);
+	_isMultipleEventsPossible = node["isMultipleEventsPossible"].as<bool>(_isMultipleEventsPossible);
 	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
 	if (const YAML::Node& weights = node["eventWeights"])
 	{

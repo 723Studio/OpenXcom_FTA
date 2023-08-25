@@ -74,6 +74,7 @@ void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 	_aggression = node["aggression"].as<int>(_aggression);
 	_morale = node["morale"].as<int>(_morale);
 	_cooperation = node["cooperation"].as<int>(_cooperation);
+	_spawnedTortureEvent = node["spawnedTortureEvent"].as<bool>(_spawnedTortureEvent);
 	_interrogationProgress = node["interrogationProgress"].as<int>(_interrogationProgress);
 	_recruitingProgress = node["recruitingProgress"].as<int>(_recruitingProgress);
 	if (node["armor"])
@@ -119,6 +120,8 @@ YAML::Node BasePrisoner::save() const
 	{
 		node["soldierId"] = -1;
 	}
+	if (_spawnedTortureEvent)
+		node["spawnedTortureEvent"] = _spawnedTortureEvent;
 	node["health"] = _health;
 	node["faction"] = (int)_faction;
 	node["stats"] = _stats;
@@ -341,14 +344,14 @@ bool BasePrisoner::think(Game &engine)
 					{
 						moraleDmg = 0;
 						maxDmg = ceil(maxDmg / 2);
-						loyaty = ceil(loyaty / 3);
+						loyaty = ceil(loyaty / 5);
 						eventChance = ceil(eventChance / 3);
 					}
 					else if (difficultyRoll > torturePower)
 					{
 						maxDmg = ceil(maxDmg / 2);
 						moraleDmg = ceil(moraleDmg / 3);
-						loyaty = ceil(loyaty / 2);
+						loyaty = ceil(loyaty / 4);
 						eventChance = ceil(eventChance / 2);
 					}
 					setHealth(getHealth() - RNG::generate(0, maxDmg));
@@ -356,7 +359,11 @@ bool BasePrisoner::think(Game &engine)
 					setCooperation(getCooperation() - rules.getCooperation());
 					engine.getMasterMind()->updateLoyalty(loyaty);
 
-					if (RNG::percent(eventChance))
+					if (_spawnedTortureEvent && !rules.isMultipleEventsPossible())
+					{
+						//no event, sorry.
+					}
+					else if (RNG::percent(eventChance))
 					{
 						auto events = rules.getSpawnedEvents();
 						events.push_back(rules.getWeightedEvent(save.getMonthsPassed()));

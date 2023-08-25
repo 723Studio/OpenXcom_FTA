@@ -109,7 +109,28 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 	_txtTitle->setText(tr(_rule->getName()));
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtDescription->setText(tr(_rule->getDescription()));
+
+	std::ostringstream sd;
+	sd << tr(_rule->getDescription());
+	if (!_rule->getRequiredItemList().empty())
+	{
+		sd << "\n";
+		sd << tr("STR_REQUIRED_ITEMS_LC");
+		for (auto item : _rule->getRequiredItemList())
+		{
+			sd << "\n";
+			if (_game->getMod()->getItem(item.first))
+			{
+				sd << tr(_game->getMod()->getItem(item.first)->getType());
+				sd << ">" << "\x01" << item.second << "\x01";
+			}
+			else
+			{
+				sd << "ERROR LOADING ITEM REQUIREMENTS!";
+			}
+		}
+	}
+	_txtDescription->setText(sd.str());
 	_txtDescription->setWordWrap(true);
 	_txtDescription->setScrollable(true);
 
