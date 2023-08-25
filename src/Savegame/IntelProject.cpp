@@ -41,7 +41,7 @@ IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating, std::string& description, bool estimate)
 {
 	int progress = 0;
-	double effort = 0, soldierEffort = 0, statEffort = 0, specProjectEffort = 0;
+	double effort = 0, soldierEffort = 0, statEffort = 0;
 	auto projStats = _rules->getStats();
 	int factor = mod->getIntelTrainingFactor();
 	for (auto s : assignedAgents)
@@ -156,6 +156,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 				&& save->isResearched(stage->getRequiredResearch()))
 				&& !save->isResearched(stage->getDisabledByResearch()))
 			{
+				Log(LOG_INFO) << " we get stage: " << stage->getName();
 				rolledStages.push_back(stage); //populate list of stages
 			}
 		}
@@ -164,20 +165,29 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 		{
 			auto pickedStage = rolledStages.at(RNG::generate(0, rolledStages.size())); // only one stage processed at a time
 			//run all event scripts for chosen stage
+			Log(LOG_INFO) << " we left with stage: " << pickedStage->getName();
 			if (!pickedStage->getEventScripts().empty())
 			{
+				std::ostringstream sd;
+				for (auto s : pickedStage->getEventScripts())
+				{
+					sd << s << " ";
+				}
+				Log(LOG_INFO) << " processing eventScript: " << sd.str();
 				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), OTHER_SCRIPT);
 			}
 
 			//and create alien mission if any
 			if (!pickedStage->getSpawnedMission().empty())
 			{
+				Log(LOG_INFO) << " spawning the mission: " << pickedStage->getSpawnedMission();
 				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, _base);
 			}
 
 			//update data if the project reaches its final stage and counted as completed.
 			if (pickedStage->isFinalStage())
 			{
+				Log(LOG_INFO) << " it's a final roll!";
 				_active = false;
 				finalRoll = true;
 			}
@@ -193,7 +203,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 				_stageRolls.insert(std::make_pair(pickedStage->getName(), 1));
 			}
 			
-			return true; //we finis stage rolling, this would tell the game to prepare data for the next one
+			return true; //we finish stage rolling, this would tell the game to prepare data for the next one
 		}
 	}
 	return false;

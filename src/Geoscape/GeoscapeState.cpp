@@ -1925,6 +1925,10 @@ void GeoscapeState::time30Minutes()
 				continue;
 			}
 			// Marked expired UFOs for removal.
+			if (_fta)
+			{
+				_game->getMasterMind()->updateLoyalty(-ufo->getRules()->getScore() * RNG::generate(5, 10) * (_game->getSavedGame()->getDifficultyCoefficient() + 1));
+			}
 			ufo->setStatus(Ufo::DESTROYED);
 		}
 	}
@@ -2000,7 +2004,6 @@ void GeoscapeState::time30Minutes()
 			{
 				if (region->getRules()->insideRegion(ufo->getLongitude(), ufo->getLatitude()))
 				{
-					// #FINNIKTODO loyalty change here?
 					region->addActivityAlien(points);
 					break;
 				}
@@ -2016,7 +2019,7 @@ void GeoscapeState::time30Minutes()
 			}
 
 			// Detection ufo state
-			ufoDetection(ufo, activeCrafts); //#FINNIKTODO use this instead of the code above
+			ufoDetection(ufo, activeCrafts);
 
 			break;
 		case Ufo::CRASHED:
@@ -2562,7 +2565,8 @@ void GeoscapeState::time1Day()
 			case INTEL_DEPLOYMENT_HINTS:
 				xbase->setDeploymentsHintsBonus(progress);
 				break;
-			default: ;
+			default:
+				break;
 			}
 			
 			if (intelProjectFinished)

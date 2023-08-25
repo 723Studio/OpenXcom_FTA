@@ -750,6 +750,7 @@ void Base::setEngineers(int engineers)
  * Returns if a certain target is covered by the base's
  * radar range, taking in account the range and chance.
  * @param target Pointer to target to compare.
+ * @param globalSearch if there should be global search logic added
  * @param alreadyDedected Was ufo already detected, `true` mean we track it without probability.
  * @return 0 - not detected, 1 - detected by conventional radar, 2 - detected by hyper-wave decoder.
  */
@@ -2941,8 +2942,8 @@ int Base::getGlobalRadarStrength() const
 		}
 		power += (*i)->getRules()->getRadarChance();
 	}
-	auto test = getTrackingBonusReal();
-	power += test;
+
+	power += getTrackingBonusReal();
 
 	return power;
 }
