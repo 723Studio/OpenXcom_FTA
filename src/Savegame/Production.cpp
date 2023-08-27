@@ -255,7 +255,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 				craft->setStatus("STR_REFUELLING");
 				b->getCrafts()->push_back(craft);
 			}
-			else
+			else if (!_facility)
 			{
 				for (const auto& i : _rules->getProducedItems())
 				{

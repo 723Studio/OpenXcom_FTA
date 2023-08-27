@@ -46,6 +46,8 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Basescape/ManufactureAllocateEngineersState.h"
+#include "../FTA/MasterMind.h"
+
 #include <climits>
 
 namespace OpenXcom
@@ -89,10 +91,19 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *product
 void ManufactureInfoStateFtA::buildUi()
 {
 	_screen = false;
+	int tile_size = 32;
 
 	_window = new Window(this, 320, 160, 0, 20, POPUP_BOTH);
 	_txtTitle = new Text(302, 17, 9, 30);
-	_btnOk = new TextButton(136, 16, 168, 155);
+	if (!_facility)
+	{
+		_btnOk = new TextButton(136, 16, 168, 155);
+	}
+	else
+	{
+		_btnOk = new TextButton(288, 16, 16, 155);
+	}
+	
 	_btnStop = new TextButton(136, 16, 16, 155);
 	_txtAvailableEngineer = new Text(160, 9, 16, 49);
 	_txtAvailableSpace = new Text(160, 9, 16, 59);
@@ -105,11 +116,14 @@ void ManufactureInfoStateFtA::buildUi()
 	_txtTodo = new Text(40, 16, 280, 88);
 	_txtAvgEfficiency = new Text(143, 9, 168, 50);
 	_txtAvgDiligence = new Text(143, 9, 168, 59);
+	_txtConstructionTime = new Text(143, 9, 168, 50);
 	_btnAllocateEngineers = new TextButton(110, 16, 16, 79);
 	_lstEngineers = new TextList(116, 56, 16, 97);
 
 	_surfaceUnits = new InteractiveSurface(160, 150, 160, 25);
 	_surfaceUnits->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::handleWheelUnit, 0);
+
+	_image = new Surface(tile_size * 2, tile_size * 2, 201, 77);
 
 	// Set palette
 	setInterface("manufactureInfo");
@@ -130,8 +144,10 @@ void ManufactureInfoStateFtA::buildUi()
 	add(_btnStop, "button2", "manufactureInfo");
 	add(_txtAvgEfficiency, "text", "manufactureInfo");
 	add(_txtAvgDiligence, "text", "manufactureInfo");
+	add(_txtConstructionTime, "text", "manufactureInfo");
 	add(_btnAllocateEngineers, "button2", "manufactureInfo");
 	add(_lstEngineers, "list", "manufactureInfo");
+	add(_image);
 
 	centerAllSurfaces();
 
@@ -199,7 +215,7 @@ void ManufactureInfoStateFtA::buildUi()
 	_timerMoreUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onMoreUnit);
 	_timerLessUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onLessUnit);
 
-	if (_facility != nullptr)
+	if (_facility)
 	{
 		_txtUnitToProduce->setVisible(false);
 		_txtUnitUp->setVisible(false);
@@ -208,15 +224,10 @@ void ManufactureInfoStateFtA::buildUi()
 		_txtTodo->setVisible(false);
 		_btnUnitDown->setVisible(false);
 		_btnStop->setVisible(false);
-		_btnOk->setX(16);
-		_btnOk->setY(155);
-		_btnOk->setWidth(288);
+		_txtAvgDiligence->setVisible(false);
+		_txtAvgEfficiency->setVisible(false);
 
 		// build preview image
-		int tile_size = 32;
-		_image = new Surface(tile_size*2, tile_size*2, 201, 77);
-		add(_image);
-
 		SurfaceSet *graphic = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
 		Surface *frame;
 		int x_offset, y_offset;
@@ -254,6 +265,11 @@ void ManufactureInfoStateFtA::buildUi()
 			}
 			y_pos += tile_size;
 		}
+	}
+	else
+	{
+		_image->setVisible(false);
+		_txtConstructionTime->setVisible(false);
 	}
 }
 
@@ -451,6 +467,29 @@ void ManufactureInfoStateFtA::setAssignedEngineers()
 	_txtAllocatedEngineers->setText(tr("STR_ENGINEERS_ALLOCATED_UC").arg(_engineers.size()));
 	_txtAvgDiligence->setText(tr("STR_AVERAGE_DILIGENCE_UC").arg(calcAvgStat(false)));
 	_txtAvgEfficiency->setText(tr("STR_AVERAGE_EFFICIENCY_UC").arg(calcAvgStat(true)));
+
+	std::ostringstream s5;
+	if (_facility && !_engineers.empty())
+	{
+		int timeSpent = 0;
+		
+		if (!_newProject)
+		{
+			timeSpent = _production->getTimeSpent();
+		}
+		int timeLeft = _production->getRules()->getManufactureTime() - timeSpent;
+		int numEffectiveEngineers = _production->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+		int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
+		int daysLeft = hoursLeft / 24;
+		int hours = hoursLeft % 24;
+		s5 << daysLeft << "/" << hours;
+		
+	}
+	else
+	{
+		s4 << "∞";
+	}
+	_txtConstructionTime->setText(tr("STR_CONSTRUCTION_TIME_UC").arg(s5.str()));
 
 	//if (_engineers.empty())
 	//{

@@ -97,6 +97,10 @@ void RuleManufacture::afterLoad(const Mod* mod)
 			_producedCraft = mod->getCraft(item->first, true);
 		}
 	}
+	else if (_category == "STR_FACILITY")
+	{
+		_facility = mod->getBaseFacility(_name, true);
+	}
 	else
 	{
 		for (auto& i : _producedItemsNames)
@@ -104,6 +108,7 @@ void RuleManufacture::afterLoad(const Mod* mod)
 			_producedItems[mod->getItem(i.first, true)] = i.second;
 		}
 	}
+
 	for (auto& i : _requiredItemsNames)
 	{
 		auto* itemRule = mod->getItem(i.first, false);
@@ -313,6 +318,15 @@ const std::map<const RuleItem*, int> &RuleManufacture::getProducedItems() const
 const RuleCraft* RuleManufacture::getProducedCraft() const
 {
 	return _producedCraft;
+}
+
+/*
+ * Gets facility build by this project if any.
+ * @return RuleBaseFacility rule set.
+ */
+const RuleBaseFacility* RuleManufacture::getProducedFacility() const
+{
+	return _facility;
 }
 
 /**

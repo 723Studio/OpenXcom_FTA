@@ -55,7 +55,7 @@ private:
 	ArrowButton * _btnUnitUp, * _btnUnitDown;
 	TextButton * _btnStop, * _btnOk, *_btnAllocateEngineers;
 	Text * _txtTitle, * _txtAvailableEngineer, * _txtAvailableSpace, * _txtAllocatedEngineers, *_txtAvgEfficiency, * _txtAvgDiligence;
-	Text * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtTodo;
+	Text * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtTodo, * _txtConstructionTime;
 	Timer *_timerMoreUnit, * _timerLessUnit;
 	InteractiveSurface *_surfaceUnits;
 	TextList * _lstEngineers;
