@@ -2551,10 +2551,13 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 {
 	if (!attack.damage_item) // no idea how this happened, but make sure we have an item
 		return;
-	auto save = getSave()->getGeoscapeSave();
 	const RuleItem* item = attack.damage_item->getRules();
 	const RuleSoldier *rule = getMod()->getSoldier(item->getSpawnedSoldier());
 
+	if (!rule)
+		return;
+
+	auto save = getSave()->getGeoscapeSave();
 	Soldier* soldier = new Soldier(rule, rule->getDefaultArmor(), 0, getSave()->getGeoscapeSave()->getId("STR_SOLDIER"));
 
 	//we need to find a base for the soldier
@@ -2664,7 +2667,6 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 void BattlescapeGame::spawnFromPrimedItems()
 {
 	std::vector<BattleItem*> itemsSpawningUnits;
-	std::vector<BattleItem*> itemsSpawningSoldiers;
 
 	for (auto* bi : *_save->getItems())
 	{
@@ -2672,19 +2674,12 @@ void BattlescapeGame::spawnFromPrimedItems()
 		{
 			continue;
 		}
-		if (bi->getRules()->getBattleType() == BT_GRENADE
-			&& bi->getFuseTimer() == 0
-			&& bi->isFuseEnabled()
-			&& !bi->getXCOMProperty()
-			&& !bi->isSpecialWeapon())
+		if ((bi->getRules()->getSpawnUnit() || bi->getRules()->getSpawnItem() || !bi->getRules()->getSpawnedSoldier().empty())
+			&& !bi->getXCOMProperty() && !bi->isSpecialWeapon())
 		{
-			if (!bi->getRules()->getSpawnUnit())
+			if (bi->getRules()->getBattleType() == BT_GRENADE && bi->getFuseTimer() == 0 && bi->isFuseEnabled())
 			{
 				itemsSpawningUnits.push_back(bi);
-			}
-			if (!bi->getRules()->getSpawnedSoldier().empty())
-			{
-				itemsSpawningSoldiers.push_back(bi);
 			}
 		}
 	}
@@ -2693,11 +2688,6 @@ void BattlescapeGame::spawnFromPrimedItems()
 	{
 		spawnNewUnit(item);
 		spawnNewItem(item);
-		_save->removeItem(item);
-	}
-
-	for (BattleItem* item : itemsSpawningSoldiers)
-	{
 		spawnNewSoldier(BattleActionAttack{ BA_NONE, nullptr, item, item, }, item->getTile()->getPosition());
 		_save->removeItem(item);
 	}

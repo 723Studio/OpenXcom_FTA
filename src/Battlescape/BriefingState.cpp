@@ -66,7 +66,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 	_txtTitle = new Text(300, 32, 16, 24);
 	_txtTarget = new Text(300, 17, 16, 40);
 	_txtCraft = new Text(300, 17, 16, 56);
-	_txtBriefing = new Text(290, 94, 16, 72);
+	_txtBriefing = new Text(290, 103, 16, 72);
 
 	auto* battleSave = _game->getSavedGame()->getSavedBattle();
 
