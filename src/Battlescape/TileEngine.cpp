@@ -1933,7 +1933,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Position originPosition, Tile 
 		}
 		visibleDistanceMaxVoxel = getMaxVoxelViewDistance(); // reset again (because of smoke formula)
 
-		int statsDiff = (currentUnit->getBaseStats()->perseption - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100;
+		int statsDiff = (currentUnit->getBaseStats()->perception - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100;
 		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - statsDiff - densityOfSmoke * smokeDensityFactor * getMaxViewDistance()/(3 * 20 * 100);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), visibleDistanceVoxels, visibleDistanceMaxVoxel, densityOfSmoke * smokeDensityFactor / 100, densityOfFire };

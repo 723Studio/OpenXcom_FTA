@@ -31,7 +31,9 @@
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/MapScript.h"
 #include "../Mod/RuleCraft.h"
+#include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
 
 namespace OpenXcom
@@ -43,7 +45,7 @@ namespace OpenXcom
  * @param battleGame Pointer to the saved game.
  * @param state Pointer to the Battlescape state.
  */
-AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeState *state) : _battleGame(battleGame), _state(state), _inEntrance(0), _inExit(0), _outside(0)
+AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeState *state) : _battleGame(battleGame), _state(state), _inEntrance(0), _inExit(0), _outside(0), _enemies(0)
 {
 	// Create objects
 	_screen = false;
@@ -123,6 +125,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	_inEntrance = tally.inEntrance;
 	_inExit = tally.inExit;
 	_outside = tally.inField;
+	_enemies = tally.liveAliensInEntrance;
 
 	if (!exit && _inExit > 0)
 	{
@@ -182,12 +185,51 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 		_txtAbort->setText(tr("STR_CRAFT_DEPLOYMENT_QUESTION"));
 	}
 
-
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->setHighContrast(true);
 	_btnOk->onMouseClick((ActionHandler)&AbortMissionState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&AbortMissionState::btnOkClick, Options::keyOk);
-	if (_battleGame->isPreview() && (_outside > 0 || _inEntrance <= 0))
+	bool noAbort = false;
+	if (_game->getMod()->isFTAGame())
+	{
+		if (craft)
+		{
+			Craft* craftData = nullptr;
+			for (auto base : *_game->getSavedGame()->getBases())
+			{
+				for (auto c : *base->getCrafts())
+				{
+					if (c->isInBattlescape())
+					{
+						craftData = c;
+						break;
+					}
+				}
+				if (craftData)
+				{
+					break;
+				}
+			}
+			if (craftData && craftData->getCraftStats().engineCooldown > 0)
+			{
+
+				int timer = craftData->getCraftStats().engineCooldown + 1 - _battleGame->getTurn();
+				if (timer > 0)
+				{
+					noAbort = true;
+					_txtAbort->setText(tr("STR_ENGINE_IS_COOLING").arg(timer));
+				}
+			}
+		}
+
+		if (_enemies > 0)
+		{
+			noAbort = true;
+			_txtAbort->setText(tr("STR_ACTIVE_ENEMIES_ONBOARD"));
+		}
+	}
+
+	if ((_battleGame->isPreview() && (_outside > 0 || _inEntrance <= 0)) || noAbort)
 	{
 		_btnOk->setVisible(false);
 	}

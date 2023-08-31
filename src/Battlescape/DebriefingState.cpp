@@ -1695,7 +1695,13 @@ void DebriefingState::prepareDebriefing()
 			}
 			else if (oldFaction == FACTION_HOSTILE && bunit->killedBy() == FACTION_PLAYER)
 			{
-				auto type = _game->getMod()->getAlienRace(bunit->getUnitRules()->getRace())->getRaceType();
+				auto race = _game->getMod()->getAlienRace(bunit->getUnitRules()->getRace());
+				RaceType type = RACE_TYPE_MIXED;
+				if (race)
+				{
+					type = race->getRaceType();
+				}
+				
 				if (!_fta || type == RACE_TYPE_ALIEN)
 				{
 					addStat("STR_ALIENS_KILLED", 1, value);

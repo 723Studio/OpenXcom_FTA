@@ -73,7 +73,7 @@ struct UnitStats
 		maneuvering, missiles, dogfight, tracking, cooperation, beams, synaptic, gravity, //pilot
 		physics, chemistry, biology, insight, data, computers, tactics, materials, designing, psionics, xenolinguistics, //scientist
 		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, construction, diligence, alienTech, reverseEngineering, //engineers
-		stealth, perseption, charisma, investigation, deception, interrogation; //agents
+		stealth, perception, charisma, investigation, deception, interrogation; //agents
 
 	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
 		strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
@@ -82,7 +82,7 @@ struct UnitStats
 		designing(0), psionics(0), xenolinguistics(0),
 		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), construction(0),
 		diligence(0), alienTech(0), reverseEngineering(0),
-		stealth(0), perseption(0), charisma(0), investigation(0), deception(0), interrogation(0){}
+		stealth(0), perception(0), charisma(0), investigation(0), deception(0), interrogation(0){}
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
 		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
 		int maneuvering_, int missiles_, int dogfight_, int tracking_, int cooperation_, int beams_, int synaptic_, int gravity_,
@@ -90,7 +90,7 @@ struct UnitStats
 		int designing_, int psionics_, int xenolinguistics_,
 		int weaponry_, int explosives_, int efficiency_, int microelectronics_, int metallurgy_, int processing_, int hacking_,
 		int construction_, int diligence_, int alienTech_, int reverseEngineering_,
-		int stealth_, int perseption_, int charisma_, int investigation_, int deception_, int interrogation_) :
+		int stealth_, int perception_, int charisma_, int investigation_, int deception_, int interrogation_) :
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
 		maneuvering(maneuvering_), missiles(missiles_), dogfight(dogfight_), tracking(tracking_), cooperation(cooperation_), beams(beams_), synaptic(synaptic_), gravity(gravity_),
@@ -98,7 +98,7 @@ struct UnitStats
 		designing(designing_), psionics(psionics_), xenolinguistics(xenolinguistics_),
 		weaponry(weaponry_), explosives(explosives_), efficiency(efficiency_), microelectronics(microelectronics_), metallurgy(metallurgy_), processing(processing_),
 		hacking(hacking_), construction(construction_), diligence(diligence_), alienTech(alienTech_), reverseEngineering(reverseEngineering_),
-		stealth(stealth_), perseption(perseption_), charisma(charisma_), investigation(investigation_), deception(deception_), interrogation(interrogation_) {}
+		stealth(stealth_), perception(perception_), charisma(charisma_), investigation(investigation_), deception(deception_), interrogation(interrogation_) {}
 	UnitStats& operator+=(const UnitStats& stats) {
 		tu += stats.tu;
 		stamina += stats.stamina;
@@ -143,7 +143,7 @@ struct UnitStats
 		alienTech += stats.alienTech;
 		reverseEngineering += stats.reverseEngineering;
 		stealth += stats.stealth;
-		perseption += stats.perseption;
+		perception += stats.perception;
 		charisma += stats.charisma;
 		investigation += stats.investigation;
 		deception += stats.deception;
@@ -193,7 +193,7 @@ struct UnitStats
 		alienTech + stats.alienTech,
 		reverseEngineering + stats.reverseEngineering,
 		stealth + stats.stealth,
-		perseption + stats.perseption,
+		perception + stats.perception,
 		charisma + stats.charisma,
 		investigation + stats.investigation,
 		deception + stats.deception,
@@ -240,7 +240,7 @@ struct UnitStats
 		alienTech -= stats.alienTech;
 		reverseEngineering -= stats.reverseEngineering;
 		stealth -= stats.stealth;
-		perseption -= stats.perseption;
+		perception -= stats.perception;
 		charisma -= stats.charisma;
 		investigation -= stats.investigation;
 		deception -= stats.deception;
@@ -290,7 +290,7 @@ struct UnitStats
 		alienTech - stats.alienTech,
 		reverseEngineering - stats.reverseEngineering,
 		stealth - stats.stealth,
-		perseption - stats.perseption,
+		perception - stats.perception,
 		charisma - stats.charisma,
 		investigation - stats.investigation,
 		deception - stats.deception,
@@ -300,7 +300,7 @@ struct UnitStats
 		-maneuvering, -missiles, -dogfight, -tracking, -cooperation, -beams, -synaptic, -gravity,
 		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -designing, -psionics, -xenolinguistics,
 		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -construction, -diligence, -alienTech, -reverseEngineering,
-		-stealth, -perseption, -charisma, -investigation, -deception, -interrogation); }
+		-stealth, -perception, -charisma, -investigation, -deception, -interrogation); }
 	void merge(const UnitStats& stats) {
 		tu = (stats.tu ? stats.tu : tu);
 		stamina = (stats.stamina ? stats.stamina : stamina);
@@ -345,7 +345,7 @@ struct UnitStats
 		alienTech = (stats.alienTech ? stats.alienTech : alienTech);
 		reverseEngineering = (stats.reverseEngineering ? stats.reverseEngineering : reverseEngineering);
 		stealth = (stats.stealth ? stats.stealth : stealth);
-		perseption = (stats.perseption ? stats.perseption : perseption);
+		perception = (stats.perception ? stats.perception : perception);
 		charisma = (stats.charisma ? stats.charisma : charisma);
 		investigation = (stats.investigation ? stats.investigation : investigation);
 		deception = (stats.deception ? stats.deception : deception);
@@ -360,7 +360,7 @@ struct UnitStats
 			materials || designing || psionics || xenolinguistics ||
 			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
 			hacking || construction || diligence || alienTech || reverseEngineering ||
-			stealth || perseption || charisma || investigation || deception || interrogation;
+			stealth || perception || charisma || investigation || deception || interrogation;
 	}
 	template<typename Func>
 	static void fieldLoop(Func f)
@@ -376,7 +376,7 @@ struct UnitStats
 			&UnitStats::materials, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
 			&UnitStats::weaponry, &UnitStats::explosives, &UnitStats::efficiency, &UnitStats::microelectronics, &UnitStats::metallurgy, &UnitStats::processing,
 			&UnitStats::hacking, &UnitStats::construction, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
-			&UnitStats::stealth, &UnitStats::perseption, &UnitStats::charisma, &UnitStats::investigation, &UnitStats::deception, &UnitStats::interrogation
+			&UnitStats::stealth, &UnitStats::perception, &UnitStats::charisma, &UnitStats::investigation, &UnitStats::deception, &UnitStats::interrogation
 		};
 
 		for (Ptr p : allFields)
@@ -432,7 +432,7 @@ struct UnitStats
 			{&UnitStats::alienTech, "STR_ALIEN_TECH"},
 			{&UnitStats::reverseEngineering, "STR_REVERSE_ENGINEERING"},
 			{&UnitStats::stealth, "STR_STEALTH"},
-			{&UnitStats::perseption, "STR_PERSEPTION"},
+			{&UnitStats::perception, "STR_PERCEPTION"},
 			{&UnitStats::charisma, "STR_CHARISMA"},
 			{&UnitStats::investigation, "STR_INVESTIGATION"},
 			{&UnitStats::deception, "STR_DECEPTION"},
@@ -1046,8 +1046,8 @@ namespace YAML
 				node["reverseEngineering"] = rhs.reverseEngineering;
 			if (rhs.stealth > 0)
 				node["stealth"] = rhs.stealth;
-			if (rhs.perseption > 0)
-				node["perseption"] = rhs.perseption;
+			if (rhs.perception > 0)
+				node["perception"] = rhs.perception;
 			if (rhs.charisma > 0)
 				node["charisma"] = rhs.charisma;
 			if (rhs.investigation > 0)
@@ -1107,7 +1107,7 @@ namespace YAML
 			rhs.alienTech = node["alienTech"].as<int>(rhs.alienTech);
 			rhs.reverseEngineering = node["reverseEngineering"].as<int>(rhs.reverseEngineering);
 			rhs.stealth = node["stealth"].as<int>(rhs.stealth);
-			rhs.perseption = node["perseption"].as<int>(rhs.perseption);
+			rhs.perception = node["perception"].as<int>(rhs.perception);
 			rhs.charisma = node["charisma"].as<int>(rhs.charisma);
 			rhs.investigation = node["investigation"].as<int>(rhs.investigation);
 			rhs.deception = node["deception"].as<int>(rhs.deception);

@@ -3296,6 +3296,7 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 		if (!bu->isOut() && (!bu->isOutThresholdExceed() || (bu->getUnitRules() && bu->getUnitRules()->getSpawnUnit())))
 		{
 			bool ftaVIP = false;
+			bool capturable = true;
 			if (bu->getGeoscapeSoldier() == 0)
 			{
 				ftaVIP = bu->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP && bu->getOriginalFaction() == FACTION_PLAYER;
@@ -3313,6 +3314,12 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 				else
 				{
 					tally.liveAliens++;
+					capturable = false;
+				}
+
+				if (_save->getMod()->isFTAGame() && !capturable && (bu->isInExitArea(START_POINT) || bu->isInExitArea(END_POINT)))
+				{
+					tally.liveAliensInEntrance++;
 				}
 			}
 			else if (bu->getOriginalFaction() == FACTION_PLAYER || ftaVIP)

@@ -587,14 +587,14 @@ double CovertOperationStartState::getOperationOdds()
 			if (investigation)
 			{
 				soldierBonus += (double)stats->investigation / 5;
-				soldierBonus += (double)stats->perseption / 10;
+				soldierBonus += (double)stats->perception / 10;
 				soldierBonus += (double)stats->interrogation / 10;
 				Log(LOG_DEBUG) << "Calculation investigation bonus of soldier " << s->getName() << ": " << soldierBonus;
 			}
 			if (infiltration)
 			{
 				soldierBonus += (double)stats->stealth / 5;
-				soldierBonus += (double)stats->perseption / 10;
+				soldierBonus += (double)stats->perception / 10;
 				soldierBonus += (double)stats->interrogation / 10;
 				soldierBonus += statEffectCalc(stats->bravery, 1800, 2.1, 15, -8);
 				Log(LOG_DEBUG) << "Calculation infiltration bonus of soldier " << s->getName() << ": " << soldierBonus;

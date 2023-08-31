@@ -960,7 +960,7 @@ void SoldierInfoStateFtA::nameBars()
 	_barStamina->setScale(1.0);
 	_txtMissiles->setText(tr(UnitStats::getStatString(&UnitStats::missiles)));
 	_bartMissiles->setScale(1.0);
-	_txtPerseption->setText(tr(UnitStats::getStatString(&UnitStats::perseption)));
+	_txtPerseption->setText(tr(UnitStats::getStatString(&UnitStats::perception)));
 	_barPerseption->setScale(1.0);
 	_txtChemistry->setText(tr(UnitStats::getStatString(&UnitStats::chemistry)));
 	_barChemistry->setScale(1.0);
@@ -1116,11 +1116,11 @@ void SoldierInfoStateFtA::fillNumbers()
 	_barExplosives->setValue(withArmor.explosives);
 	_barExplosives->setValue2(std::min(withArmor.explosives, initial->explosives));
 	std::ostringstream ss52;
-	ss52 << withArmor.perseption;
+	ss52 << withArmor.perception;
 	_numPerseption->setText(ss52.str());
-	_barPerseption->setMax(current->perseption);
-	_barPerseption->setValue(withArmor.perseption);
-	_barPerseption->setValue2(std::min(withArmor.perseption, initial->perseption));
+	_barPerseption->setMax(current->perception);
+	_barPerseption->setValue(withArmor.perception);
+	_barPerseption->setValue2(std::min(withArmor.perception, initial->perception));
 
 	std::ostringstream ss3;
 	ss3 << withArmor.health;

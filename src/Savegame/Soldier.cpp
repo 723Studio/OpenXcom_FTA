@@ -148,7 +148,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.gravity = RNG::generate(minStats.gravity, maxStats.gravity);
 		//agent
 		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
-		_initialStats.perseption = RNG::generate(minStats.perseption, maxStats.perseption);
+		_initialStats.perception = RNG::generate(minStats.perception, maxStats.perception);
 		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
 		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
 		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
@@ -181,7 +181,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 
 		//agent
 		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
-		_initialStats.perseption = RNG::generate(minStats.perseption, maxStats.perseption);
+		_initialStats.perception = RNG::generate(minStats.perception, maxStats.perception);
 		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
 		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
 		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
@@ -2982,9 +2982,9 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			stats->stealth += improveStat(exp->stealth, rate);
 			addExperience(ROLE_AGENT, rate);
 		}
-		if (exp->perseption && stats->perseption < caps.perseption)
+		if (exp->perception && stats->perception < caps.perception)
 		{
-			stats->perseption += improveStat(exp->perseption, rate);
+			stats->perception += improveStat(exp->perception, rate);
 			addExperience(ROLE_AGENT, rate);
 		}
 		if (exp->charisma && stats->charisma < caps.charisma)

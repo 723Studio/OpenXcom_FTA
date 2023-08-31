@@ -38,14 +38,14 @@ class ScriptParserBase;
  */
 struct RuleCraftStats
 {
-	int fuelMax, damageMax, speedMax, accel, radarRange, radarChance, sightRange, hitBonus, avoidBonus, powerBonus, armor, shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough;
+	int fuelMax, damageMax, speedMax, accel, radarRange, radarChance, sightRange, hitBonus, avoidBonus, powerBonus, armor, shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough, engineCooldown;
 
 	/// Default constructor.
 	RuleCraftStats() :
 		fuelMax(0), damageMax(0), speedMax(0), accel(0),
 		radarRange(0), radarChance(0), sightRange(0),
 		hitBonus(0), avoidBonus(0), powerBonus(0), armor(0),
-		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0)
+		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0), engineCooldown(0)
 	{
 
 	}
@@ -67,6 +67,7 @@ struct RuleCraftStats
 		shieldRecharge += r.shieldRecharge;
 		shieldRechargeInGeoscape += r.shieldRechargeInGeoscape;
 		shieldBleedThrough += r.shieldBleedThrough;
+		engineCooldown += r.engineCooldown;
 		return *this;
 	}
 	/// Subtract different stats.
@@ -87,6 +88,7 @@ struct RuleCraftStats
 		shieldRecharge -= r.shieldRecharge;
 		shieldRechargeInGeoscape -= r.shieldRechargeInGeoscape;
 		shieldBleedThrough -= r.shieldBleedThrough;
+		engineCooldown -= r.engineCooldown;
 		return *this;
 	}
 	/// Gets negative values of stats.
@@ -114,6 +116,7 @@ struct RuleCraftStats
 		shieldRecharge = node["shieldRecharge"].as<int>(shieldRecharge);
 		shieldRechargeInGeoscape = node["shieldRechargeInGeoscape"].as<int>(shieldRechargeInGeoscape);
 		shieldBleedThrough = node["shieldBleedThrough"].as<int>(shieldBleedThrough);
+		engineCooldown = node["engineCooldown"].as<int>(engineCooldown);
 	}
 
 	template<auto Stat, typename TBind>
@@ -134,6 +137,7 @@ struct RuleCraftStats
 		b.template addField<Stat, &RuleCraftStats::shieldRecharge>(prefix + "getShieldRecharge");
 		b.template addField<Stat, &RuleCraftStats::shieldRechargeInGeoscape>(prefix + "getShieldRechargeInGeoscape");
 		b.template addField<Stat, &RuleCraftStats::shieldBleedThrough>(prefix + "getShieldBleedThrough");
+		b.template addField<Stat, &RuleCraftStats::engineCooldown>(prefix + "getEngineCooldown");
 	}
 };
 

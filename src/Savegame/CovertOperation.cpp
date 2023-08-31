@@ -870,20 +870,20 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			else if (danger > 0)
 			{
 				exp->stealth += RNG::generate(1, 4);
-				exp->perseption += RNG::generate(1, 2);
+				exp->perception += RNG::generate(1, 2);
 			}
 
 			auto cats = _rule->getCategories();
 			if (std::find(cats.begin(), cats.end(), "STR_INVESTIGATION") != cats.end())
 			{
 				exp->investigation += RNG::generate(1, std::max(2, expRolls));
-				exp->perseption += RNG::generate(0, std::max(1, expRolls / 2));
+				exp->perception += RNG::generate(0, std::max(1, expRolls / 2));
 				exp->interrogation += RNG::generate(0, std::max(1, expRolls / 2));
 			}
 			if (std::find(cats.begin(), cats.end(), "STR_INFILTRATION") != cats.end())
 			{
 				exp->stealth += RNG::generate(1, std::max(2, expRolls));
-				exp->perseption += RNG::generate(0, std::max(1, expRolls / 2));
+				exp->perception += RNG::generate(0, std::max(1, expRolls / 2));
 				exp->interrogation += RNG::generate(0, std::max(1, expRolls / 2));
 			}
 			if (std::find(cats.begin(), cats.end(), "STR_NEGOTIATION") != cats.end())

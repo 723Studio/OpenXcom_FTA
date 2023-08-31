@@ -120,6 +120,9 @@ struct BattlescapeTally
 	int inExit = 0;
 	/// number of live soldiers in the middle of the battlefield.
 	int inField = 0;
+	// number of live enemies on entrance tiles.
+	int liveAliensInEntrance = 0;
+
 
 	/// number of live VIPs on entrance tiles
 	int vipInEntrance = 0;
