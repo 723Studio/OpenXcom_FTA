@@ -148,7 +148,7 @@ void AgentsState::initList(size_t scrl)
 				std::ostringstream ss;
 				if (project)
 				{
-					ss << project->getRules()->getName();
+					ss << tr(project->getRules()->getName());
 				}
 				else if (prisoner)
 				{
