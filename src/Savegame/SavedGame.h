@@ -110,8 +110,7 @@ class SavedGame
 	static Game *_game;
 
   public:
-	Country *debugCountry = nullptr;
-	Region *debugRegion = nullptr;
+	std::string debugRegion = "";
 	int debugType = 0;
 	size_t debugZone = 0;
 	size_t debugArea = 0;

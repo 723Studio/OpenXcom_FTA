@@ -219,7 +219,6 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_cbxRegion = new ComboBox(this, 150, 16, 0, 36);
 	_cbxZone = new ComboBox(this, 48, 16, 154, 36);
 	_cbxArea = new ComboBox(this, 48, 16, 206, 36);
-	_cbxCountry = new ComboBox(this, 150, 16, 0, 36);
 
 	// Set palette
 	setInterface("geoscape");
@@ -269,7 +268,6 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	add(_cbxRegion, "button", "geoscape");
 	add(_cbxZone, "button", "geoscape");
 	add(_cbxArea, "button", "geoscape");
-	add(_cbxCountry, "button", "geoscape");
 
 	// Set up objects
 	Surface *geobord = _game->getMod()->getSurface("GEOBORD.SCR");
@@ -462,9 +460,9 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	{
 		std::vector<std::string> regionList;
 		regionList.push_back("All regions");
-		for (auto* r : *_game->getSavedGame()->getRegions())
+		for (auto r : _game->getMod()->getRegionsList())
 		{
-			regionList.push_back(r->getRules()->getType());
+			regionList.push_back(r);
 		}
 		_cbxRegion->setOptions(regionList, false);
 		_cbxRegion->setVisible(false);
@@ -490,15 +488,6 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 		_cbxArea->setVisible(false);
 		_cbxArea->onChange((ActionHandler)&GeoscapeState::cbxAreaChange);
 
-		std::vector<std::string> countryList;
-		countryList.push_back("All countries");
-		for (auto* c : *_game->getSavedGame()->getCountries())
-		{
-			countryList.push_back(tr(c->getRules()->getType()));
-		}
-		_cbxCountry->setOptions(countryList, false);
-		_cbxCountry->setVisible(false);
-		_cbxCountry->onChange((ActionHandler)&GeoscapeState::cbxCountryChange);
 	}
 
 	timeDisplay();
@@ -3152,7 +3141,6 @@ void GeoscapeState::btnDebugClick(Action *)
 	_cbxRegion->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType >= 1);
 	_cbxZone->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
 	_cbxArea->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 2);
-	_cbxCountry->setVisible(_game->getSavedGame()->getDebugMode() && _game->getSavedGame()->debugType == 0);
 }
 
 /**
@@ -4914,11 +4902,11 @@ void GeoscapeState::cbxRegionChange(Action *)
 	int index = _cbxRegion->getSelected();
 	if (index < 1)
 	{
-		_game->getSavedGame()->debugRegion = nullptr;
+		_game->getSavedGame()->debugRegion = "";
 	}
 	else
 	{
-		_game->getSavedGame()->debugRegion = (*_game->getSavedGame()->getRegions())[index-1];
+		_game->getSavedGame()->debugRegion = (_game->getMod()->getRegionsList())[index-1];
 	}
 	updateZoneInfo();
 }
@@ -4939,9 +4927,9 @@ void GeoscapeState::updateZoneInfo()
 {
 	std::ostringstream ss;
 	auto* save = _game->getSavedGame();
-	if (save->debugRegion)
+	if (!save->debugRegion.empty())
 	{
-		auto* regionRule = save->debugRegion->getRules();
+		auto* regionRule = _game->getMod()->getRegion(save->debugRegion);
 		if (save->debugType >= 1)
 		{
 			ss << "region: " << tr(regionRule->getType()) << " [" << regionRule->getType() << "]" << std::endl;
@@ -4980,31 +4968,6 @@ void GeoscapeState::updateZoneInfo()
 			{
 				ss << "total zones: " << regionRule->getMissionZones().size() << std::endl;
 			}
-		}
-	}
-	_txtDebug->setText(ss.str());
-}
-
-void GeoscapeState::cbxCountryChange(Action *)
-{
-	int index = _cbxCountry->getSelected();
-	if (index < 1)
-	{
-		_game->getSavedGame()->debugCountry = nullptr;
-	}
-	else
-	{
-		_game->getSavedGame()->debugCountry = (*_game->getSavedGame()->getCountries())[index - 1];
-	}
-
-	std::ostringstream ss;
-	auto* save = _game->getSavedGame();
-	if (save->debugCountry)
-	{
-		auto* countryRule = save->debugCountry->getRules();
-		if (save->debugType == 0)
-		{
-			ss << "country: " << tr(countryRule->getType()) << " [" << countryRule->getType() << "]" << std::endl;
 		}
 	}
 	_txtDebug->setText(ss.str());
