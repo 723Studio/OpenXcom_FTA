@@ -318,32 +318,29 @@ void HackingState::onNodeClick(Action* action)
 	{
 	case NodeState::TARGET:
 	{
-		if (_timeUnits >= _tuBaseCost)
+		_result = true;
+		if (_targetUnit)
 		{
-			if (_targetUnit)
-			{
-				_tileEngine->hackAttack(*_action, _targetUnit);
-			}
-			if (_targetObject)
-			{
-				_tileEngine->hackObject(*_action, _targetObject);
-			}
-			if (_sourceHacking < _targetHacking || RNG::percent(20))
-			{
-				_sourceUnit->addHackingExp(); //base exp
-			}
-			if (_game->getSavedGame()->getDifficulty() != DIFF_SUPERHUMAN
-				&& _sourceHacking < _targetHacking
-				&& RNG::percent(100 - (_game->getSavedGame()->getDifficulty() + 1) * 20))
-			{
-				_sourceUnit->addHackingExp(); //extra exp!
-			}
-			onExitClick(0);
+			_tileEngine->hackAttack(*_action, _targetUnit);
 		}
-		else
+		if (_targetObject)
 		{
-			_consoleManager->addMessage(tr("STR_HACKING_NOT_ENOUGH_TU"));
+			_tileEngine->hackObject(*_action, _targetObject);
 		}
+
+		if (_sourceHacking < _targetHacking || RNG::percent(20))
+		{
+			_sourceUnit->addHackingExp(); //base exp
+		}
+
+		if (_game->getSavedGame()->getDifficulty() != DIFF_SUPERHUMAN
+			&& _sourceHacking < _targetHacking
+			&& RNG::percent(100 - (_game->getSavedGame()->getDifficulty() + 1) * 20))
+		{
+			_sourceUnit->addHackingExp(); //extra exp!
+		}
+
+		onExitClick(0);
 		break;
 	}
 	case NodeState::DISABLED:

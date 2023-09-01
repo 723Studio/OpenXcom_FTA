@@ -511,7 +511,9 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 		object->load(*i, mod);
 		
 		Position pos = (*i)["position"].as<Position>(Position(-1, -1, -1));
-		getTile(pos)->setBattleObject(object);
+		auto tile = getTile(pos);
+		tile->setBattleObject(object);
+		object->setTile(tile);
 
 		_battleObjects.push_back(object);
 	}
