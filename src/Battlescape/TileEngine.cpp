@@ -5028,11 +5028,14 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 	MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
 
 	Tile* tiles[9];
-	iterateTiles(_save, gs, [&](Tile* tile)
+	iterateTiles(
+		_save,
+		gs,
+		[&](Tile* itile)
 		{
 			tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
 			tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
-			tiles[2] = tiles[3] = tiles[4] = tiles[5] = tile;
+			tiles[2] = tiles[3] = tiles[4] = tiles[5] = itile;
 			tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
 			tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
 
@@ -5043,21 +5046,11 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 					continue; //skip out of map and emptiness
 				}
 
-				TilePart currentPart = parts[i], currentPart2;
-
-				int dieMCD = tiles[i]->getMapData(currentPart)->getDieMCD();
+				TilePart currentPart = parts[i];
 				int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
 				if (altMCD == doorMCD)
 				{
-					if (dieMCD != 0)
-					{
-						currentPart2 = tiles[i]->getMapData(currentPart)->getDataset()->getObject(dieMCD)->getObjectType();
-					}		
-					else
-					{
-						currentPart2 = currentPart;
-					}
-					tile->switchToAltMCD(currentPart);
+					itile->switchToAltMCD(currentPart);
 				}
 			}
 		}
