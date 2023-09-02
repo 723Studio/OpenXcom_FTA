@@ -432,7 +432,17 @@ void GeoscapeEventState::eventLogic()
 		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
-	// 7. Add reputation
+	// 7. handle counters
+	for (auto& inc : rule.getIncreaseCounter())
+	{
+		_game->getSavedGame()->increaseCustomCounter(inc);
+	}
+	for (auto& dec : rule.getDecreaseCounter())
+	{
+		_game->getSavedGame()->decreaseCustomCounter(dec);
+	}
+
+	// 8. Add reputation
 	auto reputationScore = _eventRule.getReputationScore();
 	if (!reputationScore.empty())
 	{

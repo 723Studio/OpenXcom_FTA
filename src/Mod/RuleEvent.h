@@ -25,6 +25,8 @@
 
 namespace OpenXcom
 {
+
+	class Mod;
 /**
 * Definition of one custom player answer to Geoscape Event.
 */
@@ -64,6 +66,7 @@ private:
 	std::vector<std::map<std::string, int> > _randomMultiItemList;
 	WeightedOptions _weightedItemList;
 	std::vector<std::string> _researchList;
+	std::vector<std::string> _decreaseCounter, _increaseCounter;
 	std::vector<std::string> _removedCovertOperationsList;
 	std::string _interruptResearch;
 	int _timer, _timerRandom;
@@ -74,7 +77,7 @@ public:
 	/// Cleans up the event ruleset.
 	~RuleEvent() = default;
 	/// Loads the event definition from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::Node &node, Mod* mod);
 	/// Gets the event's name.
 	const std::string &getName() const { return _name; }
 	/// Gets the event's description.
@@ -93,6 +96,10 @@ public:
 	int getFunds() const { return _funds; }
 	/// Gets the value of loyalty that would be added to the player's loyalty score when this event pops up.
 	int getLoyalty() const { return _loyalty; }
+	/// Gets the name of custom counter variables to decrease when this event is appeared.
+	const std::vector<std::string>& getDecreaseCounter() const { return _decreaseCounter; }
+	/// Gets the name of custom counter variables to increase when this event is appeared.
+	const std::vector<std::string>& getIncreaseCounter() const { return _increaseCounter; }
 
 	/// Gets the number of spawned persons.
 	int getSpawnedPersons() const { return _spawnedPersons; }

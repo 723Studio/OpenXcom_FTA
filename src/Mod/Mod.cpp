@@ -2921,7 +2921,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		RuleEvent* rule = loadRule(*i, &_events, &_eventIndex, "name");
 		if (rule != 0)
 		{
-			rule->load(*i);
+			rule->load(*i, this);
 		}
 	}
 	for (YAML::const_iterator i : iterateRules("missionScripts", "type"))

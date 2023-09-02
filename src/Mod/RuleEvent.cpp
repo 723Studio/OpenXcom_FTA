@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RuleEvent.h"
+#include "Mod.h"
 #include "../Engine/Exception.h"
 
 namespace OpenXcom
@@ -31,11 +32,11 @@ RuleEvent::RuleEvent(const std::string &name) : _name(name), _background("BACK13
  * Loads the event definition from YAML.
  * @param node YAML node.
  */
-void RuleEvent::load(const YAML::Node &node)
+void RuleEvent::load(const YAML::Node &node, Mod* mod)
 {
 	if (const YAML::Node &parent = node["refNode"])
 	{
-		load(parent);
+		load(parent, mod);
 	}
 
 	_description = node["description"].as<std::string>(_description);
@@ -65,6 +66,8 @@ void RuleEvent::load(const YAML::Node &node)
 	}
 	_researchList = node["researchList"].as<std::vector<std::string> >(_researchList);
 	_interruptResearch = node["interruptResearch"].as<std::string>(_interruptResearch);
+	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
+	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
 	_timer = node["timer"].as<int>(_timer);
 	_timerRandom = node["timerRandom"].as<int>(_timerRandom);
 
