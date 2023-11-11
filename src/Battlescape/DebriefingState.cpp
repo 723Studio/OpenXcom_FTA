@@ -93,9 +93,9 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  */
 DebriefingState::DebriefingState() : 
-	_eventToSpawn(nullptr), _region(0), _country(0), 
-	_positiveScore(true), _destroyBase(false), _promotions(false), _showSellButton(true), _initDone(false), _recoveredItemObjs(0), 
-	_pageNumber(0)
+	_eventToSpawn(nullptr), _region(0), _country(0),
+	_pageNumber(0), _positiveScore(true), _destroyBase(false), _promotions(false), _showSellButton(true), _initDone(false),
+	_recoveredItemObjs(0)
 {
 	_missionStatistics = new MissionStatistics();
 	_fta = _game->getMod()->isFTAGame();
@@ -1018,7 +1018,7 @@ void DebriefingState::btnOkClick(Action *)
 			{
 				if (soldier->getCraft() != nullptr && soldier->isWounded())
 				{
-					soldier->setCraftAndMoveEquipment(nullptr, _base, _game->getSavedGame()->getMonthsPassed() == -1); //#FINNIKCHECK
+					soldier->setCraftAndMoveEquipment(nullptr, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 				}
 			}
 
