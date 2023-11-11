@@ -99,13 +99,13 @@ private:
 	void addItemsToBaseStores(const RuleItem *ruleItem, Base *base, int quantity, bool considerTransformations);
 	void addItemsToBaseStores(const std::string &itemType, Base *base, int quantity, bool considerTransformations);
 	/// Recovers items from the battlescape.
-	void recoverItems(std::vector<BattleItem*> *from, Base *base);
-	/// FTA method to recover prosners instead of items.
-	void recoverPrisoner(BattleUnit* from, Base* base);
+	void recoverItems(std::vector<BattleItem*> *from, Base *base, Craft* craft);
 	/// Recovers a civilian from the battlescape.
 	void recoverCivilian(BattleUnit *from, Base *base, Craft* craft);
 	/// Recovers an alien from the battlescape.
-	void recoverAlien(BattleUnit *from, Base *base);
+	void recoverAlien(BattleUnit *from, Base *base, Craft* craft);
+	/// FTA method to recover prisners instead of items.
+	void recoverPrisoner(BattleUnit* from, Base* base);
 	/// Reequips a craft after a mission.
 	void reequipCraft(Base *base, Craft *craft, bool vehicleItemsCanBeDestroyed);
 	/// Sets the visibility according to the _pageNumber

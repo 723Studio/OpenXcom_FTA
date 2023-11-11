@@ -2719,7 +2719,7 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 			{
 				if (bu->getStatus() != STATUS_DEAD && bu->getUnitRules())
 				{
-					if (!bu->getUnitRules()->getCivilianRecoveryType().empty())
+					if (bu->getUnitRules()->isRecoverableAsCivilian())
 					{
 						resummonAsCivilians.push_back(bu->getUnitRules());
 					}

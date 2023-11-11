@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <algorithm>
+#include <functional>
 #include <climits>
 #include "TileEngine.h"
 #include "DebriefingState.h"
@@ -1838,7 +1839,7 @@ void DebriefingState::prepareDebriefing()
 					}
 					playersInExitArea++;
 
-					recoverItems(bunit->getInventory(), base);
+					recoverItems(bunit->getInventory(), base, craft);
 
 					if (soldier != 0)
 					{
@@ -1926,7 +1927,7 @@ void DebriefingState::prepareDebriefing()
 					auto* corpseRule = bunit->getArmor()->getCorpseBattlescape().front();
 					if (corpseRule && corpseRule->isRecoverable())
 					{
-						recoverAlien(bunit, base);
+						recoverAlien(bunit, base, craft);
 					}
 				}
 			}
@@ -1948,7 +1949,7 @@ void DebriefingState::prepareDebriefing()
 					auto* corpseRule = bunit->getArmor()->getCorpseBattlescape().front();
 					if (corpseRule && corpseRule->isRecoverable())
 					{
-						recoverAlien(bunit, base);
+						recoverAlien(bunit, base, craft);
 					}
 				}
 			}
@@ -2131,7 +2132,7 @@ void DebriefingState::prepareDebriefing()
 		{
 			// if this was a 2-stage mission, and we didn't abort (ie: we have time to clean up)
 			// we can recover items from the earlier stages as well
-			recoverItems(battle->getConditionalRecoveredItems(), base);
+			recoverItems(battle->getConditionalRecoveredItems(), base, craft);
 			size_t nonRecoverType = 0;
 			if (ruleDeploy && ruleDeploy->getObjectiveType() && !ruleDeploy->allowObjectiveRecovery())
 			{
@@ -2153,7 +2154,7 @@ void DebriefingState::prepareDebriefing()
 					}
 				}
 				// recover items from the floor
-				recoverItems(battle->getTile(i)->getInventory(), base);
+				recoverItems(battle->getTile(i)->getInventory(), base, craft);
 			}
 		}
 		else
@@ -2161,7 +2162,7 @@ void DebriefingState::prepareDebriefing()
 			for (int i = 0; i < battle->getMapSizeXYZ(); ++i)
 			{
 				if (battle->getTile(i)->getFloorSpecialTileType() == START_POINT)
-					recoverItems(battle->getTile(i)->getInventory(), base);
+					recoverItems(battle->getTile(i)->getInventory(), base, craft);
 			}
 		}
 	}
@@ -2203,7 +2204,7 @@ void DebriefingState::prepareDebriefing()
 			for (int i = 0; i < battle->getMapSizeXYZ(); ++i)
 			{
 				if (battle->getTile(i)->getFloorSpecialTileType() == START_POINT)
-					recoverItems(battle->getTile(i)->getInventory(), base);
+					recoverItems(battle->getTile(i)->getInventory(), base, craft);
 			}
 		}
 	}
@@ -2358,7 +2359,7 @@ void DebriefingState::prepareDebriefing()
 
 		// assuming this was a multi-stage mission,
 		// recover everything that was in the craft in the previous stage
-		recoverItems(battle->getGuaranteedRecoveredItems(), base);
+		recoverItems(battle->getGuaranteedRecoveredItems(), base, craft);
 	}
 
 	// calculate the clips for each type based on the recovered rounds.
@@ -2738,7 +2739,7 @@ void DebriefingState::addItemsToBaseStores(const std::string &itemType, Base *ba
  * @param from Items recovered from the battlescape.
  * @param base Base to add items to.
  */
-void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
+void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, Craft* craft)
 {
 	auto checkForRecovery = [&](BattleItem* item, const RuleItem *rule)
 	{
@@ -2836,7 +2837,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base)
 						}
 						else if (corpseUnit->getOriginalFaction() == FACTION_HOSTILE) // OXCE case
 						{
-							recoverAlien(corpseUnit, base);
+							recoverAlien(corpseUnit, base, craft);
 						}
 					}
 				}
@@ -3078,18 +3079,18 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 */
 void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft)
 {
-	std::string type = from->getUnitRules()->getCivilianRecoveryType();
-	if (type.empty())
+	const Unit* rule = from->getUnitRules();
+	if (rule->isRecoverableAsCivilian() == false)
 	{
 		return;
 	}
-	if (type == "STR_SCIENTIST")
+	if (rule->isRecoverableAsScientist())
 	{
 		Transfer *t = new Transfer(24);
 		t->setScientists(1);
 		base->getTransfers()->push_back(t);
 	}
-	else if (type == "STR_ENGINEER")
+	else if (rule->isRecoverableAsEngineer())
 	{
 		Transfer *t = new Transfer(24);
 		t->setEngineers(1);
@@ -3097,7 +3098,7 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 	}
 	else
 	{
-		const RuleSoldier *ruleSoldier = _game->getMod()->getSoldier(type);
+		const RuleSoldier *ruleSoldier = rule->getCivilianRecoverySoldierType();
 		if (ruleSoldier != 0)
 		{
 			Transfer *t = new Transfer(24);
@@ -3126,7 +3127,7 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 		}
 		else if (!_fta)
 		{
-			RuleItem *ruleItem = _game->getMod()->getItem(type);
+			const RuleItem *ruleItem = rule->getCivilianRecoveryItemType();
 			if (ruleItem != 0)
 			{
 				if (!ruleItem->isAlien())
@@ -3135,7 +3136,7 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 				}
 				else
 				{
-					RuleItem *ruleLiveAlienItem = ruleItem;
+					const RuleItem *ruleLiveAlienItem = ruleItem;
 					bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
 					if (killPrisonersAutomatically)
 					{
@@ -3176,7 +3177,7 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
  * @param from Battle unit to recover.
  * @param base Base to add items to.
  */
-void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
+void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 {
 	auto *ruleLiveAlienItem = from->getUnitRules()->getLiveAlienGeoscape();
 	auto altUnit = from->getUnitRules()->getAltUnit();
@@ -3195,9 +3196,15 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base)
 		return;
 	}
 
-	// This ain't good! Let's display at least some useful info before we crash...
 	if (!ruleLiveAlienItem)
 	{
+		if (from->getUnitRules()->isRecoverableAsCivilian())
+		{
+			recoverCivilian(from, base, craft);
+			return;
+		}
+
+		// This ain't good! Let's display at least some useful info before we crash...
 		std::ostringstream ss;
 		ss << "Live alien item definition is missing. Unit ID = " << from->getId();
 		ss << "; Type = " << from->getType();

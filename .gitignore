@@ -69,15 +69,17 @@ deps/
 docs/html/
 build/
 Dependencies/
+translations/
 *.*.user
+!install/win/plugins/**/*.dll
 #Ignore Vim swap files
 *.swp
 #Ignore NetBeans project directory
 nbproject/
-.tx/
-src/OpenXcom.2010.VC.opendb
-bin/user
 /makefile
+src/OpenXcom.2010.VC.opendb
+bin/Win32/user
+bin/user
 /.kdev4/
 /*.kdev4
 MacOSX10.9.sdk

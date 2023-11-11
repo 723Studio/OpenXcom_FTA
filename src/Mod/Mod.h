@@ -510,6 +510,10 @@ public:
 	/// Gets list of LUT data.
 	const std::vector<std::vector<Uint8> > *getLUTs() const;
 
+
+	/// Check for obsolete error based on year.
+	bool checkForObsoleteErrorByYear(const std::string &parent, const YAML::Node &node, const std::string &error,int year) const;
+
 	/// Check for error that we can ignore by user request.
 	bool checkForSoftError(bool check, const std::string &parent, const YAML::Node &node, const std::string &error, SeverityLevel level = LOG_WARNING) const
 	{
