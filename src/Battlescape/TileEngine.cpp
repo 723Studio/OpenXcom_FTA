@@ -2009,26 +2009,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Position originPosition, Tile 
 	{
 		const auto [visibleDistanceVoxels, densityOfSmoke, densityOfFire] = getTrajectoryDataHelper(this, _save, currentUnit, originVoxel, scanVoxel);
 
-		for (int i = 0; i < visibleDistanceVoxels; i++)
-		{
-			_trajectory.at(i) /= voxelToTile;
-			if (trackTile != _trajectory.at(i))
-			{
-				trackTile = _trajectory.at(i);
-				t = _save->getTile(trackTile);
-			}
-			if (t->getFire() == 0)
-			{
-				densityOfSmoke += t->getSmoke();
-			}
-			else
-			{
-				densityOfFire += t->getFire();
-			}
-		}
-		visibleDistanceMaxVoxel = getMaxVoxelViewDistance(); // reset again (because of smoke formula)
-
-		int statsDiff = (currentUnit->getBaseStats()->perception - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100;
+		int statsDiff = (currentUnit->getBaseStats()->perception - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100; // FtA modifer based on units stats
 		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
 		// 20 - maximum view distance in vanilla Xcom.
 		// 100 - % for smokeDensityFactor.

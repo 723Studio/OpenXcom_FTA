@@ -3311,7 +3311,7 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 		bool joinXCOM = false;
 		if (unit->getUnitRules() != nullptr)
 		{
-			joinXCOM = !unit->getUnitRules()->getCivilianRecoveryType().empty();
+			joinXCOM = !unit->getUnitRules()->isRecoverableAsCivilian();
 		}
 		if (relevantUnitType && !unit->isOut())
 		{
