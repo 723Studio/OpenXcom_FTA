@@ -30,7 +30,6 @@ class Mod;
 class Armor;
 class RuleItem;
 class RuleSoldier;
-enum SoldierRole : int;
 class RulePrisoner;
 class ModScript;
 class ScriptParserBase;
@@ -39,7 +38,7 @@ enum SpecialAbility { SPECAB_NONE, SPECAB_EXPLODEONDEATH, SPECAB_BURNFLOOR, SPEC
 enum SpecialObjective { SPECOBJ_NONE, SPECOBJ_FRIENDLY_VIP, SPECOBJ_ENEMY_VIP };
 enum SpecialTileType : int;
 enum MovementType : int;
-
+enum SoldierRole : int;
 
 enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEMALE };
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
@@ -796,7 +795,9 @@ class Unit
 {
 private:
 	std::string _type;
-	std::string _civilianRecoveryType, _spawnedPersonName, _liveAlienName;
+	std::string _civilianRecoveryTypeName, _spawnedPersonName, _liveAlienName;
+	const RuleSoldier* _civilianRecoverySoldierType = nullptr;
+	const RuleItem* _civilianRecoveryItemType = nullptr;
 	YAML::Node _spawnedSoldier;
 	std::string _race;
 	int _showFullNameInAlienInventory;
@@ -848,12 +849,22 @@ public:
 
 	/// Gets the unit's type.
 	const std::string& getType() const;
-	/// Gets the type of staff (soldier/engineer/scientists) or type of item to be recovered when a civilian is saved.
-	const std::string &getCivilianRecoveryType() const { return _civilianRecoveryType; }
+
+	/// Gets if unit can be recovered as civilian.
+	bool isRecoverableAsCivilian() const { return _civilianRecoveryTypeName.empty() == false || _civilianRecoverySoldierType || _civilianRecoveryItemType; }
+	/// Gets if engineer is recovered when a civilian is saved.
+	bool isRecoverableAsEngineer() const { return _civilianRecoveryTypeName == "STR_ENGINEER"; }
+	/// Gets if scientist is recovered when a civilian is saved.
+	bool isRecoverableAsScientist() const { return _civilianRecoveryTypeName == "STR_SCIENTIST"; }
+	/// Gets soldier type that is recovered when a civilian is saved.
+	const RuleSoldier* getCivilianRecoverySoldierType() const { return _civilianRecoverySoldierType; }
+	/// Gets item type that is recovered when a civilian is saved.
+	const RuleItem* getCivilianRecoveryItemType() const { return _civilianRecoveryItemType; }
 	/// Gets the custom name of the "spawned person".
 	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
 	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+
 	/// Gets the unit's stats.
 	UnitStats *getStats();
 	/// Gets the unit's random part of stats.

@@ -2769,6 +2769,7 @@ void StatsForNerdsState::initArmorList()
 		addSection("{Recovery}", "", _white);
 		addVectorOfRules(ss, armorRule->getCorpseBattlescape(), "corpseBattle");
 		addRule(ss, armorRule->getCorpseGeoscape(), "corpseGeo");
+		addRule(ss, armorRule->getSelfDestructItem(), "selfDestructItem");
 		addRule(ss, armorRule->getStoreItem(), "storeItem");
 
 		addSection("{Inventory}", "", _white);
@@ -2825,7 +2826,7 @@ void StatsForNerdsState::initArmorList()
 
 		addSection("{Calculations}", "", _white);
 		addVectorOfIntegers(ss, armorRule->getLoftempsSet(), "loftempsSet");
-		addInteger(ss, armorRule->getPersonalLight(), "personalLight", 15);
+		addInteger(ss, armorRule->getPersonalLight(), "personalLight", -1);
 		addInteger(ss, armorRule->getStandHeight(), "standHeight", -1);
 		addInteger(ss, armorRule->getKneelHeight(), "kneelHeight", -1);
 		addInteger(ss, armorRule->getFloatHeight(), "floatHeight", -1);

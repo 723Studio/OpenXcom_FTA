@@ -1970,12 +1970,13 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 			}
 		}
 
+		auto* selfDestructItem = getSpecialWeapon(getArmor()->getSelfDestructItem());
 		if (rand.percent(std::get<arg_selfDestructChance>(args.data))
-			&& !hasAlreadyExploded())
+			&& !hasAlreadyExploded() && selfDestructItem)
 		{
 			setAlreadyExploded(true);
 			Position p = getPosition().toVoxel();
-			save->getBattleGame()->statePushNext(new ExplosionBState(save->getBattleGame(), p, BattleActionAttack{ BA_SELF_DESTRUCT, this, }, 0));
+			save->getBattleGame()->statePushNext(new ExplosionBState(save->getBattleGame(), p, BattleActionAttack{ BA_SELF_DESTRUCT, this, selfDestructItem, selfDestructItem }, 0));
 		}
 	}
 
@@ -4540,11 +4541,11 @@ int BattleUnit::getMaxViewDistance(int baseVisibility, int nerf, int buff) const
 	return result;
 }
 
-int BattleUnit::getMaxViewDistanceAtDark(const Armor *otherUnitArmor) const
+int BattleUnit::getMaxViewDistanceAtDark(const BattleUnit* otherUnit) const
 {
-	if (otherUnitArmor)
+	if (otherUnit)
 	{
-		return getMaxViewDistance(_maxViewDistanceAtDark, otherUnitArmor->getCamouflageAtDark(), _armor->getAntiCamouflageAtDark());
+		return getMaxViewDistance(_maxViewDistanceAtDark, otherUnit->getArmor()->getCamouflageAtDark(), _armor->getAntiCamouflageAtDark());
 	}
 	else
 	{
@@ -4557,11 +4558,11 @@ int BattleUnit::getMaxViewDistanceAtDarkSquared() const
 	return _maxViewDistanceAtDarkSquared;
 }
 
-int BattleUnit::getMaxViewDistanceAtDay(const Armor *otherUnitArmor) const
+int BattleUnit::getMaxViewDistanceAtDay(const BattleUnit* otherUnit) const
 {
-	if (otherUnitArmor)
+	if (otherUnit)
 	{
-		return getMaxViewDistance(_maxViewDistanceAtDay, otherUnitArmor->getCamouflageAtDay(), _armor->getAntiCamouflageAtDay());
+		return getMaxViewDistance(_maxViewDistanceAtDay, otherUnit->getArmor()->getCamouflageAtDay(), _armor->getAntiCamouflageAtDay());
 	}
 	else
 	{
@@ -5226,13 +5227,6 @@ void BattleUnit::setSpecialWeapon(SavedBattleGame *save, bool updateFromSave)
 	const Mod *mod = save->getMod();
 	int i = 0;
 
-	if (_specWeapon[0] && updateFromSave)
-	{
-		// new saves already contain special built-in weapons, we can stop here
-		return;
-		// old saves still need the below functionality to work properly
-	}
-
 	auto addItem = [&](const RuleItem *item)
 	{
 		if (item && i < SPEC_WEAPON_MAX)
@@ -5261,6 +5255,16 @@ void BattleUnit::setSpecialWeapon(SavedBattleGame *save, bool updateFromSave)
 		}
 	};
 
+	if (_specWeapon[0] && updateFromSave)
+	{
+		// for backward compatibility, we try add corpse explosion
+		addItem(getArmor()->getSelfDestructItem());
+
+		// new saves already contain special built-in weapons, we can stop here
+		return;
+		// old saves still need the below functionality to work properly
+	}
+
 	if (getUnitRules())
 	{
 		addItem(mod->getItem(getUnitRules()->getMeleeWeapon()));
@@ -5276,6 +5280,8 @@ void BattleUnit::setSpecialWeapon(SavedBattleGame *save, bool updateFromSave)
 	{
 		addItem(getGeoscapeSoldier()->getRules()->getSpecialWeapon());
 	}
+
+	addItem(getArmor()->getSelfDestructItem());
 }
 
 /**
@@ -6470,6 +6476,8 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getVisible>("isVisible");
 	bu.add<&makeVisibleScript>("makeVisible");
+	bu.add<&BattleUnit::getMaxViewDistanceAtDark>("getMaxViewDistanceAtDark", "get maximum visibility distance in tiles of another unit at dark");
+	bu.add<&BattleUnit::getMaxViewDistanceAtDay>("getMaxViewDistanceAtDay", "get maximum visibility distance in tiles of another unit at day");
 
 
 	bu.add<&setSpawnUnitScript>("setSpawnUnit", "set type of zombie will be spawn from current unit, it will reset everything to default (hostile & instant)");

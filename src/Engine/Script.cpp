@@ -24,6 +24,7 @@
 #include <cmath>
 #include <bitset>
 #include <array>
+#include <numeric>
 
 #include "Logger.h"
 #include "Options.h"
@@ -38,6 +39,27 @@
 
 namespace OpenXcom
 {
+
+////////////////////////////////////////////////////////////
+//						const definition
+////////////////////////////////////////////////////////////
+
+constexpr ScriptRef KnowNamesPrefix[] = {
+	ScriptRef{ "ModList" },
+	ScriptRef{ "Tag" },
+};
+
+constexpr bool isKnowNamePrefix(ScriptRef name)
+{
+	for (ScriptRef r : KnowNamesPrefix)
+	{
+		if (r == name)
+		{
+			return true;
+		}
+	}
+	return false;
+}
 
 ////////////////////////////////////////////////////////////
 //						arg definition
@@ -213,6 +235,7 @@ static inline RetEnum bit_popcount_h(int& reg)
 	IMPL(bit_count,		MACRO_QUOTE({ return bit_popcount_h(Reg0);											 }),	(int& Reg0),				"Count number of set bits of arg1") \
 	\
 	IMPL(pow,			MACRO_QUOTE({ Reg0 = std::pow(Reg0, std::max(0, Data1));		return RetContinue; }),		(int& Reg0, int Data1),		"Power of arg1 to arg2") \
+	IMPL(sqrt,			MACRO_QUOTE({ Reg0 = Reg0 > 0 ? std::sqrt(Reg0) : 0;			return RetContinue; }),		(int& Reg0),				"Square root of arg1") \
 	\
 	IMPL(abs,			MACRO_QUOTE({ Reg0 = std::abs(Reg0);							return RetContinue; }),		(int& Reg0),						"Absolute value of arg1") \
 	IMPL(limit,			MACRO_QUOTE({ Reg0 = std::max(std::min(Reg0, Data2), Data1);	return RetContinue; }),		(int& Reg0, int Data1, int Data2),	"Correct value in arg1 that is always between arg2 and arg3") \
@@ -667,13 +690,112 @@ public:
 	SelectedToken getNextToken(TokenEnum excepted = TokenNone);
 };
 
+/**
+ * ScriptRef that is glue from independent parts.
+ * First empty ref mean end of list.
+ */
+class ScriptRefCompound
+{
+
+public:
+
+	std::array<ScriptRef, 4> parts;
+
+	/// Default constructor.
+	constexpr ScriptRefCompound() = default;
+
+	/// Constructor from one ref.
+	constexpr ScriptRefCompound(ScriptRef r) : parts{ r }
+	{
+
+	}
+
+
+	constexpr bool haveParts() const
+	{
+		return !!parts[1];
+	}
+
+	constexpr size_t sizeParts() const
+	{
+		size_t s = 0;
+		interate([&](const ScriptRef& r){ s += 1; });
+		return s;
+	}
+
+	constexpr size_t size() const
+	{
+		size_t s = 0;
+		interate([&](const ScriptRef& r){ s += r.size(); });
+		return s;
+	}
+
+	constexpr ScriptRef last() const
+	{
+		ScriptRef l;
+		interate([&](const ScriptRef& r){ l = r; });
+		return l;
+	}
+
+	std::string toString() const
+	{
+		std::string s;
+		s.reserve(size());
+		interate([&](const ScriptRef& r){ s.append(r.begin(), r.size()); });
+		return s;
+	}
+
+
+	constexpr explicit operator bool() const
+	{
+		return !!parts[0];
+	}
+
+	constexpr operator ScriptRange<ScriptRef>() const
+	{
+		return { parts.data(), parts.data() + parts.size() };
+	}
+
+
+	template<typename Callback>
+	constexpr void interateMutate(Callback&& f)
+	{
+		for (auto& p : parts)
+		{
+			if constexpr (std::is_invocable_r_v<bool, Callback, ScriptRef&>)
+			{
+				if (!f(p))
+				{
+					return;
+				}
+			}
+			else
+			{
+				f(p);
+			}
+		}
+	}
+
+	template<typename Callback>
+	constexpr void interate(Callback&& f) const
+	{
+		for (const auto& p : parts)
+		{
+			if (!p)
+			{
+				return;
+			}
+
+			f(p);
+		}
+	}
+};
 
 class ScriptRefOperation
 {
 public:
 	ScriptRange<ScriptProcData> procList;
-	ScriptRef procNamePrefix;
-	ScriptRef procName;
+	ScriptRefCompound procName;
 
 	ScriptRefData argRef;
 	ScriptRef argName;
@@ -683,7 +805,7 @@ public:
 	{
 		return
 			(procName && procList) && // have function name and have related overload set
-			(!argName || (argRef && procNamePrefix)) // have optional argument embedded in original operation name
+			(!argName || (argRef && procName.haveParts())) // have optional argument embedded in original operation name
 		;
 	}
 
@@ -695,16 +817,6 @@ public:
 	bool haveArg() const
 	{
 		return !!argName;
-	}
-
-	std::string toStringProc() const
-	{
-		return procNamePrefix.toString() + procName.toString();
-	}
-
-	std::string toStringArg() const
-	{
-		return argName.toString();
 	}
 };
 
@@ -1184,11 +1296,31 @@ ScriptRefOperation findOperationAndArg(const ParserWriter& ph, ScriptRef op)
 			return result;
 		}
 
-		result.argName = op.substr(0, first_dot);
+		result.argName = op.head(first_dot);
 		result.argRef = ph.getReferece(result.argName);
 		if (!result.argRef)
 		{
-			return result;
+			auto origArgName = result.argName;
+
+			++first_dot; //skip '.'
+			auto second_dot = op.tail(first_dot).find('.');
+			if (second_dot == std::string::npos)
+			{
+				return result;
+			}
+			second_dot += first_dot;
+			result.argName = op.head(second_dot);
+			result.argRef = ph.getReferece(result.argName);
+			if (!result.argRef)
+			{
+				// restore initial name for error propose, but only if is unknown. Other wise typo should be in next part
+				if (isKnowNamePrefix(origArgName) == false)
+				{
+					result.argName = origArgName;
+				}
+				return result;
+			}
+			first_dot = second_dot;
 		}
 
 		auto name = ph.parser.getTypeName(result.argRef.type);
@@ -1197,9 +1329,8 @@ ScriptRefOperation findOperationAndArg(const ParserWriter& ph, ScriptRef op)
 			return result;
 		}
 
-		result.procNamePrefix = name;
-		result.procName = op.substr(first_dot);
-		result.procList = ph.parser.getProc(result.procNamePrefix, result.procName);
+		result.procName.parts = { name, op.tail(first_dot) };
+		result.procList = ph.parser.getProc(result.procName);
 	}
 
 	return result;
@@ -1216,18 +1347,18 @@ void logErrorOnOperationArg(const ScriptRefOperation& op)
 	{
 		if (op.argRef)
 		{
-			if (op.procNamePrefix)
+			if (op.procName.haveParts())
 			{
-				Log(LOG_ERROR) << "Unknown operation name '" << op.toStringProc() << "' for variable '" << op.toStringArg() << "'";
+				Log(LOG_ERROR) << "Unknown operation name '" << op.procName.toString() << "' for variable '" << op.argName.toString() << "'";
 			}
 			else
 			{
-				Log(LOG_ERROR) << "Unsupported type for variable '" << op.toStringArg() << "'";
+				Log(LOG_ERROR) << "Unsupported type for variable '" << op.argName.toString() << "'";
 			}
 		}
 		else
 		{
-			Log(LOG_ERROR) << "Unknown variable name '" << op.toStringArg() << "'";
+			Log(LOG_ERROR) << "Unknown variable name '" << op.argName.toString() << "'";
 		}
 	}
 }
@@ -1368,7 +1499,7 @@ bool parseCustomProc(const ScriptProcData& spd, ParserWriter& ph, const ScriptRe
 
 
 constexpr size_t ConditionSize = 6;
-const ScriptRef ConditionNames[ConditionSize] =
+constexpr ScriptRef ConditionNames[ConditionSize] =
 {
 	ScriptRef{ "eq" }, ScriptRef{ "neq" },
 	ScriptRef{ "le" }, ScriptRef{ "gt" },
@@ -1376,7 +1507,7 @@ const ScriptRef ConditionNames[ConditionSize] =
 };
 
 constexpr size_t ConditionSpecialSize = 2;
-const ScriptRef ConditionSpecNames[ConditionSpecialSize] =
+constexpr ScriptRef ConditionSpecNames[ConditionSpecialSize] =
 {
 	ScriptRef{ "or" },
 	ScriptRef{ "and" },
@@ -2037,6 +2168,60 @@ void addSortHelper(std::vector<R>& vec, R value)
 	std::sort(vec.begin(), vec.end(), [](const R& a, const R& b) { return ScriptRef::compare(a.name, b.name) < 0; });
 }
 
+template<bool upper, typename R>
+auto boundSortHelper(R* begin, R* end, ScriptRange<ScriptRef> than)
+{
+	constexpr int limit = upper ? 1 : 0;
+	const auto total_size = std::accumulate(than.begin(), than.end(), size_t{}, [](size_t acc, ScriptRef r) { return acc + r.size(); });
+	const auto last_empty = std::find_if(than.begin(), than.end(), [](ScriptRef r){ return !r; });
+
+	// some garbage, should not happened, for avoiding unexpected results make check for it
+	assert(std::all_of(last_empty, than.end(), [](ScriptRef r){ return !r; }));
+
+	const auto final_range = ScriptRange{ than.begin(), last_empty };
+
+	return std::partition_point(begin, end,
+		[&](const R& a)
+		{
+			const auto curr = a.name.size();
+			if (curr < total_size)
+			{
+				return true;
+			}
+			else if (curr == total_size)
+			{
+				ScriptRef head = {};
+				ScriptRef tail = a.name;
+				auto comp = 0;
+				for (ScriptRef r : final_range)
+				{
+					auto s = r.size();
+					head = tail.head(s);
+					tail = tail.tail(s);
+					comp = ScriptRef::compare(head, r);
+					if (comp < 0)
+					{
+						return true;
+					}
+					else if (comp > 0)
+					{
+						return false;
+					}
+					else // comp == 0
+					{
+						continue;
+					}
+				}
+				return comp < limit;
+			}
+			else
+			{
+				return false;
+			}
+		}
+	);
+}
+
 /**
  * Get bound of value, upper or lower based on template parameter.
  * @param begin begin of sorted range.
@@ -2080,36 +2265,51 @@ R* boundSortHelper(R* begin, R* end, ScriptRef prefix, ScriptRef postfix = {})
 }
 
 /**
- * Helper function finding data by name (that can be merge from two parts).
+ * Helper function finding data by name (that can be merge from multiple parts).
  * @param begin begin of sorted range.
  * @param end end of sorted range.
- * @param prefix First part of name.
- * @param postfix Second part of name.
+ * @param name Name split to parts.
  * @return Found data or null.
  */
-template<typename R>
-R* findSortHelper(R* begin, R* end, ScriptRef prefix, ScriptRef postfix = {})
+template<typename R, typename... Args>
+R* findSortHelper(R* begin, R* end, Args... args)
 {
-	auto f = boundSortHelper<false>(begin, end, prefix, postfix);
+	auto f = boundSortHelper<false>(begin, end, args...);
 	if (f != end)
 	{
-		if (postfix)
+		// check upper bound, if is different than lower, its mean we have hit
+		if (f != boundSortHelper<true>(f, f + 1, args...))
 		{
-			const auto size = prefix.size();
-			if (f->name.substr(0, size) == prefix && f->name.substr(size) == postfix)
-			{
-				return &*f;
-			}
-		}
-		else
-		{
-			if (f->name == prefix)
-			{
-				return &*f;
-			}
+			return &*f;
 		}
 	}
 	return nullptr;
+}
+
+/**
+ * Helper function finding data by name (that can be merge from multiple parts).
+ * @param begin begin of sorted range.
+ * @param end end of sorted range.
+ * @param name Name split to parts.
+ * @return Found data or null.
+ */
+template<typename R>
+const R* findSortHelper(const std::vector<R>& vec, ScriptRange<ScriptRef> name)
+{
+	return findSortHelper(vec.data(), vec.data() + vec.size(), name);
+}
+
+/**
+ * Helper function finding data by name (that can be merge from multiple parts).
+ * @param begin begin of sorted range.
+ * @param end end of sorted range.
+ * @param name Name split to parts.
+ * @return Found data or null.
+ */
+template<typename R>
+R* findSortHelper(std::vector<R>& vec, ScriptRange<ScriptRef> name)
+{
+	return findSortHelper(vec.data(), vec.data() + vec.size(), name);
 }
 
 /**
@@ -2623,10 +2823,16 @@ ScriptParserBase::ScriptParserBase(ScriptGlobal* shared, const std::string& name
 
 	auto labelName = addNameRef("label");
 	auto nullName = addNameRef("null");
+	auto phName = addNameRef("_");
+	auto seperatorName = addNameRef("__");
+	auto varName = addNameRef("var");
 
 	addSortHelper(_typeList, { labelName, ArgLabel, { } });
 	addSortHelper(_typeList, { nullName, ArgNull, { } });
 	addSortHelper(_refList, { nullName, ArgNull });
+	addSortHelper(_refList, { phName, ArgInvalid });
+	addSortHelper(_refList, { seperatorName, ArgInvalid });
+	addSortHelper(_refList, { varName, ArgInvalid });
 
 	_shared->initParserGlobals(this);
 }
@@ -2887,40 +3093,37 @@ const ScriptTypeData* ScriptParserBase::getType(ArgEnum type) const
 
 /**
  * Get type data with name equal prefix + postfix.
- * @param prefix Beginning of name.
- * @param postfix End of name.
+ * @param name Name split in parts.
  * @return Pointer to data or null if not find.
  */
-const ScriptTypeData* ScriptParserBase::getType(ScriptRef prefix, ScriptRef postfix) const
+const ScriptTypeData* ScriptParserBase::getType(ScriptRange<ScriptRef> name) const
 {
-	return findSortHelper(_typeList, prefix, postfix);
+	return findSortHelper(_typeList, name);
 }
 
 /**
  * Get function data with name equal prefix + postfix.
- * @param prefix Beginning of name.
- * @param postfix End of name.
+ * @param name Name split in parts.
  * @return Pointer to data or null if not find.
  */
-ScriptRange<ScriptProcData> ScriptParserBase::getProc(ScriptRef prefix, ScriptRef postfix) const
+ScriptRange<ScriptProcData> ScriptParserBase::getProc(ScriptRange<ScriptRef> name) const
 {
 	auto lower = _procList.data();
 	auto upper = _procList.data() + _procList.size();
-	lower = boundSortHelper<false>(lower, upper, prefix, postfix);
-	upper = boundSortHelper<true>(lower, upper, prefix, postfix);
+	lower = boundSortHelper<false>(lower, upper, name);
+	upper = boundSortHelper<true>(lower, upper, name);
 
 	return { lower, upper };
 }
 
 /**
  * Get arguments data with name equal prefix + postfix.
- * @param prefix Beginning of name.
- * @param postfix End of name.
+ * @param name Name split in parts.
  * @return Pointer to data or null if not find.
  */
-const ScriptRefData* ScriptParserBase::getRef(ScriptRef prefix, ScriptRef postfix) const
+const ScriptRefData* ScriptParserBase::getRef(ScriptRange<ScriptRef> name) const
 {
-	return findSortHelper(_refList, prefix, postfix);
+	return findSortHelper(_refList, name);
 }
 
 /**
@@ -3161,10 +3364,10 @@ void ScriptParserBase::logScriptMetadata(bool haveEvents, const std::string& gro
 			#define MACRO_STRCAT(...) #__VA_ARGS__
 			#define MACRO_ALL_LOG(NAME, Impl, Args, Desc, ...) \
 				if (validOverloadProc(helper::FuncGroup<MACRO_FUNC_ID(NAME)>::overloadType()) && strlen(Desc) != 0) opLog.get(LOG_DEBUG) \
-					<< "Op:    " << std::setw(tabSize*2) << #NAME \
-					<< "OpId:  " << std::setw(tabSize/2) << offset << "  + " <<  std::setw(tabSize) << helper::FuncGroup<MACRO_FUNC_ID(NAME)>::ver() \
-					<< "Args:  " << std::setw(tabSize*5) << displayOverloadProc(this, helper::FuncGroup<MACRO_FUNC_ID(NAME)>::overloadType()) \
-					<< "Desc:  " << Desc \
+					<< "Op:   " << std::setw(tabSize*2) << #NAME \
+					<< "OpId: " << std::setw(tabSize/2) << offset << " .. " <<  std::setw(tabSize) << (offset + helper::FuncGroup<MACRO_FUNC_ID(NAME)>::ver() - 1) \
+					<< "Args: " << std::setw(tabSize*5) << displayOverloadProc(this, helper::FuncGroup<MACRO_FUNC_ID(NAME)>::overloadType()) \
+					<< "Desc: " << Desc \
 					<< "\n"; \
 				offset += helper::FuncGroup<MACRO_FUNC_ID(NAME)>::ver();
 
@@ -3218,7 +3421,7 @@ void ScriptParserBase::logScriptMetadata(bool haveEvents, const std::string& gro
 		);
 		for (auto& r : temp)
 		{
-			if (!ArgIsReg(r.type) && !ArgIsPtr(r.type) && Logger::reportingLevel() != LOG_VERBOSE)
+			if ((!ArgIsReg(r.type) && !ArgIsPtr(r.type) && Logger::reportingLevel() != LOG_VERBOSE) || ArgBase(r.type) == ArgInvalid)
 			{
 				continue;
 			}
@@ -3251,7 +3454,22 @@ void ScriptParserBase::logScriptMetadata(bool haveEvents, const std::string& gro
 			{
 				if (p.parserArg != nullptr && p.overloadArg && p.description != ScriptRef{ BindBase::functionInvisible })
 				{
-					refLog.get(LOG_DEBUG) << "Name: " << std::setw(40) << p.name.toString() << "Args: " << std::setw(50) << displayOverloadProc(this, p.overloadArg) << (p.description != ScriptRef{ BindBase::functionWithoutDescription } ? std::string("Desc: ") + p.description.toString() + "\n" : "\n");
+					const auto tabStop = 4; // alignment of next part
+					const auto minSpace = 2; // min space to next part
+
+					auto name = p.name.toString();
+					auto nameTab = std::max(
+						(((int)name.size() + minSpace + tabStop - 1) & -tabStop),
+						40
+					);
+
+					auto args = displayOverloadProc(this, p.overloadArg);
+					auto argsTab = std::max(
+						(((int)args.size() + minSpace + tabStop - 1) & -tabStop),
+						48
+					);
+
+					refLog.get(LOG_DEBUG) << "Name: " << std::setw(nameTab) << name << "Args: " << std::setw(argsTab) << args << (p.description != ScriptRef{ BindBase::functionWithoutDescription } ? std::string("Desc: ") + p.description.toString() + "\n" : "\n");
 				}
 			}
 		}
@@ -3857,6 +4075,7 @@ void ScriptGlobal::load(const YAML::Node& node)
 namespace
 {
 
+
 struct Func_test_a
 {
 	[[gnu::always_inline]]
@@ -3887,6 +4106,7 @@ struct Func_test_c
 	}
 };
 
+[[maybe_unused]]
 static auto dummyTestScriptOverload = ([]
 {
 	ScriptProcData data_a {	};
@@ -3915,7 +4135,7 @@ static auto dummyTestScriptOverload = ([]
 		{
 			arr[i++] = { {}, p };
 		}
-		return overloadCustomProc(a, std::begin(arr), std::begin(arr) + ref.size());
+		return overloadCustomProc(a, arr.data(), arr.data() + ref.size());
 	};
 
 	assert(3 == data_a.overloadArg.size());
@@ -3994,6 +4214,7 @@ void dummyFunctionClass(const DummyClass* c)
 
 }
 
+[[maybe_unused]]
 static auto dummyTestScriptFunctionParser = ([]
 {
 	ScriptGlobal g;
@@ -4004,6 +4225,7 @@ static auto dummyTestScriptFunctionParser = ([]
 	Bind<DummyClass> bind{ &f };
 	bind.addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(&dummyFunctionInt)>>("test1");
 	bind.add<&dummyFunctionClass>("test2");
+	bind.add<&dummyFunctionClass>("test3");
 
 
 	ScriptContainerBase tempScript;
@@ -4013,11 +4235,47 @@ static auto dummyTestScriptFunctionParser = ([]
 		f
 	);
 	help.addReg<DummyClass*&>(ScriptRef{"foo"});
+	help.addReg<DummyClass*&>(ScriptRef{"bar.a"});
+	help.addReg<DummyClass*&>(ScriptRef{"bar.b"});
+	help.addReg<DummyClass*&>(ScriptRef{"Tag.foo"});
+
 
 	{
 		auto r = help.getReferece(ScriptRef{"foo"});
 		assert(!!r && "reg 'foo'");
 	}
+
+	{
+		auto r = help.getReferece(ScriptRef{"bar.a"});
+		assert(!!r && "reg 'bar.a'");
+	}
+
+	{
+		auto r = help.getReferece(ScriptRef{"bar.b"});
+		assert(!!r && "reg 'bar.b'");
+	}
+
+	{
+		auto r = help.getReferece(ScriptRef{"Tag.foo"});
+		assert(!!r && "reg 'Tag.foo'");
+	}
+
+
+
+	{
+		auto getProcFromParser = [&](std::initializer_list<ScriptRef> l)
+		{
+			return !!help.parser.getProc(ScriptRange{ l.begin(), l.end() });
+		};
+		assert(getProcFromParser({ ScriptRef{"DummyClass.test2"} }));
+		assert(getProcFromParser({ ScriptRef{"DummyClass.test3"} }));
+		assert(getProcFromParser({ ScriptRef{"DummyClass"}, ScriptRef{".test2"} }));
+		assert(getProcFromParser({ ScriptRef{"DummyClass"}, ScriptRef{"."} , ScriptRef{"test2"} }));
+		assert(getProcFromParser({ ScriptRef{"DummyClass"}, ScriptRef{"."} , ScriptRef{"te"} , ScriptRef{"st2"} }));
+		assert(!getProcFromParser({ ScriptRef{"DummyClass.test1"} }));
+	}
+
+
 
 	{
 		auto r = findOperationAndArg(help, ScriptRef{"if"});
@@ -4047,6 +4305,175 @@ static auto dummyTestScriptFunctionParser = ([]
 		assert(r.argName == ScriptRef{"foo"} && "func 'foo.test2'");
 		assert(r.haveProc() == true && "func 'foo.test2'");
 	}
+
+	{
+		auto r = findOperationAndArg(help, ScriptRef{"bar.a.test2"});
+		assert(!!r && "func 'bar.a.test2'");
+		assert(r.haveArg() == true && "func 'bar.a.test2'");
+		assert(r.argName == ScriptRef{"bar.a"} && "func 'bar.a.test2'");
+		assert(r.haveProc() == true && "func 'bar.a.test2'");
+	}
+
+	{
+		auto r = findOperationAndArg(help, ScriptRef{"Tag.foo.test2"});
+		assert(!!r && "func 'Tag.foo.test2'");
+		assert(r.haveArg() == true && "func 'Tag.foo.test2'");
+		assert(r.argName == ScriptRef{"Tag.foo"} && "func 'Tag.foo.test2'");
+		assert(r.haveProc() == true && "func 'Tag.foo.test2'");
+	}
+
+	{
+		auto r = findOperationAndArg(help, ScriptRef{"bar.a2.test2"});
+		assert(!r && "func 'bar.a2.test2'");
+		assert(r.haveArg() == true && "func 'bar.a2.test2'");
+		assert(r.argName == ScriptRef{"bar"} && "func 'bar.a2.test2'");
+	}
+
+	{
+		auto r = findOperationAndArg(help, ScriptRef{"Tag.foo2.test2"});
+		assert(!r && "func 'Tag.foo.test2'");
+		assert(r.haveArg() == true && "func 'Tag.foo2.test2'");
+		assert(r.argName == ScriptRef{"Tag.foo2"} && "func 'Tag.foo2.test2'");
+	}
+
+
+	{
+		auto r = findOperationAndArg(help, ScriptRef{"Tag.foo.test2"});
+		assert(!!r && "func 'Tag.foo.test2'");
+	}
+
+	return 0;
+})();
+
+
+[[maybe_unused]]
+static auto dummyTestScriptStringRef = ([]
+{
+	assert(ScriptRef{"foo"} == ScriptRef{"foo"}.substr(0));
+	assert(ScriptRef{"oo"} == ScriptRef{"foo"}.substr(1));
+	assert(ScriptRef{"o"} == ScriptRef{"foo"}.substr(2));
+	assert(ScriptRef{""} == ScriptRef{"foo"}.substr(3));
+	assert(ScriptRef{""} == ScriptRef{"foo"}.substr(4));
+
+	assert(ScriptRef{""} == ScriptRef{"foo1234"}.substr(3, 0));
+	assert(ScriptRef{"1"} == ScriptRef{"foo1234"}.substr(3, 1));
+	assert(ScriptRef{"12"} == ScriptRef{"foo1234"}.substr(3, 2));
+	assert(ScriptRef{"123"} == ScriptRef{"foo1234"}.substr(3, 3));
+	assert(ScriptRef{"1234"} == ScriptRef{"foo1234"}.substr(3, 4));
+	assert(ScriptRef{"1234"} == ScriptRef{"foo1234"}.substr(3, 5));
+
+	assert(ScriptRef{""} == ScriptRef{"12345"}.head(0));
+	assert(ScriptRef{"1"} == ScriptRef{"12345"}.head(1));
+	assert(ScriptRef{"12"} == ScriptRef{"12345"}.head(2));
+	assert(ScriptRef{"123"} == ScriptRef{"12345"}.head(3));
+	assert(ScriptRef{"1234"} == ScriptRef{"12345"}.head(4));
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.head(5));
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.head(6));
+
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.tail(0));
+	assert(ScriptRef{"2345"} == ScriptRef{"12345"}.tail(1));
+	assert(ScriptRef{"345"} == ScriptRef{"12345"}.tail(2));
+	assert(ScriptRef{"45"} == ScriptRef{"12345"}.tail(3));
+	assert(ScriptRef{"5"} == ScriptRef{"12345"}.tail(4));
+	assert(ScriptRef{""} == ScriptRef{"12345"}.tail(5));
+	assert(ScriptRef{""} == ScriptRef{"12345"}.tail(6));
+
+	assert(ScriptRef{""} == ScriptRef{"12345"}.headFromEnd(0));
+	assert(ScriptRef{"5"} == ScriptRef{"12345"}.headFromEnd(1));
+	assert(ScriptRef{"45"} == ScriptRef{"12345"}.headFromEnd(2));
+	assert(ScriptRef{"345"} == ScriptRef{"12345"}.headFromEnd(3));
+	assert(ScriptRef{"2345"} == ScriptRef{"12345"}.headFromEnd(4));
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.headFromEnd(5));
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.headFromEnd(6));
+
+	assert(ScriptRef{"12345"} == ScriptRef{"12345"}.tailFromEnd(0));
+	assert(ScriptRef{"1234"} == ScriptRef{"12345"}.tailFromEnd(1));
+	assert(ScriptRef{"123"} == ScriptRef{"12345"}.tailFromEnd(2));
+	assert(ScriptRef{"12"} == ScriptRef{"12345"}.tailFromEnd(3));
+	assert(ScriptRef{"1"} == ScriptRef{"12345"}.tailFromEnd(4));
+	assert(ScriptRef{""} == ScriptRef{"12345"}.tailFromEnd(5));
+	assert(ScriptRef{""} == ScriptRef{"12345"}.tailFromEnd(6));
+
+	return 0;
+})();
+
+
+
+[[maybe_unused]]
+static auto dummyTestScriptLowerBound = ([]
+{
+	std::vector<ScriptTypeData> test;
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "b" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "bb" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "bbb" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "bbbb" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "c" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "cc" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "ccc" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "a" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aa" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aaa" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aaaa" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aaab" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aaaba" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "aaaaa" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "abcde" }  });
+	addSortHelper(test, ScriptTypeData{ ScriptRef{ "abcdf" }  });
+
+	auto pairRange = [&](const auto &pr, const auto &po)
+	{
+		ScriptRef prefix{ pr };
+		ScriptRef postfix{ po };
+		auto lower = test.data();
+		auto upper = test.data() + test.size();
+		lower = boundSortHelper<false>(lower, upper, prefix, postfix);
+		upper = boundSortHelper<true>(lower, upper, prefix, postfix);
+		return std::make_pair(lower, upper);
+	};
+	auto listRange = [&](std::initializer_list<const char*> l)
+	{
+		ScriptRef prefix[64] = { };
+		int i = 0;
+		for (auto* p : l)
+		{
+			prefix[i] = ScriptRef{ p, p + std::strlen(p) };
+			++i;
+		}
+		auto lower = test.data();
+		auto upper = test.data() + test.size();
+		lower = boundSortHelper<false>(lower, upper, ScriptRange{ prefix, prefix + i });
+		upper = boundSortHelper<true>(lower, upper, ScriptRange{ prefix, prefix + i });
+		return std::make_pair(lower, upper);
+	};
+	auto foundSomething = [](std::pair<const ScriptTypeData*, const ScriptTypeData*> p)
+	{
+		return p.first != p.second;
+	};
+
+	assert(true == foundSomething(pairRange("aa", "")));
+	assert(true == foundSomething(pairRange("aaaa", "")));
+	assert(true == foundSomething(pairRange("aa", "aa")));
+	assert((pairRange("aaaa", "")) == (pairRange("aa", "aa")));
+	assert((pairRange("abcde", "")) == (pairRange("abc", "de")));
+	assert((pairRange("abcde", "")) == (pairRange("ab", "cde")));
+
+	assert(false == foundSomething(listRange({"www"})));
+	assert(false == foundSomething(listRange({"www", ""})));
+	assert(true == foundSomething(listRange({"aa"})));
+	assert(true == foundSomething(listRange({"aa", ""})));
+	assert(true == foundSomething(listRange({"aaaa", ""})));
+	assert(true == foundSomething(listRange({"aa", "aa"})));
+	assert((listRange({"aaaa", ""})) == (listRange({"aa", "aa"})));
+	assert((listRange({"abcde", ""})) == (listRange({"abc", "de"})));
+	assert((listRange({"abcde", ""})) == (listRange({"ab", "cde"})));
+	assert((listRange({"abcde", ""})) == (listRange({"a", "b", "cde"})));
+	assert((listRange({"abcde", ""})) == (listRange({"a", "b", "c", "d", "e"})));
+	assert(false == foundSomething(listRange({"www", ""})));
+
+	assert((pairRange("abcde", "")) == (listRange({"a", "b", "cde"})));
+
+	assert((pairRange("aaaba", "").second) == (pairRange("abcde", "").first));
+	assert((pairRange("abcde", "").second) == (pairRange("ab", "cdf").first));
 
 	return 0;
 })();
