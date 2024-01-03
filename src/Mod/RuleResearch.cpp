@@ -67,6 +67,7 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	mod->loadNamesToNames(_name, _getOneFreeProtectedName, node["getOneFreeProtected"]);
 	_needItem = node["needItem"].as<bool>(_needItem);
 	_destroyItem = node["destroyItem"].as<bool>(_destroyItem);
+	_hidden = node["hidden"].as<bool>(_hidden);
 	_unlockFinalMission = node["unlockFinalMission"].as<bool>(_unlockFinalMission);
 	_listOrder = node["listOrder"].as<int>(_listOrder);
 	// This is necessary, research code assumes it!
