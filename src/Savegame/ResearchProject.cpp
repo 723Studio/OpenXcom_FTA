@@ -124,6 +124,8 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 			soldierEffort += statEffort / projStats.alienTech;
 			if (stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(factor) && RNG::percent(s.second))
 				s.first->getResearchExperience()->alienTech++;
+			else if (stats->alienTech < s.first->getRules()->getMinStats().alienTech && RNG::percent(100 - stats->alienTech) && RNG::percent(factor / 2))
+				s.first->getResearchExperience()->alienTech++;
 			statsN++;
 		}
 		if (projStats.psionics > 0)
@@ -132,6 +134,8 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 			soldierEffort += statEffort / projStats.psionics;
 			if (stats->psionics < caps.psionics && RNG::generate(0, caps.psionics) > stats->psionics && RNG::percent(factor) && RNG::percent(s.second))
 				s.first->getResearchExperience()->psionics++;
+			else if (stats->psionics < s.first->getRules()->getMinStats().psionics && RNG::percent(100 - stats->psionics) && RNG::percent(factor / 2))
+				s.first->getResearchExperience()->psionics++;
 			statsN++;
 		}
 		if (projStats.xenolinguistics > 0)
@@ -139,6 +143,8 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 			statEffort = stats->xenolinguistics;
 			soldierEffort += statEffort / projStats.xenolinguistics;
 			if (stats->psionics < caps.xenolinguistics && RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics && RNG::percent(factor) && RNG::percent(s.second))
+				s.first->getResearchExperience()->xenolinguistics++;
+			else if (stats->xenolinguistics < s.first->getRules()->getMinStats().xenolinguistics && RNG::percent(100 - stats->xenolinguistics) && RNG::percent(factor / 2))
 				s.first->getResearchExperience()->xenolinguistics++;
 			statsN++;
 		}

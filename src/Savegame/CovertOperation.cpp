@@ -370,10 +370,8 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			const RuleResearch* eventResearch = possibilities.at(0);
 			save.addFinishedResearch(eventResearch, &mod, _base, true);
 			_researchName = eventResearch->getName();
-			if (!eventResearch->isHidden())
-			{
-				_results->setSpecialMessage("STR_NEW_DATA_ACQUIRED");
-			}
+			_results->setSpecialMessage("STR_NEW_DATA_ACQUIRED");
+
 			if (!eventResearch->getLookup().empty())
 			{
 				const RuleResearch* lookupResearch = mod.getResearch(eventResearch->getLookup(), true);
