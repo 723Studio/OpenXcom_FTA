@@ -38,11 +38,8 @@ namespace OpenXcom
 	private:
 		Window* _window;
 		Text* _txtTitle, *_txtItem, *_txtReputation, * _txtSoldierStatus, *_txtMessage;
-		Text* _txtSoldier, * _txtTU, * _txtStamina, * _txtHealth, * _txtBravery, * _txtReactions;
-		Text* _txtFiring, * _txtThrowing, * _txtMelee, * _txtStrength, * _txtPsiStrength, * _txtPsiSkill;
-		TextList* _lstRecoveredItems, *_lstReputation, * _lstFunds, * _lstScore, * _lstSoldierStatus, * _lstSoldierStats;
+		TextList* _lstRecoveredItems, *_lstReputation, *_lstFunds, * _lstScore, * _lstSoldierStatus, * _lstSoldierStats;
 		std::string _currentTooltip;
-		Text* _txtTooltip;
 		TextButton* _btnOk, * _btnPage;
 		bool _hasItems, _hasRep, _hasFunds, _hasScore, _hasSStatus, _hasMessage, _hasMIA;
 		std::string _researchName;
@@ -67,10 +64,6 @@ namespace OpenXcom
 		void firstPage();
 		/// Drawing second page
 		void secondPage();
-		/// Handler for showing tooltip.
-		void txtTooltipIn(Action* action);
-		/// Handler for hiding tooltip.
-		void txtTooltipOut(Action* action);
 	};
 
 }

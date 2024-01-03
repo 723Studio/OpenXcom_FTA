@@ -70,23 +70,7 @@ namespace OpenXcom
 
 		_txtMessage = new Text(290, 9, 16, 168);
 
-		// Second page (soldier stats)
-		_txtSoldier = new Text(90, 9, 16, 24); //16..106 = 90
-		_txtTU = new Text(18, 9, 106, 24); //106
-		_txtStamina = new Text(18, 9, 124, 24); //124
-		_txtHealth = new Text(18, 9, 142, 24); //142
-		_txtBravery = new Text(18, 9, 160, 24); //160
-		_txtReactions = new Text(18, 9, 178, 24); //178
-		_txtFiring = new Text(18, 9, 196, 24); //196
-		_txtThrowing = new Text(18, 9, 214, 24); //214
-		_txtMelee = new Text(18, 9, 232, 24); //232
-		_txtStrength = new Text(18, 9, 250, 24); //250
-		_txtPsiStrength = new Text(18, 9, 268, 24); //268
-		_txtPsiSkill = new Text(18, 9, 286, 24); //286..304 = 18
-
 		_lstSoldierStats = new TextList(288, 144, 16, 32); // 18 rows
-
-		_txtTooltip = new Text(200, 9, 64, 180);
 
 		setInterface("covertOperationFinishDetails");
 		//1st page
@@ -109,21 +93,7 @@ namespace OpenXcom
 		add(_txtMessage, "text", "covertOperationFinishDetails");
 
 		//2ed page
-		add(_txtSoldier, "text", "covertOperationFinishDetails");
-		add(_txtTU, "text", "covertOperationFinishDetails");
-		add(_txtStamina, "text", "covertOperationFinishDetails");
-		add(_txtHealth, "text", "covertOperationFinishDetails");
-		add(_txtBravery, "text", "covertOperationFinishDetails");
-		add(_txtReactions, "text", "covertOperationFinishDetails");
-		add(_txtFiring, "text", "covertOperationFinishDetails");
-		add(_txtThrowing, "text", "covertOperationFinishDetails");
-		add(_txtMelee, "text", "covertOperationFinishDetails");
-		add(_txtStrength, "text", "covertOperationFinishDetails");
-		add(_txtPsiStrength, "text", "covertOperationFinishDetails");
-		add(_txtPsiSkill, "text", "covertOperationFinishDetails");
 		add(_lstSoldierStats, "list", "covertOperationFinishDetails");
-
-		add(_txtTooltip, "text", "debriefing");
 
 		centerAllSurfaces();
 
@@ -161,83 +131,8 @@ namespace OpenXcom
 		_txtMessage->setText(tr(_results->getSpecialMessage()));
 
 		// Second page
-		_txtSoldier->setText(tr("STR_NAME_UC"));
 
-		_txtTU->setAlign(ALIGN_CENTER);
-		_txtTU->setText(tr("STR_TIME_UNITS_ABBREVIATION"));
-		_txtTU->setTooltip("STR_TIME_UNITS");
-		_txtTU->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtTU->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtStamina->setAlign(ALIGN_CENTER);
-		_txtStamina->setText(tr("STR_STAMINA_ABBREVIATION"));
-		_txtStamina->setTooltip("STR_STAMINA");
-		_txtStamina->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtStamina->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtHealth->setAlign(ALIGN_CENTER);
-		_txtHealth->setText(tr("STR_HEALTH_ABBREVIATION"));
-		_txtHealth->setTooltip("STR_HEALTH");
-		_txtHealth->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtHealth->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtBravery->setAlign(ALIGN_CENTER);
-		_txtBravery->setText(tr("STR_BRAVERY_ABBREVIATION"));
-		_txtBravery->setTooltip("STR_BRAVERY");
-		_txtBravery->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtBravery->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtReactions->setAlign(ALIGN_CENTER);
-		_txtReactions->setText(tr("STR_REACTIONS_ABBREVIATION"));
-		_txtReactions->setTooltip("STR_REACTIONS");
-		_txtReactions->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtReactions->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtFiring->setAlign(ALIGN_CENTER);
-		_txtFiring->setText(tr("STR_FIRING_ACCURACY_ABBREVIATION"));
-		_txtFiring->setTooltip("STR_FIRING_ACCURACY");
-		_txtFiring->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtFiring->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtThrowing->setAlign(ALIGN_CENTER);
-		_txtThrowing->setText(tr("STR_THROWING_ACCURACY_ABBREVIATION"));
-		_txtThrowing->setTooltip("STR_THROWING_ACCURACY");
-		_txtThrowing->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtThrowing->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtMelee->setAlign(ALIGN_CENTER);
-		_txtMelee->setText(tr("STR_MELEE_ACCURACY_ABBREVIATION"));
-		_txtMelee->setTooltip("STR_MELEE_ACCURACY");
-		_txtMelee->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtMelee->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtStrength->setAlign(ALIGN_CENTER);
-		_txtStrength->setText(tr("STR_STRENGTH_ABBREVIATION"));
-		_txtStrength->setTooltip("STR_STRENGTH");
-		_txtStrength->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtStrength->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtPsiStrength->setAlign(ALIGN_CENTER);
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			_txtPsiStrength->setText(tr("STR_MANA_ABBREVIATION"));
-			_txtPsiStrength->setTooltip("STR_MANA_POOL");
-		}
-		else
-		{
-			_txtPsiStrength->setText(tr("STR_PSIONIC_STRENGTH_ABBREVIATION"));
-			_txtPsiStrength->setTooltip("STR_PSIONIC_STRENGTH");
-		}
-		_txtPsiStrength->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtPsiStrength->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_txtPsiSkill->setAlign(ALIGN_CENTER);
-		_txtPsiSkill->setText(tr("STR_PSIONIC_SKILL_ABBREVIATION"));
-		_txtPsiSkill->setTooltip("STR_PSIONIC_SKILL");
-		_txtPsiSkill->onMouseIn((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipIn);
-		_txtPsiSkill->onMouseOut((ActionHandler)&FinishedCoverOperationDetailsState::txtTooltipOut);
-
-		_lstSoldierStats->setColumns(13, 90, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 0);
+		_lstSoldierStats->setColumns(3, 90, 228, 0);
 		_lstSoldierStats->setAlign(ALIGN_CENTER);
 		_lstSoldierStats->setAlign(ALIGN_LEFT, 0);
 		_lstSoldierStats->setDot(true);
@@ -402,36 +297,160 @@ namespace OpenXcom
 					if (damage < 0) //soldier MiA
 					{
 						_lstSoldierStats->setSmall();
-						_lstSoldierStats->addRow(13, (*i).first.c_str(), "", "", "", "", "", "", "", "", "", "", "", "");
+						_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_MIA"), "");
 						_lstSoldierStats->setRowColor(row, _game->getMod()->getInterface("covertOperationFinishDetails")->getElement("damaged")->color);
-						_lstSoldierStats->getTooltip();
-						_lstSoldierStatus->setTooltip(tr("STR_MIA"));
+						row++;
 					}
 				}
 			}
 			if (damage >= 0)
 			{
-				auto tmp = (*i).second->psiStrength;
-				if (_game->getMod()->isManaFeatureEnabled())
+				if (damage > 0)
 				{
-					tmp = (*i).second->mana;
+					_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_WOUNDED"), "");
 				}
-				_lstSoldierStats->addRow(13, (*i).first.c_str(),
-					makeSoldierString((*i).second->tu).c_str(),
-					makeSoldierString((*i).second->stamina).c_str(),
-					makeSoldierString((*i).second->health).c_str(),
-					makeSoldierString((*i).second->bravery).c_str(),
-					makeSoldierString((*i).second->reactions).c_str(),
-					makeSoldierString((*i).second->firing).c_str(),
-					makeSoldierString((*i).second->throwing).c_str(),
-					makeSoldierString((*i).second->melee).c_str(),
-					makeSoldierString((*i).second->strength).c_str(),
-					makeSoldierString(tmp).c_str(),
-					makeSoldierString((*i).second->psiSkill).c_str(),
-					"");
-				_lstSoldierStatus->setTooltip(tr("STR_WOUNDED"));
+				else
+				{
+					_lstSoldierStats->addRow(1, (*i).first.c_str());
+				}
+
+				//fill all stats that can be changed with covert operation
+				if ((*i).second->tu > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->tu).c_str(), "");
+				}
+
+				if ((*i).second->stamina > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::stamina, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->stamina).c_str(), "");
+				}
+
+				if ((*i).second->health > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::health, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->health).c_str(), "");
+				}
+
+				if ((*i).second->bravery > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::bravery, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->bravery).c_str(), "");
+				}
+
+				if ((*i).second->reactions > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->reactions).c_str(), "");
+				}
+
+				if ((*i).second->firing > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->firing).c_str(), "");
+				}
+
+				if ((*i).second->throwing > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->throwing).c_str(), "");
+				}
+
+				if ((*i).second->melee > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->melee).c_str(), "");
+				}
+
+				if ((*i).second->strength > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::strength, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->strength).c_str(), "");
+				}
+
+				if ((*i).second->psiSkill > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->psiSkill).c_str(), "");
+				}
+
+				if ((*i).second->mana > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->mana).c_str(), "");
+				}
+
+				if ((*i).second->stealth > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::stealth, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->stealth).c_str(), "");
+				}
+
+				if ((*i).second->perception > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::perception, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->perception).c_str(), "");
+				}
+
+				if ((*i).second->investigation > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::investigation, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->investigation).c_str(), "");
+				}
+
+				if ((*i).second->interrogation > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::interrogation, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->interrogation).c_str(), "");
+				}
+
+				if ((*i).second->charisma > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::charisma, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->charisma).c_str(), "");
+				}
+
+				if ((*i).second->deception > 0)
+				{
+					std::ostringstream ss;
+					ss << "  ";
+					ss << UnitStats::getStatString(&UnitStats::deception, UnitStats::STATSTR_UC);
+					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->deception).c_str(), "");
+				}
 			}
-			row++;
 		}
 
 		//set up first page at startup
@@ -520,18 +539,6 @@ namespace OpenXcom
 		_lstSoldierStatus->setVisible(false);
 		_txtMessage->setVisible(false);
 
-		_txtSoldier->setVisible(false);
-		_txtTU->setVisible(false);
-		_txtStamina->setVisible(false);
-		_txtHealth->setVisible(false);
-		_txtBravery->setVisible(false);
-		_txtReactions->setVisible(false);
-		_txtFiring->setVisible(false);
-		_txtThrowing->setVisible(false);
-		_txtMelee->setVisible(false);
-		_txtStrength->setVisible(false);
-		_txtPsiStrength->setVisible(false);
-		_txtPsiSkill->setVisible(false);
 		_lstSoldierStats->setVisible(false);
 	}
 
@@ -580,43 +587,6 @@ namespace OpenXcom
 	{
 		bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
 					   _game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
-		_txtSoldier->setVisible(true);
-		_txtTU->setVisible(true);
-		_txtStamina->setVisible(true);
-		_txtHealth->setVisible(true);
-		_txtBravery->setVisible(true);
-		_txtReactions->setVisible(true);
-		_txtFiring->setVisible(true);
-		_txtThrowing->setVisible(true);
-		_txtMelee->setVisible(true);
-		_txtStrength->setVisible(true);
-		_txtPsiStrength->setVisible(true && showPsi);
-		_txtPsiSkill->setVisible(true && showPsi);
 		_lstSoldierStats->setVisible(true);
 	}
-
-
-	/**
-	* Shows a tooltip for the appropriate text.
-	* @param action Pointer to an action.
-	*/
-	void FinishedCoverOperationDetailsState::txtTooltipIn(Action* action)
-	{
-		_currentTooltip = action->getSender()->getTooltip();
-		_txtTooltip->setText(tr(_currentTooltip));
-	}
-
-	/**
-	* Clears the tooltip text.
-	* @param action Pointer to an action.
-	*/
-	void FinishedCoverOperationDetailsState::txtTooltipOut(Action* action)
-	{
-		if (_currentTooltip == action->getSender()->getTooltip())
-		{
-			_txtTooltip->setText("");
-		}
-	}
-
-
 }

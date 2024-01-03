@@ -657,60 +657,42 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 
 	int expRolls = effCost * mod.getCovertOpsExpFactor() / 100;
 	//limit experience gain
-	if (expRolls > 3 && expRolls <= 8)
-		expRolls = 6;
-	if (expRolls > 8 && expRolls <= 12)
-		expRolls = 9;
 	if (expRolls > 12)
-		expRolls = 10;
+		expRolls = 12;
 
 	if (save.getMonthsPassed() > 24)
 		expRolls++; //bonus for lategame
 	expRolls += RNG::generate(-2, 2); //add more random
+	if (save.getDifficulty() == DIFF_SUPERHUMAN)
+		expRolls -= RNG::generate(0, 5);
 
 	//processing soldiers change before returning home
 	std::vector<Soldier*> soldiersToKill;
 	int operationSoldierN = 0;
 	std::vector<Soldier*> soldiers = getSoldiers();
 	bool engagement = false;
+	int avgStealth = 0;
 	if (danger > 0)
 	{
-		int avgStealth = 0;
 		for (auto s : soldiers)
 		{
 			avgStealth += s->getCurrentStats()->stealth;
 		}
 
 		avgStealth /= soldiers.size();
-		int engChance = danger * 10 - avgStealth;
+		int engChance = danger * 5 - avgStealth;
 		if (!operationResult)
 		{
 			engChance *= 2;
 		}
 		engagement = RNG::percent(engChance);
-
-		GameDifficulty diff = save.getDifficulty();
-		switch (diff)
-		{
-		case DIFF_BEGINNER:
-			danger -= 1;
-			break;
-		case DIFF_EXPERIENCED:
-			break;
-		case DIFF_VETERAN:
-			danger += 1;
-			break;
-		case DIFF_GENIUS:
-			danger += 3;
-			break;
-		case DIFF_SUPERHUMAN:
-			danger = std::max(danger * 2, danger + 4);
-			expRolls -= RNG::generate(0, 3);
-			break;
-		}
 	}
 
-	Log(LOG_DEBUG) << "Background simulation, calculating soldier exp, expRolls:" << expRolls;
+	Log(LOG_DEBUG) << "Background simulation of " << this->getRules()->getName() << "with danger: " << danger;
+	if (engagement)
+		Log(LOG_DEBUG) << "Engagement rolled with avgStealth: " << avgStealth;
+	Log(LOG_DEBUG) << "Calculating soldier exp, expRolls: " << expRolls << " from ruleCost: " << ruleCost << " and effCost: " << effCost;
+
 	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
 		bool dead = false;
@@ -718,34 +700,50 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		++operationSoldierN;
 		UnitStats* exp = new UnitStats();
 		
-		if (engagement && danger > 0)
+		if (danger > 0)
 		{
 			int damage = 0;
-			int damageRolls = danger;
+			int damageRolls = danger * (ceil(save.getDifficultyCoefficient() / 2) + 1);
 			if (criticalFail)
-				damageRolls *= 2;
-			for (size_t j = 0; j < danger; j++)
+			{
+				damageRolls *= RNG::generate(1, 3);
+			}
+
+			int reactionFactor = ceil((*i)->getStatsWithAllBonuses()->reactions * 0.7);
+			int psiFactor = ceil((*i)->getStatsWithAllBonuses()->psiSkill * 0.8);
+			Log(LOG_DEBUG) << "Calculating damage for " << (*i)->getName() << " with damageRolls: " << damageRolls << ", reactionFactor: " << reactionFactor << " and psiFactor: " << psiFactor;
+			for (size_t j = 0; j < damageRolls; j++)
 			{
 				if (RNG::generate(0, 99) < woundOdds)
 				{
-					bool miss = RNG::generate(0, 99) < ceil((*i)->getStatsWithAllBonuses()->reactions * 0.7);
-					if (!miss)
+					bool miss = RNG::generate(0, 99) < reactionFactor;
+					if (!miss
+						&& RNG::generate(0, 99) < psiFactor)
 						++wound;
 				}
 			}
+			Log(LOG_DEBUG) << "Wounds: " << wound;
 			if (wound > 0)
-				damage = RNG::generate(wound * 8, wound * 12);
+			{
+				damage = RNG::generate(wound, wound * 6);
+				Log(LOG_DEBUG) << "damage: " << damage;
+			}
 			if (damage < (*i)->getCurrentStats()->health)
 			{
 				(*i)->setWoundRecovery(damage);
+				Log(LOG_DEBUG) << "Soldier recovery set to: " << (*i)->getWoundRecoveryInt();
 				_results->addSoldierDamage((*i)->getName(), damage);
 			}
 			else
+			{
 				dead = true; //ouch, too much damage rolled!
+				Log(LOG_DEBUG) << "Too much damage, soldier should be M.I.A.";
+			}
 
 			if (!dead && criticalFail)
 			{ //OMG, Finger of Death for soldier on critical failed operation!!!
 				dead = RNG::generate(0, 99) < deathOdds + ceil(danger / 3);
+				Log(LOG_DEBUG) << "Finger of Death rolled!";
 			}
 			if (dead)
 			{
@@ -760,10 +758,12 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				if (requiredProtection > protection)
 				{ //RIP...
 					soldiersToKill.push_back(*i);
+					Log(LOG_DEBUG) << "Soldier will be dead as requiredProtection: " << requiredProtection << " is greater than soldiers protection: " << protection;
 				}
 				else
 				{
 					dead = false;
+					Log(LOG_DEBUG) << "Soldier will be saved as requiredProtection: " << requiredProtection << " is less than soldiers protection: " << protection;
 					if ((*i)->getStatsWithAllBonuses()->bravery <= 20 || RNG::percent(5))
 						exp->bravery++;
 				}
@@ -799,7 +799,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 					trainingManaSec = true;
 				for (size_t j = 0; j < (size_t)expRolls; j++)
 				{
-					statID = RNG::generate(1, 8);  //choose stat
+					statID = RNG::generate(1, 7);  //choose stat
 					expGain = RNG::generate(1, 4); //choose how many experience it would be
 					if (expGain == 4)
 						expGain = 1;
@@ -853,22 +853,16 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 						else if (!trainPsiSkill)
 							++expRolls; //re-roll as we assume soldier used other tools to achieve his or her goals
 						break;
-					case 8: //special case for separate non-psi mana using, like XCF
-						if (origStat.mana < caps.mana && trainingManaSec)
-							exp->mana += expGain;
-						else if (!trainingManaSec)
-							++expRolls;
-						break;
 					default:
 						break;
 					}
 				}
 				expRolls /= 2;
 			}
-			else if (danger > 0)
+			else if (danger > 0 && !engagement)
 			{
-				exp->stealth += RNG::generate(1, 4);
-				exp->perception += RNG::generate(1, 2);
+				exp->stealth += RNG::generate(0, 4);
+				exp->perception += RNG::generate(0, 2);
 			}
 
 			auto cats = _rule->getCategories();
