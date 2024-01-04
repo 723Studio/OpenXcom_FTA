@@ -142,22 +142,20 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 			}
 		}
 
-		std::vector<std::string> randomTypes;
-		auto randomSoldiers = factionRules->getStartingStaff();
-		for (std::map<std::string, int>::iterator j = randomSoldiers.begin(); j != randomSoldiers.end(); ++j)
+		std::vector<std::string> soldierTypes;
+		for (auto &s : factionRules->getStartingStaff())
 		{
-			for (int s = 0; s < j->second; ++s)
+			for (int i = 0; i < s.second; ++i)
 			{
-				randomTypes.push_back(j->first);
+				soldierTypes.push_back(s.first);
 			}
 		}
+		
 		// Generate soldiers
-		for (size_t k = 0; k < randomTypes.size(); ++k)
+		for (size_t k = 0; k < soldierTypes.size(); ++k)
 		{
-			const RuleSoldier* ruleSoldier = mod->getSoldier(randomTypes[k], true);
-			int nationality = save->selectSoldierNationalityByLocation(mod, ruleSoldier, nullptr); //diplomacy factions are purely international
-			Soldier* soldier = mod->genSoldier(save, ruleSoldier, nationality);
-			faction->getStaffPool()->addSoldier(soldier);
+			const RuleSoldier* ruleSoldier = mod->getSoldier(soldierTypes[k], true);
+			faction->getStaffPool()->createSoldier(ruleSoldier, mod, save);
 		}
 
 		// finish faction initialization process

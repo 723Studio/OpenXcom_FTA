@@ -93,11 +93,12 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::btnOkClick);
-	_btnOk->onKeyboardPress((ActionHandler)&DiplomacyHirePersonnelState::btnOkClick, Options::keyCancel);
+	_btnOk->onKeyboardPress((ActionHandler)&DiplomacyHirePersonnelState::btnOkClick, Options::keyOk);
 
 
 	_btnCancel->setText(tr("STR_CANCEL"));
 	_btnCancel->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::btnCancelClick);
+	_btnCancel->onKeyboardPress((ActionHandler)&DiplomacyHirePersonnelState::btnCancelClick, Options::keyCancel);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr("STR_HIRE_PERSONNEL"));
@@ -124,14 +125,6 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	PUSH_IN("STR_ROLE_UC", roleStat);
 	PUSH_IN("STR_RANK", roleRankStat);
 	// #FINNIKTODO add rank per roles
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
-	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
-	}
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tu), tuStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stamina), staminaStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::health), healthStat);

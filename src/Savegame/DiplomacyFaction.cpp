@@ -463,11 +463,8 @@ void DiplomacyFaction::processFactionalEvents(Game& engine)
 							{
 								for (int j = 0; j < s.second; ++j)
 								{
-									int nationality = save.selectSoldierNationalityByLocation(&mod, ruleSoldier, nullptr); //diplomacy factions are purely international
-									Soldier* soldier = mod.genSoldier(&save, ruleSoldier, nationality);
-									_staffPool->addSoldier(soldier);
+									_staffPool->createSoldier(ruleSoldier, &mod, &save);
 								}
-								
 							}
 						}
 					}

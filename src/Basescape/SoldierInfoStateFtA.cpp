@@ -54,14 +54,15 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from. NULL to use the dead soldiers list.
  * @param soldierId ID of the selected soldier.
  */
-SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(base), _soldierId(soldierId), _soldier(0)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(base), _soldierId(soldierId), _soldier(0), _listing(true)
 {
-	initUi(true);
+	
+	initUi();
 }
 
-SoldierInfoStateFtA::SoldierInfoStateFtA(Soldier *soldier) : _soldier(soldier)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Soldier *soldier) : _soldier(soldier), _listing(false)
 {
-	initUi(false);
+	initUi();
 }
 
 /**
@@ -72,15 +73,14 @@ SoldierInfoStateFtA::~SoldierInfoStateFtA()
 
 }
 
-void SoldierInfoStateFtA::initUi(bool listing)
+void SoldierInfoStateFtA::initUi()
 {
-	if (!listing)
+	if (!_listing)
 	{
 		_base = 0;
 		_soldierId = 0;
-		_list->push_back(_soldier);
 	}
-	else if (_base == 0)
+	else if (_base == 0 && _listing)
 	{
 		_list = _game->getSavedGame()->getDeadSoldiers();
 		if (_soldierId >= _list->size())
@@ -106,7 +106,14 @@ void SoldierInfoStateFtA::initUi(bool listing)
 	_rank = new Surface(26, 23, 4, 4);
 	_flag = new InteractiveSurface(40, 20, 275, 6);
 	_btnPrev = new TextButton(28, 14, 0, 33);
-	_btnOk = new TextButton(48, 14, 30, 33);
+	if (_listing)
+	{
+		_btnOk = new TextButton(48, 14, 30, 33);
+	}
+	else
+	{
+		_btnOk = new TextButton(48, 14, 0, 33);
+	}
 	_btnNext = new TextButton(28, 14, 80, 33);
 	_btnArmor = new TextButton(110, 14, 130, 33);
 	_btnBonuses = new TextButton(16, 14, 242, 33);
@@ -191,10 +198,11 @@ void SoldierInfoStateFtA::initUi(bool listing)
 		_btnNext->onKeyboardPress((ActionHandler)&SoldierInfoStateFtA::btnNextClick, Options::keyBattleNextUnit);
 	}
 
-	if (!listing)
+	if (!_listing)
 	{
 		_btnNext->setVisible(false);
 		_btnPrev->setVisible(false);
+		_btnArmor->setVisible(false);
 	}
 
 	_btnArmor->setText(tr("STR_ARMOR"));
@@ -204,8 +212,15 @@ void SoldierInfoStateFtA::initUi(bool listing)
 	_btnBonuses->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnBonusesClick);
 
 	_edtSoldier->setBig();
-	_edtSoldier->onChange((ActionHandler)&SoldierInfoStateFtA::edtSoldierChange);
-	_edtSoldier->onMousePress((ActionHandler)&SoldierInfoStateFtA::edtSoldierPress);
+	if (_listing)
+	{
+		_edtSoldier->onChange((ActionHandler)&SoldierInfoStateFtA::edtSoldierChange);
+		_edtSoldier->onMousePress((ActionHandler)&SoldierInfoStateFtA::edtSoldierPress);
+	}
+	else
+	{
+		_edtSoldier->setDisabled(true);
+	}
 
 	// Can't change nationality of dead soldiers
 	if (_base != 0)
@@ -255,16 +270,21 @@ void SoldierInfoStateFtA::initUi(bool listing)
 void SoldierInfoStateFtA::init()
 {
 	State::init();
-	if (_list->empty())
+	if (!_soldier)
 	{
-		_game->popState();
-		return;
+		if (_list->empty())
+		{
+			_game->popState();
+			return;
+		}
+		if (!_list->empty() && _soldierId >= _list->size())
+		{
+			_soldierId = 0;
+		}
+
+		_soldier = _list->at(_soldierId);
 	}
-	if (_soldierId >= _list->size())
-	{
-		_soldierId = 0;
-	}
-	_soldier = _list->at(_soldierId);
+
 	_edtSoldier->setBig();
 	_edtSoldier->setText(_soldier->getName());
 	bool hasBonus = _soldier->prepareStatsWithBonuses(_game->getMod()); // refresh all bonuses
@@ -425,13 +445,16 @@ void SoldierInfoStateFtA::init()
 		_btnArmor->setVisible(false);
 		_btnSack->setVisible(false);
 		_txtCraft->setVisible(false);
-		_txtDead->setVisible(true);
-		std::string status = "STR_MISSING_IN_ACTION";
-		if (_soldier->getDeath() && _soldier->getDeath()->getCause())
+		if (_listing)
 		{
-			status = "STR_KILLED_IN_ACTION";
+			_txtDead->setVisible(true);
+			std::string status = "STR_MISSING_IN_ACTION";
+			if (_soldier->getDeath() && _soldier->getDeath()->getCause())
+			{
+				status = "STR_KILLED_IN_ACTION";
+			}
+			_txtDead->setText(tr(status, _soldier->getGender()));
 		}
-		_txtDead->setText(tr(status, _soldier->getGender()));
 	}
 	else
 	{

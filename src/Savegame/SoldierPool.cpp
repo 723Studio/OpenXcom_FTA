@@ -19,6 +19,7 @@
 #include "SoldierPool.h"
 #include "../Mod/Mod.h"
 #include "Soldier.h"
+#include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
 {
@@ -68,6 +69,13 @@ YAML::Node SoldierPool::save(const Mod* mod) const
 	}
 	
 	return node;
+}
+
+void SoldierPool::createSoldier(const RuleSoldier* rule, const Mod* mod, SavedGame* save)
+{
+	int nationality = save->selectSoldierNationalityByLocation(mod, rule, nullptr); //diplomacy factions are purely international
+	Soldier* soldier = mod->genSoldier(save, rule, nationality);
+	addSoldier(soldier);
 }
 
 void SoldierPool::addSoldier(Soldier* soldier)

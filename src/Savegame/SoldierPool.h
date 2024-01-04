@@ -24,6 +24,7 @@ namespace OpenXcom
 class Mod;
 class SavedGame;
 class Soldier;
+class RuleSoldier;
 enum SoldierRole : int;
 
 /**
@@ -44,6 +45,8 @@ public:
 	void load(const YAML::Node& node, SavedGame* save, const Mod* mod);
 	/// Saves the item container to YAML.
 	YAML::Node save(const Mod* mod) const;
+	/// Creates a new generated soldier for the pool.
+	void createSoldier(const RuleSoldier* rule, const Mod* mod, SavedGame* save);
 	/// Adds an item to the container.
 	void addSoldier(Soldier* soldier);
 	/// Removes an item from the container.
