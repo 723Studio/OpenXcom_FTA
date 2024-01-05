@@ -36,6 +36,9 @@
 #include "../Savegame/Craft.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/Soldier.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Savegame/SoldierPool.h"
+#include "../FTA/DiplomacyHirePersonnelState.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleSoldier.h"
@@ -60,7 +63,7 @@ SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(b
 	initUi();
 }
 
-SoldierInfoStateFtA::SoldierInfoStateFtA(Soldier *soldier) : _soldier(soldier), _listing(false)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction* faction) : _base(base), _soldier(soldier), _faction(faction), _listing(false)
 {
 	initUi();
 }
@@ -75,9 +78,8 @@ SoldierInfoStateFtA::~SoldierInfoStateFtA()
 
 void SoldierInfoStateFtA::initUi()
 {
-	if (!_listing)
+	if (_soldier)
 	{
-		_base = 0;
 		_soldierId = 0;
 	}
 	else if (_base == 0 && _listing)
@@ -97,7 +99,6 @@ void SoldierInfoStateFtA::initUi()
 		_list = _base->getSoldiers();
 	}
 
-	_ftaUI = _game->getMod()->isFTAGame();
 	_localChange = false;
 
 	// Create objects
@@ -118,15 +119,8 @@ void SoldierInfoStateFtA::initUi()
 	_btnArmor = new TextButton(110, 14, 130, 33);
 	_btnBonuses = new TextButton(16, 14, 242, 33);
 	_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
-	_btnSack = new TextButton(60, 14, 260, 33);
-	if (_ftaUI)
-	{
-		_btnDiary = new TextButton(60, 14, 260, 33);
-	}
-	else
-	{
-		_btnDiary = new TextButton(60, 14, 260, 48);
-	}
+	_btnDiary = new TextButton(60, 14, 260, 33);
+	_btnHire = new TextButton(60, 14, 260, 33);
 	_cbxRoles = new ComboBox(this, 60, 14, 260, 48, false);
 	_txtRank = new Text(130, 9, 0, 48);
 	_txtMissions = new Text(100, 9, 130, 48);
@@ -150,8 +144,8 @@ void SoldierInfoStateFtA::initUi()
 	add(_btnArmor, "button", "soldierInfo");
 	add(_btnBonuses, "button", "soldierInfo");
 	add(_edtSoldier, "text1", "soldierInfo");
-	add(_btnSack, "button", "soldierInfo");
 	add(_btnDiary, "button", "soldierInfo");
+	add(_btnHire, "button", "soldierInfo");
 	add(_txtRank, "text1", "soldierInfo");
 	add(_txtMissions, "text1", "soldierInfo");
 	add(_txtKills, "text1", "soldierInfo");
@@ -203,6 +197,7 @@ void SoldierInfoStateFtA::initUi()
 		_btnNext->setVisible(false);
 		_btnPrev->setVisible(false);
 		_btnArmor->setVisible(false);
+		_btnDiary->setVisible(false);
 	}
 
 	_btnArmor->setText(tr("STR_ARMOR"));
@@ -222,8 +217,8 @@ void SoldierInfoStateFtA::initUi()
 		_edtSoldier->setDisabled(true);
 	}
 
-	// Can't change nationality of dead soldiers
-	if (_base != 0)
+	// Can't change nationality of dead soldiers or factional soldiers
+	if (_base != 0 && !_faction)
 	{
 		// Ignore also if flags are used to indicate number of kills
 		if (_game->getMod()->getFlagByKills().empty())
@@ -233,20 +228,22 @@ void SoldierInfoStateFtA::initUi()
 		}
 	}
 
-	_btnSack->setText(tr("STR_SACK"));
-	_btnSack->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnSackClick);
-	if (_ftaUI)
-	{
-		_btnSack->setVisible(false);
-		_btnSack->setX(0); //go away!
-		_btnSack->setY(0);
-		_btnSack->setWidth(0);
-		_btnSack->setHeight(0);
-	}
-
 	_btnDiary->setText(tr("STR_DIARY"));
 	_btnDiary->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnDiaryClick);
 	_btnDiary->setVisible(Options::soldierDiaries);
+
+	_btnHire->setText(tr("STR_HIRE"));
+	_btnHire->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnHireClick);
+
+	if (_faction)
+	{
+		_btnHire->setVisible(true);
+		_btnDiary->setVisible(false);
+	}
+	else
+	{
+		_btnHire->setVisible(false);
+	}
 
 	_rolesList.push_back("STR_SOLDIER");
 	_rolesList.push_back("STR_PILOT");
@@ -256,7 +253,6 @@ void SoldierInfoStateFtA::initUi()
 	_cbxRoles->setOptions(_rolesList, true);
 	_cbxRoles->setSelected(0);
 	_cbxRoles->onChange((ActionHandler)&SoldierInfoStateFtA::cbxRolesChange);
-	_cbxRoles->setVisible(_ftaUI);
 
 	_txtPsionic->setText(tr("STR_IN_PSIONIC_TRAINING"));
 
@@ -316,10 +312,7 @@ void SoldierInfoStateFtA::init()
 
 	SurfaceSet *texture = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
 	auto frame = texture->getFrame(_soldier->getRankSprite());
-	if (_ftaUI)
-	{
-		frame = texture->getFrame(_soldier->getRoleRankSprite(role));
-	}
+	frame = texture->getFrame(_soldier->getRoleRankSprite(role));
 	if (frame)
 	{
 		frame->blitNShade(_rank, 0, 0);
@@ -368,12 +361,7 @@ void SoldierInfoStateFtA::init()
 
 	_btnArmor->setText(wsArmor);
 
-	_btnSack->setVisible(_game->getSavedGame()->getMonthsPassed() > -1 && !(_soldier->getCraft() && _soldier->getCraft()->getStatus() == "STR_OUT"));
-	if (_soldier->getCovertOperation() != 0)
-	{
-		_btnSack->setVisible(false);
-	}
-	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString(_ftaUI))));
+	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString(true))));
 
 	_txtMissions->setText(tr("STR_MISSIONS").arg(_soldier->getMissions()));
 
@@ -443,7 +431,6 @@ void SoldierInfoStateFtA::init()
 	if (_base == 0)
 	{
 		_btnArmor->setVisible(false);
-		_btnSack->setVisible(false);
 		_txtCraft->setVisible(false);
 		if (_listing)
 		{
@@ -460,6 +447,14 @@ void SoldierInfoStateFtA::init()
 	{
 		_txtDead->setVisible(false);
 	}
+
+	// factional preview
+	if (_faction)
+	{
+		_txtMissions->setVisible(false);
+		_txtKills->setVisible(false);
+	}
+
 	_localChange = false; // become ready for general screen update again.
 }
 
@@ -469,7 +464,7 @@ void SoldierInfoStateFtA::init()
  */
 void SoldierInfoStateFtA::edtSoldierPress(Action *)
 {
-	if (_base == 0)
+	if (_base == 0 || _faction)
 	{
 		_edtSoldier->setFocus(false);
 	}
@@ -489,7 +484,10 @@ void SoldierInfoStateFtA::setSoldierId(size_t soldier)
  */
 void SoldierInfoStateFtA::edtSoldierChange(Action *)
 {
-	_soldier->setName(_edtSoldier->getText());
+	if (_base == 0)
+	{
+		_soldier->setName(_edtSoldier->getText());
+	}
 }
 
 /**
@@ -498,13 +496,7 @@ void SoldierInfoStateFtA::edtSoldierChange(Action *)
  */
 void SoldierInfoStateFtA::btnOkClick(Action *)
 {
-
 	_game->popState();
-	if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && _base != 0 && _base->storesOverfull())
-	{
-		_game->pushState(new SellState(_base, 0));
-		_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
-	}
 }
 
 /**
@@ -564,15 +556,45 @@ void SoldierInfoStateFtA::btnBonusesClick(Action *)
  * Shows the Sack Soldier window.
  * @param action Pointer to an action.
  */
-void SoldierInfoStateFtA::btnSackClick(Action *)
+void SoldierInfoStateFtA::btnHireClick(Action *)
 {
-	if (_soldier->getCovertOperation() != 0)
+	if (!_faction)
 	{
 		return;
 	}
 	else
 	{
-		_game->pushState(new SackSoldierState(_base, _soldierId));
+		RuleInterface* menuInterface = _game->getMod()->getInterface("buyMenu");
+		if (static_cast<int64_t>(_soldier->getHireValue()) > _game->getSavedGame()->getFunds())
+		{
+			_game->pushState(new ErrorMessageState("STR_NOT_ENOUGH_MONEY",
+				_palette,
+				menuInterface->getElement("errorMessage")->color,
+				"BACK13.SCR",
+				menuInterface->getElement("errorPalette")->color));
+		}
+		else if (_base->getUsedQuarters() + 1 >= _base->getAvailableQuarters())
+		{
+			_game->pushState(new ErrorMessageState("STR_NOT_ENOUGH_SPACE",
+				_palette,
+				menuInterface->getElement("errorMessage")->color,
+				"BACK13.SCR",
+				menuInterface->getElement("errorPalette")->color));
+		}
+		else
+		{
+			int time = _soldier->getRules()->getTransferTime();
+			if (time == 0)
+				time = _game->getMod()->getPersonnelTime();
+			Transfer* t = new Transfer(time);
+			t->setSoldier(_soldier);
+			_base->getTransfers()->push_back(t);
+
+			_faction->getStaffPool()->removeSoldier(_soldier);
+			_game->popState();
+			_game->popState();
+			_game->pushState(new DiplomacyHirePersonnelState(_base, _faction));
+		}
 	}
 }
 
@@ -1637,7 +1659,7 @@ void SoldierInfoStateFtA::displayPsionic(SoldierRole selected)
 
 	bool psi = _soldier->getStatsWithSoldierBonusesOnly()->psiSkill > 0
 		&& (selected == ROLE_SOLDIER || selected == ROLE_AGENT || selected == ROLE_PILOT);
-	if (psi || ((Options::psiStrengthEval && !_ftaUI) && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())))
+	if (psi && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		_txtPsiStrength->setVisible(true);
 		_numPsiStrength->setVisible(true);

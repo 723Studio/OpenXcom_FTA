@@ -51,7 +51,7 @@ private:
 	Base *_base;
 	DiplomacyFaction* _faction;
 	//Uint8 _otherCraftColor;
-	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers, _selectedSoldiers;
+	std::vector<Soldier *> _filteredListOfSoldiers, _selectedSoldiers;
 	std::vector<SortFunctor *> _sortFunctors;
 	std::vector<int> _soldierNumbers;
 	int64_t _total = 0;

@@ -52,7 +52,7 @@ namespace OpenXcom
  * @param craft ID of the selected craft.
  */
 DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFaction* faction)
-		:  _base(base), _faction(faction), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
+		:  _base(base), _faction(faction), _dynGetter(NULL)
 {
 	
 	// Create objects
@@ -111,7 +111,7 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	
 	// populate sort options
 	std::vector<std::string> sortOptions;
-	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
+	//sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 
@@ -119,12 +119,11 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	sortOptions.push_back(tr(strId)); \
 	_sortFunctors.push_back(new SortFunctor(_game, functor));
 
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
+	//PUSH_IN("STR_ID", idStat);
+	//PUSH_IN("STR_NAME_UC", nameStat);
+	//PUSH_IN("STR_SOLDIER_TYPE", typeStat);
 	PUSH_IN("STR_ROLE_UC", roleStat);
 	PUSH_IN("STR_RANK", roleRankStat);
-	// #FINNIKTODO add rank per roles
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tu), tuStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stamina), staminaStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::health), healthStat);
@@ -212,7 +211,7 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	_cbxSortBy->setOptions(sortOptions);
 	_cbxSortBy->setSelected(0);
 	_cbxSortBy->onChange((ActionHandler)&DiplomacyHirePersonnelState::cbxSortByChange);
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
+	_cbxSortBy->setText(tr("STR_COMPARE_BY"));
 
 	_lstSoldiers->setColumns(3, 106, 98, 76);
 	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
@@ -242,60 +241,16 @@ DiplomacyHirePersonnelState::~DiplomacyHirePersonnelState()
  */
 void DiplomacyHirePersonnelState::cbxSortByChange(Action *)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
 		return;
 	}
-
 	SortFunctor *compFunc = _sortFunctors[selIdx];
 	_dynGetter = NULL;
 	if (compFunc)
 	{
-		if (selIdx != 2)
-		{
-			_dynGetter = compFunc->getGetter();
-		}
-
-		// if CTRL is pressed, we only want to show the dynamic column, without actual sorting
-		if (!ctrlPressed)
-		{
-			if (selIdx == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						return Unicode::naturalCompare(a->getName(), b->getName());
-					}
-				);
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
-			}
-			if (_game->isShiftPressed())
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
-			}
-		}
-	}
-	else
-	{
-		// restore original ordering, ignoring (of course) those
-		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier *>::const_iterator it = _origSoldierOrder.begin();
-			it != _origSoldierOrder.end(); ++it)
-		{
-			std::vector<Soldier *>::iterator soldierIt =
-				std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
-			if (soldierIt != _base->getSoldiers()->end())
-			{
-				Soldier *s = *soldierIt;
-				_base->getSoldiers()->erase(soldierIt);
-				_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
-			}
-		}
+		_dynGetter = compFunc->getGetter();
 	}
 
 	size_t originalScrollPos = _lstSoldiers->getScroll();
@@ -339,8 +294,8 @@ void DiplomacyHirePersonnelState::initList(size_t scrl)
 {
 	int row = 0;
 	_soldierNumbers.clear();
-	_lstSoldiers->clearList();
 	_filteredListOfSoldiers.clear();
+	_lstSoldiers->clearList();
 	_soldierNumbers.clear();
 	int i = 0;
 
@@ -427,7 +382,11 @@ void DiplomacyHirePersonnelState::updateState()
 void DiplomacyHirePersonnelState::init()
 {
 	State::init();
-	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
+	// refresh stats for sorting
+	for (auto s : _faction->getStaffPool()->getSoldiers())
+	{
+		s->prepareStatsWithBonuses(_game->getMod());
+	}
 	initList(0);
 
 }
@@ -486,7 +445,7 @@ void DiplomacyHirePersonnelState::lstSoldiersClick(Action *action)
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		_game->pushState(new SoldierInfoStateFtA(s));
+		_game->pushState(new SoldierInfoStateFtA(_base, s, _faction));
 	}
 }
 

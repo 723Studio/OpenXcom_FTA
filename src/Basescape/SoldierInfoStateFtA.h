@@ -30,6 +30,7 @@ class TextEdit;
 class ComboBox;
 class Bar;
 class Soldier;
+class DiplomacyFaction;
 enum SoldierRole : int;
 
 /**
@@ -40,6 +41,7 @@ class SoldierInfoStateFtA : public State
 {
 private:
 	Base *_base;
+	DiplomacyFaction* _faction;
 	size_t _soldierId;
 	Soldier *_soldier;
 	std::vector<Soldier*> *_list;
@@ -47,13 +49,13 @@ private:
 
 	Surface *_bg, *_rank;
 	InteractiveSurface *_flag;
-	TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnSack, *_btnDiary, *_btnBonuses;
+	TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnDiary, *_btnBonuses, *_btnHire;
 	Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead, *_txtOperation;
 	Text *_txtStuns;
 	TextEdit *_edtSoldier;
 	ComboBox *_cbxRoles;
 	std::vector<std::string> _rolesList;
-	bool _ftaUI, _localChange, _listing;
+	bool _localChange, _listing;
 
 	Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
 	Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;
@@ -82,7 +84,7 @@ private:
   public:
 	/// Creates the Soldier Info state.
 	SoldierInfoStateFtA(Base *base, size_t soldierId);
-	SoldierInfoStateFtA(Soldier *soldier);
+	SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction *faction = nullptr);
 	/// Cleans up the Soldier Info state.
 	~SoldierInfoStateFtA();
 	/// Updates the soldier info.
@@ -104,7 +106,7 @@ private:
 	/// Handler for clicking the Bonuses button.
 	void btnBonusesClick(Action *action);
 	/// Handler for clicking the Sack button.
-	void btnSackClick(Action *action);
+	void btnHireClick(Action *action);
 	/// Handler for clicking the Diary button.
 	void btnDiaryClick(Action *action);
 	/// Handler for changing the roles actions combo box.
