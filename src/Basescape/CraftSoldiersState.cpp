@@ -627,7 +627,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	Uint8 color = _lstSoldiers->getColor();
 
 	int row = 0;
-	for (auto* soldier : *_base->getSoldiers())
+	for (auto soldier : _filteredListOfSoldiers)
 	{
 		if (soldier->getCovertOperation() != 0)
 		{ }

@@ -371,12 +371,14 @@ void BaseInfoStateFtA::init()
 	_barContainment->setMax(_base->getAvailableContainment(0));
 	_barContainment->setValue(_base->getUsedContainment(0));
 
-	//#FINNIKTODO power generation here
-	std::ostringstream ss11; //power generation hardcoded placeholder, https://github.com/723Studio/OpenXcom_FTA/issues/177
-	ss11 << 20 << ":" << 26;
-	_numPower->setText(ss11.str());
-	_barPower->setMax(26);
-	_barPower->setValue(20);
+	//#FINNIKTODO power generation here https://github.com/723Studio/OpenXcom_FTA/issues/177
+	//std::ostringstream ss11;
+	//_numPower->setText(ss11.str());
+	//_barPower->setMax(value);
+	//_barPower->setValue(value2);
+	_txtPower->setVisible(false);
+	_numPower->setVisible(false);
+	_barPower->setVisible(false);
 
 	std::ostringstream ss12;
 	ss12 << _base->getDefenseValue();

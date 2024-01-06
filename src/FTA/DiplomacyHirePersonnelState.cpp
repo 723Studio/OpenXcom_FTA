@@ -96,7 +96,7 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	_btnOk->onKeyboardPress((ActionHandler)&DiplomacyHirePersonnelState::btnOkClick, Options::keyOk);
 
 
-	_btnCancel->setText(tr("STR_CANCEL"));
+	_btnCancel->setText(tr("STR_BACK"));
 	_btnCancel->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&DiplomacyHirePersonnelState::btnCancelClick, Options::keyCancel);
 
