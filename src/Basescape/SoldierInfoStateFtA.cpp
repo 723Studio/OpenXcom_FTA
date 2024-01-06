@@ -57,13 +57,13 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from. NULL to use the dead soldiers list.
  * @param soldierId ID of the selected soldier.
  */
-SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(base), _soldierId(soldierId), _soldier(0), _listing(true)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base *base, size_t soldierId) : _base(base), _soldierId(soldierId), _soldier(0), _listing(true), _faction(0), _redraw(false)
 {
 	
 	initUi();
 }
 
-SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction* faction) : _base(base), _soldier(soldier), _faction(faction), _listing(false)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction* faction) : _base(base), _soldier(soldier), _faction(faction), _listing(false), _redraw(false)
 {
 	initUi();
 }
@@ -266,7 +266,7 @@ void SoldierInfoStateFtA::initUi()
 void SoldierInfoStateFtA::init()
 {
 	State::init();
-	if (!_soldier)
+	if (!_soldier || _redraw)
 	{
 		if (_list->empty())
 		{
@@ -279,6 +279,8 @@ void SoldierInfoStateFtA::init()
 		}
 
 		_soldier = _list->at(_soldierId);
+
+		_redraw = false;
 	}
 
 	_edtSoldier->setBig();
@@ -509,6 +511,8 @@ void SoldierInfoStateFtA::btnPrevClick(Action *)
 		_soldierId = _list->size() - 1;
 	else
 		_soldierId--;
+
+	_redraw = true;
 	init();
 }
 
@@ -521,6 +525,8 @@ void SoldierInfoStateFtA::btnNextClick(Action *)
 	_soldierId++;
 	if (_soldierId >= _list->size())
 		_soldierId = 0;
+
+	_redraw = true;
 	init();
 }
 
