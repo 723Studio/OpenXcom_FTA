@@ -489,7 +489,7 @@ void ManufactureInfoStateFtA::setAssignedEngineers()
 	{
 		s4 << "∞";
 	}
-	_txtConstructionTime->setText(tr("STR_CONSTRUCTION_TIME_UC").arg(s5.str()));
+	_txtConstructionTime->setText(tr("STR_CONSTRUCTION_TIME_UC_ARG").arg(s5.str()));
 
 	//if (_engineers.empty())
 	//{
