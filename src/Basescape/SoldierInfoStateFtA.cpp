@@ -790,7 +790,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_numMaterials = new Text(18, 9, 131, yPos);
 	_barMaterials = new Bar(170, 7, 150, yPos);
 	_txtRobotics = new Text(120, 9, 6, yPos);
-	_numConstruction = new Text(18, 9, 131, yPos);
+	_numRobotics = new Text(18, 9, 131, yPos);
 	_barRobotics = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
@@ -966,8 +966,8 @@ void SoldierInfoStateFtA::addStatLines()
 	add(_numDesigning, "numbers", "soldierInfo");
 	add(_barDesigning, "barDesigning", "soldierInfo");
 	add(_txtRobotics, "text2", "soldierInfo");
-	add(_numConstruction, "numbers", "soldierInfo");
-	add(_barRobotics, "barConstruction", "soldierInfo");
+	add(_numRobotics, "numbers", "soldierInfo");
+	add(_barRobotics, "barRobotics", "soldierInfo");
 
 	add(_txtMana, "text2", "soldierInfo");
 	add(_numMana, "numbers", "soldierInfo");
@@ -1361,7 +1361,7 @@ void SoldierInfoStateFtA::fillNumbers()
 	_barDesigning->setValue2(std::min(withArmor.designing, initial->designing));
 	std::ostringstream ss49;
 	ss49 << withArmor.robotics;
-	_numConstruction->setText(ss49.str());
+	_numRobotics->setText(ss49.str());
 	_barRobotics->setMax(current->robotics);
 	_barRobotics->setValue(withArmor.robotics);
 	_barRobotics->setValue2(std::min(withArmor.robotics, initial->robotics));
@@ -1636,7 +1636,7 @@ void SoldierInfoStateFtA::updateVisibility()
 		_barHacking->setVisible(true);
 
 		_txtRobotics->setVisible(true);
-		_numConstruction->setVisible(true);
+		_numRobotics->setVisible(true);
 		_barRobotics->setVisible(true);
 
 		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
@@ -1869,7 +1869,7 @@ void SoldierInfoStateFtA::hideAllStats()
 	_barHacking->setVisible(false);
 
 	_txtRobotics->setVisible(false);
-	_numConstruction->setVisible(false);
+	_numRobotics->setVisible(false);
 	_barRobotics->setVisible(false);
 
 	_txtReverseEngineering->setVisible(false);

@@ -297,7 +297,7 @@ namespace OpenXcom
 					if (damage < 0) //soldier MiA
 					{
 						_lstSoldierStats->setSmall();
-						_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_MIA"), "");
+						_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_MIA").c_str(), "");
 						_lstSoldierStats->setRowColor(row, _game->getMod()->getInterface("covertOperationFinishDetails")->getElement("damaged")->color);
 						row++;
 					}
@@ -307,7 +307,7 @@ namespace OpenXcom
 			{
 				if (damage > 0)
 				{
-					_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_WOUNDED"), "");
+					_lstSoldierStats->addRow(3, (*i).first.c_str(), tr("STR_WOUNDED").c_str(), "");
 				}
 				else
 				{
@@ -320,7 +320,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->tu).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->tu).c_str(), "");
 				}
 
 				if ((*i).second->stamina > 0)
@@ -328,7 +328,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::stamina, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->stamina).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->stamina).c_str(), "");
 				}
 
 				if ((*i).second->health > 0)
@@ -336,7 +336,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::health, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->health).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->health).c_str(), "");
 				}
 
 				if ((*i).second->bravery > 0)
@@ -344,7 +344,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::bravery, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->bravery).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->bravery).c_str(), "");
 				}
 
 				if ((*i).second->reactions > 0)
@@ -352,7 +352,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->reactions).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->reactions).c_str(), "");
 				}
 
 				if ((*i).second->firing > 0)
@@ -360,7 +360,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->firing).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->firing).c_str(), "");
 				}
 
 				if ((*i).second->throwing > 0)
@@ -368,7 +368,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->throwing).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->throwing).c_str(), "");
 				}
 
 				if ((*i).second->melee > 0)
@@ -376,7 +376,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->melee).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->melee).c_str(), "");
 				}
 
 				if ((*i).second->strength > 0)
@@ -384,7 +384,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::strength, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->strength).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->strength).c_str(), "");
 				}
 
 				if ((*i).second->psiSkill > 0)
@@ -392,7 +392,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->psiSkill).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->psiSkill).c_str(), "");
 				}
 
 				if ((*i).second->mana > 0)
@@ -400,7 +400,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->mana).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->mana).c_str(), "");
 				}
 
 				if ((*i).second->stealth > 0)
@@ -408,7 +408,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::stealth, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->stealth).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->stealth).c_str(), "");
 				}
 
 				if ((*i).second->perception > 0)
@@ -416,7 +416,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::perception, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->perception).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->perception).c_str(), "");
 				}
 
 				if ((*i).second->investigation > 0)
@@ -424,7 +424,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::investigation, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->investigation).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->investigation).c_str(), "");
 				}
 
 				if ((*i).second->interrogation > 0)
@@ -432,7 +432,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::interrogation, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->interrogation).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->interrogation).c_str(), "");
 				}
 
 				if ((*i).second->charisma > 0)
@@ -440,7 +440,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::charisma, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->charisma).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->charisma).c_str(), "");
 				}
 
 				if ((*i).second->deception > 0)
@@ -448,7 +448,7 @@ namespace OpenXcom
 					std::ostringstream ss;
 					ss << "  ";
 					ss << UnitStats::getStatString(&UnitStats::deception, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str(), makeSoldierString((*i).second->deception).c_str(), "");
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->deception).c_str(), "");
 				}
 			}
 		}

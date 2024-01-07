@@ -70,7 +70,7 @@ private:
 	Text *_numPhysics, *_numChemistry, *_numBiology, *_numInsight, *_numData, *_numComputers, *_numTactics, *_numMaterials, *_numDesigning, *_numAlienTech, *_numPsionics, *_numXenolinguistics;
 	Bar *_barPhysics, *_barChemistry, *_barBiology, *_barInsight, *_barData, *_barComputers, *_barTactics, *_barMaterials, *_barDesigning, *_barAlienTech, *_barPsionics, *_barXenolinguistics;
 	Text *_txtWeaponry, *_txtExplosives, *_txtMicroelectronics, *_txtMetallurgy, *_txtProcessing, *_txtEfficiency, *_txtDiligence, *_txtHacking, *_txtRobotics, *_txtReverseEngineering;
-	Text *_numWeaponry, *_numExplosives, *_numMicroelectronics, *_numMetallurgy, *_numProcessing, *_numEfficiency, *_numDiligence, *_numHacking, *_numConstruction, *_numReverseEngineering;
+	Text *_numWeaponry, *_numExplosives, *_numMicroelectronics, *_numMetallurgy, *_numProcessing, *_numEfficiency, *_numDiligence, *_numHacking, *_numRobotics, *_numReverseEngineering;
 	Bar *_barWeaponry, *_barExplosives, *_barMicroelectronics, *_barMetallurgy, *_barProcessing, *_barEfficiency, *_barDiligence, *_barHacking, *_barRobotics, *_barReverseEngineering;
 	void defineStatLines();
 	void addStatLines();
