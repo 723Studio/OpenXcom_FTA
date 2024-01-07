@@ -336,6 +336,20 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		// it should also hide units when they've killed the guy spotting them
 		// it's also for good luck
 
+	//process AI betrayal
+	UnitFaction changeFaction = unit->getUnitRules()->getChangeSideOnSight();
+	if (changeFaction != FACTION_NONE)
+	{
+		for (auto* otherUnit : *unit->getVisibleUnits())
+		{
+			if (otherUnit->getFaction() == changeFaction)
+			{
+				unit->setOriginalFaction(changeFaction);
+				return;
+			}
+		}
+	}
+
 	AIModule *ai = unit->getAIModule();
 	if (!ai)
 	{

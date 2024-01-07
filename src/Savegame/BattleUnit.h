@@ -302,6 +302,7 @@ public:
 	std::vector<SoldierRole> getRoles() const { return _roles; }
 	/// Gets the unit's faction.
 	UnitFaction getFaction() const;
+	void setOriginalFaction(UnitFaction faction) { _faction = faction; }
 	/// Gets unit sprite recolors values.
 	const std::vector<std::pair<Uint8, Uint8> > &getRecolor() const;
 	/// Kneel down.

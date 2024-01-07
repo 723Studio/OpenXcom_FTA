@@ -39,6 +39,7 @@ enum SpecialObjective { SPECOBJ_NONE, SPECOBJ_FRIENDLY_VIP, SPECOBJ_ENEMY_VIP };
 enum SpecialTileType : int;
 enum MovementType : int;
 enum SoldierRole : int;
+enum UnitFaction : int;
 
 enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEMALE };
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
@@ -815,6 +816,7 @@ private:
 	int _intelligence, _aggression, _spotter, _sniper, _energyRecovery;
 	SpecialAbility _specab;
 	SpecialObjective _specialObjective;
+	UnitFaction _changeSideOnSight;
 	const RuleItem* _liveAlien = nullptr;
 	const Unit *_spawnUnit = nullptr;
 	const Unit* _altUnit = nullptr;
@@ -864,6 +866,8 @@ public:
 	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
 	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	/// Gets the new side of the unit, if it should change it on sight. -1 means no change.
+	UnitFaction getChangeSideOnSight() const { return _changeSideOnSight; }
 
 	/// Gets the unit's stats.
 	UnitStats *getStats();

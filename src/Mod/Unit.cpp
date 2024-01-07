@@ -35,7 +35,7 @@ Unit::Unit(const std::string &type) :
 	_type(type), _liveAlienName(Mod::STR_NULL), _showFullNameInAlienInventory(-1), _armor(nullptr), _standHeight(0), _kneelHeight(0), _floatHeight(0), _value(0),
 	_moraleLossWhenKilled(100), _moveSound(-1), _intelligence(0), _aggression(0),
 	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
-	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
+	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false), _changeSideOnSight(FACTION_NONE),
 	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _avoidsFire(defBoolNullable), 
 	_vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
 	_canPanic(true), _canBeMindControlled(true), _berserkChance(33)
@@ -105,6 +105,7 @@ void Unit::load(const YAML::Node &node, Mod *mod)
 	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
 	_capturable = node["capturable"].as<bool>(_capturable);
 	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
+	_changeSideOnSight = (UnitFaction)node["changeSideOnSight"].as<int>(_changeSideOnSight);
 	_specialObjective = (SpecialObjective)node["specialObjective"].as<int>(_specialObjective); //FtA way to define special units
 	_vip = node["vip"].as<bool>(_vip); //OXCE variant
 	_cosmetic = node["cosmetic"].as<bool>(_cosmetic);
