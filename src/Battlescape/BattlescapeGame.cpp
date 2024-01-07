@@ -2641,7 +2641,7 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 		newUnit->setTile(_save->getTile(position), _save);
 		newUnit->setPosition(position);
 		newUnit->setDirection(unitDirection);
-		newUnit->clearTimeUnits();
+		//newUnit->clearTimeUnits();
 		getSave()->getUnits()->push_back(newUnit);
 		newUnit->setVisible(true);
 		getSave()->initUnit(newUnit);
@@ -2650,7 +2650,7 @@ void BattlescapeGame::spawnNewSoldier(BattleActionAttack attack, Position positi
 
 		// we assume that by the design, such a soldier should be also considered as VIP
 		soldier->setJustSaved(true);
-
+		newUnit->setSpecialObjective(SPECOBJ_FRIENDLY_VIP);
 
 		base->getSoldiers()->push_back(soldier);
 	}
@@ -2707,7 +2707,7 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 		auto* bu = (*buIt);
 		if (bu->getUnitRules() != 0)
 		{
-			vip = bu->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP;
+			vip = bu->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP;
 		}
 		if (!vip)
 		{
@@ -3299,7 +3299,7 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 			bool capturable = true;
 			if (bu->getGeoscapeSoldier() == 0)
 			{
-				ftaVIP = bu->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP && bu->getOriginalFaction() == FACTION_PLAYER;
+				ftaVIP = bu->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP && bu->getOriginalFaction() == FACTION_PLAYER;
 			}
 			if (bu->getOriginalFaction() == FACTION_HOSTILE)
 			{

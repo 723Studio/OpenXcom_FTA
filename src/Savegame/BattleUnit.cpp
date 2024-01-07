@@ -67,9 +67,9 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	_lastPos(Position()), _direction(0), _toDirection(0), _directionTurret(0), _toDirectionTurret(0),
 	_verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _wasFriendlyFired(false), _walkPhase(0), _fallPhase(0), _kneeled(false),
 	_floating(false), _dontReselect(false), _fire(0), _currentAIState(0), _visible(false), _exp{}, _expTmp{}, _motionPoints(0), _scannedTurn(-1), _kills(0),
-	_warned(false), _alarmed(false), _freshReinforcement(false), _undercover(false), _revealed(false),
+	_warned(false), _alarmed(false), _freshReinforcement(false), _undercover(false), _revealed(false), _specialObjective(SPECOBJ_NONE),
 	_hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0), _moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
-	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0),
+	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0), 
 	_geoscapeSoldier(soldier), _roles(0), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
 	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false), 
 	_capturable(true), _vip(false), _bannedInNextStage(false)
@@ -404,7 +404,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_tile(0), _lastPos(Position()), _direction(0), _toDirection(0), _directionTurret(0),
 	_toDirectionTurret(0), _verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0),
 	_fallPhase(0), _kneeled(false), _floating(false), _dontReselect(false), _fire(0), _currentAIState(0), _warned(false), _alarmed(false), _undercover(false), _wasFriendlyFired(false), _freshReinforcement(false),
-	_visible(false), _exp{ }, _expTmp{ },
+	_visible(false), _exp{ }, _expTmp{ }, _specialObjective(SPECOBJ_NONE),
 	_motionPoints(0), _scannedTurn(-1), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
 	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT),
@@ -431,6 +431,7 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_faceDirection = -1;
 	_floorAbove = false;
 	_breathing = false;
+	_specialObjective = unit->getSpecialObjective();
 
 	_spawnUnit = unit->getSpawnUnit();
 	_capturable = unit->getCapturable();
@@ -645,6 +646,7 @@ void BattleUnit::load(const YAML::Node &node, const Mod *mod, const ScriptGlobal
 	_kills = node["kills"].as<int>(_kills);
 	_warned = node["warned"].as<bool>(_warned);
 	_alarmed = node["alarmed"].as<bool>(_alarmed);
+	_specialObjective = (SpecialObjective)node["specialObjective"].as<int>(_specialObjective);
 	_freshReinforcement = node["freshReinforcement"].as<bool>(_freshReinforcement);
 	_dontReselect = node["dontReselect"].as<bool>(_dontReselect);
 	_charging = 0;
@@ -795,7 +797,7 @@ YAML::Node BattleUnit::save(const ScriptGlobal *shared) const
 		node["respawn"] = _respawn;
 		node["spawnUnitFaction"] = (int)_spawnUnitFaction;
 	}
-
+	node["specialObjective"] = (int)_specialObjective;
 	node["motionPoints"] = _motionPoints;
 	if (_alreadyRespawned)
 		node["alreadyRespawned"] = _alreadyRespawned;
@@ -4042,7 +4044,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	Soldier *s = geoscape->getSoldier(_id);
 	if (this->getUnitRules() != 0)
 	{
-		if (this->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP)
+		if (this->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP)
 		{
 			s = this->getGeoscapeSoldier();
 		}

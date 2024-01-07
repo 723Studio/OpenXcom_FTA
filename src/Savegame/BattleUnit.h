@@ -105,6 +105,7 @@ private:
 	std::vector<BattleItem*> _inventory;
 	BattleItem* _specWeapon[SPEC_WEAPON_MAX];
 	AIModule *_currentAIState;
+	SpecialObjective _specialObjective;
 	bool _visible;
 	UnitStats _exp, _expTmp;
 	int _motionPoints;
@@ -447,6 +448,8 @@ public:
 	/// Get whether this unit is visible
 	bool getVisible() const;
 
+	SpecialObjective getSpecialObjective() const { return _specialObjective; }
+	void setSpecialObjective(SpecialObjective objective) { _specialObjective = objective; }
 	/// Check if unit can fall down.
 	void updateTileFloorState(SavedBattleGame *saveBattleGame);
 	/// Sets the unit's tile it's standing on

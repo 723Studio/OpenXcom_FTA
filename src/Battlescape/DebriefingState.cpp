@@ -1652,17 +1652,13 @@ void DebriefingState::prepareDebriefing()
 		UnitFaction oldFaction = bunit->getOriginalFaction();
 		int value = bunit->getValue();
 		bool evacObj = false, terminateObj = false;
-		if (bunit->getGeoscapeSoldier() == 0)
+
+		evacObj = bunit->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP;
+		if (bunit->getOriginalFaction() == FACTION_HOSTILE)
 		{
-			if (bunit->getOriginalFaction() == FACTION_PLAYER)
-			{
-				evacObj = bunit->getUnitRules()->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP;
-			}
-			else if (bunit->getOriginalFaction() == FACTION_HOSTILE)
-			{
-				terminateObj = bunit->getUnitRules()->getSpecialObjective() == SPECOBJ_ENEMY_VIP;
-			}
+			terminateObj = bunit->getSpecialObjective() == SPECOBJ_ENEMY_VIP;
 		}
+		
 		Soldier *soldier = save->getSoldier(bunit->getId());
 
 		if (!bunit->getTile())
@@ -1782,7 +1778,7 @@ void DebriefingState::prepareDebriefing()
 					|| !aborted
 					|| (aborted && bunit->isInExitArea(END_POINT)))
 				{ // so game is not aborted or aborted and unit is on exit area
-					if (evacObj && soldier == nullptr)
+					if (evacObj)
 					{
 						addStat("STR_VIP_SAVED", 1, value);
 						vipsSaved++;
@@ -1878,11 +1874,11 @@ void DebriefingState::prepareDebriefing()
 				else
 				{ // so game is aborted and unit is not on exit area
 					playersSurvived--;
-					if (evacObj || (soldier && soldier->isJustSaved()))
+					if (evacObj)
 					{
 						addStat("STR_VIP_LOST", 1, - (value * 2));
 						++vipsLost;
-						//handleVipRecovery(bunit, _base, false);
+
 					}
 					else
 					{
