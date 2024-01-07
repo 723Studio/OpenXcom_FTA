@@ -71,7 +71,7 @@ struct UnitStats
 	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana, //soldiers
 		maneuvering, missiles, dogfight, tracking, cooperation, beams, synaptic, gravity, //pilot
 		physics, chemistry, biology, insight, data, computers, tactics, materials, designing, psionics, xenolinguistics, //scientist
-		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, construction, diligence, alienTech, reverseEngineering, //engineers
+		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, robotics, diligence, alienTech, reverseEngineering, //engineers
 		stealth, perception, charisma, investigation, deception, interrogation; //agents
 
 	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
@@ -79,7 +79,7 @@ struct UnitStats
 		maneuvering(0), missiles(0), dogfight(0), tracking(0), cooperation(0), beams(0), synaptic(0), gravity(0),
 		physics(0), chemistry(0), biology(0), insight(0), data(0), computers(0), tactics(0), materials(0),
 		designing(0), psionics(0), xenolinguistics(0),
-		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), construction(0),
+		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), robotics(0),
 		diligence(0), alienTech(0), reverseEngineering(0),
 		stealth(0), perception(0), charisma(0), investigation(0), deception(0), interrogation(0){}
 	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
@@ -88,7 +88,7 @@ struct UnitStats
 		int physics_, int chemistry_, int biology_, int insight_, int data_, int computers_, int tactics_, int materials_,
 		int designing_, int psionics_, int xenolinguistics_,
 		int weaponry_, int explosives_, int efficiency_, int microelectronics_, int metallurgy_, int processing_, int hacking_,
-		int construction_, int diligence_, int alienTech_, int reverseEngineering_,
+		int robotics_, int diligence_, int alienTech_, int reverseEngineering_,
 		int stealth_, int perception_, int charisma_, int investigation_, int deception_, int interrogation_) :
 		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
 		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
@@ -96,7 +96,7 @@ struct UnitStats
 		physics(physics_), chemistry(chemistry_), biology(biology_), insight(insight_), data(data_), computers(computers_), tactics(tactics_), materials(materials_),
 		designing(designing_), psionics(psionics_), xenolinguistics(xenolinguistics_),
 		weaponry(weaponry_), explosives(explosives_), efficiency(efficiency_), microelectronics(microelectronics_), metallurgy(metallurgy_), processing(processing_),
-		hacking(hacking_), construction(construction_), diligence(diligence_), alienTech(alienTech_), reverseEngineering(reverseEngineering_),
+		hacking(hacking_), robotics(robotics_), diligence(diligence_), alienTech(alienTech_), reverseEngineering(reverseEngineering_),
 		stealth(stealth_), perception(perception_), charisma(charisma_), investigation(investigation_), deception(deception_), interrogation(interrogation_) {}
 	UnitStats& operator+=(const UnitStats& stats) {
 		tu += stats.tu;
@@ -137,7 +137,7 @@ struct UnitStats
 		metallurgy += stats.metallurgy;
 		processing += stats.processing;
 		hacking += stats.hacking;
-		construction += stats.construction;
+		robotics += stats.robotics;
 		diligence += stats.diligence;
 		alienTech += stats.alienTech;
 		reverseEngineering += stats.reverseEngineering;
@@ -187,7 +187,7 @@ struct UnitStats
 		metallurgy + stats.metallurgy,
 		processing + stats.processing,
 		hacking + stats.hacking,
-		construction + stats.construction,
+		robotics + stats.robotics,
 		diligence + stats.diligence,
 		alienTech + stats.alienTech,
 		reverseEngineering + stats.reverseEngineering,
@@ -234,7 +234,7 @@ struct UnitStats
 		metallurgy -= stats.metallurgy;
 		processing -= stats.processing;
 		hacking -= stats.hacking;
-		construction -= stats.construction;
+		robotics -= stats.robotics;
 		diligence -= stats.diligence;
 		alienTech -= stats.alienTech;
 		reverseEngineering -= stats.reverseEngineering;
@@ -284,7 +284,7 @@ struct UnitStats
 		metallurgy - stats.metallurgy,
 		processing - stats.processing,
 		hacking - stats.hacking,
-		construction - stats.construction,
+		robotics - stats.robotics,
 		diligence - stats.diligence,
 		alienTech - stats.alienTech,
 		reverseEngineering - stats.reverseEngineering,
@@ -298,7 +298,7 @@ struct UnitStats
 		-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana,
 		-maneuvering, -missiles, -dogfight, -tracking, -cooperation, -beams, -synaptic, -gravity,
 		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -designing, -psionics, -xenolinguistics,
-		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -construction, -diligence, -alienTech, -reverseEngineering,
+		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -robotics, -diligence, -alienTech, -reverseEngineering,
 		-stealth, -perception, -charisma, -investigation, -deception, -interrogation); }
 	void merge(const UnitStats& stats) {
 		tu = (stats.tu ? stats.tu : tu);
@@ -339,7 +339,7 @@ struct UnitStats
 		metallurgy = (stats.metallurgy ? stats.metallurgy : metallurgy);
 		processing = (stats.processing ? stats.processing : processing);
 		hacking = (stats.hacking ? stats.hacking : hacking);
-		construction = (stats.construction ? stats.construction : construction);
+		robotics = (stats.robotics ? stats.robotics : robotics);
 		diligence = (stats.diligence ? stats.diligence : diligence);
 		alienTech = (stats.alienTech ? stats.alienTech : alienTech);
 		reverseEngineering = (stats.reverseEngineering ? stats.reverseEngineering : reverseEngineering);
@@ -358,7 +358,7 @@ struct UnitStats
 			synaptic || gravity || physics || chemistry || biology || insight || data || computers || tactics ||
 			materials || designing || psionics || xenolinguistics ||
 			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
-			hacking || construction || diligence || alienTech || reverseEngineering ||
+			hacking || robotics || diligence || alienTech || reverseEngineering ||
 			stealth || perception || charisma || investigation || deception || interrogation;
 	}
 	template<typename Func>
@@ -374,7 +374,7 @@ struct UnitStats
 			&UnitStats::physics, &UnitStats::chemistry, &UnitStats::biology, &UnitStats::insight, &UnitStats::data, &UnitStats::computers,& UnitStats::tactics,
 			&UnitStats::materials, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
 			&UnitStats::weaponry, &UnitStats::explosives, &UnitStats::efficiency, &UnitStats::microelectronics, &UnitStats::metallurgy, &UnitStats::processing,
-			&UnitStats::hacking, &UnitStats::construction, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
+			&UnitStats::hacking, &UnitStats::robotics, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
 			&UnitStats::stealth, &UnitStats::perception, &UnitStats::charisma, &UnitStats::investigation, &UnitStats::deception, &UnitStats::interrogation
 		};
 
@@ -426,7 +426,7 @@ struct UnitStats
 			{&UnitStats::metallurgy, "STR_METALLURGY"},
 			{&UnitStats::processing, "STR_PROCESSING"},
 			{&UnitStats::hacking, "STR_HACKING"},
-			{&UnitStats::construction, "STR_CONSTRUCTION"},
+			{&UnitStats::robotics, "STR_ROBOTICS"},
 			{&UnitStats::diligence, "STR_DILIGENCE"},
 			{&UnitStats::alienTech, "STR_ALIEN_TECH"},
 			{&UnitStats::reverseEngineering, "STR_REVERSE_ENGINEERING"},
@@ -1047,8 +1047,8 @@ namespace YAML
 				node["processing"] = rhs.processing;
 			if (rhs.hacking > 0)
 				node["hacking"] = rhs.hacking;
-			if (rhs.construction > 0)
-				node["construction"] = rhs.construction;
+			if (rhs.robotics > 0)
+				node["robotics"] = rhs.robotics;
 			if (rhs.diligence > 0)
 				node["diligence"] = rhs.diligence;
 			if (rhs.alienTech > 0)
@@ -1113,7 +1113,7 @@ namespace YAML
 			rhs.metallurgy = node["metallurgy"].as<int>(rhs.metallurgy);
 			rhs.processing = node["processing"].as<int>(rhs.processing);
 			rhs.hacking = node["hacking"].as<int>(rhs.hacking);
-			rhs.construction = node["construction"].as<int>(rhs.construction);
+			rhs.robotics = node["robotics"].as<int>(rhs.robotics);
 			rhs.diligence = node["diligence"].as<int>(rhs.diligence);
 			rhs.alienTech = node["alienTech"].as<int>(rhs.alienTech);
 			rhs.reverseEngineering = node["reverseEngineering"].as<int>(rhs.reverseEngineering);

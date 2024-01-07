@@ -355,7 +355,6 @@
     <ClCompile Include="Basescape\DismantleFacilityState.cpp" />
     <ClCompile Include="Basescape\DisposeState.cpp" />
     <ClCompile Include="Basescape\EngineersState.cpp" />
-    <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
@@ -794,7 +793,6 @@
     <ClInclude Include="Basescape\DismantleFacilityState.h" />
     <ClInclude Include="Basescape\DisposeState.h" />
     <ClInclude Include="Basescape\EngineersState.h" />
-    <ClInclude Include="Basescape\FacilityAllocateEngineersState.h" />
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />

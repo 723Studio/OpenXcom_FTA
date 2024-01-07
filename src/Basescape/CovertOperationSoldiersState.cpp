@@ -195,7 +195,7 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::construction), constructionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::robotics), roboticsStat);
 	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
 	{
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);

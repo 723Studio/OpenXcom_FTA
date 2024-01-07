@@ -789,9 +789,9 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtMaterials = new Text(120, 9, 6, yPos);
 	_numMaterials = new Text(18, 9, 131, yPos);
 	_barMaterials = new Bar(170, 7, 150, yPos);
-	_txtConstruction = new Text(120, 9, 6, yPos);
+	_txtRobotics = new Text(120, 9, 6, yPos);
 	_numConstruction = new Text(18, 9, 131, yPos);
-	_barConstruction = new Bar(170, 7, 150, yPos);
+	_barRobotics = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
 	_txtStrength = new Text(120, 9, 6, yPos);
@@ -965,9 +965,9 @@ void SoldierInfoStateFtA::addStatLines()
 	add(_txtDesigning, "text2", "soldierInfo");
 	add(_numDesigning, "numbers", "soldierInfo");
 	add(_barDesigning, "barDesigning", "soldierInfo");
-	add(_txtConstruction, "text2", "soldierInfo");
+	add(_txtRobotics, "text2", "soldierInfo");
 	add(_numConstruction, "numbers", "soldierInfo");
-	add(_barConstruction, "barConstruction", "soldierInfo");
+	add(_barRobotics, "barConstruction", "soldierInfo");
 
 	add(_txtMana, "text2", "soldierInfo");
 	add(_numMana, "numbers", "soldierInfo");
@@ -1084,8 +1084,8 @@ void SoldierInfoStateFtA::nameBars()
 	_barGravity->setScale(1.0);
 	_txtDesigning->setText(tr(UnitStats::getStatString(&UnitStats::designing)));
 	_barDesigning->setScale(1.0);
-	_txtConstruction->setText(tr(UnitStats::getStatString(&UnitStats::construction)));
-	_barConstruction->setScale(1.0);
+	_txtRobotics->setText(tr(UnitStats::getStatString(&UnitStats::robotics)));
+	_barRobotics->setScale(1.0);
 
 	_txtMana->setText(tr(UnitStats::getStatString(&UnitStats::mana)));
 	_barMana->setScale(1.0);
@@ -1360,11 +1360,11 @@ void SoldierInfoStateFtA::fillNumbers()
 	_barDesigning->setValue(withArmor.designing);
 	_barDesigning->setValue2(std::min(withArmor.designing, initial->designing));
 	std::ostringstream ss49;
-	ss49 << withArmor.construction;
+	ss49 << withArmor.robotics;
 	_numConstruction->setText(ss49.str());
-	_barConstruction->setMax(current->construction);
-	_barConstruction->setValue(withArmor.construction);
-	_barConstruction->setValue2(std::min(withArmor.construction, initial->construction));
+	_barRobotics->setMax(current->robotics);
+	_barRobotics->setValue(withArmor.robotics);
+	_barRobotics->setValue2(std::min(withArmor.robotics, initial->robotics));
 
 	std::ostringstream ss10;
 	ss10 << withArmor.mana;
@@ -1635,9 +1635,9 @@ void SoldierInfoStateFtA::updateVisibility()
 		_numHacking->setVisible(true);
 		_barHacking->setVisible(true);
 
-		_txtConstruction->setVisible(true);
+		_txtRobotics->setVisible(true);
 		_numConstruction->setVisible(true);
-		_barConstruction->setVisible(true);
+		_barRobotics->setVisible(true);
 
 		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
 		{
@@ -1868,9 +1868,9 @@ void SoldierInfoStateFtA::hideAllStats()
 	_numHacking->setVisible(false);
 	_barHacking->setVisible(false);
 
-	_txtConstruction->setVisible(false);
+	_txtRobotics->setVisible(false);
 	_numConstruction->setVisible(false);
-	_barConstruction->setVisible(false);
+	_barRobotics->setVisible(false);
 
 	_txtReverseEngineering->setVisible(false);
 	_numReverseEngineering->setVisible(false);

@@ -25,7 +25,6 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "BaseView.h"
-#include "FacilityAllocateEngineersState.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
@@ -53,7 +52,6 @@ namespace OpenXcom
 PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule, BaseFacility *origFac) : _base(base), _rule(rule), _origFac(origFac)
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 128, 160, 192, 40);
@@ -132,11 +130,7 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 
 	int time = _rule->getBuildTime();
 	std::string units = "STR_DAY";
-	if (_ftaUi && _rule->getProjectRules())
-	{
-		time = _rule->getProjectRules()->getManufactureTime() / 24 / 100; //converse to days and adjust as FtA uses more precise calculation of manufacture cost
-		units = "STR_MAN_DAY";
-	}
+	
 	_numTime->setBig();
 	_numTime->setText(tr(units, _origFac != 0 ? 0 : time));
 	_txtMaintenance->setText(tr("STR_MAINTENANCE_UC"));
@@ -184,7 +178,7 @@ void PlaceFacilityState::viewClick(Action *)
 		{
 			_origFac->setX(_view->getGridX());
 			_origFac->setY(_view->getGridY());
-			if (Options::allowBuildingQueue && !_ftaUi) // sorry, no queue for FtA game...
+			if (Options::allowBuildingQueue)
 			{
 				// first reset (maybe the moved facility is not queued anymore)
 				if (abs(_origFac->getBuildTime()) > _rule->getBuildTime()) _origFac->setBuildTime(_rule->getBuildTime());
@@ -318,7 +312,7 @@ void PlaceFacilityState::viewClick(Action *)
 				_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
 			}
 
-			if (Options::allowBuildingQueue && !_ftaUi)
+			if (Options::allowBuildingQueue)
 			{
 				if (_view->isQueuedBuilding(_rule)) fac->setBuildTime(INT_MAX);
 				_view->reCalcQueuedBuildings();
@@ -329,30 +323,8 @@ void PlaceFacilityState::viewClick(Action *)
 			{
 				_base->getStorageItems()->removeItem(item.first, item.second.first);
 			}
-			//Making production for FtA game logic
-			if (_ftaUi)
-			{
-				//create project
-				auto ruleProject = fac->getRules()->getProjectRules();
-				if (ruleProject == nullptr)
-				{
-					_game->pushState(new ErrorMessageState("No rule for this facility, ask devs why!", _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK13.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
-				}
-				else
-				{
-					Production* project = new Production(fac->getRules()->getProjectRules(), 1);
-					_base->addProduction(project);
-					project->setFacility(fac);
-					fac->setProductionProject(project);
-
-					// apply project's property
-					_game->pushState(new FacilityAllocateEngineersState(_base, project));
-				}
-			}
-			else
-			{
-				_game->popState();
-			}
+			
+			_game->popState();
 		}
 	}
 }

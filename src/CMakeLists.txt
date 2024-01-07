@@ -31,7 +31,6 @@ set ( basescape_src
   Basescape/DismantleFacilityState.cpp
   Basescape/DisposeState.cpp
   Basescape/EngineersState.cpp
-  Basescape/FacilityAllocateEngineersState.cpp
   Basescape/GlobalAlienContainmentState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp

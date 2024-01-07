@@ -23,7 +23,6 @@ namespace OpenXcom
 {
 class RuleManufacture;
 class Base;
-class BaseFacility;
 class SavedGame;
 class Language;
 class Mod;
@@ -40,7 +39,6 @@ private:
 	int _engineers;
 	int _efficiency;
 	bool _sell;
-	BaseFacility* _facility = nullptr;
 	std::map<std::string, int> _randomProductionInfo;
 	bool haveEnoughMoneyForOneMoreUnit(SavedGame * g) const;
 	bool haveEnoughLivingSpaceForOneMoreUnit(Base * b);
@@ -62,8 +60,6 @@ public:
 	void setSellItems (bool sell) { _sell = sell; }
 	std::vector<Soldier*> getAssignedSoldiers(Base* b);
 	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
-	void setFacility(BaseFacility* facility) { _facility = facility; }
-	BaseFacility* getFacility(){ return _facility; }
 	int getTimeLeft();
 	
 	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);

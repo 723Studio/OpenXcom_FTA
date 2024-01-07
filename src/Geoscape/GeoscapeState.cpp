@@ -2220,16 +2220,8 @@ void GeoscapeState::time1Hour()
 						(*s)->setProductionProject(0);
 					}
 				}
-				BaseFacility *facility = pair.first->getFacility();
-				if (facility != nullptr)
-				{
-					facility->setBuildTime(0);
-					popup(new ProductionCompleteState(xbase, tr(facility->getRules()->getType()), this, PROGRESS_CONSTRUCTION));
-				}
-				else
-				{
-					popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, pair.second, pair.first));
-				}
+				
+				popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, pair.second, pair.first));
 
 				xbase->removeProduction(pair.first);
 			}
@@ -2458,33 +2450,29 @@ void GeoscapeState::time1Day()
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
-		if (!_fta)
+		std::map<const RuleBaseFacility*, int> finishedFacilities;
+		for (auto* facility : *xbase->getFacilities())
 		{
-			// Handle facility construction
-			std::map<const RuleBaseFacility*, int> finishedFacilities;
-			for (auto* facility : *xbase->getFacilities())
+			if (facility->getBuildTime() > 0)
 			{
-				if (facility->getBuildTime() > 0)
+				facility->build();
+				if (facility->getBuildTime() == 0)
 				{
-					facility->build();
-					if (facility->getBuildTime() == 0)
-					{
-						finishedFacilities[facility->getRules()] += 1;
-					}
+					finishedFacilities[facility->getRules()] += 1;
 				}
 			}
-			for (const auto& pair : finishedFacilities)
+		}
+		for (const auto& pair : finishedFacilities)
+		{
+			if (pair.second > 1)
 			{
-				if (pair.second > 1)
-				{
-					std::ostringstream ssf;
-					ssf << tr(pair.first->getType()) << " (x" << pair.second << ")";
-					popup(new ProductionCompleteState(xbase, ssf.str(), this, PROGRESS_CONSTRUCTION));
-				}
-				else
-				{
-					popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, PROGRESS_CONSTRUCTION));
-				}
+				std::ostringstream ssf;
+				ssf << tr(pair.first->getType()) << " (x" << pair.second << ")";
+				popup(new ProductionCompleteState(xbase, ssf.str(), this, PROGRESS_CONSTRUCTION));
+			}
+			else
+			{
+				popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, PROGRESS_CONSTRUCTION));
 			}
 		}
 		

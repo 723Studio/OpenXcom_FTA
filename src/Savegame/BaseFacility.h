@@ -27,8 +27,6 @@ class RuleBaseFacility;
 class Base;
 class Mod;
 class Craft;
-class Production;
-
 /**
  * Represents a base facility placed in a base.
  * Contains variable info about a facility like
@@ -43,7 +41,6 @@ private:
 	int _x, _y, _buildTime;
 	bool _disabled;
 	Craft *_craftForDrawing;	// craft, used for drawing facility
-	Production* _project;
 	bool _hadPreviousFacility;
 public:
 	/// Creates a base facility of the specified type.
@@ -84,10 +81,6 @@ public:
 	Craft *getCraftForDrawing() const;
 	/// Sets craft, used for drawing facility.
 	void setCraftForDrawing(Craft *craft);
-	/// Gets Production project for the facility.
-	Production* getProductionProject() const { return _project; }
-	/// Sets Production project for the facility.
-	void setProductionProject(Production* project) { _project = project; }
 	/// Gets whether this facility was placed over another or was placed by removing another
 	bool getIfHadPreviousFacility() const;
 	/// Sets whether this facility was placed over another or was placed by removing another

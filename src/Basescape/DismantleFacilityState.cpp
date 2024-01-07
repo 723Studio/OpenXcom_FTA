@@ -140,24 +140,6 @@ void DismantleFacilityState::btnOkClick(Action *)
 			}
 		}
 
-		if (_game->getMod()->isFTAGame())
-		{
-			for (auto project : _base->getProductions())
-			{
-				if (project->getRules() == _fac->getRules()->getProjectRules())
-				{
-					for (auto s : *_base->getSoldiers())
-					{
-						if (s->getProductionProject() == project)
-						{
-							s->setProductionProject(0);
-						}
-					}
-					_base->removeProduction(project);
-				}
-			}
-		}
-
 		for (auto facIt = _base->getFacilities()->begin(); facIt != _base->getFacilities()->end(); ++facIt)
 		{
 			if (*facIt == _fac)

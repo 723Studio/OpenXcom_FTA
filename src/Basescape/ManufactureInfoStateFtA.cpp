@@ -65,7 +65,6 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, RuleManufacture *it
 	_unitsToProduce = 1;
 	_producedItems = 0;
 	_infiniteProduction = false;
-	_facility = nullptr;
 	buildUi();
 }
 
@@ -78,7 +77,6 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, RuleManufacture *it
 ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *production) : _base(base), _item(0), _production(production)
 {
 	_newProject = false;
-	_facility = _production->getFacility();
 	_unitsToProduce = _production->getAmountTotal();
 	_producedItems = -_production->getAmountProduced();
 	_infiniteProduction = _production->getInfiniteAmount();
@@ -95,15 +93,7 @@ void ManufactureInfoStateFtA::buildUi()
 
 	_window = new Window(this, 320, 160, 0, 20, POPUP_BOTH);
 	_txtTitle = new Text(302, 17, 9, 30);
-	if (!_facility)
-	{
-		_btnOk = new TextButton(136, 16, 168, 155);
-	}
-	else
-	{
-		_btnOk = new TextButton(288, 16, 16, 155);
-	}
-	
+	_btnOk = new TextButton(288, 16, 16, 155);
 	_btnStop = new TextButton(136, 16, 16, 155);
 	_txtAvailableEngineer = new Text(160, 9, 16, 49);
 	_txtAvailableSpace = new Text(160, 9, 16, 59);
@@ -116,14 +106,11 @@ void ManufactureInfoStateFtA::buildUi()
 	_txtTodo = new Text(40, 16, 280, 88);
 	_txtAvgEfficiency = new Text(143, 9, 168, 50);
 	_txtAvgDiligence = new Text(143, 9, 168, 59);
-	_txtConstructionTime = new Text(143, 9, 168, 50);
 	_btnAllocateEngineers = new TextButton(110, 16, 16, 79);
 	_lstEngineers = new TextList(116, 56, 16, 97);
 
 	_surfaceUnits = new InteractiveSurface(160, 150, 160, 25);
 	_surfaceUnits->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::handleWheelUnit, 0);
-
-	_image = new Surface(tile_size * 2, tile_size * 2, 201, 77);
 
 	// Set palette
 	setInterface("manufactureInfo");
@@ -144,10 +131,8 @@ void ManufactureInfoStateFtA::buildUi()
 	add(_btnStop, "button2", "manufactureInfo");
 	add(_txtAvgEfficiency, "text", "manufactureInfo");
 	add(_txtAvgDiligence, "text", "manufactureInfo");
-	add(_txtConstructionTime, "text", "manufactureInfo");
 	add(_btnAllocateEngineers, "button2", "manufactureInfo");
 	add(_lstEngineers, "list", "manufactureInfo");
-	add(_image);
 
 	centerAllSurfaces();
 
@@ -214,63 +199,6 @@ void ManufactureInfoStateFtA::buildUi()
 
 	_timerMoreUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onMoreUnit);
 	_timerLessUnit->onTimer((StateHandler)&ManufactureInfoStateFtA::onLessUnit);
-
-	if (_facility)
-	{
-		_txtUnitToProduce->setVisible(false);
-		_txtUnitUp->setVisible(false);
-		_txtUnitDown->setVisible(false);
-		_btnUnitUp->setVisible(false);
-		_txtTodo->setVisible(false);
-		_btnUnitDown->setVisible(false);
-		_btnStop->setVisible(false);
-		_txtAvgDiligence->setVisible(false);
-		_txtAvgEfficiency->setVisible(false);
-
-		// build preview image
-		SurfaceSet *graphic = _game->getMod()->getSurfaceSet("BASEBITS.PCK");
-		Surface *frame;
-		int x_offset, y_offset;
-		int x_pos, y_pos;
-		int num;
-		int facilitySize = _facility->getRules()->getSize();
-
-		if (facilitySize == 1)
-		{
-			x_offset = y_offset = tile_size/2;
-		}
-		else
-		{
-			x_offset = y_offset = 0;
-		}
-
-		num = 0;
-		y_pos = y_offset;
-		for (int y = 0; y < facilitySize; ++y)
-		{
-			x_pos = x_offset;
-			for (int x = 0; x < facilitySize; ++x)
-			{
-				frame = graphic->getFrame(_facility->getRules()->getSpriteShape() + num);
-				frame->blitNShade(_image, x_pos, y_pos);
-
-				if (facilitySize == 1)
-				{
-					frame = graphic->getFrame(_facility->getRules()->getSpriteFacility() + num);
-					frame->blitNShade(_image, x_pos, y_pos);
-				}
-
-				x_pos += tile_size;
-				num++;
-			}
-			y_pos += tile_size;
-		}
-	}
-	else
-	{
-		_image->setVisible(false);
-		_txtConstructionTime->setVisible(false);
-	}
 }
 
 /**
@@ -469,33 +397,12 @@ void ManufactureInfoStateFtA::setAssignedEngineers()
 	_txtAvgEfficiency->setText(tr("STR_AVERAGE_EFFICIENCY_UC").arg(calcAvgStat(true)));
 
 	std::ostringstream s5;
-	if (_facility && !_engineers.empty())
-	{
-		int timeSpent = 0;
-		
-		if (!_newProject)
-		{
-			timeSpent = _production->getTimeSpent();
-		}
-		int timeLeft = _production->getRules()->getManufactureTime() - timeSpent;
-		int numEffectiveEngineers = _production->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
-		int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-		int daysLeft = hoursLeft / 24;
-		int hours = hoursLeft % 24;
-		s5 << daysLeft << "/" << hours;
-		
-	}
-	else
-	{
-		s4 << "∞";
-	}
-	_txtConstructionTime->setText(tr("STR_CONSTRUCTION_TIME_UC").arg(s5.str()));
 
-	//if (_engineers.empty())
-	//{
-	//	_txtAvgDiligence->setVisible(false);
-	//	_txtAvgEfficiency->setVisible(false);
-	//}
+	if (_engineers.empty())
+	{
+		_txtAvgDiligence->setVisible(false);
+		_txtAvgEfficiency->setVisible(false);
+	}
 }
 
 

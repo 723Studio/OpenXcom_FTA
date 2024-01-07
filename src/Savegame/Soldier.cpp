@@ -175,7 +175,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 		_initialStats.metallurgy = RNG::generate(minStats.metallurgy, maxStats.metallurgy);
 		_initialStats.processing = RNG::generate(minStats.processing, maxStats.processing);
 		_initialStats.hacking = RNG::generate(minStats.hacking, maxStats.hacking);
-		_initialStats.construction = RNG::generate(minStats.construction, maxStats.construction);
+		_initialStats.robotics = RNG::generate(minStats.robotics, maxStats.robotics);
 		_initialStats.diligence = RNG::generate(minStats.diligence, maxStats.diligence);
 		_initialStats.reverseEngineering = RNG::generate(minStats.reverseEngineering, maxStats.reverseEngineering);
 
@@ -2951,9 +2951,9 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			else
 				addExperience(ROLE_ENGINEER, rate);
 		}
-		if (exp->construction && stats->construction < caps.construction)
+		if (exp->robotics && stats->robotics < caps.robotics)
 		{
-			stats->construction += improveStat(exp->construction, rate);
+			stats->robotics += improveStat(exp->robotics, rate);
 			addExperience(ROLE_ENGINEER, rate);
 		}
 		if (exp->diligence && stats->diligence < caps.diligence)

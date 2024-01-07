@@ -534,14 +534,6 @@ void BaseView::draw()
 	// TODO: make const in the future
 	for (auto* fac : *_base->getFacilities())
 	{
-		// Update manufacturing data
-		for (auto project : _base->getProductions())
-		{
-			if (project->getRules() == fac->getRules()->getProjectRules())
-			{
-				fac->setProductionProject(project);
-			}
-		}
 		// Draw facility graphic
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSize(); ++y)
@@ -594,23 +586,7 @@ void BaseView::draw()
 			}
 			else
 			{
-				auto project = fac->getProductionProject();
-				if (project != nullptr)
-				{
-					if (project->getAssignedSoldiers(_base).empty())
-					{
-						ss << "∞";
-					}
-					else
-					{
-						float time = (float)fac->getBuildTime() / 24;
-						ss << ceil(time);
-					}
-				}
-				else
-				{
-					ss << fac->getBuildTime();
-				}
+				ss << fac->getBuildTime();
 			}
 			if (fac->getIfHadPreviousFacility()) // Indicate that this facility still counts for connectivity
 			{

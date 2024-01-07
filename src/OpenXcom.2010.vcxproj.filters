@@ -1241,9 +1241,6 @@
     <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\FacilityAllocateEngineersState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
     <ClCompile Include="Mod\RuleIntelProject.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
@@ -2622,9 +2619,6 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ResearchProjectDetailsState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\FacilityAllocateEngineersState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Mod\RuleIntelProject.h">

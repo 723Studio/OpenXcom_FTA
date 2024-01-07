@@ -161,12 +161,12 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statsN++;
 				}
 
-				if (projStats.construction > 0)
+				if (projStats.robotics > 0)
 				{
-					statEffort = stats->construction;
-					soldierEffort += statEffort / projStats.construction;
-					if (!prediction && stats->construction < caps.construction && RNG::generate(0, caps.construction) > stats->construction && RNG::percent(factor))
-						s->getEngineerExperience()->construction++;
+					statEffort = stats->robotics;
+					soldierEffort += statEffort / projStats.robotics;
+					if (!prediction && stats->robotics < caps.robotics && RNG::generate(0, caps.robotics) > stats->robotics && RNG::percent(factor))
+						s->getEngineerExperience()->robotics++;
 					statsN++;
 				}
 
@@ -191,7 +191,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				Log(LOG_DEBUG) << "Raw soldierEffort equals: " << soldierEffort;
 				int diligence = stats->diligence;
 				double deliganceFactor = 0.5;
-				if (diligence > 10 && !_facility)
+				if (diligence > 10)
 					deliganceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
 
 				soldierEffort *= deliganceFactor;
@@ -205,7 +205,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 			}
 			_efficiency = summEfficiency / assignedEngineers.size();
 			
-			if (assignedEngineers.size() > 1 && !_facility)
+			if (assignedEngineers.size() > 1)
 				effort *= (100 - 19 * log(assignedEngineers.size())) / 100;
 			Log(LOG_DEBUG) << "Progress after correction for size: " << effort;
 			effort *= (double)loyaltyRating;
@@ -226,12 +226,6 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 	int done = getAmountProduced();
 	int progress = getProgress(b, g, m, rating);
 	_timeSpent += progress;
-
-	if (_facility)
-	{
-		int timeLeft = _rules->getManufactureTime() - _timeSpent;
-		_facility->setBuildTime((timeLeft + progress - 1) / progress);
-	}
 
 	if (done < getAmountProduced())
 	{
@@ -255,7 +249,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 				craft->setStatus("STR_REFUELLING");
 				b->getCrafts()->push_back(craft);
 			}
-			else if (!_facility)
+			else
 			{
 				for (const auto& i : _rules->getProducedItems())
 				{
@@ -433,14 +427,7 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 YAML::Node Production::save() const
 {
 	YAML::Node node;
-	if (_facility)
-	{
-		node["item"] = _facility->getRules()->getType();
-	}
-	else
-	{
-		node["item"] = getRules()->getName();
-	}
+	node["item"] = getRules()->getName();
 	node["assigned"] = getAssignedEngineers();
 	node["spent"] = getTimeSpent();
 	node["amount"] = getAmountTotal();

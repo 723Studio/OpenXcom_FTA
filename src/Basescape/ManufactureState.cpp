@@ -222,7 +222,6 @@ void ManufactureState::fillProductionList(size_t scrl)
 	_lstManufacture->clearList();
 	for (auto* prod : _base->getProductions())
 	{
-		auto facility = prod->getFacility();
 		std::ostringstream s1;
 		size_t engineers = prod->getAssignedSoldiers(_base).size();
 		if (_ftaUi)
@@ -274,14 +273,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		{
 			s4 << "-";
 		}
-		if (facility != nullptr)
-		{
-			_lstManufacture->addRow(5, tr(facility->getRules()->getType()).c_str(), s1.str().c_str(), "", "", s4.str().c_str());
-		}
-		else
-		{
-			_lstManufacture->addRow(5, tr(prod->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
-		}
+		_lstManufacture->addRow(5, tr(prod->getRules()->getName()).c_str(), s1.str().c_str(), s2.str().c_str(), s3.str().c_str(), s4.str().c_str());
 	}
 
 	if (_ftaUi)
