@@ -44,7 +44,7 @@ private:
 	ToggleTextButton *_btnPlus;
 	Window *_window;
 	Text *_txtTitle, *_txtTraining, *_txtName, *_txtRemaining;
-	Text *_txtTu, *_txtStamina, *_txtHealth, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength;
+	Text *_txtTu, *_txtStamina, *_txtHealth, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtReaction;
 	ComboBox *_cbxSortBy;
 	TextList *_lstSoldiers;
 	std::vector<Soldier*> _soldiers;
@@ -65,22 +65,12 @@ public:
 	void cbxSortByChange(Action *action);
 	/// Updates the soldier info.
 	void init() override;
-	/// Handler for clicking the Soldiers reordering button.
-	void lstItemsLeftArrowClick(Action *action);
-	/// Moves a soldier up.
-	void moveSoldierUp(Action *action, unsigned int row, bool max = false);
-	/// Handler for clicking the Soldiers reordering button.
-	void lstItemsRightArrowClick(Action *action);
-	/// Moves a soldier down.
-	void moveSoldierDown(Action *action, unsigned int row, bool max = false);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the PLUS button.
 	void btnPlusClick(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
-	/// Handler for pressing-down a mouse-button in the list.
-	void lstSoldiersMousePress(Action *action);
 	/// Handler for clicking the De-assign All Soldiers button.
 	void btnDeassignAllSoldiersClick(Action* action);
 	/// Handler for clicking the Assign All Soldiers button.
