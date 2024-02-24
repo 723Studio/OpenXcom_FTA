@@ -1070,6 +1070,12 @@ void BattlescapeState::mapClick(Action *action)
 	{
 		if (_battleGame->cancelCurrentAction())
 		{
+			// #FINNIKTODO: expose option
+			bool previewLoS = true;
+			if (previewLoS)
+			{
+				updateSoldierInfo(false);
+			}
 			return;
 		}
 	}
