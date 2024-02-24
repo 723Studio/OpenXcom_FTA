@@ -50,13 +50,13 @@ PrisonReportState::PrisonReportState(BasePrisoner* prisoner, Base* base) :
  * @param base - current base
  */
 PrisonReportState::PrisonReportState(const RuleResearch* research, const RuleResearch* bonus, BasePrisoner* prisoner, Base* base) :
-		_research(research), _bonus(bonus), _prisoner(prisoner), _base(base), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
+		_research(research), _soldier(0), _bonus(bonus), _prisoner(prisoner), _base(base), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
 {
 	initUI();
 }
 
 PrisonReportState::PrisonReportState(Soldier* soldier, BasePrisoner* prisoner, Base* base) : _prisoner(prisoner), _base(base),
-	_soldier(soldier), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
+	_research(0), _soldier(soldier), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
 {
 	initUI();
 }
@@ -123,17 +123,32 @@ void PrisonReportState::initUI()
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_RECRUITING:
-		btnName = "STR_VIEW_SOLDIER";
-		ss << "STR_PRISONER_RECRUITING_PT1";
-		ss << " ";
-		ss << _prisoner->getNameAndId();
-		ss << " ";
-		ss << "STR_PRISONER_RECRUITING_PT2";
-		ss << " ";
-		ss << _prisoner->getGeoscapeSoldier();
-		ss << " ";
-		ss << "STR_PRISONER_RECRUITING_PT3";
-		desription = ss.str();
+		if (_soldier != 0)
+		{
+			btnName = "STR_VIEW_SOLDIER";
+			ss << "STR_PRISONER_RECRUITING_PT1";
+			ss << " ";
+			ss << _prisoner->getNameAndId();
+			ss << " ";
+			ss << "STR_PRISONER_RECRUITING_PT2";
+			ss << " ";
+			ss << _soldier->getName();
+			ss << " ";
+			ss << "STR_PRISONER_RECRUITING_PT3";
+			desription = ss.str();
+		}
+		else
+		{
+			ss << "STR_PRISONER_RECRUITING_PT1";
+			ss << " ";
+			ss << _prisoner->getNameAndId();
+			ss << " ";
+			ss << "STR_PRISONER_RECRUITING_PT2";
+			ss << " ";
+			ss << "STR_PRISONER_RECRUITING_PT4";
+			desription = ss.str();
+		}
+
 		break;
 	}
 	_btnDetails->setText(tr(btnName));

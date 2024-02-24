@@ -287,7 +287,7 @@ public:
 	int getAvailablePrisonSpace() const;
 	/// Gets the total amount of used Containment space.
 	int getUsedContainment(int prisonType, bool onlyExternal = false) const;
-	int getUsedPrisonSpace() const { return (int)_prisoners.size(); }
+	int getUsedPrisonSpace() const;
 	/// Sets the craft's battlescape status.
 	void setInBattlescape(bool inbattle);
 	/// Gets if the craft is in battlescape.

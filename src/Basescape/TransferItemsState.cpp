@@ -37,6 +37,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/BasePrisoner.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Timer.h"
 #include "../Menu/ErrorMessageState.h"
@@ -61,7 +62,7 @@ namespace OpenXcom
  */
 TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingState *debriefingState) :
 	_baseFrom(baseFrom), _baseTo(baseTo), _debriefingState(debriefingState),
-	_sel(0), _total(0), _pQty(0), _cQty(0), _aQty(0), _iQty(0.0), _distance(0.0), _ammoColor(0),
+	_sel(0), _total(0), _pQty(0), _cQty(0), _aQty(0), _prisonQty(0), _iQty(0.0), _distance(0.0), _ammoColor(0),
 	_previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER), _errorShown(false)
 {
 	// Create objects
@@ -203,6 +204,24 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		}
 	}
 
+	if (!_baseFrom->getPrisoners().empty() && _baseTo->getFreePrisonSpace() > 0 && _debriefingState == 0)
+	{
+		for (auto& prisoner : _baseFrom->getPrisoners())
+		{
+			if (prisoner->getPrisonerState() != PRISONER_STATE_NONE)
+			{
+				TransferRow row = { TRANSFER_PRISONER, prisoner, prisoner->getNameAndId(),  (int)(20 * _distance), 1, 0, 0, 1, -1, 0, 0, (int)(20 * _distance) };
+				_items.push_back(row);
+
+				std::string cat = getCategory(_items.size() - 1);
+				if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
+				{
+					_cats.push_back(cat);
+				}
+			}
+		}
+	}
+
 	_vanillaCategories = _cats.size();
 	if (_game->getMod()->getDisplayCustomCategories() > 0)
 	{
@@ -248,6 +267,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			_cats.push_back("STR_UNASSIGNED");
 		}
 	}
+
 
 	_cbxCategory->setOptions(_cats, true);
 	_cbxCategory->onChange((ActionHandler)&TransferItemsState::cbxCategoryChange);
@@ -309,7 +329,7 @@ std::string TransferItemsState::getCategory(int sel) const
 		{
 			if (rule->getVehicleUnit())
 				return "STR_PERSONNEL"; // OXCE: critters fighting for us
-			if (rule->isAlien())
+			if (rule->isAlien() && !_game->getMod()->isFTAGame())
 				return "STR_PRISONERS"; // OXCE: live aliens
 			return "STR_ALIENS";
 		}
@@ -322,6 +342,8 @@ std::string TransferItemsState::getCategory(int sel) const
 			return "STR_COMPONENTS";
 		}
 		return "STR_EQUIPMENT";
+	case TRANSFER_PRISONER:
+		return "STR_PRISONERS";
 	}
 	return "STR_ALL_ITEMS";
 }
@@ -514,6 +536,8 @@ void TransferItemsState::completeTransfer()
 			Transfer *t = 0;
 			Craft *craft = 0;
 			Soldier* soldier = nullptr;
+			RuleItem* item = nullptr;
+			BasePrisoner* prisoner = nullptr;
 			switch (transferRow.type)
 			{
 			case TRANSFER_SOLDIER:
@@ -522,8 +546,7 @@ void TransferItemsState::completeTransfer()
 					soldier = (*soldierIt);
 					if (soldier == transferRow.rule)
 					{
-						soldier->setPsiTraining(false);
-						soldier->setTraining(false);
+						soldier->clearBaseDuty();
 						t = new Transfer(time);
 						t->setSoldier(soldier);
 						_baseTo->getTransfers()->push_back(t);
@@ -540,8 +563,7 @@ void TransferItemsState::completeTransfer()
 					soldier = (*soldierIt);
 					if (soldier->getCraft() == craft)
 					{
-						soldier->setPsiTraining(false);
-						soldier->setTraining(false);
+						soldier->clearBaseDuty();
 						if (craft->getStatus() == "STR_OUT")
 						{
 							_baseTo->getSoldiers()->push_back(soldier);
@@ -598,7 +620,7 @@ void TransferItemsState::completeTransfer()
 				_baseTo->getTransfers()->push_back(t);
 				break;
 			case TRANSFER_ITEM:
-				RuleItem *item = (RuleItem*)transferRow.rule;
+				item = (RuleItem*)transferRow.rule;
 				_baseFrom->getStorageItems()->removeItem(item, transferRow.amount);
 				t = new Transfer(time);
 				t->setItems(item->getType(), transferRow.amount);
@@ -609,6 +631,27 @@ void TransferItemsState::completeTransfer()
 					_debriefingState->decreaseRecoveredItemCount(item, transferRow.amount);
 				}
 				break;
+			case TRANSFER_PRISONER:
+				prisoner = (BasePrisoner*)transferRow.rule;
+				// clear assigned soldiers duty
+				for (auto soldierIt = _baseFrom->getSoldiers()->begin(); soldierIt != _baseFrom->getSoldiers()->end();)
+				{
+					soldier = (*soldierIt);
+					if (soldier->getActivePrisoner() == prisoner)
+					{
+						soldier->clearBaseDuty();
+					}
+					else
+					{
+						++soldierIt;
+					}
+				}
+				// transfer prisoner
+				t = new Transfer(time * 2);
+				t->setPrisoner(prisoner);
+				prisoner->setPrisonerState(PRISONER_STATE_CONTAINING);
+				_baseFrom->removePrisoner(prisoner);
+				_baseTo->getTransfers()->push_back(t);
 			}
 		}
 	}
@@ -886,6 +929,11 @@ void TransferItemsState::increaseByValue(int change)
 			}
 		}
 		break;
+	case TRANSFER_PRISONER:
+		if (_baseTo->getFreePrisonSpace() <= _prisonQty)
+		{
+			errorMessage = tr("STR_NO_PRISON_SPACE_FOR_TRANSFER");
+		}
 	}
 
 	if (errorMessage.empty())
@@ -934,6 +982,9 @@ void TransferItemsState::increaseByValue(int change)
 			getRow().amount += change;
 			_total += getRow().cost * change;
 			break;
+		case TRANSFER_PRISONER:
+			_prisonQty++;
+			getRow().amount++;
 		}
 		updateItemStrings();
 	}
@@ -964,6 +1015,7 @@ void TransferItemsState::decreaseByValue(int change)
 {
 	if (0 >= change || 0 >= getRow().amount) return;
 	Craft *craft = 0;
+	const RuleItem* selItem = nullptr;
 	change = std::min(getRow().amount, change);
 
 	switch (getRow().type)
@@ -980,12 +1032,15 @@ void TransferItemsState::decreaseByValue(int change)
 		_iQty -= craft->getTotalItemStorageSize(_game->getMod());
 		break;
 	case TRANSFER_ITEM:
-		const RuleItem *selItem = (RuleItem*)getRow().rule;
+		selItem = (RuleItem*)getRow().rule;
 		_iQty -= selItem->getSize() * change;
 		if (selItem->isAlien())
 		{
 			_aQty -= change;
 		}
+		break;
+	case TRANSFER_PRISONER:
+		_prisonQty--;
 		break;
 	}
 	getRow().amount -= change;

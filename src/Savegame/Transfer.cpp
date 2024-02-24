@@ -21,6 +21,7 @@
 #include "Soldier.h"
 #include "Craft.h"
 #include "ItemContainer.h"
+#include "BasePrisoner.h"
 #include "../Engine/Language.h"
 #include "../Mod/Mod.h"
 #include "../Engine/Logger.h"
@@ -32,7 +33,7 @@ namespace OpenXcom
  * Initializes a transfer.
  * @param hours Hours in-transit.
  */
-Transfer::Transfer(int hours) : _hours(hours), _soldier(0), _craft(0), _itemQty(0), _scientists(0), _engineers(0), _delivered(false)
+Transfer::Transfer(int hours) : _hours(hours), _soldier(0), _craft(0), _itemQty(0), _scientists(0), _engineers(0), _prisoner(0), _delivered(false)
 {
 }
 
@@ -45,6 +46,7 @@ Transfer::~Transfer()
 	{
 		delete _soldier;
 		delete _craft;
+		delete _prisoner;
 	}
 }
 
@@ -103,6 +105,25 @@ bool Transfer::load(const YAML::Node& node, Base *base, const Mod *mod, SavedGam
 	_itemQty = node["itemQty"].as<int>(_itemQty);
 	_scientists = node["scientists"].as<int>(_scientists);
 	_engineers = node["engineers"].as<int>(_engineers);
+
+	if (const YAML::Node& prisoner = node["prisoner"])
+	{
+
+		std::string id = prisoner["id"].as<std::string>();
+		std::string type = prisoner["type"].as<std::string>();
+		if (mod->getPrisonerRules(type) != 0)
+		{
+			BasePrisoner* _prisoner = new BasePrisoner(mod->getPrisonerRules(type), 0, type, id);
+			_prisoner->load(prisoner, mod);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load prisoner " << type;
+			delete this;
+			return false;
+		}
+	}
+
 	_delivered = node["delivered"].as<bool>(_delivered);
 	return true;
 }
@@ -136,6 +157,11 @@ YAML::Node Transfer::save(const Base *b, const Mod *mod) const
 	{
 		node["engineers"] = _engineers;
 	}
+	else if (_prisoner != 0)
+	{
+		node["prisoner"] = _prisoner->save();
+	}
+
 	if (_delivered)
 	{
 		node["delivered"] = _delivered;
@@ -231,6 +257,10 @@ std::string Transfer::getName(Language *lang) const
 	{
 		return lang->getString("STR_ENGINEERS");
 	}
+	else if (_prisoner != 0)
+	{
+		return _prisoner->getNameAndId();
+	}
 	return lang->getString(_itemId);
 }
 
@@ -287,6 +317,10 @@ TransferType Transfer::getType() const
 	{
 		return TRANSFER_ENGINEER;
 	}
+	else if (_prisoner != 0)
+	{
+		return TRANSFER_PRISONER;
+	}
 	return TRANSFER_ITEM;
 }
 
@@ -321,6 +355,10 @@ void Transfer::advance(Base *base)
 		else if (_engineers != 0)
 		{
 			base->setEngineers(base->getEngineers() + _engineers);
+		}
+		else if (_prisoner != 0)
+		{
+			base->addPrisoner(_prisoner);
 		}
 		_delivered = true;
 	}

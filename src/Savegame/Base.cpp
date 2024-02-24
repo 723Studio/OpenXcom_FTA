@@ -190,11 +190,6 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		std::string type = (*i)["type"].as<std::string>();
 		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
 		prisoner->load(*i, _mod);
-		int soldierId = prisoner->getSoldierId();
-		if (soldierId >= 0)
-		{
-			prisoner->setGeoscapeSoldier(save->getSoldier(soldierId));
-		}
 		addPrisoner(prisoner);
 	}
 
@@ -1825,6 +1820,20 @@ int Base::getAvailableContainment(int prisonType) const
 			total += fac->getRules()->getAliens();
 		}
 	}
+	return total;
+}
+
+int Base::getUsedPrisonSpace() const
+{
+	int total = (int)_prisoners.size();
+	for (auto* transfer : _transfers)
+	{
+		if (transfer->getType() == TRANSFER_PRISONER)
+		{
+			total++;
+		}
+	}
+
 	return total;
 }
 

@@ -46,11 +46,10 @@ private:
 	std::string _id, _type;
 	PrisonerState _state;
 	std::vector<SoldierRole> _roles;
-	int	_soldierId, _health;
 	UnitFaction _faction = FACTION_HOSTILE;
 	std::string _name;
 	UnitStats _stats;
-	int _intelligence, _aggression, _morale, _cooperation;
+	int _health, _intelligence, _aggression, _morale, _cooperation;
 	int _interrogationProgress, _recruitingProgress;
 	bool _spawnedTortureEvent = false;
 	Armor *_armor = nullptr;
@@ -79,16 +78,7 @@ public:
 	void setPrisonerState(PrisonerState state) { _state = state; }
 	PrisonerState getPrisonerState() const { return _state; }
 
-	int getSoldierId() const { return _soldierId; }
-
 	const RulePrisoner* getRules() const { return _rule; }
-
-	void setGeoscapeSoldier(Soldier* soldier)
-	{
-		_geoscapeSoldier = soldier;
-		_soldierId = _geoscapeSoldier->getId();
-	}
-	Soldier* getGeoscapeSoldier() const { return _geoscapeSoldier; }
 
 	void setArmor(Armor* armor) { _armor = armor; }
 	const Armor* getArmor() const { return _armor; }

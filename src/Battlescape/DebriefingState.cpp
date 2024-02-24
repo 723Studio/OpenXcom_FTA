@@ -2944,18 +2944,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 */
 void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 {
-	auto const soldier = from->getGeoscapeSoldier();
-	const RulePrisoner* rules = nullptr;
-
-	if (soldier == nullptr)
-	{
-		rules = from->getUnitRules()->getPrisoner();
-	}
-	else
-	{
-		rules = soldier->getRules()->getPrisoner();
-	}
-
+	const RulePrisoner* rules = from->getUnitRules()->getPrisoner();
 	// we check for the rules first
 	if (!rules)
 	{
@@ -2978,19 +2967,6 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 		bool noContainment = base->getAvailablePrisonSpace() <= 0;
 		if (noContainment)
 		{
-			//#FINNIKTODO: add BasePrisoner transfers!
-			for (auto b : *_game->getSavedGame()->getBases())
-			{
-				if (b->getFreePrisonSpace() > 0)
-				{
-					noContainment = false;
-					break;
-				}
-			}
-		}
-
-		if (noContainment)
-		{
 			_containmentStateInfo[-1] = 1;
 		}
 		else
@@ -3001,44 +2977,17 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			//Populate BasePrisoner data;
 			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
 			int points = 0;
-			if (soldier)
+			p->setName(tr(from->getType()));
+			p->setIntelligence(from->getUnitRules()->getIntelligence());
+			p->setAggression(from->getUnitRules()->getAggression());
+			points = from->getUnitRules()->getValue();
+			if (!from->getRoles().empty())
 			{
-				p->setGeoscapeSoldier(soldier);
-				p->setName(from->getName(_game->getLanguage()));
-				p->setIntelligence(from->getGeoscapeSoldier()->getStatsWithAllBonuses()->insight / 10);
-				p->setAggression(RNG::generate(0, 3));
-				if (from->getOriginalFaction() == FACTION_HOSTILE)
-				{
-					points = soldier->getRules()->getValue();
-				}
-
-				for (auto baseFrom : *_game->getSavedGame()->getBases())
-				{
-					auto it = std::find(baseFrom->getSoldiers()->begin(), baseFrom->getSoldiers()->end(), soldier);
-					if (it != baseFrom->getSoldiers()->end())
-					{
-						_base->getSoldiers()->push_back(soldier);
-						baseFrom->getSoldiers()->erase(it);
-						break;
-					}
-				}
-
-				soldier->setImprisoned(true);
+				p->setRoles(from->getRoles());
 			}
-			else //only battle unit
+			else
 			{
-				p->setName(tr(from->getType()));
-				p->setIntelligence(from->getUnitRules()->getIntelligence());
-				p->setAggression(from->getUnitRules()->getAggression());
-				points = from->getUnitRules()->getValue();
-				if (!from->getRoles().empty())
-				{
-					p->setRoles(from->getRoles());
-				}
-				else
-				{
-					p->setRoles(std::vector<SoldierRole>(ROLE_SOLDIER));
-				}
+				p->setRoles(std::vector<SoldierRole>(ROLE_SOLDIER));
 			}
 
 			p->setFaction(from->getFaction());

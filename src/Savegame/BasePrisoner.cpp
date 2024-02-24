@@ -38,7 +38,7 @@ namespace OpenXcom
  * @param id prisoner id
  */
 BasePrisoner::BasePrisoner(const RulePrisoner* rule, Base* base, const std::string &type, std::string id) :
-	_rule(rule),_id(std::move(id)), _type(type), _state(PRISONER_STATE_NONE), _soldierId(-1),
+	_rule(rule),_id(std::move(id)), _type(type), _state(PRISONER_STATE_NONE),
 	_health(1), _intelligence(0), _aggression(0), _morale(100), _cooperation(0), _interrogationProgress(0), _recruitingProgress(0), _base(base)
 {
 }
@@ -63,7 +63,7 @@ void BasePrisoner::loadRoles(const std::vector<int>& r)
 void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 {
 	_name = node["name"].as<std::string>(_name);
-	_soldierId = node["soldierId"].as<int>(_soldierId);
+	_type = node["type"].as<std::string>(_type);
 	_state = (PrisonerState)node["state"].as<int>(_state);
 	if (node["roles"])
 		loadRoles(node["roles"].as<std::vector<int> >());
@@ -111,14 +111,6 @@ YAML::Node BasePrisoner::save() const
 			roles.push_back(r);
 		}
 		node["roles"] = roles;
-	}
-	if (_geoscapeSoldier)
-	{
-		node["soldierId"] = _geoscapeSoldier->getId();
-	}
-	else
-	{
-		node["soldierId"] = -1;
 	}
 	if (_spawnedTortureEvent)
 		node["spawnedTortureEvent"] = _spawnedTortureEvent;
@@ -429,14 +421,7 @@ bool BasePrisoner::think(Game &engine)
 				}
 
 				const RuleSoldier *soldierRule = mod.getSoldier(rules.getSpawnedSoldier());
-				
-				if (_geoscapeSoldier != nullptr)
-				{
-					_base->getSoldiers()->push_back(_geoscapeSoldier);
-					_geoscapeSoldier->setImprisoned(false);
-					engine.pushState(new PrisonReportState(_geoscapeSoldier, this, _base));
-				}
-				else if (soldierRule != nullptr) // we now create a new soldier from prisoner
+				if (soldierRule != nullptr) // we now create a new soldier from prisoner
 				{
 					Soldier* soldier = new Soldier(soldierRule, _armor, save.getId("STR_SOLDIER"));
 					soldier->setBothStats(&_stats);
