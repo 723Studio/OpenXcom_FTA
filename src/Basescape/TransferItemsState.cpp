@@ -985,6 +985,8 @@ void TransferItemsState::increaseByValue(int change)
 		case TRANSFER_PRISONER:
 			_prisonQty++;
 			getRow().amount++;
+			_total += getRow().cost * change;
+			break;
 		}
 		updateItemStrings();
 	}
