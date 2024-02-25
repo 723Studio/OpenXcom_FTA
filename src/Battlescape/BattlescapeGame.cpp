@@ -1050,27 +1050,32 @@ bool BattlescapeGame::scriptsToProcess()
 void BattlescapeGame::processWeaponNoise()
 {
 	if (!_save->isStealthMission())
-		return;
-
-	int noise = _currentAction.weapon->getRules()->getNoiseValue();;
-	if (_currentAction.type == BA_AUTOSHOT)
 	{
-		noise *= _currentAction.weapon->getRules()->getConfigAuto()->shots;
+		return;
 	}
 
-	if (noise > 0)
+	if (_currentAction.weapon != 0)
 	{
-		auto units = _parentState->getBattleGame()->getSave()->getUnits();
-		for (BattleUnit* unit : *units)
+		int noise = _currentAction.weapon->getRules()->getNoiseValue();;
+		if (_currentAction.type == BA_AUTOSHOT)
 		{
-			if (unit->getFaction() == FACTION_HOSTILE && !unit->getUnitWarned()
-				&& !unit->isOut())
+			noise *= _currentAction.weapon->getRules()->getConfigAuto()->shots;
+		}
+
+		if (noise > 0)
+		{
+			auto units = _parentState->getBattleGame()->getSave()->getUnits();
+			for (BattleUnit* unit : *units)
 			{
-				if (noise >= std::ceil(Position::distance(unit->getPosition(), _currentAction.actor->getPosition()) / 15))
+				if (unit->getFaction() == FACTION_HOSTILE && !unit->getUnitWarned()
+					&& !unit->isOut())
 				{
-					unit->setUnitWarned(true);
-					Log(LOG_INFO) << "Unit is warned because firing sound."; //#FINNIKTODO #CLEARLOGS
-					continue;
+					if (noise >= std::ceil(Position::distance(unit->getPosition(), _currentAction.actor->getPosition()) / 15))
+					{
+						unit->setUnitWarned(true);
+						Log(LOG_INFO) << "Unit is warned because firing sound."; //#FINNIKTODO #CLEARLOGS
+						continue;
+					}
 				}
 			}
 		}
