@@ -40,10 +40,11 @@ private:
 	std::string _name, _description, _successDescription, _failureDescription, _successBackground, _failureBackground, _successMusic, _failureMusic, _successEvent,  _failureEvent, _specialRule;
 	std::vector<std::string> _categories, _requires, _canceledBy, _allowedArmor, _successResearchList, _failureResearchList;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
-	int _soldiersMin, _soldiersMax, _optionalSoldierEffect, _scientistEffect, _engineerEffect, _itemSpaceEffect, _armorEffect;
+	int _soldiersMin, _soldiersMax, _optionalSoldierEffect, _itemSpaceEffect, _armorEffect;
 	double _itemSpaceLimit;
 	int _baseChances, _costs, _successScore, _failureScore, _successLoyalty, _failureLoyalty, _successFunds, _failureFunds;
 	int  _danger, _trapChance, _progressEventChance, _concealedItemsBonus, _bonusItemsEffect;
+	std::vector<int> _allowedRoles;
 	bool _repeatProgressEvent, _allowAllEquipment, _removeRequiredItemsOnSuccess, _removeRequiredItemsOnFailure;
 	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
 	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItems, _bonusItems, _soldierTypeEffectiveness;
@@ -80,7 +81,7 @@ public:
 	/// Gets the base functions required to start operation.
 	RuleBaseFacilityFunctions getRequiresBaseFunc() const { return _requiresBaseFunc; }
 	/// Gets the research name that would make this operation impossible to run.
-	//const std::vector<std::string>& getCanceledBy() const { return _canceledBy; };
+	const std::vector<int> getAllowedRoles() const { return _allowedRoles; }
 	/// Gets the research name that would make this operation impossible to run.
 	const std::vector<std::string>& getCanceledBy() const { return _canceledBy; }
 	/// Gets the event name that would be spawned on success operation result.
@@ -99,10 +100,6 @@ public:
 	int getSoldierSlotsMax() const { return _soldiersMax; }
 	/// Gets the optional soldiers slots effectiveness for this operations.
 	int getOptionalSoldierEffect() const { return _optionalSoldierEffect; }
-	/// Gets the optional scientist slots effectiveness for this operations.
-	int getScientistEffect() const { return _scientistEffect; }
-	/// Gets the optional engineer slots effectiveness for this operations.
-	int getEngineerEffect() const { return _engineerEffect; }
 	/// Gets the operation's base chances of success result.
 	int getBaseChances() const { return _baseChances; }
 	/// Gets the operation's time costs.

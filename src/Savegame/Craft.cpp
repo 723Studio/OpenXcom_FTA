@@ -2154,7 +2154,7 @@ int Craft::getNumLargeUnits() const
  * Returns the total amount of soldiers from a list that are currently attached to this craft.
  * @return Number of soldiers.
  */
-int Craft::getNumTotalSoldiers() const
+int Craft::getNumTotalSoldiers(bool respectSize) const
 {
 	if (_rules->getMaxUnits() == 0)
 		return 0;
@@ -2164,7 +2164,16 @@ int Craft::getNumTotalSoldiers() const
 	for (const auto* s : *_base->getSoldiers())
 	{
 		if (s->getCraft() == this)
-			++total;
+		{
+			if (respectSize)
+			{
+				total += s->getRules()->getLivingSpace();
+			}
+			else
+			{
+				++total;
+			}
+		}
 	}
 
 	return total;

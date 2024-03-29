@@ -141,7 +141,15 @@ namespace OpenXcom
 		{
 			ss << tr("STR_COCKPIT_CAPACITY").arg(craft->getPilots()) << '\n';
 		}
-		ss << tr("STR_HWP_CAPACITY").arg(craft->getMaxVehiclesAndLargeSoldiers());
+		if (_game->getMod()->isFTAGame())
+		{
+			ss << tr("STR_ENGINE_COOLDOWN").arg(craft->getStats().engineCooldown) << '\n';
+			ss << tr("STR_RELAY_POWER").arg(craft->getStats().relay) << '\n';
+		}
+		else
+		{
+			ss << tr("STR_HWP_CAPACITY").arg(craft->getMaxVehiclesAndLargeSoldiers());
+		}
 		_txtStats->setText(ss.str());
 
 		centerAllSurfaces();

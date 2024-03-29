@@ -151,6 +151,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 			_availableOptions.push_back("STR_AGENT_INFO");
 			_availableOptions.push_back("STR_SCIENTIST_INFO");
 			_availableOptions.push_back("STR_ENGINEER_INFO");
+			_availableOptions.push_back("STR_ROBOT_INFO");
 		}
 		_availableOptions.push_back("STR_MEMORIAL");
 		_availableOptions.push_back("STR_INVENTORY");
@@ -485,7 +486,8 @@ void SoldiersState::initList(size_t scrl)
 		selAction == "STR_PILOT_INFO" ||
 		selAction == "STR_AGENT_INFO" ||
 		selAction == "STR_SCIENTIST_INFO" ||
-		selAction == "STR_ENGINEER_INFO")
+		selAction == "STR_ENGINEER_INFO" ||
+		selAction == "STR_ROBOT_INFO")
 	{
 		if (_ftaUI)
 		{
@@ -497,7 +499,8 @@ void SoldiersState::initList(size_t scrl)
 				    (soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
 				    (soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
 				    (soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
-				    (soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO"))
+				    (soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO") ||
+				    (soldier->getRoleRank(ROLE_ROBOT) > 0 && selAction == "STR_ROBOT_INFO"))
 				{
 					_filteredListOfSoldiers.push_back(soldier);
 					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!

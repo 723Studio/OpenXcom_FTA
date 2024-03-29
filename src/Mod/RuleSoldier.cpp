@@ -41,7 +41,7 @@ namespace OpenXcom
 RuleSoldier::RuleSoldier(const std::string &type, int listOrder) : _type(type), _listOrder(listOrder), _armor(nullptr), _specWeapon(nullptr),
 	_monthlyBuyLimit(0), _costBuy(0), _costSalary(0),
 	_costSalarySquaddie(0), _costSalarySergeant(0), _costSalaryCaptain(0), _costSalaryColonel(0), _costSalaryCommander(0),
-	_standHeight(0), _kneelHeight(0), _floatHeight(0), _femaleFrequency(50), _value(20), _transferTime(0), _moraleLossWhenKilled(100),
+	_standHeight(0), _kneelHeight(0), _floatHeight(0), _femaleFrequency(50), _value(20), _transferTime(0), _moraleLossWhenKilled(100), _livingSpace(0),
 	_totalSoldierNamePoolWeight(0),
 	_avatarOffsetX(67), _avatarOffsetY(48), _flagOffset(0),
 	_allowPromotion(true), _allowPiloting(true), _showTypeInInventory(false),
@@ -145,6 +145,10 @@ void RuleSoldier::load(const YAML::Node &node, Mod *mod, const ModScript &parser
 	_floatHeight = node["floatHeight"].as<int>(_floatHeight);
 	_femaleFrequency = node["femaleFrequency"].as<int>(_femaleFrequency);
 	_value = node["value"].as<int>(_value);
+	_livingSpace = node["livingSpace"].as<int>(_livingSpace);
+	if (_livingSpace < 0)
+		throw Exception("Soldier rules " + _type + " has a negative value of livingSpace property, this is not allowed");
+
 	_transferTime = node["transferTime"].as<int>(_transferTime);
 	_moraleLossWhenKilled = node["moraleLossWhenKilled"].as<int>(_moraleLossWhenKilled);
 	_showTypeInInventory = node["showTypeInInventory"].as<bool>(_showTypeInInventory);

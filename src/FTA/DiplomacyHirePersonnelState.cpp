@@ -413,7 +413,13 @@ void DiplomacyHirePersonnelState::lstSoldiersClick(Action *action)
 		}
 		else
 		{
-			//add
+			// calculate soldier pool size
+			int size = 0;
+			for (auto i : _selectedSoldiers)
+			{
+				size += i->getRules()->getLivingSpace();
+			}
+
 			RuleInterface* menuInterface = _game->getMod()->getInterface("buyMenu");
 			if (_total + static_cast<int64_t>(s->getHireValue()) > _game->getSavedGame()->getFunds())
 			{
@@ -423,7 +429,7 @@ void DiplomacyHirePersonnelState::lstSoldiersClick(Action *action)
 					"BACK13.SCR",
 					menuInterface->getElement("errorPalette")->color));
 			}
-			else if (_base->getUsedQuarters() + (int)_selectedSoldiers.size() >= _base->getAvailableQuarters())
+			else if (_base->getUsedQuarters() + size >= _base->getAvailableQuarters())
 			{
 				_game->pushState(new ErrorMessageState("STR_NOT_ENOUGH_SPACE",
 					_palette,
@@ -433,12 +439,13 @@ void DiplomacyHirePersonnelState::lstSoldiersClick(Action *action)
 			}
 			else
 			{
+				//add
 				color = _lstSoldiers->getSecondaryColor();
 				_selectedSoldiers.push_back(s);
 				_total += static_cast<int64_t>(s->getHireValue());
 			}
 		}
-
+		
 		_lstSoldiers->setRowColor(row, color);
 
 		updateState();

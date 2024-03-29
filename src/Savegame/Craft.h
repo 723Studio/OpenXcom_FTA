@@ -342,7 +342,7 @@ public:
 	/// Gets the craft's amount of 2x2 units.
 	int getNumLargeUnits() const;
 	/// Gets the craft's total amount of soldiers.
-	int getNumTotalSoldiers() const;
+	int getNumTotalSoldiers(bool respectSize = false) const;
 	/// Gets the craft's total amount of vehicles.
 	int getNumTotalVehicles() const;
 	/// Gets the craft's total amount of units.

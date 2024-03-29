@@ -167,6 +167,13 @@ void Armor::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
 	_psiCamouflage = node["psiCamouflage"].as<int>(_psiCamouflage);
 	_isAlwaysVisible =  node["alwaysVisible"].as<bool>(_isAlwaysVisible);
 
+	_allowedItemCategories = node["allowedItemCategories"].as<std::vector<std::string>>(_allowedItemCategories);
+	_forbiddenItemCategoiries = node["forbiddenItemCategoiries"].as<std::vector<std::string>>(_forbiddenItemCategoiries);
+	if (_forbiddenItemCategoiries.empty() && mod->isFTAGame())
+	{
+		_forbiddenItemCategoiries.push_back("STR_ROBOT_EQUIPMENT"); // default for FTA game, less copy-paste in rulesets =)
+	}
+
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	if (const YAML::Node &dmg = node["damageModifier"])
 	{

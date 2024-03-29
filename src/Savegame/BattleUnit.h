@@ -273,7 +273,8 @@ public:
 	bool getUnitWarned() const { return _warned; };
 	/// Check if unit's desguise still valid.
 	bool tryUncover();
-
+	/// Get the pointer to unit's armor.
+	const Armor* getArmorType() const { return  _armor; }
 	/// Sets if the unit was under direct friendly fire.
 	void setFrienlyFired(bool wasFriendlyFired) { _wasFriendlyFired = wasFriendlyFired; };
 	/// Gets if the unit was under direct friendly fire.

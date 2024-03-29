@@ -749,6 +749,10 @@ void Inventory::mouseClick(Action *action, State *state)
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 				if (item != 0)
 				{
+					if (!item->getRules()->canBeEquippedInBattle() && !_tu)
+					{
+						return;
+					}
 					if (_game->isShiftPressed())
 					{
 						bool quickUnload = false;
@@ -1640,6 +1644,39 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 	{
 		warning = "STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION";
 		return false;
+	}
+
+	// Check if we can equip this item after battle starts
+	if (!item->getRules()->canBeEquippedInBattle() && !_tu)
+	{
+		warning = "STR_CANNOT_PLACE_ITEM_WHILE_IN_COMBAT";
+		return false;
+	}
+
+	// Check if the unit's armor rules allows to use this item category
+	if (!_selUnit->getArmorType()->getAllowedItemCategories().empty())
+	{
+		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
+											_selUnit->getArmorType()->getAllowedItemCategories().begin(), _selUnit->getArmorType()->getAllowedItemCategories().end());
+
+		if (firstMatch == item->getRules()->getCategories().end())
+		{
+			warning = "STR_CANNOT_USE_THIS_ITEM";
+			return false;
+		}
+	}
+
+	// Now check if the unit's armor rules forbids to use this item category
+	if (!_selUnit->getArmorType()->getForbiddenItemCategoiries().empty())
+	{
+		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
+			_selUnit->getArmorType()->getForbiddenItemCategoiries().begin(), _selUnit->getArmorType()->getForbiddenItemCategoiries().end());
+
+		if (firstMatch != item->getRules()->getCategories().end())
+		{
+			warning = "STR_CANNOT_USE_THIS_ITEM";
+			return false;
+		}
 	}
 
 	bool placed = false;

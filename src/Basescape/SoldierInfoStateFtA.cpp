@@ -46,7 +46,6 @@
 #include "SellState.h"
 #include "SoldierArmorState.h"
 #include "SoldierBonusState.h"
-#include "SackSoldierState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Savegame/SoldierDeath.h"
 
@@ -250,6 +249,7 @@ void SoldierInfoStateFtA::initUi()
 	_rolesList.push_back("STR_AGENT");
 	_rolesList.push_back("STR_SCIENTIST");
 	_rolesList.push_back("STR_ENGINEER");
+	_rolesList.push_back("STR_ROBOT");
 	_cbxRoles->setOptions(_rolesList, true);
 	_cbxRoles->setSelected(0);
 	_cbxRoles->onChange((ActionHandler)&SoldierInfoStateFtA::cbxRolesChange);
@@ -309,6 +309,10 @@ void SoldierInfoStateFtA::init()
 		case OpenXcom::ROLE_ENGINEER:
 			_cbxRoles->setSelected(4);
 			break;
+		case OpenXcom::ROLE_ROBOT:
+			_cbxRoles->setSelected(5);
+			break;
+		default: _cbxRoles->setSelected(0);
 		}
 	}
 
@@ -564,11 +568,7 @@ void SoldierInfoStateFtA::btnBonusesClick(Action *)
  */
 void SoldierInfoStateFtA::btnHireClick(Action *)
 {
-	if (!_faction)
-	{
-		return;
-	}
-	else
+	if (_faction)
 	{
 		RuleInterface* menuInterface = _game->getMod()->getInterface("buyMenu");
 		if (static_cast<int64_t>(_soldier->getHireValue()) > _game->getSavedGame()->getFunds())
@@ -660,11 +660,11 @@ void SoldierInfoStateFtA::btnFlagClick(Action *action)
 void SoldierInfoStateFtA::defineStatLines()
 {
 	int yPos = 80;
-	int step = 11;
+	_step = 11;
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
 		yPos = 81;
-		step = 10;
+		_step = 10;
 	}
 
 	_txtTimeUnits = new Text(120, 9, 6, yPos);
@@ -682,7 +682,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtWeaponry = new Text(120, 9, 6, yPos);
 	_numWeaponry = new Text(18, 9, 131, yPos);
 	_barWeaponry = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtStamina = new Text(120, 9, 6, yPos);
 	_numStamina = new Text(18, 9, 131, yPos);
@@ -699,7 +699,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtExplosives = new Text(120, 9, 6, yPos);
 	_numExplosives = new Text(18, 9, 131, yPos);
 	_barExplosives = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtHealth = new Text(120, 9, 6, yPos);
 	_numHealth = new Text(18, 9, 131, yPos);
@@ -716,7 +716,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtMicroelectronics = new Text(120, 9, 6, yPos);
 	_numMicroelectronics = new Text(18, 9, 131, yPos);
 	_barMicroelectronics = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtBravery = new Text(120, 9, 6, yPos);
 	_numBravery = new Text(18, 9, 131, yPos);
@@ -727,7 +727,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtMetallurgy = new Text(120, 9, 6, yPos);
 	_numMetallurgy = new Text(18, 9, 131, yPos);
 	_barMetallurgy = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtReactions = new Text(120, 9, 6, yPos);
 	_numReactions = new Text(18, 9, 131, yPos);
@@ -741,7 +741,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtProcessing = new Text(120, 9, 6, yPos);
 	_numProcessing = new Text(18, 9, 131, yPos);
 	_barProcessing = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtFiring = new Text(120, 9, 6, yPos);
 	_numFiring = new Text(18, 9, 131, yPos);
@@ -758,7 +758,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtEfficiency = new Text(120, 9, 6, yPos);
 	_numEfficiency = new Text(18, 9, 131, yPos);
 	_barEfficiency = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtThrowing = new Text(120, 9, 6, yPos);
 	_numThrowing = new Text(18, 9, 131, yPos);
@@ -775,7 +775,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtDiligence = new Text(120, 9, 6, yPos);
 	_numDiligence = new Text(18, 9, 131, yPos);
 	_barDiligence = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtMelee = new Text(120, 9, 6, yPos);
 	_numMelee = new Text(18, 9, 131, yPos);
@@ -792,7 +792,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtRobotics = new Text(120, 9, 6, yPos);
 	_numRobotics = new Text(18, 9, 131, yPos);
 	_barRobotics = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtStrength = new Text(120, 9, 6, yPos);
 	_numStrength = new Text(18, 9, 131, yPos);
@@ -806,7 +806,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtHacking = new Text(120, 9, 6, yPos);
 	_numHacking = new Text(18, 9, 131, yPos);
 	_barHacking = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtMana = new Text(120, 9, 6, yPos);
 	_numMana = new Text(18, 9, 131, yPos);
@@ -814,7 +814,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtAlienTech = new Text(120, 9, 6, yPos);
 	_numAlienTech = new Text(18, 9, 131, yPos);
 	_barAlienTech = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtPsiStrength = new Text(120, 9, 6, yPos);
 	_numPsiStrength = new Text(18, 9, 131, yPos);
@@ -825,7 +825,7 @@ void SoldierInfoStateFtA::defineStatLines()
 	_txtReverseEngineering = new Text(120, 9, 6, yPos);
 	_numReverseEngineering = new Text(18, 9, 131, yPos);
 	_barReverseEngineering = new Bar(170, 7, 150, yPos);
-	yPos += step;
+	yPos += _step;
 
 	_txtPsiSkill = new Text(120, 9, 6, yPos);
 	_numPsiSkill = new Text(18, 9, 131, yPos);
@@ -1600,7 +1600,6 @@ void SoldierInfoStateFtA::updateVisibility()
 			_barXenolinguistics->setVisible(true);
 		}
 	}
-
 	else if (selected == ROLE_ENGINEER)
 	{
 		_txtWeaponry->setVisible(true);
@@ -1649,6 +1648,52 @@ void SoldierInfoStateFtA::updateVisibility()
 			_numReverseEngineering->setVisible(true);
 			_barReverseEngineering->setVisible(true);
 		}
+	}
+	else if (selected == ROLE_ROBOT)
+	{
+		_txtTimeUnits->setVisible(true);
+		_numTimeUnits->setVisible(true);
+		_barTimeUnits->setVisible(true);
+
+		_txtStamina->setVisible(true);
+		_numStamina->setVisible(true);
+		_barStamina->setVisible(true);
+
+		_txtHealth->setVisible(true);
+		_numHealth->setVisible(true);
+		_barHealth->setVisible(true);
+
+		_txtBravery->setVisible(true);
+		_numBravery->setVisible(true);
+		_barBravery->setVisible(true);
+
+		_txtReactions->setVisible(true);
+		_numReactions->setVisible(true);
+		_barReactions->setVisible(true);
+
+		_txtFiring->setVisible(true);
+		_numFiring->setVisible(true);
+		_barFiring->setVisible(true);
+
+		_txtThrowing->setVisible(true);
+		_numThrowing->setVisible(true);
+		_barThrowing->setVisible(true);
+
+		_txtMelee->setVisible(true);
+		_numMelee->setVisible(true);
+		_barMelee->setVisible(true);
+
+		_txtStrength->setVisible(true);
+		_numStrength->setVisible(true);
+		_barStrength->setVisible(true);
+
+		_txtHacking->setVisible(true);
+		_numHacking->setVisible(true);
+		_barHacking->setVisible(true);
+		_txtHacking->setY(_txtHacking->getY() + _step);
+		_numHacking->setY(_numHacking->getY() + _step);
+		_barHacking->setY(_barHacking->getY() + _step);
+
 	}
 }
 

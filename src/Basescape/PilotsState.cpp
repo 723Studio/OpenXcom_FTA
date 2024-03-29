@@ -287,10 +287,6 @@ void PilotsState::initList(size_t scrl)
 			{
 				_lstPilots->setRowColor(row, _lstPilots->getColor());
 			}
-			if ((*i)->getDeath())
-			{
-				_lstPilots->setRowColor(row, _txtCraft->getColor());
-			}
 			row++;
 		}
 		it++;

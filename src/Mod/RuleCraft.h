@@ -38,14 +38,14 @@ class ScriptParserBase;
  */
 struct RuleCraftStats
 {
-	int fuelMax, damageMax, speedMax, accel, radarRange, radarChance, sightRange, hitBonus, avoidBonus, powerBonus, armor, shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough, engineCooldown;
+	int fuelMax, damageMax, speedMax, accel, radarRange, radarChance, sightRange, hitBonus, avoidBonus, powerBonus, armor, shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough, engineCooldown, relay;
 
 	/// Default constructor.
 	RuleCraftStats() :
 		fuelMax(0), damageMax(0), speedMax(0), accel(0),
 		radarRange(0), radarChance(0), sightRange(0),
 		hitBonus(0), avoidBonus(0), powerBonus(0), armor(0),
-		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0), engineCooldown(0)
+		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0), engineCooldown(0), relay(0)
 	{
 
 	}
@@ -68,6 +68,7 @@ struct RuleCraftStats
 		shieldRechargeInGeoscape += r.shieldRechargeInGeoscape;
 		shieldBleedThrough += r.shieldBleedThrough;
 		engineCooldown += r.engineCooldown;
+		relay += r.relay;
 		return *this;
 	}
 	/// Subtract different stats.
@@ -89,6 +90,7 @@ struct RuleCraftStats
 		shieldRechargeInGeoscape -= r.shieldRechargeInGeoscape;
 		shieldBleedThrough -= r.shieldBleedThrough;
 		engineCooldown -= r.engineCooldown;
+		relay -= r.relay;
 		return *this;
 	}
 	/// Gets negative values of stats.
@@ -117,6 +119,7 @@ struct RuleCraftStats
 		shieldRechargeInGeoscape = node["shieldRechargeInGeoscape"].as<int>(shieldRechargeInGeoscape);
 		shieldBleedThrough = node["shieldBleedThrough"].as<int>(shieldBleedThrough);
 		engineCooldown = node["engineCooldown"].as<int>(engineCooldown);
+		relay = node["relay"].as<int>(relay);
 	}
 
 	template<auto Stat, typename TBind>
@@ -138,6 +141,7 @@ struct RuleCraftStats
 		b.template addField<Stat, &RuleCraftStats::shieldRechargeInGeoscape>(prefix + "getShieldRechargeInGeoscape");
 		b.template addField<Stat, &RuleCraftStats::shieldBleedThrough>(prefix + "getShieldBleedThrough");
 		b.template addField<Stat, &RuleCraftStats::engineCooldown>(prefix + "getEngineCooldown");
+		b.template addField<Stat, &RuleCraftStats::relay>(prefix + "getRelay");
 	}
 };
 

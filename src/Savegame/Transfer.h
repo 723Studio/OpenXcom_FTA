@@ -83,9 +83,9 @@ public:
 	/// Sets the soldier of the transfer.
 	void setSoldier(Soldier *soldier);
 	/// Sets the craft of the transfer.
-	void setPrisoner(BasePrisoner* prisoner) { _prisoner = prisoner; };
+	void setPrisoner(BasePrisoner* prisoner) { _prisoner = prisoner; }
 	/// Gets the prisoner of the transfer.
-	BasePrisoner* getPrisoner() { return _prisoner; };
+	BasePrisoner* getPrisoner() { return _prisoner; }
 	/// Sets the prisoner of the transfer.
 	void setCraft(Craft* craft);
 	/// Gets the craft of the transfer.
@@ -109,7 +109,7 @@ public:
 	/// Advances the transfer.
 	void advance(Base *base);
 	/// Get a pointer to the soldier being transferred.
-	Soldier *getSoldier();
+	Soldier *getSoldier() const;
 
 };
 

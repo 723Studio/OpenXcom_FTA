@@ -2403,6 +2403,25 @@ int Soldier::getRoleRank(SoldierRole role) const
 	return rank;
 }
 
+int Soldier::getRoleRank(std::vector<int> roles) const
+{
+	int rank = 0;
+	for (SoldierRoleRanks* i : _roles)
+	{
+		for (int j : roles)
+		{
+			if (i->role == SoldierRole(j))
+			{
+				if (i->rank > rank)
+				{
+					rank = i->rank;
+				}
+			}
+		}
+	}
+	return rank;
+}
+
 std::pair<SoldierRole, int> Soldier::getBestRoleRank() const
 {
 	int max = INT_MIN;
