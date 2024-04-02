@@ -35,7 +35,16 @@ class RuleSkill;
 class RulePrisoner;
 class Armor;
 /// Soldier roles for FtA game
-enum SoldierRole : int { ROLE_NONE = -1, ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4, ROLE_ROBOT = 5};
+enum SoldierRole : int
+{
+	ROLE_NONE = -1,
+	ROLE_SOLDIER = 0,
+	ROLE_ROBOT = 1,
+	ROLE_PILOT = 2,
+	ROLE_AGENT = 3,
+	ROLE_SCIENTIST = 4,
+	ROLE_ENGINEER = 5
+};
 
 struct SoldierRoleRanksRequirments
 {
