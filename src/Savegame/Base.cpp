@@ -851,12 +851,17 @@ int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) c
  */
 int Base::getTotalSoldiers() const
 {
-	size_t total = _soldiers.size();
-	for (const auto* transfer : _transfers)
+	//size_t total = _soldiers.size();
+	int total = 0;
+	for (Soldier* s : _soldiers)
+	{
+		total += s->getRules()->getLivingSpace();
+	}
+	for (const Transfer* transfer : _transfers)
 	{
 		if (transfer->getType() == TRANSFER_SOLDIER)
 		{
-			total += transfer->getQuantity();
+			total += transfer->getSoldier()->getRules()->getLivingSpace();
 		}
 	}
 	return total;
@@ -1040,10 +1045,19 @@ int Base::getUsedQuarters() const
 	int total = getTotalSoldiers() + getTotalScientists() + getTotalEngineers();
 	for (const auto* prod : _productions)
 	{
-		if (prod->getRules()->getSpawnedPersonType() != "")
+		// reserve one living space for each production project (even if it's on hold)
+		auto spawnType = prod->getRules()->getSpawnedPersonType();
+		if (spawnType != "")
 		{
-			// reserve one living space for each production project (even if it's on hold)
-			total += 1;
+			const RuleSoldier* rule = _mod->getSoldier(spawnType);
+			if (rule != 0)
+			{
+				total += rule->getLivingSpace();
+			}
+			else
+			{
+				total++;
+			}
 		}
 	}
 	return total;

@@ -624,16 +624,6 @@ double CovertOperationStartState::getOperationOdds()
 			Log(LOG_DEBUG) << "_chances: " << _chances;
 		}
 
-		if (science)
-		{
-			_chances -= (double)_rule->getScientistEffect() * staffCoeff + (double)scientistsN * _rule->getScientistEffect();
-			Log(LOG_DEBUG) << "After science bonus, chances are: " << _chances;
-		}
-		if (engineering)
-		{
-			_chances -= (double)_rule->getEngineerEffect() * staffCoeff + (double)engineersN * _rule->getEngineerEffect();
-			Log(LOG_DEBUG) << "After engineer bonus, chances are: " << _chances;
-		}
 		double officerEffect = 0;
 		if (assignedSoldiersN > 3)
 		{

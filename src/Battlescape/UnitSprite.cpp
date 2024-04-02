@@ -1006,16 +1006,71 @@ void UnitSprite::drawRoutine4()
 		if (itemL)
 			itemL.offX = (itemL.offX + offXAiming);
 	}
+
+	bool hideItemL = false, hideItemR = false;
+	if (_itemL)
+		hideItemL = !_itemL->getRules()->canBeEquippedInBattle();
+	if (_itemR)
+		hideItemR = !_itemR->getRules()->canBeEquippedInBattle();
+
 	switch (unitDir)
 	{
-	case 0: blitItem(itemL); blitItem(itemR); blitBody(s); break;
-	case 1: blitItem(itemL); blitBody(s); blitItem(itemR); break;
-	case 2: blitBody(s); blitItem(itemL); blitItem(itemR); break;
-	case 3: blitBody(s); blitItem(itemR); blitItem(itemL); break;
-	case 4: blitBody(s); blitItem(itemR); blitItem(itemL); break;
-	case 5: blitItem(itemR); blitBody(s); blitItem(itemL); break;
-	case 6: blitItem(itemR); blitBody(s); blitItem(itemL); break;
-	case 7: blitItem(itemR); blitItem(itemL); blitBody(s); break;
+	case 0:
+		if (!hideItemL)
+			blitItem(itemL);
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		break;
+	case 1:
+		if (!hideItemL)
+			blitItem(itemL);
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		break;
+	case 2:
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		if (!hideItemR)
+			blitItem(itemR);
+		break;
+	case 3:
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 4:
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 5:
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 6:
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 7:
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		blitBody(s);
+		break;
 	}
 }
 

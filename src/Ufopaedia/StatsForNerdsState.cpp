@@ -2213,6 +2213,7 @@ void StatsForNerdsState::initItemList()
 
 		addSection("{Recovery}", "", _white);
 		addBoolean(ss, !itemRule->canBeEquippedBeforeBaseDefense(), "ignoreInBaseDefense"); // negated!
+		addBoolean(ss, itemRule->canBeEquippedInBattle(), "canBeEquippedInBattle");
 		addBoolean(ss, !itemRule->canBeEquippedToCraftInventory(), "ignoreInCraftEquip", !itemRule->isUsefulBattlescapeItem()); // negated!
 		addInteger(ss, itemRule->getSpecialType(), "specialType", -1);
 		addBoolean(ss, !itemRule->getRecoveryDividers().empty(), "recoveryDividers*", false); // just say if there are any or not

@@ -273,7 +273,6 @@ public:
 	bool getUnitWarned() const { return _warned; };
 	/// Check if unit's desguise still valid.
 	bool tryUncover();
-
 	/// Sets if the unit was under direct friendly fire.
 	void setFrienlyFired(bool wasFriendlyFired) { _wasFriendlyFired = wasFriendlyFired; };
 	/// Gets if the unit was under direct friendly fire.

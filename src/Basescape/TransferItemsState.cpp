@@ -141,7 +141,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		if (_debriefingState) break;
 		if (soldier->getCraft() == 0 && soldier->getCovertOperation() == 0)
 		{
-			TransferRow row = { TRANSFER_SOLDIER, soldier, soldier->getName(true), (int)(5 * _distance), 1, 0, 0, 1, -4, 0, 0, (int)(5 * _distance) };
+			TransferRow row = { TRANSFER_SOLDIER, soldier, soldier->getName(true), (int)(5 * _distance), 1, 0, 0, 1, -4, (double)soldier->getRules()->getLivingSpace(), 0, (int)(5 * _distance) };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -889,6 +889,11 @@ void TransferItemsState::increaseByValue(int change)
 	switch (getRow().type)
 	{
 	case TRANSFER_SOLDIER:
+		if (_pQty + static_cast<int>(getRow().size) > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
+		{
+			errorMessage = tr("STR_NO_FREE_ACCOMODATION");
+		}
+		break;
 	case TRANSFER_SCIENTIST:
 	case TRANSFER_ENGINEER:
 		if (_pQty + 1 > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
@@ -898,11 +903,12 @@ void TransferItemsState::increaseByValue(int change)
 		break;
 	case TRANSFER_CRAFT:
 		craft = (Craft*)getRow().rule;
+
 		if (_cQty + 1 > _baseTo->getAvailableHangars() - _baseTo->getUsedHangars())
 		{
 			errorMessage = tr("STR_NO_FREE_HANGARS_FOR_TRANSFER");
 		}
-		else if (craft->getNumTotalSoldiers() > 0 && _pQty + craft->getNumTotalSoldiers() > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
+		else if (craft->getNumTotalSoldiers() > 0 && _pQty + craft->getNumTotalSoldiers(true) > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
 		{
 			errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
 		}

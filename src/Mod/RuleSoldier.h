@@ -35,7 +35,16 @@ class RuleSkill;
 class RulePrisoner;
 class Armor;
 /// Soldier roles for FtA game
-enum SoldierRole : int { ROLE_NONE = -1, ROLE_SOLDIER = 0, ROLE_PILOT = 1, ROLE_AGENT = 2, ROLE_SCIENTIST = 3, ROLE_ENGINEER = 4};
+enum SoldierRole : int
+{
+	ROLE_NONE = -1,
+	ROLE_SOLDIER = 0,
+	ROLE_ROBOT = 1,
+	ROLE_PILOT = 2,
+	ROLE_AGENT = 3,
+	ROLE_SCIENTIST = 4,
+	ROLE_ENGINEER = 5
+};
 
 struct SoldierRoleRanksRequirments
 {
@@ -111,6 +120,7 @@ private:
 	int _femaleFrequency, _value, _transferTime, _moraleLossWhenKilled;
 	int _manaMissingWoundThreshold = -1;
 	int _healthMissingWoundThreshold = -1;
+	int _livingSpace;
 	std::vector<int> _deathSoundMale, _deathSoundFemale;
 	std::vector<int> _panicSoundMale, _panicSoundFemale, _berserkSoundMale, _berserkSoundFemale;
 	std::vector<int> _selectUnitSoundMale, _selectUnitSoundFemale;
@@ -244,6 +254,8 @@ public:
 	int getTotalSoldierNamePoolWeight() const { return _totalSoldierNamePoolWeight; }
 	/// Gets the value - for score calculation.
 	int getValue() const;
+	/// Gets the size of the soldier.
+	int getLivingSpace() const { return _livingSpace; }
 	/// Gets the soldier's transfer time.
 	int getTransferTime() const;
 	/// Percentage modifier for morale loss when this unit is killed.

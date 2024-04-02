@@ -68,7 +68,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	}
 	int pilots = c->getRules()->getPilots();
 	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
-	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding() && pilots < c->getSpaceAvailable();
+	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding();
 	_ftaUI = _game->getMod()->isFTAGame();
 
 	// Create objects
@@ -576,7 +576,38 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			}
 
 			auto space = c->getSpaceAvailable();
-			if (c->validateAddingSoldier(space, s))
+
+			//check if we have enough relay power
+			int relay = c->getCraftStats().relay;
+			if (s->getRoleRank(ROLE_ROBOT) > 0)
+			{
+				for (const auto* i : *_base->getSoldiers())
+				{
+					if (i->getCraft() == c)
+					{
+						if (i->getRoleRank(ROLE_ROBOT) > 0 && (
+							i->getRoleRank(ROLE_SOLDIER) < 1 ||
+							i->getRoleRank(ROLE_PILOT) < 1 ||
+							i->getRoleRank(ROLE_AGENT) < 1 ||
+							i->getRoleRank(ROLE_SCIENTIST) < 1 ||
+							i->getRoleRank(ROLE_ENGINEER) < 1)
+							) // only robot role - not a sapient AI.
+						{
+							relay--;
+						}
+					}
+				}
+			}
+
+			if (relay <= 0)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_RELAY_POWER"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (c->validateAddingSoldier(space, s))
 			{
 				s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 				_lstSoldiers->setCellText(row, 2, c->getName(_game->getLanguage()));

@@ -380,6 +380,7 @@ private:
 	void addExperience(SoldierRole role, int exp = 1);
 	/// Gets rank of role.
 	int getRoleRank(SoldierRole role) const;
+	int getRoleRank(std::vector<int> role) const;
 	/// Gets the role with highest rank and rank value.
 	std::pair<SoldierRole, int> getBestRoleRank() const;
 	/// Gets the role with highest rank.

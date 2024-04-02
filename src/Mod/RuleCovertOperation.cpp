@@ -30,7 +30,7 @@ namespace OpenXcom
 * @param type String defining the type.
 */
 RuleCovertOperation::RuleCovertOperation(const std::string& name) : _name(name), _soldiersMin(1), _soldiersMax(1), _optionalSoldierEffect(0),
-	_scientistEffect(5), _engineerEffect(5), _itemSpaceEffect(10), _armorEffect(20),
+	_itemSpaceEffect(10), _armorEffect(20),
 	_itemSpaceLimit(-1), _baseChances(50), _costs(0), _successScore(0), _failureScore(0),
 	_successLoyalty(0), _failureLoyalty(0), _successFunds(0), _failureFunds(0), _danger(0), _trapChance(0),
 	_progressEventChance(0), _concealedItemsBonus(20), _bonusItemsEffect(5), _repeatProgressEvent(false), _allowAllEquipment(false),
@@ -72,6 +72,7 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	}
 	_repeatProgressEvent = node["repeatProgressEvent"].as<bool>(_repeatProgressEvent);
 	_requires = node["requires"].as<std::vector<std::string>>(_requires);
+	_allowedRoles = node["allowedRoles"].as<std::vector<int>>(_allowedRoles);
 	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
 	_soldiersMin = node["soldiersMin"].as<int>(_soldiersMin);
 	if (_soldiersMin < 1)
@@ -88,8 +89,6 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 		throw Exception("Error in loading operation '" + _name + "'! soldiersMax < _soldiersMin!");
 	}
 	_optionalSoldierEffect = node["optionalSoldierEffect"].as<int>(_optionalSoldierEffect);
-	_scientistEffect = node["scientistEffect"].as<int>(_scientistEffect);
-	_engineerEffect = node["engineerEffect"].as<int>(_engineerEffect);
 	_baseChances = node["baseChances"].as<int>(_baseChances);
 	_costs = node["costs"].as<int>(_costs);
 	if (_costs < 0)

@@ -317,7 +317,7 @@ private:
 	std::vector<int> _psiMissSound;
 	int _psiMissAnimation, _psiMissAnimFrames;
 	int _power, _powerForAnimation;
-	bool _hidePower;
+	bool _hidePower, _canBeEquippedInBattle;
 	float _powerRangeReduction;
 	float _powerRangeThreshold;
 	int _coneSize, _noiseValue;
@@ -577,6 +577,8 @@ public:
 	int getPowerForAnimation() const { return _powerForAnimation; }
 	/// Should the item's power be displayed in Ufopedia or not?
 	bool getHidePower() const { return _hidePower; }
+	/// Can this item be equipped or dropped after balle starts or not?
+	bool canBeEquippedInBattle() const { return _canBeEquippedInBattle; }
 	/// Ok, so this isn't a melee type weapon but we're using it for melee... how much damage should it do?
 	int getMeleePower() const;
 

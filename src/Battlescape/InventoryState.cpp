@@ -1696,6 +1696,11 @@ void InventoryState::onAutoequip(Action *)
 		return;
 	}
 
+	if (_game->getMod()->isFTAGame())
+	{
+		return; //#FINNIKTODO: repair stacking and allowed/forbidden categories for armor on this stupid auitoequip
+	}
+
 	BattleUnit               *unit          = _battleGame->getSelectedUnit();
 	Tile                     *groundTile    = unit->getTile();
 	std::vector<BattleItem*>  groundInv     = *groundTile->getInventory();
