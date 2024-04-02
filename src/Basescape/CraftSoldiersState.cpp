@@ -68,7 +68,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	}
 	int pilots = c->getRules()->getPilots();
 	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
-	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding() && pilots < c->getSpaceAvailable();
+	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding();
 	_ftaUI = _game->getMod()->isFTAGame();
 
 	// Create objects

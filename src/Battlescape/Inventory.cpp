@@ -749,8 +749,9 @@ void Inventory::mouseClick(Action *action, State *state)
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 				if (item != 0)
 				{
-					if (!item->getRules()->canBeEquippedInBattle() && !_tu)
+					if (!item->getRules()->canBeEquippedInBattle() && _tu)
 					{
+						_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_CHANGE_INVENTORY"));
 						return;
 					}
 					if (_game->isShiftPressed())
@@ -896,13 +897,52 @@ void Inventory::mouseClick(Action *action, State *state)
 					x = item->getSlotX();
 					y = item->getSlotY();
 				}
-				// Check if this inventory section supports the item
-				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
+				// Check if this inventory section and armor supports the item
+				if (slot->getType() != INV_GROUND)
 				{
-					_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION"));
+					if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
+					{
+						_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION"));
+						return;
+					}
+					// Check if the unit's armor rules allows to use this item category
+					Armor* armor = nullptr;
+					Soldier* soldier = _selUnit->getGeoscapeSoldier();
+					if (soldier)
+					{
+						armor = soldier->getArmor();
+					}
+
+					if (armor)
+					{
+						if (!armor->getAllowedItemCategories().empty())
+						{
+							auto firstMatch = std::find_first_of(_selItem->getRules()->getCategories().begin(), _selItem->getRules()->getCategories().end(),
+																 _selUnit->getArmor()->getAllowedItemCategories().begin(), _selUnit->getArmor()->getAllowedItemCategories().end());
+
+							if (firstMatch == _selItem->getRules()->getCategories().end())
+							{
+								_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_USE_THIS_ITEM"));
+								return;
+							}
+						}
+						else if (!armor->getForbiddenItemCategoiries().empty())
+						{// Now check if the unit's armor rules forbids to use this item category
+							auto firstMatch = std::find_first_of(_selItem->getRules()->getCategories().begin(), _selItem->getRules()->getCategories().end(),
+																 _selUnit->getArmor()->getForbiddenItemCategoiries().begin(), _selUnit->getArmor()->getForbiddenItemCategoiries().end());
+
+							if (firstMatch != _selItem->getRules()->getCategories().end())
+							{
+								_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_USE_THIS_ITEM"));
+								return;
+							}
+						}
+					}
 				}
+				
+				
 				// Put item in empty slot, or stack it, if possible.
-				else if (item == 0 || item == _selItem || canStack)
+				if (item == 0 || item == _selItem || canStack)
 				{
 					// If item fits into an empty slot or can be stacked try moving it there
 					if ((!overlapItems(_selUnit, _selItem, slot, x, y) && slot->fitItemInSlot(_selItem->getRules(), x, y)) || canStack)
@@ -1654,10 +1694,10 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 	}
 
 	// Check if the unit's armor rules allows to use this item category
-	if (!_selUnit->getArmorType()->getAllowedItemCategories().empty())
+	if (!_selUnit->getArmor()->getAllowedItemCategories().empty())
 	{
 		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
-											_selUnit->getArmorType()->getAllowedItemCategories().begin(), _selUnit->getArmorType()->getAllowedItemCategories().end());
+											_selUnit->getArmor()->getAllowedItemCategories().begin(), _selUnit->getArmor()->getAllowedItemCategories().end());
 
 		if (firstMatch == item->getRules()->getCategories().end())
 		{
@@ -1665,12 +1705,10 @@ bool Inventory::fitItem(RuleInventory *newSlot, BattleItem *item, std::string &w
 			return false;
 		}
 	}
-
-	// Now check if the unit's armor rules forbids to use this item category
-	if (!_selUnit->getArmorType()->getForbiddenItemCategoiries().empty())
-	{
+	else if (!_selUnit->getArmor()->getForbiddenItemCategoiries().empty())
+	{// Now check if the unit's armor rules forbids to use this item category
 		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
-			_selUnit->getArmorType()->getForbiddenItemCategoiries().begin(), _selUnit->getArmorType()->getForbiddenItemCategoiries().end());
+			_selUnit->getArmor()->getForbiddenItemCategoiries().begin(), _selUnit->getArmor()->getForbiddenItemCategoiries().end());
 
 		if (firstMatch != item->getRules()->getCategories().end())
 		{

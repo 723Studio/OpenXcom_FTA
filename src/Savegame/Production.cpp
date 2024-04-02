@@ -330,7 +330,6 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					const RuleSoldier *rule = m->getSoldier(spawnedPersonType);
 					if (rule != 0)
 					{
-						Transfer *t = new Transfer(24);
 						int nationality = g->selectSoldierNationalityByLocation(m, rule, b);
 						Soldier *s = m->genSoldier(g, rule, nationality);
 						s->load(_rules->getSpawnedSoldierTemplate(), m, g, m->getScriptGlobal(), true); // load from soldier template
@@ -342,8 +341,17 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 						{
 							s->genName();
 						}
-						t->setSoldier(s);
-						b->getTransfers()->push_back(t);
+
+						if (g->isFtAGame())
+						{
+							b->getSoldiers()->push_back(s);
+						}
+						else
+						{
+							Transfer* t = new Transfer(24);
+							t->setSoldier(s);
+							b->getTransfers()->push_back(t);
+						}
 					}
 				}
 			}
