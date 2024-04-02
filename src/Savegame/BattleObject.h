@@ -44,7 +44,7 @@ private:
 	Tile* _tile;
 	int _hackingDefence;
 	int _failedAttempts;
-	bool _wasUsed, _isDiscovered;
+	bool _wasUsed;
 	Position _position;
 
 public:

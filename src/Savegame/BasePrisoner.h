@@ -53,7 +53,6 @@ private:
 	int _interrogationProgress, _recruitingProgress;
 	bool _spawnedTortureEvent = false;
 	Armor *_armor = nullptr;
-	Soldier* _geoscapeSoldier = nullptr;
 	std::vector<Soldier*> _agents;
 	Base* _base;
 

@@ -33,7 +33,7 @@ namespace OpenXcom
 * @param rules Pointer to ruleset.
 * @param id The id of the object.
 */
-BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _failedAttempts(0), _wasUsed(false), _isDiscovered(false)
+BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _failedAttempts(0), _wasUsed(false)
 {
 	if (_rules)
 	{

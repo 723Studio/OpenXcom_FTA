@@ -1434,7 +1434,7 @@ void DebriefingState::prepareDebriefing()
 		if (bu->getOriginalFaction() == FACTION_PLAYER && bu->getStatus() != STATUS_DEAD)
 		{
 			if ((bu->getStatus() == STATUS_UNCONSCIOUS || bu->getFaction() == FACTION_HOSTILE)
-				|| bu->isIgnored() && bu->getStunlevel() >= bu->getHealth()) // even for ignored xcom units, we need to know if they're conscious or unconscious
+				|| (bu->isIgnored() && bu->getStunlevel() >= bu->getHealth())) // even for ignored xcom units, we need to know if they're conscious or unconscious
 			{
 				playersUnconscious++;
 			}

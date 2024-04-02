@@ -689,8 +689,10 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	}
 
 	Log(LOG_DEBUG) << "Background simulation of " << this->getRules()->getName() << "with danger: " << danger;
+
 	if (engagement)
 		Log(LOG_DEBUG) << "Engagement rolled with avgStealth: " << avgStealth;
+
 	Log(LOG_DEBUG) << "Calculating soldier exp, expRolls: " << expRolls << " from ruleCost: " << ruleCost << " and effCost: " << effCost;
 
 	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)

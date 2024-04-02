@@ -585,8 +585,6 @@ namespace OpenXcom
 	 */
 	void FinishedCoverOperationDetailsState::secondPage()
 	{
-		bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
-					   _game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
 		_lstSoldierStats->setVisible(true);
 	}
 }

@@ -3641,7 +3641,7 @@ namespace
 template<typename... Args>
 void flashMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Args... args)
 {
-	if (!sbg || !sbg->getBattleState())
+	if (!sbg || !sbg->getBattleState() || sbg->getGeoscapeSave()->isFtAGame())
 	{
 		return;
 	}

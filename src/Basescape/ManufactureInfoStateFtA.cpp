@@ -89,7 +89,6 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *product
 void ManufactureInfoStateFtA::buildUi()
 {
 	_screen = false;
-	int tile_size = 32;
 
 	_window = new Window(this, 320, 160, 0, 20, POPUP_BOTH);
 	_txtTitle = new Text(302, 17, 9, 30);

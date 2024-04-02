@@ -106,7 +106,7 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _arrow(0), _missionPointer(0), _samplingObjectPointer(0), _sensorPointer(0), _anyIndicator(false), _isAltPressed(false),
+	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _samplingObjectPointer(0), _anyIndicator(false), _isAltPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
@@ -983,8 +983,8 @@ void Map::drawTerrain(Surface *surface)
 								// FTA Hacking Cursor
 								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
 								{
-									if (battleObject && battleObject->canBeHacked() ||
-										unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked())
+									if ((battleObject && battleObject->canBeHacked()) ||
+										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))
 									{
 										frameNumber = halfAnimFrameRest; // yellow box
 									}

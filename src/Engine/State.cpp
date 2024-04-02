@@ -578,7 +578,7 @@ void State::setStandardPalette(const std::string &palette, int backpals)
 	}
 	else if (palette == "PAL_BASE_INFO")
 	{
-		_cursorColor == Mod::BASEINFO_CURSOR;
+		_cursorColor = Mod::BASEINFO_CURSOR;
 	}
 	else
 	{

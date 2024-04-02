@@ -119,8 +119,8 @@ HackingView::HackingView(int w, int h, int x, int y) : Surface(w, h, x, y), _fra
 	_redraw = true;
 
 	// Create node grid 
-	for (int row = 0; row < std::size(_nodeArray); ++row)
-		for (int col = 0; (col < std::size(_nodeArray[row]) - 1 + row % 2); ++col) // 1 less for even row and full length for odd
+	for (size_t row = 0; row < std::size(_nodeArray); ++row)
+		for (size_t col = 0; (col < std::size(_nodeArray[row]) - 1 + row % 2); ++col) // 1 less for even row and full length for odd
 		{
 			_nodeArray[row][col] = new HackingNode(hackingGridStartX + hackingGridWidth * col - hackingNodeOffsetX * (row % 2),
 				hackingGridStartY + hackingGridHeight * row,

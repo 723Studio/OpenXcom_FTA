@@ -530,7 +530,7 @@ void SoldiersState::initList(size_t scrl)
 		{
 			for (auto* soldier : *_base->getSoldiers())
 			{
-				if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT" || soldier->getCovertOperation() != 0)
+				if ((soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT") || soldier->getCovertOperation() != 0)
 				{
 					// soldiers outside of the base are not eligible
 					continue;
