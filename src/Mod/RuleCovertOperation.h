@@ -22,6 +22,7 @@
 #include <yaml-cpp/yaml.h>
 #include "../Savegame/WeightedOptions.h"
 #include "RuleBaseFacilityFunctions.h"
+#include "RuleSoldier.h"
 
 namespace OpenXcom
 {
@@ -47,7 +48,8 @@ private:
 	std::vector<int> _allowedRoles;
 	bool _repeatProgressEvent, _allowAllEquipment, _removeRequiredItemsOnSuccess, _removeRequiredItemsOnFailure;
 	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
-	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItems, _bonusItems, _soldierTypeEffectiveness;
+	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItems, _bonusItems, _soldierTypeEffectiveness, _addSoldiersStr;
+	std::map<const RuleSoldier*, int> _addSoldiers;
 	int _listOrder;
 public:
 	/// Creates a blank craft ruleset.
@@ -161,6 +163,8 @@ public:
 	const std::map<std::string, int>& getRequiredItemList() const { return _requiredItems; }
 	/// Gets the operation's required item list.
 	const std::map<std::string, int> &getBonusItemList() const { return _bonusItems; }
+	/// Gets list of soldiers to add to the operation`s base on this operations completes.
+	const std::map<const RuleSoldier*, int>& getSoldiersToAdd() const { return _addSoldiers; }
 	/// Gets bonus for having required items for this operation.
 	int getBonusItemsEffect() const { return _bonusItemsEffect; }
 	/// Gets if this covert operation does not have any effects for concealed or heavy weapons.

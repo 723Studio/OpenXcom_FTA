@@ -446,6 +446,19 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		}
 	}
 
+	auto addSoldiers = _rule->getSoldiersToAdd();
+	for (auto &kv : addSoldiers)
+	{
+		for (int i = 0; i < kv.second; ++i)
+		{
+			int nationality = engine.getSavedGame()->selectSoldierNationalityByLocation(&mod, kv.first, nullptr); //#FINNIKTODO more logic for defining nationality
+			Soldier* soldier = mod.genSoldier(&save, kv.first, nationality);
+			_base->getSoldiers()->push_back(soldier);
+			soldier->setCovertOperation(this);
+			soldier->setJustSaved(true);
+		}
+	}
+
 	if (!missionName.empty())
 	{
 		// let's define variables for alien mission first
@@ -622,8 +635,6 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		engine.pushState(new FinishedCoverOperationState(this, operationResult));
 	}
 
-	_over = true;
-
 	return true;
 }
 
@@ -796,9 +807,6 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				bool trainingManaPri = false;
 				if (trainPsiSkill && mod.isManaTrainingPrimary())
 					trainingManaPri = true;
-				bool trainingManaSec = false;
-				if (mod.isManaTrainingSecondary())
-					trainingManaSec = true;
 				for (size_t j = 0; j < (size_t)expRolls; j++)
 				{
 					statID = RNG::generate(1, 7);  //choose stat
@@ -952,6 +960,7 @@ void CovertOperation::finishOperation()
 	{
 		//remove soldier from operation
 		(*i)->setCovertOperation(0);
+		(*i)->setJustSaved(false);
 
 		//if soldier was not hurt we return him or her to training, if settings allows it
 		if ((*i)->getHealthMissing() == 0)

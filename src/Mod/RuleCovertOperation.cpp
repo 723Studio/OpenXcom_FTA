@@ -106,6 +106,7 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_failureFunds = node["failureFunds"].as<int>(_failureFunds);
 	_successEveryItemList = node["successEveryItemList"].as<std::map<std::string, int> >(_successEveryItemList);
 	_failureEveryItemList = node["failureEveryItemList"].as<std::map<std::string, int> >(_failureEveryItemList);
+	_addSoldiersStr = node["addSoldiers"].as<std::map<std::string, int> >(_addSoldiersStr);
 	if (node["successWeightedItemList"])
 	{
 		_successWeightedItemList.load(node["successWeightedItemList"]);
@@ -166,6 +167,26 @@ void RuleCovertOperation::afterLoad(const Mod* mod)
 	if (!_failureEvent.empty() && !mod->getEvent(_failureEvent))
 	{
 		throw Exception("Cover operation named: '" + this->getName() + "' has broken link in failureEvent: '" + _failureEvent + "' is not found!");
+	}
+	if (!_addSoldiersStr.empty())
+	{
+		for (auto &addSoldier: _addSoldiersStr)
+		{
+			const RuleSoldier* soldier = mod->getSoldier(addSoldier.first);
+			if (soldier != 0)
+			{
+				if (addSoldier.second < 1)
+				{
+					throw Exception("Cover operation named: '" + this->getName() + " has invalid addSoldiers property - second value of the map must be greater than 0.");
+				}
+				_addSoldiers.insert_or_assign(soldier, addSoldier.second);
+			}
+			else
+			{
+				throw Exception("Cover operation named: '" + this->getName() + " has invalid addSoldiers property - no rule for soldier: '" + addSoldier.first + "'");
+			}
+			
+		}
 	}
 }
 

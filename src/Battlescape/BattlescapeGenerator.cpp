@@ -1237,6 +1237,10 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 					soldier->clearEquipmentLayout();
 				}
 				BattleUnit *unit = addXCOMUnit(new BattleUnit(_game->getMod(), soldier, _save->getDepth(), _save->getStartingCondition()));
+				if (soldier->isJustSaved()) //case we've just added this soldier via covert operation's results
+				{
+					unit->setSpecialObjective(SPECOBJ_FRIENDLY_VIP);
+				}
 				if (unit && !_save->getSelectedUnit())
 					_save->setSelectedUnit(unit);
 			}
@@ -1693,7 +1697,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 					return unit;
 				}
 			}
-			bool spawnClose = RNG::percent(35);
+			bool spawnClose = RNG::percent(20);
 			if (spawnClose && placeUnitNearFriend(unit))
 			{
 				_craftInventoryTile = _save->getTile(unit->getPosition());
