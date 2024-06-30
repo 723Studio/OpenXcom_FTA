@@ -25,8 +25,9 @@
 namespace OpenXcom
 {
 
-RuleResearch::RuleResearch(const std::string &name, int listOrder) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _funds(0), _sequentialGetOneFree(false),
-													  _needItem(false), _destroyItem(false), _hidden(false), _unlockFinalMission(false), _listOrder(listOrder)
+RuleResearch::RuleResearch(const std::string &name, int listOrder) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _funds(0), _counterValue(1),
+                                                                     _sequentialGetOneFree(false), _needItem(false), _destroyItem(false), _hidden(false),
+																	 _unlockFinalMission(false), _listOrder(listOrder)
 {
 }
 
@@ -51,7 +52,12 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
 	mod->loadUnorderedNames(_name, _spawnedItemList, node["spawnedItemList"]);
 	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
 	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
+	_counterValue = node["counterValue"].as<int>(_counterValue);
 	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
+	if (node["randomEvents"])
+	{
+		_randomEvents.load(node["randomEvents"]);
+	}
 	_cost = node["cost"].as<int>(_cost);
 	_stats.merge(node["stats"].as<UnitStats>(_stats));
 	_points = node["points"].as<int>(_points);

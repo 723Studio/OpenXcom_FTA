@@ -24,7 +24,7 @@ namespace OpenXcom
 {
 
 RuleEvent::RuleEvent(const std::string &name) : _name(name), _background("BACK13.SCR"), _city(false), _points(0), _funds(0), _loyalty(0),
-												_spawnedPersons(0), _timer(30), _timerRandom(0)
+												_spawnedPersons(0), _timer(30), _timerRandom(0), _counterValue(1)
 {
 }
 
@@ -68,6 +68,7 @@ void RuleEvent::load(const YAML::Node &node, Mod* mod)
 	_interruptResearch = node["interruptResearch"].as<std::string>(_interruptResearch);
 	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
 	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
+	_counterValue = node["counterValue"].as<int>(_counterValue);
 	_timer = node["timer"].as<int>(_timer);
 	_timerRandom = node["timerRandom"].as<int>(_timerRandom);
 

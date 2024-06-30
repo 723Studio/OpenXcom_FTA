@@ -267,9 +267,9 @@ public:
 	/// Gets the last ID for an object.
 	int getLastId(const std::string& name);
 	/// Increase a custom counter.
-	void increaseCustomCounter(const std::string& name);
+	void increaseCustomCounter(const std::string& name, int value = 1);
 	/// Decrease a custom counter.
-	void decreaseCustomCounter(const std::string& name);
+	void decreaseCustomCounter(const std::string& name, int value = 1);
 	/// Resets the list of object IDs.
 	const std::map<std::string, int> &getAllIds() const;
 	/// Resets the list of object IDs.

@@ -58,7 +58,7 @@ private:
 	std::vector<std::string> _regionList;
 	bool _city;
 	int _points, _funds, _loyalty;
-	int _spawnedPersons;
+	int _spawnedPersons, _counterValue;
 	std::string _spawnedPersonType, _spawnedPersonName;
 	YAML::Node _spawnedSoldier;
 	std::map<std::string, int> _everyMultiItemList, _reputationScore;
@@ -100,6 +100,7 @@ public:
 	const std::vector<std::string>& getDecreaseCounter() const { return _decreaseCounter; }
 	/// Gets the name of custom counter variables to increase when this event is appeared.
 	const std::vector<std::string>& getIncreaseCounter() const { return _increaseCounter; }
+	int getCounterValue() const { return _counterValue; }
 
 	/// Gets the number of spawned persons.
 	int getSpawnedPersons() const { return _spawnedPersons; }

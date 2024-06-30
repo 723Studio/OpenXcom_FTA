@@ -23,6 +23,7 @@
 #include "RuleBaseFacilityFunctions.h"
 #include "ModScript.h"
 #include "../Mod/Unit.h"
+#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -47,8 +48,9 @@ class RuleResearch
 	std::string _name, _lookup, _cutscene, _spawnedItem, _spawnedEvent;
 	int _spawnedItemCount;
 	std::vector<std::string> _spawnedItemList;
+	WeightedOptions _randomEvents;
 	std::vector<std::string> _decreaseCounter, _increaseCounter;
-	int _cost, _points, _funds;
+	int _cost, _points, _funds, _counterValue;
 	std::vector<std::string> _dependenciesName, _unlocksName, _disablesName, _reenablesName, _getOneFreeName, _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	UnitStats _stats;
@@ -130,6 +132,10 @@ public:
 	const std::vector<std::string>& getDecreaseCounter() const { return _decreaseCounter; }
 	/// Gets the name of custom counter variables to increase when this topic is researched.
 	const std::vector<std::string>& getIncreaseCounter() const { return _increaseCounter; }
+	/// Gets the value for counter to be applied (for all of them).
+	int getCounterValue() const { return _counterValue; }
+	/// Gets the list of one time random events (with weights).
+	const WeightedOptions& getRandomEvents() const { return _randomEvents; }
 };
 
 }

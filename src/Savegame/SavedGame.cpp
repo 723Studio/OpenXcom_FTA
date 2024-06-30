@@ -1368,14 +1368,14 @@ int SavedGame::getLastId(const std::string& name)
  * Increase a custom counter.
  * @param name Counter name.
  */
-void SavedGame::increaseCustomCounter(const std::string& name)
+void SavedGame::increaseCustomCounter(const std::string& name, int value)
 {
 	if (!name.empty())
 	{
 		auto i = _ids.find(name);
 		if (i != _ids.end())
 		{
-			i->second++;
+			i->second += value;
 		}
 		else
 		{
@@ -1388,7 +1388,7 @@ void SavedGame::increaseCustomCounter(const std::string& name)
  * Decrease a custom counter.
  * @param name Counter name.
  */
-void SavedGame::decreaseCustomCounter(const std::string& name)
+void SavedGame::decreaseCustomCounter(const std::string& name, int value)
 {
 	if (!name.empty())
 	{
@@ -1396,9 +1396,9 @@ void SavedGame::decreaseCustomCounter(const std::string& name)
 		if (i != _ids.end())
 		{
 			// don't go below "zero" (which is saved as one)
-			if (i->second > 1)
+			if (i->second > value)
 			{
-				i->second--;
+				i->second -= value;
 			}
 		}
 		else
@@ -3592,14 +3592,18 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 		// 3l. handle spawned events
 		RuleEvent* spawnedEventRule = mod->getEvent(myResearchRule->getSpawnedEvent());
 		spawnEvent(spawnedEventRule);
+		// 3l.2 and also random events from weighted list
+		RuleEvent* randomEventRule = mod->getEvent(myResearchRule->getRandomEvents().choose(), true); // take random
+		spawnEvent(randomEventRule);
+
 		// 3m. handle counters
 		for (auto& inc : myResearchRule->getIncreaseCounter())
 		{
-			increaseCustomCounter(inc);
+			increaseCustomCounter(inc, myResearchRule->getCounterValue());
 		}
 		for (auto& dec : myResearchRule->getDecreaseCounter())
 		{
-			decreaseCustomCounter(dec);
+			decreaseCustomCounter(dec, myResearchRule->getCounterValue());
 		}
 	}
 }

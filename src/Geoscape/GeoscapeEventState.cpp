@@ -435,11 +435,11 @@ void GeoscapeEventState::eventLogic()
 	// 7. handle counters
 	for (auto& inc : rule.getIncreaseCounter())
 	{
-		_game->getSavedGame()->increaseCustomCounter(inc);
+		_game->getSavedGame()->increaseCustomCounter(inc, rule.getCounterValue());
 	}
 	for (auto& dec : rule.getDecreaseCounter())
 	{
-		_game->getSavedGame()->decreaseCustomCounter(dec);
+		_game->getSavedGame()->decreaseCustomCounter(dec, rule.getCounterValue());
 	}
 
 	// 8. Add reputation
