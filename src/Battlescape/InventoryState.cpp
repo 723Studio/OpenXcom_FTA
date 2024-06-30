@@ -1535,14 +1535,14 @@ void InventoryState::_applyInventoryTemplate(std::vector<EquipmentLayoutItem*> &
 				!_inv->overlapItems(
 					unit,
 					matchedWeapon,
-					_game->getMod()->getInventory(equipmentLayoutItem->getSlot(), true),
+					_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true),
 					equipmentLayoutItem->getSlotX(),
 					equipmentLayoutItem->getSlotY()
 				) ||
 				_inv->canBeStacked(
 					matchedWeapon,
-					unit->getItem(_game->getMod()->getInventory(equipmentLayoutItem->getSlot(), true), equipmentLayoutItem->getSlotX(), equipmentLayoutItem->getSlotY()),
-					_game->getMod()->getInventory(equipmentLayoutItem->getSlot(), true),
+					unit->getItem(_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true), equipmentLayoutItem->getSlotX(), equipmentLayoutItem->getSlotY()),
+					_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true),
 					equipmentLayoutItem->getSlotX(),
 					equipmentLayoutItem->getSlotY()
 				)

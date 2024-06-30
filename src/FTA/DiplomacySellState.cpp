@@ -226,7 +226,7 @@ void DiplomacySellState::delayedInit()
 			{
 				for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end(); ++j)
 				{
-					if ((*j)->getItems() == *i)
+					if ((*j)->getItems() == rule)
 					{
 						qty += (*j)->getQuantity();
 					}
@@ -742,7 +742,7 @@ void DiplomacySellState::btnOkClick(Action*)
 					// if there are STILL any left to remove, take them from the transfers, and if necessary, delete it.
 					for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end() && toRemove;)
 					{
-						if ((*j)->getItems() == item->getType())
+						if ((*j)->getItems() == item)
 						{
 							if ((*j)->getQuantity() <= toRemove)
 							{

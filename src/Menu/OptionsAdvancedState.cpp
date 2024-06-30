@@ -140,10 +140,6 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_settingsAI[optionInfo.owner()].push_back(optionInfo);
 			}
-			else if (optionInfo.category() == "STR_FTA")
-			{
-				_settingsFtA.push_back(optionInfo);
-			}
 		}
 	}
 }
@@ -304,11 +300,6 @@ OptionInfo *OptionsAdvancedState::getSetting(size_t sel)
 	else if (selInt > _offsetAIMin && selInt <= _offsetAIMax)
 	{
 		return &_settingsAI[idx][selInt - 1 - _offsetAIMin];
-	}
-	else if (sel > _settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size() + 2 &&
-			 sel <= _settingsGeneral.size() + 2 + _settingsGeo.size() + 2 + _settingsBattle.size() + 2 + _settingsOxce.size() + 2 + _settingsFtA.size())
-	{
-		return &_settingsFtA[sel - 1 - _settingsGeneral.size() - 2 - _settingsGeo.size() - 2 - _settingsBattle.size() - 2 - _settingsOxce.size() - 2];
 	}
 	else
 	{

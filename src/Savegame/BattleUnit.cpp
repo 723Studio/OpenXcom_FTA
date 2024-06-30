@@ -3025,7 +3025,7 @@ std::vector<BattleItem*> *BattleUnit::getInventory()
  * @param y Y position in the slot.
  * @return True if item can be stacked to a slot.
  */
-bool BattleUnit::canStackToSlot(BattleItem* item, RuleInventory* slot, int x, int y) const
+bool BattleUnit::canStackToSlot(BattleItem* item, const RuleInventory* slot, int x, int y) const
 {
 	// If target slot is empty stacking is not applicable
 	if (!getItem(slot, x, y)) { return false; }

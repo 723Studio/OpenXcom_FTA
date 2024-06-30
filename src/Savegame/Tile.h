@@ -374,7 +374,7 @@ public:
 	/// Get fire and smoke animation offset.
 	int getAnimationOffset() const;
 	/// Add item
-	void addItem(BattleItem *item, RuleInventory *ground);
+	void addItem(BattleItem *item, const RuleInventory *ground);
 	/// Remove item
 	void removeItem(BattleItem *item);
 	/// Get pointer to the BattleObject

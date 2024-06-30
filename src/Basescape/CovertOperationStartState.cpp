@@ -119,15 +119,8 @@ CovertOperationStartState::CovertOperationStartState(Base* base, RuleCovertOpera
 		for (auto item : _rule->getRequiredItemList())
 		{
 			sd << "\n";
-			if (_game->getMod()->getItem(item.first))
-			{
-				sd << tr(_game->getMod()->getItem(item.first)->getType());
-				sd << ">" << "\x01" << item.second << "\x01";
-			}
-			else
-			{
-				sd << "ERROR LOADING ITEM REQUIREMENTS!";
-			}
+			sd << tr(item.first->getType());
+			sd << ">" << "\x01" << item.second << "\x01";
 		}
 	}
 	_txtDescription->setText(sd.str());
@@ -203,18 +196,18 @@ void CovertOperationStartState::init()
 	if (!reqItems.empty())
 	{
 		int reqItemsN = 0;
-		for (std::map<std::string, int>::iterator it = reqItems.begin(); it != reqItems.end(); ++it)
+		for (auto& it : reqItems)
 		{
-			reqItemsN = reqItemsN + it->second;
-			std::string itemName = it->first;
-			for (std::map<std::string, int>::iterator j = _items->getContents()->begin(); j != _items->getContents()->end(); ++j)
+			reqItemsN += it.second;
+			for (auto& j : *_items->getContents())
 			{
-				if (j->first == itemName && j->second >= it->second)
+				if (j.first == it.first && j.second > it.second)
 				{
-					reqItemsN = reqItemsN - j->second;
+					reqItemsN -= j.second;
 				}
 			}
 		}
+		
 		_btnStart->setVisible(reqItemsN <= 0);
 	}
 	_btnEquipmet->setVisible(_soldiers.size() > 0 || _items->getTotalQuantity() > 0);
@@ -262,10 +255,11 @@ void CovertOperationStartState::init()
 void CovertOperationStartState::btnCancelClick(Action*)
 {
 	// lets return all items back to base
-	for (std::map<std::string, int>::iterator it = _items->getContents()->begin(); it != _items->getContents()->end(); ++it)
+	for (auto& item : *_items->getContents())
 	{
-		_base->getStorageItems()->addItem(it->first, it->second);
+		_base->getStorageItems()->addItem(item.first, item.second);
 	}
+	
 	_game->popState();
 }
 
@@ -279,16 +273,18 @@ void CovertOperationStartState::btnStartClick(Action*)
 	int chances = round(this->getOperationOdds());
 	int cost = getOperationCost();
 
-	CovertOperation* newOperation = new CovertOperation(_rule, _base, cost, chances);
+	CovertOperation* newOperation = new CovertOperation(_rule, _game->getMod(), _base, cost, chances);
 	_base->addCovertOperation(newOperation);
 	// lets update operation with items and personell and assign soldiers.
-	for (std::map<std::string, int>::iterator it = _items->getContents()->begin(); it != _items->getContents()->end(); ++it)
+	for (auto& item : *_items->getContents())
 	{
-		newOperation->getItems()->addItem(it->first, it->second);
-		RuleItem* item = _game->getMod()->getItem(it->first);
-		if (item->getBattleType() == BT_PSIAMP)
-			_hasPsiItems = true; //looks like this item can be used for psionic offence!
+		newOperation->getItems()->addItem(item.first, item.second);
+		if (item.first->getBattleType() == BT_PSIAMP)
+		{
+			_hasPsiItems = true;
+		}
 	}
+
 	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
 	{
 		bool matched = false;
@@ -506,23 +502,23 @@ double CovertOperationStartState::getOperationOdds()
 		_chances += (assignedSoldiersN - _rule->getSoldierSlotsMin()) * _rule->getOptionalSoldierEffect();
 	}
 	//lets see if we need some decrease because of required items
-	std::map<std::string, int> bonItems = _rule->getBonusItemList();
+	auto bonItems = _rule->getBonusItemList();
 	if (!bonItems.empty())
 	{
-		int reqItemsN = 0;
-		for (std::map<std::string, int>::iterator it = bonItems.begin(); it != bonItems.end(); ++it)
+		int bonItemsN = 0;
+		for (auto& it : bonItems)
 		{
-			reqItemsN = reqItemsN + it->second;
-			std::string itemName = it->first;
-			for (std::map<std::string, int>::iterator j = _items->getContents()->begin(); j != _items->getContents()->end(); ++j)
+			bonItemsN += it.second;
+			for (auto& j : *_items->getContents())
 			{
-				if (j->first == itemName)
+				if (j.first == it.first && j.second > it.second)
 				{
-					reqItemsN = reqItemsN - j->second;
+					bonItemsN -= j.second;
 				}
 			}
 		}
-		_chances -= (double)_rule->getBonusItemsEffect() * reqItemsN;
+
+		_chances -= (double)_rule->getBonusItemsEffect() * bonItemsN;
 	}
 	//now lets check soldier armor if we have something about it in rules
 	if (!_rule->getAllowedArmor().empty())
@@ -660,12 +656,11 @@ double CovertOperationStartState::getOperationOdds()
 				break;
 			}
 
-			for (std::map<std::string, int>::iterator i = _items->getContents()->begin(); i != _items->getContents()->end(); ++i)
+			for (auto& items : *_items->getContents())
 			{
-				RuleItem* item = _game->getMod()->getItem((*i).first);
-				if (!item->belongsToCategory("STR_CONCEALABLE"))
+				if (!items.first->belongsToCategory("STR_CONCEALABLE"))
 					allConsealed = false;
-				if (item->belongsToCategory("STR_HEAVY_WEAPONS") && !item->belongsToCategory("STR_CLIPS"))
+				if (items.first->belongsToCategory("STR_HEAVY_WEAPONS") && !items.first->belongsToCategory("STR_CLIPS"))
 					++heavy;
 			}
 

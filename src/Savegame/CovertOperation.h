@@ -42,6 +42,7 @@ class CovertOperation
 {
 private:
 	const RuleCovertOperation* _rule;
+	const Mod* _mod;
 	Base* _base;
 	int _spent, _cost;
 	int _successChance;
@@ -51,7 +52,7 @@ private:
 	std::string _generatedMission, _researchName;
 public:
 	/// Creates a blank Covert Operation.
-	CovertOperation(const RuleCovertOperation* rule, Base* base, int cost = 0, int chances = 0);
+	CovertOperation(const RuleCovertOperation* rule, const Mod* mod, Base* base, int cost = 0, int chances = 0);
 	/// Cleans up the Covert Operation info.
 	~CovertOperation();
 	/// Loads the Covert Operation from YAML.

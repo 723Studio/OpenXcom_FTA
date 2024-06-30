@@ -83,7 +83,7 @@ void DiplomacyFaction::load(const YAML::Node &node, SavedGame *save)
 	_thisMonthDiscovered = node["thisMonthDiscovered"].as<bool>(_thisMonthDiscovered);
 	_treaties = node["treaties"].as<std::vector<std::string>>(_treaties);
 	_unlockedResearches = node["unlockedResearches"].as<std::vector<std::string>>(_unlockedResearches);
-	_items->load(node["items"]);
+	_items->load(node["items"], _mod);
 	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
 	{
 		std::string name = (*i)["name"].as<std::string>();
@@ -605,15 +605,14 @@ void DiplomacyFaction::handleRestock()
  */
 void DiplomacyFaction::handleSelling(Mod& mod)
 {
-	std::map<RuleItem*, std::pair<int, int>> sellList;
+	std::map<const RuleItem*, std::pair<int, int>> sellList;
 
 	for (auto it = _items->getContents()->begin(); it != _items->getContents()->end(); ++it)
 	{
-		RuleItem* ruleItem = _mod->getItem((*it).first);
-		auto cost = ruleItem->getBuyCost(); //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
+		auto cost = (*it).first->getBuyCost(); //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
 		if (!cost)
 		{
-			cost = ruleItem->getSellCost(); //well, in case we can't buy it, this would be ok too =)
+			cost = (*it).first->getSellCost(); //well, in case we can't buy it, this would be ok too =)
 		}
 		if (!cost)
 		{
@@ -623,7 +622,7 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 		int wishWeight = 0;
 		for (auto k = _rule->getWishList().begin(); k != _rule->getWishList().end(); ++k)
 		{
-			if (k->first == (*it).first)
+			if (k->first == (*it).first->getType())
 			{
 				wishWeight = k->second;
 				break;
@@ -631,10 +630,10 @@ void DiplomacyFaction::handleSelling(Mod& mod)
 		}
 		// calculate desired ammount of that item
 		int toSell = round((wishWeight / cost) * _power * _rule->getStockMod() / 1000);
-		toSell = _items->getItem(ruleItem) - toSell;
+		toSell = _items->getItem((*it).first) - toSell;
 		if (toSell > 0)
 		{
-			sellList.insert(std::make_pair(ruleItem, std::make_pair(toSell, cost)));
+			sellList.insert(std::make_pair((*it).first, std::make_pair(toSell, cost)));
 		}
 	}
 

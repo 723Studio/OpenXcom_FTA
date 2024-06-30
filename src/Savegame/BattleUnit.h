@@ -202,7 +202,7 @@ private:
 	/// Applies percentual and/or flat adjustments to the use costs.
 	void applyPercentages(RuleItemUseCost &cost, const RuleItemUseCost &flat) const;
 	/// Helper function to aid with equipping stackable items (FTA)
-	bool canStackToSlot(BattleItem* item, RuleInventory* slot, int x, int y) const;
+	bool canStackToSlot(BattleItem* item, const RuleInventory* slot, int x, int y) const;
 
 	void loadRoles(const std::vector<int>& r);
 public:

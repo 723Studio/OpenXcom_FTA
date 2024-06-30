@@ -211,11 +211,7 @@ void ResearchInfoStateFtA::buildUi()
 
 	if (_newProject)
 	{
-		// mark new as normal
-		if (_game->getSavedGame()->isResearchRuleStatusNew(getResearchRules()->getName()))
-		{
-			_game->getSavedGame()->setResearchRuleStatus(getResearchRules()->getName(), RuleResearch::RESEARCH_STATUS_NORMAL);
-		}
+		_game->getSavedGame()->setResearchRuleStatus(getResearchRules()->getName(), RuleResearch::RESEARCH_STATUS_NORMAL);
 	}
 }
 

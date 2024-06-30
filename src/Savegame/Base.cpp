@@ -163,7 +163,7 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		std::string name = (*i)["name"].as<std::string>();
 		if (_mod->getCovertOperation(name))
 		{
-			CovertOperation* c = new CovertOperation(_mod->getCovertOperation(name), this, 0);
+			CovertOperation* c = new CovertOperation(_mod->getCovertOperation(name), _mod, this, 0);
 			c->load(*i);
 			_covertOperations.push_back(c);
 		}

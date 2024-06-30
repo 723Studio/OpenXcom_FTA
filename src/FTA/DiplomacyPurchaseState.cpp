@@ -633,7 +633,7 @@ void DiplomacyPurchaseState::btnOkClick(Action *)
 				{
 					RuleItem *rule = (RuleItem*)i->rule;
 					t = new Transfer(rule->getTransferTime());
-					t->setItems(rule->getType(), i->amount);
+					t->setItems(rule, i->amount);
 					_base->getTransfers()->push_back(t);
 
 					_faction->removeItem(rule, i->amount);

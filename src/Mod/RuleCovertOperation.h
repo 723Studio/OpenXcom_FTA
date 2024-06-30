@@ -23,6 +23,7 @@
 #include "../Savegame/WeightedOptions.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "RuleSoldier.h"
+#include "RuleItem.h"
 
 namespace OpenXcom
 {
@@ -48,7 +49,8 @@ private:
 	std::vector<int> _allowedRoles;
 	bool _repeatProgressEvent, _allowAllEquipment, _removeRequiredItemsOnSuccess, _removeRequiredItemsOnFailure;
 	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
-	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItems, _bonusItems, _soldierTypeEffectiveness, _addSoldiersStr;
+	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItemsStr, _bonusItemsStr, _soldierTypeEffectiveness, _addSoldiersStr;
+	std::map<const RuleItem*, int> _requiredItems, _bonusItems;
 	std::map<const RuleSoldier*, int> _addSoldiers;
 	int _listOrder;
 public:
@@ -160,9 +162,9 @@ public:
 	/// Gets a list of items; one of them is randomly selected (considering weights) and  would be added to this operation on failure.
 	const WeightedOptions& getFailureWeightedItemList() const { return _failureWeightedItemList; }
 	/// Gets the operation's required item list.
-	const std::map<std::string, int>& getRequiredItemList() const { return _requiredItems; }
+	const std::map<const RuleItem*, int>& getRequiredItemList() const { return _requiredItems; }
 	/// Gets the operation's required item list.
-	const std::map<std::string, int> &getBonusItemList() const { return _bonusItems; }
+	const std::map<const RuleItem*, int>& getBonusItemList() const { return _bonusItems; }
 	/// Gets list of soldiers to add to the operation`s base on this operations completes.
 	const std::map<const RuleSoldier*, int>& getSoldiersToAdd() const { return _addSoldiers; }
 	/// Gets bonus for having required items for this operation.

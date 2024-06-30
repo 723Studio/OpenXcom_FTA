@@ -109,10 +109,6 @@ OptionsControlsState::OptionsControlsState(OptionsOrigin origin) : OptionsBaseSt
 			{
 				_controlsBattle[optionInfo.owner()].push_back(optionInfo);
 			}
-			else if (optionInfo.category() == "STR_FTA")
-			{
-				_controlsFtA.push_back(optionInfo);
-			}
 		}
 	}
 }
@@ -262,11 +258,6 @@ OptionInfo *OptionsControlsState::getControl(size_t sel)
 	else if (selInt > _offsetBattleMin && selInt <= _offsetBattleMax)
 	{
 		return &_controlsBattle[idx][selInt - 1 - _offsetBattleMin];
-	}
-	else if (sel > _controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size() + 2 &&
-			 sel <= _controlsGeneral.size() + 2 + _controlsGeo.size() + 2 + _controlsBattle.size() + 2 + _controlsOxce.size() + 2 + _controlsFtA.size())
-	{
-		return &_controlsFtA[sel - 1 - _controlsGeneral.size() - 2 - _controlsGeo.size() - 2 - _controlsBattle.size() - 2 - _controlsOxce.size() - 2];
 	}
 	else
 	{

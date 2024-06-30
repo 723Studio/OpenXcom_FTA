@@ -1323,11 +1323,11 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 	}
 	else if (_covertOperation != 0)
 	{
-		for (std::map<std::string, int>::iterator i = _covertOperation->getItems()->getContents()->begin(); i != _covertOperation->getItems()->getContents()->end(); ++i)
+		for (auto& item : *_covertOperation->getItems()->getContents())
 		{
-			for (int count = 0; count < i->second; count++)
+			for (int i = 0; i < item.second; i++)
 			{
-				_save->createItemForTile(i->first, _craftInventoryTile);
+				_save->createItemForTile(item.first, _craftInventoryTile);
 			}
 		}
 	}

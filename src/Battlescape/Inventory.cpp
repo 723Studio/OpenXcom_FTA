@@ -800,7 +800,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							// B1 - default slot by item
 							if (!placed)
 							{
-								_stackLevel[item->getSlotX()][item->getSlotY()] -= 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] -= 1;
 
 								if (item->getRules()->getDefaultInventorySlot() && item->getRules()->getDefaultInventorySlot()->getType() != INV_GROUND)
 								{
@@ -836,7 +836,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							if (!placed)
 							{
 								// reset
-								_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] += 1;
 								newSlot = _inventorySlotGround;
 
 								switch (item->getRules()->getBattleType())
@@ -1236,7 +1236,7 @@ void Inventory::mouseClick(Action *action, State *state)
 		}
 		else
 		{
-			RuleInventory* slot = _selItem->getSlot();
+			const RuleInventory* slot = _selItem->getSlot();
 			if (slot->getType() == INV_GROUND || canBeStacked(_selItem, _selItem, slot, _selItem->getSlotX(), _selItem->getSlotY()))
 			{
 				_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] += 1;
@@ -1793,7 +1793,7 @@ bool Inventory::fitItem(const RuleInventory *newSlot, BattleItem *item, std::str
 	{
 		if ((*itemInInventory)->getRules()->getType() == item->getRules()->getType())
 		{
-			RuleInventory *itemSlot = (*itemInInventory)->getSlot();
+			const RuleInventory *itemSlot = (*itemInInventory)->getSlot();
 			int slotX = (*itemInInventory)->getSlotX();
 			int slotY = (*itemInInventory)->getSlotY();
 			if (canBeStacked(item, *itemInInventory, itemSlot, slotX, slotY))
@@ -1809,10 +1809,10 @@ bool Inventory::fitItem(const RuleInventory *newSlot, BattleItem *item, std::str
 
 	if (!canPlace) // If there is no existing stack to fit the item, search for an empty slot
 	{
-		for (std::vector<RuleSlot>::iterator j = newSlot->getSlots()->begin(); j != newSlot->getSlots()->end(); ++j)
+		for (auto& j : *newSlot->getSlots())
 		{
-			if (j->x > maxSlotX) maxSlotX = j->x;
-			if (j->y > maxSlotY) maxSlotY = j->y;
+			if (j.x > maxSlotX) maxSlotX = j.x;
+			if (j.y > maxSlotY) maxSlotY = j.y;
 		}
 		for (int y2 = 0; y2 <= maxSlotY && !canPlace; ++y2)
 		{
@@ -1903,7 +1903,7 @@ bool Inventory::canBeStacked(BattleItem* itemA, BattleItem* itemB)
  * @param y Y position in slot.
  * @return True, if the items can be stacked on one another.
  */
-bool Inventory::canBeStacked(BattleItem *selItem, BattleItem *itemInInventory, RuleInventory *inventorySlot, int x, int y)
+bool Inventory::canBeStacked(BattleItem *selItem, BattleItem *itemInInventory, const RuleInventory *inventorySlot, int x, int y)
 {
 	return (
 		canBeStacked(selItem, itemInInventory) &&

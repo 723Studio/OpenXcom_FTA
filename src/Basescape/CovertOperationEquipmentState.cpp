@@ -625,7 +625,7 @@ void CovertOperationEquipmentState::moveLeftByValue(int change)
 	change = std::min(operationItemsCount, change);
 	_operation->getItems()->removeItem(_items[_sel], change);
 	_totalItems -= item->getSize() * change;
-	_base->getStorageItems()->addItem(_items[_sel], change);
+	_base->getStorageItems()->addItem(item, change);
 	updateQuantity();
 }
 
@@ -679,7 +679,7 @@ void CovertOperationEquipmentState::moveRightByValue(int change, bool suppressEr
 			change = (_rule->getItemSpaceLimit() - _totalItems) / item->getSize();
 		}
 	}
-	_operation->getItems()->addItem(_items[_sel], change);
+	_operation->getItems()->addItem(item, change);
 	_totalItems += item->getSize() * change;
 	if (_game->getSavedGame()->getMonthsPassed() > -1)
 	{

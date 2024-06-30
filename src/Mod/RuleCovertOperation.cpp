@@ -138,8 +138,8 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_failureReputationScore = node["failureReputationScore"].as<std::map<std::string, int>>(_failureReputationScore);
 	_itemSpaceLimit = node["itemSpaceLimit"].as<double>(_itemSpaceLimit);
 	_itemSpaceEffect = node["itemSpaceEffect"].as<double>(_itemSpaceEffect);
-	_requiredItems = node["requiredItems"].as<std::map<std::string, int>>(_requiredItems);
-	_bonusItems = node["bonusItems"].as<std::map<std::string, int> >(_bonusItems);
+	_requiredItemsStr = node["requiredItems"].as<std::map<std::string, int>>(_requiredItemsStr);
+	_bonusItemsStr = node["bonusItems"].as<std::map<std::string, int> >(_bonusItemsStr);
 	_bonusItemsEffect = node["bonusItemsEffect"].as<int>(_bonusItemsEffect);
 	_allowAllEquipment = node["allowAllEquipment"].as<bool>(_allowAllEquipment);
 	_removeRequiredItemsOnSuccess = node["removeRequiredItemsOnSuccess"].as<bool>(_removeRequiredItemsOnSuccess);
@@ -188,6 +188,45 @@ void RuleCovertOperation::afterLoad(const Mod* mod)
 			
 		}
 	}
+	if (!_requiredItemsStr.empty())
+	{
+		for (auto& item : _requiredItemsStr)
+		{
+			const RuleItem* rule = mod->getItem(item.first);
+			if (rule)
+			{
+				if (item.second < 1)
+				{
+					throw Exception("Cover operation named: '" + this->getName() + " has invalid requiredItems property - second value of the map must be greater than 0.");
+				}
+				_requiredItems.insert_or_assign(rule, item.second);
+			}
+			else
+			{
+				throw Exception("Cover operation named: '" + this->getName() + " has invalid requiredItems property - no rule for item: '" + item.first + "'");
+			}
+		}
+	}
+	if (!_bonusItemsStr.empty())
+	{
+		for (auto& item : _bonusItemsStr)
+		{
+			const RuleItem* rule = mod->getItem(item.first);
+			if (rule)
+			{
+				if (item.second < 1)
+				{
+					throw Exception("Cover operation named: '" + this->getName() + " has invalid bonusItems property - second value of the map must be greater than 0.");
+				}
+				_bonusItems.insert_or_assign(rule, item.second);
+			}
+			else
+			{
+				throw Exception("Cover operation named: '" + this->getName() + " has invalid bonusItems property - no rule for item: '" + item.first + "'");
+			}
+		}
+	}
+
 }
 
 std::string RuleCovertOperation::chooseGenSuccessMissionType() const

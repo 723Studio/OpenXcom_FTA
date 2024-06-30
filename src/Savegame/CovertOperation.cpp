@@ -51,8 +51,8 @@
 
 namespace OpenXcom
 {
-CovertOperation::CovertOperation(const RuleCovertOperation* rule, Base* base, int cost, int chances) :
-	_rule(rule), _base(base), _spent(0), _cost(cost), _successChance(chances),
+CovertOperation::CovertOperation(const RuleCovertOperation* rule, const Mod* mod, Base* base, int cost, int chances) :
+	_rule(rule), _mod(mod), _base(base), _spent(0), _cost(cost), _successChance(chances),
 	_results(0), _inBattlescape(false), _hasBattlescapeResolve(false), _over(false), _hasPsi(false), _progressEventSpawned(false)
 {
 	_items = new ItemContainer();
@@ -81,7 +81,7 @@ void CovertOperation::load(const YAML::Node& node)
 	_hasPsi =  node["hasPsi"].as<bool>(_hasPsi);
 	_over = node["over"].as<bool>(_over);
 	_progressEventSpawned = node["progressEventSpawned"].as<bool>(_progressEventSpawned);
-	_items->load(node["items"]);
+	_items->load(node["items"], _mod);
 }
 
 /**
@@ -257,7 +257,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	int funds = 0;
 	std::string eventName;
 	std::vector<std::string> researchList;
-	std::map<std::string, int> itemsToAdd;
+	std::map<const RuleItem*, int> itemsToAdd;
 	std::string missionName;
 	std::string deploymentName;
 	std::map<std::string, int> reputationScore;
@@ -279,7 +279,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			const RuleItem* itemRule = mod.getItem(pair.first, true);
 			if (itemRule)
 			{
-				itemsToAdd[itemRule->getType()] += pair.second;
+				itemsToAdd[itemRule] += pair.second;
 			}
 		}
 		if (!_rule->getSuccessWeightedItemList().empty())
@@ -287,7 +287,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			const RuleItem* weightedItem = mod.getItem(_rule->getSuccessWeightedItemList().choose(), true);
 			if (weightedItem)
 			{
-				itemsToAdd[weightedItem->getType()] += 1;
+				itemsToAdd[weightedItem] += 1;
 			}
 		}
 	}
@@ -307,7 +307,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			const RuleItem* itemRule = mod.getItem(pair.first, true);
 			if (itemRule)
 			{
-				itemsToAdd[itemRule->getType()] += pair.second;
+				itemsToAdd[itemRule] += pair.second;
 			}
 		}
 		if (!_rule->getFailureWeightedItemList().empty())
@@ -315,7 +315,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			const RuleItem* weightedItem = mod.getItem(_rule->getFailureWeightedItemList().choose(), true);
 			if (weightedItem)
 			{
-				itemsToAdd[weightedItem->getType()] += 1;
+				itemsToAdd[weightedItem] += 1;
 			}
 		}
 	}
@@ -343,7 +343,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		for (auto& addItems : itemsToAdd)
 		{
 			this->getItems()->addItem(addItems.first, addItems.second);
-			_results->addItem(addItems.first, addItems.second);
+			_results->addItem(addItems.first->getType(), addItems.second);
 		}
 	}
 
@@ -437,11 +437,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			auto items = _rule->getRequiredItemList();
 			for (auto &item : items)
 			{
-				auto ruleItem = mod.getItem(item.first);
-				if (ruleItem != nullptr)
-				{
-					_items->removeItem(ruleItem, item.second);
-				}
+				_items->removeItem(item.first, item.second);
 			}
 		}
 	}
@@ -627,10 +623,11 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			backgroundSimulation(engine, operationResult, criticalFail, woundOdds, deathOdds);
 		}
 		// lets return items from operation to the base
-		for (std::map<std::string, int>::iterator it = _items->getContents()->begin(); it != _items->getContents()->end(); ++it)
+		for (auto& item : *_items->getContents())
 		{
-			_base->getStorageItems()->addItem(it->first, it->second);
+			_base->getStorageItems()->addItem(item.first, item.second);
 		}
+		
 		//now we can finish operation
 		engine.pushState(new FinishedCoverOperationState(this, operationResult));
 	}
