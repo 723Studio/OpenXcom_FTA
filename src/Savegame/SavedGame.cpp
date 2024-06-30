@@ -1928,6 +1928,12 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 			{
 				// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
 			}
+			else if (isFtAGame()
+				&& research->needItem()
+				&& (!research->getRandomEvents().empty() || !research->getSpawnedEvent().empty()))
+			{
+				// FtA logic: also let the player research items that can spawn events on being researched.
+			}
 			else
 			{
 				// This topic can't give you anything else anymore, ignore it!
