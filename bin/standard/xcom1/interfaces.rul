@@ -91,6 +91,7 @@ interfaces:
         color: 133   # minty green
       - id: tooltip
         color: 133   # minty green
+        color2: 138  # yellow
       - id: button
         color: 133   # minty green
       - id: confirmDefaults
@@ -113,6 +114,8 @@ interfaces:
         color: 239   # bright green
   - type: controlsMenu
     elements:
+      - id: button
+        color: 239   # bright green
       - id: optionLists
         color: 138   # yellow
         color2: 239  # bright green
@@ -131,6 +134,8 @@ interfaces:
         color: 239   # bright green
   - type: advancedMenu
     elements:
+      - id: button
+        color: 239   # bright green
       - id: optionLists
         color: 138   # yellow
         color2: 239  # bright green
@@ -888,6 +893,10 @@ interfaces:
         color: 133
         color2: 90
         border: 239
+      - id: listExtended
+        color: 100
+        color2: 138
+        border: 239
       - id: button1
         color: 133   # minty green
       - id: button2
@@ -1343,6 +1352,9 @@ interfaces:
         color: 208   # white
         color2: 241  # pink
         border: 218  # blue
+      - id: listExtended
+        color: 246   # purple
+        color2: 213  # gold
       - id: button
         color: 246   # purple
   - type: allocateResearch
@@ -1540,6 +1552,21 @@ interfaces:
       - id: button
         color: 246   # purple
   - type: soldierArmor
+    backgroundImage: BACK14.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 4     # green
+      - id: window
+        color: 218   # blue
+      - id: text
+        color: 213   # gold
+      - id: list
+        color: 208   # white
+        border: 213  # gold
+      - id: button
+        color: 213   # gold
+  - type: soldierTransform
     backgroundImage: BACK14.SCR
     palette: PAL_BASESCAPE
     elements:
@@ -1777,6 +1804,10 @@ interfaces:
         color: 218   # blue
       - id: button
         color: 246   # purple
+      - id: errorPalette
+        color: 4     # aqua
+      - id: errorMessage
+        color: 246   # purple
   - type: craftSoldiers
     backgroundImage: BACK02.SCR
     palette: PAL_BASESCAPE
@@ -1863,6 +1894,11 @@ interfaces:
       - id: baseView
         color: 213   # gold   (time remaining)
         color2: 16   # orange (selector color)
+      - id: trafficLights
+        color: 32    # red
+        color2: 144  # yellow
+        border: 48   # green
+        TFTDMode: false
       - id: errorPalette
         color: 6     # oxide
       - id: errorMessage
@@ -1950,6 +1986,10 @@ interfaces:
         color: -1
         color2: 14
         border: 7
+      - id: thinkingProgressBar
+        color: 33
+        color2: 65
+        border: 1
       - id: optionLists
         color: -1
         color2: 14

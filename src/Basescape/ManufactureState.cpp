@@ -367,7 +367,7 @@ void ManufactureState::lstManufactureMousePress(Action *action)
 	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
 	{
 		change = std::min(change, _base->getAvailableEngineers());
-		change = std::min(change, _base->getFreeWorkshops(_ftaUi));
+		change = std::min(change, _base->getFreeWorkshops());
 		if (change > 0)
 		{
 			Production *selectedProject = _base->getProductions()[_lstManufacture->getSelectedRow()];

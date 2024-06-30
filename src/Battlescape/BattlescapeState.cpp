@@ -866,7 +866,11 @@ void BattlescapeState::think()
 		if (_popups.empty())
 		{
 			State::think();
-			_battleGame->think();
+			int ret = _battleGame->think();
+			if (ret > -1)
+			{
+				_map->refreshAIProgress(100 - ret); // progress = 100 - ret;
+			}
 			_animTimer->think(this, 0);
 			_gameTimer->think(this, 0);
 			if (popped)
@@ -1421,6 +1425,9 @@ void BattlescapeState::btnEndTurnClick(Action *)
 		// Temporarily deactivate the touch buttons at the end of the player's turn
 		toggleTouchButtons(true, false);
 
+		// PEBCAK
+		_map->getCamera()->stopKeyScrolling();
+
 		_txtTooltip->setText("");
 		_battleGame->requestEndTurn(false);
 	}
@@ -1518,7 +1525,8 @@ void BattlescapeState::btnLeftHandItemClick(Action *action)
 		bool rightClick = _game->isRightClick(action, true);
 		if (rightClick)
 		{
-			_save->getSelectedUnit()->toggleLeftHandForReactions();
+			bool isCtrl = _game->isCtrlPressed(true);
+			_save->getSelectedUnit()->toggleLeftHandForReactions(isCtrl);
 			return;
 		}
 
@@ -1566,7 +1574,8 @@ void BattlescapeState::btnRightHandItemClick(Action *action)
 		bool rightClick = _game->isRightClick(action, true);
 		if (rightClick)
 		{
-			_save->getSelectedUnit()->toggleRightHandForReactions();
+			bool isCtrl = _game->isCtrlPressed(true);
+			_save->getSelectedUnit()->toggleRightHandForReactions(isCtrl);
 			return;
 		}
 
@@ -1915,7 +1924,7 @@ bool BattlescapeState::playableUnitSelected()
 /**
  * Draw hand item with ammo number.
  */
-void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<NumberText*> &ammoText, std::vector<NumberText*> &medikitText, NumberText *twoHandedText, bool drawReactionIndicator)
+void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<NumberText*> &ammoText, std::vector<NumberText*> &medikitText, NumberText *twoHandedText, bool drawReactionIndicator, bool drawNoReactionIndicator)
 {
 	hand->clear();
 	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
@@ -1992,6 +2001,18 @@ void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<Num
 			tempSurface->blitNShade(hand, 28, 0);
 		}
 	}
+	if (drawNoReactionIndicator)
+	{
+		if (Surface* noReactionIndicator = _game->getMod()->getSurface("noReactionIndicator", false))
+		{
+			noReactionIndicator->blitNShade(hand, 0, 0);
+		}
+		else
+		{
+			Surface* tempSurface = _game->getMod()->getSurfaceSet("SCANG.DAT")->getFrame(6); // red dot
+			tempSurface->blitNShade(hand, 28, 0);
+		}
+	}
 }
 
 /**
@@ -2002,12 +2023,16 @@ void BattlescapeState::drawHandsItems()
 	BattleUnit *battleUnit = _battleGame->playableUnitSelected() ? _save->getSelectedUnit() : nullptr;
 	bool left = false;
 	bool right = false;
+	bool left2 = false;
+	bool right2 = false;
 	BattleItem* leftHandItem = nullptr;
 	BattleItem* rightHandItem = nullptr;
 	if (battleUnit)
 	{
 		left = battleUnit->isLeftHandPreferredForReactions();
 		right = battleUnit->isRightHandPreferredForReactions();
+		left2 = battleUnit->isLeftHandDisabledForReactions();
+		right2 = battleUnit->isRightHandDisabledForReactions();
 		leftHandItem = battleUnit->getLeftHandWeapon();
 		rightHandItem = battleUnit->getRightHandWeapon();
 		if (!leftHandItem || !rightHandItem)
@@ -2026,8 +2051,8 @@ void BattlescapeState::drawHandsItems()
 			}
 		}
 	}
-	drawItem(leftHandItem, _btnLeftHandItem, _numAmmoLeft, _numMedikitLeft, _numTwoHandedIndicatorLeft, left);
-	drawItem(rightHandItem, _btnRightHandItem, _numAmmoRight, _numMedikitRight, _numTwoHandedIndicatorRight, right);
+	drawItem(leftHandItem, _btnLeftHandItem, _numAmmoLeft, _numMedikitLeft, _numTwoHandedIndicatorLeft, left, left2);
+	drawItem(rightHandItem, _btnRightHandItem, _numAmmoRight, _numMedikitRight, _numTwoHandedIndicatorRight, right, right2);
 }
 
 /**
@@ -2878,7 +2903,7 @@ inline void BattlescapeState::handle(Action *action)
 							if (unitUnderTheCursor && !unitUnderTheCursor->isOut())
 							{
 								debug("Bingo!");
-								unitUnderTheCursor->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_AP), _save, {});
+								unitUnderTheCursor->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_MELEE), _save, {});
 							}
 						}
 						else
@@ -2902,12 +2927,51 @@ inline void BattlescapeState::handle(Action *action)
 								}
 								if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
 								{
-									bu->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_AP), _save, { });
+									bu->damage(Position(0, 0, 0), 1000, _game->getMod()->getDamageType(stunOnly ? DT_STUN : DT_MELEE), _save, { });
 								}
 							}
 						}
 						_battleGame->checkForCasualties(nullptr, BattleActionAttack{}, true, false);
 						_battleGame->handleState();
+					}
+					else if (_save->getDebugMode() && (key == SDLK_m || key == SDLK_p) && ctrlPressed && shiftPressed)
+					{
+						BattleUnit* unitUnderTheCursor = nullptr;
+						{
+							Position newPos;
+							_map->getSelectorPosition(&newPos);
+							Tile* tile = _save->getTile(newPos);
+							if (tile)
+							{
+								unitUnderTheCursor = tile->getOverlappingUnit(_save);
+							}
+						}
+						// mind control (ctrl-shift-m) or panic (ctrl-shift-p) just a single unit (under the cursor)
+						if (unitUnderTheCursor && !unitUnderTheCursor->isOut())
+						{
+							if (key == SDLK_p)
+							{
+								int moraleLoss = unitUnderTheCursor->reduceByBravery(100);
+								if (moraleLoss > 0)
+								{
+									debug("Have you paid your taxes yet?");
+									unitUnderTheCursor->moraleChange(-moraleLoss);
+									_game->pushState(new InfoboxState(_game->getLanguage()->getString("STR_MORALE_ATTACK_SUCCESSFUL")));
+								}
+							}
+							else
+							{
+								if (unitUnderTheCursor->getFaction() != FACTION_PLAYER)
+								{
+									debug("My mind to your mind, my thoughts to your thoughts.");
+									unitUnderTheCursor->convertToFaction(FACTION_PLAYER);
+									//unitUnderTheCursor->recoverTimeUnits();
+									unitUnderTheCursor->allowReselect();
+									unitUnderTheCursor->abortTurn(); // resets unit status to STANDING
+									_game->pushState(new InfoboxState(_game->getLanguage()->getString("STR_MIND_CONTROL_SUCCESSFUL")));
+								}
+							}
+						}
 					}
 					// f11 - voxel map dump
 					else if (key == SDLK_F11)

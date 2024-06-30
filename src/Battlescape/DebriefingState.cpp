@@ -479,10 +479,11 @@ void DebriefingState::init()
 		ItemContainer *origBaseItems = _game->getSavedGame()->getSavedBattle()->getBaseStorageItems();
 		for (auto& itemType : _game->getMod()->getItemsList())
 		{
-			int qty = _base->getStorageItems()->getItem(itemType);
-			if (qty > 0 && (Options::canSellLiveAliens || !_game->getMod()->getItem(itemType)->isAlien()))
+			RuleItem *rule = _game->getMod()->getItem(itemType);
+
+			int qty = _base->getStorageItems()->getItem(rule);
+			if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 			{
-				RuleItem *rule = _game->getMod()->getItem(itemType);
 
 				// IGNORE vehicles and their ammo
 				// Note: because their number in base has been messed up by Base::setupDefenses() already in geoscape :(
@@ -496,7 +497,7 @@ void DebriefingState::init()
 					continue;
 				}
 
-				qty -= origBaseItems->getItem(itemType);
+				qty -= origBaseItems->getItem(rule);
 				if (qty > 0)
 				{
 					_recoveredItems[rule] = qty;
@@ -1296,6 +1297,10 @@ void DebriefingState::prepareDebriefing()
 				craft->returnToBase();
 				craft->setMissionComplete(true);
 				craft->setInBattlescape(false);
+				for (auto* follower : craft->getCraftFollowers())
+				{
+					follower->returnToBase();
+				}
 			}
 			else if (xcraft->getDestination() != 0)
 			{
@@ -2558,7 +2563,7 @@ void DebriefingState::prepareDebriefing()
  */
 void DebriefingState::reequipCraft(Base *base, Craft *craft, bool vehicleItemsCanBeDestroyed)
 {
-	std::map<std::string, int> craftItemsCopy = *craft->getItems()->getContents();
+	auto craftItemsCopy = *craft->getItems()->getContents();
 	for (const auto& pair : craftItemsCopy)
 	{
 		int qty = base->getStorageItems()->getItem(pair.first);
@@ -2571,7 +2576,7 @@ void DebriefingState::reequipCraft(Base *base, Craft *craft, bool vehicleItemsCa
 			int missing = pair.second - qty;
 			base->getStorageItems()->removeItem(pair.first, qty);
 			craft->getItems()->removeItem(pair.first, missing);
-			ReequipStat stat = {pair.first, missing, craft->getName(_game->getLanguage()), 0};
+			ReequipStat stat = {pair.first->getType(), missing, craft->getName(_game->getLanguage()), 0};
 			_missingItems.push_back(stat);
 		}
 	}
@@ -2598,13 +2603,13 @@ void DebriefingState::reequipCraft(Base *base, Craft *craft, bool vehicleItemsCa
 	for (const auto& pair : *craftVehicles.getContents())
 	{
 		int qty = base->getStorageItems()->getItem(pair.first);
-		RuleItem *tankRule = _game->getMod()->getItem(pair.first, true);
+		const RuleItem *tankRule = pair.first;
 		int size = tankRule->getVehicleUnit()->getArmor()->getTotalSize();
 		int canBeAdded = std::min(qty, pair.second);
 		if (qty < pair.second)
 		{ // missing tanks
 			int missing = pair.second - qty;
-			ReequipStat stat = {pair.first, missing, craft->getName(_game->getLanguage()), 0};
+			ReequipStat stat = {pair.first->getType(), missing, craft->getName(_game->getLanguage()), 0};
 			_missingItems.push_back(stat);
 		}
 		if (tankRule->getVehicleClipAmmo() == nullptr)
@@ -2652,7 +2657,7 @@ void DebriefingState::addItemsToBaseStores(const RuleItem *ruleItem, Base *base,
 {
 	if (!considerTransformations)
 	{
-		base->getStorageItems()->addItem(ruleItem->getType(), quantity);
+		base->getStorageItems()->addItem(ruleItem, quantity);
 	}
 	else
 	{
@@ -2679,7 +2684,7 @@ void DebriefingState::addItemsToBaseStores(const RuleItem *ruleItem, Base *base,
 							runningTotal += it;
 							if (runningTotal >= roll)
 							{
-								base->getStorageItems()->addItem(pair.first->getType(), position);
+								base->getStorageItems()->addItem(pair.first, position);
 								break;
 							}
 							++position;
@@ -2689,13 +2694,13 @@ void DebriefingState::addItemsToBaseStores(const RuleItem *ruleItem, Base *base,
 				else
 				{
 					// no RNG
-					base->getStorageItems()->addItem(pair.first->getType(), quantity * pair.second.front());
+					base->getStorageItems()->addItem(pair.first, quantity * pair.second.front());
 				}
 			}
 		}
 		else
 		{
-			base->getStorageItems()->addItem(ruleItem->getType(), quantity);
+			base->getStorageItems()->addItem(ruleItem, quantity);
 		}
 	}
 }
@@ -2709,23 +2714,14 @@ void DebriefingState::addItemsToBaseStores(const RuleItem *ruleItem, Base *base,
  */
 void DebriefingState::addItemsToBaseStores(const std::string &itemType, Base *base, int quantity, bool considerTransformations)
 {
-	if (!considerTransformations)
+	const RuleItem *ruleItem = _game->getMod()->getItem(itemType, false);
+	if (ruleItem == nullptr)
 	{
-		base->getStorageItems()->addItem(itemType, quantity);
+		Log(LOG_ERROR) << "Failed to add unknown item " << itemType;
+		return;
 	}
-	else
-	{
-		const RuleItem *ruleItem = _game->getMod()->getItem(itemType, false);
-		if (ruleItem)
-		{
-			addItemsToBaseStores(ruleItem, base, quantity, considerTransformations);
-		}
-		else
-		{
-			// unknown item?
-			base->getStorageItems()->addItem(itemType, quantity);
-		}
-	}
+
+	addItemsToBaseStores(ruleItem, base, quantity, considerTransformations);
 }
 
 /**
@@ -2866,8 +2862,13 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 				bi->getUnit()->getGeoscapeSoldier()->setCorpseRecovered(true);
 			}
 
+			// ammo in weapon are handled by weapon itself.
+			if (bi->isAmmo())
+			{
+				// noting
+			}
 			// put items back in the base
-			if (checkForRecovery(bi, rule))
+			else if (checkForRecovery(bi, rule))
 			{
 				bool recoverWeapon = true;
 				switch (rule->getBattleType())

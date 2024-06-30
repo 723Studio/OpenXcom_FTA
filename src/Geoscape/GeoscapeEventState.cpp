@@ -58,13 +58,13 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 
 	// Create objects
 	_window = new Window(this, 256, 176, 32, 12, POPUP_BOTH);
-	_txtTitle = new Text(236, 32, 42, 26);
-	_txtMessage = new Text(236, 94, 42, 61);
+	_txtTitle = new Text(236, 32, 42, 23);
+	_txtMessage = new Text(236, 96, 42, 58);
 	_btnOk = new TextButton(108, 18, 48, 158);
 	_btnItemsArriving = new ToggleTextButton(108, 18, 164, 158);
-	_txtItem = new Text(114, 9, 44, 61);
-	_txtQuantity = new Text(94, 9, 182, 61);
-	_lstTransfers = new TextList(216, 80, 42, 72);
+	_txtItem = new Text(114, 9, 44, 58);
+	_txtQuantity = new Text(94, 9, 182, 58);
+	_lstTransfers = new TextList(216, 80, 42, 69);
 
 	_btnAnswerOne = new TextButton(115, 18, 42, 158);
 	_btnAnswerTwo = new TextButton(115, 18, 163, 158);
@@ -106,6 +106,11 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_txtMessage->setVerticalAlign(ALIGN_TOP);
 	_txtMessage->setWordWrap(true);
 	_txtMessage->setText(tr(_eventRule.getDescription()));
+	if (_eventRule.alignBottom())
+	{
+		_txtMessage->setVerticalAlign(ALIGN_BOTTOM);
+	}
+	_txtMessage->setScrollable(true);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&GeoscapeEventState::btnOkClick);
@@ -404,18 +409,40 @@ void GeoscapeEventState::eventLogic()
 	{
 		if (Options::oxceGeoscapeEventsInstantDelivery)
 		{
-			hq->getStorageItems()->addItem(ti.first, ti.second);
+			hq->getStorageItems()->addItem(mod->getItem(ti.first, true), ti.second);
 		}
 		else
 		{
 			Transfer* t = new Transfer(1);
-			t->setItems(ti.first, ti.second);
+			t->setItems(mod->getItem(ti.first, true), ti.second);
 			hq->getTransfers()->push_back(t);
 		}
 
 		std::ostringstream ss;
 		ss << ti.second;
 		_lstTransfers->addRow(2, tr(ti.first).c_str(), ss.str().c_str());
+	}
+
+	// 5b. spawn craft into the HQ
+	const RuleCraft* craftRule = mod->getCraft(rule.getSpawnedCraftType(), true);
+	if (craftRule)
+	{
+		Craft* craft = new Craft(craftRule, hq, save->getId(craftRule->getType()));
+		craft->initFixedWeapons(mod);
+		if (Options::oxceGeoscapeEventsInstantDelivery)
+		{
+			// same as manufacture
+			craft->checkup();
+			hq->getCrafts()->push_back(craft);
+		}
+		else
+		{
+			// same as buy
+			craft->setStatus("STR_REFUELLING");
+			Transfer* t = new Transfer(1);
+			t->setCraft(craft);
+			hq->getTransfers()->push_back(t);
+		}
 	}
 
 	// 6. give bonus research

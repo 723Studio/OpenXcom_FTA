@@ -45,6 +45,19 @@ class ScriptParserBase;
 class ScriptGlobal;
 
 enum UfoDetection : int;
+enum CraftPlacementErrors : int
+{
+	CPE_None = 0,
+	CPE_NotEnoughSpace = 1,
+	CPE_TooManySoldiers = 2,
+	CPE_TooManySmallSoldiers = 3,
+	CPE_TooManySmallUnits = 4,
+	CPE_TooManyVehiclesAndLargeSoldiers = 5,
+	CPE_TooManyLargeSoldiers = 6,
+	CPE_TooManyLargeUnits = 7,
+	CPE_SoldierGroupNotAllowed = 8,
+	CPE_SoldierGroupNotSame = 9,
+};
 
 typedef std::pair<Position, int> SoldierDeploymentData;
 
@@ -225,6 +238,20 @@ public:
 	/// Sets the craft's engineers on board
 	void setEngineers(int engineers) { _engineers = engineers; };
 
+	/// Gets the craft's maximum unit capacity (soldiers and vehicles, small and large).
+	int getMaxUnitsClamped() const;
+	int getMaxUnitsRaw() const { return _stats.soldiers; }
+	/// Gets the craft's maximum vehicle capacity (incl. 2x2 soldiers).
+	int getMaxVehiclesAndLargeSoldiersClamped() const;
+	int getMaxVehiclesAndLargeSoldiersRaw() const { return _stats.vehicles; }
+
+	/// Gets the item limit for this craft.
+	int getMaxItemsClamped() const { return std::max(0, _stats.maxItems); }
+	int getMaxItemsRaw() const { return _stats.maxItems; }
+	/// Gets the item storage space limit for this craft.
+	double getMaxStorageSpaceClamped() const { return std::max(0.0, _stats.maxStorageSpace); }
+	double getMaxStorageSpaceRaw() const { return _stats.maxStorageSpace; }
+
 	double getBaseRange() const;
 	/// Returns the craft to its base.
 	void returnToBase();
@@ -351,7 +378,7 @@ public:
 	/// Validates craft space and craft constraints on soldier armor change.
 	bool validateArmorChange(int sizeFrom, int sizeTo) const;
 	/// Validates craft space and craft constraints on adding soldier to a craft.
-	bool validateAddingSoldier(int space, const Soldier* s) const;
+	CraftPlacementErrors validateAddingSoldier(int space, const Soldier* s) const;
 	/// Validates craft space and craft constraints on adding vehicles to a craft.
 	int validateAddingVehicles(int totalSize) const;
 };

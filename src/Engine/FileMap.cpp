@@ -273,10 +273,7 @@ std::unique_ptr<std::istream> FileRecord::getIStream() const
 			Log(LOG_FATAL) << err;
 			throw Exception(err);
 		}
-		std::string a_string((char *)data, size);
-		auto rv = new std::stringstream(a_string);
-		mz_free(data);
-		return std::unique_ptr<std::istream>(rv);
+		return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, mz_free}));
 	} else {
 		return CrossPlatform::readFile(fullpath);
 	}
@@ -822,7 +819,7 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 		if (CrossPlatform::fileExists(fullname)) {
 			Log(LOG_VERBOSE) << log_ctx << "found zip ("<<fullname<<")";
 			auto layer = new VFSLayer(fullname);
-			if (layer->mapZipFile(fullname, "", true)) {
+			if (layer->mapZipFile(fullname, basename + "/", true) || layer->mapZipFile(fullname, "", true)) {
 				mrec->push_front(layer);
 				MappedVFSLayers.insert(layer);
 				mapped_anything = true;
@@ -1022,7 +1019,7 @@ SDL_RWops *zipGetFileByName(const std::string& zipfile, const std::string& fullp
 void scanModDir(const std::string& dirname, const std::string& basename, bool protectedLocation) {
 
 	// "standard" directory is for built-in mods only! otherwise automatic updates would delete user data
-	const std::set<std::string> standardMods = {
+	const static std::set<std::string> standardMods = {
 		"Aliens_Pick_Up_Weapons",
 		"Aliens_Pick_Up_Weapons_TFTD",
 		"Demigod_Difficulty",
@@ -1032,6 +1029,8 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 		"OpenXCom_Unlimited_Waypoints",
 		"OpenXCom_Unlimited_Waypoints_TFTD",
 		"PSX_Static_Cydonia_Map",
+		"Smarter_Equip",
+		"Smarter_Equip_TFTD",
 		"StrategyCore_Swap_Small_USOs_TFTD",
 		"TFTD_Damage",
 		"UFOextender_Gun_Melee",

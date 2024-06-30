@@ -127,7 +127,7 @@ void DismantleFacilityState::btnOkClick(Action *)
 			_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _fac->getRules()->getBuildCost());
 			for (auto& pair : itemCost)
 			{
-				_base->getStorageItems()->addItem(pair.first, pair.second.first);
+				_base->getStorageItems()->addItem(_game->getMod()->getItem(pair.first, true), pair.second.first);
 			}
 		}
 		else
@@ -136,8 +136,14 @@ void DismantleFacilityState::btnOkClick(Action *)
 			_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _fac->getRules()->getRefundValue());
 			for (auto& pair : itemCost)
 			{
-				_base->getStorageItems()->addItem(pair.first, pair.second.second);
+				_base->getStorageItems()->addItem(_game->getMod()->getItem(pair.first, true), pair.second.second);
 			}
+		}
+		if (_fac->getAmmo() > 0)
+		{
+			// Full refund of loaded ammo
+			_base->getStorageItems()->addItem(_fac->getRules()->getAmmoItem(), _fac->getAmmo());
+			_fac->setAmmo(0);
 		}
 
 		for (auto facIt = _base->getFacilities()->begin(); facIt != _base->getFacilities()->end(); ++facIt)
@@ -154,7 +160,7 @@ void DismantleFacilityState::btnOkClick(Action *)
 						_game->getMod()->getSound("GEO.CAT", facList.at(0)->getPlaceSound())->play();
 					}
 					// Make sure the size of the facilities left behind matches the one we removed
-					if (facList.at(0)->getSize() == _fac->getRules()->getSize()) // equal size facilities
+					if (facList.at(0)->getSizeX() == _fac->getRules()->getSizeX() && facList.at(0)->getSizeY() == _fac->getRules()->getSizeY()) // equal size facilities
 					{
 						BaseFacility *fac = new BaseFacility(facList.at(0), _base);
 						fac->setX(_fac->getX());
@@ -177,9 +183,9 @@ void DismantleFacilityState::btnOkClick(Action *)
 					{
 						size_t j = 0;
 						// Otherwise, assume the list of facilities is size 1, and just iterate over it to fill in the old facility's place
-						for (int y = _fac->getY(); y != _fac->getY() + _fac->getRules()->getSize(); ++y)
+						for (int y = _fac->getY(); y != _fac->getY() + _fac->getRules()->getSizeY(); ++y)
 						{
-							for (int x = _fac->getX(); x != _fac->getX() + _fac->getRules()->getSize(); ++x)
+							for (int x = _fac->getX(); x != _fac->getX() + _fac->getRules()->getSizeX(); ++x)
 							{
 								BaseFacility *fac = new BaseFacility(facList.at(j), _base);
 								fac->setX(x);

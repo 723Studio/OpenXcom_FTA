@@ -19,6 +19,7 @@
 #include "CraftErrorState.h"
 #include "CraftNotEnoughPilotsState.h"
 #include "ConfirmDestinationState.h"
+#include "../fmath.h"
 #include "../Engine/Game.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/Mod.h"
@@ -32,6 +33,7 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/Target.h"
@@ -43,6 +45,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
+#include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
 {
@@ -63,7 +66,7 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 
 	if (_crafts.size() == 1)
 	{
-		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase());
+		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase() && _crafts.front()->arePilotsOnboard());
 	}
 
 	int btnOkX = transferAvailable ? 29 : 68;
@@ -74,7 +77,9 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 	_btnOk = new TextButton(50, 12, btnOkX, 104);
 	_btnTransfer = new TextButton(82, 12, 87, 104);
 	_btnCancel = new TextButton(50, 12, btnCancelX, 104);
+	_btnFollowWingLeader = new ToggleTextButton(170, 16, 43, 138);
 	_txtTarget = new Text(232, 32, 12, 72);
+	_txtETA = new Text(232, 9, 12, 120);
 
 	// Set palette
 	setInterface("confirmDestination", w != 0 && w->getId() == 0);
@@ -83,7 +88,9 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 	add(_btnOk, "button", "confirmDestination");
 	add(_btnCancel, "button", "confirmDestination");
 	add(_btnTransfer, "button", "confirmDestination");
+	add(_btnFollowWingLeader, "button", "confirmDestination");
 	add(_txtTarget, "text", "confirmDestination");
+	add(_txtETA, "text", "confirmDestination");
 
 	centerAllSurfaces();
 
@@ -102,6 +109,24 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 	_btnCancel->onMouseClick((ActionHandler)&ConfirmDestinationState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&ConfirmDestinationState::btnCancelClick, Options::keyCancel);
 
+	_btnFollowWingLeader->setText(tr("STR_FOLLOW_WING_LEADER_QUESTION"));
+	_btnFollowWingLeader->setVisible(false);
+
+	if (_crafts.size() > 1)
+	{
+		_btnFollowWingLeader->setVisible(true);
+
+		Ufo* u = dynamic_cast<Ufo*>(_target);
+		if (u && u->getStatus() == Ufo::FLYING)
+		{
+			_btnFollowWingLeader->setPressed(false); // everybody go for the UFO as quickly as possible
+		}
+		else
+		{
+			_btnFollowWingLeader->setPressed(true); // follow the wing leader please
+		}
+	}
+
 	_txtTarget->setBig();
 	_txtTarget->setAlign(ALIGN_CENTER);
 	_txtTarget->setVerticalAlign(ALIGN_MIDDLE);
@@ -113,6 +138,33 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 	else
 	{
 		_txtTarget->setText(tr("STR_TARGET").arg(_target->getName(_game->getLanguage())));
+	}
+
+	// ETA display
+	if (Options::oxceShowETAMode > 0 && _target)
+	{
+		MovingTarget* mt = dynamic_cast<MovingTarget*>(_target);
+		if (Options::oxceShowETAMode == 1 && mt && mt->getSpeed() > 0)
+		{
+			// don't show ETA for moving targets (i.e. UFOs and crafts)
+		}
+		else
+		{
+			int speed = _crafts.front()->getCraftStats().speedMax;
+			int distance = XcomDistance(_crafts.front()->getDistance(_target));
+			int etaInHoursHelper = (distance + (speed / 2)) / speed;
+			int days = etaInHoursHelper / 24;
+			int hours = etaInHoursHelper % 24;
+			std::ostringstream ssStatus;
+			if (days > 0) ssStatus << tr("STR_DAY_SHORT").arg(days);
+			if (hours > 0 || days == 0)
+			{
+				if (days > 0) ssStatus << "/";
+				ssStatus << tr("STR_HOUR_SHORT").arg(hours);
+			}
+			_txtETA->setAlign(ALIGN_CENTER);
+			_txtETA->setText(tr("STR_ETA").arg(ssStatus.str()));
+		}
 	}
 }
 
@@ -245,7 +297,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 	for (auto& articleName : list)
 	{
 		ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(articleName, false);
-		if (article && _game->getSavedGame()->isResearched(article->_requires))
+		if (article && Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
 		{
 			if (i > 0)
 				ss << ", ";
@@ -317,7 +369,14 @@ void ConfirmDestinationState::btnOkClick(Action *)
 	{
 		if (craft != _crafts.front())
 		{
-			craft->setDestination(_crafts.front());
+			if (_btnFollowWingLeader->getPressed())
+			{
+				craft->setDestination(_crafts.front()); // follow the wing leader
+			}
+			else
+			{
+				craft->setDestination(_target); // go for the same target as the wing leader
+			}
 		}
 
 		if (craft->getRules()->canAutoPatrol())

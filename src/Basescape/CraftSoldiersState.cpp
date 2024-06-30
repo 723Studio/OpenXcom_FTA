@@ -61,7 +61,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 {
 	bool hidePreview = _game->getSavedGame()->getMonthsPassed() == -1;
 	Craft *c = _base->getCrafts()->at(_craft);
-	if (c && !c->getRules()->getBattlescapeTerrainData())
+	if (c && !c->getRules()->isForNewBattle())
 	{
 		// no battlescape map available
 		hidePreview = true;
@@ -558,6 +558,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		{
 			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
 		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0 || s->hasPendingTransformation())
 		{
@@ -575,11 +576,10 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 				return;
 			}
 
-			auto space = c->getSpaceAvailable();
-
-			//check if we have enough relay power
+			int space = c->getSpaceAvailable();
+			CraftPlacementErrors err = c->validateAddingSoldier(space, s);
 			int relay = c->getCraftStats().relay;
-			if (s->getRoleRank(ROLE_ROBOT) > 0)
+			if (s->getRoleRank(ROLE_ROBOT) > 0) //#FINNIKTODO: refactor relay logic into "c->validateAddingSoldier(space, s)"
 			{
 				for (const auto* i : *_base->getSoldiers())
 				{
@@ -598,7 +598,6 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 					}
 				}
 			}
-
 			if (relay <= 0)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_RELAY_POWER"),
@@ -607,14 +606,22 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 					"BACK01.SCR",
 					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
-			else if (c->validateAddingSoldier(space, s))
+			else if (err == CPE_None)
 			{
 				s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 				_lstSoldiers->setCellText(row, 2, c->getName(_game->getLanguage()));
-				color = _lstSoldiers->getSecondaryColor();
+				_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 
 				// update the label to indicate absence of a saved craft deployment
 				_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+			}
+			else if (err == CPE_SoldierGroupNotAllowed)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_SoldierGroupNotSame)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 			else if (space > 0)
 			{
@@ -625,7 +632,6 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 		}
-		_lstSoldiers->setRowColor(row, color);
 
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
@@ -638,7 +644,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		}
 		else
 		{
-			_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(row)));
+			_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(row), false));
 		}
 	}
 }
@@ -655,31 +661,21 @@ void CraftSoldiersState::cbxScreenActionsChange(Action *action)
  */
 void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 {
-	Uint8 color = _lstSoldiers->getColor();
-
+	Craft *c = _base->getCrafts()->at(_craft);
 	int row = 0;
 	for (auto soldier : _filteredListOfSoldiers)
 	{
-		if (soldier->getCovertOperation() != 0)
-		{ }
-		else
+		if ((soldier->getCraft() && (soldier->getCraft()->getStatus() != "STR_OUT" && soldier->getCraft() == c)) 
+		&& soldier->getCovertOperation() == 0) //just in case
 		{
-			color = _lstSoldiers->getColor();
-			if (soldier->getCraft() && soldier->getCraft()->getStatus() != "STR_OUT")
-			{
-				soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
-				_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
-			}
-			else if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
-			{
-				color = _otherCraftColor;
-			}
-			_lstSoldiers->setRowColor(row, color);
+			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
+			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
 		row++;
 	}
 
-	Craft *c = _base->getCrafts()->at(_craft);
+	
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 }

@@ -25,13 +25,15 @@ namespace OpenXcom
 
 /**
  * Creates info for a boolean option.
+ * @param owner Owner ID.
  * @param id String ID used in serializing.
  * @param option Pointer to the option.
  * @param def Default option value.
  * @param desc Language ID for the option description (if any).
  * @param cat Language ID for the option category (if any).
  */
-OptionInfo::OptionInfo(const std::string &id, bool *option, bool def, const std::string &desc, const std::string &cat) : _id(id), _desc(desc), _cat(cat), _type(OPTION_BOOL)
+OptionInfo::OptionInfo(OptionOwner owner, const std::string &id, bool *option, bool def, const std::string &desc, const std::string &cat) :
+	_id(id), _desc(desc), _cat(cat), _type(OPTION_BOOL), _owner(owner)
 {
 	_ref.b = option;
 	_def.b = def;
@@ -39,13 +41,15 @@ OptionInfo::OptionInfo(const std::string &id, bool *option, bool def, const std:
 
 /**
  * Creates info for an integer option.
+ * @param owner Owner ID.
  * @param id String ID used in serializing.
  * @param option Pointer to the option.
  * @param def Default option value.
  * @param desc Language ID for the option description (if any).
  * @param cat Language ID for the option category (if any).
  */
-OptionInfo::OptionInfo(const std::string &id, int *option, int def, const std::string &desc, const std::string &cat) : _id(id), _desc(desc), _cat(cat), _type(OPTION_INT)
+OptionInfo::OptionInfo(OptionOwner owner, const std::string &id, int *option, int def, const std::string &desc, const std::string &cat) :
+	_id(id), _desc(desc), _cat(cat), _type(OPTION_INT), _owner(owner)
 {
 	_ref.i = option;
 	_def.i = def;
@@ -53,13 +57,15 @@ OptionInfo::OptionInfo(const std::string &id, int *option, int def, const std::s
 
 /**
  * Creates info for a keyboard shortcut option.
+ * @param owner Owner ID.
  * @param id String ID used in serializing.
  * @param option Pointer to the option.
  * @param def Default option value.
  * @param desc Language ID for the option description (if any).
  * @param cat Language ID for the option category (if any).
  */
-OptionInfo::OptionInfo(const std::string &id, SDLKey *option, SDLKey def, const std::string &desc, const std::string &cat) : _id(id), _desc(desc), _cat(cat), _type(OPTION_KEY)
+OptionInfo::OptionInfo(OptionOwner owner, const std::string &id, SDLKey *option, SDLKey def, const std::string &desc, const std::string &cat) :
+	_id(id), _desc(desc), _cat(cat), _type(OPTION_KEY), _owner(owner)
 {
 	_ref.k = option;
 	_def.k = def;
@@ -67,13 +73,15 @@ OptionInfo::OptionInfo(const std::string &id, SDLKey *option, SDLKey def, const 
 
 /**
  * Creates info for a string option.
+ * @param owner Owner ID.
  * @param id String ID used in serializing.
  * @param option Pointer to the option.
  * @param def Default option value.
  * @param desc Language ID for the option description (if any).
  * @param cat Language ID for the option category (if any).
  */
-OptionInfo::OptionInfo(const std::string &id, std::string *option, const char *def, const std::string &desc, const std::string &cat) : _id(id), _desc(desc), _cat(cat), _type(OPTION_STRING)
+OptionInfo::OptionInfo(OptionOwner owner, const std::string &id, std::string *option, const char *def, const std::string &desc, const std::string &cat) :
+	_id(id), _desc(desc), _cat(cat), _type(OPTION_STRING), _owner(owner)
 {
 	_ref.s = option;
 	_def.s = def;
@@ -193,44 +201,6 @@ void OptionInfo::reset() const
 		*(_ref.s) = _def.s;
 		break;
 	}
-}
-
-/**
- * Returns the ID of the option.
- * @return String ID.
- */
-std::string OptionInfo::id() const
-{
-	return _id;
-}
-
-/**
- * Returns the variable type of the option.
- * @return Option type.
- */
-OptionType OptionInfo::type() const
-{
-	return _type;
-}
-
-/**
- * Returns the description of the option. Options with
- * descriptions show up in the Options screens.
- * @return Language string ID for the description.
- */
-std::string OptionInfo::description() const
-{
-	return _desc;
-}
-
-/**
- * Returns the category of the option. Options with
- * categories show up in the Options screens.
- * @return Language string ID for the category.
- */
-std::string OptionInfo::category() const
-{
-	return _cat;
 }
 
 /**

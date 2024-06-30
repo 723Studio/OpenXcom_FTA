@@ -58,6 +58,7 @@ private:
 	std::map<SoldierRole, int> _roleRankRequirements;
 	SoldierRole _forbiddenRole;
 	bool _reset;
+	bool _resetRank;
 	std::string _soldierBonusType;
 
 	void loadRoleRequirements(const std::map<int, int> &r);
@@ -158,6 +159,8 @@ public:
 
 	/// Gets whether or not this project should reset info about all previous transformations and all previously assigned soldier bonuses
 	bool getReset() const;
+	/// Gets whether or not this project should reset the rank of the destination soldier to rookie
+	bool getResetRank() const;
 	/// Gets the type of soldier bonus assigned by this project
 	const std::string &getSoldierBonusType() const;
 };

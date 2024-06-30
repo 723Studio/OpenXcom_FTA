@@ -81,6 +81,7 @@ set ( basescape_src
   Basescape/SoldierTransformationState.cpp
   Basescape/SoldierTransformationListState.cpp
   Basescape/SoldierTransformationStatsState.cpp
+  Basescape/SoldierTransformState.cpp
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
   Basescape/TechTreeViewerState.cpp
@@ -278,6 +279,7 @@ set ( interface_src
   Interface/Frame.cpp
   Interface/ImageButton.cpp
   Interface/NumberText.cpp
+  Interface/ProgressBar.cpp
   Interface/ScrollBar.cpp
   Interface/Slider.cpp
   Interface/Text.cpp

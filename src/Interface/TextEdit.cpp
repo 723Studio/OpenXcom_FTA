@@ -35,7 +35,10 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-TextEdit::TextEdit(State *state, int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _blink(true), _modal(true), _char('A'), _caretPos(0), _textEditConstraint(TEC_NONE), _change(0), _enter(0), _state(state)
+TextEdit::TextEdit(State *state, int width, int height, int x, int y) : InteractiveSurface(width, height, x, y),
+	_blink(true), _modal(true), _drawBackground(true),
+	_char('A'), _caretPos(0), _textEditConstraint(TEC_NONE),
+	_change(0), _enter(0), _state(state)
 {
 	_isFocused = false;
 	_text = new Text(width, height, 0, 0);
@@ -311,7 +314,8 @@ void TextEdit::draw()
 	_text->setText(Unicode::convUtf32ToUtf8(_value));
 	clear();
 
-	if (_enter)
+	// TODO: this whole thing is old and ugly, rework later
+	if (_enter && _drawBackground)
 	{
 		SDL_Rect square;
 		square.x = 0;

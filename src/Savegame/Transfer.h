@@ -54,6 +54,7 @@ class BasePrisoner;
 class Language;
 class Base;
 class Mod;
+class RuleItem;
 class SavedGame;
 
 /**
@@ -68,7 +69,7 @@ private:
 	Soldier *_soldier;
 	Craft *_craft;
 	BasePrisoner *_prisoner;
-	std::string _itemId;
+	const RuleItem* _itemId;
 	int _itemQty, _scientists, _engineers;
 	bool _delivered;
 public:
@@ -91,9 +92,9 @@ public:
 	/// Gets the craft of the transfer.
 	Craft* getCraft();
 	/// Gets the items of the transfer.
-	std::string getItems() const;
+	const RuleItem* getItems() const;
 	/// Sets the items of the transfer.
-	void setItems(const std::string &id, int qty = 1);
+	void setItems(const RuleItem* rule, int qty = 1);
 	/// Sets the scientists of the transfer.
 	void setScientists(int scientists);
 	/// Sets the engineers of the transfer.

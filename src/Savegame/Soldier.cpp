@@ -363,14 +363,13 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	{
 		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
 		{
-			EquipmentLayoutItem *layoutItem = new EquipmentLayoutItem(*i);
-			if (mod->getInventory(layoutItem->getSlot()))
+			try
 			{
-				_equipmentLayout.push_back(layoutItem);
+				_equipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
 			}
-			else
+			catch (Exception& ex)
 			{
-				delete layoutItem;
+				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 			}
 		}
 	}
@@ -378,14 +377,13 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	{
 		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
 		{
-			EquipmentLayoutItem *layoutItem = new EquipmentLayoutItem(*i);
-			if (mod->getInventory(layoutItem->getSlot()))
+			try
 			{
-				_personalEquipmentLayout.push_back(layoutItem);
+				_personalEquipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
 			}
-			else
+			catch (Exception& ex)
 			{
-				delete layoutItem;
+				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 			}
 		}
 	}
@@ -693,7 +691,7 @@ void Soldier::autoMoveEquipment(Craft* craft, Base* base, int toBase)
 		// ignore fixed weapons...
 		if (!invItem->isFixed())
 		{
-			const std::string& invItemMain = invItem->getItemType();
+			const auto* invItemMain = invItem->getItemType();
 			if (toBase > 0)
 			{
 				if (onTheCraft->getItem(invItemMain) > 0)
@@ -716,8 +714,8 @@ void Soldier::autoMoveEquipment(Craft* craft, Base* base, int toBase)
 		// ...but not their ammo
 		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 		{
-			const std::string& invItemAmmo = invItem->getAmmoItemForSlot(slot);
-			if (invItemAmmo != "NONE")
+			const auto* invItemAmmo = invItem->getAmmoItemForSlot(slot);
+			if (invItemAmmo != nullptr)
 			{
 				if (toBase > 0)
 				{
@@ -2230,6 +2228,12 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 					_nationality = 0;
 				}
 			}
+		}
+
+		// reset soldier rank, if needed
+		if (transformationRule->getResetRank())
+		{
+			_rank = RANK_ROOKIE;
 		}
 
 		// change stats

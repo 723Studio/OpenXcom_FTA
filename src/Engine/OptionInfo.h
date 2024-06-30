@@ -26,6 +26,7 @@ namespace OpenXcom
 {
 
 enum OptionType { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_KEY };
+enum OptionOwner { OPTION_OXC, OPTION_OXCE, OPTION_OTHER, OPTION_OWNER_MAX };
 
 /**
  * Helper class that ties metadata to particular options to help in serializing
@@ -37,17 +38,18 @@ class OptionInfo
 private:
 	std::string _id, _desc, _cat;
 	OptionType _type;
+	OptionOwner _owner;
 	union { bool *b; int *i; std::string *s; SDLKey *k; } _ref;
 	union { bool b; int i; const char *s; SDLKey k; } _def; // can't put strings in unions
 public:
 	/// Creates a bool option.
-	OptionInfo(const std::string &id, bool *option, bool def, const std::string &desc = "", const std::string &cat = "");
+	OptionInfo(OptionOwner owner, const std::string &id, bool *option, bool def, const std::string &desc = "", const std::string &cat = "");
 	/// Creates a int option.
-	OptionInfo(const std::string &id, int *option, int def, const std::string &desc = "", const std::string &cat = "");
+	OptionInfo(OptionOwner owner, const std::string &id, int *option, int def, const std::string &desc = "", const std::string &cat = "");
 	/// Creates a key option.
-	OptionInfo(const std::string &id, SDLKey *option, SDLKey def, const std::string &desc = "", const std::string &cat = "");
+	OptionInfo(OptionOwner owner, const std::string &id, SDLKey *option, SDLKey def, const std::string &desc = "", const std::string &cat = "");
 	/// Creates a string option.
-	OptionInfo(const std::string &id, std::string *option, const char *def, const std::string &desc = "", const std::string &cat = "");
+	OptionInfo(OptionOwner owner, const std::string &id, std::string *option, const char *def, const std::string &desc = "", const std::string &cat = "");
 	/// Gets a bool option pointer.
 	bool *asBool() const;
 	/// Gets an int option pointer.
@@ -65,13 +67,15 @@ public:
 	/// Resets the option to default.
 	void reset() const;
 	/// Gets the option ID.
-	std::string id() const;
+	const std::string& id() const { return _id; }
 	/// Gets the option type.
-	OptionType type() const;
+	OptionType type() const { return _type; }
+	/// Gets the option owner.
+	OptionOwner owner() const { return _owner; }
 	/// Gets the option description.
-	std::string description() const;
+	const std::string& description() const { return _desc; }
 	/// Gets the option category.
-	std::string category() const;
+	const std::string& category() const { return _cat; }
 };
 
 }

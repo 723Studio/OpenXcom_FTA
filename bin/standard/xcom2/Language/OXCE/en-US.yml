@@ -1,5 +1,16 @@
 en-US:
 #=================== Basescape ===================
+#BasescapeState.cpp
+  STR_FACILITY_IN_USE_STORAGE: "AQUA-POD IN USE!{SMALLLINE}Not enough storage space."
+  STR_FACILITY_IN_USE_QUARTERS: "AQUA-POD IN USE!{SMALLLINE}Not enough living quarters."
+  STR_FACILITY_IN_USE_LABORATORIES: "AQUA-POD IN USE!{SMALLLINE}Not enough lab space."
+  STR_FACILITY_IN_USE_WORKSHOPS: "AQUA-POD IN USE!{SMALLLINE}Not enough workshop space."
+  STR_FACILITY_IN_USE_HANGARS: "AQUA-POD IN USE!{SMALLLINE}Not enough sub pens."
+  STR_FACILITY_IN_USE_PSI_LABS: "AQUA-POD IN USE!{SMALLLINE}Not enough M.C. labs."
+  STR_FACILITY_IN_USE_GYMS: "AQUA-POD IN USE!{SMALLLINE}Not enough gyms."
+  STR_FACILITY_IN_USE_PRISONS: "AQUA-POD IN USE!{SMALLLINE}Not enough alien containment."
+#CraftWeaponsState.cpp
+  STR_NOT_ENOUGH_HWP_CAPACITY: "NOT ENOUGH SWS CAPACITY AVAILABLE!{SMALLLINE}Use a different module or reduce the number of assigned SWSs."
 #SoldierAvatarState.cpp
   STR_AVATAR_NAME_1: "#01 Dolph"
   STR_AVATAR_NAME_2: "#02 Will"
@@ -32,5 +43,20 @@ en-US:
   GMINTER1: "Dogfight Track #1"
   GMINTER2: "Dogfight Track #2"
   GMINTER3: "Dogfight Track #3"
+#=================== Menu ===================
+#NewBattleState.cpp
+  GLOBE_TEXTURE_0: "Seabed/Coral 1"
+  GLOBE_TEXTURE_1: "Research Facility 1"
+  GLOBE_TEXTURE_2: "Crashed Plane"
+  GLOBE_TEXTURE_3: "Atlantis"
+  GLOBE_TEXTURE_4: "Mayan Temple 1"
+  GLOBE_TEXTURE_5: "Sunken Galleon"
+  GLOBE_TEXTURE_6: "Sunken Liner 1"
+  GLOBE_TEXTURE_7: "Volcanic 1"
+  GLOBE_TEXTURE_8: "Seabed/Coral 2"
+  GLOBE_TEXTURE_9: "Volcanic 2"
+  GLOBE_TEXTURE_10: "Sunken Liner 2"
+  GLOBE_TEXTURE_11: "Research Facility 2"
+  GLOBE_TEXTURE_12: "Mayan Temple 2"
 #==================================================================================================================
   STR_SHOT_TYPE_AUTO: "Auto (x{0})"

@@ -26,13 +26,13 @@ namespace OpenXcom
  * Constructor for a soldier transformation project (necromancy, cloning, ascending!)
  * @param name The unique project name id
  */
-RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name, int listOrder)
-	: _name(name),
-	  _keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
-	  _allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
-	  _listOrder(listOrder), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
-	  _showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE), _forbiddenRole(ROLE_NONE),
-	  _reset(false)
+RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name, int listOrder) :
+	_name(name),
+	_keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
+	_allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
+	_listOrder(listOrder), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
+	_showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE), _forbiddenRole(ROLE_NONE),
+	_reset(false), _resetRank(false)
 {
 }
 
@@ -94,6 +94,7 @@ void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod)
 		loadRoleRequirements(node["roleRankRequirements"].as<std::map<int, int>>());
 	_forbiddenRole = (SoldierRole)node["forbiddenRole"].as<int>(_forbiddenRole);
 	_reset = node["reset"].as<bool >(_reset);
+	_resetRank = node["resetRank"].as<bool >(_resetRank);
 	_soldierBonusType = node["soldierBonusType"].as<std::string >(_soldierBonusType);
 }
 
@@ -364,6 +365,15 @@ bool RuleSoldierTransformation::isSoftLimit(bool isSameSoldierType) const
 bool RuleSoldierTransformation::getReset() const
 {
 	return _reset;
+}
+
+/**
+ * Gets whether or not this project should reset the rank of the destination soldier to rookie
+ * @return Reset the rank to rookie?
+ */
+bool RuleSoldierTransformation::getResetRank() const
+{
+	return _resetRank;
 }
 
 /**

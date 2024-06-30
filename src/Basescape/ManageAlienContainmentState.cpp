@@ -214,19 +214,18 @@ void ManageAlienContainmentState::resetListAndTotals()
 	for (const auto* proj : _base->getResearch())
 	{
 		const RuleResearch *research = proj->getRules();
-		RuleItem *item = _game->getMod()->getItem(research->getName());
+		const RuleItem *item = _game->getMod()->getItem(research->getName()); // don't use getNeededItem()
 		if (research->needItem() && research->destroyItem() && item && item->isAlien() && item->getPrisonType() == _prisonType)
 		{
 			researchList.push_back(research->getName());
 		}
 	}
 
-	int sellPriceCoefficient = _game->getSavedGame()->getSellPriceCoefficient();
-
 	for (auto& itemType : _game->getMod()->getItemsList())
 	{
-		int qty = _base->getStorageItems()->getItem(itemType);
 		RuleItem *rule = _game->getMod()->getItem(itemType, true);
+
+		int qty = _base->getStorageItems()->getItem(rule);
 		if (qty > 0 && rule->isAlien() && rule->getPrisonType() == _prisonType)
 		{
 			_qtys.push_back(0);
@@ -248,8 +247,7 @@ void ManageAlienContainmentState::resetListAndTotals()
 			std::string formattedCost = "";
 			if (Options::canSellLiveAliens)
 			{
-				int64_t adjustedCost = rule->getSellCost();
-				adjustedCost = adjustedCost * sellPriceCoefficient / 100;
+				int64_t adjustedCost = rule->getSellCostAdjusted(_base, _game->getSavedGame());
 				formattedCost = Unicode::formatFunding(adjustedCost / 1000).append("K");
 			}
 
@@ -276,8 +274,7 @@ void ManageAlienContainmentState::resetListAndTotals()
 
 		if (Options::canSellLiveAliens)
 		{
-			int64_t adjustedTotal = _total * sellPriceCoefficient / 100;
-			_txtValueOfSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(adjustedTotal)));
+			_txtValueOfSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
 		}
 	}
 
@@ -345,8 +342,6 @@ void ManageAlienContainmentState::btnSellClick(Action *)
  */
 void ManageAlienContainmentState::dealWithSelectedAliens(bool sell)
 {
-	int sellPriceCoefficient = _game->getSavedGame()->getSellPriceCoefficient();
-
 	for (size_t i = 0; i < _qtys.size(); ++i)
 	{
 		if (_qtys[i] > 0)
@@ -356,8 +351,8 @@ void ManageAlienContainmentState::dealWithSelectedAliens(bool sell)
 
 			if (sell)
 			{
-				int64_t adjustedCost = _game->getMod()->getItem(_aliens[i], true)->getSellCost();
-				adjustedCost = adjustedCost * _qtys[i] * sellPriceCoefficient / 100;
+				int64_t adjustedCost = _game->getMod()->getItem(_aliens[i], true)->getSellCostAdjusted(_base, _game->getSavedGame());
+				adjustedCost = adjustedCost * _qtys[i];
 				_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + adjustedCost);
 			}
 			else
@@ -369,7 +364,7 @@ void ManageAlienContainmentState::dealWithSelectedAliens(bool sell)
 					auto* ruleCorpse = ruleUnit->getArmor()->getCorpseGeoscape();
 					if (ruleCorpse && ruleCorpse->isRecoverable() && ruleCorpse->isCorpseRecoverable())
 					{
-						_base->getStorageItems()->addItem(ruleCorpse->getType(), _qtys[i]);
+						_base->getStorageItems()->addItem(ruleCorpse, _qtys[i]);
 					}
 				}
 			}
@@ -636,11 +631,12 @@ void ManageAlienContainmentState::updateStrings()
 		{
 			if (_qtys[i] > 0)
 			{
-				_total += _game->getMod()->getItem(_aliens[i])->getSellCost() * _qtys[i];
+				int64_t adjustedCost = _game->getMod()->getItem(_aliens[i])->getSellCostAdjusted(_base, _game->getSavedGame());
+				adjustedCost *= _qtys[i];
+				_total += adjustedCost;
 			}
 		}
-		int64_t adjustedTotal = _total * _game->getSavedGame()->getSellPriceCoefficient() / 100;
-		_txtValueOfSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(adjustedTotal)));
+		_txtValueOfSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
 	}
 }
 

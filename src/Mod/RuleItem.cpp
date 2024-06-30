@@ -22,9 +22,11 @@
 #include "Armor.h"
 #include "Unit.h"
 #include "RuleItem.h"
+#include "RuleItemCategory.h"
 #include "RuleInventory.h"
 #include "RuleDamageType.h"
 #include "RuleSoldier.h"
+#include "../Savegame/SavedGame.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Collections.h"
@@ -145,41 +147,41 @@ const float TilesToVexels = 16.0f;
  * @param type String defining the type.
  * @param listOrder
  */
-RuleItem::RuleItem(const std::string &type, int listOrder)
-	: _type(type), _name(type), _vehicleUnit(nullptr), _size(0.0),
-	  _monthlyBuyLimit(0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _costDispose(0), _throwRange(0), _underwaterThrowRange(0), _stackSize(1),
-	  _bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),
-	  _hitAnimation(0), _hitAnimFrames(-1), _hitMissAnimation(-1), _hitMissAnimFrames(-1),
-	  _meleeAnimation(0), _meleeAnimFrames(-1), _meleeMissAnimation(-1), _meleeMissAnimFrames(-1),
-	  _psiAnimation(-1), _psiAnimFrames(-1), _psiMissAnimation(-1), _psiMissAnimFrames(-1),
-	  _power(0), _powerForAnimation(0), _hidePower(false), _canBeEquippedInBattle(true), _powerRangeReduction(0), _powerRangeThreshold(0),
-	  _coneSize(0), _noiseValue(1), _damageTypeSet(false), _meleeTypeSet(false),
-	  _accuracyUse(0), _accuracyMind(0), _accuracyPanic(20), _accuracyThrow(100), _accuracyCloseQuarters(-1),
-	  _noLOSAccuracyPenalty(-1),
-	  _costUse(25), _costMind(-1, -1), _costPanic(-1, -1), _costThrow(25), _costPrime(50), _costUnprime(25),
-	  _clipSize(0), _specialChance(100), _tuLoad{}, _tuUnload{},
-	  _battleType(BT_NONE), _fuseType(BFT_NONE), _fuseTriggerEvents{}, _hiddenOnMinimap(false),
-	  _medikitActionName("STR_USE_MEDI_KIT"), _psiAttackName(), _primeActionName("STR_PRIME_GRENADE"), _unprimeActionName(), _primeActionMessage("STR_GRENADE_IS_ACTIVATED"), _unprimeActionMessage("STR_GRENADE_IS_DEACTIVATED"),
-	  _twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false),
-	  _isExplodingInHands(false), _specialUseEmptyHand(false), _specialUseEmptyHandShow(false), _defaultInventorySlot(nullptr),
-	  _defaultInvSlotX(0), _defaultInvSlotY(0), _waypoints(0), _invWidth(1), _invHeight(1),
-	  _hackingHp(0), _hackingTu(0), _samplingPower(0),
-	  _painKiller(0), _heal(0), _stimulant(0), _medikitType(BMT_NORMAL), _medikitTargetSelf(false), _medikitTargetImmune(false), _medikitTargetMatrix(63),
-	  _woundRecovery(0), _healthRecovery(0), _stunRecovery(0), _energyRecovery(0), _manaRecovery(0), _moraleRecovery(0), _painKillerRecovery(1.0f),
-	  _recoveryPoints(0), _armor(20), _turretType(-1),
-	  _aiUseDelay(-1), _aiMeleeHitCount(25),
-	  _recover(true), _recoverCorpse(true), _ignoreInBaseDefense(false), _ignoreInCraftEquip(true), _liveAlien(false), _missionObjective(false), _alienArtifact(false),
-	  _liveAlienPrisonType(0), _attraction(0), _flatUse(0, 1), _flatThrow(0, 1), _flatPrime(0, 1), _flatUnprime(0, 1), _arcingShot(false),
-	  _experienceTrainingMode(ETM_DEFAULT), _manaExperience(0), _listOrder(listOrder),
-	  _maxRange(200), _minRange(0), _dropoff(2), _bulletSpeed(0), _explosionSpeed(0), _shotgunPellets(0), _shotgunBehaviorType(0), _shotgunSpread(100), _shotgunChoke(100),
-	  _spawnUnitFaction(FACTION_NONE), _zombieUnitFaction(FACTION_HOSTILE),
-	  _targetMatrix(7),
-	  _LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false), _manaRequired(false),
-	  _meleePower(0), _specialType(-1), _vaporColor(-1), _vaporDensity(0), _vaporProbability(15),
-	  _vaporColorSurface(-1), _vaporDensitySurface(0), _vaporProbabilitySurface(15),
-	  _kneelBonus(-1), _oneHandedPenalty(-1),
-	  _monthlySalary(0), _monthlyMaintenance(0),
-	  _sprayWaypoints(0), _extendedItemReloadCostLocal(0)
+RuleItem::RuleItem(const std::string &type, int listOrder) :
+	_type(type), _name(type), _vehicleUnit(nullptr), _size(0.0),
+	_monthlyBuyLimit(0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _costDispose(0), _throwRange(0), _underwaterThrowRange(0), _stackSize(1),
+	_bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),
+	_hitAnimation(0), _hitAnimFrames(-1), _hitMissAnimation(-1), _hitMissAnimFrames(-1),
+	_meleeAnimation(0), _meleeAnimFrames(-1), _meleeMissAnimation(-1), _meleeMissAnimFrames(-1),
+	_psiAnimation(-1), _psiAnimFrames(-1), _psiMissAnimation(-1), _psiMissAnimFrames(-1),
+	_power(0), _powerForAnimation(0), _hidePower(false), _canBeEquippedInBattle(true), _powerRangeReduction(0), _powerRangeThreshold(0),
+	_coneSize(0), _noiseValue(1), _damageTypeSet(false), _meleeTypeSet(false),
+	_accuracyUse(0), _accuracyMind(0), _accuracyPanic(20), _accuracyThrow(100), _accuracyCloseQuarters(-1),
+	_noLOSAccuracyPenalty(-1),
+	_costUse(25), _costMind(-1, -1), _costPanic(-1, -1), _costThrow(25), _costPrime(50), _costUnprime(25),
+	_clipSize(0), _specialChance(100), _tuLoad{ }, _tuUnload{ },
+	_battleType(BT_NONE), _fuseType(BFT_NONE), _fuseTriggerEvents{ }, _hiddenOnMinimap(false),
+	_medikitActionName("STR_USE_MEDI_KIT"), _psiAttackName(), _primeActionName("STR_PRIME_GRENADE"), _unprimeActionName(), _primeActionMessage("STR_GRENADE_IS_ACTIVATED"), _unprimeActionMessage("STR_GRENADE_IS_DEACTIVATED"),
+	_twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false),
+	_isExplodingInHands(false), _specialUseEmptyHand(false), _specialUseEmptyHandShow(false),
+	_defaultInvSlotX(0), _defaultInvSlotY(0), _waypoints(0), _invWidth(1), _invHeight(1),
+	_hackingHp(0), _hackingTu(0), _samplingPower(0),
+	_painKiller(0), _heal(0), _stimulant(0), _medikitType(BMT_NORMAL), _medikitTargetSelf(false), _medikitTargetImmune(false), _medikitTargetMatrix(63),
+	_woundRecovery(0), _healthRecovery(0), _stunRecovery(0), _energyRecovery(0), _manaRecovery(0), _moraleRecovery(0), _painKillerRecovery(1.0f),
+	_recoveryPoints(0), _armor(20), _turretType(-1),
+	_aiUseDelay(-1), _aiMeleeHitCount(25),
+	_recover(true), _recoverCorpse(true), _ignoreInBaseDefense(false), _ignoreInCraftEquip(true), _liveAlien(false), _missionObjective(false), _alienArtifact(false),
+	_liveAlienPrisonType(0), _attraction(0), _flatUse(0, 1), _flatThrow(0, 1), _flatPrime(0, 1), _flatUnprime(0, 1), _arcingShot(false),
+	_experienceTrainingMode(ETM_DEFAULT), _manaExperience(0), _listOrder(listOrder),
+	_maxRange(200), _minRange(0), _dropoff(2), _bulletSpeed(0), _explosionSpeed(0), _shotgunPellets(0), _shotgunBehaviorType(0), _shotgunSpread(100), _shotgunChoke(100),
+	_spawnUnitFaction(FACTION_NONE), _zombieUnitFaction(FACTION_HOSTILE),
+	_targetMatrix(7), _convertToCivilian(false),
+	_LOSRequired(false), _underwaterOnly(false), _landOnly(false), _psiReqiured(false), _manaRequired(false),
+	_meleePower(0), _specialType(-1), _vaporColor(-1), _vaporDensity(0), _vaporProbability(15),
+	_vaporColorSurface(-1), _vaporDensitySurface(0), _vaporProbabilitySurface(15),
+	_kneelBonus(-1), _oneHandedPenalty(-1),
+	_monthlySalary(0), _monthlyMaintenance(0),
+	_sprayWaypoints(0)
 {
 	_accuracyMulti.setFiring();
 	_meleeMulti.setMelee();
@@ -659,6 +661,7 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
 		_targetMatrix = node["psiTargetMatrix"].as<int>(_targetMatrix);
 	}
 	_targetMatrix = node["targetMatrix"].as<int>(_targetMatrix);
+	_convertToCivilian = node["convertToCivilian"].as<bool>(_convertToCivilian);
 	_LOSRequired = node["LOSRequired"].as<bool>(_LOSRequired);
 	_meleePower = node["meleePower"].as<int>(_meleePower);
 	_underwaterOnly = node["underwaterOnly"].as<bool>(_underwaterOnly);
@@ -906,6 +909,22 @@ bool RuleItem::belongsToCategory(const std::string &category) const
 }
 
 /**
+ * Returns the first item category that has a non-empty invOrder, if it exists.
+ */
+const RuleItemCategory* RuleItem::getFirstCategoryWithInvOrder(const Mod* mod) const
+{
+	for (auto& catName : _categories)
+	{
+		auto* cat = mod->getItemCategory(catName, false);
+		if (cat && !cat->getInvOrder().empty())
+		{
+			return cat;
+		}
+	}
+	return nullptr;
+}
+
+/**
  * Gets unit rule if the item is vehicle weapon.
  */
 Unit* RuleItem::getVehicleUnit() const
@@ -934,6 +953,25 @@ int RuleItem::getBuyCost() const
 }
 
 /**
+ * Gets the item's purchase cost.
+ * @param base Current base from where item is bought
+ * @param save Game
+ * @return Current cost
+ */
+int RuleItem::getBuyCostAdjusted(const Base* base, const SavedGame* save) const
+{
+	(void)base; //TODO: not exposed to scripts yet
+
+	int buyPriceCoefficient = save->getBuyPriceCoefficient();
+	int cost = getBuyCost();
+	int adjusted = ((int64_t)cost) * buyPriceCoefficient / 100;
+
+	adjusted = ModScript::scriptFunc2<ModScript::BuyCostItem>(this, adjusted, cost, this, save, buyPriceCoefficient);
+
+	return adjusted;
+}
+
+/**
  * Gets the amount of money this item
  * is worth to sell.
  * @return The sell cost.
@@ -941,6 +979,25 @@ int RuleItem::getBuyCost() const
 int RuleItem::getSellCost() const
 {
 	return _costSell;
+}
+
+/**
+ * Gets the item's sale cost.
+ * @param base Current base from where item is sold
+ * @param save Game
+ * @return Current cost
+ */
+int RuleItem::getSellCostAdjusted(const Base* base, const SavedGame* save) const
+{
+	(void)base; //TODO: not exposed to scripts yet
+
+	int sellPriceCoefficient = save->getSellPriceCoefficient();
+	int cost = getSellCost();
+	int adjusted = ((int64_t)cost) * sellPriceCoefficient / 100;
+
+	adjusted = ModScript::scriptFunc2<ModScript::SellCostItem>(this, adjusted, cost, this, save, sellPriceCoefficient);
+
+	return adjusted;
 }
 
 /**

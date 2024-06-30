@@ -90,6 +90,8 @@ void ManufactureInfoState::buildUi()
 	_txtUnitDown = new Text(90, 9, 192, 138);
 	_btnEngineerUp = new ArrowButton(ARROW_BIG_UP, 13, 14, 132, 114);
 	_btnEngineerDown = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 132, 136);
+	_btnUnitInfinity = new ArrowButton(ARROW_BIG_UP, 13, 14, 300, 114);
+	_btnUnitMinimum = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 300, 136);
 	_btnUnitUp = new ArrowButton(ARROW_BIG_UP, 13, 14, 284, 114);
 	_btnUnitDown = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 284, 136);
 	_txtAllocated = new Text(40, 16, 128, 88);
@@ -122,6 +124,8 @@ void ManufactureInfoState::buildUi()
 	add(_btnEngineerDown, "button1", "manufactureInfo");
 	add(_txtUnitUp, "text", "manufactureInfo");
 	add(_txtUnitDown, "text", "manufactureInfo");
+	add(_btnUnitInfinity, "button1", "manufactureInfo");
+	add(_btnUnitMinimum, "button1", "manufactureInfo");
 	add(_btnUnitUp, "button1", "manufactureInfo");
 	add(_btnUnitDown, "button1", "manufactureInfo");
 	add(_btnOk, "button2", "manufactureInfo");
@@ -208,6 +212,25 @@ void ManufactureInfoState::buildUi()
 	initProfitInfo();
 	setAssignedEngineer();
 
+	if (Options::oxceBaseManufactureInfinityButton)
+	{
+		if (_production->getRules()->getProducedCraft())
+		{
+			_btnUnitInfinity->setVisible(false);
+			_btnUnitMinimum->setVisible(false);
+		}
+		else
+		{
+			_btnUnitInfinity->onMouseClick((ActionHandler)&ManufactureInfoState::infinityUnitClick, 0);
+			_btnUnitMinimum->onMouseClick((ActionHandler)&ManufactureInfoState::minimumUnitClick, 0);
+		}
+	}
+	else
+	{
+		_btnUnitInfinity->setVisible(false);
+		_btnUnitMinimum->setVisible(false);
+	}
+
 	_txtHoursPerUnit->setText(tr("STR_HOURS_PER_UNIT").arg(_production->getRules()->getManufactureTime()));
 
 	_timerMoreEngineer = new Timer(250);
@@ -234,8 +257,8 @@ void ManufactureInfoState::initProfitInfo()
 	{
 		for (auto& pair : manuf->getProducedItems())
 		{
-			int64_t adjustedSellValue = pair.first->getSellCost();
-			adjustedSellValue = adjustedSellValue * pair.second * _game->getSavedGame()->getSellPriceCoefficient() / 100;
+			int64_t adjustedSellValue = pair.first->getSellCostAdjusted(_base, _game->getSavedGame());
+			adjustedSellValue *= pair.second;
 			_producedItemsValue += adjustedSellValue;
 		}
 	}
@@ -520,9 +543,28 @@ void ManufactureInfoState::moreUnitClick(Action* action)
 }
 
 /**
-* Removes the given number of units to produce from the project if possible.
-* @param change How much we want to subtract.
-*/
+ * Increases the "units to produce" to infinite ("right-click button" on mobile platforms).
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::infinityUnitClick(Action* action)
+{
+	if (_production->getInfiniteAmount()) return; // We can't increase over infinite :)
+
+	if (_production->getRules()->getProducedCraft())
+	{
+		// nothing
+	}
+	else
+	{
+		_production->setInfiniteAmount(true);
+		setAssignedEngineer();
+	}
+}
+
+/**
+ * Removes the given number of units to produce from the project if possible.
+ * @param change How much we want to subtract.
+ */
 void ManufactureInfoState::lessUnit(int change)
 {
 	if (change <= 0) return;
@@ -575,13 +617,17 @@ void ManufactureInfoState::lessUnitClick(Action* action)
 		{
 			if (wasInfinite)
 			{
-				// when infinite amount is decreased by 1, set the amount to maximum possible considering current funds and store supplies
-				int productionPossible = INT_MAX;
+				// when infinite amount is decreased by 1, set the amount to maximum possible (capped at 999) considering current funds and store supplies
+				int productionPossible = 999;
 				auto* manufRule = _production->getRules();
 				if (manufRule->getManufactureCost() > 0)
 				{
-					int byFunds = _game->getSavedGame()->getFunds() / manufRule->getManufactureCost();
-					productionPossible = std::min(productionPossible, byFunds);
+					int64_t byFunds = _game->getSavedGame()->getFunds() / manufRule->getManufactureCost();
+					if (byFunds < 1000LL)
+					{
+						int byFundsInt = (int)byFunds;
+						productionPossible = std::min(productionPossible, byFundsInt);
+					}
 				}
 				for (auto& item : manufRule->getRequiredItems())
 				{
@@ -602,8 +648,19 @@ void ManufactureInfoState::lessUnitClick(Action* action)
 }
 
 /**
-* Assigns one more engineer (if possible).
-*/
+ * Decreases the units to produce ("right-click button" on mobile platforms).
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::minimumUnitClick(Action* action)
+{
+	_production->setInfiniteAmount(false);
+	_production->setAmountTotal(_production->getAmountProduced() + 1);
+	setAssignedEngineer();
+}
+
+/**
+ * Assigns one more engineer (if possible).
+ */
 void ManufactureInfoState::onMoreEngineer()
 {
 	_timerMoreEngineer->setInterval(50);

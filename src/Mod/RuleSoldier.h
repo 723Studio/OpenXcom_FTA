@@ -101,6 +101,7 @@ public:
 private:
 	std::string _type;
 	std::vector<SoldierRole> _roles;
+	int _group;
 	int _listOrder;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
@@ -160,6 +161,8 @@ public:
 	const std::string& getType() const;
 	/// Gets the soldier's role.
 	std::vector<SoldierRole> getRoles() const { return _roles; }
+	/// Gets the soldier type group.
+	int getGroup() const { return _group; }
 	/// Gets whether or not the soldier type should be displayed in the inventory.
 	bool getShowTypeInInventory() const { return _showTypeInInventory; }
 	/// Gets the list/sort order of the soldier's type.

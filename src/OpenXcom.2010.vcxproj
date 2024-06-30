@@ -405,6 +405,7 @@
     <ClCompile Include="Basescape\SoldierTransformationListState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationStatsState.cpp" />
+    <ClCompile Include="Basescape\SoldierTransformState.cpp" />
     <ClCompile Include="Basescape\StoresState.cpp" />
     <ClCompile Include="Basescape\TechTreeSelectState.cpp" />
     <ClCompile Include="Basescape\TechTreeViewerState.cpp" />
@@ -587,6 +588,7 @@
     <ClCompile Include="Interface\Frame.cpp" />
     <ClCompile Include="Interface\ImageButton.cpp" />
     <ClCompile Include="Interface\NumberText.cpp" />
+    <ClCompile Include="Interface\ProgressBar.cpp" />
     <ClCompile Include="Interface\ScrollBar.cpp" />
     <ClCompile Include="Interface\Slider.cpp" />
     <ClCompile Include="Interface\Text.cpp" />
@@ -843,6 +845,7 @@
     <ClInclude Include="Basescape\SoldierTransformationListState.h" />
     <ClInclude Include="Basescape\SoldierTransformationState.h" />
     <ClInclude Include="Basescape\SoldierTransformationStatsState.h" />
+    <ClInclude Include="Basescape\SoldierTransformState.h" />
     <ClInclude Include="Basescape\StoresState.h" />
     <ClInclude Include="Basescape\TechTreeSelectState.h" />
     <ClInclude Include="Basescape\TechTreeViewerState.h" />
@@ -1042,6 +1045,7 @@
     <ClInclude Include="Interface\Frame.h" />
     <ClInclude Include="Interface\ImageButton.h" />
     <ClInclude Include="Interface\NumberText.h" />
+    <ClInclude Include="Interface\ProgressBar.h" />
     <ClInclude Include="Interface\ScrollBar.h" />
     <ClInclude Include="Interface\Slider.h" />
     <ClInclude Include="Interface\Text.h" />

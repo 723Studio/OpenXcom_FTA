@@ -94,10 +94,11 @@ bool Transfer::load(const YAML::Node& node, Base *base, const Mod *mod, SavedGam
 	}
 	if (const YAML::Node &item = node["itemId"])
 	{
-		_itemId = item.as<std::string>(_itemId);
-		if (mod->getItem(_itemId) == 0)
+		auto name = item.as<std::string>();
+		_itemId = mod->getItem(name);
+		if (_itemId == 0)
 		{
-			Log(LOG_ERROR) << "Failed to load item " << _itemId;
+			Log(LOG_ERROR) << "Failed to load item " << name;
 			delete this;
 			return false;
 		}
@@ -146,7 +147,7 @@ YAML::Node Transfer::save(const Base *b, const Mod *mod) const
 	}
 	else if (_itemQty != 0)
 	{
-		node["itemId"] = _itemId;
+		node["itemId"] = _itemId->getType();
 		node["itemQty"] = _itemQty;
 	}
 	else if (_scientists != 0)
@@ -200,7 +201,7 @@ Craft *Transfer::getCraft()
  * Returns the items being transferred.
  * @return Item ID.
  */
-std::string Transfer::getItems() const
+const RuleItem* Transfer::getItems() const
 {
 	return _itemId;
 }
@@ -210,9 +211,9 @@ std::string Transfer::getItems() const
  * @param id Item identifier.
  * @param qty Item quantity.
  */
-void Transfer::setItems(const std::string &id, int qty)
+void Transfer::setItems(const RuleItem* rule, int qty)
 {
-	_itemId = id;
+	_itemId = rule;
 	_itemQty = qty;
 }
 
@@ -261,7 +262,7 @@ std::string Transfer::getName(Language *lang) const
 	{
 		return _prisoner->getNameAndId();
 	}
-	return lang->getString(_itemId);
+	return lang->getString(_itemId->getType());
 }
 
 /**

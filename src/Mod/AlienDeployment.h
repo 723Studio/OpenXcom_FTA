@@ -216,6 +216,8 @@ public:
 	std::string getBattleScript() const { return _battleScript; };
 	/// Gets the extendedObjective for this deployment.
 	std::string getExtendedObjectiveType() const { return _extendedObjectiveType; };
+	
+	int hasTextureBasedScript(const Mod* mod) const;
 	/// Checks if this is the destination for the final mission (mars stage 1, t'leth stage 1).
 	bool isFinalDestination() const;
 	/// Gets the cutscene to play when this mission is won.

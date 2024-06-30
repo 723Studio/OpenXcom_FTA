@@ -54,15 +54,17 @@ private:
 	int _fakeUnderwater;
 	bool _lift, _hyper, _mind, _grav, _globalRadar;
 	int _mindPower;
-	int _size, _buildCost, _refundValue, _buildTime, _monthlyCost;
+	int _sizeX, _sizeY;
+	int _buildCost, _refundValue, _buildTime, _monthlyCost;
 	std::map<std::string, std::pair<int, int> > _buildCostItems;
 	int _storage, _personnel, _aliens, _crafts, _labs, _workshops, _psiLabs;
 	int _ftaPrisonSpace; //a FTA version of prison
 	bool _spriteEnabled;
 	int _sightRange, _sightChance;
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound, _placeSound;
+	int _ammoMax, _rearmRate;
 	int _ammoNeeded;
-	const RuleItem* _ammoItem;
+	const RuleItem* _ammoItem = nullptr;
 	std::string _ammoItemName;
 	std::string _mapName;
 	int _interrogationSpace;
@@ -112,10 +114,15 @@ public:
 	int getSpriteFacility() const;
 	/// Retain sprite over shape behavior for bigger facility?
 	bool getSpriteEnabled() const;
+	bool getSpriteEnabledRaw() const { return _spriteEnabled; }
 	/// Should there be connectors leading to this facility?
 	bool connectorsDisabled() const { return _connectorsDisabled; }
+	/// Gets if the facility's size is 1x1.
+	bool isSmall() const;
 	/// Gets the facility's size.
-	int getSize() const;
+	int getSizeX() const { return _sizeX; }
+	/// Gets the facility's size.
+	int getSizeY() const { return _sizeY; }
 	/// Gets the facility's missile attraction.
 	int getMissileAttraction() const { return _missileAttraction; }
 	/// Is this facility allowed for a given type of base?
@@ -171,6 +178,10 @@ public:
 	/// Gets the facility's weapon hit ratio.
 	int getHitRatio() const;
 	/// Gets the facility's weapon ammo capacity.
+	int getAmmoMax() const { return _ammoMax; }
+	/// Gets the facility's weapon rearm rate.
+	int getRearmRate() const { return _rearmRate; }
+	/// Gets the facility's weapon ammo spent per shot.
 	int getAmmoNeeded() const { return _ammoNeeded; }
 	/// Gets the facility's weapon ammo item.
 	const RuleItem* getAmmoItem() const { return _ammoItem; }

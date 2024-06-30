@@ -63,7 +63,9 @@ namespace OpenXcom
  * Initializes all the elements in the New Battle window.
  * @param game Pointer to the core game.
  */
-NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::MISSION), _isRightClick(false)
+NewBattleState::NewBattleState() :
+	_craft(0), _selectType(NewBattleSelectType::MISSION), _isRightClick(false),
+	_depthVisible(false), _globeTextureVisible(false), _selectedGlobeTexture(0)
 {
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0, POPUP_BOTH);
@@ -92,6 +94,10 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 
 	_txtDepth = new Text(120, 9, 22, 143);
 	_slrDepth = new Slider(120, 16, 22, 153);
+
+	_txtGlobeTexture = new Text(120, 9, 22, 143);
+	_btnGlobeTexture = new TextButton(120, 16, 22, 153);
+	_btnGlobeTextureToggle = new TextButton(16, 16, 145, 153);
 
 	_txtDifficulty = new Text(120, 9, 178, 83);
 	_cbxDifficulty = new ComboBox(this, 120, 16, 178, 93);
@@ -128,6 +134,9 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 	add(_slrDarkness, "button1", "newBattleMenu");
 	add(_txtDepth, "text", "newBattleMenu");
 	add(_slrDepth, "button1", "newBattleMenu");
+	add(_txtGlobeTexture, "text", "newBattleMenu");
+	add(_btnGlobeTexture, "button1", "newBattleMenu");
+	add(_btnGlobeTextureToggle, "button1", "newBattleMenu");
 	add(_txtTerrain, "text", "newBattleMenu");
 	add(_txtDifficulty, "text", "newBattleMenu");
 	add(_txtAlienRace, "text", "newBattleMenu");
@@ -177,6 +186,9 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 
 	_txtTerrain->setText(tr("STR_MAP_TERRAIN"));
 
+	_txtGlobeTexture->setText(tr("STR_GLOBE_TEXTURE"));
+	_txtGlobeTexture->setVisible(false);
+
 	_txtDifficulty->setText(tr("STR_DIFFICULTY"));
 
 	_txtAlienRace->setText(tr("STR_ALIEN_RACE"));
@@ -213,7 +225,7 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
 		RuleCraft *rule = _game->getMod()->getCraft(craftType);
-		if (rule->getMaxUnits() > 0 && rule->getAllowLanding())
+		if (rule->isForNewBattle())
 		{
 			_crafts.push_back(craftType);
 		}
@@ -226,6 +238,24 @@ NewBattleState::NewBattleState() : _craft(0), _selectType(NewBattleSelectType::M
 	_slrDepth->setRange(1, 3);
 
 	_cbxTerrain->onChange((ActionHandler)&NewBattleState::cbxTerrainChange);
+
+	for (auto& pair : _game->getMod()->getGlobe()->getTexturesRaw())
+	{
+		if (pair.first >= 0)
+		{
+			_globeTextures.push_back("GLOBE_TEXTURE_" + std::to_string(pair.first));
+			_globeTextureIDs.push_back(pair.first);
+		}
+	}
+
+	_btnGlobeTexture->setText(tr(_globeTextures[_selectedGlobeTexture]));
+	_btnGlobeTexture->onMouseClick((ActionHandler)&NewBattleState::btnGlobeTextureChange);
+	_btnGlobeTexture->onMouseClick((ActionHandler)&NewBattleState::btnGlobeTextureChange, SDL_BUTTON_RIGHT);
+	_btnGlobeTexture->setVisible(false);
+
+	_btnGlobeTextureToggle->setText("*");
+	_btnGlobeTextureToggle->onMouseClick((ActionHandler)&NewBattleState::btnGlobeTextureToggle);
+	_btnGlobeTextureToggle->setVisible(false);
 
 	std::vector<std::string> difficulty;
 	difficulty.push_back(tr("STR_1_BEGINNER"));
@@ -343,6 +373,10 @@ void NewBattleState::load(const std::string &filename)
 			_slrDarkness->setValue(doc["darkness"].as<size_t>(0));
 			_cbxTerrain->setSelected(std::min(doc["terrain"].as<size_t>(0), _terrainTypes.size() - 1));
 			cbxTerrainChange(0);
+			{
+				_selectedGlobeTexture = std::min(doc["globeTexture"].as<size_t>(0), _globeTextures.size() - 1);
+				_btnGlobeTexture->setText(tr(_globeTextures[_selectedGlobeTexture]));
+			}
 			_cbxAlienRace->setSelected(std::min(doc["alienRace"].as<size_t>(0), _alienRaces.size() - 1));
 			_cbxDifficulty->setSelected(doc["difficulty"].as<size_t>(0));
 			_slrAlienTech->setValue(doc["alienTech"].as<size_t>(0));
@@ -363,13 +397,13 @@ void NewBattleState::load(const std::string &filename)
 				}
 
 				// Generate items
-				base->getStorageItems()->getContents()->clear();
+				base->getStorageItems()->clear();
 				for (auto& itemType : mod->getItemsList())
 				{
 					RuleItem *rule = _game->getMod()->getItem(itemType);
 					if (rule->getBattleType() != BT_CORPSE && rule->isRecoverable())
 					{
-						base->getStorageItems()->addItem(itemType, 1);
+						base->getStorageItems()->addItem(rule, 1);
 					}
 				}
 
@@ -383,14 +417,6 @@ void NewBattleState::load(const std::string &filename)
 				else
 				{
 					_craft = base->getCrafts()->front();
-					for (auto& pair : *_craft->getItems()->getContents())
-					{
-						RuleItem *rule = _game->getMod()->getItem(pair.first);
-						if (!rule)
-						{
-							pair.second = 0;
-						}
-					}
 				}
 
 				_game->setSavedGame(save);
@@ -421,6 +447,7 @@ void NewBattleState::save(const std::string &filename)
 	node["craft"] = _cbxCraft->getSelected();
 	node["darkness"] = _slrDarkness->getValue();
 	node["terrain"] = _cbxTerrain->getSelected();
+	node["globeTexture"] = _selectedGlobeTexture;
 	node["alienRace"] = _cbxAlienRace->getSelected();
 	node["difficulty"] = _cbxDifficulty->getSelected();
 	node["alienTech"] = _slrAlienTech->getValue();
@@ -459,7 +486,7 @@ void NewBattleState::initSave()
 		delete xcraft;
 	}
 	base->getCrafts()->clear();
-	base->getStorageItems()->getContents()->clear();
+	base->getStorageItems()->clear();
 
 	_craft = new Craft(mod->getCraft(_crafts[_cbxCraft->getSelected()]), base, 1);
 	base->getCrafts()->push_back(_craft);
@@ -502,7 +529,7 @@ void NewBattleState::initSave()
 		base->getSoldiers()->push_back(soldier);
 
 		int space = _craft->getSpaceAvailable();
-		if (_craft->validateAddingSoldier(space, soldier))
+		if (_craft->validateAddingSoldier(space, soldier) == CPE_None)
 		{
 			soldier->setCraft(_craft);
 		}
@@ -511,14 +538,14 @@ void NewBattleState::initSave()
 	// Generate items
 	for (auto& itemType : mod->getItemsList())
 	{
-		RuleItem *rule = _game->getMod()->getItem(itemType);
+		const RuleItem *rule = _game->getMod()->getItem(itemType);
 		if (rule->getBattleType() != BT_CORPSE && rule->isRecoverable())
 		{
 			int howMany = rule->getBattleType() == BT_AMMO ? 2 : 1;
-			base->getStorageItems()->addItem(itemType, howMany);
+			base->getStorageItems()->addItem(rule, howMany);
 			if (rule->getBattleType() != BT_NONE && rule->isInventoryItem())
 			{
-				_craft->getItems()->addItem(itemType, howMany);
+				_craft->getItems()->addItem(rule, howMany);
 			}
 		}
 	}
@@ -562,6 +589,13 @@ void NewBattleState::btnOkClick(Action *)
 	Base *base = 0;
 
 	bgen.setTerrain(_game->getMod()->getTerrain(_terrainTypes[_cbxTerrain->getSelected()]));
+
+	if (_globeTextureVisible)
+	{
+		int textureId = _globeTextureIDs[_selectedGlobeTexture];
+		auto* globeTexture = _game->getMod()->getGlobe()->getTexture(textureId);
+		bgen.setWorldTexture(nullptr, globeTexture);
+	}
 
 	// base defense
 	if (_missionTypes[_cbxMission->getSelected()] == "STR_BASE_DEFENSE")
@@ -759,7 +793,7 @@ void NewBattleState::cbxCraftChange(Action *)
 		{
 			count--;
 			int space = _craft->getSpaceAvailable();
-			if (_craft->validateAddingSoldier(space, soldier))
+			if (_craft->validateAddingSoldier(space, soldier) == CPE_None)
 			{
 				soldier->setCraft(_craft);
 			}
@@ -789,10 +823,40 @@ void NewBattleState::cbxTerrainChange(Action *)
 		minDepth = 1;
 		maxDepth = 3;
 	}
-	_txtDepth->setVisible(minDepth != maxDepth);
-	_slrDepth->setVisible(minDepth != maxDepth);
+	_depthVisible = (minDepth != maxDepth);
+	_txtDepth->setVisible(_depthVisible);
+	_slrDepth->setVisible(_depthVisible);
 	_slrDepth->setRange(minDepth, maxDepth);
 	_slrDepth->setValue(minDepth);
+
+	{
+		int found = ruleDeploy->hasTextureBasedScript(_game->getMod());
+		if (found == -1)
+		{
+			// there is no map script on the alien deployment at all, perform the check on the terrain
+			auto* ruleTerrain = _game->getMod()->getTerrain(_terrainTypes[_cbxTerrain->getSelected()]);
+			found = ruleTerrain->hasTextureBasedScript(_game->getMod());
+		}
+		_globeTextureVisible = (found == 1);
+
+		_txtGlobeTexture->setVisible(_globeTextureVisible);
+		_btnGlobeTexture->setVisible(_globeTextureVisible);
+
+		// if both are visible
+		if (_globeTextureVisible && _depthVisible)
+		{
+			// hide the depth slider
+			_txtDepth->setVisible(false);
+			_slrDepth->setVisible(false);
+			// and allow toggling between the texture selector and depth slider
+			_btnGlobeTextureToggle->setVisible(true);
+		}
+		else
+		{
+			// not needed
+			_btnGlobeTextureToggle->setVisible(false);
+		}
+	}
 
 	// Get races "supported" by this mission
 	_alienRaces = _game->getMod()->getAlienRacesList();
@@ -836,6 +900,26 @@ void NewBattleState::btnMissionChange(Action *action)
 void NewBattleState::btnTerrainChange(Action *action)
 {
 	fillList(NewBattleSelectType::TERRAIN, _game->isRightClick(action));
+}
+
+/**
+ * Shows the advanced globe texture selector.
+ */
+void NewBattleState::btnGlobeTextureChange(Action *action)
+{
+	fillList(NewBattleSelectType::GLOBETEXTURE, _game->isRightClick(action));
+}
+
+/**
+ * Toggles between the globe texture selector and depth slider.
+ */
+void NewBattleState::btnGlobeTextureToggle(Action *action)
+{
+	_txtDepth->setVisible(!_txtDepth->getVisible());
+	_slrDepth->setVisible(!_slrDepth->getVisible());
+
+	_txtGlobeTexture->setVisible(!_txtGlobeTexture->getVisible());
+	_btnGlobeTexture->setVisible(!_btnGlobeTexture->getVisible());
 }
 
 /**
@@ -906,6 +990,10 @@ void NewBattleState::fillList(NewBattleSelectType selectType, bool isRightClick)
 	{
 		fill(_terrainTypes, true, _cbxTerrain->getSelected());
 	}
+	else if (_selectType == NewBattleSelectType::GLOBETEXTURE)
+	{
+		fill(_globeTextures, false, _selectedGlobeTexture);
+	}
 	else if (_selectType == NewBattleSelectType::ALIENRACE)
 	{
 		fill(_alienRaces, false, _cbxAlienRace->getSelected());
@@ -924,7 +1012,10 @@ void NewBattleState::lstSelectClick(Action *action)
 	// quick toggle
 	if (_game->isRightClick(action) || _game->isMiddleClick(action))
 	{
-		auto& list = (_selectType == NewBattleSelectType::MISSION ? _missionTypes : (_selectType == NewBattleSelectType::TERRAIN ? _terrainTypes : _alienRaces));
+		auto& list =
+			(_selectType == NewBattleSelectType::MISSION ? _missionTypes :
+			(_selectType == NewBattleSelectType::TERRAIN ? _terrainTypes :
+			(_selectType == NewBattleSelectType::GLOBETEXTURE ? _globeTextures : _alienRaces)));
 		std::string s = list[_filtered[selected]];
 		if (_game->isMiddleClick(action))
 		{
@@ -947,6 +1038,11 @@ void NewBattleState::lstSelectClick(Action *action)
 	{
 		_cbxTerrain->setSelected(_filtered[selected]);
 		cbxTerrainChange(0);
+	}
+	else if (_selectType == NewBattleSelectType::GLOBETEXTURE)
+	{
+		_selectedGlobeTexture = _filtered[selected];
+		_btnGlobeTexture->setText(tr(_globeTextures[_selectedGlobeTexture]));
 	}
 	else if (_selectType == NewBattleSelectType::ALIENRACE)
 	{

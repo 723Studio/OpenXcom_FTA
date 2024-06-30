@@ -91,6 +91,7 @@ interfaces: #done
         color: 1
       - id: tooltip
         color: 239
+        color2: 244
       - id: button
         color: 1
       - id: confirmDefaults
@@ -113,6 +114,8 @@ interfaces: #done
         color: 1
   - type: controlsMenu
     elements:
+      - id: button
+        color: 1
       - id: optionLists
         color: 1
         color2: 239
@@ -131,6 +134,8 @@ interfaces: #done
         color: 1
   - type: advancedMenu
     elements:
+      - id: button
+        color: 1
       - id: optionLists
         color: 1
         color2: 239
@@ -916,6 +921,10 @@ interfaces: #done
         color: 1
         color2: 239
         border: 1
+      - id: listExtended
+        color: 156
+        color2: 244
+        border: 1
       - id: button1
         color: 1
       - id: button2
@@ -1366,6 +1375,9 @@ interfaces: #done
         color: 1   # white
         color2: 239
         border: 1  # blue
+      - id: listExtended
+        color: 156
+        color2: 244
       - id: button
         color: 1   # purple
   - type: allocateResearch
@@ -1564,6 +1576,21 @@ interfaces: #done
       - id: button
         color: 1   # purple
   - type: soldierArmor
+    backgroundImage: BACK14.SCR
+    elements:
+      - id: palette
+        color: 4     # green
+      - id: window
+        color: 1     # white
+      - id: text
+        color: 1     # white
+        color2: 239  # blue
+      - id: list
+        color: 1   # white
+        border: 1  # white
+      - id: button
+        color: 1   # white
+  - type: soldierTransform
     backgroundImage: BACK14.SCR
     elements:
       - id: palette
@@ -1795,6 +1822,10 @@ interfaces: #done
         color: 244
       - id: button
         color: 1
+      - id: errorPalette
+        color: 4
+      - id: errorMessage
+        color: 1
   - type: craftSoldiers
     backgroundImage: BACK02.SCR
     elements:
@@ -1882,6 +1913,11 @@ interfaces: #done
       - id: baseView
         color: 213   # gold   (time remaining)
         color2: 16   # orange (selector color)
+      - id: trafficLights
+        color: 8     # red
+        color2: 163  # yellow
+        border: 81   # green
+        TFTDMode: true
       - id: errorPalette
         color: 6     # oxide
       - id: errorMessage
@@ -2050,6 +2086,10 @@ interfaces: #done
         color: 47
         color2: 60
         border: 51
+      - id: thinkingProgressBar
+        color: 177
+        color2: 81
+        border: 1
       - id: warning
         size: [232, 24]
         pos: [44, 32]

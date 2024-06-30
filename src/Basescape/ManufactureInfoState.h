@@ -39,17 +39,18 @@ class InteractiveSurface;
 class ManufactureInfoState : public State
 {
 private:
-	Base* _base;
-	RuleManufacture* _item;
-	Production* _production;
-	Window* _window;
-	ArrowButton* _btnUnitUp, * _btnUnitDown, * _btnEngineerUp, * _btnEngineerDown;
-	TextButton* _btnStop, * _btnOk;
-	Text* _txtTitle, * _txtAvailableEngineer, * _txtAvailableSpace, * _txtHoursPerUnit, * _txtMonthlyProfit;
-	Text* _txtAllocatedEngineer, * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtEngineerUp, * _txtEngineerDown, * _txtAllocated, * _txtTodo;
-	ToggleTextButton* _btnSell;
-	Timer* _timerMoreEngineer, * _timerMoreUnit, * _timerLessEngineer, * _timerLessUnit;
-	InteractiveSurface* _surfaceEngineers, * _surfaceUnits;
+	Base * _base;
+	RuleManufacture * _item;
+	Production * _production;
+	Window * _window;
+	ArrowButton * _btnUnitInfinity, * _btnUnitMinimum;
+	ArrowButton * _btnUnitUp, * _btnUnitDown, * _btnEngineerUp, * _btnEngineerDown;
+	TextButton * _btnStop, * _btnOk;
+	Text * _txtTitle, * _txtAvailableEngineer, * _txtAvailableSpace, * _txtHoursPerUnit, * _txtMonthlyProfit;
+	Text * _txtAllocatedEngineer, * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtEngineerUp, * _txtEngineerDown, * _txtAllocated, * _txtTodo;
+	ToggleTextButton *_btnSell;
+	Timer * _timerMoreEngineer, * _timerMoreUnit, * _timerLessEngineer, * _timerLessUnit;
+	InteractiveSurface *_surfaceEngineers, *_surfaceUnits;
 	int _producedItemsValue;
 	/// Caches static data for monthly profit calculations
 	void initProfitInfo();
@@ -76,7 +77,8 @@ private:
 	/// Handler for releasing the more unit button.
 	void moreUnitRelease(Action* action);
 	/// Handler for clicking the more unit button.
-	void moreUnitClick(Action* action);
+	void moreUnitClick(Action * action);
+	void infinityUnitClick(Action* action);
 	/// Removes the given number of engineers from the project if possible.
 	void lessEngineer(int change);
 	/// Handler for pressing the less engineer button.
@@ -92,7 +94,8 @@ private:
 	/// Handler for releasing the less unit button.
 	void lessUnitRelease(Action* action);
 	/// Handler for clicking the less unit button.
-	void lessUnitClick(Action* action);
+	void lessUnitClick(Action * action);
+	void minimumUnitClick(Action* action);
 	/// Adds one engineer to the production (if possible).
 	void onMoreEngineer();
 	/// Removes one engineer from the production (if possible).

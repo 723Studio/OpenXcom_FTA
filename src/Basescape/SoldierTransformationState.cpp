@@ -129,7 +129,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_btnStats->setText(tr("STR_STATS_UC"));
 	_btnStats->onMouseClick((ActionHandler)&SoldierTransformationState::btnStatsClick);
 
-	if (_filteredListOfSoldiers->size() > 1)
+	if (_filteredListOfSoldiers && _filteredListOfSoldiers->size() > 1)
 	{
 		_btnLeftArrow->setText("<<");
 		_btnLeftArrow->onMouseClick((ActionHandler)&SoldierTransformationState::btnLeftArrowClick);
@@ -562,9 +562,10 @@ void SoldierTransformationState::btnStartClick(Action *action)
 
 	for (auto& requiredItem : _transformationRule->getRequiredItems())
 	{
-		if (_game->getMod()->getItem(requiredItem.first) != 0)
+		const auto* rule = _game->getMod()->getItem(requiredItem.first);
+		if (rule != 0)
 		{
-			_base->getStorageItems()->removeItem(requiredItem.first, requiredItem.second);
+			_base->getStorageItems()->removeItem(rule, requiredItem.second);
 		}
 	}
 
@@ -690,7 +691,7 @@ void SoldierTransformationState::retire()
 	{
 		int transferTime = _transformationRule->getTransferTime() > 0 ? _transformationRule->getTransferTime() : 1;
 		Transfer *transfer = new Transfer(transferTime);
-		transfer->setItems(_transformationRule->getProducedItem(), 1);
+		transfer->setItems(_game->getMod()->getItem(_transformationRule->getProducedItem(), true), 1);
 		_base->getTransfers()->push_back(transfer);
 	}
 }

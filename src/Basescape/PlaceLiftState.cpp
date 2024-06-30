@@ -33,6 +33,7 @@
 #include "SelectStartFacilityState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/RuleInterface.h"
 
 namespace OpenXcom
 {
@@ -67,6 +68,11 @@ PlaceLiftState::PlaceLiftState(Base *base, Globe *globe, bool first) : _base(bas
 	// Set up objects
 	setWindowBackground(_window, "selectFacility");
 
+	auto* itf = _game->getMod()->getInterface("basescape")->getElement("trafficLights");
+	if (itf)
+	{
+		_view->setOtherColors(itf->color, itf->color2, itf->border, !itf->TFTDMode);
+	}
 	_view->setTexture(_game->getMod()->getSurfaceSet("BASEBITS.PCK"));
 	_view->setBase(_base);
 
@@ -108,7 +114,7 @@ PlaceLiftState::PlaceLiftState(Base *base, Globe *globe, bool first) : _base(bas
 		_txtHeader->setVisible(false);
 		_window->setVisible(false);
 
-		_view->setSelectable(_lift->getSize());
+		_view->setSelectable(_lift->getSizeX(), _lift->getSizeY());
 		_view->onMouseClick((ActionHandler)&PlaceLiftState::viewClick);
 	}
 
@@ -173,7 +179,7 @@ void PlaceLiftState::lstAccessLiftsClick(Action *action)
 		_txtHeader->setVisible(false);
 		_window->setVisible(false);
 
-		_view->setSelectable(_lift->getSize());
+		_view->setSelectable(_lift->getSizeX(), _lift->getSizeY());
 		_view->onMouseClick((ActionHandler)&PlaceLiftState::viewClick);
 	}
 }

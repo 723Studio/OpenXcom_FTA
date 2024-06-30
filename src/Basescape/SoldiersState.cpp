@@ -337,7 +337,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick);
+	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, 0);
 }
 
 /**
@@ -689,12 +689,13 @@ void SoldiersState::lstSoldiersClick(Action *action)
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
-	if (selAction == "STR_PERSONNEL_INFO" ||
+	if ((selAction == "STR_PERSONNEL_INFO" ||
 		selAction == "STR_SOLDIER_INFO" ||
 		selAction == "STR_PILOT_INFO" ||
 		selAction == "STR_AGENT_INFO" ||
 		selAction == "STR_SCIENTIST_INFO" ||
-		selAction == "STR_ENGINEER_INFO")
+		selAction == "STR_ENGINEER_INFO") 
+		|| action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		if (_ftaUI)
 		{

@@ -106,6 +106,10 @@ void MapScript::load(const YAML::Node& node)
 			_rects.push_back(rect);
 		}
 	}
+	if (const YAML::Node& craftGroups = node["craftGroups"])
+	{
+		_craftGroups = craftGroups.as<std::vector<int> >(_craftGroups);
+	}
 	if (const YAML::Node &map = node["tunnelData"])
 	{
 		_tunnelData = new TunnelData;
@@ -468,12 +472,14 @@ const std::vector<VerticalLevel> &MapScript::getVerticalLevels() const
  * For use only with base defense maps as a special case,
  * set _verticalLevels directly for a new MapScript
  * @param verticalLevels the vector of VerticalLevels
- * @param size the size of the facility whose VerticalLevels are being loaded
+ * @param sizeX the X-size of the facility whose VerticalLevels are being loaded
+ * @param sizeY the Y-size of the facility whose VerticalLevels are being loaded
  */
-void MapScript::setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels, int size)
+void MapScript::setVerticalLevels(const std::vector<VerticalLevel> &verticalLevels, int sizeX, int sizeY)
 {
 	_verticalLevels = verticalLevels;
-	_sizeX = _sizeY = size;
+	_sizeX = sizeX;
+	_sizeY = sizeY;
 }
 
 }

@@ -225,8 +225,9 @@ BattlescapeGame::~BattlescapeGame()
 /**
  * Checks for units panicking or falling and so on.
  */
-void BattlescapeGame::think()
+int BattlescapeGame::think()
 {
+	int ret = -1;
 	// nothing is happening - see if we need some alien AI or units panicking or what have you
 	if (_states.empty())
 	{
@@ -234,18 +235,35 @@ void BattlescapeGame::think()
 		{
 			statePushFront(new UnitFallBState(this));
 			_save->setUnitsFalling(false);
-			return;
+			return ret;
 		}
 		// it's a non player side (ALIENS or CIVILIANS)
 		if (_save->getSide() != FACTION_PLAYER)
 		{
+			auto sideBackup = _save->getSide();
 			_save->resetUnitHitStates();
 			if (!_debugPlay)
 			{
 				if (_save->getSelectedUnit())
 				{
 					if (!handlePanickingUnit(_save->getSelectedUnit()))
+					{
 						handleAI(_save->getSelectedUnit());
+
+						// calculate AI progress
+						int units = 0;
+						int total = 0;
+						for (auto* bu : *_save->getUnits())
+						{
+							if (bu->getFaction() == sideBackup && !bu->isOut())
+							{
+								units++;
+								total += bu->reselectAllowed() ? bu->getTimeUnits() * 100 / bu->getBaseStats()->tu : 0;
+							}
+						}
+						ret = units > 0 ? total / units : 0;
+						//Log(LOG_INFO) << "units: " << units << " total: " << total << " ret: " << ret;
+					}
 				}
 				else
 				{
@@ -275,6 +293,8 @@ void BattlescapeGame::think()
 			}
 		}
 	}
+
+	return ret;
 }
 
 /**
@@ -1750,6 +1770,7 @@ bool BattlescapeGame::cancelCurrentAction(bool bForce)
 				_currentAction.targeting = false;
 				_currentAction.type = BA_NONE;
 				_currentAction.skillRules = nullptr;
+				_currentAction.result = ""; // TODO
 				setupCursor();
 				_parentState->getGame()->getCursor()->setVisible(true);
 				return true;
@@ -1779,6 +1800,7 @@ void BattlescapeGame::cancelAllActions()
 	_currentAction.targeting = false;
 	_currentAction.type = BA_NONE;
 	_currentAction.skillRules = nullptr;
+	_currentAction.result = ""; // TODO
 	setupCursor();
 	_parentState->getGame()->getCursor()->setVisible(true);
 }
@@ -2255,7 +2277,12 @@ void BattlescapeGame::psiAttackMessage(BattleActionAttack attack, BattleUnit *vi
 			if (attack.type == BA_PANIC)
 				game->pushState(new InfoboxState(game->getLanguage()->getString("STR_MORALE_ATTACK_SUCCESSFUL")));
 			else if (attack.type == BA_MINDCONTROL)
-				game->pushState(new InfoboxState(game->getLanguage()->getString("STR_MIND_CONTROL_SUCCESSFUL")));
+			{
+				if (attack.weapon_item->getRules()->convertToCivilian() && victim->getOriginalFaction() == FACTION_HOSTILE)
+					game->pushState(new InfoboxState(game->getLanguage()->getString("STR_MIND_CONTROL_SUCCESSFUL_ALT")));
+				else
+					game->pushState(new InfoboxState(game->getLanguage()->getString("STR_MIND_CONTROL_SUCCESSFUL")));
+			}
 			getSave()->getBattleState()->updateSoldierInfo();
 		}
 	}
