@@ -1354,8 +1354,8 @@ void Map::drawTerrain(Surface *surface)
 								// FTA Hacking cursor
 								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
 								{
-									if(battleObject && battleObject->canBeHacked() ||
-										unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked())
+									if((battleObject && battleObject->canBeHacked()) ||
+										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))
 									{
 										frameNumber = 3 + halfAnimFrameRest; // yellow box
 									}

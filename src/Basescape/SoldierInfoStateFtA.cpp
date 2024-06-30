@@ -56,13 +56,13 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from. NULL to use the dead soldiers list.
  * @param soldierId ID of the selected soldier.
  */
-SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, size_t soldierId) : _base(base), _soldierId(soldierId), _listing(true), _faction(0), _soldier(0), _redraw(false)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, size_t soldierId) : _base(base), _faction(0), _soldierId(soldierId), _soldier(0), _listing(true), _redraw(false)
 {
 	
 	initUi();
 }
 
-SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction* faction) : _base(base), _soldier(soldier), _faction(faction), _listing(false), _redraw(false)
+SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, Soldier *soldier, DiplomacyFaction* faction) : _base(base), _faction(faction), _soldier(soldier), _listing(false), _redraw(false)
 {
 	initUi();
 }

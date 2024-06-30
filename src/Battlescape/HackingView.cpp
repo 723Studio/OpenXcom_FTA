@@ -182,8 +182,8 @@ void HackingView::animate()
 		_frame = 0;
 	}
 	_redraw = true;
-	for (int row = 0; row < std::size(_nodeArray); ++row)
-		for (int col = 0; (col < std::size(_nodeArray[row])); ++col) 
+	for (size_t row = 0; row < std::size(_nodeArray); ++row)
+		for (size_t col = 0; (col < std::size(_nodeArray[row])); ++col)
 		{
 			if (_nodeArray[row][col])
 			{

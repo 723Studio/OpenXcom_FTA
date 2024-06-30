@@ -35,7 +35,7 @@ namespace OpenXcom
 	/**
 	 * Sets up a HackingBState.
 	 */
-HackingBState::HackingBState(BattlescapeGame* parent, BattleAction action, Game* game) : BattleState(parent, action), _unit(0), _item(0), _targetTile(0), _game(game), _initialized(false)
+HackingBState::HackingBState(BattlescapeGame* parent, BattleAction action, Game* game) : BattleState(parent, action), _game(game), _unit(0), _item(0), _targetTile(0), _initialized(false)
 	{
 	}
 
