@@ -2292,6 +2292,10 @@ CraftPlacementErrors Craft::validateAddingSoldier(int space, const Soldier* s) c
 	{
 		return CPE_TooManySoldiers;
 	}
+	if (s->hasPendingTransformation())
+	{
+		return CPE_SoldierPendingTransformation;
+	}
 	if (s->getArmor()->getSize() == 1)
 	{
 		if (_rules->getMaxSmallSoldiers() > -1 && getNumSmallSoldiers() >= _rules->getMaxSmallSoldiers())

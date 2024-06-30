@@ -57,6 +57,7 @@ enum CraftPlacementErrors : int
 	CPE_TooManyLargeUnits = 7,
 	CPE_SoldierGroupNotAllowed = 8,
 	CPE_SoldierGroupNotSame = 9,
+	CPE_SoldierPendingTransformation = 10,
 };
 
 typedef std::pair<Position, int> SoldierDeploymentData;
