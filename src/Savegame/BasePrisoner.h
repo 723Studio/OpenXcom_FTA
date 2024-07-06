@@ -52,6 +52,7 @@ private:
 	int _health, _intelligence, _aggression, _morale, _cooperation;
 	int _interrogationProgress, _recruitingProgress;
 	bool _spawnedTortureEvent = false;
+	bool _interrogationDone = false;
 	Armor *_armor = nullptr;
 	std::vector<Soldier*> _agents;
 	Base* _base;
@@ -105,6 +106,8 @@ public:
 
 	void setCooperation(int cooperation) { _cooperation = cooperation; }
 	int getCooperation() const { return _cooperation; }
+
+	bool isInterrogationDone() const { return _interrogationDone; }
 	
 
 };

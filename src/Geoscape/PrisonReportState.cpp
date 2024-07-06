@@ -117,7 +117,12 @@ void PrisonReportState::initUI()
 		ss << _prisoner->getNameAndId();
 		ss << " ";
 		if (_research != nullptr || _bonus != nullptr)
-			ss << "STR_PRISONER_INTERROGATED_PT2";
+		{
+			if (!_prisoner->isInterrogationDone())
+				ss << "STR_PRISONER_INTERROGATED_PT2";
+			else
+				ss << "STR_PRISONER_INTERROGATED_PT2_1";
+		}
 		else
 			ss << "STR_PRISONER_INTERROGATED_PT3";
 		desription = ss.str();

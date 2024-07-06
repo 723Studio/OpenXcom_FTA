@@ -183,6 +183,12 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 		_btnContain->setColor(disabledColor);
 	}
 
+	if (_prisoner->isInterrogationDone())
+	{
+		_btnInterrogate->setDisabled(true);
+		_btnInterrogate->setColor(disabledColor);
+	}
+
 	_btnHolder->setVisible(false);
 
 	if (_display == PRISONER_STATE_INTERROGATION)

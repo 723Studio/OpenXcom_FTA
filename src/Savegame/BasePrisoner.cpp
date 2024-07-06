@@ -77,6 +77,7 @@ void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 	_spawnedTortureEvent = node["spawnedTortureEvent"].as<bool>(_spawnedTortureEvent);
 	_interrogationProgress = node["interrogationProgress"].as<int>(_interrogationProgress);
 	_recruitingProgress = node["recruitingProgress"].as<int>(_recruitingProgress);
+	_interrogationDone = node["interrogationDone"].as<bool>(_interrogationDone);
 	if (node["armor"])
 	{
 		std::string armor = node["armor"].as<std::string>();
@@ -123,6 +124,7 @@ YAML::Node BasePrisoner::save() const
 	node["cooperation"] = _cooperation;
 	node["interrogationProgress"] = _interrogationProgress;
 	node["recruitingProgress"] = _recruitingProgress;
+	node["interrogationDone"] = _interrogationDone;
 	node["armor"] = _armor->getType();
 
 	return node;
@@ -269,7 +271,6 @@ bool BasePrisoner::think(Game &engine)
 					}
 					else if (possibilities.empty()) //there is no point interrogating further
 					{
-						removeAgents = true;
 						if (save.isResearched(_rule->getContainingRules().getReuiredResearch()))
 						{
 							setPrisonerState(PRISONER_STATE_CONTAINING);
@@ -278,10 +279,8 @@ bool BasePrisoner::think(Game &engine)
 						{
 							setPrisonerState(PRISONER_STATE_NONE);
 						}
-					}
 
-					if (removeAgents)
-					{
+						_interrogationDone = true;
 						for (auto s : _agents)
 						{
 							s->setActivePrisoner(0);
