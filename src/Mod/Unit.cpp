@@ -181,9 +181,9 @@ void Unit::afterLoad(const Mod* mod)
 		if (_capturable && _armor->getCorpseBattlescape().front()->isRecoverable() && _spawnUnit == nullptr)
 		{
 			mod->checkForSoftError(
-				_liveAlien == nullptr && !isRecoverableAsCivilian() && _altUnit == nullptr,
+				_liveAlien == nullptr && !isRecoverableAsCivilian() && _altUnit == nullptr && _prisoner == nullptr,
 				_type,
-				"This unit can be recovered (in theory), but there is no corresponding 'liveAlien:' or 'civilianRecoveryType:' to recover.",
+				"This unit can be recovered (in theory), but there is no corresponding 'liveAlien:', 'civilianRecoveryType:', 'altUnit' or 'prisoner' property to recover.",
 				LOG_INFO
 			);
 		}
