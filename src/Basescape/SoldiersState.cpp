@@ -337,7 +337,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, 0);
+	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick);
 }
 
 /**

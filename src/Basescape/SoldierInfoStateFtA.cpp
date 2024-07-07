@@ -245,11 +245,11 @@ void SoldierInfoStateFtA::initUi()
 	}
 
 	_rolesList.push_back("STR_SOLDIER");
+	_rolesList.push_back("STR_ROBOT");
 	_rolesList.push_back("STR_PILOT");
 	_rolesList.push_back("STR_AGENT");
 	_rolesList.push_back("STR_SCIENTIST");
 	_rolesList.push_back("STR_ENGINEER");
-	_rolesList.push_back("STR_ROBOT");
 	_cbxRoles->setOptions(_rolesList, true);
 	_cbxRoles->setSelected(0);
 	_cbxRoles->onChange((ActionHandler)&SoldierInfoStateFtA::cbxRolesChange);
@@ -297,19 +297,19 @@ void SoldierInfoStateFtA::init()
 		case OpenXcom::ROLE_SOLDIER:
 			_cbxRoles->setSelected(0);
 			break;
-		case OpenXcom::ROLE_PILOT:
+		case OpenXcom::ROLE_ROBOT:
 			_cbxRoles->setSelected(1);
 			break;
-		case OpenXcom::ROLE_AGENT:
+		case OpenXcom::ROLE_PILOT:
 			_cbxRoles->setSelected(2);
 			break;
-		case OpenXcom::ROLE_SCIENTIST:
+		case OpenXcom::ROLE_AGENT:
 			_cbxRoles->setSelected(3);
 			break;
-		case OpenXcom::ROLE_ENGINEER:
+		case OpenXcom::ROLE_SCIENTIST:
 			_cbxRoles->setSelected(4);
 			break;
-		case OpenXcom::ROLE_ROBOT:
+		case OpenXcom::ROLE_ENGINEER:
 			_cbxRoles->setSelected(5);
 			break;
 		default: _cbxRoles->setSelected(0);
@@ -1687,12 +1687,12 @@ void SoldierInfoStateFtA::updateVisibility()
 		_numStrength->setVisible(true);
 		_barStrength->setVisible(true);
 
-		_txtHacking->setVisible(true);
-		_numHacking->setVisible(true);
-		_barHacking->setVisible(true);
-		_txtHacking->setY(_txtHacking->getY() + _step);
-		_numHacking->setY(_numHacking->getY() + _step);
-		_barHacking->setY(_barHacking->getY() + _step);
+		//_txtHacking->setVisible(true);
+		//_numHacking->setVisible(true);
+		//_barHacking->setVisible(true);
+		//_txtHacking->setY(_txtHacking->getY() + _step); #FINNIKTODO: Fix me pls!
+		//_numHacking->setY(_numHacking->getY() + _step);
+		//_barHacking->setY(_barHacking->getY() + _step);
 
 	}
 }
