@@ -4248,7 +4248,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 			default: ;
 			}
 
-			s->addExperience(ROLE_SOLDIER, RNG::generate(1, (int)std::ceil(_kills * killExpMod / 100)));
+			s->addExperience(ROLE_SOLDIER, RNG::generate(1, (int)std::ceil(_kills * killExpMod / 100)), "experience from enemy kills");
 		}
 	}
 

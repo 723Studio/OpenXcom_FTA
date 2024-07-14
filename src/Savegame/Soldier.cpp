@@ -2373,9 +2373,10 @@ void Soldier::addRole(SoldierRole newRole, int rank)
 	}
 }
 
-void Soldier::addExperience(SoldierRole role, int exp)
+void Soldier::addExperience(SoldierRole role, int exp, std::string name)
 {
 	bool added = false;
+	Log(LOG_INFO) << "Gaining " << exp << " from source: " << name << " as role: " << role; //#FINNIKTODO #CLEARLOGS
 	for (auto *r : _roles)
 	{
 		if (r->role == role)
@@ -2749,72 +2750,72 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 	const UnitStats caps = getRules()->getStatCaps();
 	UnitStats origStats = *getCurrentStats();
 	int rate = 0;
-
+	Log(LOG_INFO) << "Soldier: " << this->getName() << " is improving primary stats." << role; //#FINNIKTODO #CLEARLOGS
 	// soldier primary stats
 	{
 		if (exp->bravery && stats->bravery < caps.bravery)
 		{
 			stats->bravery += improveStat(exp->bravery, rate, true);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
-				addExperience(role, 10);
+				addExperience(role, 10, "bravery stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, 10);
+				addExperience(ROLE_SOLDIER, 10, "bravery stat improvement");
 		}
 		if (exp->reactions && stats->reactions < caps.reactions)
 		{
 			stats->reactions += improveStat(exp->reactions, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "reactions stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "reactions stat improvement");
 		}
 		if (exp->firing && stats->firing < caps.firing)
 		{
 			stats->firing += improveStat(exp->firing, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "firing stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "firing stat improvement");
 		}
 		if (exp->melee && stats->melee < caps.melee)
 		{
 			stats->melee += improveStat(exp->melee, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "melee stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "melee stat improvement");
 		}
 		if (exp->throwing && stats->throwing < caps.throwing)
 		{
 			stats->throwing += improveStat(exp->throwing, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "throwing stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "throwing stat improvement");
 		}
 		if (exp->psiSkill && stats->psiSkill < caps.psiSkill)
 		{
 			stats->psiSkill += improveStat(exp->psiSkill, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "psiSkill stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "psiSkill stat improvement");
 		}
 		if (exp->psiStrength && stats->psiStrength < caps.psiStrength)
 		{
 			stats->psiStrength += improveStat(exp->psiStrength, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "psiStrength stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "psiStrength stat improvement");
 		}
 		if (exp->mana && stats->mana < caps.mana)
 		{
 			stats->mana += improveStat(exp->mana, rate);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "mana stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, rate);
+				addExperience(ROLE_SOLDIER, rate, "mana stat improvement");
 		}
 	}
 	
@@ -2823,43 +2824,43 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 		if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
 		{
 			stats->maneuvering += improveStat(exp->maneuvering, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "maneuvering stat improvement");
 		}
 		if (exp->missiles && stats->missiles < caps.missiles)
 		{
 			stats->missiles += improveStat(exp->missiles, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "missiles stat improvement");
 		}
 		if (exp->dogfight && stats->dogfight < caps.dogfight)
 		{
 			stats->dogfight += improveStat(exp->dogfight, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "dogfight stat improvement");
 		}
 		if (exp->tracking && stats->tracking < caps.tracking)
 		{
 			stats->tracking += improveStat(exp->tracking, rate);
 			int reducedRate = RNG::generate(0, rate); // non-combat skill
-			addExperience(ROLE_PILOT, reducedRate);
+			addExperience(ROLE_PILOT, reducedRate, "tracking stat improvement");
 		}
 		if (exp->cooperation && stats->cooperation < caps.cooperation)
 		{
 			stats->cooperation += improveStat(exp->cooperation, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "cooperation stat improvement");
 		}
 		if (exp->beams && stats->beams < caps.beams)
 		{
 			stats->beams += improveStat(exp->beams, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "beams stat improvement");
 		}
 		if (exp->synaptic && stats->synaptic < caps.synaptic)
 		{
 			stats->synaptic += improveStat(exp->synaptic, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "synaptic stat improvement");
 		}
 		if (exp->gravity && stats->gravity < caps.gravity)
 		{
 			stats->gravity += improveStat(exp->gravity, rate);
-			addExperience(ROLE_PILOT, rate);
+			addExperience(ROLE_PILOT, rate, "gravity stat improvement");
 		}
 	}
 	
@@ -2868,60 +2869,60 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 		if (exp->physics && stats->physics < caps.physics)
 		{
 			stats->physics += improveStat(exp->physics, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "physics stat improvement");
 		}
 		if (exp->chemistry && stats->chemistry < caps.chemistry)
 		{
 			stats->chemistry += improveStat(exp->chemistry, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "chemistry stat improvement");
 		}
 		if (exp->biology && stats->biology < caps.biology)
 		{
 			stats->biology += improveStat(exp->biology, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "biology stat improvement");
 		}
 		if (exp->insight && stats->insight < caps.insight)
 		{
 			stats->insight += improveStat(exp->insight, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "insight stat improvement");
 		}
 		if (exp->data && stats->data < caps.data)
 		{
 			stats->data += improveStat(exp->data, rate);
 			if (role == ROLE_SCIENTIST || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "data stat improvement");
 			else
-				addExperience(ROLE_SCIENTIST, rate);
+				addExperience(ROLE_SCIENTIST, rate, "bravery stat improvement");
 		}
 		if (exp->computers && stats->computers < caps.computers)
 		{
 			stats->computers += improveStat(exp->computers, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "computers stat improvement");
 		}
 		if (exp->tactics && stats->tactics < caps.tactics)
 		{
 			stats->tactics += improveStat(exp->tactics, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "tactics stat improvement");
 		}
 		if (exp->materials && stats->materials < caps.materials)
 		{
 			stats->materials += improveStat(exp->materials, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "materials stat improvement");
 		}
 		if (exp->designing && stats->designing < caps.designing)
 		{
 			stats->designing += improveStat(exp->designing, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "designing stat improvement");
 		}
 		if (exp->psionics && stats->psionics < caps.psionics)
 		{
 			stats->psionics += improveStat(exp->psionics, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "psionics stat improvement");
 		}
 		if (exp->xenolinguistics && stats->xenolinguistics < caps.xenolinguistics)
 		{
 			stats->xenolinguistics += improveStat(exp->xenolinguistics, rate);
-			addExperience(ROLE_SCIENTIST, rate);
+			addExperience(ROLE_SCIENTIST, rate, "xenolinguistics stat improvement");
 		}
 	}
 	
@@ -2930,60 +2931,60 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 		if (exp->weaponry && stats->weaponry < caps.weaponry)
 		{
 			stats->weaponry += improveStat(exp->weaponry, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "weaponry stat improvement");
 		}
 		if (exp->explosives && stats->explosives < caps.explosives)
 		{
 			stats->explosives += improveStat(exp->explosives, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "explosives stat improvement");
 		}
 		if (exp->efficiency && stats->efficiency < caps.efficiency)
 		{
 			stats->efficiency += improveStat(exp->efficiency, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "efficiency stat improvement");
 		}
 		if (exp->microelectronics && stats->microelectronics < caps.microelectronics)
 		{
 			stats->microelectronics += improveStat(exp->microelectronics, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "microelectronics stat improvement");
 		}
 		if (exp->metallurgy && stats->metallurgy < caps.metallurgy)
 		{
 			stats->metallurgy += improveStat(exp->metallurgy, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "metallurgy stat improvement");
 		}
 		if (exp->processing && stats->processing < caps.processing)
 		{
 			stats->processing += improveStat(exp->processing, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "processing stat improvement");
 		}
 		if (exp->hacking && stats->hacking < caps.hacking)
 		{
 			stats->hacking += improveStat(exp->hacking, rate);
 			if (role == ROLE_ENGINEER || role == ROLE_AGENT)
-				addExperience(role, rate);
+				addExperience(role, rate, "hacking stat improvement");
 			else
-				addExperience(ROLE_ENGINEER, rate);
+				addExperience(ROLE_ENGINEER, rate, "hacking stat improvement");
 		}
 		if (exp->robotics && stats->robotics < caps.robotics)
 		{
 			stats->robotics += improveStat(exp->robotics, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "robotics stat improvement");
 		}
 		if (exp->diligence && stats->diligence < caps.diligence)
 		{
 			stats->diligence += improveStat(exp->diligence, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "diligence stat improvement");
 		}
 		if (exp->alienTech && stats->alienTech < caps.alienTech)
 		{
 			stats->alienTech += improveStat(exp->alienTech, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "alienTech stat improvement");
 		}
 		if (exp->reverseEngineering && stats->reverseEngineering < caps.reverseEngineering)
 		{
 			stats->reverseEngineering += improveStat(exp->reverseEngineering, rate);
-			addExperience(ROLE_ENGINEER, rate);
+			addExperience(ROLE_ENGINEER, rate, "reverseEngineering stat improvement");
 		}
 	}
 	
@@ -2992,32 +2993,32 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 		if (exp->stealth && stats->stealth < caps.stealth)
 		{
 			stats->stealth += improveStat(exp->stealth, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "stealth stat improvement");
 		}
 		if (exp->perception && stats->perception < caps.perception)
 		{
 			stats->perception += improveStat(exp->perception, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "perception stat improvement");
 		}
 		if (exp->charisma && stats->charisma < caps.charisma)
 		{
 			stats->charisma += improveStat(exp->charisma, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "charisma stat improvement");
 		}
 		if (exp->investigation && stats->investigation < caps.investigation)
 		{
 			stats->investigation += improveStat(exp->investigation, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "investigation stat improvement");
 		}
 		if (exp->deception && stats->deception < caps.deception)
 		{
 			stats->deception += improveStat(exp->deception, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "deception stat improvement");
 		}
 		if (exp->interrogation && stats->interrogation < caps.interrogation)
 		{
 			stats->interrogation += improveStat(exp->interrogation, rate);
-			addExperience(ROLE_AGENT, rate);
+			addExperience(ROLE_AGENT, rate, "interrogation stat improvement");
 		}
 	}
 	

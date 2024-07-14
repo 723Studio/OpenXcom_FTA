@@ -18,7 +18,6 @@
  */
 #include "CovertOperation.h"
 #include "SerializationHelper.h"
-#include <assert.h>
 #include "../fmath.h"
 #include "../Engine/Language.h"
 #include "../Engine/Game.h"

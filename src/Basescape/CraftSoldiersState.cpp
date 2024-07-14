@@ -548,8 +548,9 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
-		Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
-		Uint8 color = _lstSoldiers->getColor();
+
+		Soldier* s = _filteredListOfSoldiers.at(row);
+			//_base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
 
 		bool isBusy = false, isFree = false;
 		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree);
@@ -598,7 +599,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 					}
 				}
 			}
-			if (relay <= 0)
+			if (relay < 0)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_RELAY_POWER"),
 					_palette,
@@ -623,7 +624,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
-			else if (space > 0)
+			else if (err == CPE_NotEnoughSpace)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"),
 					_palette,

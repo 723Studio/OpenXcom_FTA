@@ -1359,6 +1359,7 @@ void DogfightState::update()
 						for (auto pilot : _pilots)
 						{
 							int exp = pilot->getRules()->getDogfightExperience().maneuvering;
+							Log(LOG_INFO) << "maneuvering exp calc with odds : " << exp; //#FINNIKTODO #CLEARLOGS
 							if (RNG::percent(exp))
 							{
 								pilot->getDogfightExperience()->maneuvering++;
@@ -1905,18 +1906,31 @@ void DogfightState::handlePanic(bool damaged)
 {
 	if (_fta && !_craft->getPilotList(false).empty() && !_craftIsDefenseless && !_ufoIsAttacking)
 	{
-		int breackpoint = 30;
-		auto diff = _game->getSavedGame()->getDifficulty();
+		int panicCoeff = 0;
+		int timeOut = 150;
+		GameDifficulty diff = _game->getSavedGame()->getDifficulty();
 		if (diff == DIFF_BEGINNER)
-			breackpoint = 20;
-		if (diff == DIFF_SUPERHUMAN)
-			breackpoint = 35;
-		if (damaged && !_panicing && !_craft->isDestroyed() && _craft->getDamagePercentage() > 80)
 		{
-			if (RNG::generate(0, breackpoint) > _crewBravery)
+			panicCoeff -=5;
+			timeOut -= 20;
+		}
+		else if (diff == DIFF_SUPERHUMAN)
+		{
+			panicCoeff += 10;
+			timeOut += 20;
+		}
+
+		if (damaged && !_panicing && !_craft->isDestroyed() && _craft->getDamagePercentage() > 50)
+		{
+			if (_craft->getDamagePercentage() > 80)
+			{
+				panicCoeff += 5;
+			}
+			int panicChance = 65 - _crewBravery + panicCoeff;
+			if (RNG::percent(panicChance))
 			{
 				_panicing = true;
-				_panicTimeout = RNG::generate(150, 300);
+				_panicTimeout = RNG::generate(timeOut, timeOut * 2);
 				SDL_Event ev;
 				ev.type = SDL_MOUSEBUTTONDOWN;
 				ev.button.button = SDL_BUTTON_LEFT;
@@ -1926,7 +1940,8 @@ void DogfightState::handlePanic(bool damaged)
 				_btnStandard->setHidden(true);
 				_btnCautious->setHidden(true);
 				_btnStandard->setHighContrast(true);
-				setStatus("STR_PILOT_PANICING");
+				setStatus("STR_PILOT_PANICKING");
+				Log(LOG_INFO) << ">> Panic! _panicTimeout: " << _panicTimeout << " with _crewBravery: " << _crewBravery; //#FINNIKTODO #CLEARLOGS
 			}
 			else
 			{
@@ -1955,7 +1970,12 @@ void DogfightState::handlePanic(bool damaged)
 				_btnAggressive->setHidden(false);
 				_btnStandard->setHidden(false);
 				_btnCautious->setHidden(false);
-				setStatus("STR_PILOT_PANICING_OVER");
+				setStatus("STR_PILOT_PANICKING_OVER");
+				for (auto pilot : _pilots)
+				{
+					pilot->getDogfightExperience()->bravery++;
+					Log(LOG_INFO) << "bravery exp gained, now its : " << pilot->getDogfightExperience()->bravery; //#FINNIKTODO #CLEARLOGS
+				}
 			}
 		}
 	}

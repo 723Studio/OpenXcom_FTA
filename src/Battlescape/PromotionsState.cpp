@@ -24,13 +24,12 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
-#include "../Basescape/SoldierInfoState.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
 #include "../Engine/Options.h"
-#include "../Savegame/Transfer.h"
 
 namespace OpenXcom
 {
@@ -49,6 +48,8 @@ PromotionsState::PromotionsState()
 	_txtRank = new Text(90, 9, 130, 32);
 	_txtBase = new Text(80, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
+
+	_fta = _game->getMod()->isFTAGame();
 
 	// Set palette
 	setInterface("promotions");
@@ -87,21 +88,16 @@ PromotionsState::PromotionsState()
 	_lstSoldiers->setMargin(8);
 	_lstSoldiers->onMouseClick((ActionHandler)&PromotionsState::lstSoldiersClick);
 
-	bool fta = _game->getMod()->isFTAGame();
-	int it = 0;
-
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if (fta)
+		if (_fta)
 		{
-			it = 0;
 			for (auto* soldier : *xbase->getSoldiers())
 			{
-				_soldierNumbersAtBase.push_back(std::make_pair(xbase, it));
-				it++;
 				if (soldier->isPromoted())
 				{
-					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(fta)).c_str(), xbase->getName().c_str());
+					_filteredListOfSoldiers.push_back(std::make_pair(xbase, soldier));
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(_fta)).c_str(), xbase->getName().c_str());
 				}
 			}
 		}
@@ -146,8 +142,11 @@ void PromotionsState::btnOkClick(Action *)
 
 void PromotionsState::lstSoldiersClick(Action *action)
 {
-	auto line = _soldierNumbersAtBase.at(_lstSoldiers->getSelectedRow());
-	_game->pushState(new SoldierInfoState(line.first, line.second));
+	if (_fta)
+	{
+		auto& [base, soldier] = _filteredListOfSoldiers.at(_lstSoldiers->getSelectedRow());
+		_game->pushState(new SoldierInfoStateFtA(base, soldier));
+	}
 }
 
 }

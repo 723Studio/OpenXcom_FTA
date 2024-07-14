@@ -36,7 +36,6 @@
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/BasePrisoner.h"
 #include "../Savegame/IntelProject.h"
-#include <climits>
 
 namespace OpenXcom
 {

@@ -377,7 +377,7 @@ private:
 	/// Adds role or increase rank in role
 	void addRole(SoldierRole newRole, int rank = 1);
 	/// Adds role or increase rank in role
-	void addExperience(SoldierRole role, int exp = 1);
+	void addExperience(SoldierRole role, int exp = 1, std::string name = ""); //#FINNIKTODO name only for logging! remove
 	/// Gets rank of role.
 	int getRoleRank(SoldierRole role) const;
 	int getRoleRank(std::vector<int> role) const;

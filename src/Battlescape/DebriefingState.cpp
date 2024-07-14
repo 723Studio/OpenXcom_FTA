@@ -1831,7 +1831,7 @@ void DebriefingState::prepareDebriefing()
 					if (bunit->getGeoscapeSoldier())
 					{
 						_soldierStats.push_back(std::pair(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));
-						bunit->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, _totalScoreExp);
+						bunit->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, _totalScoreExp, "mission score experience");
 						//noncombat stats
 						if (statIncrease.statGrowth.biology > 0 || statIncrease.statGrowth.hacking > 0)
 						{

@@ -27,6 +27,7 @@ class Window;
 class Text;
 class TextList;
 class Base;
+class Soldier;
 
 /**
  * Promotions screen that displays new soldier ranks.
@@ -38,7 +39,8 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtBase;
 	TextList *_lstSoldiers;
-	std::vector<std::pair<Base*, int>> _soldierNumbersAtBase;
+	std::vector<std::pair<Base*, Soldier*>> _filteredListOfSoldiers;
+	bool _fta = false;
   public:
 	/// Creates the Promotions state.
 	PromotionsState();
