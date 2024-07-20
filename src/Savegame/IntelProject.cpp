@@ -27,11 +27,11 @@
 namespace OpenXcom
 {
 
-const float PROGRESS_LIMIT_POOR = 0.1f;
-const float PROGRESS_LIMIT_AVERAGE = 0.2f;
-const float PROGRESS_LIMIT_GOOD = 0.3f;
-const float PROGRESS_LIMIT_GREAT = 0.4f;
-const float PROGRESS_LIMIT_SUPERIOR = 0.5f;
+constexpr float PROGRESS_LIMIT_POOR = 0.1f;
+constexpr float PROGRESS_LIMIT_AVERAGE = 0.2f;
+constexpr float PROGRESS_LIMIT_GOOD = 0.3f;
+constexpr float PROGRESS_LIMIT_GREAT = 0.4f;
+constexpr float PROGRESS_LIMIT_SUPERIOR = 0.5f;
 
 IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 	_rules(rule), _base(base), _active(true), _spent(0), _rolls(0), _cost(cost)
@@ -103,7 +103,6 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			soldierEffort /= statsN;
 		}
-		Log(LOG_INFO) << "Adjusted effort value: " << effort;
 
 		double insightBonus = RNG::generate(0, stats->insight / 2);
 		if (estimate)
@@ -124,7 +123,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	effort /= 100;
 	//gets total effort to daily project progress
 	progress = static_cast<int>(ceil(effort * 24));
-	Log(LOG_INFO) << " >>> Total daily progress for the intel project " << _rules->getName() << ": " << progress;
+	Log(LOG_INFO) << "Total daily progress for the intel project " << _rules->getName() << ": " << progress;
 	description = getState(progress);
 
 	return progress;
@@ -147,7 +146,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
 		_rolls++;
-
+		Log(LOG_INFO) << ">> Progress made with intelligence project: " << _rules->getName();
 		std::vector<const RuleIntelStage*> rolledStages;
 		for (auto stage : getAvailableStages(save))
 		{
@@ -156,7 +155,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 				&& save->isResearched(stage->getRequiredResearch()))
 				&& !save->isResearched(stage->getDisabledByResearch()))
 			{
-				Log(LOG_INFO) << " we get stage: " << stage->getName();
+				Log(LOG_INFO) << " - stage named: " << stage->getName() << " was added to the pool.";
 				rolledStages.push_back(stage); //populate list of stages
 			}
 		}
@@ -165,29 +164,29 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 		{
 			auto pickedStage = rolledStages.at(RNG::generate(0, rolledStages.size())); // only one stage processed at a time
 			//run all event scripts for chosen stage
-			Log(LOG_INFO) << " we left with stage: " << pickedStage->getName();
+			Log(LOG_INFO) << "Stage picked for being processed: " << pickedStage->getName();
 			if (!pickedStage->getEventScripts().empty())
 			{
 				std::ostringstream sd;
-				for (auto s : pickedStage->getEventScripts())
+				for (auto& s : pickedStage->getEventScripts())
 				{
 					sd << s << " ";
 				}
-				Log(LOG_INFO) << " processing eventScript: " << sd.str();
+				Log(LOG_INFO) << " - processing eventScript: " << sd.str();
 				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), OTHER_SCRIPT);
 			}
 
 			//and create alien mission if any
 			if (!pickedStage->getSpawnedMission().empty())
 			{
-				Log(LOG_INFO) << " spawning the mission: " << pickedStage->getSpawnedMission();
+				Log(LOG_INFO) << " - spawning the mission: " << pickedStage->getSpawnedMission();
 				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, _base);
 			}
 
 			//update data if the project reaches its final stage and counted as completed.
 			if (pickedStage->isFinalStage())
 			{
-				Log(LOG_INFO) << " it's a final roll!";
+				Log(LOG_INFO) << " - it's a final roll for the project!";
 				_active = false;
 				finalRoll = true;
 			}
@@ -209,7 +208,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	return false;
 }
 
-const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* save)
+std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* save)
 {
 	std::vector<const RuleIntelStage*> availableStages;
 
@@ -217,19 +216,17 @@ const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedG
 	{
 		bool triggerHappy = false;
 		auto it = _stageRolls.find(stage->getName());
-		if (it == _stageRolls.end())
+		if (it == _stageRolls.end() //case we have not rolled this stage before.
+			|| it->second < stage->getAvailableRolls()) //case we don't have enough rolls for this stage yet.
 		{
-			triggerHappy = true; //case we have not rolled this stage before.
+			triggerHappy = true; 
 		}
-		else if (stage->isFinalStage())
+		else if (stage->isFinalStage()) //we already done with this project, abort the search with empty result.
 		{
-			availableStages.clear(); //we already done with this project, abort the search with empty result.
+			availableStages.clear(); 
 			break;
 		}
-		else if (it->second < stage->getAvailableRolls())
-		{
-			triggerHappy = true; //case we don't have enough rolls for this stage yet.
-		}
+
 
 		if (triggerHappy) // Check for researches.
 		{
@@ -256,7 +253,7 @@ const std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedG
 	return availableStages;
 }
 
-const std::string IntelProject::getName() const
+std::string IntelProject::getName() const
 {
 	return _rules->getName();
 }

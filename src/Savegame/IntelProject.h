@@ -52,9 +52,9 @@ public:
 	int getStepProgress(std::map<Soldier*, int> &assignedAgents, Mod *mod, int rating, std::string& description, bool estimate = false);
 	/// Game logic. Called every new day.
 	bool roll(Game *game, const Globe& globe, int progress, bool &finalRoll);
-	const std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save);
+	std::vector<const RuleIntelStage*> getAvailableStages(SavedGame* save);
 	/// getters and setters
-	const std::string getName() const;
+	std::string getName() const;
 	const RuleIntelProject* getRules() const { return _rules; }
 	bool getActive() const { return _active; }
 	int getRolls() const { return _rolls; }

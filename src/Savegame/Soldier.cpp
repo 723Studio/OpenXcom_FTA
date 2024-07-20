@@ -2750,16 +2750,16 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 	const UnitStats caps = getRules()->getStatCaps();
 	UnitStats origStats = *getCurrentStats();
 	int rate = 0;
-	Log(LOG_INFO) << "Soldier: " << this->getName() << " is improving primary stats." << role; //#FINNIKTODO #CLEARLOGS
+	Log(LOG_INFO) << "Soldier: " << this->getName() << " is improving primary stats."; //#FINNIKTODO #CLEARLOGS
 	// soldier primary stats
 	{
 		if (exp->bravery && stats->bravery < caps.bravery)
 		{
 			stats->bravery += improveStat(exp->bravery, rate, true);
 			if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
-				addExperience(role, 10, "bravery stat improvement");
+				addExperience(role, rate, "bravery stat improvement");
 			else
-				addExperience(ROLE_SOLDIER, 10, "bravery stat improvement");
+				addExperience(ROLE_SOLDIER, rate, "bravery stat improvement");
 		}
 		if (exp->reactions && stats->reactions < caps.reactions)
 		{
