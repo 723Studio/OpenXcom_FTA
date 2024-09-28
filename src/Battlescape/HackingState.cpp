@@ -20,7 +20,6 @@
 #include<deque>
 #include "HackingState.h"
 #include "HackingView.h"
-//#include "BattlescapeGame.h"
 #include "TileEngine.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"

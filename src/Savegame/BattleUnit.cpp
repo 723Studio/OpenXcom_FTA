@@ -4237,18 +4237,28 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 				killExpMod = 100;
 				break;
 			case DIFF_VETERAN:
-				killExpMod = 80;
+				killExpMod = 90;
 				break;
 			case DIFF_GENIUS:
-				killExpMod = 70;
+				killExpMod = 75;
 				break;
 			case DIFF_SUPERHUMAN:
-				killExpMod = 50;
+				killExpMod = 60;
 				break;
 			default: ;
 			}
 
-			s->addExperience(ROLE_SOLDIER, RNG::generate(1, (int)std::ceil(_kills * killExpMod / 100)), "experience from enemy kills");
+			int maxExp = (int)std::ceil(_kills * killExpMod / 100);
+			if (maxExp < 1)
+			{
+				maxExp = 1;
+				if (RNG::percent(killExpMod - 50))
+				{
+					maxExp++;
+				}
+			}
+
+			s->addExperience(ROLE_SOLDIER, RNG::generate(1, maxExp), "experience from enemy kills");
 		}
 	}
 

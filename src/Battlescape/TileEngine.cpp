@@ -5135,40 +5135,44 @@ bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
 		return false;
 	}
 
-	const int doorMCD = object->getRules()->getAlterationMCDNumber();
 	const int radius = object->getRules()->getAlterationMCDRadius();
-	static const TilePart parts[8] = { O_WESTWALL,O_NORTHWALL,O_FLOOR,O_WESTWALL,O_NORTHWALL,O_OBJECT,O_OBJECT,O_OBJECT };
-	Position pos = tile->getPosition();
-	MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
+	if (radius > 0)
+	{
+		const int doorMCD = object->getRules()->getAlterationMCDNumber();
+		static const TilePart parts[8] = { O_WESTWALL,O_NORTHWALL,O_FLOOR,O_WESTWALL,O_NORTHWALL,O_OBJECT,O_OBJECT,O_OBJECT };
+		Position pos = tile->getPosition();
+		MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
 
-	Tile* tiles[9];
-	iterateTiles(
-		_save,
-		gs,
-		[&](Tile* itile)
-		{
-			tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
-			tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
-			tiles[2] = tiles[3] = tiles[4] = tiles[5] = itile;
-			tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
-			tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
-
-			for (int i = 7; i >= 0; --i)
+		Tile* tiles[9];
+		iterateTiles(
+			_save,
+			gs,
+			[&](Tile* itile)
 			{
-				if (!tiles[i] || !tiles[i]->getMapData(parts[i]))
-				{
-					continue; //skip out of map and emptiness
-				}
+				tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
+				tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
+				tiles[2] = tiles[3] = tiles[4] = tiles[5] = itile;
+				tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
+				tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
 
-				TilePart currentPart = parts[i];
-				int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
-				if (altMCD == doorMCD)
+				for (int i = 7; i >= 0; --i)
 				{
-					itile->switchToAltMCD(currentPart);
+					if (!tiles[i] || !tiles[i]->getMapData(parts[i]))
+					{
+						continue; //skip out of map and emptiness
+					}
+
+					TilePart currentPart = parts[i];
+					int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
+					if (altMCD == doorMCD)
+					{
+						itile->switchToAltMCD(currentPart);
+					}
 				}
 			}
-		}
-	);
+		);
+	}
+	
 	object->setWasUsed(true);
 	return true;
 }

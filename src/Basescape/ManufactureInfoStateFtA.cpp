@@ -92,7 +92,7 @@ void ManufactureInfoStateFtA::buildUi()
 
 	_window = new Window(this, 320, 160, 0, 20, POPUP_BOTH);
 	_txtTitle = new Text(302, 17, 9, 30);
-	_btnOk = new TextButton(288, 16, 16, 155);
+	_btnOk = new TextButton(136, 16, 168, 155);
 	_btnStop = new TextButton(136, 16, 16, 155);
 	_txtAvailableEngineer = new Text(160, 9, 16, 49);
 	_txtAvailableSpace = new Text(160, 9, 16, 59);

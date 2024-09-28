@@ -106,7 +106,7 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _samplingObjectPointer(0), _anyIndicator(false), _isAltPressed(false),
+	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _hackingObjectPointer(0), _samplingObjectPointer(0), _anyIndicator(false), _isAltPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
@@ -233,6 +233,7 @@ Map::~Map()
 	delete _obstacleTimer;
 	delete _arrow;
 	delete _missionPointer;
+	delete _hackingObjectPointer;
 	delete _samplingObjectPointer;
 	delete _sensorPointer;
 	delete _message;
@@ -288,6 +289,28 @@ void Map::init()
 			for (int x = 0; x < 9; ++x)
 				_missionPointer->setPixel(x, y, pixels[x + (y * 9)]);
 		_missionPointer->unlock();
+	}
+	// load hacking battle object pointer into a surface
+	{
+		int f = Palette::blockOffset(14); // gray
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_hackingObjectPointer = new Surface(9, 9);
+		_hackingObjectPointer->setPalette(this->getPalette());
+		_hackingObjectPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_hackingObjectPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_hackingObjectPointer->unlock();
 	}
 	// load sampling battle object pointer into a surface
 	{
@@ -1826,10 +1849,10 @@ void Map::drawTerrain(Surface *surface)
 
 		}
 	}
-	//Draw arrows on sampling battle objects
+	//Draw arrows on hacking and sampling battle objects
 	for (auto ba : *_save->getBattleObjects())
 	{
-		if (!ba->wasUsed() && ba->getRules()->getSamplingDefence() > 0)
+		if (!ba->wasUsed() && (ba->getRules()->getSamplingDefence() != 0 || ba->getRules()->getHackingDefence() != 0))
 		{
 			auto pos = ba->getPosition();
 			auto objTile = ba->getTile();
@@ -1842,7 +1865,14 @@ void Map::drawTerrain(Surface *surface)
 				offset.y += 5;//(getTerrainLevel(pos, 10) - 4);
 				if (this->getCursorType() != CT_NONE)
 				{
-					_samplingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_samplingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _samplingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					if (_isAltPressed && ba->getRules()->getHackingDefence() != 0)
+					{
+						_hackingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_hackingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _hackingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					}
+					if (ba->getRules()->getSamplingDefence() != 0)
+					{
+						_samplingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_samplingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _samplingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					}
 				}
 			}
 		}

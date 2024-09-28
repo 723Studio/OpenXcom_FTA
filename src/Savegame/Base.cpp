@@ -173,6 +173,38 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
+	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
+	{
+		std::string research = (*i)["project"].as<std::string>();
+		if (_mod->getResearch(research))
+		{
+			ResearchProject* r = new ResearchProject(_mod->getResearch(research));
+			r->load(*i);
+			_research.push_back(r);
+		}
+		else
+		{
+			_scientists += (*i)["assigned"].as<int>(0);
+			Log(LOG_ERROR) << "Failed to load research " << research;
+		}
+	}
+
+	for (YAML::const_iterator i = node["productions"].begin(); i != node["productions"].end(); ++i)
+	{
+		std::string item = (*i)["item"].as<std::string>();
+		if (_mod->getManufacture(item))
+		{
+			Production* p = new Production(_mod->getManufacture(item), 0);
+			p->load(*i);
+			_productions.push_back(p);
+		}
+		else
+		{
+			_engineers += (*i)["assigned"].as<int>(0);
+			Log(LOG_ERROR) << "Failed to load manufacture " << item;
+		}
+	}
+
 	for (YAML::const_iterator i = node["intelProjects"].begin(); i != node["intelProjects"].end(); ++i)
 	{
 		std::string name = (*i)["name"].as<std::string>();
@@ -305,38 +337,6 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		if (t->load(*i, this, _mod, save))
 		{
 			_transfers.push_back(t);
-		}
-	}
-
-	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
-	{
-		std::string research = (*i)["project"].as<std::string>();
-		if (_mod->getResearch(research))
-		{
-			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
-			r->load(*i);
-			_research.push_back(r);
-		}
-		else
-		{
-			_scientists += (*i)["assigned"].as<int>(0);
-			Log(LOG_ERROR) << "Failed to load research " << research;
-		}
-	}
-
-	for (YAML::const_iterator i = node["productions"].begin(); i != node["productions"].end(); ++i)
-	{
-		std::string item = (*i)["item"].as<std::string>();
-		if (_mod->getManufacture(item))
-		{
-			Production *p = new Production(_mod->getManufacture(item), 0);
-			p->load(*i);
-			_productions.push_back(p);
-		}
-		else
-		{
-			_engineers += (*i)["assigned"].as<int>(0);
-			Log(LOG_ERROR) << "Failed to load manufacture " << item;
 		}
 	}
 

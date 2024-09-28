@@ -46,7 +46,7 @@ private:
 	ToggleTextButton *_btnShowOnlyNew;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
-	Text *_txtTitle, *_txtName, *_txtCategories;
+	Text *_txtTitle;
 	TextList *_lstResearch;
 	size_t _lstScroll;
 	Uint8 _colorNormal, _colorNew, _colorHidden;
@@ -54,7 +54,7 @@ private:
 	void onSelectProject(Action *action);
 	void onToggleProjectStatus(Action *action);
 	void onOpenTechTreeViewer(Action *action);
-	std::string getProjectCategory(RuleResearch *project);
+	std::string getProjectCategory(RuleResearch *project, bool onlyFirst = false);
 	std::vector<RuleResearch *> _projects;
 public:
 	/// Creates the New research list state.

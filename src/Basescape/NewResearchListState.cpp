@@ -62,9 +62,14 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	_cbxSort = new ComboBox(this, 103, 16, 53, 146, true);
 	_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
 	_txtTitle = new Text(214, 16, 53, 38);
-	_lstResearch = new TextList(198, 88, 53, 54);
-	_txtName = new Text(156, 9, 10, 47);
-	_txtCategories = new Text(156, 9, 166, 47);
+	if (_ftaUi)
+	{
+		_lstResearch = new TextList(214, 88, 53, 54);
+	}
+	else
+	{
+		_lstResearch = new TextList(198, 88, 53, 54);
+	}
 
 	// Set palette
 	setInterface("selectNewResearch");
@@ -75,11 +80,6 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
-	if (_ftaUi)
-	{
-		add(_txtName, "text", "selectNewResearch");
-		add(_txtCategories, "text", "selectNewResearch");
-	}
 	add(_cbxSort, "button", "selectNewResearch");
 
 	_colorNormal = _lstResearch->getColor();
@@ -124,28 +124,20 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	if (_ftaUi)
 	{
 		_txtTitle->setBig();
-	}
-	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
-
-	if (_ftaUi)
-	{
-		_txtName->setText(tr("STR_NAME"));
-		_txtCategories->setText(tr("STR_CATEGORIES"));
+		_lstResearch->setColumns(2, 156, 130);
+		_lstResearch->setMargin(2);
 	}
 	else
 	{
-		_txtName->setVisible(false);
-		_txtCategories->setVisible(false);
-	}
-
-	_lstResearch->setColumns(2, 156, 130);
-	_lstResearch->setSelectable(true);
-	_lstResearch->setBackground(_window);
-	_lstResearch->setMargin(2);
-	if (!_ftaUi)
-	{
+		_lstResearch->setColumns(1, 190);
+		_lstResearch->setMargin(8);
 		_lstResearch->setAlign(ALIGN_CENTER);
 	}
+	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
+
+	_lstResearch->setSelectable(true);
+	_lstResearch->setBackground(_window);
+	
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onSelectProject, SDL_BUTTON_LEFT);
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onToggleProjectStatus, SDL_BUTTON_RIGHT);
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onOpenTechTreeViewer, SDL_BUTTON_MIDDLE);
@@ -399,7 +391,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 			}
 			else
 			{
-				_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule).c_str());
+				_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule, true).c_str());
 			}
 			
 			if (markAllAsSeen)
@@ -437,7 +429,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 	}
 }
 
-std::string NewResearchListState::getProjectCategory(RuleResearch *project)
+std::string NewResearchListState::getProjectCategory(RuleResearch *project, bool onlyFirst)
 {
 	std::string cat = "";
 	auto stats = project->getStats();
@@ -457,16 +449,18 @@ std::string NewResearchListState::getProjectCategory(RuleResearch *project)
 		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_LC")));
 	if (stats.materials > 0)
 		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_LC")));
-	/*if (stats.psychology > 0)
-		statMap.insert(std::make_pair(stats.psychology, tr("STR_PSYCHOLOGY_LC")));*/
-	if (stats.physics > 0)
+	if (stats.designing > 0)
 		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_LC")));
-	if (stats.physics > 0)
+	if (stats.psionics > 0)
 		statMap.insert(std::make_pair(stats.psionics, tr("STR_PSIONICS_LC")));
-	if (stats.physics > 0)
+	if (stats.xenolinguistics > 0)
 		statMap.insert(std::make_pair(stats.xenolinguistics, tr("STR_XENOLINGUISTICS_LC")));
 
 	size_t i = 0;
+	int categoryLimit = 3;
+	if (onlyFirst)
+		categoryLimit = 1;
+
 	std::ostringstream ss;
 	for (auto it = statMap.begin(); it != statMap.end(); ++it)
 	{
@@ -476,16 +470,14 @@ std::string NewResearchListState::getProjectCategory(RuleResearch *project)
 		}
 		ss << (*it).second;
 		i++;
-		if (i > 1)
+		if (i == categoryLimit)
 		{
 			break;
 		}
 	}
 
 	if (!ss.str().empty())
-	{
 		cat = ss.str();
-	}
 
 	return cat;
 }
