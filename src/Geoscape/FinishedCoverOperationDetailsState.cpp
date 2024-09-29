@@ -128,8 +128,6 @@ namespace OpenXcom
 		_lstSoldierStatus->setColumns(2, 254, 18);
 		_lstSoldierStatus->setDot(true);
 
-		_txtMessage->setText(tr(_results->getSpecialMessage()));
-
 		// Second page
 
 		_lstSoldierStats->setColumns(3, 90, 228, 0);
@@ -188,7 +186,6 @@ namespace OpenXcom
 		std::map<std::string, int> soldierStatus = _results->getSoldierDamage();
 		if (!soldierStatus.empty())
 		{
-			_hasSStatus = true;
 			int wounded = 0, mia = 0;
 			for (std::map<std::string, int>::const_iterator i = soldierStatus.begin(); i != soldierStatus.end(); ++i)
 			{
@@ -207,6 +204,7 @@ namespace OpenXcom
 			}
 			if (wounded > 0)
 			{
+				_hasSStatus = true;
 				std::ostringstream ss5;
 				ss5 << Unicode::TOK_COLOR_FLIP << wounded << Unicode::TOK_COLOR_FLIP;
 				_lstSoldierStatus->addRow(2, tr("STR_XCOM_OPERATIVES_WOUNDED").c_str(), ss5.str().c_str());
@@ -214,11 +212,13 @@ namespace OpenXcom
 			}
 			if (mia > 0)
 			{
+				_hasSStatus = true;
 				std::ostringstream ss5;
 				ss5 << Unicode::TOK_COLOR_FLIP << mia << Unicode::TOK_COLOR_FLIP;
 				_lstSoldierStatus->addRow(2, tr("STR_XCOM_OPERATIVES_MISSING_IN_ACTION").c_str(), ss5.str().c_str());
 				++rowSoldierStatus;
 			}
+
 		}
 
 		if (!_results->getSpecialMessage().empty())
@@ -284,7 +284,7 @@ namespace OpenXcom
 
 		auto soldierStats = _results->getSoldierImprovement();
 		int row = 0;
-		for (std::vector<std::pair<std::string, UnitStats*>>::const_iterator i = soldierStats.begin(); i != soldierStats.end(); ++i)
+		for (std::vector<std::pair<std::string, UnitStats>>::const_iterator i = soldierStats.begin(); i != soldierStats.end(); ++i)
 		{
 			auto soldierDamage = _results->getSoldierDamage();
 			int damage = 0;
@@ -315,140 +315,140 @@ namespace OpenXcom
 				}
 
 				//fill all stats that can be changed with covert operation
-				if ((*i).second->tu > 0)
+				if ((*i).second.tu > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->tu).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.tu).c_str(), "");
 				}
 
-				if ((*i).second->stamina > 0)
+				if ((*i).second.stamina > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::stamina, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->stamina).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::stamina, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.stamina).c_str(), "");
 				}
 
-				if ((*i).second->health > 0)
+				if ((*i).second.health > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::health, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->health).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::health, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.health).c_str(), "");
 				}
 
-				if ((*i).second->bravery > 0)
+				if ((*i).second.bravery > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::bravery, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->bravery).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::bravery, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.bravery).c_str(), "");
 				}
 
-				if ((*i).second->reactions > 0)
+				if ((*i).second.reactions > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->reactions).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.reactions).c_str(), "");
 				}
 
-				if ((*i).second->firing > 0)
+				if ((*i).second.firing > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->firing).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.firing).c_str(), "");
 				}
 
-				if ((*i).second->throwing > 0)
+				if ((*i).second.throwing > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->throwing).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.throwing).c_str(), "");
 				}
 
-				if ((*i).second->melee > 0)
+				if ((*i).second.melee > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->melee).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.melee).c_str(), "");
 				}
 
-				if ((*i).second->strength > 0)
+				if ((*i).second.strength > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::strength, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->strength).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::strength, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.strength).c_str(), "");
 				}
 
-				if ((*i).second->psiSkill > 0)
+				if ((*i).second.psiSkill > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->psiSkill).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.psiSkill).c_str(), "");
 				}
 
-				if ((*i).second->mana > 0)
+				if ((*i).second.mana > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->mana).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.mana).c_str(), "");
 				}
 
-				if ((*i).second->stealth > 0)
+				if ((*i).second.stealth > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::stealth, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->stealth).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::stealth, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.stealth).c_str(), "");
 				}
 
-				if ((*i).second->perception > 0)
+				if ((*i).second.perception > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::perception, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->perception).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::perception, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.perception).c_str(), "");
 				}
 
-				if ((*i).second->investigation > 0)
+				if ((*i).second.investigation > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::investigation, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->investigation).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::investigation, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.investigation).c_str(), "");
 				}
 
-				if ((*i).second->interrogation > 0)
+				if ((*i).second.interrogation > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::interrogation, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->interrogation).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::interrogation, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.interrogation).c_str(), "");
 				}
 
-				if ((*i).second->charisma > 0)
+				if ((*i).second.charisma > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::charisma, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->charisma).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::charisma, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.charisma).c_str(), "");
 				}
 
-				if ((*i).second->deception > 0)
+				if ((*i).second.deception > 0)
 				{
 					std::ostringstream ss;
 					ss << "  ";
-					ss << UnitStats::getStatString(&UnitStats::deception, UnitStats::STATSTR_UC);
-					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second->deception).c_str(), "");
+					ss << tr(UnitStats::getStatString(&UnitStats::deception, UnitStats::STATSTR_UC));
+					_lstSoldierStats->addRow(3, ss.str().c_str(), makeSoldierString((*i).second.deception).c_str(), "");
 				}
 			}
 		}

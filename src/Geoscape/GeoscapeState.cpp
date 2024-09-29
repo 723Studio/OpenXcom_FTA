@@ -133,6 +133,7 @@
 #include "../Mod/Armor.h"
 #include "BaseDefenseState.h"
 #include "BaseDestroyedState.h"
+#include "FinishedCoverOperationState.h"
 #include "../Menu/LoadGameState.h"
 #include "../Menu/SaveGameState.h"
 #include "../Menu/ListSaveState.h"
@@ -2345,6 +2346,7 @@ void GeoscapeState::time1Hour()
 			if (operation->think(*_game, *_globe))
 			{
 				timerReset();
+				popup(new FinishedCoverOperationState(operation, operation->getFinishedResult()));
 			}
 		}
 	}

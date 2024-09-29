@@ -19,6 +19,7 @@
  */
 #include <string>
 #include <yaml-cpp/yaml.h>
+#include "../Mod/Unit.h"
 
 namespace OpenXcom
 {
@@ -49,6 +50,7 @@ private:
 	ItemContainer* _items;
 	CovertOperationResults* _results;
 	bool _inBattlescape, _hasBattlescapeResolve, _over, _hasPsi, _progressEventSpawned;
+	bool _finishedResult = false;
 	std::string _generatedMission, _researchName;
 public:
 	/// Creates a blank Covert Operation.
@@ -102,6 +104,8 @@ public:
 
 	/// Is this covert operation over?
 	bool isOver() const { return _over; }
+	/// Get the result of the operation (can be true only at the moment of success operation resolving)?
+	bool getFinishedResult() const { return _finishedResult; }
 	/// Is this covert operation is running in battlescape?
 	bool isInBattlescape() const { return _inBattlescape; }
 	/// Sets if this operation is running in battlescape
@@ -125,7 +129,7 @@ private:
 	int _score, _funds;
 	std::map<std::string, int> _bountyItems, _reputation, _soldierDamage;
 	std::string _specialMessage;
-	std::vector<std::pair<std::string, UnitStats*>> _soldierStats;
+	std::vector<std::pair<std::string, UnitStats>> _soldierStats;
 public:
 	/// Create base Covert Operation results
 	CovertOperationResults(const std::string& operationName, bool result, std::string finishDate) :
@@ -152,9 +156,9 @@ public:
 	void setSpecialMessage(const std::string& message) { _specialMessage = message; }
 	std::string getSpecialMessage() { return _specialMessage; }
 	/// Handlers for soldier stat improvement
-	void addSoldierImprovement(std::string soldier, UnitStats* improvement)
-	{ _soldierStats.push_back(std::pair<std::string, UnitStats*>(soldier, improvement)); }
-	std::vector<std::pair<std::string, UnitStats*>> getSoldierImprovement() const { return _soldierStats; }
+	void addSoldierImprovement(std::string soldier, UnitStats improvement)
+	{ _soldierStats.push_back(std::pair<std::string, UnitStats>(soldier, improvement)); }
+	std::vector<std::pair<std::string, UnitStats>> getSoldierImprovement() const { return _soldierStats; }
 };
 
 }

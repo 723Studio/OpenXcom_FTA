@@ -23,7 +23,6 @@
 #include "../Engine/Game.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Logger.h"
-#include "../Geoscape/FinishedCoverOperationState.h"
 #include "../Geoscape/Globe.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
@@ -249,7 +248,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	}
 	//now, we roll for operation results and init some vars
 	int roll = RNG::generate(0, 99);
-	bool operationResult = _successChance > roll;
+	_finishedResult = _successChance > roll;
 	bool criticalFail = roll > (_successChance + critFailCoef);
 	int score = 0;
 	int loyalty = 0;
@@ -261,9 +260,9 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	std::string deploymentName;
 	std::map<std::string, int> reputationScore;
 
-	_results = new CovertOperationResults(this->getOperationName(), operationResult, "0"); //#FINNIKTODO date
+	_results = new CovertOperationResults(this->getOperationName(), _finishedResult, "0"); //#FINNIKTODO date
 	//load results of operation
-	if (operationResult)
+	if (_finishedResult)
 	{
 		score = _rule->getSuccessScore();
 		loyalty = _rule->getSuccessLoyalty();
@@ -422,7 +421,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	{
 		bool removeItems = false;
 		
-		if (operationResult)
+		if (_finishedResult)
 		{
 			removeItems = _rule->getRemoveRequiredItemsOnSuccess();
 		}
@@ -586,7 +585,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	if (!deploymentName.empty())
 	{
 		bool process = true;
-		if (!operationResult) //if operation failed lets see if we get into a trap!
+		if (!_finishedResult) //if operation failed lets see if we get into a trap!
 		{
 			int trapRoll = _rule->getTrapChance();
 			if (criticalFail && trapRoll > 0) trapRoll = trapRoll + 35;
@@ -619,16 +618,13 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		//simulating operation
 		if (this->getRules()->getDanger() > 0)
 		{
-			backgroundSimulation(engine, operationResult, criticalFail, woundOdds, deathOdds);
+			backgroundSimulation(engine, _finishedResult, criticalFail, woundOdds, deathOdds);
 		}
 		// lets return items from operation to the base
 		for (auto& item : *_items->getContents())
 		{
 			_base->getStorageItems()->addItem(item.first, item.second);
 		}
-		
-		//now we can finish operation
-		engine.pushState(new FinishedCoverOperationState(this, operationResult));
 	}
 
 	return true;
@@ -649,26 +645,8 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	int danger = this->getRules()->getDanger(); //only dangerous operations train battle stats
 	
 	//first, we calculate how much experience we can award for the operation (expRolls)
-	int ruleCost = this->getRules()->getCosts() / 20;
-	int effCost;
-	if (ruleCost < 20)
-		effCost = (int)ceil(ruleCost / 8);
-	else if (ruleCost < 40)
-		effCost = (int)ceil(ruleCost / 8.5);
-	else if (ruleCost < 60)
-		effCost = (int)ceil(ruleCost / 9.86);
-	else if (ruleCost < 80)
-		effCost = (int)ceil(ruleCost / 11.54);
-	else
-		effCost = (int)ceil(ruleCost / 12.52);
-
-	int expRolls = effCost * mod.getCovertOpsExpFactor() / 100;
-	//limit experience gain
-	if (expRolls > 12)
-		expRolls = 12;
-
-	if (save.getMonthsPassed() > 24)
-		expRolls++; //bonus for lategame
+	int effCost = (int)ceil(this->getRules()->getCosts() / 15);
+	int expRolls = (effCost * mod.getCovertOpsExpFactor() / 100) + 1;
 	expRolls += RNG::generate(-2, 2); //add more random
 	if (save.getDifficulty() == DIFF_SUPERHUMAN)
 		expRolls -= RNG::generate(0, 5);
@@ -695,12 +673,12 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		engagement = RNG::percent(engChance);
 	}
 
-	Log(LOG_DEBUG) << "Background simulation of " << this->getRules()->getName() << "with danger: " << danger;
+	Log(LOG_DEBUG) << "Background simulation of " << this->getRules()->getName() << " with danger: " << danger;
 
 	if (engagement)
 		Log(LOG_DEBUG) << "Engagement rolled with avgStealth: " << avgStealth;
 
-	Log(LOG_DEBUG) << "Calculating soldier exp, expRolls: " << expRolls << " from ruleCost: " << ruleCost << " and effCost: " << effCost;
+	Log(LOG_DEBUG) << "Calculating soldier exp, expRolls: " << expRolls << " from ruleCost: " << this->getRules()->getCosts() << " and effCost: " << effCost;
 
 	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)
 	{
@@ -718,17 +696,13 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				damageRolls *= RNG::generate(1, 3);
 			}
 
-			int reactionFactor = ceil((*i)->getStatsWithAllBonuses()->reactions * 0.7);
-			int psiFactor = ceil((*i)->getStatsWithAllBonuses()->psiSkill * 0.8);
-			Log(LOG_DEBUG) << "Calculating damage for " << (*i)->getName() << " with damageRolls: " << damageRolls << ", reactionFactor: " << reactionFactor << " and psiFactor: " << psiFactor;
+
+			Log(LOG_DEBUG) << "Calculating damage for " << (*i)->getName() << " with damageRolls: " << damageRolls << " and psiSkill: " << (*i)->getStatsWithAllBonuses()->psiSkill;
 			for (size_t j = 0; j < damageRolls; j++)
 			{
-				if (RNG::generate(0, 99) < woundOdds)
+				if (RNG::generate(0, 99) < woundOdds && RNG::generate(0, 99) > (*i)->getStatsWithAllBonuses()->psiSkill)
 				{
-					bool miss = RNG::generate(0, 99) < reactionFactor;
-					if (!miss
-						&& RNG::generate(0, 99) < psiFactor)
-						++wound;
+					++wound;
 				}
 			}
 			Log(LOG_DEBUG) << "Wounds: " << wound;
@@ -894,19 +868,15 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			}
 		}
 
-		if (!exp->empty())
-		{
-			(*i)->improvePrimaryStats(exp, ROLE_AGENT);
-
-			//also improve secondary stats
-			int rate = 0;
-			(*i)->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
-			(*i)->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
-			(*i)->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
+		(*i)->improvePrimaryStats(exp, ROLE_AGENT);
+		//also improve secondary stats
+		int rate = 0;
+		(*i)->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
+		(*i)->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
+		(*i)->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
 			
-			UnitStats improvement = *(*i)->getCurrentStats() - origStat;
-			_results->addSoldierImprovement((*i)->getName(), &improvement);
-		}
+		UnitStats improvement = *(*i)->getCurrentStats() - origStat;
+		_results->addSoldierImprovement((*i)->getName(), improvement);
 
 		if (!dead && wound != 0)
 		{
