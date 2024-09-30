@@ -258,7 +258,10 @@ int BattlescapeGame::think()
 							if (bu->getFaction() == sideBackup && !bu->isOut())
 							{
 								units++;
-								total += bu->reselectAllowed() ? bu->getTimeUnits() * 100 / bu->getBaseStats()->tu : 0;
+								if (bu->reselectAllowed() && bu->getBaseStats()->tu > 0)
+									total += bu->getTimeUnits() * 100 / bu->getBaseStats()->tu;
+								else
+									total += 0;
 							}
 						}
 						ret = units > 0 ? total / units : 0;
