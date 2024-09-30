@@ -2278,11 +2278,19 @@ BattleItem *SavedBattleGame::createTempItem(const RuleItem *rule)
  */
 BattleUnit *SavedBattleGame::createTempUnit(const Unit *rules, UnitFaction faction, int nextUnitId)
 {
+	int maxId = INT_MIN;
+	for (auto& unit : *getUnits())
+	{
+		if (unit->getId() > maxId)
+		{
+			maxId = unit->getId();
+		}
+	}
 	BattleUnit *newUnit = new BattleUnit(
 		getMod(),
 		const_cast<Unit*>(rules),
 		faction,
-		nextUnitId > 0 ? nextUnitId : getUnits()->back()->getId() + 1,
+		nextUnitId > 0 ? nextUnitId : maxId + 1,
 		getEnviroEffects(),
 		rules->getArmor(),
 		faction == FACTION_HOSTILE ? _rule->getStatAdjustment(getGeoscapeSave()->getDifficulty()) : nullptr,

@@ -2785,10 +2785,18 @@ void BattlescapeGame::removeSummonedPlayerUnits()
 
 	for (auto* unitType : resummonAsCivilians)
 	{
+		int maxId = INT_MIN;
+		for (auto& unit : *_save->getUnits())
+		{
+			if (unit->getId() > maxId)
+			{
+				maxId = unit->getId();
+			}
+		}
 		BattleUnit *newUnit = new BattleUnit(getMod(),
 			unitType,
 			FACTION_NEUTRAL,
-			_save->getUnits()->back()->getId() + 1,
+			maxId + 1,
 			_save->getEnviroEffects(),
 			unitType->getArmor(),
 			nullptr,
@@ -4064,11 +4072,20 @@ bool OpenXcom::BattlescapeGame::scriptSpawnUnit(BattleScript* command)
 				break;
 			}
 
+			int maxId = INT_MIN;
+			for (auto &unit : *_save->getUnits())
+			{
+				if (unit->getId() > maxId)
+				{
+					maxId = unit->getId();
+				}
+			}
+
 			// Create the unit
 			BattleUnit* newUnit = new BattleUnit(getMod(),
 				unitRule,
 				faction,
-				_save->getUnits()->back()->getId() + 1,
+				maxId + 1,
 				faction != FACTION_PLAYER ? _save->getEnviroEffects() : nullptr, unitRule->getArmor(),
 				faction == FACTION_HOSTILE ? getMod()->getStatAdjustment(_parentState->getGame()->getSavedGame()->getDifficulty()) : nullptr,
 				getDepth(),
