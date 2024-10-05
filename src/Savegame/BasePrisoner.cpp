@@ -258,16 +258,13 @@ bool BasePrisoner::think(Game &engine)
 				std::string bonusResearchName = "";
 				if (!rules.getUnlockedResearches().empty())
 				{
-
 					std::vector<const RuleResearch*> possibilities;
 
 					engine.getMasterMind()->helpResearchDiscovery(rules.getUnlockedResearches(), possibilities, _base, researchName, bonusResearchName);
 
-					bool removeAgents = false;
 					if (rules.isDiesAfterInterrogation()) //prisoner dies
 					{
-						removeAgents = true;
-						_base->removePrisoner(this);
+						die();
 					}
 					else if (possibilities.empty()) //there is no point interrogating further
 					{
@@ -279,14 +276,15 @@ bool BasePrisoner::think(Game &engine)
 						{
 							setPrisonerState(PRISONER_STATE_NONE);
 						}
-
-						_interrogationDone = true;
-						for (auto s : _agents)
-						{
-							s->setActivePrisoner(0);
-						}
 					}
 				}
+
+				_interrogationDone = true;
+				for (auto s : _agents)
+				{
+					s->clearBaseDuty();
+				}
+
 				RuleResearch* research;
 				RuleResearch* bonus;
 				if (!researchName.empty())
@@ -484,7 +482,7 @@ void BasePrisoner::die()
 {
 	for (auto s : _agents)
 	{
-		s->setActivePrisoner(0);
+		s->clearBaseDuty();
 	}
 	_base->removePrisoner(this);
 	_interrogationProgress = 0;
