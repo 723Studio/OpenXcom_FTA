@@ -2288,6 +2288,26 @@ void DebriefingState::prepareDebriefing()
 				_txtTitle->setText(tr("STR_MISSION_ACCOMPLISHED"));
 			}
 		}
+		else if (ruleDeploy->getExtendedObjectiveType() == "STR_HACKING")
+		{
+			if (!save->getSavedBattle()->isHackingObjectiveGained())
+			{
+				_txtTitle->setText(tr("STR_MISSION_FAILED"));
+				success = false;
+				if (!objectiveFailedText.empty())
+				{
+					addStat(objectiveFailedText, 1, objectiveFailedScore);
+				}
+			}
+			else
+			{
+				_txtTitle->setText(tr("STR_MISSION_ACCOMPLISHED"));
+				if (!objectiveCompleteText.empty())
+				{
+					addStat(objectiveCompleteText, 1, objectiveCompleteScore);
+				}
+			}
+		}
 	}
 
 	// recover all our goodies

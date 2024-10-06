@@ -105,6 +105,7 @@ private:
 	bool _debugMode, _bughuntMode;
 	bool _aborted;
 	bool _stealthMission;
+	bool _hackingObjective;
 	bool _baseCraftInventory = false;
 	int _itemId;
 	EscapeType _vipEscapeType;
@@ -592,6 +593,9 @@ public:
 	/// Gets if this battle is a stealth mission.
 	bool isStealthMission() const { return _stealthMission; }
 	void defineStealth();
+	/// Gets if the mission objective gained with hacking special BattleObject.
+	bool isHackingObjectiveGained() const { return _hackingObjective; }
+	void setHackingObjectiveGained(bool hackingObjective) { _hackingObjective = hackingObjective; }
 	// gets ruleset.
 	const Mod *getMod() const;
 	/// gets the list of items we're guaranteed.

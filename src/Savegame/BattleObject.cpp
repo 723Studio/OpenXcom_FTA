@@ -97,6 +97,11 @@ void BattleObject::hackingPostProcess(bool result, Game* game)
 			game->getSavedGame()->spawnEvent(game->getMod()->getEvent(e));
 		}
 		game->getSavedGame()->spawnEvent(game->getMod()->getEvent(_rules->getWeightedEvent(game->getSavedGame()->getMonthsPassed())));
+
+		if (_rules->isMissionObjective())
+		{
+			game->getSavedGame()->getSavedBattle()->setHackingObjectiveGained(true);
+		}
 	}
 	else
 	{

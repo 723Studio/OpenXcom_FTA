@@ -23,7 +23,7 @@ namespace OpenXcom
 {
 
 RuleObject::RuleObject(const std::string& type)
-	: _type(type), _hackingDefence(0), _samplingDefence(0), _alterationMCDNumber(0), _alterationMCDRadius(0)
+	: _type(type), _hackingDefence(0), _samplingDefence(0), _alterationMCDNumber(0), _alterationMCDRadius(0), _isMissionObjective(false)
 {
 }
 
@@ -48,7 +48,7 @@ void RuleObject::load(const YAML::Node& node)
 	_type = node["type"].as<std::string>(_type);
 	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
 	_samplingDefence = node["samplingDefence"].as<int>(_samplingDefence);
-
+	_isMissionObjective = node["isMissionObjective"].as<bool>(_isMissionObjective);
 	_spawnedEvents = node["spawnedEvents"].as<std::vector<std::string>>(_spawnedEvents);
 	_spawnedItem = node["spawnedItem"].as<std::string >(_spawnedItem);;
 	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_alterationMCDNumber);

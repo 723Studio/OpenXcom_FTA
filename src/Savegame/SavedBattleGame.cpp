@@ -71,7 +71,7 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
 	_lastSelectedUnit(0), _pathfinding(0), _tileEngine(0),
 	_reinforcementsItemLevel(0), _startingCondition(nullptr), _enviroEffects(nullptr), _ecEnabledFriendly(false), _ecEnabledHostile(false), _ecEnabledNeutral(false),
 	_globalShade(0), _side(FACTION_PLAYER), _turn(0), _bughuntMinTurn(20), _animFrame(0), _nameDisplay(false),
-	_debugMode(false), _bughuntMode(false), _aborted(false), _stealthMission(false), _itemId(0),
+	_debugMode(false), _bughuntMode(false), _aborted(false), _stealthMission(false), _hackingObjective(false), _itemId(0),
 	_vipEscapeType(ESCAPE_NONE), _vipSurvivalPercentage(0), _vipsSaved(0), _vipsLost(0), _vipsWaitingOutside(0), _vipsSavedScore(0), _vipsLostScore(0), _vipsWaitingOutsideScore(0),
 	_objectiveType(-1), _objectivesDestroyed(0), _objectivesNeeded(0),
 	_unitsFalling(false), _cheating(false), _tuReserved(BA_NONE), _kneelReserved(false), _depth(0),
@@ -184,10 +184,7 @@ void SavedBattleGame::load(const YAML::Node &node, Mod *mod, SavedGame* savedGam
 	_bughuntMode = node["bughuntMode"].as<bool>(_bughuntMode);
 	_depth = node["depth"].as<int>(_depth);
 	_stealthMission = node["stealthMission"].as<bool>(_stealthMission);
-	if (_stealthMission)
-	{
-		Log(LOG_INFO) << ">>> This mission considered as stealth mission because it was saved like that."; //#FINNIKTODO #CLEARLOGS
-	}
+	_hackingObjective = node["hackingObjective"].as<bool>(_hackingObjective);
 	_animFrame = node["animFrame"].as<int>(_animFrame);
 	int selectedUnit = node["selectedUnit"].as<int>();
 
@@ -660,6 +657,7 @@ YAML::Node SavedBattleGame::save() const
 	node["globalshade"] = _globalShade;
 	node["turn"] = _turn;
 	node["stealthMission"] = _stealthMission;
+	node["hackingObjective"] = _hackingObjective;
 	node["alarmLvl"] = _alarmLvl;
 	node["battleScriptVars"] = _battleScriptVars;
 	node["bughuntMinTurn"] = _bughuntMinTurn;

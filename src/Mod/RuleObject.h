@@ -34,6 +34,7 @@ private:
 	std::string _type;
 	int _hackingDefence, _samplingDefence;
 	int _alterationMCDNumber, _alterationMCDRadius;
+	bool _isMissionObjective;
 	std::vector<std::string> _spawnedEvents;
 	std::string _spawnedItem;
 	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
@@ -54,6 +55,8 @@ public:
 	int getAlterationMCDNumber() const { return _alterationMCDNumber; }
 	/// Gets the radius where hacking MCD alteration will check tiles.
 	int getAlterationMCDRadius() const { return _alterationMCDRadius; }
+	/// Gets if the BattleObject is a mission objective.
+	bool isMissionObjective() const { return _isMissionObjective; }
 	/// Gets the list of spawned event to choose once succesful BattleObject iteration.
 	std::vector<std::string> getSpawnedEvents() const { return _spawnedEvents; }
 	/// Generates an event based on the month.
