@@ -1426,6 +1426,11 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, std::vector<BattleItem*> *craftInv,
 		RuleInventory *groundRuleInv, int worldShade, bool allowAutoLoadout, bool overrideEquipmentLayout)
 {
+	if (mod->isFTAGame())
+	{
+		return;
+	}
+
 	for (int pass = 0; pass < 4; ++pass)
 	{
 		BattleItem* bi = nullptr;
