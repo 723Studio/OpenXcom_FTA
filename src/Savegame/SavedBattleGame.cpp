@@ -18,6 +18,7 @@
  */
 #include <assert.h>
 #include <vector>
+#include <climits>
 #include "BattleItem.h"
 #include "BattleObject.h"
 #include "ItemContainer.h"
@@ -42,7 +43,6 @@
 #include "../Engine/Game.h"
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
-#include "../Mod/AlienDeployment.h"
 #include "../Savegame/Ufo.h"
 #include "../Battlescape/AIModule.h"
 #include "../Engine/RNG.h"

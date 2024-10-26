@@ -69,7 +69,6 @@
 #include "ConfirmEndMissionState.h"
 #include "HackingBState.h"
 #include "../fmath.h"
-#include <climits>
 #include "../Savegame/Base.h"
 #include "../Savegame/CovertOperation.h"
 
