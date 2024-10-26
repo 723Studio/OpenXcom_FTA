@@ -261,8 +261,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	std::map<std::string, int> reputationScore;
 
 	_results = new CovertOperationResults(this->getOperationName(), _finishedResult, "0"); //#FINNIKTODO date
-	//load results of operation
-	if (_finishedResult)
+	if (_finishedResult) //define success operation results
 	{
 		score = _rule->getSuccessScore();
 		loyalty = _rule->getSuccessLoyalty();
@@ -272,24 +271,30 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		reputationScore = _rule->getSuccessReputationScoreList();
 		missionName = _rule->chooseGenSuccessMissionType();
 		deploymentName = _rule->chooseGenInstantSuccessDeploymentType();
-		for (auto& pair : _rule->getSuccessEveryItemList())
+		if (!_rule->getSuccessItems().empty())
 		{
-			const RuleItem* itemRule = mod.getItem(pair.first, true);
-			if (itemRule)
+			int totalWeight = 0;
+			for (const auto& itemSet : _rule->getSuccessItems())
 			{
-				itemsToAdd[itemRule] += pair.second;
+				totalWeight += itemSet.first;
 			}
-		}
-		if (!_rule->getSuccessWeightedItemList().empty())
-		{
-			const RuleItem* weightedItem = mod.getItem(_rule->getSuccessWeightedItemList().choose(), true);
-			if (weightedItem)
+			int roll = RNG::generate(1, totalWeight);
+			int runningTotal = 0;
+			for (const auto& itemSet : _rule->getSuccessItems())
 			{
-				itemsToAdd[weightedItem] += 1;
+				runningTotal += itemSet.first;
+				if (runningTotal >= roll)
+				{
+					for (const auto& i : itemSet.second)
+					{
+						itemsToAdd[i.first] += i.second;
+					}
+					break; // break outer loop
+				}
 			}
 		}
 	}
-	else
+	else //define failure operation results
 	{
 		score = _rule->getFailureScore();
 		if (criticalFail) score = score - 300;
@@ -300,20 +305,26 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		reputationScore = _rule->getFailureReputationScoreList();
 		missionName = _rule->chooseGenFailureMissionType();
 		deploymentName = _rule->chooseGenInstantTrapDeploymentType();
-		for (auto& pair : _rule->getFailureEveryItemList())
+		if (!_rule->getFailureItems().empty())
 		{
-			const RuleItem* itemRule = mod.getItem(pair.first, true);
-			if (itemRule)
+			int totalWeight = 0;
+			for (const auto& itemSet : _rule->getFailureItems())
 			{
-				itemsToAdd[itemRule] += pair.second;
+				totalWeight += itemSet.first;
 			}
-		}
-		if (!_rule->getFailureWeightedItemList().empty())
-		{
-			const RuleItem* weightedItem = mod.getItem(_rule->getFailureWeightedItemList().choose(), true);
-			if (weightedItem)
+			int roll = RNG::generate(1, totalWeight);
+			int runningTotal = 0;
+			for (const auto& itemSet : _rule->getFailureItems())
 			{
-				itemsToAdd[weightedItem] += 1;
+				runningTotal += itemSet.first;
+				if (runningTotal >= roll)
+				{
+					for (const auto& i : itemSet.second)
+					{
+						itemsToAdd[i.first] += i.second;
+					}
+					break; // break outer loop
+				}
 			}
 		}
 	}

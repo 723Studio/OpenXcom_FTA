@@ -48,8 +48,10 @@ private:
 	int  _danger, _trapChance, _progressEventChance, _concealedItemsBonus, _bonusItemsEffect;
 	std::vector<int> _allowedRoles;
 	bool _repeatProgressEvent, _allowAllEquipment, _removeRequiredItemsOnSuccess, _removeRequiredItemsOnFailure;
-	WeightedOptions _successMissions, _failureMissions, _successWeightedItemList, _failureWeightedItemList, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
-	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _successEveryItemList, _failureEveryItemList, _requiredItemsStr, _bonusItemsStr, _soldierTypeEffectiveness, _addSoldiersStr;
+	WeightedOptions _successMissions, _failureMissions, _instantTrapDeployment, _instantSuccessDeployment, _progressEvent;
+	std::map<std::string, int> _requiredReputationLvl, _successReputationScore, _failureReputationScore, _requiredItemsStr, _bonusItemsStr, _soldierTypeEffectiveness, _addSoldiersStr;
+	std::vector<std::pair<int, std::map<std::string, int> > > _successItemNames, _failureItemNames;
+	std::vector<std::pair<int, std::map<const RuleItem*, int> > > _successItems, _failureItems;
 	std::map<const RuleItem*, int> _requiredItems, _bonusItems;
 	std::map<const RuleSoldier*, int> _addSoldiers;
 	int _listOrder;
@@ -154,13 +156,9 @@ public:
 	/// Gets the factions reputation award list for this operation on failure.
 	const std::map<std::string, int>& getFailureReputationScoreList() const { return _failureReputationScore; }
 	/// Gets list of items, all of it would be added to this operation on success result.
-	const std::map<std::string, int>& getSuccessEveryItemList() const { return _successEveryItemList; }
+	const std::vector<std::pair<int, std::map<const RuleItem*, int> > >& getSuccessItems() const { return _successItems; }
 	/// Gets list of items, all of it would be added to this operation on failure.
-	const std::map<std::string, int>& getFailureEveryItemList() const { return _failureEveryItemList; }
-	/// Gets a list of items; one of them is randomly selected (considering weights) and would be added to this operation on success result.
-	const WeightedOptions& getSuccessWeightedItemList() const { return _successWeightedItemList; }
-	/// Gets a list of items; one of them is randomly selected (considering weights) and  would be added to this operation on failure.
-	const WeightedOptions& getFailureWeightedItemList() const { return _failureWeightedItemList; }
+	const std::vector<std::pair<int, std::map<const RuleItem*, int> > >& getFailureItems() const { return _failureItems; }
 	/// Gets the operation's required item list.
 	const std::map<const RuleItem*, int>& getRequiredItemList() const { return _requiredItems; }
 	/// Gets the operation's required item list.

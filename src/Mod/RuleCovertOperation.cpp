@@ -104,17 +104,9 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_failureLoyalty = node["failureLoyalty"].as<int>(_failureLoyalty);
 	_successFunds = node["successFunds"].as<int>(_successFunds);
 	_failureFunds = node["failureFunds"].as<int>(_failureFunds);
-	_successEveryItemList = node["successEveryItemList"].as<std::map<std::string, int> >(_successEveryItemList);
-	_failureEveryItemList = node["failureEveryItemList"].as<std::map<std::string, int> >(_failureEveryItemList);
+	_successItemNames = node["successItemsNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_successItemNames);
+	_failureItemNames = node["failureItemNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_failureItemNames);
 	_addSoldiersStr = node["addSoldiers"].as<std::map<std::string, int> >(_addSoldiersStr);
-	if (node["successWeightedItemList"])
-	{
-		_successWeightedItemList.load(node["successWeightedItemList"]);
-	}
-	if (node["failureWeightedItemList"])
-	{
-		_failureWeightedItemList.load(node["failureWeightedItemList"]);
-	}
 	_successResearchList = node["successResearchList"].as<std::vector<std::string> >(_successResearchList);
 	_failureResearchList = node["failureResearchList"].as<std::vector<std::string> >(_failureResearchList);
 	if (node["successMissions"])
@@ -227,6 +219,32 @@ void RuleCovertOperation::afterLoad(const Mod* mod)
 		}
 	}
 
+	for (auto& itemSet : _successItemNames)
+	{
+		std::map<const RuleItem*, int> tmp;
+		for (auto& i : itemSet.second)
+		{
+			tmp[mod->getItem(i.first, true)] = i.second;
+		}
+		_successItems.push_back(std::make_pair(itemSet.first, tmp));
+	}
+
+	for (auto& itemSet : _failureItemNames)
+	{
+		std::map<const RuleItem*, int> tmp;
+		for (auto& i : itemSet.second)
+		{
+			tmp[mod->getItem(i.first, true)] = i.second;
+		}
+		_failureItems.push_back(std::make_pair(itemSet.first, tmp));
+	}
+
+	//remove not needed data
+	Collections::removeAll(_addSoldiersStr);
+	Collections::removeAll(_requiredItemsStr);
+	Collections::removeAll(_bonusItemsStr);
+	Collections::removeAll(_successItemNames);
+	Collections::removeAll(_failureItemNames);
 }
 
 std::string RuleCovertOperation::chooseGenSuccessMissionType() const
