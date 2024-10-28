@@ -5474,7 +5474,7 @@ void TileEngine::itemDropInventory(Tile *t, BattleUnit *unit, bool unprimeItems,
 	Collections::removeIf(*unit->getInventory(),
 		[&](BattleItem* i)
 		{
-			if (!i->getRules()->isFixed() && !i->getRules()->canBeEquippedInBattle())
+			if (!i->getRules()->isFixed() && i->getRules()->canBeEquippedInBattle())
 			{
 				i->setOwner(nullptr);
 				if (unprimeItems && i->getRules()->getFuseTimerType() != BFT_NONE)

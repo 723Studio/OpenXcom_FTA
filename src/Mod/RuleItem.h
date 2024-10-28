@@ -588,7 +588,7 @@ public:
 	int getPowerForAnimation() const { return _powerForAnimation; }
 	/// Should the item's power be displayed in Ufopedia or not?
 	bool getHidePower() const { return _hidePower; }
-	/// Can this item be equipped or dropped after balle starts or not?
+	/// Can this item be equipped or dropped after battle starts or not?
 	bool canBeEquippedInBattle() const { return _canBeEquippedInBattle; }
 	/// Ok, so this isn't a melee type weapon but we're using it for melee... how much damage should it do?
 	int getMeleePower() const;
