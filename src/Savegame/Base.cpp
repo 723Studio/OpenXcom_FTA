@@ -308,7 +308,7 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 				std::string prisoner = p.as<std::string>();
 				for (std::vector<BasePrisoner*>::iterator j = _prisoners.begin(); j != _prisoners.end(); ++j)
 				{
-					if ((*j)->getRules()->getType() == prisoner)
+					if ((*j)->getNameAndId() == prisoner)
 					{
 						s->setActivePrisoner(*j);
 						break;

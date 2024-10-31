@@ -479,6 +479,10 @@ YAML::Node Soldier::save(const ScriptGlobal *shared)
 	{
 		node["intelProject"] = _intelProject->getName();
 	}
+	if (_prisoner != 0)
+	{
+		node["activePrisoner"] = _prisoner->getNameAndId();
+	}
 	node["gender"] = (int)_gender;
 	node["look"] = (int)_look;
 	node["lookVariant"] = _lookVariant;

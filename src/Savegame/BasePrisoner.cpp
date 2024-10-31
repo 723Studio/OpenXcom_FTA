@@ -177,7 +177,7 @@ bool BasePrisoner::think(Game &engine)
 		if (prisonerState == PRISONER_STATE_INTERROGATION)
 		{
 			auto rules = _rule->getInterrogationRules();
-			int breakpoint = rules.getBaseResistance() + getMorale() / 2 + getAggression() * 5 + getIntelligence() * 5;
+			int breakpoint = rules.getBaseResistance() + getMorale() / 4 + getAggression() * 2 + getIntelligence() * 2;
 			int progress = 0;
 			double effort = 0;
 			int factor = mod.getIntelTrainingFactor();
