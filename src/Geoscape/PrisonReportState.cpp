@@ -103,54 +103,54 @@ void PrisonReportState::initUI()
 	switch (_reportCase) {
 	case PRISONER_REPORT_CASE_DEATH:
 		btnName = "STR_GO_TO_BASE";
-		ss << "STR_PRISONER_DIED_PT1";
+		ss << tr("STR_PRISONER_DIED_PT1");
 		ss << " ";
 		ss << _prisoner->getNameAndId();
 		ss << " ";
-		ss << "STR_PRISONER_DIED_PT2";
+		ss << tr("STR_PRISONER_DIED_PT2");
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_CASE_INTERROGATION:
 		btnName = "STR_VIEW_REPORT";
-		ss << "STR_PRISONER_INTERROGATED_PT1";
+		ss << tr("STR_PRISONER_INTERROGATED_PT1");
 		ss << " ";
 		ss << _prisoner->getNameAndId();
 		ss << " ";
 		if (_research != nullptr || _bonus != nullptr)
 		{
 			if (!_prisoner->isInterrogationDone())
-				ss << "STR_PRISONER_INTERROGATED_PT2";
+				ss << tr("STR_PRISONER_INTERROGATED_PT2");
 			else
-				ss << "STR_PRISONER_INTERROGATED_PT2_1";
+				ss << tr("STR_PRISONER_INTERROGATED_PT2_1");
 		}
 		else
-			ss << "STR_PRISONER_INTERROGATED_PT3";
+			ss << tr("STR_PRISONER_INTERROGATED_PT3");
 		desription = ss.str();
 		break;
 	case PRISONER_REPORT_RECRUITING:
 		if (_soldier != 0)
 		{
 			btnName = "STR_VIEW_SOLDIER";
-			ss << "STR_PRISONER_RECRUITING_PT1";
+			ss << tr("STR_PRISONER_RECRUITING_PT1");
 			ss << " ";
 			ss << _prisoner->getNameAndId();
 			ss << " ";
-			ss << "STR_PRISONER_RECRUITING_PT2";
+			ss << tr("STR_PRISONER_RECRUITING_PT2");
 			ss << " ";
 			ss << _soldier->getName();
 			ss << " ";
-			ss << "STR_PRISONER_RECRUITING_PT3";
+			ss << tr("STR_PRISONER_RECRUITING_PT3");
 			desription = ss.str();
 		}
 		else
 		{
-			ss << "STR_PRISONER_RECRUITING_PT1";
+			ss << tr("STR_PRISONER_RECRUITING_PT1");
 			ss << " ";
 			ss << _prisoner->getNameAndId();
 			ss << " ";
-			ss << "STR_PRISONER_RECRUITING_PT2";
+			ss << tr("STR_PRISONER_RECRUITING_PT2");
 			ss << " ";
-			ss << "STR_PRISONER_RECRUITING_PT4";
+			ss << tr("STR_PRISONER_RECRUITING_PT4");
 			desription = ss.str();
 		}
 
