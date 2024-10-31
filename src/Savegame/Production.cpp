@@ -111,7 +111,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				auto caps = s->getRules()->getStatCaps();
 				unsigned int statsN = 0;
 				double soldierEffort = 0, statEffort = 0;
-				Log(LOG_DEBUG) << "Engeneer " << s->getName() << " is calculating his/her effort for the manufacturing project";
+				Log(LOG_DEBUG) << "Engineer " << s->getName() << " is calculating his/her effort for the manufacturing project";
 				if (projStats.weaponry > 0)
 				{
 					statEffort = stats->weaponry;
@@ -190,11 +190,11 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 
 				Log(LOG_DEBUG) << "Raw soldierEffort equals: " << soldierEffort;
 				int diligence = stats->diligence;
-				double deliganceFactor = 0.5;
+				double diligenceFactor = 0.5;
 				if (diligence > 10)
-					deliganceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
+					diligenceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
 
-				soldierEffort *= deliganceFactor;
+				soldierEffort *= diligenceFactor;
 				Log(LOG_DEBUG) << "soldierEffort with diligence bonus: " << soldierEffort;
 				if (statsN > 0)
 					soldierEffort /= statsN;
