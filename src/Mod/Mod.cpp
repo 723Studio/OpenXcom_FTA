@@ -423,7 +423,7 @@ Mod::Mod()
 	  _aiUseDelayBlaster(3), _aiUseDelayFirearm(0), _aiUseDelayGrenade(3), _aiUseDelayMelee(0), _aiUseDelayPsionic(0),
 	  _aiFireChoiceIntelCoeff(5), _aiFireChoiceAggroCoeff(5), _aiExtendedFireModeChoice(false), _aiRespectMaxRange(false), _aiDestroyBaseFacilities(false),
 	  _aiPickUpWeaponsMoreActively(false), _aiPickUpWeaponsMoreActivelyCiv(false),
-	  _maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100), _minReactionAccuracy(0), _researchTrainingFactor(100), _engineeringTrainingFactor(100), _intelTrainingFactor(100),
+	  _maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100), _minReactionAccuracy(0), _researchTrainingFactor(100), _engineeringTrainingFactor(100), _intelTrainingFactor(100), _researchSpeedFactor(100), _engineeringSpeedFactor(100), _intelSpeedFactor(100), _prisonerActionsSpeedFactor(100),
 	  _chanceToStopRetaliation(0), _lessAliensDuringBaseDefense(false),
 	  _allowCountriesToCancelAlienPact(false), _buildInfiltrationBaseCloseToTheCountry(false), _allowAlienBasesOnWrongTextures(true),
 	  _ftaGame(false), _ftaGameLength(3),
@@ -435,11 +435,11 @@ Mod::Mod()
 	  _hackingBaseTuCost(5), _hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(5), _hackingStatToTuCoef(250), _hackingStatToHpCoef(500),
 	  _loseMoney("loseGame"), _loseRating("loseGame"), _loseDefeat("loseGame"), _ufoGlancingHitThreshold(0),
 	  _ufoBeamWidthParameter(1000), _escortRange(20),
-	  _drawEnemyRadarCircles(1), _escortsJoinFightAgainstHK(true), _hunterKillerFastRetarget(true), 
-	  _crewEmergencyEvacuationSurvivalChance(100), _pilotsEmergencyEvacuationSurvivalChance(100), 
+	  _drawEnemyRadarCircles(1), _escortsJoinFightAgainstHK(true), _hunterKillerFastRetarget(true),
+	  _crewEmergencyEvacuationSurvivalChance(100), _pilotsEmergencyEvacuationSurvivalChance(100),
 	  _soldiersPerRank({-1, -1, 5, 11, 23, 30}),
-	  _pilotAccuracyZeroPoint(55), _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60), 
-	  _pilotCooperationZeroPoint(20), _pilotCooperationRange(20), _pilotTrackingZeroPoint(40), _pilotTrackingRange(50), 
+	  _pilotAccuracyZeroPoint(55), _pilotAccuracyRange(40), _pilotReactionsZeroPoint(55), _pilotReactionsRange(60),
+	  _pilotCooperationZeroPoint(20), _pilotCooperationRange(20), _pilotTrackingZeroPoint(40), _pilotTrackingRange(50),
 	  _performanceBonusFactor(0), _covertOpsExperienceFactor(100), _covertOpsIntelBonusFactor(100),
 	  _enableNewResearchSorting(false), _displayCustomCategories(0), _shareAmmoCategories(false), _showDogfightDistanceInKm(false), _showFullNameInAlienInventory(false), _alienInventoryOffsetX(80),
 	  _alienInventoryOffsetBigUnit(32), _hidePediaInfoButton(false),
@@ -458,7 +458,7 @@ Mod::Mod()
 	_scriptGlobal = new ModScriptGlobal();
 
 	//load base damage types
-	RuleDamageType *dmg;
+	RuleDamageType* dmg;
 	_damageTypes.resize(DAMAGE_TYPES);
 
 	dmg = new RuleDamageType();
@@ -3215,6 +3215,10 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	_researchTrainingFactor = doc["researchTrainingFactor"].as<int>(_researchTrainingFactor);
 	_engineeringTrainingFactor = doc["engineeringTrainingFactor"].as<int>(_engineeringTrainingFactor);
 	_intelTrainingFactor = doc["intelTrainingFactor"].as<int>(_intelTrainingFactor);
+	_researchSpeedFactor = doc["researchSpeedFactor"].as<int>(_researchSpeedFactor);
+	_engineeringSpeedFactor = doc["engineeringSpeedFactor"].as<int>(_engineeringSpeedFactor);
+	_intelSpeedFactor = doc["intelSpeedFactor"].as<int>(_intelSpeedFactor);
+	_prisonerActionsSpeedFactor = doc["prisonerActionsSpeedFactor"].as<int>(_prisonerActionsSpeedFactor);
 	_chanceToStopRetaliation = doc["chanceToStopRetaliation"].as<int>(_chanceToStopRetaliation);
 	_lessAliensDuringBaseDefense = doc["lessAliensDuringBaseDefense"].as<bool>(_lessAliensDuringBaseDefense);
 	_allowCountriesToCancelAlienPact = doc["allowCountriesToCancelAlienPact"].as<bool>(_allowCountriesToCancelAlienPact);

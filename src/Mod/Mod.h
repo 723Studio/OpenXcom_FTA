@@ -239,6 +239,7 @@ private:
 	bool _aiPickUpWeaponsMoreActively, _aiPickUpWeaponsMoreActivelyCiv;
 	int _maxLookVariant, _tooMuchSmokeThreshold, _customTrainingFactor, _minReactionAccuracy;
 	int _researchTrainingFactor, _engineeringTrainingFactor, _intelTrainingFactor;
+	int _researchSpeedFactor, _engineeringSpeedFactor, _intelSpeedFactor, _prisonerActionsSpeedFactor;
 	int _chanceToStopRetaliation;
 	bool _lessAliensDuringBaseDefense;
 	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry;
@@ -899,6 +900,15 @@ public:
 	int getEngineerTrainingFactor() const { return _engineeringTrainingFactor; }
 	/// Gets the custom intelligence skills training factor in percent (default = 100).
 	int getIntelTrainingFactor() const { return _intelTrainingFactor; }
+
+	/// Gets the FtA's research speed factor in percent (default = 100).
+	int getResearchSpeedFactor() const { return _researchSpeedFactor; }
+	/// Gets the FtA's engineering speed factor in percent (default = 100).
+	int getEngineeringSpeedFactor() const { return _engineeringSpeedFactor; }
+	/// Gets the FtA's intelligence speed factor in percent (default = 100).
+	int getIntelSpeedFactor() const { return _intelSpeedFactor; }
+	/// Gets the FtA's prisoner actions (interrogation, torturing, recruiting) speed factor in percent (default = 100).
+	int getPrisonerActionsSpeedFactor() const { return _prisonerActionsSpeedFactor; }
 	/// Gets the chance to stop retaliation after unsuccessful xcom base attack (default = 0).
 	int getChanceToStopRetaliation() const { return _chanceToStopRetaliation; }
 	/// Should a damaged UFO deploy less aliens during the base defense?

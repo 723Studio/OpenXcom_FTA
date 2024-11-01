@@ -41,20 +41,23 @@ IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating, std::string& description, bool estimate)
 {
 	int progress = 0;
-	double effort = 0, soldierEffort = 0, statEffort = 0;
+	double effort = 0;
 	auto projStats = _rules->getStats();
-	int factor = mod->getIntelTrainingFactor();
+	int trainingFactor = mod->getIntelTrainingFactor();
+	double speedFactor = (double)mod->getIntelSpeedFactor() / 100;
+	Log(LOG_INFO) << "Calculating step progress for intel progect: " << this->getName() << " with current progress: " << _spent << " and cost: " << _cost; //#FINNIKTODO #CLEARLOGS
 	for (auto s : assignedAgents)
 	{
 		auto stats = s.first->getStatsWithAllBonuses();
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
-
+		double  soldierEffort = 0, statEffort = 0;
+		Log(LOG_INFO) << "Agent: " << s.first->getName() << " is calculating effort for the project"; //#FINNIKTODO #CLEARLOGS
 		if (projStats.data > 0)
 		{
 			statEffort = stats->data;
 			soldierEffort += (statEffort / projStats.data);
-			if (!estimate && stats->data < caps.data && RNG::generate(0, caps.data) > stats->data && RNG::percent(factor * (projStats.data / 100)) && RNG::percent(s.second))
+			if (!estimate && stats->data < caps.data && RNG::generate(0, caps.data) > stats->data && RNG::percent(trainingFactor * (projStats.data / 100)) && RNG::percent(s.second))
 				s.first->getIntelExperience()->data++;
 			statsN++;
 		}
@@ -62,7 +65,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->computers;
 			soldierEffort += (statEffort / projStats.computers);
-			if (!estimate && stats->computers < caps.computers && RNG::generate(0, caps.computers) > stats->computers && RNG::percent(factor) && RNG::percent(s.second))
+			if (!estimate && stats->computers < caps.computers && RNG::generate(0, caps.computers) > stats->computers && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->computers++;
 			statsN++;
 		}
@@ -70,7 +73,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->xenolinguistics;
 			soldierEffort += (statEffort / projStats.xenolinguistics);
-			if (!estimate && stats->xenolinguistics < caps.xenolinguistics && RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics && RNG::percent(factor) && RNG::percent(s.second))
+			if (!estimate && stats->xenolinguistics < caps.xenolinguistics && RNG::generate(0, caps.xenolinguistics) > stats->xenolinguistics && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->xenolinguistics++;
 			statsN++;
 		}
@@ -78,7 +81,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->hacking;
 			soldierEffort += (statEffort / projStats.hacking);
-			if (!estimate && stats->hacking < caps.hacking && RNG::generate(0, caps.hacking) > stats->hacking && RNG::percent(factor) && RNG::percent(s.second))
+			if (!estimate && stats->hacking < caps.hacking && RNG::generate(0, caps.hacking) > stats->hacking && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->hacking++;
 			statsN++;
 		}
@@ -86,7 +89,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->alienTech;
 			soldierEffort += (statEffort / projStats.alienTech);
-			if (!estimate && stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(factor) && RNG::percent(s.second))
+			if (!estimate && stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->alienTech++;
 			statsN++;
 		}
@@ -94,14 +97,9 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->investigation;
 			soldierEffort += (statEffort / projStats.investigation);
-			if (!estimate && stats->investigation < caps.investigation && RNG::generate(0, caps.investigation) > stats->investigation && RNG::percent(factor) && RNG::percent(s.second))
+			if (!estimate && stats->investigation < caps.investigation && RNG::generate(0, caps.investigation) > stats->investigation && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->investigation++;
 			statsN++;
-		}
-
-		if (statsN > 0)
-		{
-			soldierEffort /= statsN;
 		}
 
 		double insightBonus = RNG::generate(0, stats->insight / 2);
@@ -110,20 +108,27 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 			insightBonus = stats->insight;
 			insightBonus /= 4; //just take average roll
 		}
-		soldierEffort += insightBonus / 10;
+		insightBonus /= 10;
+		soldierEffort += insightBonus;
+		Log(LOG_INFO) << "Total agent effort: " << soldierEffort << " with insight bonus: " << insightBonus; //#FINNIKTODO #CLEARLOGS
+		
+		soldierEffort /= statsN + 1;
+		Log(LOG_INFO) << "Adjusted agent effort: " << soldierEffort << " with statsN: " << statsN + 1; //#FINNIKTODO #CLEARLOGS
 		effort += soldierEffort;
-		soldierEffort = 0;
 	}
+	Log(LOG_INFO) << "Total effort: " << effort; //#FINNIKTODO #CLEARLOGS
 	// If one woman can carry a baby in nine months, nine women can't do it in a month...
 	if (assignedAgents.size() > 1)
 	{
 		effort *= (100 - (19 * log(assignedAgents.size()))) / 100;
+		Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
 	}
-	effort *= rating;
-	effort /= 100;
+	effort *= (double)rating / 100;
+	effort *= speedFactor;
+	Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 	//gets total effort to daily project progress
 	progress = static_cast<int>(ceil(effort * 24));
-	Log(LOG_INFO) << "Total daily progress for the intel project " << _rules->getName() << ": " << progress;
+	Log(LOG_INFO) << ">>> Total daily progress for the intel project " << _rules->getName() << ": " << progress;
 	description = getState(progress);
 
 	return progress;

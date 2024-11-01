@@ -174,15 +174,20 @@ bool BasePrisoner::think(Game &engine)
 	else
 	{
 		//process different stats
+		double speedFactor = (double)engine.getMod()->getPrisonerActionsSpeedFactor() / 100;
+		int trainingFactor = mod.getIntelTrainingFactor();
+		double loyaltyFactor = (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
+
 		if (prisonerState == PRISONER_STATE_INTERROGATION)
 		{
 			auto rules = _rule->getInterrogationRules();
 			int breakpoint = rules.getBaseResistance() + getMorale() / 4 + getAggression() * 2 + getIntelligence() * 2;
 			int progress = 0;
 			double effort = 0;
-			int factor = mod.getIntelTrainingFactor();
+			Log(LOG_INFO) << "Processing interrogation of base prisoner: " << this->getNameAndId() << " with current interrogationProgress: " << _interrogationProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
 			for (auto s : _agents)
 			{
+				Log(LOG_INFO) << "Agent: " << s->getName() << " is calculating effort for interrogation"; //#FINNIKTODO #CLEARLOGS
 				auto stats = s->getStatsWithAllBonuses();
 				auto caps = s->getRules()->getStatCaps();
 				double soldierEffort = 0, statEffort = 0;
@@ -190,11 +195,12 @@ bool BasePrisoner::think(Game &engine)
 				int charismaCoef = 20;
 				int deceptionCoef = 40;
 				int psiCoef = 5;
+				
 				statEffort = stats->interrogation;
 				soldierEffort += (statEffort / interrogationCoef);
 				if (stats->interrogation < caps.interrogation
 					&& RNG::generate(0, caps.interrogation) > stats->interrogation
-					&& RNG::percent(factor))
+					&& RNG::percent(trainingFactor))
 				{
 					s->getIntelExperience()->interrogation++;
 				}
@@ -203,7 +209,7 @@ bool BasePrisoner::think(Game &engine)
 				soldierEffort += (statEffort / charismaCoef);
 				if (stats->charisma < caps.charisma
 					&& RNG::generate(0, caps.charisma) > stats->charisma
-					&& RNG::percent(factor))
+					&& RNG::percent(trainingFactor))
 				{
 					s->getIntelExperience()->charisma++;
 				}
@@ -212,50 +218,54 @@ bool BasePrisoner::think(Game &engine)
 				soldierEffort += (statEffort / deceptionCoef);
 				if (stats->deception < caps.deception
 					&& RNG::generate(0, caps.deception) > stats->deception
-					&& RNG::percent(factor))
+					&& RNG::percent(trainingFactor))
 				{
 					s->getIntelExperience()->deception++;
 				}
 
+				double insightBonus = RNG::generate(0, stats->insight);
+				soldierEffort += insightBonus / 100;
+
 				//extra handle for psi
+				int statsN = 4;
 				if (stats->psiSkill > 0)
 				{
+					statsN++;
 					statEffort = stats->psiSkill;
-					statEffort += stats->psiStrength;
-					if (RNG::percent(factor / 2))
+					soldierEffort += (statEffort / psiCoef);
+					
+					if (stats->psiSkill < caps.psiSkill
+						&& RNG::generate(0, caps.psiSkill) > stats->psiSkill
+						&& RNG::percent(trainingFactor / 2))
 					{
 						s->getIntelExperience()->psiSkill++;
 					}
 				}
-				else
-				{
-					statEffort = stats->psiStrength;
-					soldierEffort += (statEffort / psiCoef);
-				}
 
-				soldierEffort /= 4;
-
-				double insightBonus = RNG::generate(0, stats->insight);
-				soldierEffort += insightBonus / 20;
-
+				soldierEffort /= statsN;
+				Log(LOG_INFO) << "Agent effort: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				effort += soldierEffort;
 			}
+			Log(LOG_INFO) << "Total effort: " << effort; //#FINNIKTODO #CLEARLOGS
 			// If one woman can carry a baby in nine months, nine women can't do it in a month...
 			if (_agents.size() > 1)
 			{
 				effort *= (100 - (25 * log(_agents.size()))) / 100;
+				Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
 			}
-
-			effort *= (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
+			effort *= loyaltyFactor;
+			effort *= speedFactor;
+			Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 			progress = static_cast<int>(effort);
 			_interrogationProgress += progress;
+			Log(LOG_INFO) << ">>> Interrogation calculated, progress: " << progress << " with total progress: " << _interrogationProgress; //#FINNIKTODO #CLEARLOGS
 			if (_interrogationProgress >= breakpoint)
 			{
 				result = true;
 				_interrogationProgress = 0;
 				// give research if any
-				std::string researchName = "";
-				std::string bonusResearchName = "";
+				std::string researchName;
+				std::string bonusResearchName;
 				if (!rules.getUnlockedResearches().empty())
 				{
 					std::vector<const RuleResearch*> possibilities;
@@ -304,6 +314,7 @@ bool BasePrisoner::think(Game &engine)
 		{
 			auto rules = _rule->getTortureRules();
 			// let's calculate power of our team
+			Log(LOG_INFO) << "Processing torturing of base prisoner: " << this->getNameAndId(); //#FINNIKTODO #CLEARLOGS
 			int psionics = 0, torturePower = 0;
 			for (auto agent: _agents)
 			{
@@ -318,26 +329,30 @@ bool BasePrisoner::think(Game &engine)
 			}
 			
 			torturePower *= psionics + 1;
+			Log(LOG_INFO) << "torturePower: " << torturePower; //#FINNIKTODO #CLEARLOGS
 			if (torturePower > 0)
 			{
-				if (RNG::percent(-10 * save.getDifficultyCoefficient() + 80))
+				int roll = -10 * save.getDifficultyCoefficient() + 80; //#FINNIKTODO #CLEARLOGS
+				if (RNG::percent(roll))
 				{
-					int difficultyRoll = RNG::generate(rules.getDifficulty() / 2, rules.getDifficulty() * 2);
+					int tortureDifficulty = RNG::generate(rules.getDifficulty() / 2, rules.getDifficulty() * 2);
 					//calculate and apply torture effects
-					
+					Log(LOG_INFO) << "tortureDifficulty: " << tortureDifficulty; //#FINNIKTODO #CLEARLOGS
 					int maxDmg = 4 + floor(save.getDifficultyCoefficient() / 2);
 					int loyaty = rules.getLoyalty() * (1 + floor(save.getDifficultyCoefficient() / 2));
 					int moraleDmg = rules.getMorale();
 					int eventChance = rules.getEventChance();
-					if (difficultyRoll > torturePower * 2) // min torture
+					if (tortureDifficulty > torturePower * 2) // min torture
 					{
+						Log(LOG_INFO) << ">>> Minimal torture effect"; //#FINNIKTODO #CLEARLOGS
 						moraleDmg = 0;
 						maxDmg = ceil(maxDmg / 2);
 						loyaty = ceil(loyaty / 5);
 						eventChance = ceil(eventChance / 3);
 					}
-					else if (difficultyRoll > torturePower)
+					else if (tortureDifficulty > torturePower)
 					{
+						Log(LOG_INFO) << ">>> Normal torture effect"; //#FINNIKTODO #CLEARLOGS
 						maxDmg = ceil(maxDmg / 2);
 						moraleDmg = ceil(moraleDmg / 3);
 						loyaty = ceil(loyaty / 4);
@@ -362,6 +377,10 @@ bool BasePrisoner::think(Game &engine)
 						}
 					}
 				}
+				else //#FINNIKTODO #CLEARLOGS
+				{
+					Log(LOG_INFO) << "No effect of torture with roll" << roll; //#FINNIKTODO #CLEARLOGS
+				}
 			}
 		}
 		else if (prisonerState == PRISONER_STATE_REQRUITING)
@@ -370,7 +389,8 @@ bool BasePrisoner::think(Game &engine)
 			int breakpoint = rules.getDifficulty() - getCooperation() + (100 - getMorale());
 			int progress = 0;
 			double effort = 0;
-			int factor = mod.getIntelTrainingFactor();
+			
+			Log(LOG_INFO) << "Processing recruiting of base prisoner: " << this->getNameAndId() << " with current recruitingProgress: " << _recruitingProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
 			for (auto s : _agents)
 			{
 				double soldierEffort = 0, statEffort = 0;
@@ -381,7 +401,7 @@ bool BasePrisoner::think(Game &engine)
 				soldierEffort += (statEffort);
 				if (stats->charisma < caps.charisma
 					&& RNG::generate(0, caps.charisma) > stats->charisma
-					&& RNG::percent(factor))
+					&& RNG::percent(trainingFactor))
 				{
 					s->getIntelExperience()->charisma++;
 				}
@@ -390,23 +410,28 @@ bool BasePrisoner::think(Game &engine)
 				soldierEffort += (statEffort);
 				if (stats->deception < caps.deception
 					&& RNG::generate(0, caps.deception) > stats->deception
-					&& RNG::percent(factor))
+					&& RNG::percent(trainingFactor))
 				{
 					s->getIntelExperience()->deception++;
 				}
 
 				soldierEffort /= 2;
+				Log(LOG_INFO) << "Agent effort: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				effort += soldierEffort;
 			}
 
 			if (_agents.size() > 1)
 			{
 				effort *= (100 - (25 * log(_agents.size()))) / 100;
+				Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
 			}
 
-			effort *= (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
+			effort *= loyaltyFactor;
+			effort *= speedFactor;
+			Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 			progress = static_cast<int>(effort);
 			_recruitingProgress += progress;
+			Log(LOG_INFO) << ">>> Recruiting calculated, progress: " << progress << " with total progress: " << _recruitingProgress; //#FINNIKTODO #CLEARLOGS
 			if (_recruitingProgress >= breakpoint)
 			{
 				result = true;

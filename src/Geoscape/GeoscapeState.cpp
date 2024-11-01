@@ -4693,7 +4693,7 @@ void GeoscapeState::handleResearch(Base* base)
 		{
 			finished.push_back(std::make_pair(assignedScientists, project));
 		}
-		else
+		else  //#FINNIKTODO #CLEARLOGS
 		{
 			Log(LOG_INFO) << "After step calculation we have  " << project->getCost() - project->getSpent() << " points left.";
 		}
