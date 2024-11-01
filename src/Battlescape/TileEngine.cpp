@@ -1550,13 +1550,11 @@ bool TileEngine::calculateUnitsInFOV(BattleUnit* unit, const Position eventPos, 
 									if (bu->tryUncover())
 									{
 										unit->setUnitWarned(true);
-										Log(LOG_INFO) << "Unit is warned because tryUncover xcom unit " << bu; //#FINNIKTODO #CLEARLOGS
 									}
 								}
 								else
 								{
 									unit->setUnitWarned(true);
-									Log(LOG_INFO) << "Unit is warned because it sees xcom unit " << bu; //#FINNIKTODO #CLEARLOGS
 								}
 							}
 
@@ -2632,14 +2630,12 @@ void TileEngine::checkForSuspiciousItems(BattleUnit* unit)
 				|| (bi->getFuseTimer() > -1 && bi->getRules()->getSpawnUnit()))
 			{
 				unit->setUnitWarned(true);
-				Log(LOG_INFO) << "Unit is warned because checkForSuspiciousItems (xcom property, corpse or fused item)"; //#FINNIKTODO #CLEARLOGS
 			}
 			if (bi->getPreviousOwner() != nullptr)
 			{
 				if (bi->getPreviousOwner()->getOriginalFaction() == FACTION_PLAYER)
 				{
 					unit->setUnitWarned(true);
-					Log(LOG_INFO) << "Unit is warned because checkForSuspiciousItems (previous owner == FACTION_PLAYER)"; //#FINNIKTODO #CLEARLOGS
 				}
 			}
 		}
@@ -3490,7 +3486,6 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 						if ((*j) == tile)
 						{
 							(*i)->setUnitWarned(true);
-							Log(LOG_INFO) << "Unit is warned because it sees hit in " << tilePos; //#FINNIKTODO #CLEARLOGS
 						}
 					}
 				}

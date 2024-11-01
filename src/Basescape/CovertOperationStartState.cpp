@@ -561,12 +561,12 @@ double CovertOperationStartState::getOperationOdds()
 			{
 				std::string solType = s->getRules()->getType();
 				auto ruleType = _rule->getSoldierTypeEffectiveness();
-				for (std::map<std::string, int>::iterator t = ruleType.begin(); t != ruleType.end(); ++t)
+				for (auto& t : ruleType)
 				{
-					std::string ruleTypeName = t->first;
+					std::string ruleTypeName = t.first;
 					if (ruleTypeName == solType)
 					{
-						solEffectiveness = t->second;
+						solEffectiveness = t.second;
 					}
 				}
 			}
@@ -585,7 +585,6 @@ double CovertOperationStartState::getOperationOdds()
 				soldierBonus += (double)stats->investigation / 5;
 				soldierBonus += (double)stats->perception / 10;
 				soldierBonus += (double)stats->interrogation / 10;
-				Log(LOG_DEBUG) << "Calculation investigation bonus of soldier " << s->getName() << ": " << soldierBonus;
 			}
 			if (infiltration)
 			{
@@ -593,18 +592,15 @@ double CovertOperationStartState::getOperationOdds()
 				soldierBonus += (double)stats->perception / 10;
 				soldierBonus += (double)stats->interrogation / 10;
 				soldierBonus += statEffectCalc(stats->bravery, 1800, 2.1, 15, -8);
-				Log(LOG_DEBUG) << "Calculation infiltration bonus of soldier " << s->getName() << ": " << soldierBonus;
 			}
 			if (negotiation)
 			{
 				soldierBonus += (double)stats->charisma / 3;
-				Log(LOG_DEBUG) << "Calculation negotiation bonus of soldier " << s->getName() << ": " << soldierBonus;
 			}
 			if (deception)
 			{
 				soldierBonus += (double)stats->deception / 3;
 				soldierBonus += statEffectCalc(stats->bravery, 1800, 2.1, 9, -5);
-				Log(LOG_DEBUG) << "Calculation deception bonus of soldier " << s->getName() << ": " << soldierBonus;
 			}
 
 			int psi = stats->psiSkill;
@@ -614,10 +610,8 @@ double CovertOperationStartState::getOperationOdds()
 				soldierBonus += statEffectCalc(stats->psiStrength, 8000, 2.2, 8, 0) / 4; //as soldier still has psi defence and some excrescence capabilities
 
 			soldierBonus = soldierBonus * solEffectiveness / 100 / statsNumber;
-			Log(LOG_DEBUG) << "Result soldier bonus: " << soldierBonus;
 			_chances += soldierBonus;
 			soldierBonus = 0;
-			Log(LOG_DEBUG) << "_chances: " << _chances;
 		}
 
 		double officerEffect = 0;
@@ -626,7 +620,6 @@ double CovertOperationStartState::getOperationOdds()
 			officerEffect = -0.2321 * pow(soldierMaxRank, 2) + 2.5036 * soldierMaxRank + 0.0357; // cute nonlinear function for field officer + avg rank bonus
 		}
 		double rankEffect = (double)soldiersTotalRank / assignedSoldiersN;
-		Log(LOG_DEBUG) << "officerEffect: " << officerEffect << " , rankEffect: " << rankEffect;
 		_chances += officerEffect + rankEffect;
 
 		// let's check if itemset has specific FTA's item categories
@@ -667,20 +660,15 @@ double CovertOperationStartState::getOperationOdds()
 			if (!allConsealed)
 			{
 				itemCatEffect = -itemConcealedBonusEffect * diffCoeff;
-				Log(LOG_DEBUG) << "!allConsealed, so itemCatEffect: " << itemCatEffect;
 			}
 
 			itemCatEffect = itemCatEffect - diffCoeff * heavy * itemConcealedBonusEffect * 4;
-			Log(LOG_DEBUG) << "resulting itemCatEffect: " << itemCatEffect;
 			_chances += itemCatEffect;
-			Log(LOG_DEBUG) << "after itemCatEffect considered, chances are: " << _chances;
 		}
 	}
 
 	double intelBonus = ((double)_base->getOperationBoost() * 100 ) / 100;
-	Log(LOG_DEBUG) << "intelBonus:" << intelBonus;
 	_chances += intelBonus;
-	Log(LOG_DEBUG) << ">>> Operation chances calculation finished with result:" << _chances;
 
 	if (_chances > 200) // we dont want too high chances
 		_chances = 200;
@@ -695,7 +683,6 @@ int CovertOperationStartState::getOperationCost()
 	{
 		double bonus = (_chances - 100) / (_chances - 82) * 24 / 100; //some cute nonlinear calculation
 		reducedCost -= std::round(_cost * bonus);
-		Log(LOG_DEBUG) << "We have _chances > 100, so we reduce time cost from: " << _cost << " down to: " << reducedCost;
 	}
 	return reducedCost;
 }

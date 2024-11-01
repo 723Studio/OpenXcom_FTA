@@ -4645,7 +4645,6 @@ void GeoscapeState::handleResearch(Base* base)
 		{
 			bool sharable = true;
 			assignedScientists.clear();
-			Log(LOG_INFO) << "Calculating hourly progress for research project: " << rules->getName() << "..."; //#CLEARLOGS
 			if (rules->destroyItem()
 				|| !rules->getGetOneFree().empty()
 				|| !rules->getSpawnedEvent().empty()

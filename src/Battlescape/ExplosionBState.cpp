@@ -267,8 +267,6 @@ void ExplosionBState::init()
 						if (dist <= soundRange)
 						{
 							unit->setUnitWarned(true);
-							Log(LOG_INFO) << "Unit is warned because explosion sound."; //#FINNIKTODO #CLEARLOGS
-							continue;
 						}
 					}
 				}

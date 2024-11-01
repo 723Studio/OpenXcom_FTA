@@ -268,19 +268,19 @@ public:
 	/// Mark the unit as surrendering this turn.
 	void setSurrendering(bool isSurrendering);
 	/// Sets the unit's alarmed status.
-	void setAlarmed(bool isAlarmed) { _alarmed = isAlarmed; Log(LOG_INFO) << "Unit " << this->getId() << " now has alarmed status: " << _alarmed;}; //#FINNIKTODO #CLEARLOGS
+	void setAlarmed(bool isAlarmed) { _alarmed = isAlarmed;}
 	/// Gets the unit's alarmed status.
-	bool getAlarmed() const { return _alarmed; };
+	bool getAlarmed() const { return _alarmed; }
 	/// Sets the unit's warned status.
-	void setUnitWarned(bool warned) { _warned = warned; };
+	void setUnitWarned(bool warned) { _warned = warned; }
 	/// Gets the unit's warned status.
-	bool getUnitWarned() const { return _warned; };
+	bool getUnitWarned() const { return _warned; }
 	/// Check if unit's desguise still valid.
 	bool tryUncover();
 	/// Sets if the unit was under direct friendly fire.
-	void setFrienlyFired(bool wasFriendlyFired) { _wasFriendlyFired = wasFriendlyFired; };
+	void setFrienlyFired(bool wasFriendlyFired) { _wasFriendlyFired = wasFriendlyFired; }
 	/// Gets if the unit was under direct friendly fire.
-	bool wasFriendlyFired() const { return _wasFriendlyFired; };
+	bool wasFriendlyFired() const { return _wasFriendlyFired; }
 	/// Start the walkingPhase
 	void startWalking(int direction, Position destination, SavedBattleGame *savedBattleGame);
 	/// Increase the walkingPhase

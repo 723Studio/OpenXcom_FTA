@@ -729,11 +729,11 @@ YAML::Node SavedBattleGame::save() const
 			node["items"].push_back(bi->save(this->getMod()->getScriptGlobal()));
 		}
 	}
-	for (std::vector<BattleObject*>::const_iterator i = _battleObjects.begin(); i != _battleObjects.end(); ++i)
+	for (auto _battleObject : _battleObjects)
 	{
-		if ((*i)->getTile()!=NULL) //if battleObject deleted
+		if (_battleObject->getTile()!=NULL) //if battleObject deleted
 		{
-			node["battleObjects"].push_back((*i)->save());
+			node["battleObjects"].push_back(_battleObject->save());
 		}
 	}
 	node["tuReserved"] = (int)_tuReserved;
@@ -856,12 +856,12 @@ AlienDeployment* SavedBattleGame::getAlienDeploymet()
 	}
 	if (!ruleDeploy)
 	{
-		for (std::vector<Ufo*>::iterator ufo = save->getUfos()->begin(); ufo != save->getUfos()->end(); ++ufo)
+		for (auto& ufo : *save->getUfos())
 		{
-			if ((*ufo)->isInBattlescape())
+			if (ufo->isInBattlescape())
 			{
 				// Note: fake underwater UFO deployment was already considered above (via alienCustomMission)
-				ruleDeploy = _rule->getDeployment((*ufo)->getRules()->getType());
+				ruleDeploy = _rule->getDeployment(ufo->getRules()->getType());
 				break;
 			}
 		}
@@ -885,11 +885,11 @@ ItemContainer *SavedBattleGame::getBaseStorageItems()
 */
 int SavedBattleGame::findBattleScriptVariable(const std::string& varName)
 {
-	for (std::map<std::string, int>::iterator i = _battleScriptVars.begin(); i != _battleScriptVars.end(); ++i)
+	for (auto& _battleScriptVar : _battleScriptVars)
 	{
-		if ((*i).first == varName)
+		if (_battleScriptVar.first == varName)
 		{
-			return (*i).second;
+			return _battleScriptVar.second;
 		}
 	}
 	return 0;
@@ -900,11 +900,11 @@ int SavedBattleGame::findBattleScriptVariable(const std::string& varName)
 */
 void SavedBattleGame::updateBattleScriptVariable(const std::string& varName, int val)
 {
-	for (std::map<std::string, int>::iterator i = _battleScriptVars.begin(); i != _battleScriptVars.end(); ++i)
+	for (auto& _battleScriptVar : _battleScriptVars)
 	{
-		if ((*i).first == varName)
+		if (_battleScriptVar.first == varName)
 		{
-			(*i).second += 1;
+			_battleScriptVar.second += 1;
 			return;
 		}
 	}
@@ -1440,37 +1440,33 @@ void SavedBattleGame::newTurnUpdateScripts()
 void SavedBattleGame::updateAlarm()
 {
 	bool riseAlarm = false;
-	for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+	for (auto& _unit : _units)
 	{
-		if ((*i)->getFaction() == FACTION_HOSTILE && !(*i)->isOut())
+		if (_unit->getFaction() == FACTION_HOSTILE && !_unit->isOut())
 		{
-			if ((*i)->getAlarmed())
+			if (_unit->getAlarmed())
 			{
 				riseAlarm = true;
-				(*i)->setUnitWarned(false);
-				(*i)->setAlarmed(false);
-				Log(LOG_INFO) << "Unit not warned and alarmed anymore, because it was already alarmed and rised global alarm level on the map."; //#FINNIKTODO #CLEARLOGS
+				_unit->setUnitWarned(false);
+				_unit->setAlarmed(false);
 			}
 
-			if ((*i)->getUnitWarned())
+			if (_unit->getUnitWarned())
 			{
-				(*i)->setAlarmed(true);
-				Log(LOG_INFO) << "Unit is alarmed because its warned status."; //#FINNIKTODO #CLEARLOGS
-
+				_unit->setAlarmed(true);
 			}
 		}
 	}
 	if (riseAlarm)
 	{
 		_alarmLvl += 1;
-		for (std::vector<BattleUnit*>::iterator i = _units.begin(); i != _units.end(); ++i)
+		for (auto& _unit : _units)
 		{
-			if ((*i)->getFaction() == FACTION_PLAYER && !(*i)->getUndercover())
+			if (_unit->getFaction() == FACTION_PLAYER && !_unit->getUndercover())
 			{
-				(*i)->setUndercover(false);
+				_unit->setUndercover(false);
 			}
 		}
-		Log(LOG_INFO) << "Rising alarm level to " << _alarmLvl << " !"; //#FINNIKTODO #CLEARLOGS
 	}
 }
 /**
@@ -3340,17 +3336,15 @@ void SavedBattleGame::defineStealth()
 	if (!mission->getUndercoverArmors().empty())
 	{
 		_stealthMission = true;
-		Log(LOG_INFO) << ">>> This mission considered as stealth mission because it's deployment has defined Undercover Armors!"; //#FINNIKTODO #CLEARLOGS
 	}
 	else if (!mission->getBattleScript().empty())
 	{
 		auto scripts = _rule->getBattleScript(mission->getBattleScript());
-		for (std::vector<BattleScript*>::const_iterator i = scripts->begin(); i != scripts->end(); ++i)
+		for (auto script : *scripts)
 		{
-			if ((*i)->getMinAlarm() > 0)
+			if (script->getMinAlarm() > 0)
 			{
 				_stealthMission = true;
-				Log(LOG_INFO) << ">>> This mission considered as stealth mission because " << (*i)->getType() << " battleScript has min alarm level " << (*i)->getMinAlarm(); //#FINNIKTODO #CLEARLOGS
 				break;
 			}
 		}

@@ -110,7 +110,6 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				auto caps = s->getRules()->getStatCaps();
 				unsigned int statsN = 0;
 				double soldierEffort = 0, statEffort = 0;
-				Log(LOG_INFO) << "Engineer " << s->getName() << " is calculating his/her effort for the project" << _rules->getName(); //#FINNIKTODO #CLEARLOGS
 				if (projStats.weaponry > 0)
 				{
 					statEffort = stats->weaponry;
@@ -187,26 +186,21 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 					statsN++;
 				}
 
-				Log(LOG_INFO) << "Raw soldierEffort equals: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				int diligence = stats->diligence;
 				double diligenceFactor = 0.5;
 				if (diligence > 10)
 					diligenceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
 
 				soldierEffort *= diligenceFactor;
-				Log(LOG_INFO) << "soldierEffort with diligence bonus: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				if (statsN > 0)
 					soldierEffort /= statsN;
-				Log(LOG_INFO) << "Final soldierEffort value: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				effort += soldierEffort;
-				Log(LOG_INFO) << "Project effort now has value: " << effort; //#FINNIKTODO #CLEARLOGS
 				summEfficiency += stats->efficiency;
 			}
 			_efficiency = summEfficiency / assignedEngineers.size();
 
 			effort *= loyaltyRating; //not normalizing by 100 to fit small hourly values into integer later
 			effort *= speedFactor;
-			Log(LOG_INFO) << "Effort after correction for loyalty and mod factor: " << effort; //#FINNIKTODO #CLEARLOGS
 			progress = static_cast<int>(effort);
 			Log(LOG_INFO) << " >>> Total hourly progress for manufacturing project " << _rules->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
 		}

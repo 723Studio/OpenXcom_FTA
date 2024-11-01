@@ -86,7 +86,7 @@ private:
 	/// Process Faction's power management and returns required funds for further use.
 	int64_t managePower(int month, int64_t baseCost);
 	/// Handle researching.
-	void handleResearch(Game& engine, int64_t reqFunds);
+	void handleResearch(Game& engine);
 	/// Get if research article is unlocked by faction.
 	bool isResearched(const std::string& name) const;
 	bool isResearched(const RuleResearch* rule) const;

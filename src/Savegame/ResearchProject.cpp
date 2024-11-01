@@ -55,7 +55,6 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
 		double soldierEffort = 0, statEffort = 0;
-		Log(LOG_INFO) << "Scientist: " << s.first->getName() << " is calculating effort for the project"; //#FINNIKTODO #CLEARLOGS
 		if (projStats.physics > 0)
 		{
 			statEffort = stats->physics;
@@ -158,21 +157,14 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 		soldierEffort /= statsN + 1;
 
 		effort += soldierEffort;
-		Log(LOG_INFO) << "Calculated effort value : " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 	}
-
-	Log(LOG_INFO) << "Raw combined effort: " << effort; //#FINNIKTODO #CLEARLOGS
 
 	// If one woman can carry a baby in nine months, nine women can't do it in a month...
 	if (assignedScientists.size() > 1)
 		effort *= (100 - 19 * log(assignedScientists.size())) / 100;
 
-	Log(LOG_INFO) << "Adjusted effort by size: " << effort; //#FINNIKTODO #CLEARLOGS
-
 	effort *= rating; //not normalizing by 100 to fit small hourly values into integer later
 	effort *= speedFactor;
-
-	Log(LOG_INFO) << "Adjusted effort by loyalty and mod coefficients: " << effort; //#FINNIKTODO #CLEARLOGS
 
 	progress = static_cast<int>(effort);
 	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS

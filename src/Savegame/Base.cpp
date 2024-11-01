@@ -306,11 +306,11 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			if (const YAML::Node& p = (*i)["activePrisoner"])
 			{
 				std::string prisoner = p.as<std::string>();
-				for (std::vector<BasePrisoner*>::iterator j = _prisoners.begin(); j != _prisoners.end(); ++j)
+				for (auto& _prisoner : _prisoners)
 				{
-					if ((*j)->getNameAndId() == prisoner)
+					if (_prisoner->getNameAndId() == prisoner)
 					{
-						s->setActivePrisoner(*j);
+						s->setActivePrisoner(_prisoner);
 						break;
 					}
 				}

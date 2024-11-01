@@ -321,10 +321,6 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 				{
 					_squadTacticBonus += squadCraft->getPilotCoordinationBonus(squadCraft->getPilotList(false), _game->getMod());
 				}
-				if (_squadTacticBonus > 0)
-				{
-					Log(LOG_INFO) << "_squadTacticBonus applied: " << _squadTacticBonus; //#FINNIKTODO #CLEARLOGS
-				}
 			}
 		}
 	}
@@ -1259,21 +1255,17 @@ void DogfightState::update()
 							if (type == CWPST_CANNON)
 							{
 								int exp = pilot->getRules()->getDogfightExperience().dogfight;
-								Log(LOG_INFO) << "dogfight exp calc with odds: " << rate << " * " << exp << " /  100 = " << rate * exp / 100; //#FINNIKTODO #CLEARLOGS
 								if (RNG::percent(rate * exp / 100))
 								{
 									pilot->getDogfightExperience()->dogfight++;
-									Log(LOG_INFO) << "dogfight exp gained, now it is: " << pilot->getDogfightExperience()->dogfight; //#FINNIKTODO #CLEARLOGS
 								}
 							}
 							else if (type == CWPST_MISSILE)
 							{
 								int exp = pilot->getRules()->getDogfightExperience().missiles;
-								Log(LOG_INFO) << "missiles exp calc with odds: " << rate << " * " << exp << " /  100 = " << rate * exp / 100; //#FINNIKTODO #CLEARLOGS
 								if (RNG::percent(rate * exp / 100))
 								{
 									pilot->getDogfightExperience()->missiles++;
-									Log(LOG_INFO) << "missiles exp gained, now its : " << pilot->getDogfightExperience()->missiles; //#FINNIKTODO #CLEARLOGS
 								}
 							}
 						}
@@ -1317,7 +1309,6 @@ void DogfightState::update()
 						// HK's chance to hit is halved, but craft's reload time is doubled too
 						chancetoHit = chancetoHit / 2;
 					}
-					Log(LOG_INFO) << "Ufo shooting, its chancetoHit is: " << chancetoHit << " with _pilotDodgeBonus: " << _pilotDodgeBonus; //#FINNIKTODO #CLEARLOGS
 					if (RNG::percent(chancetoHit) || _selfDestructPressed)
 					{
 						// Formula delivered by Volutar, altered by Extended version.
@@ -1359,11 +1350,9 @@ void DogfightState::update()
 						for (auto pilot : _pilots)
 						{
 							int exp = pilot->getRules()->getDogfightExperience().maneuvering;
-							Log(LOG_INFO) << "maneuvering exp calc with odds : " << exp; //#FINNIKTODO #CLEARLOGS
 							if (RNG::percent(exp))
 							{
 								pilot->getDogfightExperience()->maneuvering++;
-								Log(LOG_INFO) << "maneuvering exp gained, now its : " << pilot->getDogfightExperience()->maneuvering; //#FINNIKTODO #CLEARLOGS
 							}
 						}
 					}
@@ -1941,7 +1930,6 @@ void DogfightState::handlePanic(bool damaged)
 				_btnCautious->setHidden(true);
 				_btnStandard->setHighContrast(true);
 				setStatus("STR_PILOT_PANICKING");
-				Log(LOG_INFO) << ">> Panic! _panicTimeout: " << _panicTimeout << " with _crewBravery: " << _crewBravery; //#FINNIKTODO #CLEARLOGS
 			}
 			else
 			{
@@ -1951,7 +1939,6 @@ void DogfightState::handlePanic(bool damaged)
 					if (RNG::percent(exp))
 					{
 						pilot->getDogfightExperience()->bravery ++;
-						Log(LOG_INFO) << "bravery exp gained, now its : " << pilot->getDogfightExperience()->bravery; //#FINNIKTODO #CLEARLOGS
 					}
 				}
 			}
@@ -1974,7 +1961,6 @@ void DogfightState::handlePanic(bool damaged)
 				for (auto pilot : _pilots)
 				{
 					pilot->getDogfightExperience()->bravery++;
-					Log(LOG_INFO) << "bravery exp gained, now its : " << pilot->getDogfightExperience()->bravery; //#FINNIKTODO #CLEARLOGS
 				}
 			}
 		}
