@@ -203,12 +203,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 				summEfficiency += stats->efficiency;
 			}
 			_efficiency = summEfficiency / assignedEngineers.size();
-			
-			if (assignedEngineers.size() > 1)
-			{
-				effort *= (100 - 19 * log(assignedEngineers.size())) / 100;
-				Log(LOG_INFO) << "Effort after correction for size: " << effort; //#FINNIKTODO #CLEARLOGS
-			}
+
 			effort *= loyaltyRating; //not normalizing by 100 to fit small hourly values into integer later
 			effort *= speedFactor;
 			Log(LOG_INFO) << "Effort after correction for loyalty and mod factor: " << effort; //#FINNIKTODO #CLEARLOGS

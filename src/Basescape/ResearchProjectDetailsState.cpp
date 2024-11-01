@@ -178,21 +178,21 @@ std::string ResearchProjectDetailsState::generateStatsList()
 std::string ResearchProjectDetailsState::getCostDescription()
 {
 	const int cost = _rule->getCost();
-	if (cost <= 10) // for more precise calculation, we use man/hour * 100 in FtA for cost/spends calcualtions
+	if (cost <= 10 * 100) // for more precise calculation, we use man/hour * 100 in FtA for cost/spends calcualtions
 		return "STR_TRIVIAL";
-	if (cost <= 30)
+	if (cost <= 30 * 100)
 		return "STR_VERY_EASY";
-	else if (cost <= 100)
+	else if (cost <= 100 * 100)
 		return "STR_EASY";
-	else if (cost <= 300)
+	else if (cost <= 300 * 100)
 		return "STR_MODERATE";
-	else if (cost <= 900)
+	else if (cost <= 900 * 100)
 		return "STR_AVERAGE";
-	else if (cost <= 2700)
+	else if (cost <= 2700 * 100)
 		return "STR_SOPHISTICATED";
-	else if (cost <= 8000)
+	else if (cost <= 8000 * 100)
 		return "STR_HARD";
-	else if (cost <= 24000)
+	else if (cost <= 24000 * 100)
 		return "STR_VERY_HARD";
 	else
 		return "STR_IMPOSSIBLE";
