@@ -334,6 +334,7 @@ void PrisonerAllocateAgentsState::lstAgentsClick(Action *action)
 			_selectedPrisoner->removeAgent(s);
 			color = _lstAgents->getColor();
 			_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
+			s->setActivePrisoner(0);
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
