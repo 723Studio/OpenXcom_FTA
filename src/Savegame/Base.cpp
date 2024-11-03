@@ -34,7 +34,6 @@
 #include "Soldier.h"
 #include "../Engine/Language.h"
 #include "../Mod/RuleItem.h"
-#include "../Mod/RulePrisoner.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleResearch.h"
@@ -308,7 +307,7 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 				std::string prisoner = p.as<std::string>();
 				for (auto& _prisoner : _prisoners)
 				{
-					if (_prisoner->getNameAndId() == prisoner)
+					if (_prisoner->getId() == prisoner)
 					{
 						s->setActivePrisoner(_prisoner);
 						break;

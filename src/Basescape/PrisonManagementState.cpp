@@ -218,7 +218,7 @@ void PrisonManagementState::fillPrisonList(size_t scrl)
 		}
 		assigned << n;
 
-		_lstPrisoners->addRow(3, p->getNameAndId().c_str(), assigned.str().c_str() ,status.str().c_str());
+		_lstPrisoners->addRow(3, p->getNameAndId(_game->getLanguage()).c_str(), assigned.str().c_str() ,status.str().c_str());
 	}
 
 	auto recovery = _base->getSumRecoveryPerDay();

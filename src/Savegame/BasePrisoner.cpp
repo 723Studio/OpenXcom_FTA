@@ -26,6 +26,7 @@
 #include "../Engine/RNG.h"
 #include "../FTA/MasterMind.h"
 #include "../Geoscape/PrisonReportState.h"
+#include "../Engine/Language.h"
 #include <sstream>
 #include <algorithm>
 
@@ -184,7 +185,7 @@ bool BasePrisoner::think(Game &engine)
 			int breakpoint = rules.getBaseResistance() + getMorale() / 4 + getAggression() * 2 + getIntelligence() * 2;
 			int progress = 0;
 			double effort = 0;
-			Log(LOG_INFO) << "Processing interrogation of base prisoner: " << this->getNameAndId() << " with current interrogationProgress: " << _interrogationProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
+			Log(LOG_INFO) << "Processing interrogation of base prisoner: " << this->getName() << " " << this->getId() << " with current interrogationProgress: " << _interrogationProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
 			for (auto s : _agents)
 			{
 				Log(LOG_INFO) << "Agent: " << s->getName() << " is calculating effort for interrogation"; //#FINNIKTODO #CLEARLOGS
@@ -314,7 +315,7 @@ bool BasePrisoner::think(Game &engine)
 		{
 			auto rules = _rule->getTortureRules();
 			// let's calculate power of our team
-			Log(LOG_INFO) << "Processing torturing of base prisoner: " << this->getNameAndId(); //#FINNIKTODO #CLEARLOGS
+			Log(LOG_INFO) << "Processing torturing of base prisoner: " << this->getName() << " " << this->getId(); //#FINNIKTODO #CLEARLOGS
 			int psionics = 0, torturePower = 0;
 			for (auto agent: _agents)
 			{
@@ -390,7 +391,7 @@ bool BasePrisoner::think(Game &engine)
 			int progress = 0;
 			double effort = 0;
 			
-			Log(LOG_INFO) << "Processing recruiting of base prisoner: " << this->getNameAndId() << " with current recruitingProgress: " << _recruitingProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
+			Log(LOG_INFO) << "Processing recruiting of base prisoner: " << this->getName() << " " << this->getId() << " with current recruitingProgress: " << _recruitingProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
 			for (auto s : _agents)
 			{
 				double soldierEffort = 0, statEffort = 0;
@@ -514,10 +515,10 @@ void BasePrisoner::die()
 	_recruitingProgress = 0;
 }
 
-std::string BasePrisoner::getNameAndId()
+std::string BasePrisoner::getNameAndId(Language* lang)
 {
 	std::ostringstream nameId;
-	nameId << getName();
+	nameId << lang->getString(getName());
 	nameId << " / ";
 	nameId << getId();
 	return nameId.str();

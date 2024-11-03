@@ -108,7 +108,7 @@ PrisonerInfoState::PrisonerInfoState(Base* base, BasePrisoner* prisoner, const R
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr(_prisoner->getNameAndId()));
+	_txtTitle->setText(_prisoner->getNameAndId(_game->getLanguage()));
 
 	_btnAllocate->setText(tr("STR_ALLOCATE_AGENTS"));
 	_btnAllocate->onMouseClick((ActionHandler)&PrisonerInfoState::btnAllocateClick);

@@ -210,7 +210,7 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 		{
 			if (prisoner->getPrisonerState() != PRISONER_STATE_NONE)
 			{
-				TransferRow row = { TRANSFER_PRISONER, prisoner, prisoner->getNameAndId(),  (int)(20 * _distance), 1, 0, 0, 1, -1, 0, 0, (int)(20 * _distance) };
+				TransferRow row = { TRANSFER_PRISONER, prisoner, prisoner->getId(),  (int)(20 * _distance), 1, 0, 0, 1, -1, 0, 0, (int)(20 * _distance) };
 				_items.push_back(row);
 
 				std::string cat = getCategory(_items.size() - 1);

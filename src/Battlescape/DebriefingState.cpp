@@ -2997,11 +2997,10 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			base->addPrisoner(p);
 			//Populate BasePrisoner data;
 			p->setArmor(_game->getMod()->getArmor(from->getArmor()->getType()));
-			int points = 0;
-			p->setName(tr(from->getType()));
+			p->setName(from->getType());
 			p->setIntelligence(from->getUnitRules()->getIntelligence());
 			p->setAggression(from->getUnitRules()->getAggression());
-			points = from->getUnitRules()->getValue();
+			int points = from->getUnitRules()->getValue();
 			if (!from->getRoles().empty())
 			{
 				p->setRoles(from->getRoles());

@@ -105,7 +105,7 @@ void PrisonReportState::initUI()
 		btnName = "STR_GO_TO_BASE";
 		ss << tr("STR_PRISONER_DIED_PT1");
 		ss << " ";
-		ss << _prisoner->getNameAndId();
+		ss << _prisoner->getNameAndId(_game->getLanguage());
 		ss << " ";
 		ss << tr("STR_PRISONER_DIED_PT2");
 		desription = ss.str();
@@ -114,7 +114,7 @@ void PrisonReportState::initUI()
 		btnName = "STR_VIEW_REPORT";
 		ss << tr("STR_PRISONER_INTERROGATED_PT1");
 		ss << " ";
-		ss << _prisoner->getNameAndId();
+		ss << _prisoner->getNameAndId(_game->getLanguage());
 		ss << " ";
 		if (_research != nullptr || _bonus != nullptr)
 		{
@@ -133,7 +133,7 @@ void PrisonReportState::initUI()
 			btnName = "STR_VIEW_SOLDIER";
 			ss << tr("STR_PRISONER_RECRUITING_PT1");
 			ss << " ";
-			ss << _prisoner->getNameAndId();
+			ss << _prisoner->getNameAndId(_game->getLanguage());
 			ss << " ";
 			ss << tr("STR_PRISONER_RECRUITING_PT2");
 			ss << " ";
@@ -146,7 +146,7 @@ void PrisonReportState::initUI()
 		{
 			ss << tr("STR_PRISONER_RECRUITING_PT1");
 			ss << " ";
-			ss << _prisoner->getNameAndId();
+			ss << _prisoner->getNameAndId(_game->getLanguage());
 			ss << " ";
 			ss << tr("STR_PRISONER_RECRUITING_PT2");
 			ss << " ";

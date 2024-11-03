@@ -260,7 +260,7 @@ std::string Transfer::getName(Language *lang) const
 	}
 	else if (_prisoner != 0)
 	{
-		return _prisoner->getNameAndId();
+		return _prisoner->getId();
 	}
 	return lang->getString(_itemId->getType());
 }

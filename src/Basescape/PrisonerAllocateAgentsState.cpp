@@ -86,7 +86,7 @@ PrisonerAllocateAgentsState::PrisonerAllocateAgentsState(Base *base, PrisonerInf
 	//_btnInfo->onMouseClick((ActionHandler)&PrisonerAllocateAgentsState::btnInfoClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(tr(_selectedPrisoner->getPrisioner()->getNameAndId()));
+	_txtTitle->setText(_selectedPrisoner->getPrisioner()->getNameAndId(_game->getLanguage()));
 	_txtTitle->setWordWrap(true);
 	_txtTitle->setVerticalAlign(ALIGN_MIDDLE);
 

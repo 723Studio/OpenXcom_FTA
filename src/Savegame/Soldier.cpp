@@ -481,7 +481,7 @@ YAML::Node Soldier::save(const ScriptGlobal *shared)
 	}
 	if (_prisoner != 0)
 	{
-		node["activePrisoner"] = _prisoner->getNameAndId();
+		node["activePrisoner"] = _prisoner->getId();
 	}
 	node["gender"] = (int)_gender;
 	node["look"] = (int)_look;

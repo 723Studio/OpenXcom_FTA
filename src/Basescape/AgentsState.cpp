@@ -164,7 +164,7 @@ void AgentsState::initList(size_t scrl)
 					{
 						ss << tr("STR_RECRUITING") << ": ";
 					}
-					ss << prisoner->getNameAndId();
+					ss << prisoner->getNameAndId(_game->getLanguage());
 				}
 				_lstAgents->addRow(2, (*i)->getName(true).c_str(), ss.str().c_str());
 				color = _lstAgents->getColor();

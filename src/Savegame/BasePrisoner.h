@@ -31,6 +31,7 @@ class Armor;
 class Soldier;
 class Base;
 class BattleUnit;
+class Language;
 enum UnitFaction : int;
 enum PrisonerState: int {
 	PRISONER_STATE_NONE = 0,
@@ -73,7 +74,7 @@ public:
 	const std::string& getId() const { return _id; }
 	void setName(const std::string& name) { _name = name; }
 	std::string getName() const { return _name; }
-	std::string getNameAndId();
+	std::string getNameAndId(Language *lang);
 
 	void setPrisonerState(PrisonerState state) { _state = state; }
 	PrisonerState getPrisonerState() const { return _state; }
