@@ -290,7 +290,7 @@ void ResearchState::fillProjectList(size_t scrl)
 			}
 			sstr << n;
 
-			float progress = static_cast<float>(proj->getSpent()) / proj->getRules()->getCost();
+			float progress = static_cast<float>(proj->getSpent()) / static_cast<float>(proj->getRules()->getCost() * 100);
 			if (n == 0)
 			{
 				sspr << tr("STR_NONE");
