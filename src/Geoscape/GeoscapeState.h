@@ -173,8 +173,6 @@ public:
 	/// Multi-dogfights logic handling.
 	void handleDogfights();
 	void handleDogfightMultiAction(int button);
-	/// Dogfight experience handling.
-	void handleDogfightExperience();
 	/// Gets the number of minimized dogfights.
 	int minimizedDogfightsCount();
 	/// Starts a new dogfight.

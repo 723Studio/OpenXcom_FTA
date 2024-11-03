@@ -185,7 +185,7 @@ void CraftPilotsState::updateUI()
 	_txtDodgeBonusValue->setText(ss2.str().c_str());
 
 	std::ostringstream ss3;
-	int approachSpeed = c->getPilotApproachSpeedModifier(pilots, _game->getMod());
+	int approachSpeed = 2; //hardcode for FtA
 	switch (approachSpeed)
 	{
 	case 1:

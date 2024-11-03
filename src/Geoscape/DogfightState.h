@@ -69,8 +69,7 @@ private:
 	size_t _interceptionsCount;
 	int _x, _y, _minimizedIconX, _minimizedIconY;
 	int _weaponNum;
-	int _pilotAccuracyBonus, _pilotDodgeBonus, _pilotApproachSpeedModifier, _craftAccelerationBonus;
-	int _pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery, _squadTacticBonus;
+	int _pilotDodgeBonus, _craftAccelerationBonus, _pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery, _squadTacticBonus;
 	bool _firedAtLeastOnce, _experienceAwarded;
 	bool _delayedRecolorDone, _fta;
 	// craft min/max, radar min/max, damage min/max, shield min/max
@@ -177,7 +176,7 @@ public:
 	/// Waits until the UFO reaches the right altitude.
 	bool getWaitForAltitude() const;
 	/// Award experience to the pilots.
-	void awardExperienceToPilots();
+	//void awardExperienceToPilots();
 };
 
 }

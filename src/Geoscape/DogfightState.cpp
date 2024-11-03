@@ -271,56 +271,48 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	}
 
 	// pilot modifiers
-	_pilotAccuracyBonus = 0; _pilotDodgeBonus = 0; _pilotApproachSpeedModifier = 0;
-	_pilotMissileAccuracyBonus = 0; _pilotCannonAccuracyBonus = 0;
-	_crewBravery = 2; _squadTacticBonus = 0;
+	_pilotDodgeBonus = 0, _pilotMissileAccuracyBonus = 0; _pilotCannonAccuracyBonus = 0, _crewBravery = 2; _squadTacticBonus = 0;
 	_pilots = _craft->getPilotList(false);
 	for (auto* pilot : _pilots)
 	{
 		pilot->prepareStatsWithBonuses(_game->getMod()); // refresh soldier bonuses
 	}
-
-	_pilotAccuracyBonus = _craft->getPilotAccuracyBonus(_pilots, _game->getMod());
-	_pilotDodgeBonus = _craft->getPilotDodgeBonus(_pilots, _game->getMod());
-	_pilotApproachSpeedModifier = _craft->getPilotApproachSpeedModifier(_pilots, _game->getMod());
-
-	if (_fta)
+	if (!_pilots.empty())
 	{
-		if (!_pilots.empty())
+		int maneuveringMax = 0, missilesMax = 0, dogfightMax = 0;
+		int maneuvering = 0, missiles = 0, dogfight = 0;
+		int bravery = 0;
+		for (auto pilot : _pilots)
 		{
-			int maneuveringMax = 0, missilesMax = 0, dogfightMax = 0;
-			int maneuvering = 0, missiles = 0, dogfight = 0;
-			for (std::vector<Soldier *>::const_iterator i = _pilots.begin(); i != _pilots.end(); ++i)
+			maneuvering = pilot->getStatsWithAllBonuses()->maneuvering;
+			if (maneuvering > maneuveringMax)
 			{
-				maneuvering = (*i)->getStatsWithSoldierBonusesOnly()->maneuvering;
-				if (maneuvering > maneuveringMax)
-				{
-					maneuveringMax = maneuvering; // we use max crew stat
-				}
-				missiles = (*i)->getStatsWithSoldierBonusesOnly()->missiles;
-				if (missiles > missilesMax)
-				{
-					missilesMax = missiles;
-				}
-				dogfight = (*i)->getStatsWithSoldierBonusesOnly()->dogfight;
-				if (dogfight > dogfightMax)
-				{
-					dogfightMax = dogfight;
-				}
+				maneuveringMax = maneuvering; // we use max crew stat
 			}
-			// no need to define new properties for zero point and range
-			_pilotDodgeBonus = (maneuveringMax - _game->getMod()->getPilotReactionsZeroPoint()) * _game->getMod()->getPilotReactionsRange() / 100;
-			_pilotMissileAccuracyBonus = (missilesMax - _game->getMod()->getPilotAccuracyZeroPoint()) * _game->getMod()->getPilotAccuracyRange() / 100;
-			_pilotCannonAccuracyBonus = (dogfightMax - _game->getMod()->getPilotAccuracyZeroPoint()) * _game->getMod()->getPilotAccuracyRange() / 100;
-			_crewBravery = _pilotApproachSpeedModifier * 10;
-			_pilotApproachSpeedModifier = 2;
-
-			for (auto squadCraft : _ufo->getCraftFollowers())
+			missiles = pilot->getStatsWithAllBonuses()->missiles;
+			if (missiles > missilesMax)
 			{
-				if (squadCraft->isInDogfight() && squadCraft != _craft && !squadCraft->isDestroyed() && !squadCraft->getPilotList(false).empty())
-				{
-					_squadTacticBonus += squadCraft->getPilotCoordinationBonus(squadCraft->getPilotList(false), _game->getMod());
-				}
+				missilesMax = missiles;
+			}
+			dogfight = pilot->getStatsWithAllBonuses()->dogfight;
+			if (dogfight > dogfightMax)
+			{
+				dogfightMax = dogfight;
+			}
+
+			bravery += pilot->getStatsWithAllBonuses()->bravery;
+		}
+		// no need to define new properties for zero point and range
+		_pilotDodgeBonus = (maneuveringMax - _game->getMod()->getPilotReactionsZeroPoint()) * _game->getMod()->getPilotReactionsRange() / 100;
+		_pilotMissileAccuracyBonus = (missilesMax - _game->getMod()->getPilotAccuracyZeroPoint()) * _game->getMod()->getPilotAccuracyRange() / 100;
+		_pilotCannonAccuracyBonus = (dogfightMax - _game->getMod()->getPilotAccuracyZeroPoint()) * _game->getMod()->getPilotAccuracyRange() / 100;
+		_crewBravery = bravery / _pilots.size();
+
+		for (auto squadCraft : _ufo->getCraftFollowers())
+		{
+			if (squadCraft->isInDogfight() && squadCraft != _craft && !squadCraft->isDestroyed() && !squadCraft->getPilotList(false).empty())
+			{
+				_squadTacticBonus += squadCraft->getPilotCoordinationBonus(squadCraft->getPilotList(false), _game->getMod());
 			}
 		}
 	}
@@ -328,7 +320,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_craftAccelerationBonus = 2; // vanilla
 	if (!_pilots.empty())
 	{
-		_craftAccelerationBonus = std::min(4, (_craft->getCraftStats().accel / 3) + 1);
+		_craftAccelerationBonus = std::min(2, (_craft->getCraftStats().accel / 3) + 1);
 	}
 
 	// HK options
@@ -351,11 +343,6 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 				{
 					// push secondary targets a tiny bit away from the HK
 					_currentDist += 16;
-				}
-				else
-				{
-					// approach primary target at maximum approach speed
-					_pilotApproachSpeedModifier = 4;
 				}
 			}
 		}
@@ -1085,7 +1072,7 @@ void DogfightState::update()
 			}
 			else if (_currentDist > _targetDist && !_ufo->isCrashed() && !_craft->isDestroyed())
 			{
-				distanceChange = -1 * _pilotApproachSpeedModifier; // engage speed
+				distanceChange = -1 * _craftAccelerationBonus; // engage speed
 			}
 
 			// don't let the interceptor mystically push or pull its fired projectiles
@@ -1162,18 +1149,13 @@ void DogfightState::update()
 					chanceToHit -= _ufo->getCraftStats().avoidBonus;
 					chanceToHit += _craft->getCraftStats().hitBonus;
 					auto type = p->getSubType();
-					if (_fta)
-					{
-						if (type == CWPST_CANNON)
-							chanceToHit += _pilotCannonAccuracyBonus;
-						if (type == CWPST_MISSILE)
-							chanceToHit += _pilotMissileAccuracyBonus;
-						chanceToHit += _squadTacticBonus;
-					}
-					else
-					{
-						chanceToHit += _pilotAccuracyBonus;
-					}
+
+					if (type == CWPST_CANNON)
+						chanceToHit += _pilotCannonAccuracyBonus;
+					if (type == CWPST_MISSILE)
+						chanceToHit += _pilotMissileAccuracyBonus;
+					chanceToHit += _squadTacticBonus;
+					
 					if (RNG::percent(chanceToHit))
 					{
 						// Formula delivered by Volutar, altered by Extended version.
@@ -1199,7 +1181,6 @@ void DogfightState::update()
 
 						damage = std::max(0, damage - _ufo->getCraftStats().armor);
 						_ufo->setDamage(_ufo->getDamage() + damage, _game->getMod());
-						_state->handleDogfightExperience(); // called after setDamage
 						if (_ufo->isCrashed())
 						{
 							_ufo->setShotDownByCraftId(_craft->getUniqueId());
@@ -1776,7 +1757,6 @@ void DogfightState::update()
 			{
 				finalRun = true;
 				_ufo->setDamage(_ufo->getCraftStats().damageMax, _game->getMod());
-				_state->handleDogfightExperience(); // called after setDamage
 				_ufo->setShotDownByCraftId(_craft->getUniqueId());
 				_ufo->setSpeed(0);
 				_ufo->setStatus(Ufo::DESTROYED);
@@ -2744,41 +2724,41 @@ bool DogfightState::getWaitForAltitude() const
 	return _waitForAltitude;
 }
 
-void DogfightState::awardExperienceToPilots()
-{
-	if (!_fta && _firedAtLeastOnce && !_experienceAwarded && _craft && _ufo && (_ufo->isCrashed() || _ufo->isDestroyed()))
-	{
-		bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
-		for (auto* pilot : _pilots)
-		{
-			if (pilot->getCurrentStats()->firing < pilot->getRules()->getStatCaps().firing)
-			{
-				if (RNG::percent(pilot->getRules()->getDogfightExperience().firing))
-				{
-					pilot->getCurrentStatsEditable()->firing++;
-					pilot->getDailyDogfightExperienceCache()->firing++;
-				}
-			}
-			if (pilot->getCurrentStats()->reactions < pilot->getRules()->getStatCaps().reactions)
-			{
-				if (RNG::percent(pilot->getRules()->getDogfightExperience().reactions))
-				{
-					pilot->getCurrentStatsEditable()->reactions++;
-					pilot->getDailyDogfightExperienceCache()->reactions++;
-				}
-			}
-			if (pilot->getCurrentStats()->bravery < pilot->getRules()->getStatCaps().bravery)
-			{
-				if (RNG::percent(pilot->getRules()->getDogfightExperience().bravery))
-				{
-					pilot->getCurrentStatsEditable()->bravery += 10; // increase by 10 to keep OCD at bay
-					pilot->getDailyDogfightExperienceCache()->bravery += 10;
-				}
-			}
-			pilot->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
-		}
-		_experienceAwarded = true;
-	}
-}
+//void DogfightState::awardExperienceToPilots()
+//{
+//	if (!_fta && _firedAtLeastOnce && !_experienceAwarded && _craft && _ufo && (_ufo->isCrashed() || _ufo->isDestroyed()))
+//	{
+//		bool psiStrengthEval = (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()));
+//		for (auto* pilot : _pilots)
+//		{
+//			if (pilot->getCurrentStats()->firing < pilot->getRules()->getStatCaps().firing)
+//			{
+//				if (RNG::percent(pilot->getRules()->getDogfightExperience().firing))
+//				{
+//					pilot->getCurrentStatsEditable()->firing++;
+//					pilot->getDailyDogfightExperienceCache()->firing++;
+//				}
+//			}
+//			if (pilot->getCurrentStats()->reactions < pilot->getRules()->getStatCaps().reactions)
+//			{
+//				if (RNG::percent(pilot->getRules()->getDogfightExperience().reactions))
+//				{
+//					pilot->getCurrentStatsEditable()->reactions++;
+//					pilot->getDailyDogfightExperienceCache()->reactions++;
+//				}
+//			}
+//			if (pilot->getCurrentStats()->bravery < pilot->getRules()->getStatCaps().bravery)
+//			{
+//				if (RNG::percent(pilot->getRules()->getDogfightExperience().bravery))
+//				{
+//					pilot->getCurrentStatsEditable()->bravery += 10; // increase by 10 to keep OCD at bay
+//					pilot->getDailyDogfightExperienceCache()->bravery += 10;
+//				}
+//			}
+//			pilot->calcStatString(_game->getMod()->getStatStrings(), psiStrengthEval);
+//		}
+//		_experienceAwarded = true;
+//	}
+//}
 
 }

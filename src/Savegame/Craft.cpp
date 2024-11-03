@@ -1805,45 +1805,6 @@ int Craft::getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const
 }
 
 /**
-* Calculates the approach speed modifier based on pilot skills.
-* @return Approach speed modifier.
-*/
-int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, const Mod *mod) const
-{
-	if (pilots.empty())
-		return 2; // vanilla
-
-	int bravery = 0, bravMin = 500, bravTotal = 0;
-	for (const auto* soldier : pilots)
-	{
-		bravery = soldier->getStatsWithSoldierBonusesOnly()->bravery;
-		bravTotal += bravery;
-		bravMin = std::min(bravery, bravMin);
-	}
-	bravery = bravTotal / pilots.size(); // average bravery of all pilots
-
-	if (mod->isFTAGame())
-		bravery = bravMin; // for FtA we look for the lowest
-
-	if (bravery >= mod->getPilotBraveryThresholdVeryBold())
-	{
-		return 4; // double the speed
-	}
-	else if (bravery >= mod->getPilotBraveryThresholdBold())
-	{
-		return 3; // 50% speed increase
-	}
-	else if (bravery >= mod->getPilotBraveryThresholdNormal())
-	{
-		return 2; // normal speed
-	}
-	else
-	{
-		return 1; // half the speed
-	}
-}
-
-/**
  * Returns the total amount of vehicles of
  * a certain type stored in the craft.
  * @param vehicle Vehicle type.
