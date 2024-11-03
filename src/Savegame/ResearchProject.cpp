@@ -51,7 +51,7 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 	double speedFactor = (double)mod->getResearchSpeedFactor() / 100;
 	for (auto s : assignedScientists)
 	{
-		auto stats = s.first->getStatsWithAllBonuses();
+		auto stats = s.first->getCurrentStats();
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
 		double soldierEffort = 0, statEffort = 0;

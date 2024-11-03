@@ -35,11 +35,6 @@ class Soldier;
 class RuleCovertOperation;
 class CovertOperationStartState;
 class Armor;
-class ArrowButton;
-
-struct SortFunctor;
-
-
 
 /**
 * Select Armor screen that lets the player
@@ -106,18 +101,13 @@ private:
 	Window* _window;
 	Text* _txtTitle, * _txtType, * _txtQuantity;
 	TextList* _lstArmor;
-	ArrowButton* _sortName;
 	std::vector<std::string> _allowedArmor;
 	std::vector<ArmorItem> _armors;
-	ArmorSort _armorOrder;
-	void updateArrows();
 public:
 	/// Creates the Soldier Armor state.
 	CovertOperationSoldierArmorState(Base* base, size_t soldier, SoldierArmorOrigin origin, std::vector<std::string> allowedArmor);
 	/// Cleans up the Soldier Armor state.
 	~CovertOperationSoldierArmorState();
-	/// Sorts the armor list.
-	void sortList();
 	/// Updates the armor list.
 	void updateList();
 	/// Handler for clicking the Cancel button.
@@ -126,8 +116,6 @@ public:
 	void lstArmorClick(Action* action);
 	/// Handler for clicking the Weapons list.
 	void lstArmorClickMiddle(Action* action);
-	/// Handler for clicking the Name arrow.
-	void sortNameClick(Action* action);
 };
 
 }

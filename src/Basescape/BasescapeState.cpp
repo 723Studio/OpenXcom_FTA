@@ -593,16 +593,7 @@ void BasescapeState::viewRightClick(Action *)
 	{
 		switch (f->getRules()->getRightClickActionType())
 		{
-			case 1:
-				if (_game->getMod()->isFTAGame())
-				{
-					_game->pushState(new PrisonManagementState(_base));
-				}
-				else
-				{
-					_game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE));
-				}
-			break;
+			case 1:_game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE));break;
 			case 2: _game->pushState(new ManufactureState(_base)); break;
 			case 3: _game->pushState(new ResearchState(_base)); break;
 			case 4: _game->pushState(new AllocateTrainingState(_base)); break;
@@ -610,6 +601,7 @@ void BasescapeState::viewRightClick(Action *)
 			case 6: _game->pushState(new SoldiersState(_base)); break;
 			case 7: _game->pushState(new SellState(_base, 0)); break;
 			case 8: _game->pushState(new IntelState(_base)); break;
+			case 9: _game->pushState(new PrisonManagementState(_base));
 			default: _game->popState(); break;
 		}
 	}

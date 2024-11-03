@@ -651,7 +651,6 @@ CovertOperationSoldierArmorState::CovertOperationSoldierArmorState(Base* base, s
 	_txtType = new Text(90, 9, 80, 52);
 	_txtQuantity = new Text(70, 9, 190, 52);
 	_lstArmor = new TextList(160, 80, 73, 68);
-	_sortName = new ArrowButton(ARROW_NONE, 11, 8, 80, 52);
 
 	// Set palette
 	if (_origin == SA_BATTLESCAPE)
@@ -669,7 +668,6 @@ CovertOperationSoldierArmorState::CovertOperationSoldierArmorState(Base* base, s
 	add(_txtType, "text", "covertOperationSoldierArmor");
 	add(_txtQuantity, "text", "covertOperationSoldierArmor");
 	add(_lstArmor, "list", "covertOperationSoldierArmor");
-	add(_sortName, "text", "covertOperationSoldierArmor");
 
 	centerAllSurfaces();
 
@@ -693,9 +691,6 @@ CovertOperationSoldierArmorState::CovertOperationSoldierArmorState(Base* base, s
 	_lstArmor->setSelectable(true);
 	_lstArmor->setBackground(_window);
 	_lstArmor->setMargin(8);
-
-	_sortName->setX(_sortName->getX() + _txtType->getTextWidth() + 4);
-	_sortName->onMouseClick((ActionHandler)&SoldierArmorState::sortNameClick);
 
 	const auto& armors = _game->getMod()->getArmorsForSoldiers();
 	for (auto* a : armors)
@@ -723,8 +718,6 @@ CovertOperationSoldierArmorState::CovertOperationSoldierArmorState(Base* base, s
 		}
 	}
 
-	_armorOrder = ARMOR_SORT_NONE;
-	updateArrows();
 	updateList();
 
 	_lstArmor->onMouseClick((ActionHandler)&SoldierArmorState::lstArmorClick);
@@ -746,46 +739,6 @@ CovertOperationSoldierArmorState::~CovertOperationSoldierArmorState()
 }
 
 /**
-* Updates the sorting arrows based
-* on the current setting.
-*/
-void CovertOperationSoldierArmorState::updateArrows()
-{
-	_sortName->setShape(ARROW_NONE);
-	switch (_armorOrder)
-	{
-	case ARMOR_SORT_NAME_ASC:
-		_sortName->setShape(ARROW_SMALL_UP);
-		break;
-	case ARMOR_SORT_NAME_DESC:
-		_sortName->setShape(ARROW_SMALL_DOWN);
-		break;
-	default:
-		break;
-	}
-}
-
-/**
-* Sorts the armor list.
-* @param sort Order to sort the armors in.
-*/
-void CovertOperationSoldierArmorState::sortList()
-{
-	switch (_armorOrder)
-	{
-	case ARMOR_SORT_NAME_ASC:
-		std::sort(_armors.begin(), _armors.end(), compareArmorName(false));
-		break;
-	case ARMOR_SORT_NAME_DESC:
-		std::sort(_armors.rbegin(), _armors.rend(), compareArmorName(true));
-		break;
-	default:
-		break;
-	}
-	updateList();
-}
-
-/**
 * Updates the armor list with the current list
 * of available armors.
 */
@@ -793,11 +746,11 @@ void CovertOperationSoldierArmorState::updateList()
 {
 	_lstArmor->clearList();
 	int row = 0;
-	for (std::vector<ArmorItem>::const_iterator j = _armors.begin(); j != _armors.end(); ++j)
+	for (const auto& _armor : _armors)
 	{
-		_lstArmor->addRow(2, (*j).name.c_str(), (*j).quantity.c_str());
+		_lstArmor->addRow(2, _armor.name.c_str(), _armor.quantity.c_str());
 		bool allowed = false;
-		auto iter = std::find(std::begin(_allowedArmor), std::end(_allowedArmor), (*j).type);
+		auto iter = std::find(std::begin(_allowedArmor), std::end(_allowedArmor), _armor.type);
 		if (iter != std::end(_allowedArmor)) {
 			allowed = true;
 		}
@@ -855,24 +808,6 @@ void CovertOperationSoldierArmorState::lstArmorClickMiddle(Action* action)
 {
 	std::string articleId = _armors[_lstArmor->getSelectedRow()].type;
 	Ufopaedia::openArticle(_game, articleId);
-}
-
-/**
-* Sorts the armors by name.
-* @param action Pointer to an action.
-*/
-void CovertOperationSoldierArmorState::sortNameClick(Action*)
-{
-	if (_armorOrder == ARMOR_SORT_NAME_ASC)
-	{
-		_armorOrder = ARMOR_SORT_NAME_DESC;
-	}
-	else
-	{
-		_armorOrder = ARMOR_SORT_NAME_ASC;
-	}
-	updateArrows();
-	sortList();
 }
 
 }

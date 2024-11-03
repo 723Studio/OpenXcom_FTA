@@ -97,7 +97,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 	{
 		int progress = 0;
 		std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
-		if (assignedEngineers.size() > 0)
+		if (!assignedEngineers.empty())
 		{
 			double effort = 0;
 			auto projStats = _rules->getStats();
@@ -106,7 +106,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 			int summEfficiency = 0;
 			for (auto s : assignedEngineers)
 			{
-				auto stats = s->getStatsWithAllBonuses();
+				auto stats = s->getCurrentStats();
 				auto caps = s->getRules()->getStatCaps();
 				unsigned int statsN = 0;
 				double soldierEffort = 0, statEffort = 0;
@@ -432,6 +432,7 @@ YAML::Node Production::save() const
 	node["spent"] = getTimeSpent();
 	node["amount"] = getAmountTotal();
 	node["infinite"] = getInfiniteAmount();
+	node["efficiency"] = getEfficiency();
 	if (getSellItems())
 		node["sell"] = getSellItems();
 	if (!_rules->getRandomProducedItems().empty())
@@ -449,6 +450,7 @@ void Production::load(const YAML::Node &node)
 	setAmountTotal(node["amount"].as<int>(getAmountTotal()));
 	setInfiniteAmount(node["infinite"].as<bool>(getInfiniteAmount()));
 	setSellItems(node["sell"].as<bool>(getSellItems()));
+	setEfficiency(node["efficiency"].as<bool>(getEfficiency()));
 	if (!_rules->getRandomProducedItems().empty())
 	{
 		_randomProductionInfo = node["randomProductionInfo"].as< std::map<std::string, int> >(_randomProductionInfo);

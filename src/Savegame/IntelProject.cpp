@@ -45,10 +45,10 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	auto projStats = _rules->getStats();
 	int trainingFactor = mod->getIntelTrainingFactor();
 	double speedFactor = (double)mod->getIntelSpeedFactor() / 100;
-	Log(LOG_INFO) << "Calculating step progress for intel progect: " << this->getName() << " with current progress: " << _spent << " and cost: " << _cost; //#FINNIKTODO #CLEARLOGS
+	Log(LOG_INFO) << "Calculating step progress for intel project: " << this->getName() << " with current progress: " << _spent << " and cost: " << _cost; //#FINNIKTODO #CLEARLOGS
 	for (auto s : assignedAgents)
 	{
-		auto stats = s.first->getStatsWithAllBonuses();
+		auto stats = s.first->getCurrentStats();
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
 		double  soldierEffort = 0, statEffort = 0;
@@ -128,7 +128,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 	//gets total effort to daily project progress
 	progress = static_cast<int>(ceil(effort * 24));
-	Log(LOG_INFO) << ">>> Total daily progress for the intel project " << _rules->getName() << ": " << progress;
+	Log(LOG_INFO) << ">>> Total daily progress for the intel project " << _rules->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
 	description = getState(progress);
 
 	return progress;

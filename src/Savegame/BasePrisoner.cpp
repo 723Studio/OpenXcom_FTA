@@ -188,7 +188,7 @@ bool BasePrisoner::think(Game &engine)
 			for (auto s : _agents)
 			{
 				Log(LOG_INFO) << "Agent: " << s->getName() << " is calculating effort for interrogation"; //#FINNIKTODO #CLEARLOGS
-				auto stats = s->getStatsWithAllBonuses();
+				auto stats = s->getCurrentStats();
 				auto caps = s->getRules()->getStatCaps();
 				double soldierEffort = 0, statEffort = 0;
 				int interrogationCoef = 10;
@@ -318,10 +318,10 @@ bool BasePrisoner::think(Game &engine)
 			int psionics = 0, torturePower = 0;
 			for (auto agent: _agents)
 			{
-				torturePower += agent->getStatsWithAllBonuses()->bravery;
-				if (agent->getStatsWithAllBonuses()->psiSkill > 0)
+				torturePower += agent->getCurrentStats()->bravery;
+				if (agent->getCurrentStats()->psiSkill > 0)
 				{
-					if (agent->getStatsWithAllBonuses()->psiStrength > 50)
+					if (agent->getCurrentStats()->psiStrength > 50)
 						psionics += 2;
 					else
 						psionics++;
@@ -394,7 +394,7 @@ bool BasePrisoner::think(Game &engine)
 			for (auto s : _agents)
 			{
 				double soldierEffort = 0, statEffort = 0;
-				auto stats = s->getStatsWithAllBonuses();
+				auto stats = s->getCurrentStats();
 				auto caps = s->getRules()->getStatCaps();
 
 				statEffort = stats->charisma;
