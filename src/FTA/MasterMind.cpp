@@ -70,8 +70,8 @@ MasterMind::~MasterMind()
 
 /**
 * Handle additional operations in new FTA game generation.
-* @param eventName - string with rules name of the event.
-* @return true is event was generater successfully.
+* @param diff - game difficulty
+* @param gs - ptr to GeoscapeState
 */
 void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 {
@@ -131,8 +131,7 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 		auto items = faction->getPublicItems();
 		for (auto &item : factionRules->getStartingItems())
 		{
-			RuleItem* itemRule = _game->getMod()->getItem(item.first);
-			if (itemRule)
+			if (RuleItem* itemRule = _game->getMod()->getItem(item.first))
 			{
 				items->addItem(itemRule, item.second);
 			}
@@ -153,9 +152,9 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 		}
 		
 		// Generate soldiers
-		for (size_t k = 0; k < soldierTypes.size(); ++k)
+		for (auto& soldierType : soldierTypes)
 		{
-			const RuleSoldier* ruleSoldier = mod->getSoldier(soldierTypes[k], true);
+			const RuleSoldier* ruleSoldier = mod->getSoldier(soldierType, true);
 			faction->getStaffPool()->createSoldier(ruleSoldier, mod, save);
 		}
 

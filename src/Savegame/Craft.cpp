@@ -1671,7 +1671,7 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 		int total = 0;
 		for (auto* soldier : *_base->getSoldiers())
 		{
-			if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting())
+			if (soldier->getCraft() == this && soldier->getRoleRank(ROLE_PILOT) > 0)
 			{
 				result.push_back(soldier);
 				total++;
@@ -1691,7 +1691,7 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 			{
 				for (auto* soldier : *_base->getSoldiers())
 				{
-					if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting() && soldier->getId() == soldierId)
+					if (soldier->getCraft() == this && soldier->getRoleRank(ROLE_PILOT) > 0 && soldier->getId() == soldierId)
 					{
 						result.push_back(soldier);
 						total2++;
@@ -1709,7 +1709,7 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 				for (std::vector<Soldier*>::reverse_iterator iter = _base->getSoldiers()->rbegin(); iter != _base->getSoldiers()->rend(); ++iter)
 				{
 					Soldier* soldier = (*iter);
-					if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting() && !isPilot(soldier->getId()))
+					if (soldier->getCraft() == this && soldier->getRoleRank(ROLE_PILOT) > 0 && !isPilot(soldier->getId()))
 					{
 						result.push_back(soldier);
 						total2++;

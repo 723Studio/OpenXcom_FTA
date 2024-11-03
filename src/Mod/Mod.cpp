@@ -4032,9 +4032,9 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 			}
 		}
 		// Generate soldiers
-		for (size_t i = 0; i < randomTypes.size(); ++i)
+		for (auto& randomType : randomTypes)
 		{
-			const RuleSoldier* ruleSoldier = getSoldier(randomTypes[i], true);
+			const RuleSoldier* ruleSoldier = getSoldier(randomType, true);
 			int nationality = save->selectSoldierNationalityByLocation(this, ruleSoldier, nullptr); // -1 (unfortunately the first base is not placed yet)
 			Soldier *soldier = genSoldier(save, ruleSoldier, nationality);
 			base->getSoldiers()->push_back(soldier);
@@ -4055,79 +4055,43 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 			return lhs->getRoles()[0]->role < rhs->getRoles()[0]->role;
 		};
 		sort(base->getSoldiers()->begin(), base->getSoldiers()->end(), compareRole);
-		// Assign pilots to craft (interceptors first, transport last) and non-pilots to transports only
+		// Assign pilots
 		for (auto* soldier : *base->getSoldiers())
 		{
-			if (soldier->getArmor()->getSize() > 1)
+			if (soldier->getArmor()->getSize() == 1 && soldier->getRoleRank(ROLE_PILOT) > 0)
 			{
-				// "Large soldiers" just stay in the base
-				continue;
-			}
-			
-			if (_ftaGame)
-			{
-				if (soldier->getRoleRank(ROLE_PILOT) > 0)
+				for (auto* craft : *base->getCrafts())
 				{
-					for (auto* craft : *base->getCrafts())
+					// We setup crafts with required fta-pilots first. 
+					const std::vector<Soldier*> pilots = craft->getPilotList(false);
+					if ((int)(pilots.size()) < craft->getRules()->getPilots())
 					{
 						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-						if (!craft->getRules()->getAllowLanding()
-							&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
+						if (craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
 							&& err == CPE_None)
 						{
 							soldier->setCraft(craft);
+							craft->addPilot(soldier->getId());
 						}
 					}
-				}
-				else if (soldier->getRoleRank(ROLE_SOLDIER) > 0)
-				{
-					for (auto* craft : *base->getCrafts())
-					{
-						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-						if (craft->getRules()->getAllowLanding()
-							&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
-							&& err == CPE_None)
-						{
-							soldier->setCraft(craft);
-						}
-					}
+					
 				}
 			}
-			else //OXC(E) logic
+		}
+		// Now assign soldiers for drop-ships
+		for (auto* soldier : *base->getSoldiers())
+		{
+			if (soldier->getArmor()->getSize() == 1 && soldier->getRoleRank(ROLE_SOLDIER) > 0)
 			{
-				if (soldier->getRules()->getAllowPiloting())
+				for (auto* craft : *base->getCrafts())
 				{
-					Craft* found = 0;
-					for (auto* craft : *base->getCrafts())
+					CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
+					if (craft->getRules()->getAllowLanding()
+						&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
+						&& err == CPE_None)
 					{
-						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-						if (!found && craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits() && err == CPE_None)
-						{
-							// Remember transporter as fall-back, but search further for interceptors
-							found = craft;
-						}
-						if (!craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getPilots())
-						{
-							// Fill interceptors with minimum amount of pilots necessary
-							found = craft;
-						}
+						soldier->setCraft(craft);
 					}
-					soldier->setCraft(found);
-				}
-				else
-				{
-					Craft* found = 0;
-					for (auto* craft : *base->getCrafts())
-					{
-						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-						if (craft->getRules()->getAllowLanding() && craft->getSpaceUsed() < craft->getRules()->getMaxUnits() && err == CPE_None)
-						{
-							// First available transporter will do
-							found = craft;
-							break;
-						}
-					}
-					soldier->setCraft(found);
 				}
 			}
 		}
