@@ -283,11 +283,10 @@ void CovertOperationSoldiersState::cbxSortByChange(Action*)
 	{
 		// restore original ordering, ignoring (of course) those
 		// soldiers that have been sacked since this state started
-		for (std::vector<Soldier*>::const_iterator it = _origSoldierOrder.begin();
-			it != _origSoldierOrder.end(); ++it)
+		for (auto it : _origSoldierOrder)
 		{
 			std::vector<Soldier*>::iterator soldierIt =
-				std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *it);
+				std::find(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), it);
 			if (soldierIt != _base->getSoldiers()->end())
 			{
 				Soldier* s = *soldierIt;
@@ -448,7 +447,7 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 		}
 		else if (s->hasFullHealth() && !isBusy)
 		{
-			int space = (_operation->getRule()->getSoldierSlotsMin() + _operation->getRule()->getSoldierSlotsMax()) - opSoldiers.size();
+			int space = (_operation->getRule()->getSoldierSlotsMax()) - opSoldiers.size();
 			if (space > 0)
 			{
 				_operation->addSoldier(s);
