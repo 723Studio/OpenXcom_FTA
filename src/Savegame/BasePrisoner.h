@@ -67,7 +67,8 @@ public:
 	/// Saves the unit to YAML.
 	YAML::Node save() const;
 	/// Geoscape logic
-	bool think(Game &engine);
+	bool think(Game &engine, std::vector<Soldier*>& promotedSoldiers);
+	void promoteAgents(std::vector<Soldier*>& promotedSoldiers);
 	void die();
 
 	//getters and setters

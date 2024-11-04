@@ -2558,6 +2558,11 @@ void GeoscapeState::time1Day()
 				_game->pushState(new IntelCompleteState(project, this, xbase));
 			}
 		}
+		// Handle prisoner
+		for (auto* prisoner : xbase->getPrisoners())
+		{
+			prisoner->think(*_game, promotedSoldiers); // soldier exp gain and promotion moved into prisoner logic
+		}
 
 		// now check if there are new projects available and add it to the base;
 		for (auto& intel : _game->getMod()->getIntelProjectsList())
@@ -2580,7 +2585,7 @@ void GeoscapeState::time1Day()
 				double maxCost = rule->getCost() * 1.5;
 				IntelProject* project = new IntelProject(rule, xbase, RNG::generate(minCost, maxCost));
 				// there are much more conditions depending on various properies
-				if (project->getAvailableStages(_game->getSavedGame()).size() > 0)
+				if (!project->getAvailableStages(_game->getSavedGame()).empty())
 				{
 					// we want to auto-add the project
 					xbase->addIntelProject(project);
@@ -2595,32 +2600,6 @@ void GeoscapeState::time1Day()
 					delete project; //sorry, not a time yet...
 				}
 			}
-		}
-
-		// Handle prisoner
-		for (auto *prisoner : xbase->getPrisoners())
-		{
-			if (prisoner->think(*_game))
-			{
-				for (auto* soldier : *xbase->getSoldiers())
-				{
-					if (soldier->getActivePrisoner() == prisoner)
-					{
-						soldier->improvePrimaryStats(soldier->getIntelExperience(), ROLE_AGENT);
-						soldier->clearEngineerExperience();
-						if (soldier->rolePromoteSoldier(ROLE_AGENT))
-						{
-							promotedSoldiers.push_back(soldier);
-						}
-					}
-				}
-			}
-		}
-
-		//handle promotion
-		if (!promotedSoldiers.empty() && _fta)
-		{
-			_game->pushState(new PromotionsState);
 		}
 
 		// Handle soldier wounds and martial training
@@ -2678,6 +2657,11 @@ void GeoscapeState::time1Day()
 		}
 	}
 
+	//handle promotion
+	if (!promotedSoldiers.empty() && _fta)
+	{
+		_game->pushState(new PromotionsState);
+	}
 	// Handle mission and event scripts gap timers
 	_game->getSavedGame()->handleMissionScriptTimers();
 	_game->getSavedGame()->handleEventScriptTimers();

@@ -145,8 +145,9 @@ void BasePrisoner::setMorale(int morale)
 /**
  * Geoscape logic 
  * @param engine - game pointer
+ * @param promotedSoldiers - a pointer to a vector to return in geoscape for promotion screen
  */
-bool BasePrisoner::think(Game &engine)
+bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 {
 	const Mod& mod = *engine.getMod();
 	SavedGame& save = *engine.getSavedGame();
@@ -169,6 +170,7 @@ bool BasePrisoner::think(Game &engine)
 
 	if (getHealth() <= 0) //prisoner dies
 	{
+		promoteAgents(promotedSoldiers);
 		die();
 		engine.pushState(new PrisonReportState(this, _base));
 	}
@@ -263,6 +265,7 @@ bool BasePrisoner::think(Game &engine)
 			if (_interrogationProgress >= breakpoint)
 			{
 				result = true;
+				promoteAgents(promotedSoldiers);
 				_interrogationProgress = 0;
 				// give research if any
 				std::string researchName;
@@ -436,6 +439,7 @@ bool BasePrisoner::think(Game &engine)
 			if (_recruitingProgress >= breakpoint)
 			{
 				result = true;
+				promoteAgents(promotedSoldiers);
 				_recruitingProgress = 0;
 				auto events = rules.getSpawnedEvents();
 				if (!events.empty() && RNG::percent(rules.getEventChance()))
@@ -506,13 +510,26 @@ bool BasePrisoner::think(Game &engine)
 
 void BasePrisoner::die()
 {
-	for (auto s : _agents)
+	for (auto &s : _agents)
 	{
 		s->clearBaseDuty();
 	}
 	_base->removePrisoner(this);
 	_interrogationProgress = 0;
 	_recruitingProgress = 0;
+}
+
+void BasePrisoner::promoteAgents(std::vector<Soldier*>& promotedSoldiers)
+{
+	for (auto* s : _agents)
+	{
+		s->improvePrimaryStats(s->getIntelExperience(), ROLE_AGENT);
+		s->clearIntelExperience();
+		if (s->rolePromoteSoldier(ROLE_AGENT))
+		{
+			promotedSoldiers.push_back(s);
+		}
+	}
 }
 
 std::string BasePrisoner::getNameAndId(Language* lang)

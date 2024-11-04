@@ -50,7 +50,7 @@ PrisonReportState::PrisonReportState(BasePrisoner* prisoner, Base* base) :
  * @param base - current base
  */
 PrisonReportState::PrisonReportState(const RuleResearch* research, const RuleResearch* bonus, BasePrisoner* prisoner, Base* base) :
-		_research(research), _soldier(0), _bonus(bonus), _prisoner(prisoner), _base(base), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
+		_research(research), _bonus(bonus), _prisoner(prisoner), _base(base), _soldier(0), _reportCase(PRISONER_REPORT_CASE_INTERROGATION)
 {
 	initUI();
 }
@@ -167,7 +167,7 @@ void PrisonReportState::initUI()
 	_txtDescription->setAlign(ALIGN_CENTER);
 	_txtDescription->setBig();
 	_txtDescription->setWordWrap(true);
-	_txtDescription->setText(tr(desription));
+	_txtDescription->setText(desription);
 }
 
 /**

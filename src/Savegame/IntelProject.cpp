@@ -41,11 +41,17 @@ IntelProject::IntelProject(const RuleIntelProject* rule, Base *base, int cost) :
 int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* mod, int rating, std::string& description, bool estimate)
 {
 	int progress = 0;
+	if (assignedAgents.empty())
+	{
+		description = getState(progress);
+		return 0;
+	}
+
 	double effort = 0;
 	auto projStats = _rules->getStats();
 	int trainingFactor = mod->getIntelTrainingFactor();
 	double speedFactor = (double)mod->getIntelSpeedFactor() / 100;
-	if (!assignedAgents.empty())
+	if (!estimate)
 		Log(LOG_INFO) << "Calculating step progress for intel project: " << this->getName() << " with current progress: " << _spent << " and cost: " << _cost; //#FINNIKTODO #CLEARLOGS
 
 	for (auto s : assignedAgents)
@@ -54,7 +60,6 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;
 		double  soldierEffort = 0, statEffort = 0;
-		Log(LOG_INFO) << "Agent: " << s.first->getName() << " is calculating effort for the project"; //#FINNIKTODO #CLEARLOGS
 		if (projStats.data > 0)
 		{
 			statEffort = stats->data;
@@ -112,25 +117,32 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		}
 		insightBonus /= 10;
 		soldierEffort += insightBonus;
-		Log(LOG_INFO) << "Total agent effort: " << soldierEffort << " with insight bonus: " << insightBonus; //#FINNIKTODO #CLEARLOGS
+		if (!estimate)
+			Log(LOG_INFO) << "Total agent effort: " << soldierEffort << " with insight bonus: " << insightBonus; //#FINNIKTODO #CLEARLOGS
 		
 		soldierEffort /= statsN + 1;
-		Log(LOG_INFO) << "Adjusted agent effort: " << soldierEffort << " with statsN: " << statsN + 1; //#FINNIKTODO #CLEARLOGS
+		if (!estimate)
+			Log(LOG_INFO) << "Adjusted agent effort: " << soldierEffort << " with statsN: " << statsN + 1; //#FINNIKTODO #CLEARLOGS
 		effort += soldierEffort;
 	}
-	Log(LOG_INFO) << "Total effort: " << effort; //#FINNIKTODO #CLEARLOGS
+	if (!estimate)
+		Log(LOG_INFO) << "Total effort: " << effort; //#FINNIKTODO #CLEARLOGS
 	// If one woman can carry a baby in nine months, nine women can't do it in a month...
 	if (assignedAgents.size() > 1)
 	{
 		effort *= (100 - (19 * log(assignedAgents.size()))) / 100;
-		Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
+		if (!estimate)
+			Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
 	}
 	effort *= (double)rating / 100;
-	effort *= speedFactor;
-	Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
+	effort *= speedFactor * 24;
+	if (!estimate)
+		Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 	//gets total effort to daily project progress
-	progress = static_cast<int>(ceil(effort * 24));
-	Log(LOG_INFO) << ">>> Total daily progress for the intel project " << _rules->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
+	progress = static_cast<int>(ceil(effort));
+	if (!estimate)
+		Log(LOG_INFO) << ">>> Total daily progress for the intel project " << _rules->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
+
 	description = getState(progress);
 
 	return progress;
@@ -149,7 +161,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	bool specialRule = _rules->getSpecialRule() != INTEL_NONE;
 	_active = progress > 0 && specialRule;
 	
-	if (_spent >= (_rolls * getRules()->getCostIncrease()))
+	if (_spent > (_rolls * getRules()->getCostIncrease()))
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
 		_rolls++;
