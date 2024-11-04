@@ -902,85 +902,34 @@ void refreshMods()
 
 	// add in any new mods picked up from the scan and ensure there is but a single
 	// master active
+	mods.push_back(std::pair<std::string, bool>("From the Ashes", false)); // should be set to 'true' later on mapping with modInfo
+
 	std::string activeMaster;
-	std::string inactiveMaster;
 	for (auto i = _modInfos.cbegin(); i != _modInfos.cend(); ++i)
 	{
-		bool found = false;
 		for (auto j = mods.begin(); j != mods.end(); ++j)
 		{
 			if (i->first == j->first)
 			{
-				found = true;
 				if (i->second.isMaster())
 				{
-					if (!_masterMod.empty())
+					if (i->first == "From the Ashes")
 					{
-						j->second = (_masterMod == j->first);
-					}
-					if (j->second)
-					{
-						if (!activeMaster.empty())
-						{
-							Log(LOG_WARNING) << "Too many active masters detected; turning off " << j->first;
-							j->second = false;
-						}
-						else
-						{
-							activeMaster = j->first;
-						}
+						j->second = true;
+						activeMaster = j->first;
 					}
 					else
 					{
-						// prefer activating standard masters over a possibly broken
-						// third party master
-						if (inactiveMaster.empty() || j->first == "xcom1" || j->first == "xcom2")
-						{
-							inactiveMaster = j->first;
-						}
+						j->second = false;
 					}
 				}
-
-				break;
 			}
-		}
-		if (found)
-		{
-			continue;
-		}
-
-		// not active by default
-		std::pair<std::string, bool> newMod(i->first, false);
-		if (i->second.isMaster())
-		{
-			// it doesn't matter what order the masters are in since
-			// only one can be active at a time anyway
-			mods.insert(mods.begin(), newMod);
-
-			if (inactiveMaster.empty())
-			{
-				inactiveMaster = i->first;
-			}
-		}
-		else
-		{
-			mods.push_back(newMod);
 		}
 	}
 
 	if (activeMaster.empty())
 	{
-		if (inactiveMaster.empty())
-		{
-			Log(LOG_ERROR) << "no mod masters available";
-			throw Exception("No X-COM installations found");
-		}
-		else
-		{
-			Log(LOG_INFO) << "no master already active; activating " << inactiveMaster;
-			std::find(mods.begin(), mods.end(), std::pair<std::string, bool>(inactiveMaster, false))->second = true;
-			_masterMod = inactiveMaster;
-		}
+		throw Exception("No 'From the Ashes' content found! please, check your installation.");
 	}
 	else
 	{
