@@ -573,7 +573,6 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 	int change = std::round(coef * score);
 	int loyalty = _game->getSavedGame()->getLoyalty();
 	loyalty += change;
-	Log(LOG_INFO) << "Loyalty updating to:  " << loyalty << " from coefficient: " << coef << ", change value: " << change << " and score value : " << score << " with reason : " << reason; //#CLEARLOGS
 	_game->getSavedGame()->setLoyalty(loyalty);
 
 	return change;

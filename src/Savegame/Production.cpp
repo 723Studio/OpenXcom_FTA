@@ -202,11 +202,9 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 			effort *= loyaltyRating; //not normalizing by 100 to fit small hourly values into integer later
 			effort *= speedFactor;
 			progress = static_cast<int>(effort);
-			Log(LOG_INFO) << " >>> Total hourly progress for manufacturing project " << _rules->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
 		}
 		else
 		{
-			Log(LOG_INFO) << " >>> No assigned engineers for project: " << _rules->getName(); //#FINNIKTODO #CLEARLOGS
 			_efficiency = 100;
 		}
 		return progress;

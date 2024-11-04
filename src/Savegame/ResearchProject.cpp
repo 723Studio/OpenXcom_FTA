@@ -167,7 +167,6 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 	effort *= speedFactor;
 
 	progress = static_cast<int>(effort);
-	Log(LOG_INFO) << " >>> Total hourly progress for project " << _project->getName() << ": " << progress; //#FINNIKTODO #CLEARLOGS
 
 	return progress;
 }
