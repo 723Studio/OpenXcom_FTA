@@ -1481,6 +1481,13 @@ void DogfightState::update()
 				_craft->setDestination(_ufo);
 			}
 		}
+		if (_ufo->isCrashed() || _ufo->isDestroyed())
+		{
+			for (auto &p : _pilots)
+			{
+				p->addExperience(ROLE_PILOT, RNG::generate(1, 3) * (_ufoSize + 1), "UFO battle");
+			}
+		}
 		if (!_destroyCraft && (_destroyUfo || _mode == _btnDisengage))
 		{
 			// keep original target if attacked by a HK (and didn't disengage manually)
