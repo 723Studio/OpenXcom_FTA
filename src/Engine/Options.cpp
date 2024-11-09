@@ -900,27 +900,39 @@ void refreshMods()
 		mods.insert(mods.begin(), newMod);
 	}
 
-	// add in any new mods picked up from the scan and ensure there is but a single
-	// master active
-	mods.push_back(std::pair<std::string, bool>("From the Ashes", false)); // should be set to 'true' later on mapping with modInfo
+	const std::string target = "From the Ashes";
+	auto it = std::find_if(mods.begin(), mods.end(),
+		[&target](const std::pair<std::string, bool>& pair) {
+			return pair.first == target;
+		});
+
+	if (it != mods.end())
+	{
+		Log(LOG_INFO) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
+	}
+	else
+	{
+		Log(LOG_INFO) << target << " is only allowed mastermod, pushed to options.cfg";
+		mods.push_back(std::pair<std::string, bool>("From the Ashes", false)); // should be set to 'true' later on mapping with modInfo
+	}
 
 	std::string activeMaster;
-	for (auto i = _modInfos.cbegin(); i != _modInfos.cend(); ++i)
+	for (const auto& _modInfo : _modInfos)
 	{
-		for (auto j = mods.begin(); j != mods.end(); ++j)
+		for (auto& mod : mods)
 		{
-			if (i->first == j->first)
+			if (_modInfo.first == mod.first)
 			{
-				if (i->second.isMaster())
+				if (_modInfo.second.isMaster())
 				{
-					if (i->first == "From the Ashes")
+					if (_modInfo.first == "From the Ashes")
 					{
-						j->second = true;
-						activeMaster = j->first;
+						mod.second = true;
+						activeMaster = mod.first;
 					}
 					else
 					{
-						j->second = false;
+						mod.second = false;
 					}
 				}
 			}
