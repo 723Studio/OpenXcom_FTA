@@ -86,7 +86,6 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 	std::string baseName = _game->getLanguage()->getString("STR_LAST_STAND"); //#FINNIKTODO random array here
 	base->setName(baseName);
 	base->calculateServices(save);
-	base->setRevealed(true);
 	gs->getGlobe()->center(lon, lat);
 
 	for (auto& c : *base->getCrafts())
