@@ -36,8 +36,8 @@ namespace OpenXcom
 
 	/**
 	 * Initializes all the elements in the FinishedCoverOperationState window.
-	 * @param geoEvent Pointer to the event.
-	 * @param result - comes true if sucess operation, false if it was failed.
+	 * @param operation Pointer to the operation.
+	 * @param result - comes true if success operation, false if it was failed.
 	 */
 	FinishedCoverOperationState::FinishedCoverOperationState(CovertOperation* operation, bool result) : _operation(operation), _rule(operation->getRules())
 	{

@@ -86,12 +86,13 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 	std::string baseName = _game->getLanguage()->getString("STR_LAST_STAND"); //#FINNIKTODO random array here
 	base->setName(baseName);
 	base->calculateServices(save);
+	base->setRevealed(true);
 	gs->getGlobe()->center(lon, lat);
 
-	for (std::vector<Craft*>::iterator i = base->getCrafts()->begin(); i != base->getCrafts()->end(); ++i)
+	for (auto& c : *base->getCrafts())
 	{
-		(*i)->setLongitude(lon);
-		(*i)->setLatitude(lat);
+		c->setLongitude(lon);
+		c->setLatitude(lat);
 	}
 	//spawn regional MIB HQ
 	AlienDeployment* aBaseDeployment = mod->getDeployment("STR_INITIAL_REGIONAL_HQ");

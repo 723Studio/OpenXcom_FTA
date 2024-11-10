@@ -771,7 +771,7 @@ void BattlescapeGenerator::nextStage()
 
 	size_t unitCount = _save->getUnits()->size();
 
-	deployAliens(_alienCustomDeploy ? _alienCustomDeploy : ruleDeploy);
+	deployAliens(_alienCustomDeploy && !_alienCustomDeploy->getDeploymentData()->empty() ? _alienCustomDeploy : ruleDeploy);
 
 	if (unitCount == _save->getUnits()->size())
 	{
@@ -970,7 +970,7 @@ void BattlescapeGenerator::run()
 
 	if (!isPreview)
 	{
-		deployAliens(_alienCustomDeploy ? _alienCustomDeploy : ruleDeploy);
+		deployAliens(_alienCustomDeploy && !_alienCustomDeploy->getDeploymentData()->empty() ? _alienCustomDeploy : ruleDeploy);
 	}
 
 	if (!isPreview && unitCount == _save->getUnits()->size())

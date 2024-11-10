@@ -129,11 +129,11 @@ std::string CovertOperation::getOperationName()
 std::vector<Soldier*> CovertOperation::getSoldiers()
 {
 	std::vector<Soldier*> soldiers;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	for (auto& soldier : *_base->getSoldiers())
 	{
-		if ((*i)->getCovertOperation() != 0 && (*i)->getCovertOperation()->getOperationName() == this->getOperationName())
+		if (soldier->getCovertOperation() != 0 && soldier->getCovertOperation()->getOperationName() == this->getOperationName())
 		{
-			soldiers.push_back(*i);
+			soldiers.push_back(soldier);
 		}
 	}
 	return soldiers;
@@ -182,7 +182,7 @@ std::string CovertOperation::getTimeLeftName()
 
 /**
 * Handle Covert Operation daily logic.
-* @param Game game engine.
+* @param engine game engine.
 * @param globe
 */
 bool CovertOperation::think(Game& engine, const Globe& globe)
@@ -278,12 +278,12 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			{
 				totalWeight += itemSet.first;
 			}
-			int roll = RNG::generate(1, totalWeight);
+
 			int runningTotal = 0;
 			for (const auto& itemSet : _rule->getSuccessItems())
 			{
 				runningTotal += itemSet.first;
-				if (runningTotal >= roll)
+				if (runningTotal >= RNG::generate(1, totalWeight))
 				{
 					for (const auto& i : itemSet.second)
 					{
@@ -312,12 +312,11 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			{
 				totalWeight += itemSet.first;
 			}
-			int roll = RNG::generate(1, totalWeight);
 			int runningTotal = 0;
 			for (const auto& itemSet : _rule->getFailureItems())
 			{
 				runningTotal += itemSet.first;
-				if (runningTotal >= roll)
+				if (runningTotal >= RNG::generate(1, totalWeight))
 				{
 					for (const auto& i : itemSet.second)
 					{
@@ -365,7 +364,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	{
 		std::vector<const RuleResearch*> possibilities;
 
-		for (auto rName : researchList)
+		for (const auto& rName : researchList)
 		{
 			const RuleResearch* rRule = mod.getResearch(rName, true);
 			if (!save.isResearched(rRule, false))
@@ -412,16 +411,16 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	
 	if (!reputationScore.empty())
 	{
-		for (std::map<std::string, int>::const_iterator i = reputationScore.begin(); i != reputationScore.end(); ++i)
+		for (const auto& i : reputationScore)
 		{
-			for (std::vector<DiplomacyFaction*>::iterator j = save.getDiplomacyFactions().begin(); j != save.getDiplomacyFactions().end(); ++j)
+			for (auto& j : save.getDiplomacyFactions())
 			{
-				std::string factionName = (*j)->getRules()->getName();
-				std::string lookingName = (*i).first;
+				std::string factionName = j->getRules()->getName();
+				std::string lookingName = i.first;
 				if (factionName == lookingName)
 				{
-					(*j)->updateReputationScore((*i).second);
-					_results->addReputation(factionName, (*i).second);
+					j->updateReputationScore(i.second);
+					_results->addReputation(factionName, i.second);
 					break;
 				}
 			}
@@ -580,12 +579,12 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		std::string specRule = _rule->getSpecialRule();
 		if (specRule == "STR_REGIONAL_HQ_DISCOVERY")
 		{
-			for (std::vector<OpenXcom::AlienBase*>::iterator i = save.getAlienBases()->begin(); i != save.getAlienBases()->end(); ++i)
+			for (auto& i : *save.getAlienBases())
 			{
-				auto baseName = (*i)->getDeployment()->getType();
+				auto baseName = i->getDeployment()->getType();
 				if (baseName == "STR_INITIAL_REGIONAL_HQ")
 				{
-					(*i)->setDiscovered(true);
+					i->setDiscovered(true);
 
 					_results->setSpecialMessage("STR_REGIONAL_HQ_FOUND");
 				}
@@ -644,7 +643,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 /**
 * Handle background simulation for Covert Operation.
 * Award exp to soldiers, simulate critical fail repercussion.
-* @param Game game engine.
+* @param engine game engine.
 * @param operationResult and criticalFail operation results.
 * @param woundOdds and deathOdds stats from game difficulty.
 */
@@ -684,14 +683,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		engagement = RNG::percent(engChance);
 	}
 
-	Log(LOG_DEBUG) << "Background simulation of " << this->getRules()->getName() << " with danger: " << danger;
-
-	if (engagement)
-		Log(LOG_DEBUG) << "Engagement rolled with avgStealth: " << avgStealth;
-
-	Log(LOG_DEBUG) << "Calculating soldier exp, expRolls: " << expRolls << " from ruleCost: " << this->getRules()->getCosts() << " and effCost: " << effCost;
-
-	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+	for (auto& soldier : soldiers)
 	{
 		bool dead = false;
 		int wound = 0;
@@ -707,42 +699,35 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				damageRolls *= RNG::generate(1, 3);
 			}
 
-
-			Log(LOG_DEBUG) << "Calculating damage for " << (*i)->getName() << " with damageRolls: " << damageRolls << " and psiSkill: " << (*i)->getStatsWithAllBonuses()->psiSkill;
 			for (size_t j = 0; j < damageRolls; j++)
 			{
-				if (RNG::generate(0, 99) < woundOdds && RNG::generate(0, 99) > (*i)->getStatsWithAllBonuses()->psiSkill)
+				if (RNG::generate(0, 99) < woundOdds && RNG::generate(0, 99) > soldier->getStatsWithAllBonuses()->psiSkill)
 				{
 					++wound;
 				}
 			}
-			Log(LOG_DEBUG) << "Wounds: " << wound;
 			if (wound > 0)
 			{
 				damage = RNG::generate(wound, wound * 6);
-				Log(LOG_DEBUG) << "damage: " << damage;
 			}
-			if (damage < (*i)->getCurrentStats()->health)
+			if (damage < soldier->getCurrentStats()->health)
 			{
-				(*i)->setWoundRecovery(damage);
-				Log(LOG_DEBUG) << "Soldier recovery set to: " << (*i)->getWoundRecoveryInt();
-				_results->addSoldierDamage((*i)->getName(), damage);
+				soldier->setWoundRecovery(damage);
+				_results->addSoldierDamage(soldier->getName(), damage);
 			}
 			else
 			{
 				dead = true; //ouch, too much damage rolled!
-				Log(LOG_DEBUG) << "Too much damage, soldier should be M.I.A.";
 			}
 
 			if (!dead && criticalFail)
 			{ //OMG, Finger of Death for soldier on critical failed operation!!!
 				dead = RNG::generate(0, 99) < deathOdds + ceil(danger / 3);
-				Log(LOG_DEBUG) << "Finger of Death rolled!";
 			}
 			if (dead)
 			{
 				//Check for divine protection
-				int protection = (*i)->getBestRoleRank().second - 2;
+				int protection = soldier->getBestRoleRank().second - 2;
 				//lets add save if we have psi. Btw, there is a place for additional perks
 				if (_hasPsi)
 					protection += 3;
@@ -751,24 +736,22 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 					requiredProtection += 3;
 				if (requiredProtection > protection)
 				{ //RIP...
-					soldiersToKill.push_back(*i);
-					Log(LOG_DEBUG) << "Soldier will be dead as requiredProtection: " << requiredProtection << " is greater than soldiers protection: " << protection;
+					soldiersToKill.push_back(soldier);
 				}
 				else
 				{
 					dead = false;
-					Log(LOG_DEBUG) << "Soldier will be saved as requiredProtection: " << requiredProtection << " is less than soldiers protection: " << protection;
-					if ((*i)->getStatsWithAllBonuses()->bravery <= 20 || RNG::percent(5))
+					if (soldier->getStatsWithAllBonuses()->bravery <= 20 || RNG::percent(5))
 						exp->bravery++;
 				}
 			}
 		}
 
-		UnitStats origStat = *(*i)->getCurrentStats();
+		UnitStats origStat = *soldier->getCurrentStats();
 		//soldiers can improve stats based on virtual experience they take
 		if (!dead && expRolls > 0)
 		{
-			const UnitStats caps = (*i)->getRules()->getStatCaps();
+			const UnitStats caps = soldier->getRules()->getStatCaps();
 			// at first, we process combat stats
 			if (engagement)
 			{
@@ -879,19 +862,19 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			}
 		}
 
-		(*i)->improvePrimaryStats(exp, ROLE_AGENT);
+		soldier->improvePrimaryStats(exp, ROLE_AGENT);
 		//also improve secondary stats
 		int rate = 0;
-		(*i)->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
-		(*i)->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
-		(*i)->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
+		soldier->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
+		soldier->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
+		soldier->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
 			
-		UnitStats improvement = *(*i)->getCurrentStats() - origStat;
-		_results->addSoldierImprovement((*i)->getName(), improvement);
+		UnitStats improvement = *soldier->getCurrentStats() - origStat;
+		_results->addSoldierImprovement(soldier->getName(), improvement);
 
 		if (!dead && wound != 0)
 		{
-			(*i)->setReturnToTrainingWhenOperationOver(NONE);
+			soldier->setReturnToTrainingWhenOperationOver(NONE);
 		}
 	}
 
@@ -907,20 +890,19 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			loneSaved = true;
 			chosenID = RNG::generate(0, killN - 1);
 		}
-		for (std::vector<Soldier *>::iterator j = soldiersToKill.begin(); j != soldiersToKill.end(); ++j)
+		for (auto& j : soldiersToKill)
 		{
 			if (loneSaved && chosenID == it)
 			{
-				Log(LOG_INFO) << "All soldiers on covert operation named: " << this->getOperationName() << " should be dead, but soldier named: " << (*j)->getName() << " was chosen to be the last survived.";
-				int health = (*j)->getCurrentStats()->health;
+				int health = j->getCurrentStats()->health;
 				int genDamage = (int)RNG::generate(health * 0.5, health * 0.9);
-				(*j)->setWoundRecovery(genDamage);
-				_results->addSoldierDamage((*j)->getName(), genDamage);
+				j->setWoundRecovery(genDamage);
+				_results->addSoldierDamage(j->getName(), genDamage);
 			}
 			else
 			{
-				_results->addSoldierDamage((*j)->getName(), -10);
-				save.killSoldier(true, (*j)); //RIP
+				_results->addSoldierDamage(j->getName(), -10);
+				save.killSoldier(true, j); //RIP
 			}
 			++it;
 		}
@@ -933,28 +915,28 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 void CovertOperation::finishOperation()
 {
 	auto soldiers = getSoldiers();
-	for (std::vector<Soldier*>::iterator i = soldiers.begin(); i != soldiers.end(); ++i)
+	for (auto& soldier : soldiers)
 	{
 		//remove soldier from operation
-		(*i)->setCovertOperation(0);
-		(*i)->setJustSaved(false);
+		soldier->setCovertOperation(0);
+		soldier->setJustSaved(false);
 
 		//if soldier was not hurt we return him or her to training, if settings allows it
-		if ((*i)->getHealthMissing() == 0)
+		if (soldier->getHealthMissing() == 0)
 		{
-			ReturnToTrainings trainings = (*i)->getReturnToTrainingsWhenOperationOver();
+			ReturnToTrainings trainings = soldier->getReturnToTrainingsWhenOperationOver();
 			if (trainings == MARTIAL_TRAINING || trainings == BOTH_TRAININGS)
 			{
 				if (_base->getUsedTraining() < _base->getAvailableTraining())
 				{
-					(*i)->setTraining(true);
+					soldier->setTraining(true);
 				}
 			}
 			if (trainings == PSI_TRAINING || trainings == BOTH_TRAININGS)
 			{
 				if ((_base->getUsedPsiLabs() < _base->getAvailablePsiLabs()) && Options::anytimePsiTraining)
 				{
-					(*i)->setPsiTraining(true);
+					soldier->setPsiTraining(true);
 				}
 			}
 		}
