@@ -3216,13 +3216,24 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 			{
 				if (corpseRule->isCorpseRecoverable())
 				{
-					if (_fta)
+					RaceType type = RACE_TYPE_ALIEN;
+					AlienRace* race = _game->getMod()->getAlienRace(from->getUnitRules()->getRace());
+					if (race)
 					{
-						addStat("STR_ENEMY_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+						type = _game->getMod()->getAlienRace(from->getUnitRules()->getRace())->getRaceType();
+					}
+
+					if (!_fta || type == RACE_TYPE_ALIEN)
+					{
+						addStat("STR_ALIEN_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+					}
+					else if (type == RACE_TYPE_MONSTER)
+					{
+						addStat("STR_MONSTER_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
 					}
 					else
 					{
-						addStat("STR_ALIEN_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
+						addStat("STR_ENEMY_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
 					}
 					
 					auto* corpseItem = from->getArmor()->getCorpseGeoscape();
