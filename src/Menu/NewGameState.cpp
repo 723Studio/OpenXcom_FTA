@@ -133,6 +133,9 @@ NewGameState::NewGameState()
 	{
 		_btnIronman->setVisible(false);
 		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
+		//even more, we disable difficulty settings choice for now - remove later
+		_btnSuperhuman->setVisible(false);
+		_btnGenius->setVisible(false);
 	}
 }
 
