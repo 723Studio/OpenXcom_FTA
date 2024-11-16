@@ -117,7 +117,8 @@ void SoldierInfoStateFtA::initUi()
 	_btnNext = new TextButton(28, 14, 80, 33);
 	_btnArmor = new TextButton(110, 14, 130, 33);
 	_btnBonuses = new TextButton(16, 14, 242, 33);
-	_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
+	_edtSoldier = new Text(210, 16, 40, 9);
+	//_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
 	_btnDiary = new TextButton(60, 14, 260, 33);
 	_btnHire = new TextButton(60, 14, 260, 33);
 	_cbxRoles = new ComboBox(this, 60, 14, 260, 48, false);
@@ -206,15 +207,16 @@ void SoldierInfoStateFtA::initUi()
 	_btnBonuses->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnBonusesClick);
 
 	_edtSoldier->setBig();
-	if (_listing)
-	{
-		_edtSoldier->onChange((ActionHandler)&SoldierInfoStateFtA::edtSoldierChange);
-		_edtSoldier->onMousePress((ActionHandler)&SoldierInfoStateFtA::edtSoldierPress);
-	}
-	else
-	{
-		_edtSoldier->setDisabled(true);
-	}
+
+	//if (_listing)
+	//{
+	//	_edtSoldier->onChange((ActionHandler)&SoldierInfoStateFtA::edtSoldierChange);
+	//	_edtSoldier->onMousePress((ActionHandler)&SoldierInfoStateFtA::edtSoldierPress);
+	//}
+	//else
+	//{
+	//	_edtSoldier->setDisabled(true);
+	//}
 
 	// Can't change nationality of dead soldiers or factional soldiers
 	if (_base != 0 && !_faction)

@@ -52,7 +52,8 @@ private:
 	TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnDiary, *_btnBonuses, *_btnHire;
 	Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead, *_txtOperation;
 	Text *_txtStuns;
-	TextEdit *_edtSoldier;
+	Text *_edtSoldier;
+	//TextEdit *_edtSoldier;
 	ComboBox *_cbxRoles;
 	std::vector<std::string> _rolesList;
 	bool _localChange, _listing, _redraw;

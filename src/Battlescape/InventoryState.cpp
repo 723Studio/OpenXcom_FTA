@@ -807,6 +807,10 @@ void InventoryState::btnArmorClick(Action *action)
  */
 void InventoryState::btnArmorClickRight(Action *action)
 {
+	if (_game->getMod()->isFTAGame())
+	{
+		return;
+	}
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
