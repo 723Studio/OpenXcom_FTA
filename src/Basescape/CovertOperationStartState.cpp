@@ -196,14 +196,14 @@ void CovertOperationStartState::init()
 	if (!reqItems.empty())
 	{
 		int reqItemsN = 0;
-		for (auto& it : reqItems)
+		for (auto& [reqItem, reqValue] : reqItems)
 		{
-			reqItemsN += it.second;
-			for (auto& j : *_items->getContents())
+			reqItemsN += reqValue;
+			for (const auto& [contentItem, contentValue] : *_items->getContents())
 			{
-				if (j.first == it.first && j.second > it.second)
+				if (contentItem == reqItem)
 				{
-					reqItemsN -= j.second;
+					reqItemsN -= contentValue;
 				}
 			}
 		}
