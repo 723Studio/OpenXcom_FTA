@@ -601,8 +601,8 @@ void BasescapeState::viewRightClick(Action *)
 			case 6: _game->pushState(new SoldiersState(_base)); break;
 			case 7: _game->pushState(new SellState(_base, 0)); break;
 			case 8: _game->pushState(new IntelState(_base)); break;
-			case 9: _game->pushState(new PrisonManagementState(_base));
-			default: _game->popState(); break;
+			case 9: _game->pushState(new PrisonManagementState(_base)); break;
+		default: ;
 		}
 	}
 	else if (f->getRules()->isMindShield())

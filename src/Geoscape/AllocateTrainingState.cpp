@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <sstream>
-#include <climits>
 #include "TrainingState.h"
 #include "AllocateTrainingState.h"
 #include "../Engine/Game.h"
@@ -36,6 +35,7 @@
 #include "../Interface/ComboBox.h"
 #include "../Mod/Mod.h"
 #include "../Basescape/SoldierSortUtil.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include <algorithm>
 #include "../Engine/Unicode.h"
 
@@ -102,7 +102,7 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 
 	_btnPlus->setText("+");
 	_btnPlus->setPressed(false);
-	if (_game->getMod()->getSoldierBonusList().empty())
+	if (_game->getMod()->getSoldierBonusList().empty() || _game->getMod()->isFTAGame())
 	{
 		// no soldier bonuses in the mod = button not needed
 		_btnPlus->setVisible(false);
@@ -190,7 +190,7 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(2);
-	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick);
+	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick, 0);
 }
 
 /**
@@ -305,6 +305,16 @@ void AllocateTrainingState::initList(size_t scrl)
 	_lstSoldiers->clearList();
 	for (auto* soldier : *_base->getSoldiers())
 	{
+		std::ostringstream soldierName;
+		if (soldier->getRoleRank(ROLE_SOLDIER) < 1)
+		{
+			if (soldier->getRoleRank(ROLE_ROBOT) > 0)
+				continue; // no training for robots
+
+			soldierName << "*";
+		}
+		soldierName << soldier->getName(true);
+
 		const UnitStats* stats = _btnPlus->getPressed() ? soldier->getStatsWithSoldierBonusesOnly() : soldier->getCurrentStats();
 
 		std::ostringstream tu;
@@ -351,7 +361,7 @@ void AllocateTrainingState::initList(size_t scrl)
 			status = tr("STR_NO");
 
 		_lstSoldiers->addRow(10,
-			soldier->getName(true).c_str(),
+			soldierName.str().c_str(),
 			tu.str().c_str(),
 			stamina.str().c_str(),
 			health.str().c_str(),
@@ -383,10 +393,10 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 	}
 
 	_sel = _lstSoldiers->getSelectedRow();
+	auto* soldier = _base->getSoldiers()->at(_sel);
+
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		auto* soldier = _base->getSoldiers()->at(_sel);
-
 		// can't put fully trained soldiers back into training
 		if (soldier->isFullyTrained()) return;
 
@@ -435,6 +445,10 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 			_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
 			soldier->setTraining(false);
 		}
+	}
+	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT && _game->getMod()->isFTAGame())
+	{
+		_game->pushState(new SoldierInfoStateFtA(_base, soldier));
 	}
 }
 
