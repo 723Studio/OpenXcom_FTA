@@ -210,8 +210,8 @@ void CovertOperationStartState::init()
 		
 		_btnStart->setVisible(reqItemsN <= 0);
 	}
-	_btnEquipmet->setVisible(_soldiers.size() > 0 || _items->getTotalQuantity() > 0);
-	_btnArmor->setVisible(_soldiers.size() > 0);
+	_btnEquipmet->setVisible(!_soldiers.empty() || _items->getTotalQuantity() > 0);
+	_btnArmor->setVisible(!_soldiers.empty());
 
 
 	SurfaceSet* texture = _game->getMod()->getSurfaceSet("BASEBITS.PCK");

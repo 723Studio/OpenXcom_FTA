@@ -29,7 +29,6 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
-#include "../Savegame/BaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleBaseFacility.h"
@@ -265,9 +264,16 @@ void ManufactureState::fillProductionList(size_t scrl)
 			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-			int daysLeft = hoursLeft / 24;
-			int hours = hoursLeft % 24;
-			s4 << daysLeft << "/" << hours;
+			if (hoursLeft < 1)
+			{
+				s4 << tr("STR_FINISHING"); //for corner cases
+			}
+			else
+			{
+				int daysLeft = hoursLeft / 24;
+				int hours = hoursLeft % 24;
+				s4 << daysLeft << "/" << hours;
+			}
 		}
 		else
 		{

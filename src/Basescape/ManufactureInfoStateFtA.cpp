@@ -78,7 +78,7 @@ ManufactureInfoStateFtA::ManufactureInfoStateFtA(Base *base, Production *product
 {
 	_newProject = false;
 	_unitsToProduce = _production->getAmountTotal();
-	_producedItems = -_production->getAmountProduced();
+	_producedItems = _production->getAmountProduced();
 	_infiniteProduction = _production->getInfiniteAmount();
 	buildUi();
 }
@@ -323,7 +323,7 @@ void ManufactureInfoStateFtA::exitState()
 int ManufactureInfoStateFtA::calcAvgStat(bool check)
 {
 	double result = 0;
-	if (_engineers.size() > 0)
+	if (!_engineers.empty())
 	{
 		
 		for (auto s : _engineers)
