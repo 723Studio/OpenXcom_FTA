@@ -1825,7 +1825,7 @@ void Map::drawTerrain(Surface *surface)
 	}
 
 	//Draw arrows on items that are mission objective
-	for (auto item : *_save->getItems())
+	for (BattleItem* item : *_save->getItems())
 	{
 		if (item->getRules()->isMissionObjective() && item->getOwner() == 0)
 		{
@@ -1850,13 +1850,16 @@ void Map::drawTerrain(Surface *surface)
 		}
 	}
 	//Draw arrows on hacking and sampling battle objects
-	for (auto ba : *_save->getBattleObjects())
+	for (BattleObject* ba : *_save->getBattleObjects())
 	{
 		if (!ba->wasUsed() && (ba->getRules()->getSamplingDefence() != 0 || ba->getRules()->getHackingDefence() != 0))
 		{
-			auto pos = ba->getPosition();
-			auto objTile = ba->getTile();
-
+			Position pos = ba->getPosition();
+			Tile* objTile = ba->getTile();
+			if (!objTile)
+			{
+				continue; //for good
+			}
 			if (pos.z <= _camera->getViewLevel() && !objTile->getUnit() && (objTile->isDiscovered(O_FLOOR) || objTile->isDiscovered(O_OBJECT)))
 			{
 				_camera->convertMapToScreen(pos, &screenPosition);
