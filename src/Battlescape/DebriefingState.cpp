@@ -666,12 +666,6 @@ void DebriefingState::init()
 	_missionStatistics->id = _game->getSavedGame()->getMissionStatistics()->size();
 	save->getMissionStatistics()->push_back(_missionStatistics);
 
-	_totalScoreExp = RNG::generate(0, std::abs(total / 100));
-	if (save->getDifficulty() == DIFF_SUPERHUMAN)
-	{
-		_totalScoreExp /= 2;
-	}
-
 	// Award Best-of commendations.
 	int bestScoreID[7] = {0, 0, 0, 0, 0, 0, 0};
 	int bestScore[7] = {0, 0, 0, 0, 0, 0, 0};
@@ -866,10 +860,16 @@ void DebriefingState::init()
 	_positiveScore = (total > 0);
 
 	std::vector<Soldier*> participants;
+	int missionExp = RNG::generate(0, std::abs(total / 100));
+	if (save->getDifficulty() == DIFF_SUPERHUMAN)
+	{
+		missionExp /= 2;
+	}
 	for (auto* bu : *_game->getSavedGame()->getSavedBattle()->getUnits())
 	{
 		if (bu->getGeoscapeSoldier())
 		{
+			bu->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, missionExp, "mission score experience");
 			if (Options::fieldPromotions && !bu->hasGainedAnyExperience())
 			{
 				// Note: difference from OXC, soldier needs to actually have done something during the mission
@@ -1831,7 +1831,6 @@ void DebriefingState::prepareDebriefing()
 					if (bunit->getGeoscapeSoldier())
 					{
 						_soldierStats.push_back(std::pair(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));
-						bunit->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, _totalScoreExp, "mission score experience");
 						//noncombat stats
 						if (statIncrease.statGrowth.biology > 0 || statIncrease.statGrowth.hacking > 0)
 						{
