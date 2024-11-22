@@ -59,7 +59,7 @@ private:
 	bool _ammoVisibility[RuleItem::AmmoSlotMax] = { };
 	int _fuseTimer, _ammoQuantity;
 	int _painKiller, _heal, _stimulant;
-	bool _XCOMProperty, _droppedOnAlienTurn, _isAmmo, _isWeaponWithAmmo, _fuseEnabled;
+	bool _XCOMProperty, _droppedOnAlienTurn, _isAmmo, _isWeaponWithAmmo, _fuseEnabled, _isCraftTurretAmmo;
 	const RuleItemAction *_confAimedOrLaunch = nullptr;
 	const RuleItemAction *_confSnap = nullptr;
 	const RuleItemAction *_confAuto = nullptr;
@@ -217,6 +217,10 @@ public:
 	void setXCOMProperty (bool flag);
 	/// Get xcom property flag
 	bool getXCOMProperty() const;
+	/// Set if the BattleItem represents a craft turret ammo
+	void setCraftTurretAmmo(bool flag) { _isCraftTurretAmmo = flag; }
+	/// Get if the BattleItem represents a craft turret ammo
+	bool isCraftTurretAmmo() const { return _isCraftTurretAmmo; }
 	/// get the flag representing "not dropped on player turn"
 	bool getTurnFlag() const;
 	/// set the flag representing "not dropped on player turn"

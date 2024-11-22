@@ -264,6 +264,9 @@ public:
 	/// Gets craft tiles.
 	const std::vector<Position>& getCraftTiles() const { return _craftTiles; }
 
+	/// Gets the pointer to Base that is related to this battle.
+	Base *findXcomBase();
+
 	/**
 	 * Converts coordinates into a unique index.
 	 * getTile() calls this every time, so should be inlined along with it.

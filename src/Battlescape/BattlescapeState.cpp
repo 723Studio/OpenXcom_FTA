@@ -87,6 +87,8 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
+#include "../Savegame/ItemContainer.h"
+
 #include <algorithm>
 
 namespace OpenXcom
@@ -3386,14 +3388,30 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
 		if (relevantUnitType && !unit->isOut())
 		{
 			itemsToDrop.clear();
-			for (auto* item : *unit->getInventory())
+			for (BattleItem* item : *unit->getInventory())
 			{
 				if (item->getXCOMProperty() || item->getUnit() || item->getRules()->isMissionObjective() || joinXCOM)
 				{
+					if (item->getRules()->getBattleType() == BT_FIREARM) //special case for ammo of craft turrets
+					{
+						for (int i = 0; i < RuleItem::AmmoSlotMax; i++)
+						{
+							BattleItem* ammoItem = item->getAmmoForSlot(i);
+							Base* xbase = _save->findXcomBase();
+							if (ammoItem && ammoItem != item && ammoItem->isCraftTurretAmmo() && xbase &&
+								((getGame()->getMod()->getStatisticalBulletConservation()
+									&& RNG::percent((ammoItem->getAmmoQuantity() * 100) / ammoItem->getRules()->getClipSize()))
+									|| ammoItem->getAmmoQuantity() == ammoItem->getRules()->getClipSize()))
+								{
+										xbase->getStorageItems()->addItem(ammoItem->getRules());
+								}
+						}
+					}
+					
 					itemsToDrop.push_back(item);
 				}
 			}
-			for (auto* xcomItem : itemsToDrop)
+			for (BattleItem* xcomItem : itemsToDrop)
 			{
 				_save->getTileEngine()->itemDrop(unit->getTile(), xcomItem, false);
 			}

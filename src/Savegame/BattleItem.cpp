@@ -43,7 +43,7 @@ namespace OpenXcom
  * @param rules Pointer to ruleset.
  * @param id The id of the item.
  */
-BattleItem::BattleItem(const RuleItem *rules, int *id) : _id(*id), _rules(rules), _owner(0), _previousOwner(0), _unit(0), _tile(0), _inventorySlot(0), _inventoryX(0), _inventoryY(0), _ammoItem{ }, _fuseTimer(-1), _ammoQuantity(0), _painKiller(0), _heal(0), _stimulant(0), _XCOMProperty(false), _droppedOnAlienTurn(false), _isAmmo(false), _isWeaponWithAmmo(false), _fuseEnabled(false)
+BattleItem::BattleItem(const RuleItem *rules, int *id) : _id(*id), _rules(rules), _owner(0), _previousOwner(0), _unit(0), _tile(0), _inventorySlot(0), _inventoryX(0), _inventoryY(0), _ammoItem{ }, _fuseTimer(-1), _ammoQuantity(0), _painKiller(0), _heal(0), _stimulant(0), _XCOMProperty(false), _droppedOnAlienTurn(false), _isAmmo(false), _isWeaponWithAmmo(false), _fuseEnabled(false), _isCraftTurretAmmo(false)
 {
 	(*id)++;
 	if (_rules)
@@ -136,6 +136,7 @@ void BattleItem::load(const YAML::Node &node, Mod *mod, const ScriptGlobal *shar
 	_fuseEnabled = node["fuseEnabed"].as<bool>(_fuseEnabled);
 	_droppedOnAlienTurn = node["droppedOnAlienTurn"].as<bool>(_droppedOnAlienTurn);
 	_XCOMProperty = node["XCOMProperty"].as<bool>(_XCOMProperty);
+	_isCraftTurretAmmo = node["isCraftTurretAmmo"].as<bool>(_isCraftTurretAmmo);
 	_scriptValues.load(node, shared);
 }
 
@@ -203,6 +204,8 @@ YAML::Node BattleItem::save(const ScriptGlobal *shared) const
 		node["droppedOnAlienTurn"] = _droppedOnAlienTurn;
 	if (_XCOMProperty)
 		node["XCOMProperty"] = _XCOMProperty;
+	if (_isCraftTurretAmmo)
+		node["isCraftTurretAmmo"] = _isCraftTurretAmmo;
 	_scriptValues.save(node, shared);
 
 	return node;

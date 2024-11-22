@@ -71,6 +71,7 @@
 #include "../fmath.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/CovertOperation.h"
+#include "../Savegame/ItemContainer.h"
 
 namespace OpenXcom
 {
@@ -2469,7 +2470,7 @@ void BattlescapeGame::spawnNewUnit(BattleActionAttack attack, Position position)
 	bool positionValid = getTileEngine()->isPositionValidForUnit(position, newUnit, true, checkDirection);
 	if (positionValid) // Place the unit and initialize it in the battlescape
 	{
-		int unitDirection = attack.attacker ? attack.attacker->getDirection() : RNG::generate(0, 7);
+		int unitDirection = attack.attacker ? attack.attacker->getDirection() : 4;
 		// If this is a tank, arm it with its weapon
 		if (getMod()->getItem(newUnit->getType()) && getMod()->getItem(newUnit->getType())->isFixed())
 		{
@@ -2481,9 +2482,29 @@ void BattlescapeGame::spawnNewUnit(BattleActionAttack attack, Position position)
 				{
 					const RuleItem *ammo = newUnitWeapon->getVehicleClipAmmo();
 					BattleItem *ammoItem = _save->createItemForUnit(ammo, newUnit);
+
 					if (ammoItem)
 					{
-						ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
+						bool loadWeapon = false;
+						if (faction == FACTION_PLAYER && ammo->isCraftTurretAmmo()) //special case for ammo of craft turrets
+						{
+							auto xbase = _save->findXcomBase();
+							if (xbase && xbase->getStorageItems()->getItem(ammo) > 0)
+							{
+								xbase->getStorageItems()->removeItem(ammo);
+								loadWeapon = true;
+							}
+						}
+						else
+							loadWeapon = true;
+
+						if (loadWeapon)
+						{
+							ammoItem->setAmmoQuantity(newUnitWeapon->getVehicleClipSize());
+							ammoItem->setCraftTurretAmmo(true);
+						}
+						else
+							ammoItem->setAmmoQuantity(0);
 					}
 				}
 			}

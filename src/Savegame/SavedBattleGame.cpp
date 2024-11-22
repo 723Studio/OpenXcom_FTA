@@ -1009,6 +1009,36 @@ int SavedBattleGame::getGlobalShade() const
 }
 
 /**
+ * Gets the XCOM Base, related to this battle.
+ * @return Base pointer.
+ */
+Base* SavedBattleGame::findXcomBase()
+{
+	Base* xbase = 0;
+	for (auto& base : *getGeoscapeSave()->getBases())
+	{
+		if (base->isInBattlescape())
+		{
+			xbase = base;
+			break;
+		}
+		else
+		{
+			for (auto& craft : *base->getCrafts())
+			{
+				if (craft->isInBattlescape())
+				{
+					xbase = craft->getBase();
+					break;
+				}
+			}
+		}
+	}
+
+	return xbase;
+}
+
+/**
  * Pre-calculate all valid tiles for later use in map drawing.
  */
 void SavedBattleGame::calculateCraftTiles()

@@ -1599,7 +1599,7 @@ void DebriefingState::prepareDebriefing()
 
 	if (success && ruleDeploy && ruleDeploy->isHiddentXcomBase() && craft)
 	{
-		// Set up starting base
+		// Set up new xcom base
 		Base* hiddenBase = new Base(_game->getMod());
 		hiddenBase->load(_game->getMod()->getHiddenXcomBase(), save, true);
 		hiddenBase->setLongitude(craft->getLongitude());

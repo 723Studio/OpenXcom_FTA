@@ -340,7 +340,7 @@ private:
 	bool _hiddenOnMinimap;
 	std::string _medikitActionName, _psiAttackName, _primeActionName, _unprimeActionName, _primeActionMessage, _unprimeActionMessage;
 
-	bool _twoHanded, _blockBothHands, _fixedWeapon, _fixedWeaponShow, _isConsumable, _isFireExtinguisher;
+	bool _twoHanded, _blockBothHands, _fixedWeapon, _fixedWeaponShow, _isConsumable, _isFireExtinguisher, _isCraftTurretAmmo;
 	bool _isExplodingInHands, _specialUseEmptyHand, _specialUseEmptyHandShow;
 	int _inventoryMoveCostPercent = 100;
 	std::string _defaultInventorySlotName;
@@ -782,6 +782,8 @@ public:
 	bool isConsumable() const;
 	/// Does this item extinguish fire?
 	bool isFireExtinguisher() const;
+	/// Does this item represents a craft's turret clip?
+	bool isCraftTurretAmmo() const;
 	/// Is this item explode in hands?
 	bool isExplodingInHands() const;
 	/// If this is used as a speacialWeapon, is it accessed by empty hand?

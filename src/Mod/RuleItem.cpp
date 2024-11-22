@@ -162,7 +162,7 @@ RuleItem::RuleItem(const std::string &type, int listOrder) :
 	_clipSize(0), _specialChance(100), _tuLoad{ }, _tuUnload{ },
 	_battleType(BT_NONE), _fuseType(BFT_NONE), _fuseTriggerEvents{ }, _hiddenOnMinimap(false),
 	_medikitActionName("STR_USE_MEDI_KIT"), _psiAttackName(), _primeActionName("STR_PRIME_GRENADE"), _unprimeActionName(), _primeActionMessage("STR_GRENADE_IS_ACTIVATED"), _unprimeActionMessage("STR_GRENADE_IS_DEACTIVATED"),
-	_twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false),
+	_twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false), _isCraftTurretAmmo(false),
 	_isExplodingInHands(false), _specialUseEmptyHand(false), _specialUseEmptyHandShow(false),
 	_defaultInvSlotX(0), _defaultInvSlotY(0), _waypoints(0), _invWidth(1), _invHeight(1),
 	_hackingHp(0), _hackingTu(0), _samplingPower(0),
@@ -582,6 +582,7 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
 	mod->loadUnorderedNames(_type, _supportedInventorySectionsNames, node["supportedInventorySections"]);
 	_isConsumable = node["isConsumable"].as<bool>(_isConsumable);
 	_isFireExtinguisher = node["isFireExtinguisher"].as<bool>(_isFireExtinguisher);
+	_isCraftTurretAmmo = node["isCraftTurretAmmo"].as<bool>(_isCraftTurretAmmo);
 	_isExplodingInHands = node["isExplodingInHands"].as<bool>(_isExplodingInHands);
 	_specialUseEmptyHand = node["specialUseEmptyHand"].as<bool>(_specialUseEmptyHand);
 	_specialUseEmptyHandShow = node["specialUseEmptyHandShow"].as<bool>(_specialUseEmptyHandShow);
@@ -1919,6 +1920,15 @@ bool RuleItem::isConsumable() const
 bool RuleItem::isFireExtinguisher() const
 {
 	return _isFireExtinguisher;
+}
+
+/**
+ * Does this item represents a craft's turret clip?
+ * @return True if the item extinguishes fire.
+ */
+bool RuleItem::isCraftTurretAmmo() const
+{
+	return _isCraftTurretAmmo;
 }
 
 /**
