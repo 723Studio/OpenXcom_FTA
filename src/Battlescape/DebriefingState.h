@@ -87,7 +87,6 @@ private:
 	std::map<int, int>  _containmentStateInfo;
 	int _totalEvacObjs{}, _savedEvacObjs{}, _recoveredItemObjs;
 	int _limitsEnforced;
-	int _totalScoreExp;
 	MissionStatistics *_missionStatistics;
 	std::vector<Soldier*> _soldiersCommended, _deadSoldiersCommended;
 	std::map<Soldier*, UnitStats> _nonComatStatIncreaseList;

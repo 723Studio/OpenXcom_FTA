@@ -31,7 +31,6 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../FTA/MasterMind.h"
-#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -129,13 +128,19 @@ NewGameState::NewGameState()
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
 
-	if (_game->getMod()->isFTAGame() && !_game->getMod()->getIsIronManEnabled()) // #FINNIKTODO remove on beta
+	if (_game->getMod()->isFTAGame())
 	{
-		_btnIronman->setVisible(false);
-		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
-		//even more, we disable difficulty settings choice for now - remove later
-		_btnSuperhuman->setVisible(false);
 		_btnGenius->setVisible(false);
+		_btnSuperhuman->setY(_btnGenius->getY());
+		if (!_game->getMod()->getIsIronManEnabled())
+		{
+			_btnIronman->setVisible(false);
+			_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
+		}
+		else
+		{
+			_btnSuperhuman->setVisible(false);
+		}
 	}
 }
 
