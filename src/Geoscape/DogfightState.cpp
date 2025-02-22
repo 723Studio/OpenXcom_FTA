@@ -54,7 +54,6 @@
 #include "DogfightErrorState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/Mod.h"
-#include "../Engine/Logger.h"
 #include "../FTA/MasterMind.h"
 
 namespace OpenXcom
@@ -662,9 +661,9 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	if (!_ufo->getEscapeCountdown())
 	{
 		_ufo->setFireCountdown(0);
-		int escapeCountdown = _ufo->getRules()->getBreakOffTime() + RNG::generate(0, _ufo->getRules()->getBreakOffTime()) - 30 * _game->getSavedGame()->getDifficultyCoefficient();
+		int diff = _game->getSavedGame()->getDifficulty();
+		int escapeCountdown = _ufo->getRules()->getBreakOffTime() + RNG::generate(0, _ufo->getRules()->getBreakOffTime()) - 30 * diff;
 		{
-			int diff = _game->getSavedGame()->getDifficulty();
 			auto& custom = _game->getMod()->getUfoEscapeCountdownCoefficients();
 			if (custom.size() > (size_t)diff)
 			{
@@ -1148,7 +1147,7 @@ void DogfightState::update()
 					int chanceToHit = (p->getAccuracy() * (100 + 300 / (5 - _ufoSize)) + 100) / 200; // vanilla xcom
 					chanceToHit -= _ufo->getCraftStats().avoidBonus;
 					chanceToHit += _craft->getCraftStats().hitBonus;
-					auto type = p->getSubType();
+					CraftWeaponProjectileSubType type = p->getSubType();
 
 					if (type == CWPST_CANNON)
 						chanceToHit += _pilotCannonAccuracyBonus;
@@ -1233,6 +1232,12 @@ void DogfightState::update()
 						int rate = p->getFireRate();
 						for (auto pilot : _pilots)
 						{
+							int ufoCrashBonus = 0;
+							if (_ufo->isCrashed() && _game->getSavedGame()->getDifficultyCoefficient() < 5)
+							{
+								ufoCrashBonus += RNG::generate(1, _ufoSize + 1);
+							}
+
 							if (type == CWPST_CANNON)
 							{
 								int exp = pilot->getRules()->getDogfightExperience().dogfight;
@@ -1240,6 +1245,8 @@ void DogfightState::update()
 								{
 									pilot->getDogfightExperience()->dogfight++;
 								}
+
+								pilot->getDogfightExperience()->dogfight += ufoCrashBonus;
 							}
 							else if (type == CWPST_MISSILE)
 							{
@@ -1248,6 +1255,7 @@ void DogfightState::update()
 								{
 									pilot->getDogfightExperience()->missiles++;
 								}
+								pilot->getDogfightExperience()->missiles += ufoCrashBonus;
 							}
 						}
 					}
