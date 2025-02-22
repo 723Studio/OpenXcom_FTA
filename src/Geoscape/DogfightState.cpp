@@ -1945,10 +1945,6 @@ void DogfightState::handlePanic(bool damaged)
 				_btnStandard->setHidden(false);
 				_btnCautious->setHidden(false);
 				setStatus("STR_PILOT_PANICKING_OVER");
-				for (auto pilot : _pilots)
-				{
-					pilot->getDogfightExperience()->bravery++;
-				}
 			}
 		}
 	}

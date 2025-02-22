@@ -252,7 +252,7 @@ private:
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
 	int _noLOSAccuracyPenaltyGlobal;
 	int _surrenderMode;
-	int _coefBattlescape, _coefGeoscape, _coefDogfight, _coefResearch, _coefAlienMission, _coefUfo, _coefAlienBase, _noFundsPenalty, _noFundsValue, _performanceCap, _performanceFactor;
+	int _coefBattlescape, _coefGeoscape, _coefDogfight, _coefResearch, _coefAlienMission, _coefUfo, _coefAlienBase, _noFundsPenalty, _noFundsValue;
 	int _bughuntMinTurn, _bughuntMaxEnemies, _bughuntRank, _bughuntLowMorale, _bughuntTimeUnitsLeft;
 
 	int _manaMissingWoundThreshold = 200;
@@ -1211,17 +1211,15 @@ public:
 	int getHackingStatToTuCoef() const { return _hackingStatToTuCoef; }
 	int getHackingStatToHpCoef() const { return _hackingStatToTuCoef; }
 	/// Get settings for loyalty
-	int getLoyaltyCoefBattlescape() const { return _coefBattlescape; };
-	int getLoyaltyCoefGeoscape() const { return _coefGeoscape; };
-	int getLoyaltyCoefDogfight() const { return _coefDogfight; };
-	int getLoyaltyCoefResearch() const { return _coefResearch; };
-	int getLoyaltyCoefAlienMission() const { return _coefAlienMission; };
-	int getLoyaltyCoefUfo() const { return _coefUfo; };
-	int getLoyaltyCoefAlienBase() const { return _coefAlienBase; };
-	int getLoyaltyNoFundsPenalty() const { return _noFundsPenalty; };
-	int getLoyaltyNoFundsValue() const { return _noFundsValue; };
-	int getLoyaltyPerformanceCap() const { return _performanceCap; };
-	int getLoyaltyPerformanceFactor() const { return _performanceFactor; };
+	int getLoyaltyCoefBattlescape() const { return _coefBattlescape; }
+	int getLoyaltyCoefGeoscape() const { return _coefGeoscape; }
+	int getLoyaltyCoefDogfight() const { return _coefDogfight; }
+	int getLoyaltyCoefResearch() const { return _coefResearch; }
+	int getLoyaltyCoefAlienMission() const { return _coefAlienMission; }
+	int getLoyaltyCoefUfo() const { return _coefUfo; }
+	int getLoyaltyCoefAlienBase() const { return _coefAlienBase; }
+	int getLoyaltyNoFundsPenalty() const { return _noFundsPenalty; }
+	int getLoyaltyNoFundsValue() const { return _noFundsValue; }
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;
 	RuleResearch *getFinalResearch() const;
@@ -1231,7 +1229,7 @@ public:
 	const std::map<int, std::string> *getMonthlyRatings() const;
 	const std::map<int, std::string>* getLoyaltyRatings() const;
 	const std::map<int, std::string>* getReputationLevels() const;
-	int getReputationBreakthroughValue() const { return _reputationBreakthroughValue; };
+	int getReputationBreakthroughValue() const { return _reputationBreakthroughValue; }
 	const std::map<std::string, std::string> &getFixedUserOptions() const { return _fixedUserOptions; }
 	const std::map<std::string, std::string> &getRecommendedUserOptions() const { return _recommendedUserOptions; }
 	const std::vector<std::string> &getHiddenMovementBackgrounds() const;

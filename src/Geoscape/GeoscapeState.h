@@ -65,6 +65,7 @@ private:
 	std::vector<Craft*> _activeCrafts;
 	size_t _minimizedDogfights;
 	int _slowdownCounter;
+	std::vector<Soldier*> _promotedSoldiers;
 
 	/// Update list of active crafts.
 	const std::vector<Craft*>* updateActiveCrafts();
@@ -187,6 +188,7 @@ public:
 	void handleBaseDefense(Base *base, Ufo *ufo);
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
+	std::vector<Soldier*> getPromotedSolders() { return _promotedSoldiers; }
 private:
 	/// Handle alien mission generation.
 	void determineAlienMissions();

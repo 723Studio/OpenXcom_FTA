@@ -74,7 +74,7 @@ int Soldier::improveStat(int exp, int &rate, bool bravery)
 	rate = 0;
 	if (bravery && exp > RNG::generate(0, 10))
 	{
-		rate = 1;
+		rate = 10;
 		return 10;
 	}
 

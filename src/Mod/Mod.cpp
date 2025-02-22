@@ -429,7 +429,7 @@ Mod::Mod()
 	  _ftaGame(false), _ftaGameLength(3),
 	  _ironManEnabled(true), _researchTreeDisabled(false), _defaultFactionPowerCost(300000), _kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
 	  _enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0), _noLOSAccuracyPenaltyGlobal(-1), _surrenderMode(0),
-	  _coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000), _performanceCap(0), _performanceFactor(0), _bughuntMinTurn(999),
+	  _coefBattlescape(100), _coefGeoscape(100), _coefDogfight(100), _coefResearch(100), _coefAlienMission(100), _coefUfo(100), _coefAlienBase(100), _noFundsPenalty(200), _noFundsValue(-100000), _bughuntMinTurn(999),
 	  _bughuntMaxEnemies(2), _bughuntRank(0), _bughuntLowMorale(40), _bughuntTimeUnitsLeft(60), _manaEnabled(false),
 	  _manaBattleUI(false), _manaTrainingPrimary(false), _manaTrainingSecondary(false), _manaReplenishAfterMission(true),
 	  _hackingBaseTuCost(5), _hackingFirewallBaseTuCost(10), _hackingFirewallBaseHpCost(5), _hackingStatToTuCoef(250), _hackingStatToHpCoef(500),
@@ -3281,8 +3281,6 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		_coefAlienBase = nodeLoyalty["coefAlienBase"].as<int>(_coefAlienBase);
 		_noFundsPenalty = nodeLoyalty["noFundsPenalty"].as<int>(_noFundsPenalty);
 		_noFundsValue = nodeLoyalty["noFundsValue"].as<int>(_noFundsValue);
-		_performanceCap = nodeLoyalty["performanceCap"].as<int>(_performanceCap);
-		_performanceFactor = nodeLoyalty["performanceFactor"].as<int>(_performanceFactor);
 	}
 
 	if (const YAML::Node &nodeGameOver = loadDocInfoHelper("gameOver"))

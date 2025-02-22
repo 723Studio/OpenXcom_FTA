@@ -33,6 +33,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/SavedGame.h"
+#include "../Battlescape/PromotionsState.h"
 
 namespace OpenXcom
 {
@@ -46,7 +47,8 @@ namespace OpenXcom
  * @param endType What ended the production.
  * @param production Pointer to the production details.
  */
-ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &item, GeoscapeState *state, productionProgress_e endType, Production *production) : _base(base), _state(state), _endType(endType)
+ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &item, GeoscapeState *state, std::vector<Soldier*> promotedSoldiers, productionProgress_e endType, Production *production) :
+	_base(base), _state(state), _promotedSoldiers(promotedSoldiers), _endType(endType)
 {
 	_screen = false;
 
@@ -55,6 +57,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_btnOk = new TextButton(118, 18, 40, 154);
 	_btnGotoBase = new TextButton(118, 18, 162, 154);
 	_btnSummary = new TextButton(118, 18, 162, 154);
+	_btnPromotions = new TextButton(118, 18, 162, 131);
 	_txtMessage = new Text(246, 110, 37, 35);
 	_txtItem = new Text(160, 9, 47, 35);
 	_txtQuantity = new Text(70, 9, 209, 35);
@@ -67,6 +70,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	add(_btnOk, "button", "geoManufactureComplete");
 	add(_btnGotoBase, "button", "geoManufactureComplete");
 	add(_btnSummary, "button", "geoManufactureComplete");
+	add(_btnPromotions, "button", "geoManufactureComplete");
 	add(_txtMessage, "text1", "geoManufactureComplete");
 	add(_txtItem, "text1", "geoManufactureComplete");
 	add(_txtQuantity, "text1", "geoManufactureComplete");
@@ -93,6 +97,10 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 
 	_btnSummary->setText(tr("STR_RANDOM_PRODUCTION_SUMMARY"));
 	_btnSummary->onMouseClick((ActionHandler)&ProductionCompleteState::btnSummaryClick);
+
+	_btnPromotions->setText(tr("STR_VIEW_PROMOTIONS"));
+	_btnPromotions->onMouseClick((ActionHandler)&ProductionCompleteState::btnPromotionsClick);
+	_btnPromotions->setVisible(!promotedSoldiers.empty());
 
 	_txtItem->setText(tr("STR_ITEM"));
 	_txtItem->setVisible(false);
@@ -251,4 +259,8 @@ void ProductionCompleteState::lstSummaryClick(Action *)
 	_lstSummary->scrollTo(scrollPos);
 }
 
+void ProductionCompleteState::btnPromotionsClick(Action* action)
+{
+	_game->pushState(new PromotionsState);
+}
 }

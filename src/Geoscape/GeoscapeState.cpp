@@ -49,7 +49,6 @@
 #include "../Savegame/Ufo.h"
 #include "../Mod/RuleUfo.h"
 #include "../Mod/RuleArcScript.h"
-#include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleEvent.h"
 #include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleDiplomacyFaction.h"
@@ -515,6 +514,7 @@ GeoscapeState::~GeoscapeState()
 		delete dfs;
 	}
 	_dogfightsToBeStarted.clear();
+	_promotedSoldiers.clear();
 }
 
 /**
@@ -2198,8 +2198,7 @@ void GeoscapeState::time1Hour()
 	{
 		popup(new ItemsArrivingState(this));
 	}
-	
-	std::vector<Soldier*> promotedSoldiers;
+
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		// Handle Research
@@ -2225,15 +2224,15 @@ void GeoscapeState::time1Hour()
 						(*s)->clearEngineerExperience();
 						if ((*s)->rolePromoteSoldier(ROLE_ENGINEER))
 						{
-							promotedSoldiers.push_back((*s));
+							_promotedSoldiers.push_back((*s));
 						}
 						(*s)->setProductionProject(0);
 					}
 				}
 				
-				popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, pair.second, pair.first));
-
+				popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, _promotedSoldiers, pair.second, pair.first));
 				xbase->removeProduction(pair.first);
+				_promotedSoldiers.clear();
 			}
 		}
 
@@ -2276,11 +2275,7 @@ void GeoscapeState::time1Hour()
 		}
 	}
 
-	//oh, and don't forget about FtA promotions!
-	if (!promotedSoldiers.empty() && _fta)
-	{
-		_game->pushState(new PromotionsState);
-	}
+
 
 	// Handle pending transformations
 	for (auto* xbase : *_game->getSavedGame()->getBases())
@@ -2452,8 +2447,7 @@ void GeoscapeState::time1Day()
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
-	bool availableIntelInformed = false, completedIntelInformed = false;
-	std::vector<Soldier*> promotedSoldiers;
+	bool availableIntelInformed = false;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2475,11 +2469,11 @@ void GeoscapeState::time1Day()
 			{
 				std::ostringstream ssf;
 				ssf << tr(pair.first->getType()) << " (x" << pair.second << ")";
-				popup(new ProductionCompleteState(xbase, ssf.str(), this, PROGRESS_CONSTRUCTION));
+				popup(new ProductionCompleteState(xbase, ssf.str(), this, _promotedSoldiers, PROGRESS_CONSTRUCTION));
 			}
 			else
 			{
-				popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, PROGRESS_CONSTRUCTION));
+				popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, _promotedSoldiers, PROGRESS_CONSTRUCTION));
 			}
 		}
 		
@@ -2524,10 +2518,6 @@ void GeoscapeState::time1Day()
 					{
 						soldier->improvePrimaryStats(soldier->getIntelExperience(), ROLE_AGENT);
 						soldier->clearIntelExperience();
-						if (soldier->rolePromoteSoldier(ROLE_AGENT))
-						{
-							promotedSoldiers.push_back(soldier);
-						}
 						if (intelProjectFinished)
 						{
 							soldier->setIntelProject(0);
@@ -2561,7 +2551,7 @@ void GeoscapeState::time1Day()
 		// Handle prisoner
 		for (auto* prisoner : xbase->getPrisoners())
 		{
-			prisoner->think(*_game, promotedSoldiers); // soldier exp gain and promotion moved into prisoner logic
+			prisoner->think(*_game, _promotedSoldiers); // soldier exp gain and promotion moved into prisoner logic
 		}
 
 		// now check if there are new projects available and add it to the base;
@@ -2601,6 +2591,8 @@ void GeoscapeState::time1Day()
 				}
 			}
 		}
+
+		_promotedSoldiers.clear();
 
 		// Handle soldier wounds and martial training
 		BaseSumDailyRecovery recovery = xbase->getSumRecoveryPerDay();
@@ -2656,12 +2648,7 @@ void GeoscapeState::time1Day()
 			}
 		}
 	}
-
-	//handle promotion
-	if (!promotedSoldiers.empty() && _fta)
-	{
-		_game->pushState(new PromotionsState);
-	}
+	
 	// Handle mission and event scripts gap timers
 	_game->getSavedGame()->handleMissionScriptTimers();
 	_game->getSavedGame()->handleEventScriptTimers();
@@ -2683,7 +2670,7 @@ void GeoscapeState::time1Day()
 		{
 			for (auto missionScript : faction->getAvalibleMissionScripts())
 			{
-				bool success = processCommand(missionScript);
+				processCommand(missionScript);
 			}
 		}
 	}
@@ -4666,7 +4653,6 @@ void GeoscapeState::handleResearch(Base* base)
 	}
 
 	// 3. add finished research, including lookups and getonefrees (up to 4x)
-	std::vector<Soldier*> promotedSoldiers;
 	for (auto projectData : finished)
 	{
 		ResearchProject* project = projectData.second;
@@ -4677,20 +4663,16 @@ void GeoscapeState::handleResearch(Base* base)
 		base->removeResearch(project);
 		project = nullptr;
 
-		// wait, if it's FtA, we need to train stats and promote people!
-		if (_game->getMod()->isFTAGame())
+		auto scientists = projectData.first;
+		for (auto [fst, snd] : scientists)
 		{
-			auto scientists = projectData.first;
-			for (auto [fst, snd] : scientists)
+			fst->improvePrimaryStats(fst->getResearchExperience(), ROLE_SCIENTIST);
+			fst->clearResearchExperience();
+			if (fst->rolePromoteSoldier(ROLE_SCIENTIST))
 			{
-				fst->improvePrimaryStats(fst->getResearchExperience(), ROLE_SCIENTIST);
-				fst->clearResearchExperience();
-				if (fst->rolePromoteSoldier(ROLE_SCIENTIST))
-				{
-					promotedSoldiers.push_back(fst);
-				}
-				fst->setResearchProject(0);
+				_promotedSoldiers.push_back(fst);
 			}
+			fst->setResearchProject(0);
 		}
 
 		// 3b. handle interrogation
@@ -4751,7 +4733,7 @@ void GeoscapeState::handleResearch(Base* base)
 			}
 		}
 		// 3e. handle research complete popup + ufopedia article popups (topic+bonus)
-		popup(new ResearchCompleteState(newResearch, bonus, research, base));
+		popup(new ResearchCompleteState(newResearch, bonus, research, base, _promotedSoldiers));
 		// 3f. reset timer
 		timerReset();
 
@@ -4840,6 +4822,8 @@ void GeoscapeState::handleResearch(Base* base)
 		// 2. handle items spawned by research
 		// 3. handle events spawned by research
 		saveGame->handlePrimaryResearchSideEffects(topicsToCheck, _game->getMod(), base);
+
+		_promotedSoldiers.clear();
 	}
 
 	// check and remove disabled projects from ongoing research
@@ -4857,12 +4841,6 @@ void GeoscapeState::handleResearch(Base* base)
 		{
 			(*i)->removeResearch(*iter);
 		}
-	}
-
-	//oh, and don't forget about FtA promotions!
-	if (!promotedSoldiers.empty() && _fta)
-	{
-		_game->pushState(new PromotionsState);
 	}
 }
 

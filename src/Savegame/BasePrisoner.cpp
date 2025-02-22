@@ -187,10 +187,8 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 			int breakpoint = rules.getBaseResistance() + getMorale() / 4 + getAggression() * 2 + getIntelligence() * 2;
 			int progress = 0;
 			double effort = 0;
-			Log(LOG_INFO) << "Processing interrogation of base prisoner: " << this->getName() << " " << this->getId() << " with current interrogationProgress: " << _interrogationProgress << " and breakpoint: " << breakpoint; //#FINNIKTODO #CLEARLOGS
 			for (auto s : _agents)
 			{
-				Log(LOG_INFO) << "Agent: " << s->getName() << " is calculating effort for interrogation"; //#FINNIKTODO #CLEARLOGS
 				auto stats = s->getCurrentStats();
 				auto caps = s->getRules()->getStatCaps();
 				double soldierEffort = 0, statEffort = 0;
@@ -246,22 +244,17 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 				}
 
 				soldierEffort /= statsN;
-				Log(LOG_INFO) << "Agent effort: " << soldierEffort; //#FINNIKTODO #CLEARLOGS
 				effort += soldierEffort;
 			}
-			Log(LOG_INFO) << "Total effort: " << effort; //#FINNIKTODO #CLEARLOGS
 			// If one woman can carry a baby in nine months, nine women can't do it in a month...
 			if (_agents.size() > 1)
 			{
 				effort *= (100 - (25 * log(_agents.size()))) / 100;
-				Log(LOG_INFO) << "Adjusted effort (by agents number): " << effort; //#FINNIKTODO #CLEARLOGS
 			}
 			effort *= loyaltyFactor;
 			effort *= speedFactor;
-			Log(LOG_INFO) << "Adjusted effort (by loyalty and mod): " << effort; //#FINNIKTODO #CLEARLOGS
 			progress = static_cast<int>(effort);
 			_interrogationProgress += progress;
-			Log(LOG_INFO) << ">>> Interrogation calculated, progress: " << progress << " with total progress: " << _interrogationProgress; //#FINNIKTODO #CLEARLOGS
 			if (_interrogationProgress >= breakpoint)
 			{
 				result = true;
@@ -380,10 +373,6 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 							save.spawnEvent(events, &mod);
 						}
 					}
-				}
-				else //#FINNIKTODO #CLEARLOGS
-				{
-					Log(LOG_INFO) << "No effect of torture with roll" << roll; //#FINNIKTODO #CLEARLOGS
 				}
 			}
 		}
