@@ -21,7 +21,6 @@
 #include <map>
 #include <vector>
 #include <yaml-cpp/yaml.h>
-#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -35,10 +34,10 @@ class RuleDiplomacyFaction
 private:
 	std::string _name, _description, _background, _cardBackground, _discoverResearch, _discoverEvent, _startingResearch;
 	int _genMissionFrequency, _helpTreatyGap;
-	int _sellPriceFactor, _buyPriceFactor, _repPriceFactor, _stockMod, _powerHungry, _scienceBaseCost;
+	int _sellPriceFactor, _buyPriceFactor, _repPriceFactor, _powerHungry, _scienceBaseCost;
 	int _startingReputation, _startingFunds, _startingPower;
 	std::map<std::string, int> _startingItems, _startingStaff, _staffWeights;
-	std::map<std::string, int> _wishList;
+	std::map<std::string, double> _wishList;
 	std::vector<std::string> _helpTreatyMissions, _helpTreatyEventScripts, _usualEventsScripts, _happyEvents, _angryEvents, _startingResearches, _factionalEvents;
 public:
 	/// Creates a blank RuleDiplomacyFaction.
@@ -99,8 +98,7 @@ public:
 	int getSellPriceFactor() const { return _sellPriceFactor; }
 	int getBuyPriceFactor() const { return _buyPriceFactor; }
 	int getRepPriceFactor() const { return _repPriceFactor; }
-	int getStockMod() const { return _stockMod; }
-	const std::map<std::string, int>& getWishList() const { return _wishList; }
+	const std::map<std::string, double>& getWishList() const { return _wishList; }
 	const std::map<std::string, int>& getStaffWeights() const { return _staffWeights; }
 
 

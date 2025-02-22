@@ -128,7 +128,7 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 		}
 
 		// populate faction item stores and staff
-		auto items = faction->getPublicItems();
+		auto items = faction->getItems();
 		for (auto &item : factionRules->getStartingItems())
 		{
 			if (RuleItem* itemRule = _game->getMod()->getItem(item.first))

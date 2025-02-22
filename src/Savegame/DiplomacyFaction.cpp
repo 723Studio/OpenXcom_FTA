@@ -44,7 +44,6 @@ DiplomacyFaction::DiplomacyFaction(const Mod* mod, const std::string& name):
 {
 	_rule = _mod->getDiplomacyFaction(name);
 	_items = new ItemContainer();
-	_secretItems = new ItemContainer();
 	_staffPool = new SoldierPool();
 }
 
@@ -55,7 +54,6 @@ DiplomacyFaction::~DiplomacyFaction()
 		delete i;
 	}
 	delete _items;
-	delete _secretItems;
 	delete _staffPool;
 }
 
@@ -172,34 +170,17 @@ void DiplomacyFaction::addItem(const RuleItem* item, int qty)
 {
 	if (qty > 0)
 	{
-		bool goToSecret = false;
-		if (_secretItems->getItem(item) <= 0 && item->isAlienArtifact())
-		{
-			auto it = std::find(_mod->getResearchList().begin(), _mod->getResearchList().end(), item->getName());
-			if (it != _mod->getResearchList().end())
-			{
-				if (!isResearched(*it))
-				{
-					goToSecret = true;
-				}
-			}
-		}
-		if (goToSecret)
-		{
-			_secretItems->addItem(item, 1);
-			qty -= 1;
-		}
-		if (qty > 0)
-		{
-			_items->addItem(item, qty);
-		}
+		_items->addItem(item, qty);
 	}
 
 }
 
 void DiplomacyFaction::removeItem(const RuleItem* item, int qty)
 {
-	_items->removeItem(item, qty);
+	if (qty > 0)
+	{
+		_items->removeItem(item, qty);
+	}
 }
 
 /**
@@ -243,19 +224,18 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 			processDailyReputation(engine);
 		}
 
-		//ok, what would happen today?
-		processFactionalEvents(engine);
-
 		//it's management time!
-		handleSelling(*engine.getMod());
 		if (period == TIMESTEP_10_DAYS)
 		{
-			Log(LOG_INFO) << "Handling restock, Faction:  " << _rule->getName() << " has funds: " << _funds << " and power: " << _power << "."; //#CLEARLOGS
+			processFactionalEvents(engine);
+			Log(LOG_INFO) << "Managing faction:  " << _rule->getName() << " has funds: " << _funds << " and power: " << _power << "."; //#CLEARLOGS
 			handleRestock();
+			handleSelling();
+			manageStaff(engine);
+			managePower();
+			Log(LOG_INFO) << ">>> Faction management finished:  " << _rule->getName() << " has funds: " << _funds << " and power: " << _power << "."; //#CLEARLOGS
 		}
-		//manageStaff(); #FINNIKTODO uncomment with alpha 2
-		int64_t reqFunds = managePower(save.getMonthsPassed(), _mod->getDefaultFactionPowerCost());
-		handleResearch(engine);
+		//handleResearch(engine); //#FINNIKTODO
 
 		if (_discovered)
 		{
@@ -552,22 +532,21 @@ void DiplomacyFaction::factionMissionGenerator(Game& engine)
  */
 void DiplomacyFaction::handleRestock()
 {
-	for (const auto& it : _rule->getWishList())
+	for (const auto& [wishListItem, weight] : _rule->getWishList())
 	{
-		RuleItem* ruleItem = _mod->getItem(it.first);
-		int64_t cost = ruleItem->getBuyCost();
-		if (cost <= 0)
+		RuleItem* ruleItem = _mod->getItem(wishListItem);
+		int cost = ruleItem->getBuyCost();
+		if (cost <= 0 || !ruleItem)
 		{
 			// we don't have cost for the item, skip that trash!
 			continue;
 		}
 
 		// first, we see if we can handle this item
-		if (isResearched(ruleItem->getRequirements()) && isResearched(ruleItem->getBuyRequirements()))
+		if (ruleItem->getBuyRequirements().empty() || isResearched(ruleItem->getBuyRequirements()))
 		{
 			// calculate wanted amount purchase things
-			int64_t toBuy = round(it.second / cost * _power * _rule->getStockMod() / 1000);
-			toBuy -= _items->getItem(ruleItem);
+			int64_t toBuy = round(weight * _power / 100) - getItems()->getItem(ruleItem);
 			// now we can purchase things
 			if (toBuy > 0 && _funds > 0)
 			{
@@ -576,146 +555,99 @@ void DiplomacyFaction::handleRestock()
 			}
 		}
 	}
-	Log(LOG_INFO) << ">>>> Restock finished, Faction:  " << _rule->getName() << " has funds: " << _funds << "."; //#CLEARLOGS
 }
 
 /**
  * Handle managing of Faction's staff and non-item equipment.
  * @param mod rulesets to get constant data.
  */
-void DiplomacyFaction::handleSelling(Mod& mod)
+void DiplomacyFaction::handleSelling()
 {
 	std::map<const RuleItem*, std::pair<int, int>> sellList;
 
-	for (const auto& it : *_items->getContents())
+	for (auto [item, value] : *_items->getContents())
 	{
-		auto cost = it.first->getBuyCost(); //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
+		int cost = item->getBuyCost(); //yes, faction can sell items with purchase cost
 		if (!cost)
 		{
-			cost = it.first->getSellCost(); //well, in case we can't buy it, this would be ok too =)
+			cost = item->getSellCost(); //well, in case we can't buy it, this would be ok too =)
 		}
 		if (!cost)
 		{
 			cost = 1; // extra safe if something bad would come to faction stash, it would cost at least $1
 		}
 
-		int wishWeight = 0;
-		for (const auto& k : _rule->getWishList())
+		double wishWeight = 0;
+		for (auto& [wishItem, weight] : _rule->getWishList())
 		{
-			if (k.first == it.first->getType())
+			if (wishItem == item->getType())
 			{
-				wishWeight = k.second;
+				wishWeight = weight;
 				break;
 			}
 		}
 		// calculate desired amount of that item
-		int toSell = round((wishWeight / cost) * _power * _rule->getStockMod() / 1000);
-		toSell = _items->getItem(it.first) - toSell;
+
+		int toSell = value - round(wishWeight * _power / 100);
 		if (toSell > 0)
 		{
-			sellList.insert(std::make_pair(it.first, std::make_pair(toSell, cost)));
+			sellList.insert(std::make_pair(item, std::make_pair(toSell, cost)));
 		}
 	}
 
 	if (!sellList.empty())
 	{
-		for (auto& i : sellList)
+		for (auto [sellItem, values] : sellList)
 		{
-			removeItem(i.first, i.second.first);
-			int64_t dFunds = i.second.first;
-			dFunds *= i.second.second; // sorry for that, was too lasy to make a structure
+			removeItem(sellItem, values.first);
+			int64_t dFunds = values.first;
+			dFunds *= values.second; // sorry for that, was too lasy to make a structure
 			_funds += dFunds;
 		}
 	}
-
-	Log(LOG_INFO) << ">>>> Sale finished, Faction:  " << _rule->getName() << " has funds: " << _funds; //#CLEARLOGS
 }
 
 /**
  * Handle managing of Faction's staff and non-item equipment.
  * @param mod rulesets to get constant data.
  */
-void DiplomacyFaction::manageStaff()
+void DiplomacyFaction::manageStaff(Game& engine)
 {
-	//std::map<std::string, int> buyList;
+	std::map<const RuleSoldier*, int> buyList;
 
-	//// handle soldiers
-	//const std::vector<std::string>& soldiers = _mod->getSoldiersList();
-	//for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
-	//{
+	// handle soldiers
+	for (auto &weights : _rule->getStaffWeights())
+	{
+		const RuleSoldier* soldierRule = _mod->getSoldier(weights.first);
 
-	//	const RuleSoldier* rule = _mod->getSoldier(*i);
-	//	
-	//	if (rule->getBuyCost() != 0 && isResearched(rule->getRequirements()))
-	//	{
-	//		buyList.insert(std::make_pair((*i), rule->getBuyCost()));
-	//	}
-	//}
-	//
-	//// handle STR_SCIENTIST
-	//if (isResearched("STR_SCIENTIST"))
-	//{
-	//	buyList.insert(std::make_pair("STR_SCIENTIST", _mod->getHireScientistCost()));
-	//}
+		if (soldierRule->getBuyCost() != 0 && isResearched(soldierRule->getRequirements()))
+		{
+			int soldiersInPool = 0;
+			for (auto hiredSoldier: _staffPool->getSoldiers())
+			{
+				if (hiredSoldier->getRules() == soldierRule)
+				{
+					soldiersInPool++;
+				}
+			}
+			int64_t amount = round(weights.second * _power / 100) - soldiersInPool;
 
-	//// handle STR_ENGINEER
-	//if (isResearched("STR_ENGINEER"))
-	//{
-	//	buyList.insert(std::make_pair("STR_ENGINEER", _mod->getHireEngineerCost()));
-	//}
+			if (amount > 0)
+			{
+				buyList.insert(std::make_pair(soldierRule, (int)amount));
+			}
+		}
+	}
 
-	//// handle crafts
-	//const std::vector<std::string>& crafts = _mod->getCraftsList();
-	//for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
-	//{
-
-	//	RuleCraft* rule = _mod->getCraft(*i);
-
-	//	if (rule->getBuyCost() != 0 && isResearched(rule->getRequirements()))
-	//	{
-	//		buyList.insert(std::make_pair((*i), rule->getBuyCost()));
-	//	}
-	//}
-
-	//for (auto j = buyList.begin(); j != buyList.end(); ++j)
-	//{
-	//	int weight = 0;
-	//	for (auto k = _rule->getStaffWeights().begin(); k != _rule->getStaffWeights().end(); ++k)
-	//	{
-	//		if (k->first == (*j).first)
-	//		{
-
-	//			weight = k->second;
-	//			break;
-	//		}
-	//	}
-
-	//	if (weight)
-	//	{
-	//		
-	//		int64_t toBuy = _power;
-	//		toBuy *= weight;
-	//		toBuy = floor(toBuy / 10000) - _staff->getItem((*j).first);
-
-	//		if (toBuy)
-	//		{
-	//			int64_t cost = (*j).second;
-	//			if (toBuy > 0 || _funds > 0)
-	//			{
-	//				_staff->addItem((*j).first, (int)toBuy);
-	//				_funds -= toBuy * cost;
-	//				Log(LOG_DEBUG) << "Faction:  " << _rule->getName() << " is buying staff " << (*j).first << ": " << toBuy << " because of coef: " << floor(_power / weight); //#CLEARLOGS
-	//			}
-	//			//else
-	//			//{
-	//			//	_staff->removeItem((*j).first, toBuy);
-	//			//	_funds += toBuy * cost; //yes, faction can sell items with purchase cost, or balancing resources would go crazy.
-	//			//	Log(LOG_DEBUG) << "Faction:  " << _rule->getName() << " is selling staff " << (*j).first << ": " << toBuy << " because of coef: " << floor(_power / weight); //#CLEARLOGS
-	//			//}
-	//		}
-	//	}
-
-	//}
+	for (auto [rule, amount] : buyList)
+	{
+		if (RNG::percent(70 - (engine.getSavedGame()->getDifficultyCoefficient()) * 10))
+		{
+			int nationality = engine.getSavedGame()->selectSoldierNationalityByLocation(engine.getMod(), rule, nullptr);
+			_staffPool->addSoldier(engine.getMod()->genSoldier(engine.getSavedGame(), rule, nationality));
+		}
+		
+	}
 }
 
 /**
@@ -723,55 +655,50 @@ void DiplomacyFaction::manageStaff()
  * @param month
  * @param baseCost
  */
-int64_t DiplomacyFaction::managePower(int month, int64_t baseCost) //#FINNIKCHECK
+void DiplomacyFaction::managePower()
 {
+
 	int powerHungry = _rule->getPowerHungry();
-	month += 1;
-	double temp = month;
-	temp /= month + 14;
-	temp *= powerHungry;
-	temp += (powerHungry / 2.33);
-	int64_t reqFunds = _power * round(temp);
-	temp = month * 0.017;
-	int64_t powerCost = baseCost + (baseCost * round(temp));
-	int dPower = 0;
-
-	if (_funds < 0)
+	int64_t reqFunds = _power;
+	reqFunds *= powerHungry;
+	if (reqFunds > _funds)
 	{
-		if (_funds < -reqFunds / 1.3)
+		//we lose some power!
+		int powerLost = round((_funds - reqFunds) / powerHungry);
+		if (powerLost > 0)
 		{
-			dPower = static_cast<int>((-_funds + (reqFunds / 1.3)) / powerCost * 0.9);
-			if (dPower > _power)
+			_power -= powerLost;
+			int64_t gainedFunds = powerLost;
+			gainedFunds *= powerHungry;
+			_funds += gainedFunds;
+		}
+	}
+	else if (reqFunds < _funds && _vigilance > 0)
+	{
+		int64_t spareFunds = _funds - reqFunds;
+		int64_t vigilanceCost = _vigilance;
+		vigilanceCost *= powerHungry;
+		if (spareFunds >= vigilanceCost)
+		{
+			_power += _vigilance;
+			_funds -= vigilanceCost;
+			_vigilance = 0;
+		}
+		else
+		{
+			int powerGain = floor(spareFunds / powerHungry);
+			if (powerGain > 0)
 			{
-				dPower = _power;
+				_power += powerGain;
+				_vigilance -= powerGain;
+				vigilanceCost = powerGain;
+				vigilanceCost *= powerHungry;
+				_funds -= vigilanceCost;
+
 			}
-			_power -= dPower;
-			Log(LOG_INFO) << "Faction:  " << _rule->getName() << " updating power to: " << _power << " with dPower value: " << dPower << " because its funds: " << _funds << " are below limit: " << reqFunds; //#CLEARLOGS
-			_funds += static_cast<int>(dPower * powerCost * 0.9);
 		}
-		else
-		{
-			return reqFunds;
-		}
-	}
 
-	if (_vigilance > 0)
-	{
-		if (_funds > reqFunds)
-		{
-			int cost = static_cast<int>((_funds - reqFunds) / powerCost);
-			dPower = std::min(cost, _vigilance);
-			_power += dPower;
-			_funds -= dPower * powerCost;
-			Log(LOG_INFO) << "Faction:  " << _rule->getName() << " updating power to: " << _power << " with dPower value: " << dPower << " because it has vigilance: " << _vigilance << " and funds are above reqFunds value: " << reqFunds; //#CLEARLOGS
-		}
-		else
-		{
-			Log(LOG_INFO) << "Faction:  " << _rule->getName() << " has vigilance value : " << _vigilance << ", but can't update power because funds value: " << _funds << " below reqFunds: " << reqFunds; //#CLEARLOGS
-		}
 	}
-
-	return reqFunds;
 }
 
 /**
@@ -781,22 +708,19 @@ int64_t DiplomacyFaction::managePower(int month, int64_t baseCost) //#FINNIKCHEC
 void DiplomacyFaction::handleResearch(Game& engine) //#FINNIKTODO - refactor with new soldier-based scientists logic
 {
 	SavedGame& save = *engine.getSavedGame();
-
-	bool hasResearch = !_research.empty();
-
-	if (hasResearch)
+	if (!_research.empty())
 	{
-		for (auto p = _research.begin(); p != _research.end(); ++p)
+		for (FactionalResearch* project : _research)
 		{
-			if ((*p)->step())
+			if (project->step())
 			{
 				//project finished
 				const RuleResearch* bonus = 0;
-				const RuleResearch* research = (*p)->getRules();
+				const RuleResearch* research = project->getRules();
 
 				// core research first
 				unlockResearch(research->getName());
-				Log(LOG_INFO) << "Faction:  " << _rule->getName() << " finished research : " << (*p)->getName(); //#CLEARLOGS
+				Log(LOG_INFO) << "Faction:  " << _rule->getName() << " finished research : " << project->getName(); //#CLEARLOGS
 
 				// spawn item
 				RuleItem* spawnedItem = _mod->getItem(research->getSpawnedItem());
@@ -819,12 +743,12 @@ void DiplomacyFaction::handleResearch(Game& engine) //#FINNIKTODO - refactor wit
 				}
 
 				//clear research project
-				/*_staff->addItem("STR_SCIENTIST", (*p)->getScientists());*/ //#FINNIKTODO - process staff pool
+				/*_staff->addItem("STR_SCIENTIST", (*p)->getScientists());*/
 
 				Collections::deleteIf(_research, 1,
 					[&](FactionalResearch* r)
 					{
-						return r == (*p);
+						return r == project;
 					}
 				);
 			}

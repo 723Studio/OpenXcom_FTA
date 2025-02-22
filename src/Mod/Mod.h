@@ -247,7 +247,6 @@ private:
 	bool _ftaGame;
 	int _ftaGameLength;
 	bool _ironManEnabled, _researchTreeDisabled;
-	int _defaultFactionPowerCost;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
 	int _noLOSAccuracyPenaltyGlobal;
@@ -1247,7 +1246,6 @@ public:
 	const std::vector<int> &getStartDogfightSounds() const { return _startDogfightSound; }
 	const std::vector<int> &getFlagByKills() const;
 	StatAdjustment *getStatAdjustment(int difficulty);
-	int getDefaultFactionPowerCost() const { return _defaultFactionPowerCost; };
 	int getDefeatScore() const;
 	int getDefeatFunds() const;
 	bool isDemigod() const;

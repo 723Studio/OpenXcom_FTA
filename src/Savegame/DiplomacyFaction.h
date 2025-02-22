@@ -67,7 +67,7 @@ private:
 	std::vector<std::string> _commandsToProcess, _eventsToProcess;
 	std::vector<RuleMissionScript*> _availableMissionScripts;
 	std::vector<std::string> _unlockedResearches;
-	ItemContainer* _items, *_secretItems;
+	ItemContainer* _items;
 	SoldierPool* _staffPool;
 	std::vector<FactionalResearch*> _research;
 
@@ -80,11 +80,11 @@ private:
 	/// Handle purshaising of Faction's items, based on current situation.
 	void handleRestock();
 	/// Handle selling of faction's items, if they don't need them anymore.
-	void handleSelling(Mod& mod);
+	void handleSelling();
 	/// Handle managing of Faction's staff and non-item equipment.
-	void manageStaff();
+	void manageStaff(Game& engine);
 	/// Process Faction's power management and returns required funds for further use.
-	int64_t managePower(int month, int64_t baseCost);
+	void managePower();
 	/// Handle researching.
 	void handleResearch(Game& engine);
 	/// Get if research article is unlocked by faction.
@@ -146,7 +146,7 @@ public:
 	const std::vector<RuleMissionScript*>& getAvalibleMissionScripts() const { return _availableMissionScripts; }
 
 	/// Public manipulators to factional stores.
-	ItemContainer* getPublicItems() const { return _items; }
+	ItemContainer* getItems() const { return _items; }
 	void addItem(const RuleItem* item, int qty = 1);
 	void removeItem(const RuleItem* item, int qty = 1);
 	SoldierPool* getStaffPool() const { return _staffPool; }

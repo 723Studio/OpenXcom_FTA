@@ -1058,7 +1058,7 @@ int DiplomacyPurchaseState::getFactionItemStock(std::string entityName)
 	RuleItem* itemRule = _game->getMod()->getItem(entityName);
 	if (itemRule)
 	{
-		int iQty = _faction->getPublicItems()->getItem(itemRule);
+		int iQty = _faction->getItems()->getItem(itemRule);
 		if (iQty > 0)
 		{
 			if (!itemRule->getReputationRequirements().empty())

@@ -64,7 +64,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		{
 			statEffort = stats->data;
 			soldierEffort += (statEffort / projStats.data);
-			if (!estimate && stats->data < caps.data && RNG::generate(0, caps.data) > stats->data && RNG::percent(trainingFactor * (projStats.data / 100)) && RNG::percent(s.second))
+			if (!estimate && stats->data < caps.data && RNG::generate(0, caps.data) > stats->data && RNG::percent(trainingFactor) && RNG::percent(s.second))
 				s.first->getIntelExperience()->data++;
 			statsN++;
 		}
