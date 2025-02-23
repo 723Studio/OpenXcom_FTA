@@ -274,6 +274,7 @@ public:
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
 	/// Getters for FtA's roles sprite IDs.
+	int getRequiredExperience(SoldierRole role, int rank) const;
 	int getPilotRankSprite() const { return _pilotRankSprite; }
 	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; }
 	int getPilotRankSpriteTiny() const { return _pilotRankSpriteTiny; }

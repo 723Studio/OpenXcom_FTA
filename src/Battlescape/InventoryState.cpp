@@ -24,6 +24,7 @@
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
 #include "../Mod/Mod.h"
@@ -249,6 +250,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickForward, Options::keyBattleRight);
 
 	_btnRank->onMouseClick((ActionHandler)&InventoryState::btnRankClick);
+	_btnRank->onMouseClick((ActionHandler)&InventoryState::btnRankClickRight, SDL_BUTTON_RIGHT);
 	_btnRank->setTooltip("STR_UNIT_STATS");
 	_btnRank->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnRank->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
@@ -583,7 +585,7 @@ void InventoryState::edtSoldierPress(Action *action)
 		if (unit != 0)
 		{
 			Soldier *s = unit->getGeoscapeSoldier();
-			if (s)
+			if (s && !_game->getMod()->isFTAGame())
 			{
 				// set the soldier's name without a statstring
 				_txtName->setText(s->getName());
@@ -603,7 +605,7 @@ void InventoryState::edtSoldierChange(Action *)
 	if (unit != 0)
 	{
 		Soldier *s = unit->getGeoscapeSoldier();
-		if (s)
+		if (s && !_game->getMod()->isFTAGame())
 		{
 			// set the soldier's name
 			s->setName(_txtName->getText());
@@ -1265,6 +1267,25 @@ void InventoryState::btnRankClick(Action *)
 	}
 
 	_game->pushState(new UnitInfoState(_battleGame->getSelectedUnit(), _parent, true, false));
+}
+
+void InventoryState::btnRankClickRight(Action* action)
+{
+	// don't accept clicks when moving items
+	if (_inv->getSelectedItem() != 0)
+	{
+		return;
+	}
+
+	BattleUnit* unit = _inv->getSelectedUnit();
+	if (unit)
+	{
+		Soldier* s = unit->getGeoscapeSoldier();
+		if (s)
+		{
+			_game->pushState(new SoldierInfoStateFtA(0, s));
+		}
+	}
 }
 
 void InventoryState::_createInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)

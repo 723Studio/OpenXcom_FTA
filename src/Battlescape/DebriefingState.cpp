@@ -664,6 +664,12 @@ void DebriefingState::init()
 
 	_missionStatistics->daylight = save->getSavedBattle()->getGlobalShade();
 	_missionStatistics->id = _game->getSavedGame()->getMissionStatistics()->size();
+	std::string objective = _game->getMod()->getDeployment(save->getSavedBattle()->getAlienCustomDeploy())->getExtendedObjectiveType();
+	if (objective.empty())
+	{
+		objective = "STR_NEUTRALIZE_ENEMIES"; //default option
+	}
+	_missionStatistics->objective = objective;
 	save->getMissionStatistics()->push_back(_missionStatistics);
 
 	// Award Best-of commendations.
@@ -2243,31 +2249,6 @@ void DebriefingState::prepareDebriefing()
 			else
 			{
 				_txtTitle->setText(tr("STR_EVACUATION_COMPLETE"));
-			}
-		}
-		else if (ruleDeploy->getExtendedObjectiveType() == "STR_EXTRACTION")
-		{
-			success = true;
-			if (playersSurvived == 0)
-			{
-				_txtTitle->setText(tr("STR_EXTRACTION_FAILED"));
-				success = false;
-				if (!objectiveFailedText.empty())
-				{
-					addStat(objectiveFailedText, 1, objectiveFailedScore);
-				}
-			}
-			else if (deadSoldiers == 0 && playersMIA == 0)
-			{
-				_txtTitle->setText(tr("STR_EXTRACTION_SUCCESSFUL"));
-				if (!objectiveCompleteText.empty())
-				{
-					addStat(objectiveCompleteText, 1, objectiveCompleteScore);
-				}
-			}
-			else
-			{
-				_txtTitle->setText(tr("STR_EXTRACTION_COMPLETE"));
 			}
 		}
 		else if (ruleDeploy->getExtendedObjectiveType() == "STR_ITEM_EXTRACTION")

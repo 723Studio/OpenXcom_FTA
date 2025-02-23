@@ -68,6 +68,7 @@ set ( basescape_src
   Basescape/SellState.cpp
   Basescape/SoldierArmorState.cpp
   Basescape/SoldierAvatarState.cpp
+  Basescape/SoldierExperienceState.cpp
   Basescape/SoldierBonusState.cpp
   Basescape/SoldierDiaryMissionState.cpp
   Basescape/SoldierDiaryOverviewState.cpp

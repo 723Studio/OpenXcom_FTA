@@ -28,7 +28,7 @@
 #include "../Interface/Bar.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Text.h"
-#include "../Interface/TextEdit.h"
+#include "../Interface/BattlescapeButton.h"
 #include "../Interface/ComboBox.h"
 #include "../Engine/Surface.h"
 #include "../Savegame/SavedGame.h"
@@ -46,6 +46,7 @@
 #include "SellState.h"
 #include "SoldierArmorState.h"
 #include "SoldierBonusState.h"
+#include "SoldierExperienceState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Savegame/SoldierDeath.h"
 
@@ -103,7 +104,7 @@ void SoldierInfoStateFtA::initUi()
 	// Create objects
 	defineStatLines();
 	_bg = new Surface(320, 200, 0, 0);
-	_rank = new Surface(26, 23, 4, 4);
+	_rank = new BattlescapeButton(26, 23, 4, 4);
 	_flag = new InteractiveSurface(40, 20, 275, 6);
 	_btnPrev = new TextButton(28, 14, 0, 33);
 	if (_listing)
@@ -136,7 +137,8 @@ void SoldierInfoStateFtA::initUi()
 	setInterface("soldierInfo");
 
 	add(_bg);
-	add(_rank);
+	//add(_rank);
+	add(_rank, "rank", "soldierInfo", _bg);
 	add(_flag);
 	add(_btnOk, "button", "soldierInfo");
 	add(_btnPrev, "button", "soldierInfo");
@@ -167,6 +169,8 @@ void SoldierInfoStateFtA::initUi()
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&SoldierInfoStateFtA::btnOkClick, Options::keyCancel);
+
+	_rank->onMouseClick((ActionHandler)&SoldierInfoStateFtA::btnRankClick);
 
 	_btnPrev->setText("<<");
 	if (_base == 0)
@@ -542,16 +546,10 @@ void SoldierInfoStateFtA::btnNextClick(Action *)
  */
 void SoldierInfoStateFtA::btnArmorClick(Action *)
 {
-	if (!_soldier->getCraft() || (_soldier->getCraft() && _soldier->getCraft()->getStatus() != "STR_OUT"))
+	if (!_soldier->getCraft() || (_soldier->getCraft() && _soldier->getCraft()->getStatus() != "STR_OUT")
+		&& !_soldier->getCovertOperation())
 	{
-		if (_soldier->getCovertOperation() != 0)
-		{
-			return;
-		}
-		else
-		{
-			_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));
-		}
+		_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));
 	}
 }
 
@@ -657,6 +655,11 @@ void SoldierInfoStateFtA::btnFlagClick(Action *action)
 
 	_soldier->setNationality(temp);
 	init();
+}
+
+void SoldierInfoStateFtA::btnRankClick(Action* action)
+{
+	_game->pushState(new SoldierExperienceState(_soldier));
 }
 
 void SoldierInfoStateFtA::defineStatLines()

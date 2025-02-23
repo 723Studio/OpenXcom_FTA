@@ -675,6 +675,22 @@ int RuleSoldier::getRankSpriteTiny() const
 	return _rankSpriteTiny;
 }
 
+int RuleSoldier::getRequiredExperience(SoldierRole role, int rank) const
+{
+    for (const auto& req : _roleExpRequirments)
+    {
+        if (req->role == role)
+        {
+            auto it = req->requirments.find(rank);
+            if (it != req->requirments.end())
+            {
+                return it->second;
+            }
+        }
+    }
+    return -1; // or some default value indicating no requirement found
+}
+
 
 ////////////////////////////////////////////////////////////
 //					Script binding

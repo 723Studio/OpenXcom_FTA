@@ -177,7 +177,7 @@ public:
 	/// Gets the Alien Deployment's alternative deployment to show the player.
 	const std::string& getAlternativeDeploymentName() const { return _alternativeDeployment; };
 	/// Gets the Alien Deployment's research, that would update alien deployment to alternative.
-	const std::string& getAlternativeDeploymentResearchName() const { return _alternativeDeploymentResearch; };
+	const std::string& getAlternativeDeploymentResearchName() const { return _alternativeDeploymentResearch; }
 	/// Gets the number of items to be recovered/given after a successful mission.
 	int getMissionBountyItemCount() const { return _missionBountyItemCount; }
 	/// Gets the bug hunt mode minimum turn requirement (default = 0 = not used).
@@ -213,9 +213,9 @@ public:
 	/// Gets the script to use for this deployment.
 	const std::string& getRandomMapScript() const;
 	/// Gets the battle script to use for this deployment.
-	std::string getBattleScript() const { return _battleScript; };
+	std::string getBattleScript() const { return _battleScript; }
 	/// Gets the extendedObjective for this deployment.
-	std::string getExtendedObjectiveType() const { return _extendedObjectiveType; };
+	std::string getExtendedObjectiveType() const { return _extendedObjectiveType; }
 	
 	int hasTextureBasedScript(const Mod* mod) const;
 	/// Checks if this is the destination for the final mission (mars stage 1, t'leth stage 1).
@@ -227,13 +227,13 @@ public:
 	/// Gets the cutscene to play when this mission is aborted.
 	std::string getAbortCutscene() const;
 	/// Gets geoscape event rule name to spawn after success mission.
-	std::string chooseSuccessEvent() const { return _successEvents.choose(); };
+	std::string chooseSuccessEvent() const { return _successEvents.choose(); }
 	/// Gets geoscape event rule name to despawn after success mission.
-	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); };
+	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); }
 	/// Gets geoscape event rule name to spawn after failure mission.
-	std::string chooseFailureEvent() const { return _failureEvents.choose(); };
+	std::string chooseFailureEvent() const { return _failureEvents.choose(); }
 	/// Gets the the list of undercover armor types for the mission to make concealed units.
-	std::vector<std::string> getUndercoverArmors() const { return _undercoverArmors; };
+	std::vector<std::string> getUndercoverArmors() const { return _undercoverArmors; }
 	/// Gets the alert message for this mission type.
 	std::string getAlertMessage() const;
 	/// Gets the alert background for this mission type.

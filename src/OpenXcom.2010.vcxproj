@@ -396,6 +396,7 @@
     <ClCompile Include="Basescape\SoldierDiaryOverviewState.cpp" />
     <ClCompile Include="Basescape\SoldierDiaryPerformanceState.cpp" />
     <ClCompile Include="Basescape\SoldierAvatarState.cpp" />
+    <ClCompile Include="Basescape\SoldierExperienceState.cpp" />
     <ClCompile Include="Basescape\SoldierInfoState.cpp" />
     <ClCompile Include="Basescape\SoldierInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\SoldierMemorialState.cpp" />
@@ -836,6 +837,7 @@
     <ClInclude Include="Basescape\SoldierDiaryOverviewState.h" />
     <ClInclude Include="Basescape\SoldierDiaryPerformanceState.h" />
     <ClInclude Include="Basescape\SoldierAvatarState.h" />
+    <ClInclude Include="Basescape\SoldierExperienceState.h" />
     <ClInclude Include="Basescape\SoldierInfoState.h" />
     <ClInclude Include="Basescape\SoldierInfoStateFtA.h" />
     <ClInclude Include="Basescape\SoldierMemorialState.h" />

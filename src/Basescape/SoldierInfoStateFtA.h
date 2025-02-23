@@ -27,6 +27,7 @@ class Surface;
 class TextButton;
 class Text;
 class TextEdit;
+class BattlescapeButton;
 class ComboBox;
 class Bar;
 class Soldier;
@@ -47,7 +48,8 @@ private:
 	std::vector<Soldier*> *_list;
 	SoldierRole _role;
 
-	Surface *_bg, *_rank;
+	Surface *_bg;
+	BattlescapeButton *_rank;
 	InteractiveSurface *_flag;
 	TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnDiary, *_btnBonuses, *_btnHire;
 	Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead, *_txtOperation;
@@ -115,6 +117,8 @@ private:
 	void cbxRolesChange(Action *action);
 	/// Handler for clicking the flag.
 	void btnFlagClick(Action *action);
+	/// Handler for clicking the Rank button.
+	void btnRankClick(Action* action);
 };
 
 }

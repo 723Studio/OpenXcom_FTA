@@ -24,7 +24,6 @@
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
-#include "../Interface/ArrowButton.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
@@ -38,7 +37,6 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom

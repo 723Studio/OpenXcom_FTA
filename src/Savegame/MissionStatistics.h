@@ -44,6 +44,7 @@ struct MissionStatistics
 	std::string rating;
 	int score;
 	std::string alienRace;
+	std::string objective;
 	int daylight;
 	std::map<int, int> injuryList;
 	bool valiantCrux;
@@ -66,6 +67,7 @@ struct MissionStatistics
 		score = node["score"].as<int>(score);
 		rating = node["rating"].as<std::string>(rating);
 		alienRace = node["alienRace"].as<std::string>(alienRace);
+		objective = node["objective"].as<std::string>(objective);
 		daylight = node["daylight"].as<int>(daylight);
 		injuryList = node["injuryList"].as< std::map<int, int> >(injuryList);
 		valiantCrux = node["valiantCrux"].as<bool>(valiantCrux);
@@ -93,6 +95,7 @@ struct MissionStatistics
 		node["score"] = score;
 		node["rating"] = rating;
 		node["alienRace"] = alienRace;
+		node["objective"] = objective;
 		node["daylight"] = daylight;
 		if (!injuryList.empty())
 			node["injuryList"] = injuryList;
@@ -185,7 +188,7 @@ struct MissionStatistics
 	}
 
 	MissionStatistics(const YAML::Node& node) : time(0, 0, 0, 0, 0, 0, 0) { load(node); }
-	MissionStatistics() : id(0), markerId(0), time(0, 0, 0, 0, 0, 0, 0), region("STR_REGION_UNKNOWN"), country("STR_UNKNOWN"), ufo("NO_UFO"), craft("NO_CRAFT"), success(false), aborted(false), score(0), alienRace("STR_UNKNOWN"), daylight(0), valiantCrux(false), lootValue(0) { }
+	MissionStatistics() : id(0), markerId(0), time(0, 0, 0, 0, 0, 0, 0), region("STR_REGION_UNKNOWN"), country("STR_UNKNOWN"), ufo("NO_UFO"), craft("NO_CRAFT"), success(false), aborted(false), score(0), alienRace("STR_UNKNOWN"), objective("STR_NEUTRALIZE_ENEMIES"), daylight(0), valiantCrux(false), lootValue(0) { }
 	~MissionStatistics() { }
 };
 

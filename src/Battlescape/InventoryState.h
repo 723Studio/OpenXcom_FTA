@@ -121,6 +121,7 @@ public:
 	void btnGroundClickBackward(Action *action);
 	/// Handler for clicking the Rank button.
 	void btnRankClick(Action *action);
+	void btnRankClickRight(Action* action);
 	/// Handler for clicking the Links button.
 	void btnLinksClick(Action *action);
 	/// Handler for clicking on the Create Template button.
