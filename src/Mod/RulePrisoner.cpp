@@ -87,10 +87,10 @@ PrisonerTortureRules::PrisonerTortureRules() : _difficulty(100), _loyaltyChange(
 
 PrisonerTortureRules::~PrisonerTortureRules()
 {
-	for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _eventWeights.begin(); i != _eventWeights.end(); ++i)
-	{
-		delete i->second;
-	}
+	//for (std::vector<std::pair<size_t, WeightedOptions*> >::iterator i = _eventWeights.begin(); i != _eventWeights.end(); ++i)
+	//{
+	//	delete i->second;
+	//}
 }
 
 void PrisonerTortureRules::load(const YAML::Node& node)
