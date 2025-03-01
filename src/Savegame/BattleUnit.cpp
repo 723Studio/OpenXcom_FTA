@@ -4147,13 +4147,6 @@ void BattleUnit::addBiologyExp()
 bool BattleUnit::hasGainedAnyExperience()
 {
 	return _exp.empty();
-
-	// if (!Mod::EXTENDED_EXPERIENCE_AWARD_SYSTEM) #FINNIKTODO refactor .empty()
-	// {
-	// 	// vanilla compatibility (throwing doesn't count)
-	// 	return _exp.bravery || _exp.reactions || _exp.firing || _exp.psiSkill || _exp.psiStrength || _exp.melee || _exp.mana;
-	// }
-	// return _exp.bravery || _exp.reactions || _exp.firing || _exp.psiSkill || _exp.psiStrength || _exp.melee || _exp.throwing || _exp.mana;
 }
 
 void BattleUnit::updateGeoscapeStats(Soldier *soldier) const

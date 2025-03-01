@@ -189,7 +189,7 @@ AlienDeployment::AlienDeployment(const std::string &type) :
 	_markerName("STR_TERROR_SITE"), _markerIcon(-1), _durationMin(0), _durationMax(0), _minDepth(0), _maxDepth(0),
 	_genMissionFrequency(0), _genMissionLimit(1000), _genMissionRaceFromAlienBase(true),
 	_objectiveType(-1), _objectivesRequired(0), _objectiveCompleteScore(0), _objectiveFailedScore(0), _despawnPenalty(0), _abortPenalty(0), _points(0),
-	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _keepCraftAfterFailedMission(false), _allowObjectiveRecovery(false), _escapeType(ESCAPE_NONE), _vipSurvivalPercentage(0),
+	_turnLimit(0), _cheatTurn(20), _chronoTrigger(FORCE_LOSE), _keepCraftAfterFailedMission(false), _allowObjectiveRecovery(false), _escapeType(ESCAPE_NONE), _extendedObjectiveType(OBJECTIVE_NONE), _vipSurvivalPercentage(0),
 	_baseDetectionRange(0), _baseDetectionChance(100), _huntMissionMaxFrequency(60), _huntMissionRaceFromAlienBase(true),
 	_resetAlienBaseAgeAfterUpgrade(false), _resetAlienBaseAge(false)
 {
@@ -239,7 +239,6 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_missionBountyItem = node["missionBountyItem"].as<std::string>(_missionBountyItem);
 	_alternativeDeployment = node["alternativeDeployment"].as<std::string>(_alternativeDeployment);
 	_alternativeDeploymentResearch = node["alternativeDeploymentResearch"].as<std::string>(_alternativeDeploymentResearch);
-	_extendedObjectiveType = node["extendedObjectiveType"].as<std::string>(_extendedObjectiveType);
 	_missionBountyItemCount = node["missionBountyItemCount"].as<int>(_missionBountyItemCount);
 	_bughuntMinTurn = node["bughuntMinTurn"].as<int>(_bughuntMinTurn);
 	_data = node["data"].as< std::vector<DeploymentData> >(_data);
@@ -329,6 +328,7 @@ void AlienDeployment::load(const YAML::Node &node, Mod *mod)
 	_keepCraftAfterFailedMission = node["keepCraftAfterFailedMission"].as<bool>(_keepCraftAfterFailedMission);
 	_allowObjectiveRecovery = node["allowObjectiveRecovery"].as<bool>(_allowObjectiveRecovery);
 	_escapeType = EscapeType(node["escapeType"].as<int>(_escapeType));
+	_extendedObjectiveType = static_cast<ObjectiveType>(node["extendedObjectiveType"].as<int>(_extendedObjectiveType));
 	_vipSurvivalPercentage = node["vipSurvivalPercentage"].as<int>(_vipSurvivalPercentage);
 	if (node["genMission"])
 	{

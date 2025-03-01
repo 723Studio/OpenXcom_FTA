@@ -25,6 +25,7 @@
 
 namespace OpenXcom
 {
+class AlienDeployment;
 
 class TextButton;
 class Window;
@@ -67,6 +68,7 @@ private:
 	Region *_region;
 	Country *_country;
 	Base *_base{};
+	AlienDeployment *_ruleDeploy;
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
 	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer, *_btnNonCombatStats;

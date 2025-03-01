@@ -464,7 +464,6 @@ void SoldiersState::init()
 void SoldiersState::initList(size_t scrl)
 {
 	_lstSoldiers->clearList();
-
 	_filteredListOfSoldiers.clear();
 	_soldierNumbers.clear();
 	int i = 0;

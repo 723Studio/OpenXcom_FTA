@@ -664,12 +664,29 @@ void DebriefingState::init()
 
 	_missionStatistics->daylight = save->getSavedBattle()->getGlobalShade();
 	_missionStatistics->id = _game->getSavedGame()->getMissionStatistics()->size();
-	std::string objective = _game->getMod()->getDeployment(save->getSavedBattle()->getAlienCustomDeploy())->getExtendedObjectiveType();
-	if (objective.empty())
+	std::string objectiveName = "STR_NEUTRALIZE_ENEMIES";
+	if (_ruleDeploy)
 	{
-		objective = "STR_NEUTRALIZE_ENEMIES"; //default option
+		ObjectiveType objective = _ruleDeploy->getExtendedObjectiveType();
+		switch (objective)
+		{
+			case OBJECTIVE_NONE:
+				objectiveName = "STR_NEUTRALIZE_ENEMIES";
+				break;
+			case OBJECTIVE_EVACUATION:
+				objectiveName = "STR_EVACUATION";
+				break;
+			case OBJECTIVE_ITEM_EXTRACTION:
+				objectiveName = "STR_ITEM_EXTRACTION";
+				break;
+			case OBJECTIVE_HACKING:
+				objectiveName = "STR_HACKING";
+				break;
+			default: objectiveName = "STR_NEUTRALIZE_ENEMIES";
+		}
 	}
-	_missionStatistics->objective = objective;
+
+	_missionStatistics->objective = objectiveName;
 	save->getMissionStatistics()->push_back(_missionStatistics);
 
 	// Award Best-of commendations.
@@ -1150,22 +1167,22 @@ void DebriefingState::prepareDebriefing()
 	SavedGame *save = _game->getSavedGame();
 	SavedBattleGame *battle = save->getSavedBattle();
 
-	AlienDeployment *ruleDeploy = _game->getMod()->getDeployment(battle->getMissionType());
+	_ruleDeploy = _game->getMod()->getDeployment(battle->getMissionType());
 	// OXCE: Don't forget custom mission overrides
 	AlienDeployment* alienCustomMission = _game->getMod()->getDeployment(battle->getAlienCustomMission());
 	if (alienCustomMission)
 	{
-		ruleDeploy = alienCustomMission;
+		_ruleDeploy = alienCustomMission;
 	}
 	// OXCE: Don't forget about UFO landings/crash sites
-	if (!ruleDeploy)
+	if (!_ruleDeploy)
 	{
 		for (auto* ufo : *save->getUfos())
 		{
 			if (ufo->isInBattlescape())
 			{
 				// Note: fake underwater UFO deployment was already considered above (via alienCustomMission)
-				ruleDeploy = _game->getMod()->getDeployment(ufo->getRules()->getType());
+				_ruleDeploy = _game->getMod()->getDeployment(ufo->getRules()->getType());
 				break;
 			}
 		}
@@ -1207,20 +1224,20 @@ void DebriefingState::prepareDebriefing()
 	std::string missionCompleteText, missionFailedText;
 	std::string objectiveCompleteText, objectiveFailedText;
 	int objectiveCompleteScore = 0, objectiveFailedScore = 0;
-	if (ruleDeploy)
+	if (_ruleDeploy)
 	{
-		if (ruleDeploy->getObjectiveCompleteInfo(objectiveCompleteText, objectiveCompleteScore, missionCompleteText))
+		if (_ruleDeploy->getObjectiveCompleteInfo(objectiveCompleteText, objectiveCompleteScore, missionCompleteText))
 		{
 			_stats.push_back(new DebriefingStat(objectiveCompleteText, false));
 		}
-		if (ruleDeploy->getObjectiveFailedInfo(objectiveFailedText, objectiveFailedScore, missionFailedText))
+		if (_ruleDeploy->getObjectiveFailedInfo(objectiveFailedText, objectiveFailedScore, missionFailedText))
 		{
 			_stats.push_back(new DebriefingStat(objectiveFailedText, false));
 		}
-		if (aborted && ruleDeploy->getAbortPenalty() != 0)
+		if (aborted && _ruleDeploy->getAbortPenalty() != 0)
 		{
 			_stats.push_back(new DebriefingStat("STR_MISSION_ABORTED", false));
-			addStat("STR_MISSION_ABORTED", 1, -ruleDeploy->getAbortPenalty());
+			addStat("STR_MISSION_ABORTED", 1, -_ruleDeploy->getAbortPenalty());
 		}
 	}
 	if (battle->getVIPSurvivalPercentage() > 0)
@@ -1530,14 +1547,14 @@ void DebriefingState::prepareDebriefing()
 		}
 	}
 
-	if (ruleDeploy && ruleDeploy->getEscapeType() != ESCAPE_NONE)
+	if (_ruleDeploy && _ruleDeploy->getEscapeType() != ESCAPE_NONE)
 	{
-		if (ruleDeploy->getEscapeType() != ESCAPE_EXIT)
+		if (_ruleDeploy->getEscapeType() != ESCAPE_EXIT)
 		{
 			success = playersInEntryArea > 0;
 		}
 
-		if (ruleDeploy->getEscapeType() != ESCAPE_ENTRY)
+		if (_ruleDeploy->getEscapeType() != ESCAPE_ENTRY)
 		{
 			success = success || playersInExitArea > 0;
 		}
@@ -1577,7 +1594,7 @@ void DebriefingState::prepareDebriefing()
 					destroyAlienBase = false;
 			}
 
-			if (ruleDeploy && !ruleDeploy->getNextStage().empty())
+			if (_ruleDeploy && !_ruleDeploy->getNextStage().empty())
 			{
 				_missionStatistics->alienRace = ab->getAlienRace();
 				destroyAlienBase = false;
@@ -1603,7 +1620,7 @@ void DebriefingState::prepareDebriefing()
 		}
 	}
 
-	if (success && ruleDeploy && ruleDeploy->isHiddentXcomBase() && craft)
+	if (success && _ruleDeploy && _ruleDeploy->isHiddentXcomBase() && craft)
 	{
 		// Set up new xcom base
 		Base* hiddenBase = new Base(_game->getMod());
@@ -1611,7 +1628,7 @@ void DebriefingState::prepareDebriefing()
 		hiddenBase->setLongitude(craft->getLongitude());
 		hiddenBase->setLatitude(craft->getLatitude());
 		
-		hiddenBase->setName(_game->getLanguage()->getString(ruleDeploy->getType()));
+		hiddenBase->setName(_game->getLanguage()->getString(_ruleDeploy->getType()));
 		save->getBases()->push_back(hiddenBase);
 	}
 
@@ -1799,8 +1816,7 @@ void DebriefingState::prepareDebriefing()
 						addStat("STR_VIP_SAVED", 1, value);
 						if (!bunit->wasFriendlyFired())
 						{
-							auto role = soldier->getBestRole();
-							switch (role) {
+							switch (soldier->getBestRole()) {
 							case ROLE_SOLDIER:
 								addStat("STR_SOLDIER_JOINED_XCOM", 1, value / 3);
 								break;
@@ -1818,6 +1834,9 @@ void DebriefingState::prepareDebriefing()
 								break;
 							case ROLE_NONE:
 								addStat("STR_CIVILIAN_JOINED_XCOM", 1, value / 3);
+								break;
+							case ROLE_ROBOT:
+								addStat("STR_ROBOT_JOINED_XCOM", 1, value / 3);
 								break;
 							default: ;
 							}
@@ -1988,7 +2007,7 @@ void DebriefingState::prepareDebriefing()
 		{
 			// craft was not even on the battlescape (e.g. paratroopers)
 		}
-		else if (ruleDeploy->keepCraftAfterFailedMission())
+		else if (_ruleDeploy->keepCraftAfterFailedMission())
 		{
 			// craft didn't wait for you (e.g. escape/extraction missions)
 		}
@@ -2094,13 +2113,13 @@ void DebriefingState::prepareDebriefing()
 			else if (!objectiveCompleteText.empty())
 			{
 				int victoryStat = 0;
-				if (ruleDeploy->getEscapeType() != ESCAPE_NONE)
+				if (_ruleDeploy->getEscapeType() != ESCAPE_NONE)
 				{
-					if (ruleDeploy->getEscapeType() != ESCAPE_EXIT)
+					if (_ruleDeploy->getEscapeType() != ESCAPE_EXIT)
 					{
 						victoryStat += playersInEntryArea;
 					}
-					if (ruleDeploy->getEscapeType() != ESCAPE_ENTRY)
+					if (_ruleDeploy->getEscapeType() != ESCAPE_ENTRY)
 					{
 						victoryStat += playersInExitArea;
 					}
@@ -2140,9 +2159,9 @@ void DebriefingState::prepareDebriefing()
 			// we can recover items from the earlier stages as well
 			recoverItems(battle->getConditionalRecoveredItems(), base, craft);
 			size_t nonRecoverType = 0;
-			if (ruleDeploy && ruleDeploy->getObjectiveType() && !ruleDeploy->allowObjectiveRecovery())
+			if (_ruleDeploy && _ruleDeploy->getObjectiveType() && !_ruleDeploy->allowObjectiveRecovery())
 			{
-				nonRecoverType = ruleDeploy->getObjectiveType();
+				nonRecoverType = _ruleDeploy->getObjectiveType();
 			}
 			for (int i = 0; i < battle->getMapSizeXYZ(); ++i)
 			{
@@ -2215,9 +2234,9 @@ void DebriefingState::prepareDebriefing()
 		}
 	}
 	// Extended mission types handling
-	if (ruleDeploy)
+	if (_ruleDeploy)
 	{
-		if (ruleDeploy->getExtendedObjectiveType() == "STR_EVACUATION" && (vipsLost > 0 || vipsSaved > 0))
+		if (_ruleDeploy->getExtendedObjectiveType() == OBJECTIVE_EVACUATION && (vipsLost > 0 || vipsSaved > 0))
 		{
 			success = true;
 			if (vipsSaved == 0 || (vipsSaved * 4) < vipsLost)
@@ -2251,7 +2270,7 @@ void DebriefingState::prepareDebriefing()
 				_txtTitle->setText(tr("STR_EVACUATION_COMPLETE"));
 			}
 		}
-		else if (ruleDeploy->getExtendedObjectiveType() == "STR_ITEM_EXTRACTION")
+		else if (_ruleDeploy->getExtendedObjectiveType() == OBJECTIVE_ITEM_EXTRACTION)
 		{
 			if (_recoveredItemObjs < 1)
 			{
@@ -2268,7 +2287,7 @@ void DebriefingState::prepareDebriefing()
 				_txtTitle->setText(tr("STR_MISSION_ACCOMPLISHED"));
 			}
 		}
-		else if (ruleDeploy->getExtendedObjectiveType() == "STR_HACKING")
+		else if (_ruleDeploy->getExtendedObjectiveType() == OBJECTIVE_HACKING)
 		{
 			if (!save->getSavedBattle()->isHackingObjectiveGained())
 			{
@@ -2311,12 +2330,12 @@ void DebriefingState::prepareDebriefing()
 				if (!recoveryDividers.empty())
 				{
 					bool done = false;
-					if (ruleDeploy)
+					if (_ruleDeploy)
 					{
 						// step 1: check deployment
-						if (recoveryDividers.find(ruleDeploy->getType()) != recoveryDividers.end())
+						if (recoveryDividers.find(_ruleDeploy->getType()) != recoveryDividers.end())
 						{
-							aadivider = recoveryDividers.at(ruleDeploy->getType());
+							aadivider = recoveryDividers.at(_ruleDeploy->getType());
 							done = true;
 						}
 					}
@@ -2490,10 +2509,10 @@ void DebriefingState::prepareDebriefing()
 
 	_missionStatistics->success = success;
 
-	if (success && ruleDeploy && base)
+	if (success && _ruleDeploy && base)
 	{
 		// Unlock research defined in alien deployment, if the mission was a success
-		const RuleResearch *research = _game->getMod()->getResearch(ruleDeploy->getUnlockedResearchOnSuccess());
+		const RuleResearch *research = _game->getMod()->getResearch(_ruleDeploy->getUnlockedResearchOnSuccess());
 		bool showPedia = !_game->getSavedGame()->isResearched(research) && research != nullptr;
 		save->handleResearchUnlockedByMissions(research, _game->getMod());
 		if (showPedia)
@@ -2509,10 +2528,10 @@ void DebriefingState::prepareDebriefing()
 		}
 
 		// Give bounty item defined in alien deployment, if the mission was a success
-		const RuleItem *bountyItem = _game->getMod()->getItem(ruleDeploy->getMissionBountyItem());
+		const RuleItem *bountyItem = _game->getMod()->getItem(_ruleDeploy->getMissionBountyItem());
 		if (bountyItem)
 		{
-			int bountyQty = std::max(1, ruleDeploy->getMissionBountyItemCount());
+			int bountyQty = std::max(1, _ruleDeploy->getMissionBountyItemCount());
 			addItemsToBaseStores(bountyItem, base, bountyQty, true);
 			int specialType = bountyItem->getSpecialType();
 			if (specialType > 1)
@@ -2525,30 +2544,30 @@ void DebriefingState::prepareDebriefing()
 		}
 
 		// Increase counters
-		save->increaseCustomCounter(ruleDeploy->getCounterSuccess());
-		save->increaseCustomCounter(ruleDeploy->getCounterAll());
+		save->increaseCustomCounter(_ruleDeploy->getCounterSuccess());
+		save->increaseCustomCounter(_ruleDeploy->getCounterAll());
 		// Decrease counters
-		save->decreaseCustomCounter(ruleDeploy->getDecreaseCounterSuccess());
-		save->decreaseCustomCounter(ruleDeploy->getDecreaseCounterAll());
+		save->decreaseCustomCounter(_ruleDeploy->getDecreaseCounterSuccess());
+		save->decreaseCustomCounter(_ruleDeploy->getDecreaseCounterAll());
 
 		// Generate a success event
-		_eventToSpawn = _game->getMod()->getEvent(ruleDeploy->chooseSuccessEvent());
+		_eventToSpawn = _game->getMod()->getEvent(_ruleDeploy->chooseSuccessEvent());
 	}
-	else if (!success && ruleDeploy)
+	else if (!success && _ruleDeploy)
 	{
 		// Unlock research defined in alien deployment, if the mission was a failure
-		const RuleResearch* research = _game->getMod()->getResearch(ruleDeploy->getUnlockedResearchOnFailure());
+		const RuleResearch* research = _game->getMod()->getResearch(_ruleDeploy->getUnlockedResearchOnFailure());
 		save->handleResearchUnlockedByMissions(research, _game->getMod());
 
 		// Increase counters
-		save->increaseCustomCounter(ruleDeploy->getCounterFailure());
-		save->increaseCustomCounter(ruleDeploy->getCounterAll());
+		save->increaseCustomCounter(_ruleDeploy->getCounterFailure());
+		save->increaseCustomCounter(_ruleDeploy->getCounterAll());
 		// Decrease counters
-		save->decreaseCustomCounter(ruleDeploy->getDecreaseCounterFailure());
-		save->decreaseCustomCounter(ruleDeploy->getDecreaseCounterAll());
+		save->decreaseCustomCounter(_ruleDeploy->getDecreaseCounterFailure());
+		save->decreaseCustomCounter(_ruleDeploy->getDecreaseCounterAll());
 
 		// Generate a failure event
-		_eventToSpawn = _game->getMod()->getEvent(ruleDeploy->chooseFailureEvent());
+		_eventToSpawn = _game->getMod()->getEvent(_ruleDeploy->chooseFailureEvent());
 	}
 
 	// remember the base for later use (of course only if it's not lost already (in that case base=0))

@@ -228,10 +228,9 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 */
 CovertOperationSoldiersState::~CovertOperationSoldiersState()
 {
-	for (std::vector<SortFunctor*>::iterator it = _sortFunctors.begin();
-		it != _sortFunctors.end(); ++it)
+	for (auto* sortFunctor : _sortFunctors)
 	{
-		delete(*it);
+		delete sortFunctor;
 	}
 }
 
@@ -315,6 +314,7 @@ void CovertOperationSoldiersState::btnOkClick(Action*)
 void CovertOperationSoldiersState::initList(size_t scrl)
 {
 	_lstSoldiers->clearList();
+	_filteredListOfSoldiers.clear();
 	_soldierNumbers.clear();
 
 	if (_dynGetter != NULL)
@@ -326,56 +326,63 @@ void CovertOperationSoldiersState::initList(size_t scrl)
 		_lstSoldiers->setColumns(3, 106, 98, 76);
 	}
 
+
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
 	unsigned int row = 0;
 	unsigned int it = 0;
-	for (std::vector<Soldier*>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+
+	for (auto& soldier : *_base->getSoldiers())
 	{
-		if ((*i)->getRoleRank(_operation->getRule()->getAllowedRoles()) > 0) // only allowed roles
+		if (soldier->getRoleRank(_operation->getRule()->getAllowedRoles()) > 0)
 		{
+			_filteredListOfSoldiers.push_back(soldier);
 			_soldierNumbers.push_back(it); // don't forget soldier's number on the base!
-			std::string duty = (*i)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
-			if (_dynGetter != NULL)
-			{
-				// call corresponding getter
-				int dynStat = (*_dynGetter)(_game, *i);
-				std::ostringstream ss;
-				ss << dynStat;
-				_lstSoldiers->addRow(4, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
-			}
-			else
-			{
-				_lstSoldiers->addRow(3, (*i)->getName(true, 19).c_str(), tr((*i)->getRankString(true)).c_str(), duty.c_str());
-			}
-
-			Uint8 color;
-			auto opSoldiers = _operation->getSoldiers();
-			bool matched = false;
-
-			auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), (*i));
-			if (iter != std::end(opSoldiers))
-			{
-				matched = true;
-			}
-
-			if (matched)
-			{
-				color = _lstSoldiers->getSecondaryColor();
-				_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
-			}
-			else if (isBusy || !isFree)
-			{
-				color = _otherCraftColor;
-			}
-			else
-			{
-				color = _lstSoldiers->getColor();
-			}
-			_lstSoldiers->setRowColor(row, color);
-			row++;
 		}
 		it++;
+	}
+
+	for (auto& filteredSoldier : _filteredListOfSoldiers)
+	{
+		std::string duty = filteredSoldier->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		if (_dynGetter != NULL)
+		{
+			// call corresponding getter
+			int dynStat = (*_dynGetter)(_game, filteredSoldier);
+			std::ostringstream ss;
+			ss << dynStat;
+			_lstSoldiers->addRow(4, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
+		}
+		else
+		{
+			_lstSoldiers->addRow(3, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString(true)).c_str(), duty.c_str());
+		}
+
+		Uint8 color;
+		auto opSoldiers = _operation->getSoldiers();
+		bool matched = false;
+
+		auto iter = std::find(std::begin(opSoldiers), std::end(opSoldiers), filteredSoldier);
+		if (iter != std::end(opSoldiers))
+		{
+			matched = true;
+		}
+
+		if (matched)
+		{
+			color = _lstSoldiers->getSecondaryColor();
+			_lstSoldiers->setCellText(row, 2, tr("STR_ASSIGNED_UC"));
+		}
+		else if (isBusy || !isFree)
+		{
+			color = _otherCraftColor;
+		}
+		else
+		{
+			color = _lstSoldiers->getColor();
+		}
+		_lstSoldiers->setRowColor(row, color);
+		row++;
 	}
 	if (scrl)
 		_lstSoldiers->scrollTo(scrl);
@@ -417,9 +424,9 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 		return;
 	}
 	int row = _lstSoldiers->getSelectedRow();
+	Soldier* s = _base->getSoldiers()->at(_soldierNumbers.at(_lstSoldiers->getSelectedRow()));
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		Soldier* s = _base->getSoldiers()->at(_soldierNumbers.at(_lstSoldiers->getSelectedRow()));
 		Uint8 color;
 		auto opSoldiers = _operation->getSoldiers();
 		bool matched = false;
@@ -480,7 +487,7 @@ void CovertOperationSoldiersState::lstSoldiersClick(Action* action)
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		_game->pushState(new SoldierInfoStateFtA(_base, row));
+		_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
 	}
 }
 

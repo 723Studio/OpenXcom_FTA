@@ -77,6 +77,7 @@ struct ReinforcementsData
 };
 enum ChronoTrigger { FORCE_LOSE, FORCE_ABORT, FORCE_WIN, FORCE_WIN_SURRENDER };
 enum EscapeType : int { ESCAPE_NONE, ESCAPE_EXIT, ESCAPE_ENTRY, ESCAPE_EITHER };
+enum ObjectiveType { OBJECTIVE_NONE, OBJECTIVE_EVACUATION, OBJECTIVE_ITEM_EXTRACTION, OBJECTIVE_HACKING};
 /**
  * Represents a specific type of Alien Deployment.
  * Contains constant info about a Alien Deployment like
@@ -108,7 +109,7 @@ private:
 	std::map<std::string, int> _civiliansByType;
 	std::vector<std::string> _terrains, _music;
 	int _shade, _minShade, _maxShade;
-	std::string _nextStage, _race, _mapScript, _battleScript, _extendedObjectiveType;
+	std::string _nextStage, _race, _mapScript, _battleScript;
 	std::vector<std::string> _mapScripts;
 	std::vector<std::string> _randomRaces;
 	std::vector<std::string> _undercoverArmors;
@@ -127,6 +128,7 @@ private:
 	ChronoTrigger _chronoTrigger;
 	bool _keepCraftAfterFailedMission, _allowObjectiveRecovery;
 	EscapeType _escapeType;
+	ObjectiveType _extendedObjectiveType;
 	int _vipSurvivalPercentage;
 	std::string _baseSelfDestructCode;
 	int _baseDetectionRange, _baseDetectionChance, _huntMissionMaxFrequency;
@@ -215,7 +217,7 @@ public:
 	/// Gets the battle script to use for this deployment.
 	std::string getBattleScript() const { return _battleScript; }
 	/// Gets the extendedObjective for this deployment.
-	std::string getExtendedObjectiveType() const { return _extendedObjectiveType; }
+	ObjectiveType getExtendedObjectiveType() const { return _extendedObjectiveType; }
 	
 	int hasTextureBasedScript(const Mod* mod) const;
 	/// Checks if this is the destination for the final mission (mars stage 1, t'leth stage 1).
