@@ -592,6 +592,12 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		}
 	}
 
+	//simulating operation
+	if (this->getRules()->getDanger() > 0)
+	{
+		backgroundSimulation(engine, _finishedResult, criticalFail, woundOdds, deathOdds);
+	}
+
 	if (!deploymentName.empty())
 	{
 		bool process = true;
@@ -625,12 +631,6 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	}
 	else //we do not push any battlescape for our operation or anything like that, so we can return to our base!
 	{
-		//simulating operation
-		if (this->getRules()->getDanger() > 0)
-		{
-			backgroundSimulation(engine, _finishedResult, criticalFail, woundOdds, deathOdds);
-		}
-		// lets return items from operation to the base
 		for (auto& item : *_items->getContents())
 		{
 			_base->getStorageItems()->addItem(item.first, item.second);
