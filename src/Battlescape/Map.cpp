@@ -1506,7 +1506,7 @@ void Map::drawTerrain(Surface *surface)
 										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
 									}
 									ss << accuracy;
-									ss << "%";
+									//ss << "%"; //it is no percentage
 								}
 
 								//TODO: merge this code with `InventoryState::calculateCurrentDamageTooltip` as 90% is same or should be same
