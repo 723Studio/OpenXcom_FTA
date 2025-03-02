@@ -231,7 +231,7 @@ BaseInfoStateFtA::BaseInfoStateFtA(Base *base, BasescapeState *state) : _base(ba
 
 	_txtPersonnel->setText(tr("STR_BASE_INFO_HEADER"));
 
-	_txtSoldiers->setText(tr("STR_SOLDIERS"));
+	_txtSoldiers->setText(tr("STR_PERSONNEL"));
 	_barSoldiers->setScale(1.0);
 
 	_txtQuarters->setText(tr("STR_LIVING_QUARTERS_PLURAL"));
