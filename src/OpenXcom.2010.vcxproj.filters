@@ -1325,6 +1325,9 @@
     <ClCompile Include="Basescape\SoldierExperienceState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\IntelligenceProjectDetailsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2715,6 +2718,9 @@
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\SoldierExperienceState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\IntelligenceProjectDetailsState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
   </ItemGroup>

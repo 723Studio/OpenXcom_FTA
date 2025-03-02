@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "IntelAllocateAgentsState.h"
+
+#include "IntelligenceProjectDetailsState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
@@ -53,8 +55,8 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(148, 16, 164, 176);
-	//_btnInfo = new TextButton(42, 16, 270, 8);
-	_txtTitle = new Text(300, 17, 16, 7);
+	_btnInfo = new TextButton(42, 16, 270, 8);
+	_txtTitle = new Text(247, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtAssignment = new Text(84, 9, 122, 32);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
@@ -65,7 +67,7 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 
 	add(_window, "window", "intelAllocateAgents");
 	add(_btnOk, "button", "intelAllocateAgents");
-	//add(_btnInfo, "button", "intelAllocateAgents");
+	add(_btnInfo, "button", "intelAllocateAgents");
 	add(_txtTitle, "text", "intelAllocateAgents");
 	add(_txtName, "text", "intelAllocateAgents");
 	add(_txtAssignment, "text", "intelAllocateAgents");
@@ -83,8 +85,8 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 	_btnOk->onMouseClick((ActionHandler)&IntelAllocateAgentsState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&IntelAllocateAgentsState::btnOkClick, Options::keyCancel);
 
-	//_btnInfo->setText(tr("STR_INFO"));
-	//_btnInfo->onMouseClick((ActionHandler)&PrisonerAllocateAgentsState::btnInfoClick);
+	_btnInfo->setText(tr("STR_INFO"));
+	_btnInfo->onMouseClick((ActionHandler)&IntelAllocateAgentsState::btnInfoClick);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr(_project->getRules()->getName()));
@@ -107,10 +109,10 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::charisma), charismaStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::data), dataStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::computers), computersStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::deception), deceptionStat);
-	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::interrogation), interrogationStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::bravery), braveryStat);
 	if (_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
@@ -237,10 +239,10 @@ void IntelAllocateAgentsState::btnOkClick(Action *)
 	_game->popState();
 }
 
-//void PrisonerAllocateAgentsState::btnInfoClick(Action* action)
-//{
-//	_game->pushState(new ResearchProjectDetailsState(_base, _planningProject->getResearchRules()));
-//}
+void IntelAllocateAgentsState::btnInfoClick(Action* action)
+{
+	_game->pushState(new IntelligenceProjectDetailsState(_project->getRules()));
+}
 
 /**
  * Shows the soldiers in a list at specified offset/scroll.

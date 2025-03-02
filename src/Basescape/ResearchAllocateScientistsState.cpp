@@ -57,7 +57,7 @@ ResearchAllocateScientistsState::ResearchAllocateScientistsState(Base *base, Res
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(148, 16, 164, 176);
 	_btnInfo = new TextButton(42, 16, 270, 8);
-	_txtTitle = new Text(300, 17, 16, 7);
+	_txtTitle = new Text(247, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtAssignment = new Text(84, 9, 122, 32);
 	_txtFreeSpace = new Text(150, 9, 16, 24);
@@ -239,7 +239,7 @@ void ResearchAllocateScientistsState::btnOkClick(Action *)
 
 void ResearchAllocateScientistsState::btnInfoClick(Action* action)
 {
-	_game->pushState(new ResearchProjectDetailsState(_base, _planningProject->getResearchRules()));
+	_game->pushState(new ResearchProjectDetailsState(_planningProject->getResearchRules()));
 }
 
 /**

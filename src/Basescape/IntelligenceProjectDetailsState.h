@@ -22,7 +22,7 @@
 namespace OpenXcom
 {
 
-class RuleResearch;
+class RuleIntelProject;
 class Window;
 class TextButton;
 class Text;
@@ -30,20 +30,19 @@ class Text;
 /**
  * Screen which displays detailed info about manufacturing project.
  */
-class ResearchProjectDetailsState : public State
+class IntelligenceProjectDetailsState : public State
 {
 private:
-	const RuleResearch *_rule;
+	const RuleIntelProject*_rule;
 	Window *_window;
 	TextButton *_btnOk;
-	Text *_txtTitle, *_txtDifficulty, *_txtFunds, *_txtDestroyitem, *_txtReqStatsHeader, *_txtReqStats;
+	Text *_txtTitle, *_txtSpecialType, *_txtReqStatsHeader, *_txtReqStats, *_txtDescriptionHeader, *_txtDescription;
 	std::string generateStatsList();
 public:
 	/// Creates the State.
-	ResearchProjectDetailsState(const RuleResearch *rule);
+	IntelligenceProjectDetailsState(const RuleIntelProject *rule);
 	/// Handler for the OK button.
 	void btnOKClick(Action *action);
-	std::string getCostDescription();
 };
 
 }

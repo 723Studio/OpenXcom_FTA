@@ -40,13 +40,13 @@ class NewResearchListState : public State
 {
 private:
 	Base *_base;
-	bool _sortByCost, _ftaUi;
+	bool _sortByCost;
 	TextButton *_btnOK;
 	ComboBox *_cbxSort;
 	ToggleTextButton *_btnShowOnlyNew;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
-	Text *_txtTitle;
+	Text *_txtTitle, *_txtName, *_txtCategory;
 	TextList *_lstResearch;
 	size_t _lstScroll;
 	Uint8 _colorNormal, _colorNew, _colorHidden;
@@ -54,6 +54,7 @@ private:
 	void onSelectProject(Action *action);
 	void onToggleProjectStatus(Action *action);
 	void onOpenTechTreeViewer(Action *action);
+	void onOpenProjectDetailsInfo(Action *action);
 	std::string getProjectCategory(RuleResearch *project, bool onlyFirst = false);
 	std::vector<RuleResearch *> _projects;
 public:

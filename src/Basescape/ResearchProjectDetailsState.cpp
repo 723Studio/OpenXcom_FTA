@@ -26,7 +26,6 @@
 #include "../Engine/Options.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleManufacture.h"
-#include "../Savegame/Base.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
 
@@ -39,7 +38,7 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param item The RuleManufacture to produce.
  */
-ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleResearch* rule) :  _base(base), _rule(rule)
+ResearchProjectDetailsState::ResearchProjectDetailsState(const RuleResearch* rule) : _rule(rule)
 {
 	_screen = false;
 
@@ -76,40 +75,28 @@ ResearchProjectDetailsState::ResearchProjectDetailsState(Base *base, const RuleR
 	_txtDifficulty->setText(tr("STR_PROJECT_DIFFICULTY").arg(tr(getCostDescription())));
 
 	int dY = 0;
-	if (_game->getSavedGame()->getDebugMode())
-	{
-		_txtDifficulty->setVisible(false);
-		dY = 10;
-	}
-
 	_txtFunds->setText(tr("STR_PROJECT_FUNDS").arg(_rule->getFunds()));
-	_txtFunds->setY(_txtFunds->getY() - dY);
 	if (_rule->getFunds() == 0)
 	{
 		_txtFunds->setVisible(false);
-	}
-	else
-	{
 		dY += 10;
 	}
+
 
 	_txtDestroyitem->setText(tr("STR_DESTROY_RESEARCHING_ITEM"));
 	_txtDestroyitem->setY(_txtDestroyitem->getY() - dY);
 	if (!_rule->destroyItem())
 	{
 		_txtDestroyitem->setVisible(false);
-	}
-	else
-	{
 		dY += 10;
 	}
 	
 	_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
-	_txtReqStatsHeader->setY(_txtReqStatsHeader->getY() - dY + 2);
+	_txtReqStatsHeader->setY(_txtReqStatsHeader->getY() - dY);
 
 	_txtReqStats->setText(generateStatsList());
 	_txtReqStats->setWordWrap(true);
-	_txtReqStats->setY(_txtReqStats->getY() - dY + 2);
+	_txtReqStats->setY(_txtReqStats->getY() - dY);
 	_txtReqStats->setColor(_game->getMod()->getInterface("researchDetailsMenu")->getElement("text")->color2);
 
 	_btnOk->setText(tr("STR_OK"));

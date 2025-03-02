@@ -359,6 +359,7 @@
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
     <ClCompile Include="Basescape\IntelAllocateAgentsState.cpp" />
+    <ClCompile Include="Basescape\IntelligenceProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\IntelState.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp" />
@@ -800,6 +801,7 @@
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
     <ClInclude Include="Basescape\IntelAllocateAgentsState.h" />
+    <ClInclude Include="Basescape\IntelligenceProjectDetailsState.h" />
     <ClInclude Include="Basescape\IntelState.h" />
     <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />

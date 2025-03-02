@@ -41,7 +41,7 @@ struct SortFunctor;
 class IntelAllocateAgentsState : public State
 {
 private:
-	TextButton* _btnOk; // *_btnInfo;
+	TextButton* _btnOk, *_btnInfo;
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtAssignment;
 	ComboBox *_cbxSortBy;
@@ -67,7 +67,7 @@ public:
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the INFO button.
-	//void btnInfoClick(Action* action);
+	void btnInfoClick(Action* action);
 	/// Updates the soldiers list.
 	void init() override;
 	/// Handler for clicking the Soldiers list.

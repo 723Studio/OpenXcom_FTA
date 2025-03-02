@@ -19,6 +19,7 @@
 #include "IntelState.h"
 #include "AgentsState.h"
 #include "IntelAllocateAgentsState.h"
+#include "IntelligenceProjectDetailsState.h"
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -110,7 +111,7 @@ IntelState::IntelState(Base *base) : _base(base)
 	_lstProjects->setWordWrap(true);
 	_lstProjects->onMouseClick((ActionHandler)&IntelState::onSelectProject, SDL_BUTTON_LEFT);
 	//_lstProjects->onMouseClick((ActionHandler)&IntelState::onProjectDetails, SDL_BUTTON_MIDDLE);
-	//_lstProjects->onMouseClick((ActionHandler)&IntelState::onProjectDetails, SDL_BUTTON_RIGHT);
+	_lstProjects->onMouseClick((ActionHandler)&IntelState::onProjectDetails, SDL_BUTTON_RIGHT);
 }
 
 /**
@@ -159,16 +160,16 @@ void IntelState::onSelectProject(Action *)
 	_game->pushState(new IntelAllocateAgentsState(_base, project));
 }
 
-///**
-//* Opens the IntelProjectDetails for the corresponding project.
-//* @param action Pointer to an action.
-//*/
-//void IntelState::onProjectDetails(Action* action)
-//{
-//	const std::vector<IntelProject*>& baseProjects(_base->getIntelProjects());
-//	auto selectedTopic = baseProjects[_lstProjects->getSelectedRow()]->getRules();
-//	//_game->pushState(new TechTreeViewerState(selectedTopic, 0)); //#FINNIKTODO
-//}
+/**
+* Opens the IntelProjectDetails for the corresponding project.
+* @param action Pointer to an action.
+*/
+void IntelState::onProjectDetails(Action* action)
+{
+	const std::vector<IntelProject*>& baseProjects(_base->getIntelProjects());
+	auto selectedTopic = baseProjects[_lstProjects->getSelectedRow()]->getRules();
+	_game->pushState(new IntelligenceProjectDetailsState(selectedTopic));
+}
 
 /**
  * Updates the research list

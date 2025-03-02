@@ -412,7 +412,7 @@ struct UnitStats
 			{&UnitStats::chemistry, "STR_CHEMISTRY"},
 			{&UnitStats::biology, "STR_BIOLOGY"},
 			{&UnitStats::insight, "STR_INSIGHT"},
-			{&UnitStats::data, "STR_DATA_ANALISIS"},
+			{&UnitStats::data, "STR_DATA_ANALYSIS"},
 			{&UnitStats::computers, "STR_COMPUTER_SCIENCE"},
 			{&UnitStats::tactics, "STR_TACTICS"},
 			{&UnitStats::materials, "STR_MATERIAL_SCIENCE"},

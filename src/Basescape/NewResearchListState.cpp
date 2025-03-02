@@ -35,6 +35,7 @@
 #include "../Mod/RuleResearch.h"
 #include "ResearchInfoState.h"
 #include "ResearchInfoStateFtA.h"
+#include "ResearchProjectDetailsState.h"
 #include "TechTreeViewerState.h"
 
 namespace OpenXcom
@@ -52,24 +53,17 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 		_sortByCost = !_sortByCost;
 	}
 
-	_ftaUi = _game->getMod()->isFTAGame();
-
 	_screen = false;
 
-	_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
-	_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
-	_btnOK = new TextButton(103, 16, 164, 146);
-	_cbxSort = new ComboBox(this, 103, 16, 53, 146, true);
-	_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
-	_txtTitle = new Text(214, 16, 53, 38);
-	if (_ftaUi)
-	{
-		_lstResearch = new TextList(214, 88, 53, 54);
-	}
-	else
-	{
-		_lstResearch = new TextList(198, 88, 53, 54);
-	}
+	_window = new Window(this, 240, 146, 40, 27, POPUP_BOTH);
+	_btnQuickSearch = new TextEdit(this, 125, 9, 48, 51);
+	_btnOK = new TextButton(108, 16, 164, 149);
+	_cbxSort = new ComboBox(this, 108, 16, 48, 149, true);
+	_btnShowOnlyNew = new ToggleTextButton(108, 16, 48, 149);
+	_txtTitle = new Text(224, 16, 48, 35);
+	_txtName = new Text(125, 9, 48, 51);
+	_txtCategory = new Text(71, 9, 192, 51);
+	_lstResearch = new TextList(208, 80, 48, 62);
 
 	// Set palette
 	setInterface("selectNewResearch");
@@ -79,6 +73,8 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_btnOK, "button", "selectNewResearch");
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
+	add(_txtName, "text", "selectNewResearch");
+	add(_txtCategory, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
 	add(_cbxSort, "button", "selectNewResearch");
 
@@ -121,25 +117,21 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	}
 
 	_txtTitle->setAlign(ALIGN_CENTER);
-	if (_ftaUi)
-	{
-		_txtTitle->setBig();
-		_lstResearch->setColumns(2, 156, 130);
-		_lstResearch->setMargin(2);
-	}
-	else
-	{
-		_lstResearch->setColumns(1, 190);
-		_lstResearch->setMargin(8);
-		_lstResearch->setAlign(ALIGN_CENTER);
-	}
 	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
+	_txtTitle->setBig();
 
+	_txtName->setText(tr("STR_PROJECT_NAME"));
+
+	_txtCategory->setText(tr("STR_PROJECT_CATEGORY"));
+
+	_lstResearch->setColumns(2, 144, 64);
+	_lstResearch->setWordWrap(true);
+	_lstResearch->setMargin(0);
 	_lstResearch->setSelectable(true);
 	_lstResearch->setBackground(_window);
 	
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onSelectProject, SDL_BUTTON_LEFT);
-	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onToggleProjectStatus, SDL_BUTTON_RIGHT);
+	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onOpenProjectDetailsInfo, SDL_BUTTON_RIGHT);
 	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onOpenTechTreeViewer, SDL_BUTTON_MIDDLE);
 
 	_btnQuickSearch->setText(""); // redraw
@@ -162,16 +154,16 @@ void NewResearchListState::init()
  * Selects the RuleResearch to work on.
  * @param action Pointer to an action.
  */
-void NewResearchListState::onSelectProject(Action *)
+void NewResearchListState::onSelectProject(Action * action)
 {
-	_lstScroll = _lstResearch->getScroll();
-	if (_ftaUi)
+	if (_game->isCtrlPressed())
 	{
-		_game->pushState(new ResearchInfoStateFtA(_base, _projects[_lstResearch->getSelectedRow()]));
+		onToggleProjectStatus(action);
 	}
 	else
 	{
-		_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+		_lstScroll = _lstResearch->getScroll();
+		_game->pushState(new ResearchInfoStateFtA(_base, _projects[_lstResearch->getSelectedRow()]));
 	}
 }
 
@@ -223,13 +215,20 @@ void NewResearchListState::onToggleProjectStatus(Action *)
 */
 void NewResearchListState::onOpenTechTreeViewer(Action *)
 {
-	_lstScroll = _lstResearch->getScroll();
-	const RuleResearch *selectedTopic = _projects[_lstResearch->getSelectedRow()];
 	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
 	{
 		return;
 	}
+	_lstScroll = _lstResearch->getScroll();
+	const RuleResearch *selectedTopic = _projects[_lstResearch->getSelectedRow()];
 	_game->pushState(new TechTreeViewerState(selectedTopic, 0));
+}
+
+void NewResearchListState::onOpenProjectDetailsInfo(Action* action)
+{
+	_lstScroll = _lstResearch->getScroll();
+	const RuleResearch* selectedTopic = _projects[_lstResearch->getSelectedRow()];
+	_game->pushState(new ResearchProjectDetailsState(selectedTopic));
 }
 
 /**
@@ -251,10 +250,12 @@ void NewResearchListState::btnQuickSearchToggle(Action *action)
 	{
 		_btnQuickSearch->setText("");
 		_btnQuickSearch->setVisible(false);
+		_txtName->setVisible(true);
 		btnQuickSearchApply(action);
 	}
 	else
 	{
+		_txtName->setVisible(false);
 		_btnQuickSearch->setVisible(true);
 		_btnQuickSearch->setFocus(true);
 	}
@@ -385,14 +386,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
 		if (rule->getRequirements().empty())
 		{
-			if (!_ftaUi)
-			{
-				_lstResearch->addRow(1, tr(rule->getName()).c_str());
-			}
-			else
-			{
-				_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule, true).c_str());
-			}
+			_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule, true).c_str());
 			
 			if (markAllAsSeen)
 			{
@@ -431,33 +425,33 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 
 std::string NewResearchListState::getProjectCategory(RuleResearch *project, bool onlyFirst)
 {
-	std::string cat = "";
+	std::string cat;
 	auto stats = project->getStats();
 	std::map<int, std::string> statMap;
 
 	if (stats.physics > 0)
-		statMap.insert(std::make_pair(stats.physics, tr("STR_PHYSICS_LC")));
+		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
 	if (stats.chemistry > 0)
-		statMap.insert(std::make_pair(stats.chemistry, tr("STR_CHEMISTRY_LC")));
+		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
 	if (stats.biology > 0)
-		statMap.insert(std::make_pair(stats.biology, tr("STR_BIOLOGY_LC")));
+		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
 	if (stats.data > 0)
-		statMap.insert(std::make_pair(stats.data, tr("STR_DATA_ANALISIS_LC")));
+		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
 	if (stats.computers > 0)
-		statMap.insert(std::make_pair(stats.computers, tr("STR_COMPUTER_SCIENCE_LC")));
+		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
 	if (stats.tactics > 0)
-		statMap.insert(std::make_pair(stats.tactics, tr("STR_TACTICS_LC")));
+		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
 	if (stats.materials > 0)
-		statMap.insert(std::make_pair(stats.materials, tr("STR_MATERIAL_SCIENCE_LC")));
+		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_LC))));
 	if (stats.designing > 0)
-		statMap.insert(std::make_pair(stats.designing, tr("STR_DESIGNING_LC")));
+		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
 	if (stats.psionics > 0)
-		statMap.insert(std::make_pair(stats.psionics, tr("STR_PSIONICS_LC")));
+		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
 	if (stats.xenolinguistics > 0)
-		statMap.insert(std::make_pair(stats.xenolinguistics, tr("STR_XENOLINGUISTICS_LC")));
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
 
 	size_t i = 0;
-	int categoryLimit = 3;
+	size_t categoryLimit = 3;
 	if (onlyFirst)
 		categoryLimit = 1;
 

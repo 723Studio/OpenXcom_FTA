@@ -36,6 +36,7 @@ set ( basescape_src
   Basescape/GlobalResearchState.cpp
   Basescape/IntelAllocateAgentsState.cpp
   Basescape/IntelState.cpp
+  Basescape/IntelligenceProjectDetailsState.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp

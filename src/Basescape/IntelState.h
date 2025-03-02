@@ -48,6 +48,7 @@ public:
 	~IntelState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action* action);
+	void onProjectDetails(Action* action);
 	/// Handler for clicking the New Operation button.
 	void btnPrisonClick(Action* action);
 	/// Handler for clicking the Agents button.
