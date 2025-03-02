@@ -363,6 +363,10 @@ void CraftEquipmentState::initList()
 				continue;
 			}
 
+			//don't show crafts turret ammo
+			if (rule->isCraftTurretAmmo())
+				continue;
+
 			// filter by category
 			if (categoryFilterEnabled)
 			{
