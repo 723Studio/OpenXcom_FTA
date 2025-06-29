@@ -145,7 +145,7 @@ void ResearchInfoStateFtA::buildUi()
 	_btnAbandon->setText(tr("STR_ABANDON_PROJECT"));
 	_btnAbandon->onMouseClick((ActionHandler)&ResearchInfoStateFtA::btnAbandonClick);
 
-	_txtGrade->setText(tr("GRADE"));
+	_txtGrade->setText(tr("STR_GRADE_UC"));
 
 	setAssignedScientists();
 
@@ -154,7 +154,7 @@ void ResearchInfoStateFtA::buildUi()
 	int stat = getStatString(0).first;
 	if (stat > 0)
 	{
-		_txtStat1->setText(tr(getStatString(0).second));
+		_txtStat1->setText(getStatString(0).second);
 		_txtStat1->setX(x);
 		x += offset;
 	}
@@ -162,7 +162,7 @@ void ResearchInfoStateFtA::buildUi()
 	stat = getStatString(1).first;
 	if (stat > 0)
 	{
-		_txtStat2->setText(tr(getStatString(1).second));
+		_txtStat2->setText(getStatString(1).second);
 		_txtStat2->setX(x);
 		x += offset;
 	}
@@ -170,7 +170,7 @@ void ResearchInfoStateFtA::buildUi()
 	stat = getStatString(2).first;
 	if (stat > 0)
 	{
-		_txtStat3->setText(tr(getStatString(2).second));
+		_txtStat3->setText(getStatString(2).second);
 		_txtStat3->setX(x);
 		x += offset;
 	}
@@ -178,7 +178,7 @@ void ResearchInfoStateFtA::buildUi()
 	stat = getStatString(3).first;
 	if (stat > 0)
 	{
-		_txtStat4->setText(tr(getStatString(3).second));
+		_txtStat4->setText(getStatString(3).second);
 		_txtStat4->setX(x);
 		x += offset;
 	}
@@ -194,7 +194,7 @@ void ResearchInfoStateFtA::buildUi()
 	stat = getStatString(5).first;
 	if (stat > 0)
 	{
-		_txtStat6->setText(tr(getStatString(5).second));
+		_txtStat6->setText(getStatString(5).second);
 		_txtStat6->setX(x);
 		x += offset;
 	}
@@ -290,8 +290,8 @@ void ResearchInfoStateFtA::fillScientistsList(size_t scrl)
 			stats[i++] = std::to_string(GetStatValue(*s, stat.second));
 		}
 		stats[i] = std::to_string(s->getCurrentStats()->insight);
-		_lstScientists->addRow(9, s->getName().c_str(), ss.str().c_str(), stats[0].c_str(), stats[1].c_str(), stats[2].c_str(),
-							   stats[3].c_str(), stats[4].c_str(), stats[5].c_str(), stats[6].c_str());
+		_lstScientists->addRow(9, s->getName().c_str(), tr(ss.str().c_str()), tr(stats[0].c_str()), tr(stats[1].c_str()), tr(stats[2].c_str()),
+							   tr(stats[3].c_str()), tr(stats[4].c_str()), tr(stats[5].c_str()), tr(stats[6].c_str()));
 	}
 }
 

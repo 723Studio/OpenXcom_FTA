@@ -532,7 +532,7 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 		return 0;
 	}
 	double coef = 1;
-	std::string reason = "";
+	std::string reason;
 	switch (source)
 	{
 	case XCOM_BATTLESCAPE:

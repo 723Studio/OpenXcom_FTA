@@ -117,7 +117,7 @@ ResearchAllocateScientistsState::ResearchAllocateScientistsState(Base *base, Res
 	PUSH_IN("STR_CHEMISTRY_UC", chemistryStat);
 	PUSH_IN("STR_BIOLOGY_UC", biologyStat);
 	PUSH_IN("STR_INSIGHT_UC", insightStat);
-	PUSH_IN("STR_DATA_ANALISIS_UC", dataStat);
+	PUSH_IN("STR_DATA_ANALYSIS_UC", dataStat);
 	PUSH_IN("STR_COMPUTER_SCIENCE_UC", computersStat);
 	PUSH_IN("STR_TACTICS_UC", tacticsStat);
 	PUSH_IN("STR_MATERIAL_SCIENCE_UC", materialsStat);
