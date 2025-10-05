@@ -2379,6 +2379,11 @@ void Soldier::addRole(SoldierRole newRole, int rank)
 
 void Soldier::addExperience(SoldierRole role, int exp, std::string name)
 {
+	if (exp <= 0)
+	{
+		return;
+	}
+
 	bool added = false;
 	Log(LOG_INFO) << "Gaining " << exp << " from source: " << name << " as role: " << role; //#FINNIKTODO #CLEARLOGS
 	for (auto *r : _roles)

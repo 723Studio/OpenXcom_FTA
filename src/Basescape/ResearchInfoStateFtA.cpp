@@ -290,8 +290,8 @@ void ResearchInfoStateFtA::fillScientistsList(size_t scrl)
 			stats[i++] = std::to_string(GetStatValue(*s, stat.second));
 		}
 		stats[i] = std::to_string(s->getCurrentStats()->insight);
-		_lstScientists->addRow(9, s->getName().c_str(), tr(ss.str().c_str()), tr(stats[0].c_str()), tr(stats[1].c_str()), tr(stats[2].c_str()),
-							   tr(stats[3].c_str()), tr(stats[4].c_str()), tr(stats[5].c_str()), tr(stats[6].c_str()));
+		_lstScientists->addRow(9, s->getName().c_str(), ss.str().c_str(), stats[0].c_str(), stats[1].c_str(), stats[2].c_str(),
+							   stats[3].c_str(), stats[4].c_str(), stats[5].c_str(), stats[6].c_str());
 	}
 }
 

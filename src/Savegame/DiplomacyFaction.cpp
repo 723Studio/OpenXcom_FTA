@@ -229,10 +229,10 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 		{
 			processFactionalEvents(engine);
 			Log(LOG_INFO) << "Managing faction:  " << _rule->getName() << " has funds: " << _funds << " and power: " << _power << "."; //#CLEARLOGS
+			managePower();
 			handleRestock();
 			handleSelling();
 			manageStaff(engine);
-			managePower();
 			Log(LOG_INFO) << ">>> Faction management finished:  " << _rule->getName() << " has funds: " << _funds << " and power: " << _power << "."; //#CLEARLOGS
 		}
 		//handleResearch(engine); //#FINNIKTODO
@@ -550,6 +550,7 @@ void DiplomacyFaction::handleRestock()
 			// now we can purchase things
 			if (toBuy > 0 && _funds > 0)
 			{
+				Log(LOG_INFO) << "Buyng: " << toBuy << "of item:  " << ruleItem->getName() << " that has weight: " << weight << " and current stock is: " << getItems()->getItem(ruleItem); //#CLEARLOGS
 				_items->addItem(ruleItem, (int)toBuy);
 				_funds -= toBuy * cost;
 			}
@@ -599,6 +600,7 @@ void DiplomacyFaction::handleSelling()
 	{
 		for (auto [sellItem, values] : sellList)
 		{
+			Log(LOG_INFO) << "Selling: " << values.first << " of item: " << sellItem->getName(); //#CLEARLOGS
 			removeItem(sellItem, values.first);
 			int64_t dFunds = values.first;
 			dFunds *= values.second; // sorry for that, was too lasy to make a structure
@@ -664,12 +666,13 @@ void DiplomacyFaction::managePower()
 	if (reqFunds > _funds)
 	{
 		//we lose some power!
-		int powerLost = round((_funds - reqFunds) / powerHungry);
+		int powerLost = round((reqFunds - _funds) / powerHungry);
 		if (powerLost > 0)
 		{
 			_power -= powerLost;
 			int64_t gainedFunds = powerLost;
 			gainedFunds *= powerHungry;
+			Log(LOG_INFO) << "reqFunds:  " << reqFunds << " > funds: " << _funds << ", power loss is: " << powerLost << " and funds gain is: " << gainedFunds; //#CLEARLOGS
 			_funds += gainedFunds;
 		}
 	}
@@ -680,6 +683,7 @@ void DiplomacyFaction::managePower()
 		vigilanceCost *= powerHungry;
 		if (spareFunds >= vigilanceCost)
 		{
+			Log(LOG_INFO) << "spareFunds:  " << spareFunds << " > vigilanceCost: " << vigilanceCost << ", power gain equal vigilance: " << _vigilance; //#CLEARLOGS
 			_power += _vigilance;
 			_funds -= vigilanceCost;
 			_vigilance = 0;
@@ -689,6 +693,7 @@ void DiplomacyFaction::managePower()
 			int powerGain = floor(spareFunds / powerHungry);
 			if (powerGain > 0)
 			{
+				Log(LOG_INFO) << "powerGain:  " << powerGain << " > 0 due to having spare funds: " << spareFunds << " and vigilance: " << _vigilance << ", increasing power"; //#CLEARLOGS
 				_power += powerGain;
 				_vigilance -= powerGain;
 				vigilanceCost = powerGain;

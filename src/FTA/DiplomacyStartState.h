@@ -75,7 +75,7 @@ class DiplomacyInfoState : public State
 private:
 	TextButton* _btnOk;
 	Window* _window;
-	Text* _txtTitle, *_txtDesc;
+	Text* _txtTitle, *_txtDesc, *_txtPower, *_txtVigilance, *_txtFunds;
 public:
 	/// Creates the Diplomacy Start state.
 	DiplomacyInfoState(const DiplomacyFaction* faction);

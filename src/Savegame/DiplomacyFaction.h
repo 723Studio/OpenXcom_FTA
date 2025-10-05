@@ -126,6 +126,10 @@ public:
 	int getPower() const { return _power; }
 	/// Sets a new power value for the faction.
 	void setPower(int power) { _power = power; }
+	/// Gets the faction vigilance value.
+	int getVigilance() const { return _vigilance; }
+	/// Sets a new vigilance value for the faction.
+	void setVigilance(int vigilance) { _vigilance = vigilance; }
 	/// Gets the faction's funds.
 	int64_t getFunds() const { return _funds; }
 	/// Sets a new value for the faction's funds.

@@ -275,7 +275,10 @@ DiplomacyInfoState::DiplomacyInfoState(const DiplomacyFaction* faction)
 	_window = new Window(this, 250, 160, 35, 20, POPUP_BOTH);
 	_btnOk = new TextButton(103, 14, 174, 158);
 	_txtTitle = new Text(234, 17, 43, 28);
-	_txtDesc = new Text(234, 107, 43, 48);
+	_txtDesc = new Text(234, 92, 43, 46);
+	_txtPower = new Text(118, 10, 43, 142);
+	_txtVigilance = new Text(118, 10, 43, 152);
+	_txtFunds = new Text(118, 10, 43, 162);
 
 	// Set palette
 	setInterface(interfaceName);
@@ -284,6 +287,9 @@ DiplomacyInfoState::DiplomacyInfoState(const DiplomacyFaction* faction)
 	add(_btnOk, "button", interfaceName);
 	add(_txtTitle, "name", interfaceName);
 	add(_txtDesc, "text1", interfaceName);
+	add(_txtPower, "text1", interfaceName);
+	add(_txtVigilance, "text1", interfaceName);
+	add(_txtFunds, "text1", interfaceName);
 
 	centerAllSurfaces();
 
@@ -296,7 +302,13 @@ DiplomacyInfoState::DiplomacyInfoState(const DiplomacyFaction* faction)
 
 	_txtDesc->setText(tr(rules->getDescription()));
 	_txtDesc->setWordWrap(true);
+	_txtDesc->setScrollable(true);
 
+	_txtPower->setText(tr("STR_FACTION_POWER_ARG").arg(faction->getPower()));
+
+	_txtVigilance->setText(tr("STR_FACTION_VIGILANCE_ARG").arg(faction->getVigilance()));
+
+	_txtFunds->setText(tr("STR_FACTION_FUNDS_ARG").arg(faction->getFunds()));
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&DiplomacyInfoState::btnOkClick);

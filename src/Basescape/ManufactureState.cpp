@@ -263,16 +263,23 @@ void ManufactureState::fillProductionList(size_t scrl)
 				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
 			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
-			int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-			if (hoursLeft < 1)
+			if (numEffectiveEngineers > 0)
 			{
-				s4 << tr("STR_FINISHING"); //for corner cases
+				int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
+				if (hoursLeft < 1)
+				{
+					s4 << tr("STR_FINISHING"); //for corner cases
+				}
+				else
+				{
+					int daysLeft = hoursLeft / 24;
+					int hours = hoursLeft % 24;
+					s4 << daysLeft << "/" << hours;
+				}
 			}
-			else
+			else //case FTA engineer is really ineffective
 			{
-				int daysLeft = hoursLeft / 24;
-				int hours = hoursLeft % 24;
-				s4 << daysLeft << "/" << hours;
+				s4 << "-";
 			}
 		}
 		else
