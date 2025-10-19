@@ -43,7 +43,7 @@ private:
 	bool _fta = false;
   public:
 	/// Creates the Promotions state.
-	PromotionsState();
+	PromotionsState(bool clearPromotions = false);
 	/// Cleans up the Promotions state.
 	~PromotionsState();
 	/// Handler for clicking the OK button.

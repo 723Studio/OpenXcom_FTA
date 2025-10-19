@@ -50,6 +50,7 @@ IntelCompleteState::IntelCompleteState(IntelProject *project, GeoscapeState *sta
 	_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
 	_btnOk = new TextButton(80, 16, 64, 146);
 	_btnGotoBase = new TextButton(80, 16, 176, 146);
+	_btnPromotions = new TextButton(118, 18, 162, 131);
 	_txtTitle = new Text(230, 17, 45, 70);
 	_txtProject = new Text(230, 32, 45, 96);
 
@@ -59,6 +60,7 @@ IntelCompleteState::IntelCompleteState(IntelProject *project, GeoscapeState *sta
 	add(_window, "window", "geoIntelComplete");
 	add(_btnOk, "button", "geoIntelComplete");
 	add(_btnGotoBase, "button", "geoIntelComplete");
+	add(_btnPromotions, "button", "geoIntelComplete");
 	add(_txtTitle, "text1", "geoIntelComplete");
 	add(_txtProject, "text2", "geoIntelComplete");
 
@@ -74,6 +76,8 @@ IntelCompleteState::IntelCompleteState(IntelProject *project, GeoscapeState *sta
 	_btnGotoBase->setText(tr("STR_ALLOCATE"));
 	_btnGotoBase->onMouseClick((ActionHandler)&IntelCompleteState::btnGotoBaseClick);
 	_btnGotoBase->onKeyboardPress((ActionHandler)&IntelCompleteState::btnGotoBaseClick, Options::keyOk);
+
+	
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);

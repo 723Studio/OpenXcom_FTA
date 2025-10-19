@@ -1,3 +1,7 @@
 {
-    "oxcYamlHelper.rulesetDocumentationSettings": 0
+    "oxcYamlHelper.rulesetDocumentationSettings": 0,
+    "files.associations": {
+        "utility": "cpp",
+        "xtree": "cpp"
+    }
 }

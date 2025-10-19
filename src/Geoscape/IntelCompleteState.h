@@ -39,7 +39,7 @@ class IntelCompleteState : public State
 {
 	Window *_window;
 	Text *_txtTitle, *_txtProject;
-	TextButton *_btnGotoBase, *_btnOk;
+	TextButton *_btnGotoBase, *_btnOk, *_btnPromotions;
 	IntelProject *_project;
 	Base* _base;
 	GeoscapeState* _state;

@@ -1282,17 +1282,6 @@ void Soldier::setBothStats(UnitStats *stats)
 }
 
 /**
- * Returns the unit's promotion status and resets it.
- * @return True if recently promoted, False otherwise.
- */
-bool Soldier::isPromoted()
-{
-	bool promoted = _recentlyPromoted;
-	_recentlyPromoted = false;
-	return promoted;
-}
-
-/**
  * Returns the unit's current armor.
  * @return Pointer to armor data.
  */

@@ -260,6 +260,8 @@ public:
 	void monthlyFunding();
 	/// Handles monthly scoring (reduced method for FtA).
 	void monthlyScoring();
+	/// Handles soldier promotion postprocessing.
+	void handlePromotionsPostprocessing();
 	/// Gets the current game time.
 	GameTime *getTime() const;
 	/// Sets the current game time.

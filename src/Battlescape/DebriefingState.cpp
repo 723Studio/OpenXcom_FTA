@@ -1032,7 +1032,7 @@ void DebriefingState::btnOkClick(Action *)
 		{
 			if (_promotions)
 			{
-				_game->pushState(new PromotionsState);
+				_game->pushState(new PromotionsState(true));
 			}
 			if (!_missingItems.empty())
 			{

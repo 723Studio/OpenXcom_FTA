@@ -55,15 +55,15 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 
 	_screen = false;
 
-	_window = new Window(this, 240, 146, 40, 27, POPUP_BOTH);
-	_btnQuickSearch = new TextEdit(this, 125, 9, 48, 51);
-	_btnOK = new TextButton(108, 16, 164, 149);
-	_cbxSort = new ComboBox(this, 108, 16, 48, 149, true);
-	_btnShowOnlyNew = new ToggleTextButton(108, 16, 48, 149);
-	_txtTitle = new Text(224, 16, 48, 35);
-	_txtName = new Text(125, 9, 48, 51);
-	_txtCategory = new Text(71, 9, 192, 51);
-	_lstResearch = new TextList(208, 80, 48, 62);
+	_window = new Window(this, 320, 146, 0, 27, POPUP_BOTH);
+	_btnQuickSearch = new TextEdit(this, 138, 9, 10, 51);
+	_btnOK = new TextButton(108, 16, 190, 149);
+	_btnShowOnlyNew = new ToggleTextButton(108, 16, 22, 149);
+	_cbxSort = new ComboBox(this, 108, 16, 22, 149, true);
+	_txtTitle = new Text(300, 16, 10, 35);
+	_txtName = new Text(138, 9, 10, 51);
+	_txtCategory = new Text(89, 9, 182, 51);
+	_lstResearch = new TextList(288, 80, 10, 62);
 
 	// Set palette
 	setInterface("selectNewResearch");
@@ -124,7 +124,7 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 
 	_txtCategory->setText(tr("STR_PROJECT_CATEGORY"));
 
-	_lstResearch->setColumns(2, 144, 64);
+	_lstResearch->setColumns(2, 172, 116);
 	_lstResearch->setWordWrap(true);
 	_lstResearch->setMargin(0);
 	_lstResearch->setSelectable(true);
@@ -386,7 +386,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
 		if (rule->getRequirements().empty())
 		{
-			_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule, true).c_str());
+			_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule).c_str());
 			
 			if (markAllAsSeen)
 			{
@@ -423,7 +423,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 	}
 }
 
-std::string NewResearchListState::getProjectCategory(RuleResearch *project, bool onlyFirst)
+std::string NewResearchListState::getProjectCategory(RuleResearch *project)
 {
 	std::string cat;
 	auto stats = project->getStats();
@@ -450,11 +450,14 @@ std::string NewResearchListState::getProjectCategory(RuleResearch *project, bool
 	if (stats.xenolinguistics > 0)
 		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
 
-	size_t i = 0;
-	size_t categoryLimit = 3;
-	if (onlyFirst)
-		categoryLimit = 1;
+	// sort by stat value (ascending)
+	std::vector<std::pair<int, std::string>> sortedStats(statMap.begin(), statMap.end());
+    std::sort(sortedStats.begin(), sortedStats.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
 
+	// concatenate all categories
+	size_t i = 0;
 	std::ostringstream ss;
 	for (auto it = statMap.begin(); it != statMap.end(); ++it)
 	{
@@ -464,10 +467,6 @@ std::string NewResearchListState::getProjectCategory(RuleResearch *project, bool
 		}
 		ss << (*it).second;
 		i++;
-		if (i == categoryLimit)
-		{
-			break;
-		}
 	}
 
 	if (!ss.str().empty())

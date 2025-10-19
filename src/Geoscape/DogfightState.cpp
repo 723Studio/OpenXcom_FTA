@@ -1517,7 +1517,7 @@ void DogfightState::update()
 			}
 			if (pushState == "PromotionsState")
 			{
-				_game->pushState(new PromotionsState);
+				_game->pushState(new PromotionsState(true));
 			}
 		}
 		if (_ufo->isCrashed())

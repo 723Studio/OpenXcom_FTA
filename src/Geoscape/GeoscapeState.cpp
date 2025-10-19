@@ -1231,7 +1231,7 @@ void GeoscapeState::time5Seconds()
 			}
 			if (pushState == "PromotionsState")
 			{
-				_game->pushState(new PromotionsState);
+				_game->pushState(new PromotionsState(true));
 			}
 
 			// Handle craft shield recharge

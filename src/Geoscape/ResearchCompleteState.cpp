@@ -26,6 +26,7 @@
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Engine/Options.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/SavedGame.h"
 #include "../Battlescape/PromotionsState.h"
 
 namespace OpenXcom
@@ -102,6 +103,7 @@ ResearchCompleteState::ResearchCompleteState(const RuleResearch *newResearch, co
  */
 void ResearchCompleteState::btnOkClick(Action *)
 {
+	_game->getSavedGame()->handlePromotionsPostprocessing();
 	_game->popState();
 }
 
@@ -132,10 +134,9 @@ void ResearchCompleteState::btnReportClick(Action *)
 	}
 }
 
-
 void ResearchCompleteState::btnPromotionsClick(Action* action)
 {
-	_game->pushState(new PromotionsState);
+	_game->pushState(new PromotionsState); //promotion postprocessing happens only on OK button click
 }
 
 }

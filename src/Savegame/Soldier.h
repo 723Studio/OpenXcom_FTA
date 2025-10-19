@@ -240,7 +240,9 @@ private:
 	/// Set initial and current stats.
 	void setBothStats(UnitStats *stats);
 	/// Get whether the unit was recently promoted.
-	bool isPromoted();
+	bool isPromoted() const { return _recentlyPromoted; }
+	/// Sets whether the unit was recently promoted.
+	void setPromoted(bool promoted) { _recentlyPromoted = promoted; }
 	/// Gets the soldier armor.
 	Armor *getArmor() const;
 	/// Sets the soldier armor.

@@ -55,7 +55,7 @@ private:
 	void onToggleProjectStatus(Action *action);
 	void onOpenTechTreeViewer(Action *action);
 	void onOpenProjectDetailsInfo(Action *action);
-	std::string getProjectCategory(RuleResearch *project, bool onlyFirst = false);
+	std::string getProjectCategory(RuleResearch *project);
 	std::vector<RuleResearch *> _projects;
 public:
 	/// Creates the New research list state.

@@ -175,6 +175,7 @@ ProductionCompleteState::~ProductionCompleteState()
  */
 void ProductionCompleteState::btnOkClick(Action *)
 {
+	_game->getSavedGame()->handlePromotionsPostprocessing();
 	_game->popState();
 }
 
@@ -261,6 +262,6 @@ void ProductionCompleteState::lstSummaryClick(Action *)
 
 void ProductionCompleteState::btnPromotionsClick(Action* action)
 {
-	_game->pushState(new PromotionsState);
+	_game->pushState(new PromotionsState); //promotion postprocessing happens only on OK button click
 }
 }

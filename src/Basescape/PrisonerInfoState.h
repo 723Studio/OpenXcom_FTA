@@ -83,7 +83,7 @@ public:
 	void addAgent(Soldier * agent) { _agents.insert(agent); }
 	void removeAgent(Soldier* agent) { _agents.erase(agent); }
 	void setAgents(std::set<Soldier*> agent) { _agents = std::move(agent); }
-	BasePrisoner* getPrisioner() { return _prisoner; }
+	BasePrisoner* getPrisoner() { return _prisoner; }
 };
 
 }

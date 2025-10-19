@@ -1261,6 +1261,23 @@ void SavedGame::monthlyScoring()
 }
 
 /**
+ *	Clears promotion flag on soldiers after revealing it to the player.
+ */
+void SavedGame::handlePromotionsPostprocessing()
+{
+	for (auto* base : _bases)
+	{
+		for (auto* soldier : *base->getSoldiers())
+		{
+			if (soldier->isPromoted())
+			{
+				soldier->setPromoted(false);
+			}
+		}
+	}
+}
+
+/**
  * Returns the current time of the game.
  * @return Pointer to the game time.
  */

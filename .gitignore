@@ -128,3 +128,5 @@ cmake-build-debug/.cmake/api/v1/query/cache-v2
 .idea/codeStyles/Project.xml
 .idea/codeStyles/codeStyleConfig.xml
 .idea/.name
+.idea/editor.xml
+.vscode/settings.json

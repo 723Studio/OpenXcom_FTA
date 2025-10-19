@@ -364,7 +364,11 @@ void IntelAllocateAgentsState::lstAgentsClick(Action *action)
 			_lstAgents->setCellText(row, 1, tr("STR_NONE_UC"));
 			color = _lstAgents->getColor();
 		}
-		else if (s->hasFullHealth() && !isBusy)
+		else if (isBusy)
+		{
+			color = _otherCraftColor;
+		}
+		else if (s->hasFullHealth())
 		{
 			_lstAgents->setCellText(row, 1, tr("STR_ASSIGNED_UC"));
 			color = _lstAgents->getSecondaryColor();
