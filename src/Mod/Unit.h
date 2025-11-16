@@ -351,15 +351,15 @@ struct UnitStats
 		interrogation = (stats.interrogation ? stats.interrogation : interrogation);
 	}
 
-	bool empty()
+	bool empty() const
 	{
-		return bravery || reactions || firing || psiSkill || psiStrength || melee || throwing || mana ||
+		return !(bravery || reactions || firing || psiSkill || psiStrength || melee || throwing || mana ||
 			maneuvering || missiles || dogfight || cooperation || tracking || beams ||
 			synaptic || gravity || physics || chemistry || biology || insight || data || computers || tactics ||
 			materials || designing || psionics || xenolinguistics ||
 			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
 			hacking || robotics || diligence || alienTech || reverseEngineering ||
-			stealth || perception || charisma || investigation || deception || interrogation;
+			stealth || perception || charisma || investigation || deception || interrogation);
 	}
 	template<typename Func>
 	static void fieldLoop(Func f)

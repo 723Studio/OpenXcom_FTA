@@ -97,16 +97,17 @@ void RuleManufacture::afterLoad(const Mod* mod)
 			_producedCraft = mod->getCraft(item->first, true);
 		}
 	}
-	else if (_category == "STR_FACILITY")
-	{
-		_facility = mod->getBaseFacility(_name, true);
-	}
 	else
 	{
 		for (auto& i : _producedItemsNames)
 		{
 			_producedItems[mod->getItem(i.first, true)] = i.second;
 		}
+	}
+
+	if (mod->isFTAGame() && _stats.empty())
+	{
+		throw Exception("Stats are not defined for manufacture project, it is required for FTA game");
 	}
 
 	for (auto& i : _requiredItemsNames)
@@ -318,15 +319,6 @@ const std::map<const RuleItem*, int> &RuleManufacture::getProducedItems() const
 const RuleCraft* RuleManufacture::getProducedCraft() const
 {
 	return _producedCraft;
-}
-
-/*
- * Gets facility build by this project if any.
- * @return RuleBaseFacility rule set.
- */
-const RuleBaseFacility* RuleManufacture::getProducedFacility() const
-{
-	return _facility;
 }
 
 /**

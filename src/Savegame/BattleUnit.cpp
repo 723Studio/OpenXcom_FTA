@@ -4146,7 +4146,7 @@ void BattleUnit::addBiologyExp()
  */
 bool BattleUnit::hasGainedAnyExperience()
 {
-	return _exp.empty();
+	return !_exp.empty();
 }
 
 void BattleUnit::updateGeoscapeStats(Soldier *soldier) const

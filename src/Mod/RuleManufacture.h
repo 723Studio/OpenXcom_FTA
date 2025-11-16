@@ -63,7 +63,6 @@ private:
 	std::map<const RuleItem*, int> _requiredItems, _producedItems;
 	std::map<const RuleCraft*, int> _requiredCrafts;
 	const RuleCraft* _producedCraft;
-	const RuleBaseFacility* _facility;
 	std::vector<std::pair<int, std::map<std::string, int> > > _randomProducedItemsNames;
 	std::vector<std::pair<int, std::map<const RuleItem*, int> > > _randomProducedItems;
 	int _listOrder;
@@ -113,8 +112,6 @@ public:
 	const std::map<const RuleItem*, int> &getProducedItems() const;
 	/// If this produce craft return its type, otherwise null.
 	const RuleCraft* getProducedCraft() const;
-	/// If this produce facility return its type, otherwise null.
-	const RuleBaseFacility* getProducedFacility() const;
 	/// Gets the random manufacture rules.
 	const std::vector<std::pair<int, std::map<const RuleItem*, int> > > &getRandomProducedItems() const;
 	/// Gets the "manufactured person", i.e. person spawned when manufacturing project ends.
