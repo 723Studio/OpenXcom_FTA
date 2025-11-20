@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <functional>
 #include <climits>
-#include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -75,7 +74,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(hidePreview ? 148 : 38, 16, hidePreview ? 164 : 274, 176);
 	_btnPreview = new TextButton(102, 16, 164, 176);
-	_txtTitle = new Text(_ftaUI ? 300 : 168, 17, 16, 7);
+	_txtTitle = new Text(_ftaUI ? 168 : 300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
@@ -476,24 +475,24 @@ void CraftSoldiersState::initList(size_t scrl)
 	Craft *c = _base->getCrafts()->at(_craft);
 	auto recovery = _base->getSumRecoveryPerDay();
 	bool isBusy = false, isFree = false;
-	for (std::vector<Soldier*>::iterator s = _filteredListOfSoldiers.begin(); s != _filteredListOfSoldiers.end(); ++s)
+	for (auto* soldier : _filteredListOfSoldiers)
 	{
-		std::string duty = (*s)->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
+		std::string duty = soldier->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
-			int dynStat = (*_dynGetter)(_game, *s);
+			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, (*s)->getName(true, 19).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true, 19).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, (*s)->getName(true, 19).c_str(), tr((*s)->getRankString(_ftaUI)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, soldier->getName(true, 19).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
 
 		Uint8 color;
-		if ((*s)->getCraft() == c)
+		if (soldier->getCraft() == c)
 		{
 			color = _lstSoldiers->getSecondaryColor();
 		}
@@ -550,7 +549,6 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		Craft *c = _base->getCrafts()->at(_craft);
 
 		Soldier* s = _filteredListOfSoldiers.at(row);
-			//_base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
 
 		bool isBusy = false, isFree = false;
 		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree);
@@ -586,13 +584,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 				{
 					if (i->getCraft() == c)
 					{
-						if (i->getRoleRank(ROLE_ROBOT) > 0 && (
-							i->getRoleRank(ROLE_SOLDIER) < 1 ||
-							i->getRoleRank(ROLE_PILOT) < 1 ||
-							i->getRoleRank(ROLE_AGENT) < 1 ||
-							i->getRoleRank(ROLE_SCIENTIST) < 1 ||
-							i->getRoleRank(ROLE_ENGINEER) < 1)
-							) // only robot role - not a sapient AI.
+						if (s->hasOnlyOneRole(ROLE_ROBOT))// only robot role - not a sapient AI.
 						{
 							relay--;
 						}

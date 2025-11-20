@@ -2440,7 +2440,30 @@ std::pair<SoldierRole, int> Soldier::getBestRoleRank() const
 	return std::make_pair(role, max);
 }
 
-int Soldier::getRoleRankSprite(SoldierRole role)
+bool Soldier::hasOnlyOneRole(SoldierRole role) const
+{
+	bool foundGivenRoleWithRank = false;
+	for (const auto* r : _roles)
+	{
+		if (r == nullptr) continue;
+		if (r->rank > 0)
+		{
+			if (r->role == role)
+			{
+				foundGivenRoleWithRank = true;
+			}
+			else
+			{
+				// Another role has rank > 0 -> not the only role
+				return false;
+			}
+		}
+	}
+	// True only if the passed role had rank > 0 and no other role did
+	return foundGivenRoleWithRank;
+}
+
+int Soldier::getRoleRankSprite(SoldierRole role) const
 {
 	int roleRank = getRoleRank(role);
 	int id = 0;

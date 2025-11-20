@@ -387,6 +387,8 @@ private:
 	std::pair<SoldierRole, int> getBestRoleRank() const;
 	/// Gets the role with highest rank.
 	SoldierRole getBestRole() const { return getBestRoleRank().first; }
+	/// Gets if soldier has ranks only in selected role.
+	bool hasOnlyOneRole(SoldierRole role) const;
 	/// Gets a pointer to the dogfight experience values (FtA mechanic).
 	UnitStats* getDogfightExperience() { return &_dogfightExperience; }
 	/// Clears dogfight experience values (FtA mechanic).
@@ -409,7 +411,7 @@ private:
 	/// Process role ranks promotions for a soldier.
 	bool rolePromoteSoldier(SoldierRole role);
 	/// Gets a sprite version of the soldier for specific role. Used for BASEBITS.PCK.
-	int getRoleRankSprite(SoldierRole role);
+	int getRoleRankSprite(SoldierRole role) const;
 	/// Gets a sprite version of the soldier for specific role. Used for SMOKE.PCK.
 	int getRoleRankSpriteBattlescape(SoldierRole role);
 	/// Gets a sprite version of the soldier for specific role. Used for TinyRanks.

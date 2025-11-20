@@ -45,13 +45,16 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtTraining, *_txtName, *_txtRemaining;
 	Text *_txtTu, *_txtStamina, *_txtHealth, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtReaction;
-	ComboBox *_cbxSortBy;
+	ComboBox *_cbxSortBy, *_cbxScreenActions;
 	TextList *_lstSoldiers;
 	std::vector<Soldier*> _soldiers;
+	std::vector<int> _soldierNumbers;
 	size_t _sel;
 	int _space;
+	bool _ftaUI;
+	std::vector<std::string> _availableOptions;
 	Base *_base;
-	std::vector<Soldier *> _origSoldierOrder;
+	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers;
 	std::vector<SortFunctor *> _sortFunctors;
 	std::vector<SortFunctor *> _sortFunctorsPlus;
 	///initializes the display list
@@ -75,6 +78,8 @@ public:
 	void btnDeassignAllSoldiersClick(Action* action);
 	/// Handler for clicking the Assign All Soldiers button.
 	void btnAssignAllSoldiersClick(Action* action);
+	/// Handler for changing the screen actions combo box.
+	void cbxScreenActionsChange(Action* action);
 };
 
 }
