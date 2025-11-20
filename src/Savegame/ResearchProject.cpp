@@ -20,6 +20,7 @@
 #include "../Mod/RuleResearch.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/Soldier.h"
+#include "../Savegame/Craft.h"
 
 namespace OpenXcom
 {
@@ -51,6 +52,11 @@ int ResearchProject::getStepProgress(std::map<Soldier*, int>& assignedScientists
 	double speedFactor = (double)mod->getResearchSpeedFactor() / 100;
 	for (auto s : assignedScientists)
 	{
+		if (s.first->getCraft()->getStatus() == "STR_OUT")
+		{
+			continue;
+		}
+
 		auto stats = s.first->getCurrentStats();
 		auto caps = s.first->getRules()->getStatCaps();
 		unsigned int statsN = 0;

@@ -189,6 +189,11 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 			double effort = 0;
 			for (auto s : _agents)
 			{
+				if (s->getCraft()->getStatus() == "STR_OUT")
+				{
+					continue;
+				}
+
 				auto stats = s->getCurrentStats();
 				auto caps = s->getRules()->getStatCaps();
 				double soldierEffort = 0, statEffort = 0;
