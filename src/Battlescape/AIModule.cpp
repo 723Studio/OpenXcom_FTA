@@ -445,6 +445,13 @@ void AIModule::think(BattleAction *action)
 		action->target = _patrolAction.target;
 		break;
 	case AI_COMBAT:
+		if (_save->isStealthMission() && _save->getAlarmLevel() == 0 && _save->getGeoscapeSave()->getDifficulty() < 3)
+		{
+			action->type = _attackAction.type = BA_NONE;
+			action->finalAction = true;
+		}
+		else
+		{
 		action->type = _attackAction.type;
 		action->target = _attackAction.target;
 		// this may have changed to a grenade.
@@ -471,6 +478,7 @@ void AIModule::think(BattleAction *action)
 		else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
 		{
 			action->kneel = _unit->getArmor()->allowsKneeling(false);
+		}
 		}
 		break;
 	case AI_AMBUSH:

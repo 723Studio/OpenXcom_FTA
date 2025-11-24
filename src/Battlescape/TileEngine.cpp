@@ -3311,7 +3311,7 @@ bool TileEngine::hitUnit(BattleActionAttack attack, BattleUnit *target, const Po
 	const int stunDamage = target->getStunlevel() - stunLevelOrig;
 
 	// hit log
-	if (attack.attacker)
+	if (attack.attacker && target->getVisible())
 	{
 		if (healthDamage > 0 || stunDamage > 0)
 		{
