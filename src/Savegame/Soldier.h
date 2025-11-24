@@ -128,6 +128,7 @@ private:
 	SoldierDiary *_diary;
 	std::string _statString;
 	bool _corpseRecovered;
+	bool _isRookieSoldier, _isRookieScientist, _isRookieEngineer, _isRookieAgent, _isRookiePilot;
 	std::map<std::string, int> _previousTransformations, _transformationBonuses, _pendingTransformations;
 	std::vector<const RuleSoldierBonus*> _bonusCache;
 	ScriptValues<Soldier> _scriptValues;
@@ -344,9 +345,29 @@ private:
 	/// Set the training status
 	void setTraining(bool training);
 	/// Returns whether the soldier was just saved
-	bool isJustSaved() { return _justSaved; }
+	bool isJustSaved() const { return _justSaved; }
 	/// Set the "Just saved" status - we recover this soldier on battlescape, but not deliverid him/her to the base yet
 	void setJustSaved(bool saved) { _justSaved = saved; }
+	/// Is the soldier a rookie (first mission)?
+	bool isRookieSoldier() const { return _isRookieSoldier; }
+	/// Sets whether the soldier is a rookie (first mission)?
+	void setRookieSoldier(bool rookie) { _isRookieSoldier = rookie; }
+	/// Is the soldier a newbie scientist?
+	bool isRookieScientist() const { return _isRookieScientist; }
+	/// Sets whether the soldier is a newbie scientist?
+	void setRookieScientist(bool rookie) { _isRookieScientist = rookie; }
+	/// Is the soldier a newbie engineer?
+	bool isRookieEngineer() const { return _isRookieEngineer; }
+	/// Sets whether the soldier is a newbie engineer?
+	void setRookieEngineer(bool rookie) { _isRookieEngineer = rookie; }
+	/// Is the soldier a newbie agent?
+	bool isRookieAgent() const { return _isRookieAgent; }
+	/// Sets whether the soldier is a newbie agent?
+	void setRookieAgent(bool rookie) { _isRookieAgent = rookie; }
+	/// Is the soldier a newbie pilot?
+	bool isRookiePilot() const { return _isRookiePilot; }
+	/// Sets whether the soldier is a newbie pilot?
+	void setRookiePilot(bool rookie) { _isRookiePilot = rookie; }
 	/// Should the soldier return to martial training automatically when fully healed?
 	bool getReturnToTrainingWhenHealed() const;
 	/// Sets whether the soldier should return to martial training automatically when fully healed.
@@ -379,7 +400,7 @@ private:
 	/// Adds role or increase rank in role
 	void addRole(SoldierRole newRole, int rank = 1);
 	/// Adds role or increase rank in role
-	void addExperience(SoldierRole role, int exp = 1, std::string name = ""); //#FINNIKTODO name only for logging! remove
+	void addExperience(SoldierRole role, int exp = 1, std::string name = "");
 	/// Gets rank of role.
 	int getRoleRank(SoldierRole role) const;
 	int getRoleRank(std::vector<int> role) const;

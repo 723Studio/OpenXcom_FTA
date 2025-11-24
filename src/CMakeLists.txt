@@ -42,7 +42,7 @@ set ( basescape_src
   Basescape/ManufactureDependenciesTreeState.cpp
   Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureInfoStateFtA.cpp
-  Basescape/ManufactureProductDetailsState
+  Basescape/ManufactureProductDetailsState.cpp
   Basescape/ManufactureStartState.cpp
   Basescape/ManufactureState.cpp
   Basescape/MiniBaseView.cpp

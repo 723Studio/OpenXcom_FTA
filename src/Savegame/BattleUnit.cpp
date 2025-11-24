@@ -4142,6 +4142,24 @@ void BattleUnit::addBiologyExp()
 }
 
 /**
+ * Adds one the anomaly (phisics, chemistry or alienTech) exp counter.
+ */
+void BattleUnit::addAnomalyExp()
+{
+	int roll = RNG::generate(1, 100) - 1; // 0..99
+	int idx = std::min(2, roll / 40);     // 0 for 0..39, 1 for 40..79, 2 for 80..99
+
+	// pointer-to-member to avoid branching
+	static constexpr Sint16 UnitStats::* members[] = {
+		&UnitStats::physics,
+		&UnitStats::chemistry,
+		&UnitStats::alienTech
+	};
+
+	++(_exp.*members[idx]);
+}
+
+/**
  * Did the unit gain any experience yet?
  */
 bool BattleUnit::hasGainedAnyExperience()
@@ -4199,6 +4217,11 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		{
 			s->promoteRank();
 		}
+		else if (s->isRookieSoldier())
+		{
+			s->addExperience(ROLE_SOLDIER, RNG::generate(5, 10), "experience for completing first mission");
+			s->setRookieSoldier(false);
+		}
 		int v;
 		v = caps.tu - stats->tu;
 		if (v > 0) stats->tu += RNG::generate(0, v/10 + 2);
@@ -4218,40 +4241,32 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 			_exp.mana = 0;
 		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
 
-		if (mod->isFTAGame() && _kills > 0)
+		// add experince for kills
+		if (_kills > 0)
 		{
 			int killExpMod = 100;
 			switch (geoscape->getDifficulty())
 			{
-			case DIFF_BEGINNER:
-				killExpMod = 120;
-				break;
-			case DIFF_EXPERIENCED:
-				killExpMod = 100;
-				break;
-			case DIFF_VETERAN:
-				killExpMod = 90;
-				break;
-			case DIFF_GENIUS:
-				killExpMod = 75;
-				break;
-			case DIFF_SUPERHUMAN:
-				killExpMod = 60;
-				break;
-			default: ;
+				case DIFF_BEGINNER:
+					killExpMod = 110;
+					break;
+				case DIFF_EXPERIENCED:
+					killExpMod = 100;
+					break;
+				case DIFF_VETERAN:
+					killExpMod = 90;
+					break;
+				case DIFF_GENIUS:
+					killExpMod = 80;
+					break;
+				case DIFF_SUPERHUMAN:
+					killExpMod = 70;
+					break;
+				default: ;
 			}
 
 			int maxExp = (int)std::ceil(_kills * killExpMod / 100);
-			if (maxExp < 1)
-			{
-				maxExp = 1;
-				if (RNG::percent(killExpMod - 50))
-				{
-					maxExp++;
-				}
-			}
-
-			s->addExperience(ROLE_SOLDIER, RNG::generate(1, maxExp), "experience from enemy kills");
+			s->addExperience(ROLE_SOLDIER, RNG::generate(0, maxExp), "experience from enemy kills");
 		}
 	}
 

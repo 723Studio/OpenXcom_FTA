@@ -2427,7 +2427,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 		{
 			if ((*j).x >= mapblock->getSizeX() || (*j).y >= mapblock->getSizeY() || (*j).z >= mapblock->getSizeZ())
 			{
-				ss << "Object " << rule->getType() << " is outside of map block " << mapblock->getName() << ", position: [";
+				ss << "Object " << rule->getName() << " is outside of map block " << mapblock->getName() << ", position: [";
 				ss << (*j).x << "," << (*j).y << "," << (*j).z << "], block size: [";
 				ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
 				throw Exception(ss.str());

@@ -34,7 +34,7 @@ namespace OpenXcom
 {
 
 /**
- * Initializes all the elements in a Inte; Complete window.
+ * Initializes all the elements in a Intel; Complete window.
  * @param game Pointer to the core game.
  * @param base Pointer to base the production belongs to.
  * @param item Item that finished producing.

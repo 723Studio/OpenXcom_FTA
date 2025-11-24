@@ -280,6 +280,8 @@ void HackingState::think()
  */
 void HackingState::onExitClick(Action*)
 {
+	auto unit = _action->actor;
+	auto soldier = unit->getGeoscapeSoldier();
 	if (Options::maximizeInfoScreens)
 	{
 		Screen::updateScale(Options::battlescapeScale, Options::baseXBattlescape, Options::baseYBattlescape, true);
@@ -297,6 +299,19 @@ void HackingState::onExitClick(Action*)
 	if (_result)
 	{
 		_action->actor->addHackingExp();
+		if (soldier)
+		{
+			if (soldier->getBestRole() == ROLE_ENGINEER && soldier->isRookieEngineer())
+			{
+				soldier->addExperience(ROLE_ENGINEER, RNG::generate(5, 10), "hacking");
+				soldier->setRookieEngineer(false);
+			}
+			else if (soldier->getBestRole() == ROLE_AGENT && soldier->isRookieAgent())
+			{
+				soldier->addExperience(ROLE_AGENT, RNG::generate(5, 10), "hacking");
+				soldier->setRookieAgent(false);
+			}
+		}
 	}
 	_game->popState();
 }

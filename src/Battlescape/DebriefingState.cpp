@@ -890,9 +890,10 @@ void DebriefingState::init()
 	}
 	for (auto* bu : *_game->getSavedGame()->getSavedBattle()->getUnits())
 	{
-		if (bu->getGeoscapeSoldier())
+		auto* soldier = bu->getGeoscapeSoldier();
+		if (soldier)
 		{
-			bu->getGeoscapeSoldier()->addExperience(ROLE_SOLDIER, missionExp, "mission score experience");
+			soldier->addExperience(ROLE_SOLDIER, missionExp, "mission score experience");
 			if (Options::fieldPromotions && !bu->hasGainedAnyExperience())
 			{
 				// Note: difference from OXC, soldier needs to actually have done something during the mission
@@ -904,7 +905,7 @@ void DebriefingState::init()
 
 	if (_fta)
 	{
-		for (auto soldier : participants)
+		for (auto* soldier : participants)
 		{
 			if (soldier->rolePromoteSoldier(ROLE_SOLDIER))
 			{

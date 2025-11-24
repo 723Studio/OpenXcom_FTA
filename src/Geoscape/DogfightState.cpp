@@ -1493,7 +1493,13 @@ void DogfightState::update()
 		{
 			for (auto &p : _pilots)
 			{
-				p->addExperience(ROLE_PILOT, RNG::generate(1, 3) * (_ufoSize + 1), "UFO battle");
+				int exp = RNG::generate(1, 3) * (_ufoSize + 1);
+				if (p->isRookiePilot())
+				{
+					exp += RNG::generate(5, 10); // rookies get a bit more experience to help them along
+					p->setRookiePilot(false);
+				}
+				p->addExperience(ROLE_PILOT, exp, "UFO battle");
 			}
 		}
 		if (!_destroyCraft && (_destroyUfo || _mode == _btnDisengage))

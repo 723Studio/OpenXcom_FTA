@@ -2004,7 +2004,7 @@ void BattlescapeGame::primaryAction(Position pos)
 				}
 			}
 		}
-		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING && _parentState->getGame()->getMod()->isFTAGame())
+		else if (_currentAction.type == BA_HACK && _currentAction.weapon->getRules()->getBattleType() == BT_HACKING)
 		{
 			auto targetUnit = _save->selectUnit(pos);
 			auto battleObject = _save->getTile(pos)->getBattleObject();
@@ -2026,7 +2026,6 @@ void BattlescapeGame::primaryAction(Position pos)
 					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
 				if (!_currentAction.weapon->getRules()->isLOSRequired() ||
-					(_currentAction.actor->getFaction() == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
 					std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
 				{
 					// OK to hack (I didn't want to convert that condition to a NOT check. It's already too complicated)
@@ -2041,12 +2040,23 @@ void BattlescapeGame::primaryAction(Position pos)
 			// check if there is a battle object that can be hacked
 			else if (battleObject)
 			{
+				Tile* targetTile = battleObject->getTile();
 				if (!battleObject->canBeHacked())
 				{
 					hackTargetAllowed = false;
 					_parentState->warning("STR_NOT_HACKING_TARGET");
 				}
-				// #FINNIKTODO: add battle object line of sight check here
+
+				if (!_currentAction.weapon->getRules()->isLOSRequired() ||
+					std::find(_currentAction.actor->getVisibleTiles()->begin(), _currentAction.actor->getVisibleTiles()->end(), targetTile) != _currentAction.actor->getVisibleTiles()->end())
+				{
+					// OK to hack (I didn't want to convert that condition to a NOT check. It's already too complicated)
+				}
+				else
+				{
+					hackTargetAllowed = false;
+					_parentState->warning("STR_LINE_OF_SIGHT_REQUIRED");
+				}
 			}
 			else
 			{

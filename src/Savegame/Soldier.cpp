@@ -117,7 +117,7 @@ Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id
 	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
 	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false), _returnToTrainingsWhenOperationOver(NONE),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
-	_corpseRecovered(false)
+	_corpseRecovered(false), _isRookieSoldier(true), _isRookieScientist(true), _isRookieEngineer(true), _isRookieAgent(true), _isRookiePilot(true)
 {
 	if (id != 0)
 	{
@@ -305,6 +305,11 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 	_researchExperience = node["researchExperience"].as<UnitStats>(_researchExperience);
 	_engineerExperience = node["engineerExperience"].as<UnitStats>(_engineerExperience);
 	_intelExperience = node["intelExperience"].as<UnitStats>(_intelExperience);
+	_isRookieSoldier = node["isRookieSoldier"].as<bool>(_isRookieSoldier);
+	_isRookieScientist = node["isRookieScientist"].as<bool>(_isRookieScientist);
+	_isRookieEngineer = node["isRookieEngineer"].as<bool>(_isRookieEngineer);
+	_isRookieAgent = node["isRookieAgent"].as<bool>(_isRookieAgent);
+	_isRookiePilot = node["isRookiePilot"].as<bool>(_isRookiePilot);
 
 	// re-roll mana stats when upgrading saves
 	if (_currentStats.mana == 0 && _rules->getMaxStats().mana > 0)
@@ -508,6 +513,16 @@ YAML::Node Soldier::save(const ScriptGlobal *shared)
 		node["returnToTrainingWhenHealed"] = _returnToTrainingWhenHealed;
 	if (_justSaved)
 		node["justSaved"] = _justSaved;
+	if (_isRookieSoldier)
+		node["isRookieSoldier"] = _isRookieSoldier;
+	if (_isRookieScientist)
+		node["isRookieScientist"] = _isRookieScientist;
+	if (_isRookieEngineer)
+		node["isRookieEngineer"] = _isRookieEngineer;
+	if (_isRookieAgent)
+		node["isRookieAgent"] = _isRookieAgent;
+	if (_isRookiePilot)
+		node["isRookiePilot"] = _isRookiePilot;
 	node["improvement"] = _improvement;
 	node["psiStrImprovement"] = _psiStrImprovement;
 	if (!_equipmentLayout.empty())

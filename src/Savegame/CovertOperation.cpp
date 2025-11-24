@@ -862,6 +862,12 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 			}
 		}
 
+		if (soldier->isRookieAgent())
+		{
+			exp += RNG::generate(5, 10); // extra exp for rookie agents
+			soldier->setRookieAgent(false);
+		}
+
 		soldier->improvePrimaryStats(exp, ROLE_AGENT);
 		//also improve secondary stats
 		int rate = 0;

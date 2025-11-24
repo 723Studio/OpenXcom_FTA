@@ -35,10 +35,7 @@ namespace OpenXcom
 */
 BattleObject::BattleObject(const RuleObject* rules) : _rules(rules), _tile(0), _hackingDefence(0), _failedAttempts(0), _wasUsed(false)
 {
-	if (_rules)
-	{
-		_hackingDefence = rules->getHackingDefence();
-	}
+	_hackingDefence = rules->getHackingDefence(); // needs as it can be increased later with failed hacking attempts
 }
 
 /**
@@ -68,7 +65,7 @@ void BattleObject::load(const YAML::Node& node, Mod* mod)
 YAML::Node BattleObject::save() const
 {
 	YAML::Node node;
-	node["type"] = _rules->getType();
+	node["type"] = _rules->getName();
 	node["hackingDefence"] = _hackingDefence;
 	node["failedAttempts"] = _failedAttempts;
 	node["wasUsed"] = _wasUsed;

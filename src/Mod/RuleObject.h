@@ -24,29 +24,37 @@
 
 namespace OpenXcom
 {
-
+enum BattleObjectType : int
+{
+	BATTLE_OBJECT_HACKING_TERMINAL = 0,
+	BATTLE_OBJECT_BIOLOGY_SAMPLING = 1,
+	BATTLE_OBJECT_ANOMALY_SAMPLING = 2
+};
 /**
-	* Represents a rules that are used to create BattleObject on battlescape.
-	*/
+* Represents a rules that are used to create BattleObject on battlescape.
+*/
 class RuleObject
 {
 private:
-	std::string _type;
+	std::string _name;
 	int _hackingDefence, _samplingDefence;
 	int _alterationMCDNumber, _alterationMCDRadius;
 	bool _isMissionObjective;
+	BattleObjectType _type;
 	std::vector<std::string> _spawnedEvents;
 	std::string _spawnedItem;
 	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
 public:
 	/// Creates a blank RuleObject.
-	RuleObject(const std::string& type);
+	RuleObject(const std::string& name);
 	/// Cleans up the RuleObject ruleset.
 	~RuleObject();
 	/// Loads the RuleObject definition from YAML.
 	void load(const YAML::Node& node);
+	/// Gets the RuleObject's name.
+	const std::string& getName() const { return _name; }
 	/// Gets the RuleObject's type.
-	const std::string& getType() const { return _type; }
+	BattleObjectType getType() const { return _type; }
 	/// Gets the RuleObject's hacking defence.
 	int getHackingDefence() const { return _hackingDefence; }
 	/// Gets the RuleObject's hacking defence.

@@ -483,6 +483,7 @@ void ActionMenuState::handleAction()
 		else if (_action->type == BA_SAMPLE && weapon->getBattleType() == BT_SAMPLING && _action->actor->getGeoscapeSoldier())
 		{
 			BattleUnit* unit = _action->actor;
+			Soldier* soldier = unit->getGeoscapeSoldier();
 			BattleObject* object = unit->getTile()->getBattleObject();
 			if (object == nullptr)
 			{
@@ -493,22 +494,33 @@ void ActionMenuState::handleAction()
 				}
 			}
 
-			if (object && !object->wasUsed())
+			auto rules = object ? object->getRules() : nullptr;
+			if (rules && !object->wasUsed())
 			{
-				int defence = object->getRules()->getSamplingDefence();
+				int defence = rules->getSamplingDefence();
 				if (defence > 0)
 				{
 					if (_action->spendTU(&_action->result))
 					{
-						int power = weapon->getSamplingPower() + unit->getBaseStats()->biology;
-						if (unit->getGeoscapeSoldier()->getRoleRank(ROLE_SCIENTIST) < 1)
+						auto stats = unit->getBaseStats();
+						int power = weapon->getSamplingPower();
+						if (rules->getType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
+						{
+							power += stats->biology;
+						}
+						else if (rules->getType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+						{
+							power += std::ceil((stats->physics + stats->chemistry + stats->alienTech) / 3);
+						}
+						
+						if (soldier && soldier->getRoleRank(ROLE_SCIENTIST) < 1)
 							power /= 2;
 
 						if (RNG::generate(0, power) >= defence) //we succeed in sampling!
 						{
 							std::vector<RuleEvent*> events;
 							bool result = false;
-							for (auto gEvent : object->getRules()->getSpawnedEvents())
+							for (auto gEvent : rules->getSpawnedEvents())
 							{
 								auto eventRule = _game->getMod()->getEvent(gEvent);
 								if (eventRule)
@@ -533,9 +545,20 @@ void ActionMenuState::handleAction()
 							if (result)
 							{
 								_action->result = "STR_SAMPLES_GATHERED";
-								if (RNG::generate(0, 5) >= (int)_game->getSavedGame()->getDifficulty())
+
+								if (rules->getType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
 								{
 									unit->addBiologyExp();
+								}
+								else if (rules->getType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+								{
+									unit->addAnomalyExp();
+								}
+
+								if (soldier && soldier->isRookieScientist())
+								{
+									soldier->addExperience(ROLE_SCIENTIST, RNG::generate(5, 10), "sampling");
+									soldier->setRookieScientist(false);
 								}
 							}
 						}
