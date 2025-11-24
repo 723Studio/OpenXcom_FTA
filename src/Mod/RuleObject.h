@@ -36,11 +36,11 @@ enum BattleObjectType : int
 class RuleObject
 {
 private:
-	std::string _name;
+	std::string _type;
 	int _hackingDefence, _samplingDefence;
 	int _alterationMCDNumber, _alterationMCDRadius;
 	bool _isMissionObjective;
-	BattleObjectType _type;
+	BattleObjectType _useType;
 	std::vector<std::string> _spawnedEvents;
 	std::string _spawnedItem;
 	std::vector<std::pair<size_t, WeightedOptions*> > _eventWeights;
@@ -52,9 +52,9 @@ public:
 	/// Loads the RuleObject definition from YAML.
 	void load(const YAML::Node& node);
 	/// Gets the RuleObject's name.
-	const std::string& getName() const { return _name; }
+	const std::string& getName() const { return _type; }
 	/// Gets the RuleObject's type.
-	BattleObjectType getType() const { return _type; }
+	BattleObjectType getUseType() const { return _useType; }
 	/// Gets the RuleObject's hacking defence.
 	int getHackingDefence() const { return _hackingDefence; }
 	/// Gets the RuleObject's hacking defence.

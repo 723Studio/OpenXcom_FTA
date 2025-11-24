@@ -504,11 +504,11 @@ void ActionMenuState::handleAction()
 					{
 						auto stats = unit->getBaseStats();
 						int power = weapon->getSamplingPower();
-						if (rules->getType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
+						if (rules->getUseType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
 						{
 							power += stats->biology;
 						}
-						else if (rules->getType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+						else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 						{
 							power += std::ceil((stats->physics + stats->chemistry + stats->alienTech) / 3);
 						}
@@ -546,11 +546,11 @@ void ActionMenuState::handleAction()
 							{
 								_action->result = "STR_SAMPLES_GATHERED";
 
-								if (rules->getType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
+								if (rules->getUseType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
 								{
 									unit->addBiologyExp();
 								}
-								else if (rules->getType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+								else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 								{
 									unit->addAnomalyExp();
 								}
