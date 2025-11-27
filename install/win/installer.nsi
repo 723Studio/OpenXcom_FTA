@@ -302,7 +302,7 @@ ${EndIf}
 ${If} $PortableMode == ${BST_CHECKED}
 	nsisunz::UnzipToLog "$TEMP\X-Com-From-the-Ashes.zip" "$INSTDIR\user\mods"
 ${Else}
-	nsisunz::UnzipToLog "$TEMP\X-Com-From-the-Ashes.zip" "$DOCUMENTS\OpenXcom\mods"
+	nsisunz::UnzipToLog "$TEMP\X-Com-From-the-Ashes.zip" "$DOCUMENTS\OpenXcomFtA\mods"
 ${EndIf}
         Pop $0
 	StrCmp $0 "success" download_mod_yes download_mod_fail1
@@ -322,7 +322,7 @@ ${EndIf}
 ${If} $PortableMode == ${BST_CHECKED}
 	nsisunz::UnzipToLog "$TEMP\Hit-Fx-FtA.zip" "$INSTDIR\user\mods"
 ${Else}
-	nsisunz::UnzipToLog "$TEMP\Hit-Fx-FtA.zip" "$DOCUMENTS\OpenXcom\mods"
+	nsisunz::UnzipToLog "$TEMP\Hit-Fx-FtA.zip" "$DOCUMENTS\OpenXcomFtA\mods"
 ${EndIf}
         Pop $0
 	StrCmp $0 "success" download_hitfx_yes download_hitfx_fail1
@@ -362,7 +362,7 @@ ${EndIf}
 ${If} $PortableMode == ${SF_SELECTED}
 		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_USER).lnk" "$INSTDIR\user"
 ${Else}
-		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_USER).lnk" "$DOCUMENTS\OpenXcom"
+		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_USER).lnk" "$DOCUMENTS\OpenXcomFtA"
 ${EndIf}
 		CreateShortCut "$SMPROGRAMS\$StartMenuFolder\$(SETUP_SHORTCUT_UNINSTALL).lnk" "$INSTDIR\Uninstall.exe"
 
@@ -591,7 +591,7 @@ SectionEnd
 
 Section /o "un.$(SETUP_UNUSER)" UnUser
 	RMDir /r "$INSTDIR\user"
-	RMDir /r "$DOCUMENTS\OpenXcom"
+	RMDir /r "$DOCUMENTS\OpenXcomFtA"
 SectionEnd
 
 Section "-un.Main"
