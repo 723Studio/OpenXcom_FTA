@@ -311,6 +311,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_inv->onMouseClick((ActionHandler)&InventoryState::invClick, 0);
 	_inv->onMouseOver((ActionHandler)&InventoryState::invMouseOver);
 	_inv->onMouseOut((ActionHandler)&InventoryState::invMouseOut);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_WHEELDOWN);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_WHEELUP);
 
 	if (_battleGame->getDebugMode() && _game->isShiftPressed())
 	{
