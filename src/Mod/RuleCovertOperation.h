@@ -161,11 +161,11 @@ public:
 	const std::vector<std::pair<int, std::map<const RuleItem*, int> > >& getFailureItems() const { return _failureItems; }
 	/// Gets the operation's required item list.
 	const std::map<const RuleItem*, int>& getRequiredItemList() const { return _requiredItems; }
-	/// Gets the operation's required item list.
+	/// Gets the operation's bonus item list.
 	const std::map<const RuleItem*, int>& getBonusItemList() const { return _bonusItems; }
 	/// Gets list of soldiers to add to the operation`s base on this operations completes.
 	const std::map<const RuleSoldier*, int>& getSoldiersToAdd() const { return _addSoldiers; }
-	/// Gets bonus for having required items for this operation.
+	/// Gets bonus for having bonus items for this operation.
 	int getBonusItemsEffect() const { return _bonusItemsEffect; }
 	/// Gets if this covert operation does not have any effects for concealed or heavy weapons.
 	bool getAllowAllEquipment() const { return _allowAllEquipment; }

@@ -104,7 +104,7 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	_failureLoyalty = node["failureLoyalty"].as<int>(_failureLoyalty);
 	_successFunds = node["successFunds"].as<int>(_successFunds);
 	_failureFunds = node["failureFunds"].as<int>(_failureFunds);
-	_successItemNames = node["successItemsNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_successItemNames);
+	_successItemNames = node["successItemNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_successItemNames);
 	_failureItemNames = node["failureItemNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_failureItemNames);
 	_addSoldiersStr = node["addSoldiers"].as<std::map<std::string, int> >(_addSoldiersStr);
 	_successResearchList = node["successResearchList"].as<std::vector<std::string> >(_successResearchList);
@@ -224,7 +224,15 @@ void RuleCovertOperation::afterLoad(const Mod* mod)
 		std::map<const RuleItem*, int> tmp;
 		for (auto& i : itemSet.second)
 		{
-			tmp[mod->getItem(i.first, true)] = i.second;
+			auto item = mod->getItem(i.first, true);
+			if (!item)
+			{
+				throw Exception("Cover operation named: '" + this->getName() + " has invalid successItemNames property - no rule for item: '" + i.first + "'");
+			}
+			else
+			{
+				tmp[item] = i.second;
+			}
 		}
 		_successItems.push_back(std::make_pair(itemSet.first, tmp));
 	}
@@ -234,7 +242,15 @@ void RuleCovertOperation::afterLoad(const Mod* mod)
 		std::map<const RuleItem*, int> tmp;
 		for (auto& i : itemSet.second)
 		{
-			tmp[mod->getItem(i.first, true)] = i.second;
+			auto item = mod->getItem(i.first, true);
+			if (!item)
+			{
+				throw Exception("Cover operation named: '" + this->getName() + " has invalid failureItemNames property - no rule for item: '" + i.first + "'");
+			}
+			else
+			{
+				tmp[item] = i.second;
+			}
 		}
 		_failureItems.push_back(std::make_pair(itemSet.first, tmp));
 	}
