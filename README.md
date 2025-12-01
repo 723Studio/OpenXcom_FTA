@@ -210,6 +210,18 @@ savegame.
 
 For more details please check the [wiki](https://ufopaedia.org/index.php/Options_(OpenXcom)).
 
+### Encrypted Content Containers
+
+OpenXcom FTA supports loading encrypted `.oxc` container files to protect game content from unauthorized modification and redistribution. This feature uses AES-256-CBC encryption with HMAC-SHA256 authentication.
+
+To use encrypted containers:
+
+1. **Create an encrypted container** using [rpk-builder](https://github.com/723Studio/rpk-builder)
+2. **Set the encryption key** via the `OXC_CONTENT_KEY` environment variable before launching the game
+3. **Place the container** file (e.g., `common.oxc`, `standard.oxc`) in your data folders
+
+The game will automatically detect and load `.oxc` files alongside regular ZIP archives and directories.
+
 ## Development
 
 OpenXcom requires the following developer libraries:
@@ -219,6 +231,10 @@ OpenXcom requires the following developer libraries:
 - [SDL\_gfx](https://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) (libsdl-gfx1.2), version 2.0.22 or later
 - [SDL\_image](https://www.libsdl.org/projects/SDL_image/) (libsdl-image1.2)
 - [yaml-cpp](https://github.com/jbeder/yaml-cpp), version 0.5.3 or later
+
+- [tiny-AES-c](https://github.com/kokke/tiny-AES-c) — Embedded AES-256-CBC implementation adapted from the tiny-AES-c project (MIT license). The adapted source files are included in `src/Engine/tiny_aes.c` and `src/Engine/tiny_aes.h`.
+
+  The original tiny-AES-c project: https://github.com/kokke/tiny-AES-c (MIT). We include a minimal, adapted subset for decrypting `.oxc` containers; see those source files for attribution and implementation details.
 
 The source code includes files for the following build tools:
 

@@ -389,6 +389,15 @@
     <ClCompile Include="Engine\FileMap.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\OXCContainer.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\OXCCrypto.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\tiny_aes.c">
+      <Filter>Engine</Filter>
+    </ClCompile>
     <ClCompile Include="Battlescape\ActionMenuState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
@@ -1731,6 +1740,15 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine\FileMap.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\OXCContainer.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\OXCCrypto.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\tiny_aes.h">
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Battlescape\ActionMenuState.h">

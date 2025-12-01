@@ -184,6 +184,9 @@ set ( engine_src
   Engine/OpenGL.cpp
   Engine/OptionInfo.cpp
   Engine/Options.cpp
+  Engine/OXCContainer.cpp
+  Engine/OXCCrypto.cpp
+  Engine/tiny_aes.c
   Engine/Palette.cpp
   Engine/RNG.cpp
   Engine/Scalers/hq2x.cpp
@@ -626,6 +629,9 @@ if (( APPLE AND CREATE_BUNDLE ) OR CPACK_GENERATOR STREQUAL "7Z" )
 endif ()
 
 add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
+
+# Ensure MSVC uses /bigobj to avoid "number of sections exceeded" (C1128)
+target_compile_options(openxcom PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 
 if ( EMBED_ASSETS )
   add_dependencies(openxcom zips)

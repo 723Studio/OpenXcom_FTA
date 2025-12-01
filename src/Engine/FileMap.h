@@ -39,8 +39,10 @@ namespace FileMap
 	struct FileRecord {
 		std::string fullpath; 	// includes zip file name if any
 
-		void *zip; 				// borrowed reference/weakref. NOTNULL:
+		void *zip; 				// borrowed reference/weakref. NOTNULL: points to mz_zip_archive
 		size_t findex;       	// file index in the zipfile.
+		
+		void *oxc;				// borrowed reference/weakref. NOTNULL: points to OXCContainer
 
 		FileRecord();
 

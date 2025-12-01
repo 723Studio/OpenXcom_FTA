@@ -2,6 +2,8 @@
     "oxcYamlHelper.rulesetDocumentationSettings": 0,
     "files.associations": {
         "utility": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "sstream": "cpp",
+        "iosfwd": "cpp"
     }
 }
