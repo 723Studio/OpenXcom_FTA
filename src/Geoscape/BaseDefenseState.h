@@ -30,6 +30,7 @@ class Ufo;
 class TextList;
 class GeoscapeState;
 class Timer;
+class RuleBaseFacility;
 
 enum BaseDefenseActionType { BDA_NONE, BDA_FIRE, BDA_RESOLVE, BDA_DESTROY, BDA_END };
 
@@ -42,6 +43,7 @@ private:
 	TextButton *_btnOk;
 	TextButton *_btnStart, *_btnAbort;
 	Window *_window;
+	InteractiveSurface *_preview;
 	Text *_txtTitle, *_txtInit;
 	TextList *_lstDefenses;
 	Base *_base;
@@ -50,9 +52,10 @@ private:
 	BaseDefenseActionType _action;
 	Timer *_timer;
 	GeoscapeState *_state;
+	bool applyDamage(const RuleBaseFacility* rule);
 public:
 	/// Creates the Base Defense state.
-	BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state);
+	BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state, bool instaHyper);
 	/// Cleans up the Base Defense state.
 	~BaseDefenseState();
 	/// Handle the Timer.

@@ -34,6 +34,7 @@
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
 #include "../Mod/Mod.h"
+#include "../Basescape/SoldierInfoState.h"
 #include "../Basescape/SoldierSortUtil.h"
 #include "../Basescape/SoldierInfoStateFtA.h"
 #include <algorithm>
@@ -47,7 +48,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to handle.
  */
-AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base), _origSoldierOrder(*_base->getSoldiers())
+AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base), _origSoldierOrder(*_base->getSoldiers()), _doNotReset(false)
 {
 
 	_ftaUI = _game->getMod()->isFTAGame();
@@ -224,7 +225,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(2);
-	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick, 0);
+	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick);
+	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 }
 
 /**
@@ -326,6 +328,14 @@ void AllocateTrainingState::btnPlusClick(Action *action)
 void AllocateTrainingState::init()
 {
 	State::init();
+
+	// coming back from SoldierInfoState
+	if (_doNotReset)
+	{
+		_doNotReset = false;
+		return;
+	}
+
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
 	initList(0);
 }
@@ -390,11 +400,11 @@ void AllocateTrainingState::initList(size_t scrl)
 
 		bool isDone = soldier->isFullyTrained();
 		bool isWounded = soldier->isWounded();
-		bool isQueued = isWounded && soldier->getReturnToTrainingWhenHealed();
 		bool isTraining = soldier->isInTraining();
 		bool isOut = soldier->getCovertOperation() != 0;
 		bool isBusy = soldier->getResearchProject() != 0 || soldier->getProductionProject() != 0 || soldier->getIntelProject() != 0 || soldier->getActivePrisoner() != 0;
 		bool isTransforming = soldier->hasPendingTransformation();
+		bool isQueued = !isTraining && soldier->getReturnToTrainingWhenHealed();
 
 		std::string status;
 		if (isDone)
@@ -488,6 +498,7 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 				soldier->setActivePrisoner(0);
 				soldier->setProductionProject(0);
 				soldier->setResearchProject(0);
+				soldier->setReturnToTrainingWhenHealed(false);
 			}
 		}
 		else
@@ -497,10 +508,12 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 			_space++;
 			_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
 			soldier->setTraining(false);
+			soldier->setReturnToTrainingWhenHealed(false);
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT && _game->getMod()->isFTAGame())
+	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
+		_doNotReset = true;
 		_game->pushState(new SoldierInfoStateFtA(_base, soldier));
 	}
 }
@@ -579,6 +592,7 @@ void AllocateTrainingState::btnAssignAllSoldiersClick(Action* action)
 			soldier->setActivePrisoner(0);
 			soldier->setProductionProject(0);
 			soldier->setResearchProject(0);
+			soldier->setReturnToTrainingWhenHealed(false);
 		}
 		row++;
 	}

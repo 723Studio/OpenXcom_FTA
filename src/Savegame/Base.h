@@ -21,8 +21,9 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include <list>
 #include <cmath>
+#include "../Engine/Yaml.h"
 #include "../Mod/RuleBaseFacilityFunctions.h"
 
 #ifndef BASEFACILITIESITERATOR
@@ -50,6 +51,8 @@ class Production;
 class Vehicle;
 class Ufo;
 class AlienMission;
+class Texture;
+
 enum SoldierRole : int;
 enum UfoDetection : int;
 enum BasePlacementErrors : int
@@ -90,6 +93,8 @@ enum BasePlacementErrors : int
 	BPE_Used_Gyms = 16,
 	/// 17: not enough alien containment
 	BPE_Used_AlienContainment = 17,
+	/// 18: trying to build a facility (from scratch) that can only be built as an upgrade of another facility
+	BPE_UpgradeOnly = 18,
 };
 
 struct BaseSumDailyRecovery
@@ -134,6 +139,7 @@ private:
 	std::map<const RuleBaseFacility*, int> _destroyedFacilitiesCache;
 	RuleBaseFacilityFunctions _provideBaseFunc = 0;
 	RuleBaseFacilityFunctions _forbiddenBaseFunc = 0;
+	const Texture* _globeTexture = nullptr;
 
 	using Target::load;
 public:
@@ -142,14 +148,14 @@ public:
 	/// Cleans up the base.
 	~Base();
 	/// Loads the base from YAML.
-	void load(const YAML::Node& node, SavedGame *save, bool newGame, bool newBattleGame = false);
+	void load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGame, bool newBattleGame = false);
 	/// Finishes loading the base (more specifically all craft in the base) from YAML.
-	void finishLoading(const YAML::Node& node, SavedGame *save);
+	void finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save);
 	void calculateServices(SavedGame* save);
 	/// Tests whether the base facilities are within the base boundaries and not overlapping.
 	bool isOverlappingOrOverflowing();
 	/// Saves the base to YAML.
-	YAML::Node save() const override;
+	void save(YAML::YamlNodeWriter writer) const override;
 	/// Gets the base's type.
 	std::string getType() const override;
 	/// Gets the base's name.
@@ -276,6 +282,8 @@ public:
 	int getMonthlyMaintenace() const;
 	/// Get the list of base's ResearchProject
 	const std::vector<ResearchProject *> & getResearch() const;
+	/// Get the list of base's ResearchProject
+	std::vector<ResearchProject *> & getResearch() { return _research; }
 	/// Add a new ResearchProject to the Base
 	void addResearch(ResearchProject *);
 	/// Remove a ResearchProject from the Base
@@ -353,12 +361,15 @@ public:
 	BasePlacementErrors isAreaInUse(BaseAreaSubset area, const RuleBaseFacility* replacement = nullptr) const;
 	/// Gets available base functionality.
 	RuleBaseFacilityFunctions getProvidedBaseFunc(BaseAreaSubset skip) const;
+	RuleBaseFacilityFunctions getInherentProvidedBaseFunc() const { return _provideBaseFunc; }
 	/// Gets used base functionality.
 	RuleBaseFacilityFunctions getRequireBaseFunc(BaseAreaSubset skip) const;
 	/// Gets forbidden base functionality.
 	RuleBaseFacilityFunctions getForbiddenBaseFunc(BaseAreaSubset skip) const;
+	RuleBaseFacilityFunctions getInherentForbiddenBaseFunc() const { return _forbiddenBaseFunc; }
 	/// Gets future base functionality.
 	RuleBaseFacilityFunctions getFutureBaseFunc(BaseAreaSubset skip) const;
+	RuleBaseFacilityFunctions getInherentFutureBaseFunc() const { return _provideBaseFunc; }
 	/// Checks if it is possible to build another facility of a given type.
 	bool isMaxAllowedLimitReached(RuleBaseFacility *rule) const;
 
@@ -366,17 +377,28 @@ public:
 	BaseSumDailyRecovery getSumRecoveryPerDay() const;
 	/// Removes a craft from the base.
 	std::vector<Craft*>::iterator removeCraft(Craft *craft, bool unload);
-
-	// Base intelligence bonuses.
+	/// Gets base intelligence bonuses.
 	int getOperationBoost() const { return _operationsBonus; }
+	/// Sets operation bonus.
 	void setOperationBonus(int bonus) { _operationsBonus = bonus; }
+	/// Gets tracking bonus.
 	int getTrackingBonus() const { return _trackingBonus; }
+	/// Gets real tracking bonus.
 	int getTrackingBonusReal() const;
+	/// Sets tracking bonus.
 	void setTrackingBonus(int bonus) { _trackingBonus = bonus; }
+	/// Gets deployment hints bonus.
 	int getDeploymentsHints() const { return _deploymentHintsBonus; }
+	/// Sets deployment hints bonus.
 	void setDeploymentsHintsBonus(int bonus) { _deploymentHintsBonus = bonus; }
+	/// Gets the base's radar strength.
 	int getRadarStrength() const;
+	/// Gets the base's global radar strength.
 	int getGlobalRadarStrength() const;
+	/// Gets the base's globe texture.
+	const Texture* getGlobeTexture() const { return _globeTexture; }
+	/// Sets the base's globe texture.
+	void setGlobeTexture(const Texture* globeTexture) { _globeTexture = globeTexture; }
 };
 
 }

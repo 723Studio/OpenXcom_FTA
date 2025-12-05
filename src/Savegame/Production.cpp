@@ -36,7 +36,8 @@
 
 namespace OpenXcom
 {
-Production::Production(const RuleManufacture * rules, int amount) : _rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false)
+Production::Production(const RuleManufacture * rules, int amount) :
+	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false), _isFallback(false)
 {
 	_efficiency = 100;
 }
@@ -218,6 +219,24 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 
 productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating)
 {
+	if (_isFallback)
+	{
+		int availableEngineer = b->getAvailableEngineers();
+		int availableWorkSpace = b->getFreeWorkshops();
+
+		if (isQueuedOnly())
+		{
+			// start counting the workshop space now
+			availableWorkSpace -= _rules->getRequiredSpace();
+		}
+		if (availableEngineer > 0 && availableWorkSpace > 0)
+		{
+			int change = std::min(availableEngineer, availableWorkSpace);
+			setAssignedEngineers(getAssignedEngineers() + change);
+			b->setEngineers(b->getEngineers() - change);
+		}
+	}
+
 	int done = getAmountProduced();
 	int progress = getProgress(b, g, m, rating);
 	_timeSpent += progress;
@@ -242,10 +261,21 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 				Craft *craft = new Craft(ruleCraft, b, g->getId(ruleCraft->getType()));
 				craft->initFixedWeapons(m);
 				craft->checkup();
-				b->getCrafts()->push_back(craft);
+				int transferTimeCraft = std::max(0, _rules->getTransferTimes().size() < 3 ? 0 : _rules->getTransferTimes().at(2));
+				if (transferTimeCraft > 0)
+				{
+					Transfer* t = new Transfer(transferTimeCraft);
+					t->setCraft(craft);
+					b->getTransfers()->push_back(t);
+				}
+				else
+				{
+					b->getCrafts()->push_back(craft);
+				}
 			}
 			else
 			{
+				int transferTimeItems = std::max(0, _rules->getTransferTimes().empty() ? 0 : _rules->getTransferTimes().front());
 				for (const auto& i : _rules->getProducedItems())
 				{
 					if (getSellItems())
@@ -256,17 +286,26 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					}
 					else
 					{
-						b->getStorageItems()->addItem(i.first, i.second);
+						if (transferTimeItems > 0)
+						{
+							Transfer* t = new Transfer(transferTimeItems);
+							t->setItems(i.first, i.second);
+							b->getTransfers()->push_back(t);
+						}
+						else
+						{
+							b->getStorageItems()->addItem(i.first, i.second);
+							if (i.first->getBattleType() == BT_NONE)
+							{
+								for (auto* c : *b->getCrafts())
+								{
+									c->reuseItem(i.first);
+								}
+							}
+						}
 						if (!_rules->getRandomProducedItems().empty())
 						{
 							_randomProductionInfo[i.first->getType()] += i.second;
-						}
-						if (i.first->getBattleType() == BT_NONE)
-						{
-							for (auto* c : *b->getCrafts())
-							{
-								c->reuseItem(i.first);
-							}
 						}
 					}
 				}
@@ -274,6 +313,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 			// Random manufacture
 			if (!_rules->getRandomProducedItems().empty())
 			{
+				int transferTimeItems = std::max(0, _rules->getTransferTimes().empty() ? 0 : _rules->getTransferTimes().front());
 				int totalWeight = 0;
 				for (const auto& itemSet : _rules->getRandomProducedItems())
 				{
@@ -289,15 +329,24 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					{
 						for (const auto& i : itemSet.second)
 						{
-							b->getStorageItems()->addItem(i.first, i.second);
-							_randomProductionInfo[i.first->getType()] += i.second;
-							if (i.first->getBattleType() == BT_NONE)
+							if (transferTimeItems > 0)
 							{
-								for (auto* c : *b->getCrafts())
+								Transfer* t = new Transfer(transferTimeItems);
+								t->setItems(i.first, i.second);
+								b->getTransfers()->push_back(t);
+							}
+							else
+							{
+								b->getStorageItems()->addItem(i.first, i.second);
+								if (i.first->getBattleType() == BT_NONE)
 								{
-									c->reuseItem(i.first);
+									for (auto* c : *b->getCrafts())
+									{
+										c->reuseItem(i.first);
+									}
 								}
 							}
+							_randomProductionInfo[i.first->getType()] += i.second;
 						}
 						// break outer loop
 						break;
@@ -308,15 +357,16 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 			const std::string &spawnedPersonType = _rules->getSpawnedPersonType();
 			if (spawnedPersonType != "")
 			{
+				int transferTimePersonnel = std::max(1, _rules->getTransferTimes().size() < 2 ? 24 : _rules->getTransferTimes().at(1));
 				if (spawnedPersonType == "STR_SCIENTIST")
 				{
-					Transfer *t = new Transfer(24);
+					Transfer *t = new Transfer(transferTimePersonnel);
 					t->setScientists(1);
 					b->getTransfers()->push_back(t);
 				}
 				else if (spawnedPersonType == "STR_ENGINEER")
 				{
-					Transfer *t = new Transfer(24);
+					Transfer *t = new Transfer(transferTimePersonnel);
 					t->setEngineers(1);
 					b->getTransfers()->push_back(t);
 				}
@@ -325,9 +375,11 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 					const RuleSoldier *rule = m->getSoldier(spawnedPersonType);
 					if (rule != 0)
 					{
+						Transfer *t = new Transfer(transferTimePersonnel);
 						int nationality = g->selectSoldierNationalityByLocation(m, rule, b);
 						Soldier *s = m->genSoldier(g, rule, nationality);
-						s->load(_rules->getSpawnedSoldierTemplate(), m, g, m->getScriptGlobal(), true); // load from soldier template
+						YAML::YamlRootNodeReader reader(_rules->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+						s->load(reader, m, g, m->getScriptGlobal(), true); // load from soldier template
 						if (_rules->getSpawnedPersonName() != "")
 						{
 							s->setName(lang->getString(_rules->getSpawnedPersonName()));
@@ -427,36 +479,35 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 	//}
 }
 
-YAML::Node Production::save() const
+void Production::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["item"] = getRules()->getName();
-	node["assigned"] = getAssignedEngineers();
-	node["spent"] = getTimeSpent();
-	node["amount"] = getAmountTotal();
-	node["infinite"] = getInfiniteAmount();
-	node["efficiency"] = getEfficiency();
+	writer.setAsMap();
+	writer.write("item", getRules()->getName());
+	writer.write("assigned", getAssignedEngineers());
+	writer.write("spent", getTimeSpent());
+	writer.write("amount", getAmountTotal());
+	writer.write("infinite", getInfiniteAmount());
+	writer.wite("efficiency", _efficiency);
 	if (getSellItems())
-		node["sell"] = getSellItems();
+		writer.write("sell", getSellItems());
+	if (_isFallback)
+		writer.write("isFallback", _isFallback);
 	if (!_rules->getRandomProducedItems().empty())
-	{
-		node["randomProductionInfo"] = _randomProductionInfo;
-	}
-
-	return node;
+		writer.write("randomProductionInfo", _randomProductionInfo);
 }
 
-void Production::load(const YAML::Node &node)
+void Production::load(const YAML::YamlNodeReader& reader)
 {
-	setAssignedEngineers(node["assigned"].as<int>(getAssignedEngineers()));
-	setTimeSpent(node["spent"].as<int>(getTimeSpent()));
-	setAmountTotal(node["amount"].as<int>(getAmountTotal()));
-	setInfiniteAmount(node["infinite"].as<bool>(getInfiniteAmount()));
-	setSellItems(node["sell"].as<bool>(getSellItems()));
-	setEfficiency(node["efficiency"].as<bool>(getEfficiency()));
+	setAssignedEngineers(reader["assigned"].readVal(getAssignedEngineers()));
+	setTimeSpent(reader["spent"].readVal(getTimeSpent()));
+	setAmountTotal(reader["amount"].readVal(getAmountTotal()));
+	setInfiniteAmount(reader["infinite"].readVal(getInfiniteAmount()));
+	setSellItems(reader["sell"].readVal(getSellItems()));
+	setEfficiency(reader["efficiency"].readVal(getEfficiency()));
+	reader.tryRead("isFallback", _isFallback);
 	if (!_rules->getRandomProducedItems().empty())
 	{
-		_randomProductionInfo = node["randomProductionInfo"].as< std::map<std::string, int> >(_randomProductionInfo);
+		_randomProductionInfo = reader["randomProductionInfo"].readVal(_randomProductionInfo);
 	}
 	// backwards compatibility
 	if (getAmountTotal() == INT_MAX)

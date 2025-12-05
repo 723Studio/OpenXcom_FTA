@@ -92,6 +92,8 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	}
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
+	touchComponentsCreate(_txtTitle, true);
+
 	// Set palette
 	setInterface("craftSoldiers");
 
@@ -108,12 +110,16 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_cbxSortBy, "button", "craftSoldiers");
 	add(_cbxScreenActions, "button", "craftSoldiers");
 
+	touchComponentsAdd("button2", "craftSoldiers", _window);
+
 	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "craftSoldiers");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftSoldiersState::btnOkClick);
@@ -126,7 +132,16 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview->onMouseClick((ActionHandler)&CraftSoldiersState::btnPreviewClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	if (Options::oxceBaseTouchButtons)
+	{
+		_txtTitle->setAlign(ALIGN_CENTER);
+		_txtTitle->setText(c->getName(_game->getLanguage()));
+	}
+	else
+	{
+		_txtTitle->setAlign(ALIGN_LEFT);
+		_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	}
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
@@ -308,7 +323,7 @@ CraftSoldiersState::~CraftSoldiersState()
  */
 void CraftSoldiersState::cbxSortByChange(Action *)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
+	bool ctrlPressed = _game->isCtrlPressed(true);
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
@@ -367,7 +382,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
 			}
-			if (_game->isShiftPressed())
+			if (_game->isShiftPressed(true))
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
@@ -522,7 +537,7 @@ void CraftSoldiersState::init()
 {
 	State::init();
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
-	initList(0);
+	initList(_lstSoldiers->getScroll());
 
 	// update the label to indicate presence of a saved craft deployment
 	Craft* c = _base->getCrafts()->at(_craft);
@@ -530,6 +545,8 @@ void CraftSoldiersState::init()
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW_SAVED"));
 	else
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -544,7 +561,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		return;
 	}
 	int row = _lstSoldiers->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
 
@@ -616,6 +633,14 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
+			else if (err == CPE_ArmorGroupNotAllowed)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_ARMOR_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_SoldierPendingTransformation)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
 			else if (err == CPE_NotEnoughSpace)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"),
@@ -629,7 +654,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	else if (_game->isRightClick(action, true))
 	{
 		if (_ftaUI)
 		{

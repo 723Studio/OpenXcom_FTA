@@ -45,7 +45,7 @@ keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZero
 // Extra hotkeys (OXCE)
 OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment,
 	keyGraphsZoomIn, keyGraphsZoomOut,
-	keyToggleQuickSearch,
+	keyToggleQuickSearch, keyInstaSave,
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
 	keyMarkAllAsSeen,
 	keySellAll, keySellAllButOne,
@@ -54,8 +54,9 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyRemoveEquipmentFromCraft,
 	keyRemoveArmorFromCraft, keyRemoveArmorFromAllCrafts,
 	keyRemoveSoldiersFromTraining, keyAddSoldiersToTraining,
-	keyInventoryArmor, keyInventoryAvatar, keyInventorySave, keyInventoryLoad,
+	keyInventoryArmor, keyInventoryAvatar, keyInventoryDiaryLight, keyInventorySave, keyInventoryLoad,
 	keyInvSavePersonalEquipment, keyInvLoadPersonalEquipment, keyInvShowPersonalEquipment,
+	keyBattleUnitUp, keyBattleUnitDown,
 	keyBattleShowLayers,
 	keyBattleUseSpecial,
 	keyBattleActionItem1, keyBattleActionItem2, keyBattleActionItem3, keyBattleActionItem4, keyBattleActionItem5,
@@ -67,11 +68,17 @@ OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers,
 // OXCE, accessible via GUI
 OPT bool oxceUpdateCheck;
 OPT int autosaveSlots;
+OPT int oxceGeoAutosaveFrequency;
+OPT int oxceGeoAutosaveSlots;
 OPT bool oxceLinks;
+OPT bool oxceLinksDisableTextEdit;
 OPT bool oxceFatFingerLinks;
+OPT bool oxceBattleTouchButtonsEnabled;
+OPT bool oxceQuickSearchButton;
 OPT bool oxceHighlightNewTopics;
 OPT bool oxcePediaShowClipSize;
 
+OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
 OPT int oxceShowETAMode;
@@ -94,9 +101,13 @@ OPT int oxceWoundedDefendBaseIf;
 OPT bool oxcePlayBriefingMusicDuringEquipment;
 OPT int oxceNightVisionColor;
 OPT int oxceAutoNightVisionThreshold;
+OPT int oxceShowAccuracyOnCrosshair;
+OPT int oxceReactionFireThreshold;
 OPT bool oxceAutoSell;
 OPT bool oxceAutomaticPromotions;
 OPT bool oxceEnableOffCentreShooting;
+OPT bool oxceUniformShootingSpread;
+OPT int oxceCrashedOrLanded;
 
 // OXCE hidden, accessible only via options.cfg
 /**
@@ -108,6 +119,7 @@ OPT bool oxceRawScreenShots;
 OPT bool oxceFirstPersonViewFisheyeProjection;
 OPT bool oxceThumbButtons;
 OPT int oxceThrottleMouseMoveEvent;
+OPT bool oxceDisableThinkingProgressBar;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
@@ -120,9 +132,19 @@ OPT int oxceStartUpTextMode;
 
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
+OPT bool oxceGeoShowScoreInsteadOfFunds;
+OPT bool oxceGeoEnableTrainingIndicator;
+OPT bool oxceGeoSuppressRedundantHKAlert;
+OPT bool oxceGeoSuppressLandingWithoutEquipment;
+OPT bool oxceGeoGoToNearestBase;
+OPT bool oxceGeoSortCraftByDistanceToTarget;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
-OPT int oxceBaseManufactureInfinityButton;
+OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
+OPT bool oxceBaseFilterResearchable;
+OPT bool oxceBaseManufactureFallbackButton;
+OPT bool oxceBaseManufactureInfinityButton;
+OPT bool oxceBaseTouchButtons;
 
 OPT bool oxceDisableAlienInventory;
 OPT bool oxceDisableHitLog;
@@ -136,8 +158,16 @@ OPT int oxceTogglePersonalLightType;
 OPT int oxceToggleNightVisionType;
 OPT int oxceToggleBrightnessType;
 
+OPT bool oxceShowBurningAsWounded;
+OPT bool oxceDisableInfoOnThrowCursor;
+OPT bool oxceSwapDontReselectActions;
 OPT bool oxceEnableUnitResponseSounds;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
+OPT bool oxceInventoryShowUnitSlot;
+OPT bool oxceReplaceNotesLink;
+
+OPT bool oxceInventorySplitScrollButton;
+OPT bool oxceInventoryDropItemOverPaperdoll;
 
 OPT int oxceMaxEquipmentLayoutTemplates;
 
@@ -147,3 +177,5 @@ OPT int newDisplayWidth, newDisplayHeight, newBattlescapeScale, newGeoscapeScale
 OPT std::string newOpenGLShader;
 OPT std::vector< std::pair<std::string, bool> > mods; // ordered list of available mods (lowest priority to highest) and whether they are active
 OPT SoundFormat currentSound;
+
+OPT int battleXcomSpeedOrig;

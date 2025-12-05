@@ -199,7 +199,7 @@ MonthlyReportState::MonthlyReportState(Globe *globe) : _gameOver(0), _ratingTota
 	ss2 << tr("STR_MAINTENANCE") << "> " << Unicode::TOK_COLOR_FLIP << Unicode::formatFunding(_game->getSavedGame()->getBaseMaintenance());
 	_txtMaintenance->setText(ss2.str());
 
-	int performanceBonus = _ratingTotal * _game->getMod()->getPerformanceBonusFactor();
+	int performanceBonus = _game->getMod()->getPerformanceBonus(_ratingTotal);
 	if (performanceBonus > 0)
 	{
 		// increase funds by performance bonus
@@ -331,7 +331,7 @@ void MonthlyReportState::btnOkClick(Action *)
 			{
 				// Award medals to eligible soldiers
 				soldier->getDiary()->addMonthlyService();
-				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
+				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame(), soldier))
 				{
 					_soldiersMedalled.push_back(soldier);
 				}

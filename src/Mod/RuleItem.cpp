@@ -148,22 +148,27 @@ const float TilesToVexels = 16.0f;
  * @param listOrder
  */
 RuleItem::RuleItem(const std::string &type, int listOrder) :
-	_type(type), _name(type), _vehicleUnit(nullptr), _size(0.0),
-	_monthlyBuyLimit(0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _costDispose(0), _throwRange(0), _underwaterThrowRange(0), _stackSize(1),
+	_type(type), _name(type), _vehicleUnit(nullptr), _vehicleFixedAmmoSlot(0), _size(0.0),
+	_monthlyBuyLimit(0), _costBuy(0), _costSell(0), _transferTime(24), _weight(3), _costDispose(0), _throwRange(200), _underwaterThrowRange(200), _stackSize(1),
+	_throwDropoffRange(99), _underwaterThrowDropoffRange(99), _throwDropoff(5),
 	_bigSprite(-1), _floorSprite(-1), _handSprite(120), _bulletSprite(-1), _specialIconSprite(-1),
 	_hitAnimation(0), _hitAnimFrames(-1), _hitMissAnimation(-1), _hitMissAnimFrames(-1),
 	_meleeAnimation(0), _meleeAnimFrames(-1), _meleeMissAnimation(-1), _meleeMissAnimFrames(-1),
 	_psiAnimation(-1), _psiAnimFrames(-1), _psiMissAnimation(-1), _psiMissAnimFrames(-1),
-	_power(0), _powerForAnimation(0), _hidePower(false), _canBeEquippedInBattle(true), _powerRangeReduction(0), _powerRangeThreshold(0),
+	_power(0), _powerForAnimation(0), _hidePower(false), _canBeEquippedInBattle(true), _ignoreAmmoPower(false), _powerRangeReduction(0), _powerRangeThreshold(0),
 	_coneSize(0), _noiseValue(1), _damageTypeSet(false), _meleeTypeSet(false),
 	_accuracyUse(0), _accuracyMind(0), _accuracyPanic(20), _accuracyThrow(100), _accuracyCloseQuarters(-1),
 	_noLOSAccuracyPenalty(-1),
-	_costUse(25), _costMind(-1, -1), _costPanic(-1, -1), _costThrow(25), _costPrime(50), _costUnprime(25),
+	_explodeInventory(-1),
+	_costUse(25), _costMind({}, {}), _costPanic({}, {}), _costThrow(25), _costPrime(50), _costUnprime(25),
 	_clipSize(0), _specialChance(100), _tuLoad{ }, _tuUnload{ },
 	_battleType(BT_NONE), _fuseType(BFT_NONE), _fuseTriggerEvents{ }, _hiddenOnMinimap(false),
-	_medikitActionName("STR_USE_MEDI_KIT"), _psiAttackName(), _primeActionName("STR_PRIME_GRENADE"), _unprimeActionName(), _primeActionMessage("STR_GRENADE_IS_ACTIVATED"), _unprimeActionMessage("STR_GRENADE_IS_DEACTIVATED"),
-	_twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false), _isCraftTurretAmmo(false),
-	_isExplodingInHands(false), _specialUseEmptyHand(false), _specialUseEmptyHandShow(false),
+	_painKillerActionName("STR_PAIN_KILLER"), _stimulantActionName("STR_STIMULANT"), _healActionName("STR_HEAL"),
+	_medikitActionName("STR_USE_MEDI_KIT"),
+	_psiAttackName(), _primeActionName("STR_PRIME_GRENADE"), _unprimeActionName(),
+	_primeActionMessage("STR_GRENADE_IS_ACTIVATED"), _unprimeActionMessage("STR_GRENADE_IS_DEACTIVATED"),
+	_twoHanded(false), _blockBothHands(false), _fixedWeapon(false), _fixedWeaponShow(false), _isConsumable(false), _isFireExtinguisher(false), _isCraftTurretAmmo(false), _isAmmoRechargeable(false),
+	_specialUseEmptyHand(false), _specialUseEmptyHandShow(false),
 	_defaultInvSlotX(0), _defaultInvSlotY(0), _waypoints(0), _invWidth(1), _invHeight(1),
 	_hackingHp(0), _hackingTu(0), _samplingPower(0),
 	_painKiller(0), _heal(0), _stimulant(0), _medikitType(BMT_NORMAL), _medikitTargetSelf(false), _medikitTargetImmune(false), _medikitTargetMatrix(63),
@@ -172,7 +177,7 @@ RuleItem::RuleItem(const std::string &type, int listOrder) :
 	_aiUseDelay(-1), _aiMeleeHitCount(25),
 	_recover(true), _recoverCorpse(true), _ignoreInBaseDefense(false), _ignoreInCraftEquip(true), _liveAlien(false), _missionObjective(false), _alienArtifact(false),
 	_liveAlienPrisonType(0), _attraction(0), _flatUse(0, 1), _flatThrow(0, 1), _flatPrime(0, 1), _flatUnprime(0, 1), _arcingShot(false),
-	_experienceTrainingMode(ETM_DEFAULT), _manaExperience(0), _listOrder(listOrder),
+	_experienceTrainingMode(ETM_DEFAULT), _manaExperience(0), _loadOrder(0), _listOrder(listOrder),
 	_maxRange(200), _minRange(0), _dropoff(2), _bulletSpeed(0), _explosionSpeed(0), _shotgunPellets(0), _shotgunBehaviorType(0), _shotgunSpread(100), _shotgunChoke(100),
 	_spawnUnitFaction(FACTION_NONE), _zombieUnitFaction(FACTION_HOSTILE),
 	_targetMatrix(7), _convertToCivilian(false),
@@ -201,15 +206,15 @@ RuleItem::RuleItem(const std::string &type, int listOrder) :
 	_confSnap.range = 15;
 	_confAuto.range = 7;
 
-	_confAimed.cost = RuleItemUseCost(0);
-	_confSnap.cost = RuleItemUseCost(0, -1);
-	_confAuto.cost = RuleItemUseCost(0, -1);
-	_confMelee.cost = RuleItemUseCost(0);
+	_confAimed.cost = { 0 };
+	_confSnap.cost = { 0, {} };
+	_confAuto.cost = { 0, {} };
+	_confMelee.cost = { 0 };
 
-	_confAimed.flat = RuleItemUseCost(-1, -1);
-	_confSnap.flat = RuleItemUseCost(-1, -1);
-	_confAuto.flat = RuleItemUseCost(-1, -1);
-	_confMelee.flat = RuleItemUseCost(-1, -1);
+	_confAimed.flat = { {}, {} };
+	_confSnap.flat = { {}, {} };
+	_confAuto.flat = { {}, {} };
+	_confMelee.flat = { {}, {} };
 
 	_confAimed.name = "STR_AIMED_SHOT";
 	_confSnap.name = "STR_SNAP_SHOT";
@@ -228,34 +233,16 @@ RuleItem::~RuleItem()
 }
 
 /**
- * Get optional value (not equal -1) or default one.
- * @param a Optional cost value.
- * @param b Default cost value.
- * @return Final cost.
- */
-RuleItemUseCost RuleItem::getDefault(const RuleItemUseCost& a, const RuleItemUseCost& b) const
-{
-	RuleItemUseCost n;
-	n.Time = a.Time >= 0 ? a.Time : b.Time;
-	n.Energy = a.Energy >= 0 ? a.Energy : b.Energy;
-	n.Morale = a.Morale >= 0 ? a.Morale : b.Morale;
-	n.Health = a.Health >= 0 ? a.Health : b.Health;
-	n.Stun = a.Stun >= 0 ? a.Stun : b.Stun;
-	n.Mana = a.Mana >= 0 ? a.Mana : b.Mana;
-	return n;
-}
-
-/**
  * Load ammo slot with checking correct range.
  * @param result
  * @param node
  * @param parentName
  */
-void RuleItem::loadAmmoSlotChecked(int& result, const YAML::Node& node, const std::string& parentName)
+void RuleItem::loadAmmoSlotChecked(int& result, const YAML::YamlNodeReader& reader, const std::string& parentName)
 {
-	if (node)
+	if (reader)
 	{
-		int s = node.as<int>(result);
+		int s = reader.readVal(result);
 		if (s < AmmoSlotSelfUse || s >= AmmoSlotMax)
 		{
 			Log(LOG_ERROR) << "ammoSlot outside of allowed range in '" << parentName << "'";
@@ -273,25 +260,29 @@ void RuleItem::loadAmmoSlotChecked(int& result, const YAML::Node& node, const st
  * @param node YAML node.
  * @param name Name of action type.
  */
-void RuleItem::loadConfAction(RuleItemAction& a, const YAML::Node& node, const std::string& name) const
+void RuleItem::loadConfAction(RuleItemAction& a, const YAML::YamlNodeReader& reader, const std::string& name) const
 {
-	if (const YAML::Node& conf = node["conf" + name])
+	if (const auto& conf = reader[ryml::to_csubstr("conf" + name)])
 	{
-		a.shots = conf["shots"].as<int>(a.shots);
-		a.spendPerShot = conf["spendPerShot"].as<int>(a.spendPerShot);
-		a.followProjectiles = conf["followProjectiles"].as<bool>(a.followProjectiles);
-		a.name = conf["name"].as<std::string>(a.name);
-		a.shortName = conf["shortName"].as<std::string>(a.shortName);
+
+		conf.tryRead("shots", a.shots);
+		conf.tryRead("spendPerShot", a.spendPerShot);
+		conf.tryRead("followProjectiles", a.followProjectiles);
+		conf.tryRead("name", a.name);
+		conf.tryRead("shortName", a.shortName);
 		loadAmmoSlotChecked(a.ammoSlot, conf["ammoSlot"], _name);
-		a.arcing = conf["arcing"].as<bool>(a.arcing);
+		loadIntNullable(a.ammoZombieUnitChanceOverride, conf["ammoZombieUnitChanceOverride"]);
+		loadIntNullable(a.ammoSpawnUnitChanceOverride, conf["ammoSpawnUnitChanceOverride"]);
+		loadIntNullable(a.ammoSpawnItemChanceOverride, conf["ammoSpawnItemChanceOverride"]);
+		conf.tryRead("arcing", a.arcing);
 	}
 }
 /**
  * Load RuleItemFuseTrigger from yaml.
  */
-void RuleItem::loadConfFuse(RuleItemFuseTrigger& a, const YAML::Node& node, const std::string& name) const
+void RuleItem::loadConfFuse(RuleItemFuseTrigger& a, const YAML::YamlNodeReader& reader, const std::string& name) const
 {
-	if (const YAML::Node& conf = node[name])
+	if (const auto& conf = reader[ryml::to_csubstr(name)])
 	{
 		loadBool(a.defaultBehavior, conf["defaultBehavior"]);
 		loadBool(a.throwTrigger, conf["throwTrigger"]);
@@ -319,80 +310,84 @@ void RuleItem::updateCategories(std::map<std::string, std::string> *replacementR
  * @param mod Mod for the item.
  * @param listOrder The list weight for this item.
  */
-void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
+void RuleItem::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript& parsers)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod, parsers);
 	}
 
-	_ufopediaType = node["ufopediaType"].as<std::string>(_ufopediaType);
-	_name = node["name"].as<std::string>(_name);
-	_nameAsAmmo = node["nameAsAmmo"].as<std::string>(_nameAsAmmo);
+	reader.tryRead("ufopediaType", _ufopediaType);
+	reader.tryRead("name", _name);
+	reader.tryRead("nameAsAmmo", _nameAsAmmo);
 
 	//requires
-	_requiresBuyCountry = node["requiresBuyCountry"].as<std::string>(_requiresBuyCountry);
-	mod->loadUnorderedNames(_type, _requiresName, node["requires"]);
-	mod->loadUnorderedNames(_type, _requiresBuyName, node["requiresBuy"]);
-	mod->loadBaseFunction(_type, _requiresBuyBaseFunc, node["requiresBuyBaseFunc"]);
+	reader.tryRead("requiresBuyCountry", _requiresBuyCountry);
+	mod->loadUnorderedNames(_type, _requiresName, reader["requires"]);
+	mod->loadUnorderedNames(_type, _requiresBuyName, reader["requiresBuy"]);
+	mod->loadBaseFunction(_type, _requiresBuyBaseFunc, reader["requiresBuyBaseFunc"]);
 
 
-	mod->loadUnorderedNamesToInt(_type, _recoveryDividers, node["recoveryDividers"]);
-	_recoveryTransformationsName = node["recoveryTransformations"].as< std::map<std::string, std::vector<int> > >(_recoveryTransformationsName);
-	_reputationRequirements = node["reputationRequirements"].as<std::map<std::string, int>>(_reputationRequirements);
-	mod->loadUnorderedNames(_type, _categories, node["categories"]);
-	_size = node["size"].as<double>(_size);
-	_monthlyBuyLimit = node["monthlyBuyLimit"].as<int>(_monthlyBuyLimit);
-	_costBuy = node["costBuy"].as<int>(_costBuy);
-	_costSell = node["costSell"].as<int>(_costSell);
-	_costDispose = node["costDispose"].as<int>(_costDispose);
-	_transferTime = node["transferTime"].as<int>(_transferTime);
-	_weight = node["weight"].as<int>(_weight);
-	_throwRange = node["throwRange"].as<int>(_throwRange);
-	_underwaterThrowRange = node["underwaterThrowRange"].as<int>(_underwaterThrowRange);
-	_stackSize = node["stackSize"].as<int>(_stackSize);
-	_missionObjective = node["missionObjective"].as<bool>(_missionObjective);
-	_alienArtifact = node["alienArtifact"].as<bool>(_alienArtifact);
-	_extendedItemReloadCostLocal = node["extendedItemReloadCostLocal"].as<int>(_extendedItemReloadCostLocal);
+	mod->loadUnorderedNamesToInt(_type, _recoveryDividers, reader["recoveryDividers"]);
+	reader.tryRead("recoveryTransformations", _recoveryTransformationsName);
+	mod->loadUnorderedNames(_type, _categories, reader["categories"]);
 
+	reader.tryRead("vehicleFixedAmmoSlot", _vehicleFixedAmmoSlot);
+	reader.tryRead("size", _size);
+	reader.tryRead("monthlyBuyLimit", _monthlyBuyLimit);
+	reader.tryRead("costBuy", _costBuy);
+	reader.tryRead("costSell", _costSell);
+	reader.tryRead("costDispose", _costDispose);
+	reader.tryRead("transferTime", _transferTime);
+	reader.tryRead("weight", _weight);
+	reader.tryRead("stackSize", _stackSize);
+	reader.tryRead("missionObjective", _missionObjective);
+	reader.tryRead("alienArtifact", _alienArtifact);
+	reader.tryRead("extendedItemReloadCostLocal", _extendedItemReloadCostLocal);
+	reader.tryRead("throwRange", _throwRange);
+	reader.tryRead("underwaterThrowRange", _underwaterThrowRange);
+	reader.tryRead("throwDropoffRange", _throwDropoffRange);
+	reader.tryRead("underwaterThrowDropoffRange", _underwaterThrowDropoffRange);
+	reader.tryRead("throwDropoff", _throwDropoff);
 
-	mod->loadSpriteOffset(_type, _bigSprite, node["bigSprite"], "BIGOBS.PCK");
-	mod->loadSpriteOffset(_type, _floorSprite, node["floorSprite"], "FLOOROB.PCK");
-	mod->loadSpriteOffset(_type, _handSprite, node["handSprite"], "HANDOB.PCK");
+	mod->loadSpriteOffset(_type, _bigSprite, reader["bigSprite"], "BIGOBS.PCK");
+	mod->loadSpriteOffset(_type, _floorSprite, reader["floorSprite"], "FLOOROB.PCK");
+	mod->loadSpriteOffset(_type, _handSprite, reader["handSprite"], "HANDOB.PCK");
 	// Projectiles: 0-384 entries ((105*33) / (3*3)) (35 sprites per projectile(0-34), 11 projectiles (0-10))
-	mod->loadSpriteOffset(_type, _bulletSprite, node["bulletSprite"], "Projectiles", 35);
-	mod->loadSpriteOffset(_type, _specialIconSprite, node["specialIconSprite"], "SPICONS.DAT");
+	mod->loadSpriteOffset(_type, _bulletSprite, reader["bulletSprite"], "Projectiles", 35);
+	mod->loadSpriteOffset(_type, _specialIconSprite, reader["specialIconSprite"], "SPICONS.DAT");
 
-	mod->loadSoundOffset(_type, _reloadSound, node["reloadSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _primeSound, node["primeSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _unprimeSound, node["unprimeSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _fireSound, node["fireSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _hitSound, node["hitSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _hitMissSound, node["hitMissSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _meleeSound, node["meleeSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _meleeHitSound, node["meleeHitSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _meleeMissSound, node["meleeMissSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _psiSound, node["psiSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _psiMissSound, node["psiMissSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _explosionHitSound, node["explosionHitSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _reloadSound, reader["reloadSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _primeSound, reader["primeSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _unprimeSound, reader["unprimeSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _fireSound, reader["fireSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _hitSound, reader["hitSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _hitMissSound, reader["hitMissSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _meleeSound, reader["meleeSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _meleeHitSound, reader["meleeHitSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _meleeMissSound, reader["meleeMissSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _psiSound, reader["psiSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _psiMissSound, reader["psiMissSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _explosionHitSound, reader["explosionHitSound"], "BATTLE.CAT");
 
-	mod->loadSpriteOffset(_type, _hitAnimation, node["hitAnimation"], "SMOKE.PCK");
-	mod->loadSpriteOffset(_type, _hitMissAnimation, node["hitMissAnimation"], "SMOKE.PCK");
-	mod->loadSpriteOffset(_type, _meleeAnimation, node["meleeAnimation"], "HIT.PCK");
-	mod->loadSpriteOffset(_type, _meleeMissAnimation, node["meleeMissAnimation"], "HIT.PCK");
-	mod->loadSpriteOffset(_type, _psiAnimation, node["psiAnimation"], "HIT.PCK");
-	mod->loadSpriteOffset(_type, _psiMissAnimation, node["psiMissAnimation"], "HIT.PCK");
+	mod->loadSpriteOffset(_type, _hitAnimation, reader["hitAnimation"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _hitMissAnimation, reader["hitMissAnimation"], "SMOKE.PCK");
+	mod->loadSpriteOffset(_type, _meleeAnimation, reader["meleeAnimation"], "HIT.PCK");
+	mod->loadSpriteOffset(_type, _meleeMissAnimation, reader["meleeMissAnimation"], "HIT.PCK");
+	mod->loadSpriteOffset(_type, _psiAnimation, reader["psiAnimation"], "HIT.PCK");
+	mod->loadSpriteOffset(_type, _psiMissAnimation, reader["psiMissAnimation"], "HIT.PCK");
 
-	_hitAnimFrames = node["hitAnimFrames"].as<int>(_hitAnimFrames);
-	_hitMissAnimFrames = node["hitMissAnimFrames"].as<int>(_hitMissAnimFrames);
-	_meleeAnimFrames = node["meleeAnimFrames"].as<int>(_meleeAnimFrames);
-	_meleeMissAnimFrames = node["meleeMissAnimFrames"].as<int>(_meleeMissAnimFrames);
-	_psiAnimFrames = node["psiAnimFrames"].as<int>(_psiAnimFrames);
-	_psiMissAnimFrames = node["psiMissAnimFrames"].as<int>(_psiMissAnimFrames);
+	reader.tryRead("hitAnimFrames", _hitAnimFrames);
+	reader.tryRead("hitMissAnimFrames", _hitMissAnimFrames);
+	reader.tryRead("meleeAnimFrames", _meleeAnimFrames);
+	reader.tryRead("meleeMissAnimFrames", _meleeMissAnimFrames);
+	reader.tryRead("psiAnimFrames", _psiAnimFrames);
+	reader.tryRead("psiMissAnimFrames", _psiMissAnimFrames);
 
-	if (node["battleType"])
+	if (reader["battleType"])
 	{
-		_battleType = (BattleType)node["battleType"].as<int>(_battleType);
+		reader.tryRead("battleType", _battleType);
 		_ignoreInCraftEquip = !isUsefulBattlescapeItem();
 
 		if (_battleType == BT_PSIAMP)
@@ -440,32 +435,32 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
 		_meleeTypeSet = true;
 	}
 
-	if (const YAML::Node &type = node["damageType"])
+	if (const auto& type = reader["damageType"])
 	{
 		//load predefined damage type
-		_damageType = *mod->getDamageType((ItemDamageType)type.as<int>());
+		_damageType = *mod->getDamageType((ItemDamageType)type.readVal<int>());
 		_damageTypeSet = true;
 	}
-	_damageType.FixRadius = node["blastRadius"].as<int>(_damageType.FixRadius);
-	if (const YAML::Node &alter = node["damageAlter"])
+	reader.tryRead("blastRadius", _damageType.FixRadius);
+	if (const auto& alter = reader["damageAlter"])
 	{
 		_damageType.load(alter);
 	}
 
-	if (const YAML::Node &type = node["meleeType"])
+	if (const auto& type = reader["meleeType"])
 	{
 		//load predefined damage type
-		_meleeType = *mod->getDamageType((ItemDamageType)type.as<int>());
+		_meleeType = *mod->getDamageType((ItemDamageType)type.readVal<int>());
 		_meleeTypeSet = true;
 	}
-	if (const YAML::Node &alter = node["meleeAlter"])
+	if (const auto& alter = reader["meleeAlter"])
 	{
 		_meleeType.load(alter);
 	}
 
-	if (const YAML::Node &skill = node["skillApplied"])
+	if (const auto& skill = reader["skillApplied"])
 	{
-		if (skill.as<bool>(false))
+		if (skill.readVal(false))
 		{
 			_meleeMulti.setMelee();
 		}
@@ -475,87 +470,233 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
 			_meleeMulti.setModded(true); // vanilla default = true
 		}
 	}
-	if (node["strengthApplied"].as<bool>(false))
+	if (reader["strengthApplied"].readVal(false))
 	{
 		_damageBonus.setStrength();
 		_damageBonus.setModded(true); // vanilla default = false
 	}
 
-	_power = node["power"].as<int>(_power);
-	_powerForAnimation = node["powerForAnimation"].as<int>(_powerForAnimation);
-	_hidePower = node["hidePower"].as<bool>(_hidePower);
-	_canBeEquippedInBattle = node["canBeEquippedInBattle"].as<bool>(_canBeEquippedInBattle);
-	_coneSize = node["coneSize"].as<int>(_coneSize);
-	_noiseValue = node["noiseValue"].as<int>(_noiseValue);
-	_medikitActionName = node["medikitActionName"].as<std::string>(_medikitActionName);
-	_psiAttackName = node["psiAttackName"].as<std::string>(_psiAttackName);
-	_primeActionName = node["primeActionName"].as<std::string>(_primeActionName);
-	_primeActionMessage = node["primeActionMessage"].as<std::string>(_primeActionMessage);
-	_unprimeActionName = node["unprimeActionName"].as<std::string>(_unprimeActionName);
-	_unprimeActionMessage = node["unprimeActionMessage"].as<std::string>(_unprimeActionMessage);
-	_fuseType = (BattleFuseType)node["fuseType"].as<int>(_fuseType);
-	_hiddenOnMinimap = node["hiddenOnMinimap"].as<bool>(_hiddenOnMinimap);
-	_clipSize = node["clipSize"].as<int>(_clipSize);
+	reader.tryRead("power", _power);
+	reader.tryRead("powerForAnimation", _powerForAnimation);
+	reader.tryRead("hidePower", _hidePower);
+	reader.tryRead("canBeEquippedInBattle", _canBeEquippedInBattle);
+	reader.tryRead("coneSize", _coneSize);
+	reader.tryRead("noiseValue", _noiseValue);
+	reader.tryRead("ignoreAmmoPower", _ignoreAmmoPower);
+	reader.tryRead("painKillerActionName", _painKillerActionName);
+	reader.tryRead("stimulantActionName", _stimulantActionName);
+	reader.tryRead("healActionName", _healActionName);
+	reader.tryRead("medikitActionName", _medikitActionName);
+	reader.tryRead("psiAttackName", _psiAttackName);
+	reader.tryRead("primeActionName", _primeActionName);
+	reader.tryRead("primeActionMessage", _primeActionMessage);
+	reader.tryRead("unprimeActionName", _unprimeActionName);
+	reader.tryRead("unprimeActionMessage", _unprimeActionMessage);
+	reader.tryRead("sellActionMessage", _sellActionMessage);
+	reader.tryRead("fuseType", _fuseType);
+	reader.tryRead("hiddenOnMinimap", _hiddenOnMinimap);
+	reader.tryRead("clipSize", _clipSize);
 
-	loadConfFuse(_fuseTriggerEvents, node, "fuseTriggerEvents");
+	loadConfFuse(_fuseTriggerEvents, reader, "fuseTriggerEvents");
 
-	_confAimed.accuracy = node["accuracyAimed"].as<int>(_confAimed.accuracy);
-	_confAuto.accuracy = node["accuracyAuto"].as<int>(_confAuto.accuracy);
-	_confSnap.accuracy = node["accuracySnap"].as<int>(_confSnap.accuracy);
-	_confMelee.accuracy = node["accuracyMelee"].as<int>(_confMelee.accuracy);
-	_accuracyUse = node["accuracyUse"].as<int>(_accuracyUse);
-	_accuracyMind = node["accuracyMindControl"].as<int>(_accuracyMind);
-	_accuracyPanic = node["accuracyPanic"].as<int>(_accuracyPanic);
-	_accuracyThrow = node["accuracyThrow"].as<int>(_accuracyThrow);
-	_accuracyCloseQuarters = node["accuracyCloseQuarters"].as<int>(_accuracyCloseQuarters);
-	_noLOSAccuracyPenalty = node["noLOSAccuracyPenalty"].as<int>(_noLOSAccuracyPenalty);
+	reader.tryRead("accuracyAimed", _confAimed.accuracy);
+	reader.tryRead("accuracyAuto", _confAuto.accuracy);
+	reader.tryRead("accuracySnap", _confSnap.accuracy);
+	reader.tryRead("accuracyMelee", _confMelee.accuracy);
+	reader.tryRead("accuracyUse", _accuracyUse);
+	reader.tryRead("accuracyMindControl", _accuracyMind);
+	reader.tryRead("accuracyPanic", _accuracyPanic);
+	reader.tryRead("accuracyThrow", _accuracyThrow);
+	reader.tryRead("accuracyCloseQuarters", _accuracyCloseQuarters);
+	reader.tryRead("noLOSAccuracyPenalty", _noLOSAccuracyPenalty);
+	if (reader["isExplodingInHands"])
+	{
+		// FIXME: backwards-compatibility only, remove in 2026
+		bool tmpBool = false;
+		reader.tryRead("isExplodingInHands", tmpBool);
+		_explodeInventory = tmpBool ? 2 : 0;
+	}
+	reader.tryRead("explodeInventory", _explodeInventory);
 
-	_confAimed.cost.loadCost(node, "Aimed");
-	_confAuto.cost.loadCost(node, "Auto");
-	_confSnap.cost.loadCost(node, "Snap");
-	_confMelee.cost.loadCost(node, "Melee");
-	_costUse.loadCost(node, "Use");
-	_costMind.loadCost(node, "MindControl");
-	_costPanic.loadCost(node, "Panic");
-	_costThrow.loadCost(node, "Throw");
-	_costPrime.loadCost(node, "Prime");
-	_costUnprime.loadCost(node, "Unprime");
+	_confAimed.cost.loadCost(reader, "Aimed");
+	_confAuto.cost.loadCost(reader, "Auto");
+	_confSnap.cost.loadCost(reader, "Snap");
+	_confMelee.cost.loadCost(reader, "Melee");
+	_costUse.loadCost(reader, "Use");
+	_costMind.loadCost(reader, "MindControl");
+	_costPanic.loadCost(reader, "Panic");
+	_costThrow.loadCost(reader, "Throw");
+	_costPrime.loadCost(reader, "Prime");
+	_costUnprime.loadCost(reader, "Unprime");
 
-	loadBoolNullable(_flatUse.Time, node["flatRate"]);
+	reader.tryRead("flatRate", _flatUse.Time);
 
-	_confAimed.flat.loadPercent(node, "Aimed");
-	_confAuto.flat.loadPercent(node, "Auto");
-	_confSnap.flat.loadPercent(node, "Snap");
-	_confMelee.flat.loadPercent(node, "Melee");
-	_flatUse.loadPercent(node, "Use");
-	_flatThrow.loadPercent(node, "Throw");
-	_flatPrime.loadPercent(node, "Prime");
-	_flatUnprime.loadPercent(node, "Unprime");
+	_confAimed.flat.loadFlat(reader, "Aimed");
+	_confAuto.flat.loadFlat(reader, "Auto");
+	_confSnap.flat.loadFlat(reader, "Snap");
+	_confMelee.flat.loadFlat(reader, "Melee");
+	_flatUse.loadFlat(reader, "Use");
+	_flatThrow.loadFlat(reader, "Throw");
+	_flatPrime.loadFlat(reader, "Prime");
+	_flatUnprime.loadFlat(reader, "Unprime");
 
-	loadConfAction(_confAimed, node, "Aimed");
-	loadConfAction(_confAuto, node, "Auto");
-	loadConfAction(_confSnap, node, "Snap");
-	loadConfAction(_confMelee, node, "Melee");
+	loadConfAction(_confAimed, reader, "Aimed");
+	loadConfAction(_confAuto, reader, "Auto");
+	loadConfAction(_confSnap, reader, "Snap");
+	loadConfAction(_confMelee, reader, "Melee");
 
-	auto loadAmmoConf = [&](int offset, const YAML::Node &n)
+	auto loadAmmoConf = [&](int offset, const YAML::YamlNodeReader& n)
 	{
 		if (n)
 		{
 			mod->loadUnorderedNames(_type, _compatibleAmmoNames[offset], n["compatibleAmmo"]);
-			_tuLoad[offset] = n["tuLoad"].as<int>(_tuLoad[offset]);
-			_tuUnload[offset] = n["tuUnload"].as<int>(_tuUnload[offset]);
+			n.tryRead("tuLoad", _tuLoad[offset]);
+			n.tryRead("tuUnload", _tuUnload[offset]);
 		}
 	};
 
-	loadAmmoConf(0, node);
-	if (const YAML::Node &nodeAmmo = node["ammo"])
+	loadAmmoConf(0, reader);
+	if (const auto& nodeAmmo = reader["ammo"])
 	{
 		for (int slot = 0; slot < AmmoSlotMax; ++slot)
 		{
-			loadAmmoConf(slot, nodeAmmo[std::to_string(slot)]);
+			loadAmmoConf(slot, nodeAmmo[ryml::to_csubstr(std::to_string(slot))]);
 		}
 	}
 
+	reader.tryRead("specialChance", _specialChance);
+	reader.tryRead("twoHanded", _twoHanded);
+	reader.tryRead("blockBothHands", _blockBothHands);
+	reader.tryRead("waypoints", _waypoints);
+	reader.tryRead("fixedWeapon", _fixedWeapon);
+	reader.tryRead("fixedWeaponShow", _fixedWeaponShow);
+	reader["inventoryMoveCost"]["basePercent"].tryReadVal(_inventoryMoveCostPercent);
+	mod->loadNameNull(_type, _defaultInventorySlotName, reader["defaultInventorySlot"]);
+	reader.tryRead("defaultInvSlotX", _defaultInvSlotX);
+	reader.tryRead("defaultInvSlotY", _defaultInvSlotY);
+	mod->loadUnorderedNames(_type, _supportedInventorySectionsNames, reader["supportedInventorySections"]);
+	reader.tryRead("isConsumable", _isConsumable);
+	reader.tryRead("isCraftTurretAmmo", _isCraftTurretAmmo);
+	reader.tryRead("isFireExtinguisher", _isFireExtinguisher);
+	reader.tryRead("isAmmoRechargeable", _isAmmoRechargeable);
+	reader.tryRead("specialUseEmptyHand", _specialUseEmptyHand);
+	reader.tryRead("specialUseEmptyHandShow", _specialUseEmptyHandShow);
+	reader.tryRead("invWidth", _invWidth);
+	reader.tryRead("invHeight", _invHeight);
+
+	reader.tryRead("painKiller", _painKiller);
+	reader.tryRead("heal", _heal);
+	reader.tryRead("stimulant", _stimulant);
+	reader.tryRead("woundRecovery", _woundRecovery);
+	reader.tryRead("healthRecovery", _healthRecovery);
+	reader.tryRead("stunRecovery", _stunRecovery);
+	reader.tryRead("energyRecovery", _energyRecovery);
+	reader.tryRead("manaRecovery", _manaRecovery);
+	reader.tryRead("moraleRecovery", _moraleRecovery);
+	reader.tryRead("painKillerRecovery", _painKillerRecovery);
+	reader.tryRead("medikitType", _medikitType);
+	reader.tryRead("medikitTargetSelf", _medikitTargetSelf);
+	reader.tryRead("medikitTargetImmune", _medikitTargetImmune);
+	reader.tryRead("medikitTargetMatrix", _medikitTargetMatrix);
+	reader.tryRead("medikitBackground", _medikitBackground);
+
+	reader.tryRead("recoveryPoints", _recoveryPoints);
+	reader.tryRead("armor", _armor);
+	reader.tryRead("turretType", _turretType);
+	if (const auto& nodeAI = reader["ai"])
+	{
+		nodeAI.tryRead("useDelay", _aiUseDelay);
+		nodeAI.tryRead("meleeHitCount", _aiMeleeHitCount);
+	}
+	reader.tryRead("recover", _recover);
+	reader.tryRead("recoverCorpse", _recoverCorpse);
+	reader.tryRead("ignoreInBaseDefense", _ignoreInBaseDefense);
+	reader.tryRead("ignoreInCraftEquip", _ignoreInCraftEquip);
+	reader.tryRead("liveAlien", _liveAlien);
+	reader.tryRead("prisonType", _liveAlienPrisonType);
+	reader.tryRead("attraction", _attraction);
+	reader.tryRead("arcingShot", _arcingShot);
+	reader.tryRead("experienceTrainingMode", _experienceTrainingMode);
+	reader.tryRead("manaExperience", _manaExperience);
+	reader.tryRead("loadOrder", _loadOrder);
+	reader.tryRead("listOrder", _listOrder);
+	reader.tryRead("maxRange", _maxRange);
+	reader.tryRead("aimRange", _confAimed.range);
+	reader.tryRead("autoRange", _confAuto.range);
+	reader.tryRead("snapRange", _confSnap.range);
+	reader.tryRead("minRange", _minRange);
+	reader.tryRead("dropoff", _dropoff);
+	reader.tryRead("bulletSpeed", _bulletSpeed);
+	reader.tryRead("explosionSpeed", _explosionSpeed);
+	reader.tryRead("autoShots", _confAuto.shots);
+	reader.tryRead("shotgunPellets", _shotgunPellets);
+	reader.tryRead("shotgunBehavior", _shotgunBehaviorType);
+	reader.tryRead("shotgunSpread", _shotgunSpread);
+	reader.tryRead("shotgunChoke", _shotgunChoke);
+	reader.tryRead("hackingHp", _hackingHp);
+	reader.tryRead("hackingTu", _hackingTu);
+	reader.tryRead("samplingPower", _samplingPower);
+
+	mod->loadUnorderedNamesToNames(_type, _zombieUnitByArmorMale, reader["zombieUnitByArmorMale"]);
+	mod->loadUnorderedNamesToNames(_type, _zombieUnitByArmorFemale, reader["zombieUnitByArmorFemale"]);
+	mod->loadUnorderedNamesToNames(_type, _zombieUnitByType, reader["zombieUnitByType"]);
+	mod->loadNameNull(_type, _zombieUnit, reader["zombieUnit"]);
+	mod->loadNameNull(_type, _spawnUnitName, reader["spawnUnit"]);
+	mod->loadNameNull(_type, _spawnItemName, reader["spawnItem"]);
+	reader.tryRead("spawnUnitFaction", _spawnUnitFaction);
+	reader.tryRead("zombieUnitFaction", _zombieUnitFaction);
+	loadIntNullable(_spawnUnitChance, reader["spawnUnitChance"]);
+	loadIntNullable(_zombieUnitChance, reader["zombieUnitChance"]);
+	loadIntNullable(_spawnItemChance, reader["spawnItemChance"]);
+
+	// TODO: just backwards-compatibility, remove in 2022, update ruleset validator too
+	reader.tryRead("psiTargetMatrix", _targetMatrix);
+
+	reader.tryRead("targetMatrix", _targetMatrix);
+	reader.tryRead("convertToCivilian", _convertToCivilian);
+	reader.tryRead("LOSRequired", _LOSRequired);
+	reader.tryRead("meleePower", _meleePower);
+	reader.tryRead("underwaterOnly", _underwaterOnly);
+	reader.tryRead("landOnly", _landOnly);
+	reader.tryRead("specialType", _specialType);
+
+	mod->loadTransparencyOffset(_type, _vaporColor, reader["vaporColor"]);
+	reader.tryRead("vaporDensity", _vaporDensity);
+	reader.tryRead("vaporProbability", _vaporProbability);
+
+	mod->loadTransparencyOffset(_type, _vaporColorSurface, reader["vaporColorSurface"]);
+	reader.tryRead("vaporDensitySurface", _vaporDensitySurface);
+	reader.tryRead("vaporProbabilitySurface", _vaporProbabilitySurface);
+
+	mod->loadSpriteOffset(_type, _customItemPreviewIndex, reader["customItemPreviewIndex"], "CustomItemPreviews");
+	reader.tryRead("kneelBonus", _kneelBonus);
+	reader.tryRead("oneHandedPenalty", _oneHandedPenalty);
+	reader.tryRead("monthlySalary", _monthlySalary);
+	reader.tryRead("monthlyMaintenance", _monthlyMaintenance);
+	reader.tryRead("sprayWaypoints", _sprayWaypoints);
+
+	_damageBonus.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::DamageBonusStatBonus>());
+	_meleeBonus.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::MeleeBonusStatBonus>());
+	_accuracyMulti.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::AccuracyMultiplierStatBonus>());
+	_meleeMulti.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::MeleeMultiplierStatBonus>());
+	_throwMulti.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::ThrowMultiplierStatBonus>());
+	_closeQuartersMulti.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::CloseQuarterMultiplierStatBonus>());
+
+	reader.tryRead("powerRangeReduction", _powerRangeReduction);
+	reader.tryRead("powerRangeThreshold", _powerRangeThreshold);
+
+	reader.tryRead("psiRequired", _psiReqiured);
+	reader.tryRead("manaRequired", _manaRequired);
+	_scriptValues.load(reader, parsers.getShared());
+
+	_battleItemScripts.load(_type, reader, parsers.battleItemScripts);
+}
+
+/**
+ * Cross link with other Rules.
+ */
+void RuleItem::afterLoad(const Mod* mod)
+{
 	if ((_battleType == BT_MELEE || _battleType == BT_FIREARM) && _clipSize == 0)
 	{
 		for (RuleItemAction* conf : { &_confAimed, &_confAuto, &_confSnap, &_confMelee, })
@@ -566,146 +707,12 @@ void RuleItem::load(const YAML::Node &node, Mod *mod, const ModScript& parsers)
 			}
 		}
 	}
-	_specialChance = node["specialChance"].as<int>(_specialChance);
-	_twoHanded = node["twoHanded"].as<bool>(_twoHanded);
-	_blockBothHands = node["blockBothHands"].as<bool>(_blockBothHands);
-	_waypoints = node["waypoints"].as<int>(_waypoints);
-	_fixedWeapon = node["fixedWeapon"].as<bool>(_fixedWeapon);
-	_fixedWeaponShow = node["fixedWeaponShow"].as<bool>(_fixedWeaponShow);
-	if (const YAML::Node& cost = node["inventoryMoveCost"])
+
+	// these are good defaults for vanilla
+	if (_loadOrder <= 0)
 	{
-		_inventoryMoveCostPercent = cost["basePercent"].as<int>(_inventoryMoveCostPercent);
+		_loadOrder = _listOrder;
 	}
-	mod->loadNameNull(_type, _defaultInventorySlotName, node["defaultInventorySlot"]);
-	_defaultInvSlotX = node["defaultInvSlotX"].as<int>(_defaultInvSlotX);
-	_defaultInvSlotY = node["defaultInvSlotY"].as<int>(_defaultInvSlotY);
-	mod->loadUnorderedNames(_type, _supportedInventorySectionsNames, node["supportedInventorySections"]);
-	_isConsumable = node["isConsumable"].as<bool>(_isConsumable);
-	_isFireExtinguisher = node["isFireExtinguisher"].as<bool>(_isFireExtinguisher);
-	_isCraftTurretAmmo = node["isCraftTurretAmmo"].as<bool>(_isCraftTurretAmmo);
-	_isExplodingInHands = node["isExplodingInHands"].as<bool>(_isExplodingInHands);
-	_specialUseEmptyHand = node["specialUseEmptyHand"].as<bool>(_specialUseEmptyHand);
-	_specialUseEmptyHandShow = node["specialUseEmptyHandShow"].as<bool>(_specialUseEmptyHandShow);
-	_invWidth = node["invWidth"].as<int>(_invWidth);
-	_invHeight = node["invHeight"].as<int>(_invHeight);
-
-	_painKiller = node["painKiller"].as<int>(_painKiller);
-	_heal = node["heal"].as<int>(_heal);
-	_stimulant = node["stimulant"].as<int>(_stimulant);
-	_woundRecovery = node["woundRecovery"].as<int>(_woundRecovery);
-	_healthRecovery = node["healthRecovery"].as<int>(_healthRecovery);
-	_stunRecovery = node["stunRecovery"].as<int>(_stunRecovery);
-	_energyRecovery = node["energyRecovery"].as<int>(_energyRecovery);
-	_manaRecovery = node["manaRecovery"].as<int>(_manaRecovery);
-	_moraleRecovery = node["moraleRecovery"].as<int>(_moraleRecovery);
-	_painKillerRecovery = node["painKillerRecovery"].as<float>(_painKillerRecovery);
-	_medikitType = (BattleMediKitType)node["medikitType"].as<int>(_medikitType);
-	_medikitTargetSelf = node["medikitTargetSelf"].as<bool>(_medikitTargetSelf);
-	_medikitTargetImmune = node["medikitTargetImmune"].as<bool>(_medikitTargetImmune);
-	_medikitTargetMatrix = node["medikitTargetMatrix"].as<int>(_medikitTargetMatrix);
-	_medikitBackground = node["medikitBackground"].as<std::string>(_medikitBackground);
-
-	_hackingHp = node["hackingHp"].as<int>(_hackingHp);
-	_hackingTu = node["hackingTu"].as<int>(_hackingTu);
-	_samplingPower = node["samplingPower"].as<int>(_samplingPower);
-
-	_recoveryPoints = node["recoveryPoints"].as<int>(_recoveryPoints);
-	_armor = node["armor"].as<int>(_armor);
-	_turretType = node["turretType"].as<int>(_turretType);
-	if (const YAML::Node &nodeAI = node["ai"])
-	{
-		_aiUseDelay = nodeAI["useDelay"].as<int>(_aiUseDelay);
-		_aiMeleeHitCount = nodeAI["meleeHitCount"].as<int>(_aiMeleeHitCount);
-	}
-	_recover = node["recover"].as<bool>(_recover);
-	_recoverCorpse = node["recoverCorpse"].as<bool>(_recoverCorpse);
-	_ignoreInBaseDefense = node["ignoreInBaseDefense"].as<bool>(_ignoreInBaseDefense);
-	_ignoreInCraftEquip = node["ignoreInCraftEquip"].as<bool>(_ignoreInCraftEquip);
-	_liveAlien = node["liveAlien"].as<bool>(_liveAlien);
-	_liveAlienPrisonType = node["prisonType"].as<int>(_liveAlienPrisonType);
-	_attraction = node["attraction"].as<int>(_attraction);
-	_arcingShot = node["arcingShot"].as<bool>(_arcingShot);
-	_experienceTrainingMode = (ExperienceTrainingMode)node["experienceTrainingMode"].as<int>(_experienceTrainingMode);
-	_manaExperience = node["manaExperience"].as<int>(_manaExperience);
-	_listOrder = node["listOrder"].as<int>(_listOrder);
-	_maxRange = node["maxRange"].as<int>(_maxRange);
-	_confAimed.range = node["aimRange"].as<int>(_confAimed.range);
-	_confAuto.range = node["autoRange"].as<int>(_confAuto.range);
-	_confSnap.range = node["snapRange"].as<int>(_confSnap.range);
-	_minRange = node["minRange"].as<int>(_minRange);
-	_dropoff = node["dropoff"].as<int>(_dropoff);
-	_bulletSpeed = node["bulletSpeed"].as<int>(_bulletSpeed);
-	_explosionSpeed = node["explosionSpeed"].as<int>(_explosionSpeed);
-	_confAuto.shots = node["autoShots"].as<int>(_confAuto.shots);
-	_shotgunPellets = node["shotgunPellets"].as<int>(_shotgunPellets);
-	_shotgunBehaviorType = node["shotgunBehavior"].as<int>(_shotgunBehaviorType);
-	_shotgunSpread = node["shotgunSpread"].as<int>(_shotgunSpread);
-	_shotgunChoke = node["shotgunChoke"].as<int>(_shotgunChoke);
-
-	mod->loadUnorderedNamesToNames(_type, _zombieUnitByArmorMale, node["zombieUnitByArmorMale"]);
-	mod->loadUnorderedNamesToNames(_type, _zombieUnitByArmorFemale, node["zombieUnitByArmorFemale"]);
-	mod->loadUnorderedNamesToNames(_type, _zombieUnitByType, node["zombieUnitByType"]);
-	mod->loadNameNull(_type, _zombieUnit, node["zombieUnit"]);
-	mod->loadNameNull(_type, _spawnUnitName, node["spawnUnit"]);
-	mod->loadNameNull(_type, _spawnItemName, node["spawnItem"]);
-	_spawnSoldier = node["spawnSoldier"].as<std::string>(_spawnSoldier);
-	_spawnUnitFaction = (UnitFaction)node["spawnUnitFaction"].as<int>(_spawnUnitFaction);
-	_zombieUnitFaction = (UnitFaction)node["zombieUnitFaction"].as<int>(_zombieUnitFaction);
-	loadIntNullable(_spawnUnitChance, node["spawnUnitChance"]);
-	loadIntNullable(_zombieUnitChance, node["zombieUnitChance"]);
-	loadIntNullable(_spawnItemChance, node["spawnItemChance"]);
-
-
-	if (node["psiTargetMatrix"])
-	{
-		// TODO: just backwards-compatibility, remove in 2022, update ruleset validator too
-		_targetMatrix = node["psiTargetMatrix"].as<int>(_targetMatrix);
-	}
-	_targetMatrix = node["targetMatrix"].as<int>(_targetMatrix);
-	_convertToCivilian = node["convertToCivilian"].as<bool>(_convertToCivilian);
-	_LOSRequired = node["LOSRequired"].as<bool>(_LOSRequired);
-	_meleePower = node["meleePower"].as<int>(_meleePower);
-	_underwaterOnly = node["underwaterOnly"].as<bool>(_underwaterOnly);
-	_landOnly = node["landOnly"].as<bool>(_landOnly);
-	_specialType = node["specialType"].as<int>(_specialType);
-
-	mod->loadTransparencyOffset(_type, _vaporColor, node["vaporColor"]);
-	_vaporDensity = node["vaporDensity"].as<int>(_vaporDensity);
-	_vaporProbability = node["vaporProbability"].as<int>(_vaporProbability);
-
-	mod->loadTransparencyOffset(_type, _vaporColorSurface, node["vaporColorSurface"]);
-	_vaporDensitySurface = node["vaporDensitySurface"].as<int>(_vaporDensitySurface);
-	_vaporProbabilitySurface = node["vaporProbabilitySurface"].as<int>(_vaporProbabilitySurface);
-
-	mod->loadSpriteOffset(_type, _customItemPreviewIndex, node["customItemPreviewIndex"], "CustomItemPreviews");
-	_kneelBonus = node["kneelBonus"].as<int>(_kneelBonus);
-	_oneHandedPenalty = node["oneHandedPenalty"].as<int>(_oneHandedPenalty);
-	_monthlySalary = node["monthlySalary"].as<int>(_monthlySalary);
-	_monthlyMaintenance = node["monthlyMaintenance"].as<int>(_monthlyMaintenance);
-	_sprayWaypoints = node["sprayWaypoints"].as<int>(_sprayWaypoints);
-
-	_damageBonus.load(_type, node, parsers.bonusStatsScripts.get<ModScript::DamageBonusStatBonus>());
-	_meleeBonus.load(_type, node, parsers.bonusStatsScripts.get<ModScript::MeleeBonusStatBonus>());
-	_accuracyMulti.load(_type, node, parsers.bonusStatsScripts.get<ModScript::AccuracyMultiplierStatBonus>());
-	_meleeMulti.load(_type, node, parsers.bonusStatsScripts.get<ModScript::MeleeMultiplierStatBonus>());
-	_throwMulti.load(_type, node, parsers.bonusStatsScripts.get<ModScript::ThrowMultiplierStatBonus>());
-	_closeQuartersMulti.load(_type, node, parsers.bonusStatsScripts.get<ModScript::CloseQuarterMultiplierStatBonus>());
-
-	_powerRangeReduction = node["powerRangeReduction"].as<float>(_powerRangeReduction);
-	_powerRangeThreshold = node["powerRangeThreshold"].as<float>(_powerRangeThreshold);
-
-	_psiReqiured = node["psiRequired"].as<bool>(_psiReqiured);
-	_manaRequired = node["manaRequired"].as<bool>(_manaRequired);
-	_scriptValues.load(node, parsers.getShared());
-
-	_battleItemScripts.load(_type, node, parsers.battleItemScripts);
-}
-
-/**
- * Cross link with other Rules.
- */
-void RuleItem::afterLoad(const Mod* mod)
-{
 	mod->verifySpriteOffset(_type, _bigSprite, "BIGOBS.PCK");
 	mod->verifySpriteOffset(_type, _floorSprite, "FLOOROB.PCK");
 	mod->verifySpriteOffset(_type, _handSprite, "HANDOB.PCK");
@@ -787,18 +794,25 @@ void RuleItem::afterLoad(const Mod* mod)
 	}
 	if (_vehicleUnit)
 	{
-		if (_compatibleAmmo[0].size() > 1)
+		if (_vehicleFixedAmmoSlot != 0 && _vehicleFixedAmmoSlot != -1)
 		{
-			throw Exception("Vehicle weapons support only one ammo type");
+			throw Exception("Vehicle primary weapon fixed ammo slot can be only 0 or -1.");
 		}
-		if (_compatibleAmmo[0].size() == 1)
+		if (_vehicleFixedAmmoSlot > -1)
 		{
-			auto* ammo = _compatibleAmmo[0][0];
-			if (ammo->getClipSize() > 0 && getClipSize() > 0)
+			if (_compatibleAmmo[_vehicleFixedAmmoSlot].size() > 1)
 			{
-				if (getClipSize() % ammo->getClipSize())
+				throw Exception("Vehicle weapons support only one ammo type");
+			}
+			if (_compatibleAmmo[_vehicleFixedAmmoSlot].size() == 1)
+			{
+				auto* ammo = _compatibleAmmo[_vehicleFixedAmmoSlot].front();
+				if (ammo->getClipSize() > 0 && getClipSize() > 0)
 				{
-					throw Exception("Vehicle weapon clip size is not a multiple of '" + ammo->getType() +  "' clip size");
+					if (getClipSize() % ammo->getClipSize())
+					{
+						throw Exception("Vehicle weapon clip size is not a multiple of '" + ammo->getType() + "' clip size");
+					}
 				}
 			}
 		}
@@ -1447,7 +1461,7 @@ int RuleItem::getAccuracyThrow() const
  * Gets the item's accuracy for close quarters combat.
  * @return The close quarters accuracy.
  */
-int RuleItem::getAccuracyCloseQuarters(Mod *mod) const
+int RuleItem::getAccuracyCloseQuarters(const Mod *mod) const
 {
 	return _accuracyCloseQuarters != -1 ? _accuracyCloseQuarters : mod->getCloseQuartersAccuracyGlobal();
 }
@@ -1462,12 +1476,21 @@ int RuleItem::getNoLOSAccuracyPenalty(Mod *mod) const
 }
 
 /**
+ * Gets the setting for primed explosives exploding in the inventory.
+ * @return The setting (0 = no, 1 = yes, except when in hands, 2 = always).
+ */
+int RuleItem::getExplodeInventory(const Mod* mod) const
+{
+	return _explodeInventory != -1 ? _explodeInventory : (_battleType == BT_GRENADE ? mod->getExplodeInventoryGlobal() : 0);
+}
+
+/**
  * Gets the item's time unit percentage for aimed shots.
  * @return The aimed shot TU percentage.
  */
 RuleItemUseCost RuleItem::getCostAimed() const
 {
-	return _confAimed.cost;
+	return getDefault(_confAimed.cost);
 }
 
 /**
@@ -1494,7 +1517,7 @@ RuleItemUseCost RuleItem::getCostSnap() const
  */
 RuleItemUseCost RuleItem::getCostMelee() const
 {
-	return _confMelee.cost;
+	return getDefault(_confMelee.cost);
 }
 
 /**
@@ -1505,11 +1528,11 @@ RuleItemUseCost RuleItem::getCostUse() const
 {
 	if (_battleType != BT_PSIAMP || !_psiAttackName.empty())
 	{
-		return _costUse;
+		return getDefault(_costUse);
 	}
 	else
 	{
-		return RuleItemUseCost();
+		return {};
 	}
 }
 
@@ -1537,7 +1560,7 @@ RuleItemUseCost RuleItem::getCostPanic() const
  */
 RuleItemUseCost RuleItem::getCostThrow() const
 {
-	return _costThrow;
+	return getDefault(_costThrow);
 }
 
 /**
@@ -1548,7 +1571,7 @@ RuleItemUseCost RuleItem::getCostPrime() const
 {
 	if (!_primeActionName.empty())
 	{
-		return _costPrime;
+		return getDefault(_costPrime);
 	}
 	else
 	{
@@ -1562,7 +1585,7 @@ RuleItemUseCost RuleItem::getCostPrime() const
  */
 RuleItemUseCost RuleItem::getCostUnprime() const
 {
-		return _costUnprime;
+	return getDefault(_costUnprime);
 }
 
 /**
@@ -1590,7 +1613,11 @@ int RuleItem::getTUUnload(int slot) const
  */
 const RuleItem* RuleItem::getVehicleClipAmmo() const
 {
-	return _compatibleAmmo[0].empty() ? nullptr : _compatibleAmmo[0].front();
+	if (_vehicleFixedAmmoSlot > -1)
+	{
+		return _compatibleAmmo[_vehicleFixedAmmoSlot].empty() ? nullptr : _compatibleAmmo[_vehicleFixedAmmoSlot].front();
+	}
+	return nullptr;
 }
 
 /**
@@ -1695,6 +1722,14 @@ const RuleDamageType *RuleItem::getMeleeType() const
 BattleType RuleItem::getBattleType() const
 {
 	return _battleType;
+}
+
+/**
+ * Is the item's type BT_GRENADE or BT_PROXIMITYGRENADE?
+ */
+bool RuleItem::isGrenadeOrProxy() const
+{
+	return _battleType == BT_GRENADE || _battleType == BT_PROXIMITYGRENADE;
 }
 
 /**
@@ -1921,23 +1956,12 @@ bool RuleItem::isFireExtinguisher() const
 {
 	return _isFireExtinguisher;
 }
-
-/**
- * Does this item represents a craft's turret clip?
- * @return True if the item extinguishes fire.
+/** Does this item represents a craft's turret clip?
+ * @return True if the item a craft's turret clip.
  */
 bool RuleItem::isCraftTurretAmmo() const
 {
 	return _isCraftTurretAmmo;
-}
-
-/**
- * Is this item explode in hands?
- * @return True if the item can explode in hand.
- */
-bool RuleItem::isExplodingInHands() const
-{
-	return _isExplodingInHands;
 }
 
 /**
@@ -2119,11 +2143,16 @@ int RuleItem::getAIUseDelay(const Mod *mod) const
 		return mod->getAIUseDelayMelee();
 
 	case BT_GRENADE:
-	case BT_PROXIMITYGRENADE:
 		return mod->getAIUseDelayGrenade();
+
+	case BT_PROXIMITYGRENADE:
+		return mod->getAIUseDelayProxy();
 
 	case BT_PSIAMP:
 		return mod->getAIUseDelayPsionic();
+
+	case BT_MEDIKIT:
+		return mod->getAIUseDelayMedikit();
 
 	default:
 		return _aiUseDelay;
@@ -2161,7 +2190,7 @@ int RuleItem::getPrisonType() const
  * Returns whether this item charges a flat rate for costAimed.
  * @return True if this item charges a flat rate for costAimed.
  */
-RuleItemUseCost RuleItem::getFlatAimed() const
+RuleItemUseFlat RuleItem::getFlatAimed() const
 {
 	return getDefault(_confAimed.flat, _flatUse);
 }
@@ -2170,25 +2199,25 @@ RuleItemUseCost RuleItem::getFlatAimed() const
  * Returns whether this item charges a flat rate for costAuto.
  * @return True if this item charges a flat rate for costAuto.
  */
-RuleItemUseCost RuleItem::getFlatAuto() const
+RuleItemUseFlat RuleItem::getFlatAuto() const
 {
-	return getDefault(_confAuto.flat, getDefault(_confAimed.flat, _flatUse));
+	return getDefault(_confAuto.flat, _confAimed.flat, _flatUse);
 }
 
 /**
  * Returns whether this item charges a flat rate for costSnap.
  * @return True if this item charges a flat rate for costSnap.
  */
-RuleItemUseCost RuleItem::getFlatSnap() const
+RuleItemUseFlat RuleItem::getFlatSnap() const
 {
-	return getDefault(_confSnap.flat, getDefault(_confAimed.flat, _flatUse));
+	return getDefault(_confSnap.flat, _confAimed.flat, _flatUse);
 }
 
 /**
  * Returns whether this item charges a flat rate for costMelee.
  * @return True if this item charges a flat rate for costMelee.
  */
-RuleItemUseCost RuleItem::getFlatMelee() const
+RuleItemUseFlat RuleItem::getFlatMelee() const
 {
 	return getDefault(_confMelee.flat, _flatUse);
 }
@@ -2197,36 +2226,36 @@ RuleItemUseCost RuleItem::getFlatMelee() const
  * Returns whether this item charges a flat rate of use and attack cost.
  * @return True if this item charges a flat rate of use and attack cost.
  */
-RuleItemUseCost RuleItem::getFlatUse() const
+RuleItemUseFlat RuleItem::getFlatUse() const
 {
-	return _flatUse;
+	return getDefault(_flatUse);
 }
 
 /**
  * Returns whether this item charges a flat rate for costThrow.
  * @return True if this item charges a flat rate for costThrow.
  */
-RuleItemUseCost RuleItem::getFlatThrow() const
+RuleItemUseFlat RuleItem::getFlatThrow() const
 {
-	return _flatThrow;
+	return getDefault(_flatThrow);
 }
 
 /**
  * Returns whether this item charges a flat rate for costPrime.
  * @return True if this item charges a flat rate for costPrime.
  */
-RuleItemUseCost RuleItem::getFlatPrime() const
+RuleItemUseFlat RuleItem::getFlatPrime() const
 {
-	return _flatPrime;
+	return getDefault(_flatPrime);
 }
 
 /**
  * Returns whether this item charges a flat rate for costUnprime.
  * @return True if this item charges a flat rate for costUnprime.
  */
-RuleItemUseCost RuleItem::getFlatUnprime() const
+RuleItemUseFlat RuleItem::getFlatUnprime() const
 {
-	return _flatUnprime;
+	return getDefault(_flatUnprime);
 }
 
 /**
@@ -2300,6 +2329,33 @@ bool RuleItem::isOutOfRange(int distanceSq) const
 }
 
 /**
+ * Checks whether a given distance is out of throw range for this item.
+ * @return True, if out of throw range.
+ */
+bool RuleItem::isOutOfThrowRange(int distanceSq, int depth) const
+{
+	bool outOfRange = false;
+
+	if (depth > 0)
+	{
+		if (distanceSq > _underwaterThrowRange * _underwaterThrowRange)
+		{
+			outOfRange = true;
+		}
+	}
+	else
+	{
+		if (distanceSq > _throwRange * _throwRange)
+		{
+			outOfRange = true;
+		}
+	}
+
+	// no special handling for short ranges and diagonals
+	return outOfRange;
+}
+
+/**
  * Gets the maximum effective range of this weapon when using Aimed Shot.
  * @return The maximum range.
  */
@@ -2342,6 +2398,36 @@ int RuleItem::getMinRange() const
 int RuleItem::getDropoff() const
 {
 	return _dropoff;
+}
+
+/**
+ * Helper function to calculate limits and dropoff.
+ * @return The per-tile dropoff.
+ */
+int RuleItem::calculateLimits(int& upperLimit, int& lowerLimit, int depth, BattleActionType type) const
+{
+	upperLimit = type == BA_THROW ? 200 : getAimRange();
+	lowerLimit = type == BA_THROW ?   0 : getMinRange();
+
+	if (Options::battleUFOExtenderAccuracy)
+	{
+		switch (type)
+		{
+		case BA_SNAPSHOT:
+			upperLimit = getSnapRange();
+			break;
+		case BA_AUTOSHOT:
+			upperLimit = getAutoRange();
+			break;
+		case BA_THROW:
+			upperLimit = depth > 0 ? getUnderwaterThrowDropoffRange() : getThrowDropoffRange();
+			break;
+		default:
+			break;
+		}
+	}
+
+	return type == BA_THROW ? getThrowDropoff() : getDropoff();
 }
 
 /**
@@ -2657,7 +2743,7 @@ const std::vector<int> &RuleItem::getCustomItemPreviewIndex() const
 * Gets the kneel bonus (15% bonus is encoded as 100+15 = 115).
 * @return Kneel bonus.
 */
-int RuleItem::getKneelBonus(Mod *mod) const
+int RuleItem::getKneelBonus(const Mod *mod) const
 {
 	return _kneelBonus != -1 ? _kneelBonus : mod->getKneelBonusGlobal();
 }
@@ -2666,7 +2752,7 @@ int RuleItem::getKneelBonus(Mod *mod) const
 * Gets the one-handed penalty (20% penalty is encoded as 100-20 = 80).
 * @return One-handed penalty.
 */
-int RuleItem::getOneHandedPenalty(Mod *mod) const
+int RuleItem::getOneHandedPenalty(const Mod *mod) const
 {
 	return _oneHandedPenalty != -1 ? _oneHandedPenalty : mod->getOneHandedPenaltyGlobal();
 }
@@ -2820,8 +2906,8 @@ std::string debugDisplayScript(const RuleItem* ri)
 	{
 		std::string s;
 		s += RuleItem::ScriptName;
-		s += "(name: \"";
-		s += ri->getName();
+		s += "(type: \"";
+		s += ri->getType();
 		s += "\")";
 		return s;
 	}

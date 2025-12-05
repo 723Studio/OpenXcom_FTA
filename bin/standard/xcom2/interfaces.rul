@@ -319,6 +319,8 @@ interfaces: #done
         color: 1
         color2: 239
         border: 1
+      - id: disabled
+        color: 3
       - id: button
         color: 1
   - type: ufoTracker
@@ -515,7 +517,7 @@ interfaces: #done
         color: 1
   - type: baseDefense
     backgroundImage: BACK04.SCR
-    palette: PAL_BASESCAPE
+#    palette: PAL_BASESCAPE
     elements:
       - id: palette
         color: 2     # red/orange
@@ -525,6 +527,18 @@ interfaces: #done
         color: 1   # blue
       - id: button
         color: 1   # blue
+  - type: baseDefense_geo
+    backgroundImage: BACK04.SCR
+    elements:
+      - id: palette
+        color: 2
+      - id: window
+        color: 1
+      - id: text
+        color: 1
+        color2: 239
+      - id: button
+        color: 1
   - type: terrorSite
     elements:
       - id: palette
@@ -726,6 +740,9 @@ interfaces: #done
       - id: distance
         color: 244
         pos: [123, 73]
+      - id: oceanIndicator
+        color: 239
+        pos: [151, 73]
       - id: minimizedNumber
         color: 80
       - id: radarDetail
@@ -973,6 +990,7 @@ interfaces: #done
       - id: list
         color: 1     # white
         color2: 1    # white
+        custom: 254
       - id: totals
         color: 1     # white
       - id: button
@@ -1031,6 +1049,10 @@ interfaces: #done
         color: 1     # white
         color2: 239  # light blue
         custom: -12  # above Intercept button
+      - id: trainingIndicator
+        color: 1     # white
+        color2: 239  # light blue
+        custom: 4  # below standard visible area
       - id: genericWindow
         color: 1
       - id: genericText
@@ -1064,7 +1086,28 @@ interfaces: #done
         color: 1
       - id: button
         color: 1
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
   - type: dependencyTree
+    backgroundImage: BACK13.SCR
+    palette: PAL_GEOSCAPE
+    elements:
+      - id: palette
+        color: 6
+      - id: window
+        color: 1
+      - id: text
+        color: 1
+        color2: 244
+      - id: list
+        color: 244
+        color2: 239
+        border: 1
+      - id: button
+        color: 1
+  - type: itemLocations
     backgroundImage: BACK13.SCR
     palette: PAL_GEOSCAPE
     elements:
@@ -1099,6 +1142,10 @@ interfaces: #done
         color: 1  # white
       - id: button
         color: 1   # blue
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: errorPalette
         color: 6     # brown
       - id: errorMessage
@@ -1119,6 +1166,10 @@ interfaces: #done
         border: 1  # blue
       - id: button
         color: 1   # blue
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: errorPalette
         color: 6     # oxide
       - id: errorMessage
@@ -1172,6 +1223,10 @@ interfaces: #done
         color: 239   # purple
       - id: button
         color: 1   # purple
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: errorPalette
         color: 6     # brown
       - id: errorMessage
@@ -1300,6 +1355,10 @@ interfaces: #done
         color2: 244
       - id: button
         color: 1   # blue
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: catBox
         color: 1   # pink
   - type: allocateManufacture
@@ -1363,6 +1422,22 @@ interfaces: #done
         border: 1
       - id: button
         color: 1
+  - type: globalResearchDiary
+    backgroundImage: BACK05.SCR
+    elements:
+      - id: palette
+        color: 0
+      - id: window
+        color: 1
+      - id: text
+        color: 1
+        color2: 239
+      - id: list
+        color: 239
+        color2: 1
+        border: 1
+      - id: button
+        color: 1
   - type: selectNewResearch
     backgroundImage: BACK05.SCR
     parent: researchMenu
@@ -1380,6 +1455,10 @@ interfaces: #done
         color2: 244
       - id: button
         color: 1   # purple
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
   - type: allocateResearch
     backgroundImage: BACK05.SCR
     parent: researchMenu
@@ -1635,6 +1714,21 @@ interfaces: #done
         border: 1  # white
       - id: button
         color: 1   # white
+  - type: soldierDiaryLight
+    backgroundImage: BACK14.SCR
+    elements:
+      - id: palette
+        color: 4     # green
+      - id: window
+        color: 1     # white
+      - id: text
+        color: 1     # white
+        color2: 239  # blue
+      - id: list
+        color: 1   # white
+        border: 1  # white
+      - id: button
+        color: 1   # white
   - type: soldierBonus
     backgroundImage: BACK14.SCR
     elements:
@@ -1733,6 +1827,10 @@ interfaces: #done
         color2: 244
       - id: button
         color: 1
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: list
         color: 244
         color2: 239
@@ -1784,6 +1882,10 @@ interfaces: #done
         color: 1     # blue
       - id: button
         color: 1     # blue
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
       - id: list
         color: 1     # white
         color2: 239  # blue
@@ -1844,6 +1946,10 @@ interfaces: #done
         border: 1
       - id: button
         color: 1
+      - id: button2
+        color: 244
+      - id: touchButton
+        color: 244
   - type: craftPilots
     backgroundImage: BACK02.SCR
     elements:
@@ -2056,6 +2162,10 @@ interfaces: #done
         color: 47
         color2: 63
         border: 54
+      - id: infoBoxText
+        color: 47
+        color2: 80
+        border: 54
       - id: grenadeMenu
         color: 47
         color2: 63
@@ -2135,6 +2245,11 @@ interfaces: #done
         color: 1
   - type: inventory
     elements:
+      - id: textSlot
+        color: 48
+        color2: 16
+        pos: [65, 95]
+        size: [70, 9]
       - id: textName
         color: 48
       - id: textTUs
@@ -2194,6 +2309,10 @@ interfaces: #done
         color2: 0
   - type: stats
     elements:
+      - id: numMaxHealth
+        color: 96
+        pos: [278, 0]    # only X counts, Y is ignored (because it's dynamic)
+        custom: 2        # 0 + 1(=show also when current hp is equal to max hp) + 2(=show '/' prefix)
       - id: textName
         color: 48
       - id: barTUs

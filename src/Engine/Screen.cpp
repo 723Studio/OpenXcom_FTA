@@ -322,11 +322,12 @@ int Screen::getHeight() const
  */
 void Screen::resetDisplay(bool resetVideo, bool noShaders)
 {
-	int width = Options::displayWidth;
-	int height = Options::displayHeight;
-#ifdef __linux__
+#if defined __linux__ || defined _WIN32 || defined  __CYGWIN__
 	Uint32 oldFlags = _flags;
 #endif
+
+	int width = Options::displayWidth;
+	int height = Options::displayHeight;
 	makeVideoFlags();
 
 	if (!_surface || (_surface->format->BitsPerPixel != _bpp ||
@@ -351,9 +352,11 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 
 	if (resetVideo || _screen->format->BitsPerPixel != _bpp)
 	{
-#ifdef __linux__
+		Log(LOG_INFO) << "Attempting to set display to " << width << "x" << height << "x" << _bpp << "...";
+
+#if defined __linux__ || defined _WIN32 || defined  __CYGWIN__
 		// Workaround for segfault when switching to opengl
-		if (!(oldFlags & SDL_OPENGL) && (_flags & SDL_OPENGL))
+		if ((oldFlags & SDL_OPENGL) != (_flags & SDL_OPENGL))
 		{
 			Uint8 cursor = 0;
 			char *_oldtitle = 0;
@@ -361,13 +364,15 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 			std::string title(_oldtitle);
 			SDL_QuitSubSystem(SDL_INIT_VIDEO);
 			SDL_InitSubSystem(SDL_INIT_VIDEO);
+
+			// recreate operations done by `Game::Game` constructor
 			SDL_ShowCursor(SDL_ENABLE);
 			SDL_EnableUNICODE(1);
 			SDL_WM_SetCaption(title.c_str(), 0);
+			SDL_WM_GrabInput(Options::captureMouse);
 			SDL_SetCursor(SDL_CreateCursor(&cursor, &cursor, 1,1,0,0));
 		}
 #endif
-		Log(LOG_INFO) << "Attempting to set display to " << width << "x" << height << "x" << _bpp << "...";
 		_screen = SDL_SetVideoMode(width, height, _bpp, _flags);
 		if (_screen == 0)
 		{

@@ -20,6 +20,7 @@
 #include "RuleInterface.h"
 #include "Mod.h"
 #include <climits>
+#include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
 {
@@ -41,50 +42,40 @@ RuleInterface::~RuleInterface()
  * Loads the elements from a YAML file.
  * @param node YAML node.
  */
-void RuleInterface::load(const YAML::Node& node, Mod *mod)
+void RuleInterface::load(const YAML::YamlNodeReader& reader, Mod *mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	_palette = node["palette"].as<std::string>(_palette);
-	_parent = node["parent"].as<std::string>(_parent);
-	_backgroundImage = node["backgroundImage"].as<std::string>(_backgroundImage);
-	_altBackgroundImage = node["altBackgroundImage"].as<std::string>(_altBackgroundImage);
-	_music = node["music"].as<std::string>(_music);
-	mod->loadSoundOffset(_type, _sound, node["sound"], "GEO.CAT");
-	for (YAML::const_iterator i = node["elements"].begin(); i != node["elements"].end(); ++i)
+	reader.tryRead("palette", _palette);
+	reader.tryRead("parent", _parent);
+	reader.tryRead("backgroundImage", _backgroundImage);
+	reader.tryRead("altBackgroundImage", _altBackgroundImage);
+	reader.tryRead("upgBackgroundImage", _upgBackgroundImage);
+	reader.tryRead("music", _music);
+	mod->loadSoundOffset(_type, _sound, reader["sound"], "GEO.CAT");
+	for (const auto& elementReader : reader["elements"].children())
 	{
-		Element element;
-		if ((*i)["size"])
+		Element& element = _elements[elementReader["id"].readVal<std::string>()];
+		if (elementReader["size"])
 		{
-			std::pair<int, int> pos = (*i)["size"].as<std::pair<int, int> >();
+			std::pair<int, int> pos = elementReader["size"].readVal<std::pair<int, int> >();
 			element.w = pos.first;
 			element.h = pos.second;
 		}
-		else
+		if (elementReader["pos"])
 		{
-			element.w = element.h = INT_MAX;
-		}
-		if ((*i)["pos"])
-		{
-			std::pair<int, int> pos = (*i)["pos"].as<std::pair<int, int> >();
+			std::pair<int, int> pos = elementReader["pos"].readVal<std::pair<int, int> >();
 			element.x = pos.first;
 			element.y = pos.second;
 		}
-		else
-		{
-			element.x = element.y = INT_MAX;
-		}
-		element.color = (*i)["color"].as<int>(INT_MAX);
-		element.color2 = (*i)["color2"].as<int>(INT_MAX);
-		element.border = (*i)["border"].as<int>(INT_MAX);
-		element.custom = (*i)["custom"].as<int>(0);
-		element.TFTDMode = (*i)["TFTDMode"].as<bool>(false);
-
-		std::string id = (*i)["id"].as<std::string>("");
-		_elements[id] = element;
+		elementReader.tryRead("color", element.color);
+		elementReader.tryRead("color2", element.color2);
+		elementReader.tryRead("border", element.border);
+		elementReader.tryRead("custom", element.custom);
+		elementReader.tryRead("TFTDMode", element.TFTDMode);
 	}
 }
 
@@ -92,10 +83,24 @@ void RuleInterface::load(const YAML::Node& node, Mod *mod)
  * Retrieves info on an element
  * @param id String defining the element.
  */
-Element *RuleInterface::getElement(const std::string &id)
+const Element *RuleInterface::getElementOptional(const std::string &id) const
 {
 	auto i = _elements.find(id);
 	if (_elements.end() != i) return &i->second; else return 0;
+}
+
+/**
+ * Retrieves info on an element
+ * @param id String defining the element.
+ */
+const Element *RuleInterface::getElement(const std::string &id) const
+{
+	auto i = getElementOptional(id);
+	if (i == nullptr)
+	{
+		throw Exception("Missing interface Element '" + id + "' in '" + _type + "'");
+	}
+	return i;
 }
 
 const std::string &RuleInterface::getPalette() const
@@ -108,8 +113,19 @@ const std::string &RuleInterface::getParent() const
 	return _parent;
 }
 
-const std::string &RuleInterface::getBackgroundImage() const
+const std::string &RuleInterface::getBackgroundImage(const Mod* mod, const SavedGame* save) const
 {
+	if (save)
+	{
+		for (auto& pair : _upgBackgroundImage)
+		{
+			auto r = mod->getResearch(pair.first, false);
+			if (r && save->isResearched(r))
+			{
+				return pair.second;
+			}
+		}
+	}
 	return _backgroundImage;
 }
 

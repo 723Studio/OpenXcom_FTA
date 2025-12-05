@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Texture.h"
+#include "Mod.h"
 #include "../Savegame/Target.h"
 #include "../Engine/RNG.h"
 
@@ -27,7 +28,7 @@ namespace OpenXcom
  * Initializes a globe texture.
  * @param id Texture identifier.
  */
-Texture::Texture(int id) : _id(id), _fakeUnderwater(false)
+Texture::Texture(int id) : _id(id), _baseGridSprite(0), _isOcean(false), _fakeUnderwater(false)
 {
 }
 
@@ -42,14 +43,19 @@ Texture::~Texture()
  * Loads the texture type from a YAML file.
  * @param node YAML node.
  */
-void Texture::load(const YAML::Node &node)
+void Texture::load(const YAML::YamlNodeReader& reader, Mod* mod)
 {
-	_id = node["id"].as<int>(_id);
-	_fakeUnderwater = node["fakeUnderwater"].as<bool>(_fakeUnderwater);
-	_startingCondition = node["startingCondition"].as<std::string>(_startingCondition);
-	_deployments = node["deployments"].as< std::map<std::string, int> >(_deployments);
-	_terrain = node["terrain"].as< std::vector<TerrainCriteria> >(_terrain);
-	_baseTerrain = node["baseTerrain"].as< std::vector<TerrainCriteria> >(_baseTerrain);
+	reader.tryRead("id", _id);
+	{
+		std::string parent = "id_" + std::to_string(_id);
+		mod->loadSpriteOffset(parent, _baseGridSprite, reader["baseGridSprite"], "BASEBITS.PCK");
+	}
+	reader.tryRead("isOcean", _isOcean);
+	reader.tryRead("fakeUnderwater", _fakeUnderwater);
+	reader.tryRead("startingCondition", _startingCondition);
+	reader.tryRead("deployments", _deployments);
+	reader.tryRead("terrain", _terrain);
+	reader.tryRead("baseTerrain", _baseTerrain);
 }
 
 /**
@@ -186,6 +192,23 @@ std::string Texture::getRandomDeployment() const
 	}
 
 	return "";
+}
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, TerrainCriteria* val)
+{
+	YAML::YamlNodeReader reader(n);
+	reader.tryRead("name", val->name);
+	reader.tryRead("weight", val->weight);
+	if (const auto& areaReader = reader["area"])
+	{
+		std::vector<double> area = areaReader.readVal<std::vector<double> >();
+		val->lonMin = Deg2Rad(area[0]);
+		val->lonMax = Deg2Rad(area[1]);
+		val->latMin = Deg2Rad(area[2]);
+		val->latMax = Deg2Rad(area[3]);
+	}
+	return true;
 }
 
 }

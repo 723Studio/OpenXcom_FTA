@@ -22,6 +22,7 @@
 #include "LoadYaml.h"
 #include "Mod.h"
 #include "RuleSoldier.h"
+#include "../Savegame/SoldierDiary.h"
 
 namespace OpenXcom
 {
@@ -33,11 +34,13 @@ const std::string Armor::NONE = "STR_NONE";
  * type of armor.
  * @param type String defining the type.
  */
-Armor::Armor(const std::string &type) :
+Armor::Armor(const std::string &type, int listOrder) :
 	_type(type), _infiniteSupply(false), _frontArmor(0), _sideArmor(0), _leftArmorDiff(0), _rearArmor(0), _underArmor(0),
 	_drawingRoutine(0), _drawBubbles(false), _movementType(MT_WALK), _specab(SPECAB_NONE), _turnBeforeFirstStep(false), _turnCost(1), _moveSound(-1), _size(1), _weight(0),
 	_visibilityAtDark(0), _visibilityAtDay(0),
-	_camouflageAtDay(0), _camouflageAtDark(0), _antiCamouflageAtDay(0), _antiCamouflageAtDark(0), _heatVision(0), _psiVision(0), _psiCamouflage(0),
+	_camouflageAtDay(0), _camouflageAtDark(0), _antiCamouflageAtDay(0), _antiCamouflageAtDark(0),
+	_visibilityThroughSmoke(0), _visibilityThroughFire(100),
+	_psiVision(0), _psiCamouflage(0),
 	_deathFrames(3), _constantAnimation(false), _hasInventory(true), _forcedTorso(TORSO_USE_GENDER),
 	_faceColorGroup(0), _hairColorGroup(0), _utileColorGroup(0), _rankColorGroup(0),
 	_fearImmune(defBoolNullable), _bleedImmune(defBoolNullable), _painImmune(defBoolNullable), _zombiImmune(defBoolNullable),
@@ -45,8 +48,7 @@ Armor::Armor(const std::string &type) :
 	_overKill(0.5f), _meleeDodgeBackPenalty(0),
 	_allowsRunning(defBoolNullable), _allowsStrafing(defBoolNullable), _allowsSneaking(defBoolNullable), _allowsKneeling(defBoolNullable), _allowsMoving(1),
 	_isPilotArmor(false), _allowTwoMainWeapons(false), _instantWoundRecovery(false),
-	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1),
-	_hackingDefense(0)
+	_standHeight(-1), _kneelHeight(-1), _floatHeight(-1), _meleeOriginVoxelVerticalOffset(0), _group(0), _hackingDefense(0), _listOrder(listOrder)
 {
 	for (int i=0; i < DAMAGE_TYPES; i++)
 		_damageModifier[i] = 1.0f;
@@ -71,52 +73,63 @@ Armor::~Armor()
  * Loads the armor from a YAML file.
  * @param node YAML node.
  */
-void Armor::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
+void Armor::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript &parsers)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
 		load(parent, mod, parsers);
 	}
 
-	_ufopediaType = node["ufopediaType"].as<std::string>(_ufopediaType);
-	_spriteSheet = node["spriteSheet"].as<std::string>(_spriteSheet);
-	_spriteInv = node["spriteInv"].as<std::string>(_spriteInv);
-	_hasInventory = node["allowInv"].as<bool>(_hasInventory);
-	if (node["corpseItem"])
+	reader.tryRead("ufopediaType", _ufopediaType);
+	reader.tryRead("spriteSheet", _spriteSheet);
+	reader.tryRead("spriteInv", _spriteInv);
+	reader.tryRead("allowInv", _hasInventory);
+	if (reader["corpseItem"])
 	{
 		_corpseBattleNames.clear();
-		_corpseBattleNames.push_back(node["corpseItem"].as<std::string>());
+		_corpseBattleNames.push_back(reader["corpseItem"].readVal<std::string>());
 		_corpseGeoName = _corpseBattleNames[0];
 	}
-	else if (node["corpseBattle"])
+	else if (reader["corpseBattle"])
 	{
-		mod->loadNames(_type, _corpseBattleNames, node["corpseBattle"]);
+		mod->loadNames(_type, _corpseBattleNames, reader["corpseBattle"]);
 		_corpseGeoName = _corpseBattleNames.at(0);
 	}
-	mod->loadNames(_type, _builtInWeaponsNames, node["builtInWeapons"]);
-	mod->loadName(_type, _corpseGeoName, node["corpseGeo"]);
-	mod->loadNameNull(_type, _storeItemName, node["storeItem"]);
-	mod->loadNameNull(_type, _selfDestructItemName, node["selfDestructItem"]);
-	mod->loadNameNull(_type, _specWeaponName, node["specialWeapon"]);
-	mod->loadNameNull(_type, _requiresName, node["requires"]);
+	mod->loadNames(_type, _builtInWeaponsNames, reader["builtInWeapons"]);
+	mod->loadName(_type, _corpseGeoName, reader["corpseGeo"]);
+	mod->loadNameNull(_type, _storeItemName, reader["storeItem"]);
+	mod->loadNameNull(_type, _selfDestructItemName, reader["selfDestructItem"]);
+	mod->loadNameNull(_type, _specWeaponName, reader["specialWeapon"]);
+	mod->loadNameNull(_type, _requiresName, reader["requires"]);
+	mod->loadNameNull(_type, _requiresAwardName, reader["requiresAward"]);
+	mod->loadNameNull(_type, _requiresBonusName, reader["requiresBonus"]);
 
-	_layersDefaultPrefix = node["layersDefaultPrefix"].as<std::string>(_layersDefaultPrefix);
-	_layersSpecificPrefix = node["layersSpecificPrefix"].as< std::map<int, std::string> >(_layersSpecificPrefix);
-	_layersDefinition = node["layersDefinition"].as< std::map<std::string, std::vector<std::string> > >(_layersDefinition);
+	reader.tryRead("layersDefaultPrefix", _layersDefaultPrefix);
+	reader.tryRead("layersSpecificPrefix", _layersSpecificPrefix);
+	reader.tryRead("layersDefinition", _layersDefinition);
 
-	_frontArmor = node["frontArmor"].as<int>(_frontArmor);
-	_sideArmor = node["sideArmor"].as<int>(_sideArmor);
-	_leftArmorDiff = node["leftArmorDiff"].as<int>(_leftArmorDiff);
-	_rearArmor = node["rearArmor"].as<int>(_rearArmor);
-	_underArmor = node["underArmor"].as<int>(_underArmor);
-	_drawingRoutine = node["drawingRoutine"].as<int>(_drawingRoutine);
-	_drawBubbles = node["drawBubbles"].as<bool>(_drawBubbles);
-	_movementType = (MovementType)node["movementType"].as<int>(_movementType);
-	_specab = (SpecialAbility)node["specab"].as<int>(_specab);
+	reader.tryRead("frontArmor", _frontArmor);
+	reader.tryRead("sideArmor", _sideArmor);
+	reader.tryRead("leftArmorDiff", _leftArmorDiff);
+	reader.tryRead("rearArmor", _rearArmor);
+	reader.tryRead("underArmor", _underArmor);
+	reader.tryRead("drawingRoutine", _drawingRoutine);
+	reader.tryRead("drawBubbles", _drawBubbles);
+	reader.tryRead("movementType", _movementType);
+	reader.tryRead("specab", _specab);
 
-	_turnBeforeFirstStep = node["turnBeforeFirstStep"].as<bool>(_turnBeforeFirstStep);
-	_turnCost = node["turnCost"].as<int>(_turnCost);
-	if (const YAML::Node &move =  node["moveCost"])
+	if (const YAML::YamlNodeReader& ai = reader["ai"])
+	{
+		ai.tryRead("targetWeightAsHostile", _aiTargetWeightAsHostile);
+		ai.tryRead("targetWeightAsHostileCivilians", _aiTargetWeightAsHostileCivilians);
+		ai.tryRead("targetWeightAsFriendly", _aiTargetWeightAsFriendly);
+		ai.tryRead("targetWeightAsNeutral", _aiTargetWeightAsNeutral);
+	}
+
+	reader.tryRead("turnBeforeFirstStep", _turnBeforeFirstStep);
+	reader.tryRead("turnCost", _turnCost);
+	if (const YAML::YamlNodeReader& move = reader["moveCost"])
 	{
 		_moveCostBase.load(move["basePercent"]);
 		_moveCostBaseFly.load(move["baseFlyPercent"]);
@@ -141,60 +154,59 @@ void Armor::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
 		_moveCostGravLift.load(move["gravLiftPercent"]);
 	}
 
-	mod->loadSoundOffset(_type, _moveSound, node["moveSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _deathSoundMale, node["deathMale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _deathSoundFemale, node["deathFemale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _moveSound, reader["moveSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _deathSoundMale, reader["deathMale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _deathSoundFemale, reader["deathFemale"], "BATTLE.CAT");
 
-	mod->loadSoundOffset(_type, _selectUnitSoundMale, node["selectUnitMale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _selectUnitSoundFemale, node["selectUnitFemale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _startMovingSoundMale, node["startMovingMale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _startMovingSoundFemale, node["startMovingFemale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _selectWeaponSoundMale, node["selectWeaponMale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _selectWeaponSoundFemale, node["selectWeaponFemale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _annoyedSoundMale, node["annoyedMale"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _annoyedSoundFemale, node["annoyedFemale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectUnitSoundMale, reader["selectUnitMale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectUnitSoundFemale, reader["selectUnitFemale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _startMovingSoundMale, reader["startMovingMale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _startMovingSoundFemale, reader["startMovingFemale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectWeaponSoundMale, reader["selectWeaponMale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectWeaponSoundFemale, reader["selectWeaponFemale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _annoyedSoundMale, reader["annoyedMale"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _annoyedSoundFemale, reader["annoyedFemale"], "BATTLE.CAT");
 
-	_weight = node["weight"].as<int>(_weight);
-	_visibilityAtDark = node["visibilityAtDark"].as<int>(_visibilityAtDark);
-	_visibilityAtDay = node["visibilityAtDay"].as<int>(_visibilityAtDay);
-	_personalLightFriend = node["personalLight"].as<int>(_personalLightFriend);
-	_personalLightHostile = node["personalLightHostile"].as<int>(_personalLightHostile);
-	_personalLightNeutral = node["personalLightNeutral"].as<int>(_personalLightNeutral);
-	_camouflageAtDay = node["camouflageAtDay"].as<int>(_camouflageAtDay);
-	_camouflageAtDark = node["camouflageAtDark"].as<int>(_camouflageAtDark);
-	_antiCamouflageAtDay = node["antiCamouflageAtDay"].as<int>(_antiCamouflageAtDay);
-	_antiCamouflageAtDark = node["antiCamouflageAtDark"].as<int>(_antiCamouflageAtDark);
-	_heatVision = node["heatVision"].as<int>(_heatVision);
-	_psiVision = node["psiVision"].as<int>(_psiVision);
-	_psiCamouflage = node["psiCamouflage"].as<int>(_psiCamouflage);
-	_isAlwaysVisible =  node["alwaysVisible"].as<bool>(_isAlwaysVisible);
+	reader.tryRead("weight", _weight);
+	reader.tryRead("visibilityAtDark", _visibilityAtDark);
+	reader.tryRead("visibilityAtDay", _visibilityAtDay);
+	reader.tryRead("personalLight", _personalLightFriend);
+	reader.tryRead("personalLightHostile", _personalLightHostile);
+	reader.tryRead("personalLightNeutral", _personalLightNeutral);
+	reader.tryRead("camouflageAtDay", _camouflageAtDay);
+	reader.tryRead("camouflageAtDark", _camouflageAtDark);
+	reader.tryRead("antiCamouflageAtDay", _antiCamouflageAtDay);
+	reader.tryRead("antiCamouflageAtDark", _antiCamouflageAtDark);
+	reader.tryRead("heatVision", _visibilityThroughSmoke);
+	reader.tryRead("visibilityThroughFire", _visibilityThroughFire);
+	reader.tryRead("psiVision", _psiVision);
+	reader.tryRead("psiCamouflage", _psiCamouflage);
+	reader.tryRead("alwaysVisible", _isAlwaysVisible);
 
-	_allowedItemCategories = node["allowedItemCategories"].as<std::vector<std::string>>(_allowedItemCategories);
-	_forbiddenItemCategoiries = node["forbiddenItemCategoiries"].as<std::vector<std::string>>(_forbiddenItemCategoiries);
-	if (_forbiddenItemCategoiries.empty() && mod->isFTAGame())
+	_stats.merge(reader["stats"].readVal(_stats));
+	reader.tryRead("allowedItemCategories", _allowedItemCategories);
+	reader.tryRead("forbiddenItemCategories", _forbiddenItemCategories);
+	if (_forbiddenItemCategories.empty() && mod->isFTAGame())
 	{
-		_forbiddenItemCategoiries.push_back("STR_ROBOT_EQUIPMENT"); // default for FTA game, less copy-paste in rulesets =)
+		_forbiddenItemCategories.push_back("STR_ROBOT_EQUIPMENT"); // default for FTA game, less copy-paste in rulesets =)
 	}
-
-	_stats.merge(node["stats"].as<UnitStats>(_stats));
-	if (const YAML::Node &dmg = node["damageModifier"])
+	if (const YAML::YamlNodeReader& dmg = reader["damageModifier"])
 	{
-		for (size_t i = 0; i < dmg.size() && i < (size_t)DAMAGE_TYPES; ++i)
+		size_t end = std::min(dmg.childrenCount(), (size_t)DAMAGE_TYPES);
+		for (size_t i = 0; i < end; ++i)
 		{
-			_damageModifier[i] = dmg[i].as<float>();
+			_damageModifier[i] = dmg[i].readVal<float>();
 		}
 	}
-	mod->loadInts(_type, _loftempsSet, node["loftempsSet"]);
-	if (node["loftemps"])
-		_loftempsSet = { node["loftemps"].as<int>() };
-	_deathFrames = node["deathFrames"].as<int>(_deathFrames);
-	_constantAnimation = node["constantAnimation"].as<bool>(_constantAnimation);
-	_forcedTorso = (ForcedTorso)node["forcedTorso"].as<int>(_forcedTorso);
-
-	if (const YAML::Node &size = node["size"])
+	mod->loadInts(_type, _loftempsSet, reader["loftempsSet"]);
+	if (reader["loftemps"])
+		_loftempsSet = { reader["loftemps"].readVal<int>() };
+	reader.tryRead("deathFrames", _deathFrames);
+	reader.tryRead("constantAnimation", _constantAnimation);
+	reader.tryRead("forcedTorso", _forcedTorso);
+	if (reader.tryRead("size", _size))
 	{
-		_size = size.as<int>(_size);
-		if (_size != 1)
+		if (_size != 1) //TODO: Add handling for opposite case too
 		{
 			_fearImmune = 1;
 			_bleedImmune = 1;
@@ -204,58 +216,59 @@ void Armor::load(const YAML::Node &node, Mod *mod, const ModScript &parsers)
 			_createsMeleeThreat = 0;
 		}
 	}
-	loadBoolNullable(_fearImmune, node["fearImmune"]);
-	loadBoolNullable(_bleedImmune, node["bleedImmune"]);
-	loadBoolNullable(_painImmune, node["painImmune"]);
+	loadBoolNullable(_fearImmune, reader["fearImmune"]);
+	loadBoolNullable(_bleedImmune, reader["bleedImmune"]);
+	loadBoolNullable(_painImmune, reader["painImmune"]);
 	if (_size == 1) //Big units are always immune, because game we don't have 2x2 unit zombie
 	{
-		loadBoolNullable(_zombiImmune, node["zombiImmune"]);
+		loadBoolNullable(_zombiImmune, reader["zombiImmune"]);
 	}
-	loadBoolNullable(_ignoresMeleeThreat, node["ignoresMeleeThreat"]);
-	loadBoolNullable(_createsMeleeThreat, node["createsMeleeThreat"]);
+	loadBoolNullable(_ignoresMeleeThreat, reader["ignoresMeleeThreat"]);
+	loadBoolNullable(_createsMeleeThreat, reader["createsMeleeThreat"]);
 
-	_overKill = node["overKill"].as<float>(_overKill);
-	_meleeDodgeBackPenalty = node["meleeDodgeBackPenalty"].as<float>(_meleeDodgeBackPenalty);
+	reader.tryRead("overKill", _overKill);
+	reader.tryRead("meleeDodgeBackPenalty", _meleeDodgeBackPenalty);
 
-	_psiDefence.load(_type, node, parsers.bonusStatsScripts.get<ModScript::PsiDefenceStatBonus>());
-	_meleeDodge.load(_type, node, parsers.bonusStatsScripts.get<ModScript::MeleeDodgeStatBonus>());
+	_psiDefence.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::PsiDefenceStatBonus>());
+	_meleeDodge.load(_type, reader, parsers.bonusStatsScripts.get<ModScript::MeleeDodgeStatBonus>());
 
-	const YAML::Node &rec = node["recovery"];
-	{
-		_timeRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::TimeRecoveryStatBonus>());
-		_energyRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::EnergyRecoveryStatBonus>());
-		_moraleRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::MoraleRecoveryStatBonus>());
-		_healthRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::HealthRecoveryStatBonus>());
-		_manaRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::ManaRecoveryStatBonus>());
-		_stunRecovery.load(_type, rec, parsers.bonusStatsScripts.get<ModScript::StunRecoveryStatBonus>());
-	}
-	_faceColorGroup = node["spriteFaceGroup"].as<int>(_faceColorGroup);
-	_hairColorGroup = node["spriteHairGroup"].as<int>(_hairColorGroup);
-	_rankColorGroup = node["spriteRankGroup"].as<int>(_rankColorGroup);
-	_utileColorGroup = node["spriteUtileGroup"].as<int>(_utileColorGroup);
-	mod->loadInts(_type, _faceColor, node["spriteFaceColor"]);
-	mod->loadInts(_type, _hairColor, node["spriteHairColor"]);
-	mod->loadInts(_type, _rankColor, node["spriteRankColor"]);
-	mod->loadInts(_type, _utileColor, node["spriteUtileColor"]);
+	_timeRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::TimeRecoveryStatBonus>());
+	_energyRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::EnergyRecoveryStatBonus>());
+	_moraleRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::MoraleRecoveryStatBonus>());
+	_healthRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::HealthRecoveryStatBonus>());
+	_manaRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::ManaRecoveryStatBonus>());
+	_stunRecovery.load(_type, reader["recovery"], parsers.bonusStatsScripts.get<ModScript::StunRecoveryStatBonus>());
 
-	_battleUnitScripts.load(_type, node, parsers.battleUnitScripts);
+	reader.tryRead("spriteFaceGroup", _faceColorGroup);
+	reader.tryRead("spriteHairGroup", _hairColorGroup);
+	reader.tryRead("spriteRankGroup", _rankColorGroup);
+	reader.tryRead("spriteUtileGroup", _utileColorGroup);
+	mod->loadInts(_type, _faceColor, reader["spriteFaceColor"]);
+	mod->loadInts(_type, _hairColor, reader["spriteHairColor"]);
+	mod->loadInts(_type, _rankColor, reader["spriteRankColor"]);
+	mod->loadInts(_type, _utileColor, reader["spriteUtileColor"]);
 
-	mod->loadUnorderedNames(_type, _unitsNames, node["units"]);
-	_scriptValues.load(node, parsers.getShared());
-	mod->loadSpriteOffset(_type, _customArmorPreviewIndex, node["customArmorPreviewIndex"], "CustomArmorPreviews");
-	loadBoolNullable(_allowsRunning, node["allowsRunning"]);
-	loadBoolNullable(_allowsStrafing, node["allowsStrafing"]);
-	loadBoolNullable(_allowsSneaking, node["allowsSneaking"]);
-	loadBoolNullable(_allowsKneeling, node["allowsKneeling"]);
-	_allowsMoving = node["allowsMoving"].as<bool>(_allowsMoving);
-	_isPilotArmor = node["isPilotArmor"].as<bool>(_isPilotArmor);
-	_allowTwoMainWeapons = node["allowTwoMainWeapons"].as<bool>(_allowTwoMainWeapons);
-	_instantWoundRecovery = node["instantWoundRecovery"].as<bool>(_instantWoundRecovery);
-	_standHeight = node["standHeight"].as<int>(_standHeight);
-	_kneelHeight = node["kneelHeight"].as<int>(_kneelHeight);
-	_floatHeight = node["floatHeight"].as<int>(_floatHeight);
+	_battleUnitScripts.load(_type, reader, parsers.battleUnitScripts);
 
-	_hackingDefense = node["hackingDefense"].as<int>(_hackingDefense);
+	mod->loadUnorderedNames(_type, _unitsNames, reader["units"]);
+	mod->loadUnorderedInts(_type, _ranks, reader["ranks"]);
+	_scriptValues.load(reader, parsers.getShared());
+	mod->loadSpriteOffset(_type, _customArmorPreviewIndex, reader["customArmorPreviewIndex"], "CustomArmorPreviews");
+	loadBoolNullable(_allowsRunning, reader["allowsRunning"]);
+	loadBoolNullable(_allowsStrafing, reader["allowsStrafing"]);
+	loadBoolNullable(_allowsSneaking, reader["allowsSneaking"]);
+	loadBoolNullable(_allowsKneeling, reader["allowsKneeling"]);
+	loadBoolNullable(_allowsMoving, reader["allowsMoving"]);
+	reader.tryRead("isPilotArmor", _isPilotArmor);
+	reader.tryRead("allowTwoMainWeapons", _allowTwoMainWeapons);
+	reader.tryRead("instantWoundRecovery", _instantWoundRecovery);
+	reader.tryRead("standHeight", _standHeight);
+	reader.tryRead("kneelHeight", _kneelHeight);
+	reader.tryRead("floatHeight", _floatHeight);
+	reader.tryRead("hackingDefense", _hackingDefense);
+	reader.tryRead("meleeOriginVoxelVerticalOffset", _meleeOriginVoxelVerticalOffset);
+	reader.tryRead("group", _group);
+	reader.tryRead("listOrder", _listOrder);
 }
 
 /**
@@ -284,6 +297,8 @@ void Armor::afterLoad(const Mod* mod)
 	mod->linkRule(_builtInWeapons, _builtInWeaponsNames);
 	mod->linkRule(_units, _unitsNames);
 	mod->linkRule(_requires, _requiresName);
+	mod->linkRule(_requiresAward, _requiresAwardName);
+	mod->linkRule(_requiresBonus, _requiresBonusName);
 	if (_storeItemName == Armor::NONE)
 	{
 		_infiniteSupply = true;
@@ -332,7 +347,6 @@ void Armor::afterLoad(const Mod* mod)
 	// calcualte final surfaces used by layers
 	if (!_layersDefaultPrefix.empty())
 	{
-		std::stringstream ss;
 		for (auto& version : _layersDefinition)
 		{
 			int layerIndex = 0;
@@ -340,20 +354,16 @@ void Armor::afterLoad(const Mod* mod)
 			{
 				if (!layerItem.empty())
 				{
-					ss.str("");
-					auto pre = _layersSpecificPrefix.find(layerIndex);
-					if (pre != _layersSpecificPrefix.end())
+					static std::string buf; //static buffer that grows on demand; that's what she said
+					const auto& pre = _layersSpecificPrefix.find(layerIndex);
+					const auto& prefix = pre != _layersSpecificPrefix.end() ? pre->second : _layersDefaultPrefix;
+					size_t formattedLen = c4::format(c4::to_substr(buf), "{}__{}__{}", prefix, layerIndex, layerItem);
+					if (formattedLen > buf.size())
 					{
-						ss << pre->second;
+						buf.resize(formattedLen);
+						c4::format(c4::to_substr(buf), "{}__{}__{}", prefix, layerIndex, layerItem);
 					}
-					else
-					{
-						ss << _layersDefaultPrefix;
-					}
-					ss << "__" << layerIndex << "__" << layerItem;
-
-					//override element in vector
-					layerItem = ss.str();
+					layerItem.assign(buf.data(), formattedLen);
 
 					//check if surface is valid
 					if (Options::lazyLoadResources == false)
@@ -371,6 +381,7 @@ void Armor::afterLoad(const Mod* mod)
 	}
 
 	Collections::sortVector(_units);
+	Collections::sortVector(_ranks);
 }
 
 
@@ -838,15 +849,6 @@ int Armor::getAntiCamouflageAtDark() const
 }
 
 /**
-* Gets info about heat vision.
-* @return How much smoke is ignored, in percent.
-*/
-int Armor::getHeatVision() const
-{
-	return _heatVision;
-}
-
-/**
 * Gets info about psi vision.
 * @return How many tiles can units be sensed even through solid obstacles (e.g. walls).
 */
@@ -1072,7 +1074,7 @@ bool Armor::hasInventory() const
 * Gets the list of units this armor applies to.
 * @return The list of unit IDs (empty = applies to all).
 */
-const std::vector<const RuleSoldier*> &Armor::getUnits() const
+const std::vector<const RuleSoldier*> &Armor::getUnitsRaw() const
 {
 	return _units;
 }
@@ -1080,9 +1082,38 @@ const std::vector<const RuleSoldier*> &Armor::getUnits() const
 /**
  * Check if a soldier can use this armor.
  */
-bool Armor::getCanBeUsedBy(const RuleSoldier* soldier) const
+bool Armor::getCanBeUsedBy(const Soldier* soldier) const
 {
-	return _units.empty() || Collections::sortVectorHave(_units, soldier);
+	if (!_units.empty())
+	{
+		if (!Collections::sortVectorHave(_units, soldier->getRules()))
+		{
+			return false;
+		}
+	}
+	if (!_ranks.empty())
+	{
+		int rankInt = soldier->getRank();
+		if (!Collections::sortVectorHave(_ranks, rankInt))
+		{
+			return false;
+		}
+	}
+	if (_requiresAward)
+	{
+		if (!soldier->getDiary()->containsCommendation(_requiresAward))
+		{
+			return false;
+		}
+	}
+	if (_requiresBonus)
+	{
+		if (!soldier->hasBonus(_requiresBonus))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 /**
@@ -1252,7 +1283,8 @@ void Armor::ScriptRegister(ScriptParserBase* parser)
 	ar.add<&Armor::getCamouflageAtDay>("getCamouflageAtDay");
 	ar.add<&Armor::getAntiCamouflageAtDark>("getAntiCamouflageAtDark");
 	ar.add<&Armor::getAntiCamouflageAtDay>("getAntiCamouflageAtDay");
-	ar.add<&Armor::getHeatVision>("getHeatVision");
+	ar.add<&Armor::getVisibilityThroughSmoke>("getHeatVision", "getVisibilityThroughSmoke");
+	ar.add<&Armor::getVisibilityThroughFire>("getVisibilityThroughFire", "getVisibilityThroughFire");
 	ar.add<&Armor::getPersonalLightFriend>("getPersonalLight");
 	ar.add<&Armor::getPersonalLightHostile>("getPersonalLightHostile");
 	ar.add<&Armor::getPersonalLightNeutral>("getPersonalLightNeutral");

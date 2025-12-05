@@ -106,11 +106,24 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _arrow(0), _missionPointer(0), _sensorPointer(0), _hackingObjectPointer(0), _samplingObjectPointer(0), _anyIndicator(false), _isAltPressed(false),
+	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _hackingObjectPointer(0), _samplingObjectPointer(0), _isAltPressed(false), _isCtrlPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
-	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
+	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
 {
+	// TODO: extract to a better place later
+	for (const auto& pair : Options::mods)
+	{
+		if (pair.second)
+		{
+			if (pair.first == "xcom2")
+			{
+				_isTFTD = true;
+				break;
+			}
+		}
+	}
+
 	_iconHeight = _game->getMod()->getInterface("battlescape")->getElement("icons")->h;
 	_iconWidth = _game->getMod()->getInterface("battlescape")->getElement("icons")->w;
 	_messageColor = _game->getMod()->getInterface("battlescape")->getElement("messageWindows")->color;
@@ -158,6 +171,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_obstacleTimer->stop();
 	_obstacleTimer->onTimer((SurfaceHandler)&Map::disableObstacles);
 
+	_showInfoOnCursor = (Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2;
 	_txtAccuracy = new Text(44, 18, 0, 0);
 	_txtAccuracy->setSmall();
 	_txtAccuracy->setPalette(_game->getScreen()->getPalette());
@@ -191,6 +205,10 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 		// persisted per battle
 		_debugVisionMode = _save->getToggleBrightness();
 	}
+
+	_save->setToggleNightVisionTemp(false);
+	_save->setToggleNightVisionColorTemp(0);
+	_save->setToggleBrightnessTemp(_debugVisionMode);
 
 	_fadeShade = 16;
 	_nvColor = 0;
@@ -419,8 +437,13 @@ void Map::draw()
 	{
 		for (auto* explosion : _explosions)
 		{
+			if (explosion->isBig())
+			{
+				_explosionInFOV = true;
+				break;
+			}
 			t = _save->getTile(explosion->getPosition().toTile());
-			if (t && (explosion->isBig() || t->getVisible()))
+			if (t && t->getVisible())
 			{
 				_explosionInFOV = true;
 				break;
@@ -529,6 +552,9 @@ namespace
 {
 
 static const int ArrowBobOffsets[8] = {0,1,2,1,0,1,2,1};
+
+static const int ArrowColorsUFO[4]  = { 6,  3, 14, 4 }; // white,    red, blue, green
+static const int ArrowColorsTFTD[4] = { 4, 11, 16, 6 }; // white, orange, blue, green
 
 int getArrowBobForFrame(int frame)
 {
@@ -795,7 +821,7 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	{
 		shade = std::min(+NIGHT_VISION_SHADE, shade);
 	}
-	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, _isAltPressed);
+	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, _isAltPressed && !_isCtrlPressed);
 }
 
 /**
@@ -806,6 +832,7 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 void Map::drawTerrain(Surface *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
+	_isCtrlPressed = _game->isCtrlPressed(true);
 	int frameNumber = 0;
 	SurfaceRaw<const Uint8> tmpSurface;
 	Tile *tile;
@@ -817,7 +844,8 @@ void Map::drawTerrain(Surface *surface)
 	int dummy;
 	BattleUnit *movingUnit = _save->getTileEngine()->getMovingUnit();
 	int tileShade, tileColor, obstacleShade;
-	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0);
+	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0,
+		_isTFTD ? ArrowColorsTFTD[1] : ArrowColorsUFO[1], _isTFTD ? ArrowColorsTFTD[2] : ArrowColorsUFO[2]);
 	ItemSprite itemSprite(surface, _game->getMod(), _save, _animFrame);
 
 	const int halfAnimFrame = (_animFrame / 2) % 4;
@@ -940,6 +968,11 @@ void Map::drawTerrain(Surface *surface)
 	if (!_camera->getShowAllLayers())
 	{
 		endZ = std::min(endZ, _camera->getViewLevel());
+	}
+	if (_camera->getShowSingleLayer())
+	{
+		beginZ = _camera->getViewLevel();
+		endZ = _camera->getViewLevel();
 	}
 
 
@@ -1417,7 +1450,7 @@ void Map::drawTerrain(Surface *surface)
 							Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, 0);
 
 							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
-							if ((_cursorType == CT_AIM || _cursorType == CT_PSI || _cursorType == CT_WAYPOINT) && Options::battleUFOExtenderAccuracy)
+							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
 							{
 								BattleAction *action = _save->getBattleGame()->getCurrentAction();
 								const RuleItem *weapon = action->weapon->getRules();
@@ -1426,40 +1459,30 @@ void Map::drawTerrain(Surface *surface)
 								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
 								int distance = (int)std::ceil(sqrt(float(distanceSq)));
 
-								if (_cursorType == CT_AIM)
+								if (_cursorType == CT_AIM || _cursorType == CT_THROW)
 								{
 									int accuracy = BattleUnit::getFiringAccuracy(attack, _game->getMod());
-									int upperLimit = 200;
-									int lowerLimit = weapon->getMinRange();
-									switch (action->type)
-									{
-									case BA_AIMEDSHOT:
-										upperLimit = weapon->getAimRange();
-										break;
-									case BA_SNAPSHOT:
-										upperLimit = weapon->getSnapRange();
-										break;
-									case BA_AUTOSHOT:
-										upperLimit = weapon->getAutoRange();
-										break;
-									default:
-										break;
-									}
-									// at this point, let's assume the shot is adjusted and set the text amber.
-									_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
 
-									if (distance > upperLimit)
 									{
-										accuracy -= (distance - upperLimit) * weapon->getDropoff();
-									}
-									else if (distance < lowerLimit)
-									{
-										accuracy -= (lowerLimit - distance) * weapon->getDropoff();
-									}
-									else
-									{
-										// no adjustment made? set it to green.
-										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
+										int upperLimit, lowerLimit;
+										int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
+
+										// at this point, let's assume the shot is adjusted and set the text amber.
+										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
+
+										if (distance > upperLimit)
+										{
+											accuracy -= (distance - upperLimit) * dropoff;
+										}
+										else if (distance < lowerLimit)
+										{
+											accuracy -= (lowerLimit - distance) * dropoff;
+										}
+										else
+										{
+											// no adjustment made? set it to green.
+											_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
+										}
 									}
 
 									// Include LOS penalty for tiles in the unit's current view range
@@ -1467,9 +1490,8 @@ void Map::drawTerrain(Surface *surface)
 									int noLOSAccuracyPenalty = action->weapon->getRules()->getNoLOSAccuracyPenalty(_game->getMod());
 									if (noLOSAccuracyPenalty != -1)
 									{
-										bool isCtrlPressed = _game->isCtrlPressed(true);
 										bool hasLOS = false;
-										if (Position(itX, itY, itZ) == _cacheCursorPosition && isCtrlPressed == _cacheIsCtrlPressed && _cacheHasLOS != -1)
+										if (Position(itX, itY, itZ) == _cacheCursorPosition && _isCtrlPressed == _cacheIsCtrlPressed && _cacheHasLOS != -1)
 										{
 											// use cached result
 											hasLOS = (_cacheHasLOS == 1);
@@ -1486,7 +1508,7 @@ void Map::drawTerrain(Surface *surface)
 												hasLOS = _save->getTileEngine()->isTileInLOS(action, tile, true);
 											}
 											// remember
-											_cacheIsCtrlPressed = isCtrlPressed;
+											_cacheIsCtrlPressed = _isCtrlPressed;
 											_cacheCursorPosition = Position(itX, itY, itZ);
 											_cacheHasLOS = hasLOS ? 1 : 0;
 										}
@@ -1498,7 +1520,10 @@ void Map::drawTerrain(Surface *surface)
 										}
 									}
 
-									bool outOfRange = weapon->isOutOfRange(distanceSq);
+									bool outOfRange = action->type == BA_THROW
+										? weapon->isOutOfThrowRange(distanceSq, _save->getDepth())
+										: weapon->isOutOfRange(distanceSq);
+
 									// zero accuracy or out of range: set it red.
 									if (accuracy <= 0 || outOfRange)
 									{
@@ -1586,8 +1611,16 @@ void Map::drawTerrain(Surface *surface)
 										if (rule->getBattleType() != BT_PSIAMP || action->type == BA_USE)
 										{
 											int totalDamage = 0;
-											totalDamage += rule->getPowerBonus(attack);
-											totalDamage -= rule->getPowerRangeReduction(distance * 16);
+											if (weapon->getIgnoreAmmoPower())
+											{
+												totalDamage += weapon->getPowerBonus(attack);
+												totalDamage -= weapon->getPowerRangeReduction(distance * 16);
+											}
+											else
+											{
+												totalDamage += rule->getPowerBonus(attack);
+												totalDamage -= rule->getPowerRangeReduction(distance * 16);
+											}
 											if (totalDamage < 0) totalDamage = 0;
 											if (_cursorType != CT_WAYPOINT)
 												ss << "\n";
@@ -1798,7 +1831,9 @@ void Map::drawTerrain(Surface *surface)
 	{
 		for (auto* myUnit : *_save->getUnits())
 		{
-			if (myUnit->getScannedTurn() == _save->getTurn() && myUnit->getFaction() != FACTION_PLAYER && !myUnit->isOut())
+			bool motionScan = myUnit->getScannedTurn() == _save->getTurn() && myUnit->getFaction() != FACTION_PLAYER && !myUnit->isOut();
+			bool customMarker = myUnit->getCustomMarker() > 0 && myUnit->getFaction() == FACTION_PLAYER && !myUnit->isOut();
+			if (motionScan || customMarker)
 			{
 				Position temp = myUnit->getPosition();
 				temp.z = _camera->getViewLevel();
@@ -1810,16 +1845,37 @@ void Map::drawTerrain(Surface *surface)
 				{
 					offset.y += 4;
 				}
-				offset.y += 24 - /*myUnit->getHeight()*/ 21; // no spoilers
+				if (motionScan)
+				{
+					offset.y += Position::TileZ - /*myUnit->getHeight()*/ 21; // no spoilers
+				}
+				else if (customMarker)
+				{
+					offset.y += Position::TileZ - (myUnit->getHeight() + myUnit->getFloatHeight());
+				}
 				if (myUnit->isKneeled())
 				{
 					offset.y -= 2;
 				}
-				_arrow->blitNShade(
-					surface,
-					screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2),
-					screenPosition.y + offset.y - _arrow->getHeight() + getArrowBobForFrame(_animFrame),
-					0);
+				if (motionScan)
+				{
+					_arrow->blitNShade(
+						surface,
+						screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2),
+						screenPosition.y + offset.y - _arrow->getHeight() + getArrowBobForFrame(_animFrame),
+						0);
+				}
+				else if (customMarker)
+				{
+					Surface::blitRaw(
+						surface,
+						_arrow,
+						screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2),
+						screenPosition.y + offset.y - _arrow->getHeight() + getArrowBobForFrame(_animFrame),
+						0,
+						false,
+						_isTFTD ? ArrowColorsTFTD[myUnit->getCustomMarker() % 4] : ArrowColorsUFO[myUnit->getCustomMarker() % 4]);
+				}
 			}
 		}
 	}
@@ -1906,9 +1962,6 @@ void Map::drawTerrain(Surface *surface)
 	{
 		// big explosions cause the screen to flash as bright as possible before any explosions are actually drawn.
 		// this causes everything to look like EGA for a single frame.
-		// Meridian: no frikin flashing!!
-		// Finnik: flashing is back!
-		//_flashScreen = false;
 		if (_flashScreen)
 		{
 			for (int x = 0, y = 0; x < surface->getWidth() && y < surface->getHeight();)
@@ -2033,6 +2086,8 @@ void Map::persistToggles()
 		// persisted per battle
 		_save->setToggleBrightness(_debugVisionMode);
 	}
+
+	_save->setToggleBrightnessTemp(_debugVisionMode);
 }
 
 /**
@@ -2530,6 +2585,8 @@ void Map::fadeShade()
 	if ((_nightVisionOn && !hold) || (!_nightVisionOn && hold))
 	{
 		_nvColor = Options::oxceNightVisionColor;
+		_save->setToggleNightVisionTemp(true);
+		_save->setToggleNightVisionColorTemp(_nvColor);
 		if (_fadeShade > NIGHT_VISION_SHADE) // 0 = max brightness
 		{
 			--_fadeShade;
@@ -2548,6 +2605,8 @@ void Map::fadeShade()
 			{
 				// and at the end turn off night vision
 				_nvColor = 0;
+				_save->setToggleNightVisionTemp(false);
+				_save->setToggleNightVisionColorTemp(0);
 			}
 		}
 	}
@@ -2675,6 +2734,9 @@ void Map::resetCameraSmoothing()
 void Map::setBlastFlash(bool flash)
 {
 	_flashScreen = flash;
+
+	// Meridian: no frikin flashing!!
+	_flashScreen = false;
 }
 
 /**

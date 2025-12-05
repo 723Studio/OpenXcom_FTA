@@ -39,6 +39,7 @@
 #include "../Basescape/BasescapeState.h"
 #include "../Basescape/CraftInfoState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/RuleInterface.h"
 
 namespace OpenXcom
 {
@@ -68,34 +69,38 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 		}
 	}
 
+	int extraRows = Clamp(Options::oxceInterceptTableSize, 8, 80) - 8;
+	int extraHeight = 8 * extraRows;
+	int offset = extraHeight / 2;
+
 	// Create objects
 	if (Options::oxceInterceptGuiMaintenanceTime > 0)
 	{
-		_window = new Window(this, 320, 140, 0, 30, POPUP_HORIZONTAL);
-		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146);
-		_btnGotoBase = new TextButton(142, 16, 162, 146);
-		_txtTitle = new Text(300, 17, 10, 46);
+		_window = new Window(this, 320, 140 + extraHeight, 0, 30 - offset, POPUP_HORIZONTAL);
+		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146 + offset);
+		_btnGotoBase = new TextButton(142, 16, 162, 146 + offset);
+		_txtTitle = new Text(300, 17, 10, 46 - offset);
 		int x = 14;
-		_txtCraft = new Text(WIDTH_CRAFT, 9, x, 70);
+		_txtCraft = new Text(WIDTH_CRAFT, 9, x, 70 - offset);
 		x += WIDTH_CRAFT;
-		_txtStatus = new Text(WIDTH_STATUS, 9, x, 70);
+		_txtStatus = new Text(WIDTH_STATUS, 9, x, 70 - offset);
 		x += WIDTH_STATUS;
-		_txtBase = new Text(WIDTH_BASE, 9, x, 70);
+		_txtBase = new Text(WIDTH_BASE, 9, x, 70 - offset);
 		x += WIDTH_BASE;
-		_txtWeapons = new Text(WIDTH_WEAPONS+4, 17, x-4, 62);
-		_lstCrafts = new TextList(290, 64, 12, 78);
+		_txtWeapons = new Text(WIDTH_WEAPONS+4, 17, x-4, 62 - offset);
+		_lstCrafts = new TextList(290, 64 + extraHeight, 12, 78 - offset);
 	}
 	else
 	{
-		_window = new Window(this, 320, 140, 0, 30, POPUP_HORIZONTAL);
-		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146);
-		_btnGotoBase = new TextButton(142, 16, 162, 146);
-		_txtTitle = new Text(300, 17, 10, 46);
-		_txtCraft = new Text(86, 9, 14, 70);
-		_txtStatus = new Text(70, 9, 100, 70);
-		_txtBase = new Text(80, 9, 170, 70);
-		_txtWeapons = new Text(80, 17, 238, 62);
-		_lstCrafts = new TextList(288, 64, 8, 78);
+		_window = new Window(this, 320, 140 + extraHeight, 0, 30 - offset, POPUP_HORIZONTAL);
+		_btnCancel = new TextButton(_base ? 142 : 288, 16, 16, 146 + offset);
+		_btnGotoBase = new TextButton(142, 16, 162, 146 + offset);
+		_txtTitle = new Text(300, 17, 10, 46 - offset);
+		_txtCraft = new Text(86, 9, 14, 70 - offset);
+		_txtStatus = new Text(70, 9, 100, 70 - offset);
+		_txtBase = new Text(80, 9, 170, 70 - offset);
+		_txtWeapons = new Text(80, 17, 238, 62 - offset);
+		_lstCrafts = new TextList(288, 64 + extraHeight, 8, 78 - offset);
 	}
 
 	// Set palette
@@ -167,17 +172,38 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 	//clear list of selected crafts before creating a new wing
 	_selCrafts.clear();
 
-	int row = 0;
+	std::vector< std::tuple<Craft*, double, Base*> > craftList;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		if (_base != 0 && xbase != _base)
 			continue;
 		for (auto* xcraft : *xbase->getCrafts())
 		{
+			double xdistance = 0.0;
+			if (_target) xdistance = xcraft->getDistance(_target);
+			craftList.push_back(std::make_tuple(xcraft, xdistance, xbase));
+		}
+	}
+	if (_target && Options::oxceGeoSortCraftByDistanceToTarget)
+	{
+		std::stable_sort(craftList.begin(), craftList.end(),
+			[](const std::tuple<Craft*, double, Base*>& a, const std::tuple<Craft*, double, Base*>& b)
+			{
+				return std::get<1>(a) < std::get<1>(b);
+			}
+		);
+	}
+
+	int row = 0;
+	for (auto& tuple : craftList)
+	{
+		auto* xbase = std::get<2>(tuple);
+		auto* xcraft = std::get<0>(tuple);
+		{
 			std::ostringstream ssStatus;
 			std::string status = xcraft->getStatus();
 
-			bool hasEnoughPilots = xcraft->arePilotsOnboard();
+			bool hasEnoughPilots = xcraft->arePilotsOnboard(_game->getMod());
 			if (status == "STR_OUT")
 			{
 				// QoL: let's give the player a bit more info
@@ -339,6 +365,29 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 			if (hasEnoughPilots && status == "STR_READY")
 			{
 				_lstCrafts->setCellColor(row, 1, _lstCrafts->getSecondaryColor());
+			}
+			if (_target)
+			{
+				bool craftReturning = xcraft->getLowFuel() || xcraft->getMissionComplete();
+				if (craftReturning)
+				{
+					auto disabledColor = _game->getMod()->getInterface("intercept")->getElement("disabled")->color;
+					_lstCrafts->setCellColor(row, 0, disabledColor);
+				}
+				else
+				{
+					bool craftAvailable = Options::craftLaunchAlways || status == "STR_READY" || status == "STR_OUT";
+					if (craftAvailable)
+					{
+						double craftDistanceToTarget = std::get<1>(tuple);
+						double baseDistanceToTarget = xcraft->getBase()->getDistance(_target);
+						if (craftDistanceToTarget + baseDistanceToTarget > xcraft->getBaseRange() * 2.0)
+						{
+							auto disabledColor = _game->getMod()->getInterface("intercept")->getElement("disabled")->color;
+							_lstCrafts->setCellColor(row, 0, disabledColor);
+						}
+					}
+				}
 			}
 			row++;
 		}

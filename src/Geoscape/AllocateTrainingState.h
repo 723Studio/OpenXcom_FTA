@@ -57,6 +57,8 @@ private:
 	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers;
 	std::vector<SortFunctor *> _sortFunctors;
 	std::vector<SortFunctor *> _sortFunctorsPlus;
+	bool _doNotReset;
+
 	///initializes the display list
 	void initList(size_t scrl);
 public:

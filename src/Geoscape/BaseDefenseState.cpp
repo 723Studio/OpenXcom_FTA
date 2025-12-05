@@ -39,6 +39,7 @@
 #include "../Engine/Sound.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
+#include "../Mod/RuleInterface.h"
 
 namespace OpenXcom
 {
@@ -50,8 +51,10 @@ namespace OpenXcom
  * @param ufo Pointer to the attacking ufo.
  * @param state Pointer to the Geoscape.
  */
-BaseDefenseState::BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state) : _state(state)
+BaseDefenseState::BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state, bool instaHyper) : _state(state)
 {
+	bool showUfo = _game->getMod()->showUfoPreviewInBaseDefense();
+
 	_base = base;
 	_action = BDA_NONE;
 	_row = -1;
@@ -65,24 +68,27 @@ BaseDefenseState::BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state) :
 	_txtInit = new Text(300, 10, 16, 24);
 	_lstDefenses = new TextList(300, 128, 16, 40);
 	_btnOk = new TextButton(120, 18, 100, 170);
-	_btnStart = new TextButton(148, 16, 8, 176);
-	_btnAbort = new TextButton(148, 16, 164, 176);
+	_btnStart = new TextButton(showUfo ? 148-13 : 148, 16, 8, 176);
+	_btnAbort = new TextButton(showUfo ? 148+13 : 148, 16, showUfo ? 164-13 : 164, 176);
+	_preview = new InteractiveSurface(160, 96, 151, 75);
 
 	// Set palette
-	setInterface("baseDefense");
+	std::string baseDefenseInterface = showUfo ? "baseDefense_geo" : "baseDefense";
+	setInterface(baseDefenseInterface);
 
-	add(_window, "window", "baseDefense");
-	add(_btnOk, "button", "baseDefense");
-	add(_btnStart, "button", "baseDefense");
-	add(_btnAbort, "button", "baseDefense");
-	add(_txtTitle, "text", "baseDefense");
-	add(_txtInit, "text", "baseDefense");
-	add(_lstDefenses, "text", "baseDefense");
+	add(_window, "window", baseDefenseInterface);
+	add(_btnOk, "button", baseDefenseInterface);
+	add(_btnStart, "button", baseDefenseInterface);
+	add(_btnAbort, "button", baseDefenseInterface);
+	add(_txtTitle, "text", baseDefenseInterface);
+	add(_txtInit, "text", baseDefenseInterface);
+	add(_lstDefenses, "text", baseDefenseInterface);
+	add(_preview);
 
 	centerAllSurfaces();
 
 	// Set up objects
-	setWindowBackground(_window, "baseDefense");
+	setWindowBackground(_window, baseDefenseInterface);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&BaseDefenseState::btnOkClick);
@@ -104,6 +110,78 @@ BaseDefenseState::BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state) :
 
 	_lstDefenses->setColumns(3, 134, 70, 50);
 	_lstDefenses->setFlooding(true);
+
+	if (showUfo)
+	{
+		RuleInterface* dogfightInterface = _game->getMod()->getInterface("dogfight");
+
+		SurfaceCrop crop = _game->getMod()->getSurface("INTERWIN.DAT")->getCrop();
+		crop.setX(0);
+		crop.setY(0);
+		crop.getCrop()->x = 0;
+		crop.getCrop()->y = 0;
+		crop.getCrop()->w = _preview->getWidth();
+		crop.getCrop()->h = _preview->getHeight();
+		//_preview->drawRect(crop.getCrop(), 15);
+		//crop.blit(_preview);
+
+		_preview->drawRect(crop.getCrop(), 15);
+		crop.getCrop()->y = dogfightInterface->getElement("previewTop")->y;
+		crop.getCrop()->h = dogfightInterface->getElement("previewTop")->h;
+		crop.blit(_preview);
+
+		crop.setY(_preview->getHeight() - dogfightInterface->getElement("previewBot")->h);
+		crop.getCrop()->y = dogfightInterface->getElement("previewBot")->y;
+		crop.getCrop()->h = dogfightInterface->getElement("previewBot")->h;
+		crop.blit(_preview);
+
+		if (ufo->getRules()->getModSprite().empty())
+		{
+			crop.getCrop()->y = dogfightInterface->getElement("previewMid")->y + dogfightInterface->getElement("previewMid")->h * _ufo->getRules()->getSprite();
+			crop.getCrop()->h = dogfightInterface->getElement("previewMid")->h;
+		}
+		else
+		{
+			crop = _game->getMod()->getSurface(ufo->getRules()->getModSprite())->getCrop();
+		}
+		crop.setX(dogfightInterface->getElement("previewTop")->x);
+		crop.setY(dogfightInterface->getElement("previewTop")->h);
+		crop.blit(_preview);
+
+		// extra info
+		bool extraInfo = ufo->getHyperDetected();
+		if (!extraInfo && instaHyper)
+		{
+			for (auto* fac : *_base->getFacilities())
+			{
+				if (fac->getBuildTime() == 0 && fac->getRules()->isHyperwave())
+				{
+					extraInfo = true;
+					break;
+				}
+			}
+		}
+		if (extraInfo)
+		{
+			std::ostringstream ss;
+			ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getRules()->getType());
+			_lstDefenses->addRow(3, tr("STR_CRAFT_TYPE").c_str(), ss.str().c_str(), "");
+
+			ss.str("");
+			ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getAlienRace());
+			_lstDefenses->addRow(3, tr("STR_RACE").c_str(), ss.str().c_str(), "");
+
+			ss.str("");
+			ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getMissionType());
+			_lstDefenses->addRow(3, tr("STR_MISSION").c_str(), ss.str().c_str(), "");
+
+		}
+	}
+	else
+	{
+		_preview->setVisible(false);
+	}
+
 	_gravShields = _base->getGravShields();
 	_defenses = _base->getDefenses()->size();
 	_timer = new Timer(250);
@@ -113,7 +191,14 @@ BaseDefenseState::BaseDefenseState(Base *base, Ufo *ufo, GeoscapeState *state) :
 
 	if (_ufo->getRules()->getMissilePower() != 0)
 	{
-		btnStartClick(0);
+		if (showUfo)
+		{
+			_btnAbort->setVisible(false);
+		}
+		else
+		{
+			btnStartClick(0);
+		}
 	}
 }
 
@@ -128,6 +213,71 @@ BaseDefenseState::~BaseDefenseState()
 void BaseDefenseState::think()
 {
 	_timer->think(this, 0);
+}
+
+bool BaseDefenseState::applyDamage(const RuleBaseFacility* rule)
+{
+	bool shieldDown = false;
+
+	int power = rule->getDefenseValue();
+
+	if (rule->unifiedDamageFormula() && rule->getAmmoItem())
+	{
+		// unified damage formula
+		int damage = rule->getAmmoItem()->getDamageType()->getRandomDamage(power);
+
+		if (_ufo->getShield() != 0)
+		{
+			int shieldDamage = damage * rule->getShieldDamageModifier() / 100;
+			if (rule->getShieldDamageModifier() == 0)
+			{
+				damage = 0;
+			}
+			else
+			{
+				// scale down by bleed-through factor and scale up by shield-effectiveness factor
+				damage = std::max(0, shieldDamage - _ufo->getShield()) * _ufo->getCraftStats().shieldBleedThrough / rule->getShieldDamageModifier();
+			}
+			_ufo->setShield(_ufo->getShield() - shieldDamage);
+
+			if (_ufo->getShield() == 0)
+			{
+				shieldDown = true;
+			}
+		}
+
+		damage = std::max(0, damage - _ufo->getCraftStats().armor);
+		_ufo->setDamage(_ufo->getDamage() + damage, _game->getMod());
+	}
+	else
+	{
+		// vanilla dmg formula: 50-150%
+		int dmg = power / 2 + RNG::generate(0, power);
+
+		if (_ufo->getShield() > 0)
+		{
+			int shieldDmg = dmg * rule->getShieldDamageModifier() / 100;
+			if (rule->getShieldDamageModifier() == 0)
+			{
+				dmg = 0;
+			}
+			else
+			{
+				// scale down by bleed-through factor NOT performed for backwards-compatibility
+				// only scale up by shield-effectiveness factor
+				dmg = std::max(0, shieldDmg - _ufo->getShield()) * 100 / rule->getShieldDamageModifier();
+			}
+			_ufo->setShield(_ufo->getShield() - shieldDmg);
+
+			if (_ufo->getShield() == 0)
+			{
+				shieldDown = true;
+			}
+		}
+		_ufo->setDamage(_ufo->getDamage() + dmg, _game->getMod());
+	}
+
+	return shieldDown;
 }
 
 void BaseDefenseState::nextStep()
@@ -196,6 +346,9 @@ void BaseDefenseState::nextStep()
 		bool hasOwnAmmo = def->getRules()->getAmmoMax() > 0;
 		bool spendAmmo = false;
 
+		int chanceToHit = def->getRules()->getHitRatio(); // vanilla xcom
+		chanceToHit -= _ufo->getCraftStats().avoidBonus2;
+
 		switch (_action)
 		{
 		case  BDA_NONE:
@@ -233,7 +386,7 @@ void BaseDefenseState::nextStep()
 			{
 				//_lstDefenses->setCellText(_row, 2, tr("STR_NO_AMMO"));
 			}
-			else if (!RNG::percent((def)->getRules()->getHitRatio()))
+			else if (!RNG::percent(chanceToHit))
 			{
 				spendAmmo = true;
 				_lstDefenses->setCellText(_row, 2, tr("STR_MISSED"));
@@ -243,15 +396,18 @@ void BaseDefenseState::nextStep()
 				spendAmmo = true;
 				_lstDefenses->setCellText(_row, 2, tr("STR_HIT"));
 				_game->getMod()->getSound("GEO.CAT", (def)->getRules()->getHitSound())->play();
-				int dmg = (def)->getRules()->getDefenseValue();
-				dmg = dmg / 2 + RNG::generate(0, dmg);
-				if (_ufo->getShield() > 0)
+
+				bool shieldDown = applyDamage(def->getRules());
+
+				if (shieldDown)
 				{
-					int shieldDamage = dmg;
-					dmg = std::max(0, dmg - _ufo->getShield());
-					_ufo->setShield(_ufo->getShield() - shieldDamage);
+					_lstDefenses->addRow(3, tr("STR_UFO_SHIELD_DOWN").c_str(), " ", " ");
+					++_row;
+					if (_row > 14)
+					{
+						_lstDefenses->scrollDown(true);
+					}
 				}
-				_ufo->setDamage(_ufo->getDamage() + dmg, _game->getMod());
 			}
 			if (spendAmmo && ammoNeeded > 0)
 			{
@@ -284,6 +440,9 @@ void BaseDefenseState::nextStep()
 */
 void BaseDefenseState::btnStartClick(Action *)
 {
+	_preview->setVisible(false);
+	_lstDefenses->clearList();
+
 	_btnStart->setVisible(false);
 	_btnAbort->setVisible(false);
 	_timer->start();

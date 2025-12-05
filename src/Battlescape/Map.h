@@ -73,9 +73,10 @@ private:
 	int _nvColor;
 	Game *_game;
 	SavedBattleGame *_save;
-	Surface *_arrow, *_missionPointer, *_sensorPointer, *_hackingObjectPointer, *_samplingObjectPointer;
+	bool _isTFTD;
+	Surface *_arrow, *_hackingObjectPointer, *_samplingObjectPointer;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
-	bool _anyIndicator, _isAltPressed;
+	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;
 	int _selectorX, _selectorY;
 	int _mouseX, _mouseY;
@@ -111,6 +112,7 @@ private:
 	int _hostileBarColor, _neutralBarColor, _borderBarColor;
 	const std::vector<Uint8> *_transparencies;
 	bool _showObstacles;
+	bool _showInfoOnCursor;
 public:
 	/// Creates a new map at the specified position and size.
 	Map(Game* game, int width, int height, int x, int y, int visibleMapHeight);
@@ -159,6 +161,8 @@ public:
 	bool getFollowProjectile() const { return _followProjectile; }
 	/// Gets alt pressed flag.
 	bool isAltPressed() const { return _isAltPressed; }
+	/// Gets ctrl pressed flag.
+	bool isCtrlPressed() const { return _isCtrlPressed; }
 	/// Add new vapor particle.
 	void addVaporParticle(Position pos, Particle particle);
 	/// Get all vapor for tile.

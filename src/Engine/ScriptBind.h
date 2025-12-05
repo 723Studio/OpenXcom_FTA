@@ -251,6 +251,9 @@ struct ParserWriter
 	/// Add new reg arg.
 	ScriptRefData addReg(const ScriptRef& s, ArgEnum type);
 
+	/// Add new local const.
+	ScriptRefData addConst(const ScriptRef& s, ArgEnum type, ScriptValueData value);
+
 
 
 	/// Add new code scope.
@@ -991,16 +994,15 @@ struct BindMemberInvokeImpl //Work araound ICC 19.0.1 bug
 	template<typename T, typename... TRest>
 	static auto f(T&& a, TRest&&... b) -> decltype(auto)
 	{
-		using ReturnType = std::invoke_result_t<typename Ptr::Type, T, TRest...>;
-
-		ReturnType v = std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...);
 		if constexpr (sizeof...(Rest) > 0)
 		{
-			return BindMemberInvokeImpl<Rest...>::f(std::forward<ReturnType>(v));
+			return BindMemberInvokeImpl<Rest...>::f(
+				std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...)
+			);
 		}
 		else
 		{
-			return std::forward<ReturnType>(v);
+			return std::invoke(Ptr::val(), std::forward<T>(a), std::forward<TRest>(b)...);
 		}
 	}
 };
@@ -1325,9 +1327,10 @@ struct BindListInitImpl<bool (*)(T*, V* v, Args...), Func, X...>
 	{
 		if (t)
 		{
+			auto& obj = BindMemberInvoke<X...>::f(t);
 			curr = 0;
-			limit = BindMemberInvoke<X...>::f(t).size();
-			for (auto* u : BindMemberInvoke<X...>::f(t))
+			limit = std::size(obj);
+			for (auto* u : obj)
 			{
 				if (Func(t, u, std::forward<Args>(args)...))
 				{
@@ -1363,18 +1366,20 @@ struct BindListLoopImpl<bool (*)(T*, V* v, Args...), Func, X...>
 	{
 		if (t)
 		{
-			if ((size_t)curr < BindMemberInvoke<X...>::f(t).size())
+			auto& obj = BindMemberInvoke<X...>::f(t);
+			size_t l = std::size(obj);
+			if ((size_t)curr < l)
 			{
-				r = BindMemberInvoke<X...>::f(t).at(curr);
+				r = obj[curr];
 			}
 			else
 			{
 				r = nullptr;
 			}
 			++curr;
-			for (;(size_t)curr < BindMemberInvoke<X...>::f(t).size(); ++curr)
+			for (;(size_t)curr < l; ++curr)
 			{
-				if (Func(t, BindMemberInvoke<X...>::f(t).at(curr), std::forward<Args>(args)...))
+				if (Func(t, obj[curr], std::forward<Args>(args)...))
 				{
 					break;
 				}
@@ -1575,21 +1580,21 @@ struct Bind : BindBase
 
 
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get)
+	void addField(const std::string& getFuncName)
 	{
-		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get field of " + prefix);
+		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(getFuncName), "Get field of " + prefix);
 	}
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get, const std::string& set)
+	void addField(const std::string& getFuncName, const std::string& setFuncName)
 	{
-		addField<MemPtr0, MemPtrR...>(get);
-		addCustomFunc<helper::BindPropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(set), "Set field of " + prefix);
+		addField<MemPtr0, MemPtrR...>(getFuncName);
+		addCustomFunc<helper::BindPropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(setFuncName), "Set field of " + prefix);
 	}
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get, const std::string& set, const std::string& add)
+	void addField(const std::string& getFuncName, const std::string& setFuncName, const std::string& addFuncName)
 	{
-		addField<MemPtr0, MemPtrR...>(get, set);
-		addCustomFunc<helper::BindPropAdd<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(add), "Add to field of " + prefix);
+		addField<MemPtr0, MemPtrR...>(getFuncName, setFuncName);
+		addCustomFunc<helper::BindPropAdd<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(addFuncName), "Add to field of " + prefix);
 	}
 
 
@@ -1687,6 +1692,11 @@ struct Bind : BindBase
 	{
 		addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(X)>>(getName(func), description);
 	}
+	template<auto MemPtr0, auto MemPtr1, auto... MemPtrR>
+	void add(const std::string& func, const std::string& description = BindBase::functionWithoutDescription)
+	{
+		addCustomFunc<helper::BindPropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtr1), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(func), description);
+	}
 };
 
 template<typename T>
@@ -1740,21 +1750,21 @@ struct BindValue : BindBase
 
 
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get)
+	void addField(const std::string& getFuncName)
 	{
-		addCustomFunc<helper::BindValuePropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(get), "Get field of " + prefix);
+		addCustomFunc<helper::BindValuePropGet<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(getFuncName), "Get field of " + prefix);
 	}
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get, const std::string& set)
+	void addField(const std::string& getFuncName, const std::string& setFuncName)
 	{
-		addField<MemPtr0, MemPtrR...>(get);
-		addCustomFunc<helper::BindValuePropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0),  MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(set), "Set field of " + prefix);
+		addField<MemPtr0, MemPtrR...>(getFuncName);
+		addCustomFunc<helper::BindValuePropSet<T, MACRO_CLANG_AUTO_HACK(MemPtr0),  MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(setFuncName), "Set field of " + prefix);
 	}
 	template<auto MemPtr0, auto... MemPtrR>
-	void addField(const std::string& get, const std::string& set, const std::string& add)
+	void addField(const std::string& getFuncName, const std::string& setFuncName, const std::string& addFuncName)
 	{
-		addField<MemPtr0, MemPtrR...>(get, set);
-		addCustomFunc<helper::BindValuePropAdd<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(add), "Add to field of " + prefix);
+		addField<MemPtr0, MemPtrR...>(getFuncName, setFuncName);
+		addCustomFunc<helper::BindValuePropAdd<T, MACRO_CLANG_AUTO_HACK(MemPtr0), MACRO_CLANG_AUTO_HACK(MemPtrR)...>>(getName(addFuncName), "Add to field of " + prefix);
 	}
 
 

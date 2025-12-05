@@ -28,7 +28,7 @@ namespace OpenXcom
  * Creates a blank alien race.
  * @param id String defining the id.
  */
-AlienRace::AlienRace(const std::string &id) : _id(id), _retaliationAggression(0), _raceType(RACE_TYPE_ALIEN)
+AlienRace::AlienRace(const std::string &id, int listOrder) : _id(id), _retaliationAggression(0), _raceType(RACE_TYPE_ALIEN), _listOrder(listOrder)
 {
 }
 
@@ -44,29 +44,27 @@ AlienRace::~AlienRace()
  * Loads the alien race from a YAML file.
  * @param node YAML node.
  */
-void AlienRace::load(const YAML::Node &node, const Mod* mod)
+void AlienRace::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	_baseCustomDeploy = node["baseCustomDeploy"].as<std::string>(_baseCustomDeploy);
-	_baseCustomMission = node["baseCustomMission"].as<std::string>(_baseCustomMission);
-	_members = node["members"].as< std::vector<std::string> >(_members);
-	_membersRandom = node["membersRandom"].as< std::vector <std::vector<std::string> > >(_membersRandom);
-	_retaliationAggression = node["retaliationAggression"].as<int>(_retaliationAggression);
-	_raceType = (RaceType)node["raceType"].as<int>(_raceType);
+	reader.tryRead("baseCustomDeploy", _baseCustomDeploy);
+	reader.tryRead("baseCustomMission", _baseCustomMission);
+	reader.tryRead("members", _members);
+	reader.tryRead("membersRandom", _membersRandom);
+	reader.tryRead("retaliationAggression", _retaliationAggression);
+	reader.tryRead("raceType", _raceType);
 
-	if (const YAML::Node& weights = node["retaliationMissionWeights"])
+	for (const auto& weights : reader["retaliationMissionWeights"].children())
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
-		{
-			WeightedOptions* nw = new WeightedOptions();
-			nw->load(nn->second);
-			_retaliationMissionDistribution.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
-		}
+		WeightedOptions* nw = new WeightedOptions();
+		nw->load(weights);
+		_retaliationMissionDistribution.push_back(std::make_pair(weights.readKey<size_t>(0), nw));
 	}
+	reader.tryRead("listOrder", _listOrder);
 }
 
 /**

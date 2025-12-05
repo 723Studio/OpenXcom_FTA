@@ -20,13 +20,14 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
 
-	class Mod;
+class Mod;
+class RuleResearch;
 /**
 * Definition of one custom player answer to Geoscape Event.
 */
@@ -38,12 +39,12 @@ struct CustomAnswer
 	std::string description;
 
 	/// Loads stats from YAML.
-	void load(const YAML::Node& node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		title = node["title"].as<std::string>(title);
-		spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(spawnEvents);
-		weightedEvents.load(node["weightedEvents"]);
-		description = node["description"].as<std::string>(description);
+		reader.tryRead("title", title);
+		reader.tryRead("spawnEvents", spawnEvents);
+		weightedEvents.load(reader["weightedEvents"]);
+		reader.tryRead("description", description);
 	}
 };
 
@@ -54,7 +55,7 @@ struct CustomAnswer
 class RuleEvent
 {
 private:
-	std::string _name, _description, _background, _music;
+	std::string _name, _description, _background, _music, _cutscene;
 	std::vector<std::string> _regionList;
 	bool _alignBottom;
 	bool _city;
@@ -62,16 +63,21 @@ private:
 	std::string _spawnedCraftType;
 	int _spawnedPersons, _counterValue;
 	std::string _spawnedPersonType, _spawnedPersonName;
-	YAML::Node _spawnedSoldier;
-	std::map<std::string, int> _everyMultiItemList, _reputationScore;
+	YAML::YamlString _spawnedSoldier;
+	std::map<std::string, int> _everyMultiItemList;
 	std::vector<std::string> _everyItemList, _randomItemList;
 	std::vector<std::map<std::string, int> > _randomMultiItemList;
 	WeightedOptions _weightedItemList;
-	std::vector<std::string> _researchList;
+	std::vector<std::string> _researchNames;
+	std::vector<const RuleResearch*> _research;
 	std::vector<std::string> _decreaseCounter, _increaseCounter;
-	std::vector<std::string> _removedCovertOperationsList;
+	std::vector<std::string> _adhocMissionScriptTags;
 	std::string _interruptResearch;
+	std::vector<std::string> _removedCovertOperationsList;
 	int _timer, _timerRandom;
+	bool _invert;
+	std::map<std::string, int> _everyMultiSoldierList;
+	std::vector<std::map<std::string, int> > _randomMultiSoldierList;
 	std::map<int, CustomAnswer> _answers;
 public:
 	/// Creates a blank RuleEvent.
@@ -79,7 +85,10 @@ public:
 	/// Cleans up the event ruleset.
 	~RuleEvent() = default;
 	/// Loads the event definition from YAML.
-	void load(const YAML::Node &node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
+	/// Cross link with other rules.
+	void afterLoad(const Mod* mod);
+
 	/// Gets the event's name.
 	const std::string &getName() const { return _name; }
 	/// Gets the event's description.
@@ -90,6 +99,8 @@ public:
 	const std::string &getBackground() const { return _background; }
 	/// Gets the event's music.
 	const std::string &getMusic() const { return _music; }
+	/// Gets the cutscene to play when the event dialog is closed.
+	const std::string &getCutscene() const { return _cutscene; }
 	/// Gets a list of regions where this event can occur.
 	const std::vector<std::string> &getRegionList() const { return _regionList; }
 	/// Is this event city specific?
@@ -116,7 +127,7 @@ public:
 	/// Gets the custom name of the spawned person.
 	const std::string& getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
-	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 
 	/// Gets a list reputation score to update.
 	const std::map<std::string, int>& getReputationScore() const { return _reputationScore; }
@@ -131,7 +142,9 @@ public:
 	/// Gets a list of items; one of them is randomly selected (considering weights) and transferred to HQ stores when this event pops up.
 	const WeightedOptions &getWeightedItemList() const { return _weightedItemList; }
 	/// Gets a list of research projects; one of them will be randomly discovered when this event pops up.
-	const std::vector<std::string> &getResearchList() const { return _researchList; }
+	const std::vector<const RuleResearch*> &getResearchList() const { return _research; }
+	/// Gets a list of adhoc script tags; used for adhoc alien mission generation.
+	const std::vector<std::string> &getAdhocMissionScriptTags() const { return _adhocMissionScriptTags; }
 	/// Gets a covered otions that should be removed
 	const std::vector<std::string>& getRemovedCovertOperationsList() const { return _removedCovertOperationsList; }
 	/// Gets the research project that will interrupt/terminate an already generated (but not yet popped up) event.
@@ -142,6 +155,13 @@ public:
 	int getTimerRandom() const { return _timerRandom; }
 	/// Gets custom player answers for this event.
 	const std::map<int, CustomAnswer>&getCustomAnswers() const { return _answers; }
+	/// Should the event remove items instead of adding them?
+	bool getInvert() const { return _invert; }
+
+	/// Gets a list of soldiers; they are all transferred to HQ when this event pops up.
+	const std::map<std::string, int> &getEveryMultiSoldierList() const { return _everyMultiSoldierList; }
+	/// Gets a list of lists of soldiers; one of them is randomly selected and transferred to HQ when this event pops up.
+	const std::vector<std::map<std::string, int> > &getRandomMultiSoldierList() const { return _randomMultiSoldierList; }
 };
 
 }

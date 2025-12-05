@@ -50,6 +50,7 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtMission, *_txtRating, *_txtDate, *_txtDeathTitle, *_txtDeathInfo, *_txtDeathDate;
 	TextList *_lstDiary;
+	bool _doNotReset;
 
 public:
 	/// Creates the Soldier Diary state.

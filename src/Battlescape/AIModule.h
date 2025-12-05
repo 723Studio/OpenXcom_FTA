@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "BattlescapeGame.h"
 #include "Position.h"
 #include "../Savegame/BattleUnit.h"
@@ -34,6 +34,13 @@ class BattlescapeState;
 class Node;
 
 enum AIMode { AI_PATROL, AI_AMBUSH, AI_COMBAT, AI_ESCAPE };
+enum AIAttackWeight : int
+{
+	/// Base scale of attack weights
+	AIW_SCALE = 100,
+	AIW_IGNORED = 0,
+};
+
 /**
  * This class is used by the BattleUnit AI.
  */
@@ -62,6 +69,8 @@ private:
 	void meleeActionLeeroy(bool canRun);
 	void dont_think(BattleAction *action);
 public:
+	bool medikit_think(BattleMediKitType healOrStim);
+public:
 	/// Creates a new AIModule linked to the game and a certain unit.
 	AIModule(SavedBattleGame *save, BattleUnit *unit, Node *node);
 	/// Cleans up the AIModule.
@@ -71,9 +80,9 @@ public:
 	/// Resets the unsaved AI state.
 	void reset();
 	/// Loads the AI Module from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Saves the AI Module to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Runs Module functionality every AI cycle.
 	void think(BattleAction *action);
 	/// Sets the "unit was hit" flag true.
@@ -131,8 +140,12 @@ public:
 	bool psiAction();
 	/// Performs a melee attack action.
 	void meleeAttack();
+
+	/// How much given unit is worth as target of attack.
+	AIAttackWeight getTargetAttackWeight(BattleUnit* target) const;
 	/// Checks to make sure a target is valid, given the parameters
 	bool validTarget(BattleUnit* target, bool assessDanger, bool includeCivs) const;
+
 	/// Checks the alien's TU reservation setting.
 	BattleActionType getReserveMode();
 	/// Assuming we have both a ranged and a melee weapon, we have to select one.

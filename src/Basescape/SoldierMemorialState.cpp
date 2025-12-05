@@ -114,7 +114,7 @@ SoldierMemorialState::SoldierMemorialState()
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&SoldierMemorialState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&SoldierMemorialState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 }

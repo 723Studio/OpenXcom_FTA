@@ -29,6 +29,7 @@
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include <climits>
+#include "../Mod/Texture.h"
 
 namespace OpenXcom
 {
@@ -239,6 +240,22 @@ BasePlacementErrors BaseView::getPlacementError(const RuleBaseFacility *rule, Ba
 		if (areaUseError != BPE_None)
 		{
 			return areaUseError;
+		}
+	}
+
+	// Check if all squares are occupied already (for facilities that can be built only as upgrades)
+	if (rule->isUpgradeOnly())
+	{
+		for (int y = placementArea.beg_y; y < placementArea.end_y; ++y)
+		{
+			for (int x = placementArea.beg_x; x < placementArea.end_x; ++x)
+			{
+				BaseFacility* facility = _facilities[x][y];
+				if (!facility)
+				{
+					return BPE_UpgradeOnly;
+				}
+			}
 		}
 	}
 
@@ -475,7 +492,7 @@ void BaseView::draw()
 	{
 		for (int y = 0; y < BASE_SIZE; ++y)
 		{
-			Surface *frame = _texture->getFrame(0);
+			Surface *frame = _texture->getFrame(_base->getGlobeTexture() ? _base->getGlobeTexture()->getBaseGridSprite() : 0);
 			int fx = (x * GRID_SIZE);
 			int fy = (y * GRID_SIZE);
 			frame->blitNShade(this, fx, fy);

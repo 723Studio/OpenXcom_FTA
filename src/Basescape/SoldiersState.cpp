@@ -33,6 +33,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/BattleUnit.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/CovertOperation.h"
@@ -53,7 +54,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
  */
-SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
+SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL), _mainOffset(0)
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
@@ -120,7 +121,8 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&SoldiersState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnOkClick, Options::keyCancel);
-	//_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
+	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
+	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnTransformationsOverviewClick, SDLK_t);
 
 	_btnPsiTraining->setText(tr("STR_PSI_TRAINING"));
 	_btnPsiTraining->onMouseClick((ActionHandler)&SoldiersState::btnPsiTrainingClick);
@@ -163,7 +165,10 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 			_availableOptions.push_back("STR_TRAINING");
 
 		if (isTransformationAvailable)
+		{
+			_mainOffset = _availableOptions.size();
 			_availableOptions.push_back("STR_TRANSFORMATIONS_OVERVIEW");
+		}
 
 		bool refreshDeadSoldierStats = false;
 		for (const auto* transformationRule : availableTransformations)
@@ -455,7 +460,7 @@ void SoldiersState::init()
 	_base->setInBattlescape(false);
 
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
-	initList(0);
+	initList(_lstSoldiers->getScroll());
 }
 
 /**
@@ -633,6 +638,21 @@ void SoldiersState::btnMemorialClick(Action *)
 }
 
 /**
+ * Opens the Transformations Overview screen.
+ * @param action Pointer to an action.
+ */
+void SoldiersState::btnTransformationsOverviewClick(Action *)
+{
+	if (_mainOffset > 0)
+	{
+		// needed in SoldierTransformationListState::lstTransformationsClick()
+		_cbxScreenActions->setSelected(_mainOffset);
+
+		_game->pushState(new SoldierTransformationListState(_base, _cbxScreenActions));
+	}
+}
+
+/**
  * Opens the selected screen from the combo box
  * @param action Pointer to an action
  */
@@ -672,6 +692,49 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 }
 
 /**
+* Displays the inventory screen for the soldiers inside the base.
+* @param action Pointer to an action.
+*/
+void SoldiersState::btnInventoryClick(Action *)
+{
+	if (_base->getAvailableSoldiers(true, true) > 0)
+	{
+		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
+		_game->getSavedGame()->setBattleGame(bgame);
+		bgame->setMissionType("STR_BASE_DEFENSE");
+
+		if (_game->isCtrlPressed() && _game->isAltPressed())
+		{
+			_game->getSavedGame()->setDisableSoldierEquipment(true);
+		}
+		BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+		bgen.setBase(_base);
+		bgen.runInventory(0);
+
+		// pre-select the soldier under the mouse cursor (if possible)
+		if (_availableOptions.empty() || _cbxScreenActions->getSelected() == 0)
+		{
+			size_t idx = _lstSoldiers->getSelectedRow();
+			if (idx < _base->getSoldiers()->size())
+			{
+				int soldierId = _base->getSoldiers()->at(idx)->getId();
+				for (auto* unit : *bgame->getUnits())
+				{
+					if (unit->getId() == soldierId)
+					{
+						bgame->setSelectedUnit(unit);
+						break;
+					}
+				}
+			}
+		}
+
+		_game->getScreen()->clear();
+		_game->pushState(new InventoryState(false, 0, _base, true));
+	}
+}
+
+/**
  * Shows the selected soldier's info.
  * @param action Pointer to an action.
  */
@@ -696,13 +759,35 @@ void SoldiersState::lstSoldiersClick(Action *action)
 		selAction == "STR_ENGINEER_INFO") 
 		|| action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
-		if (_ftaUI)
+		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 		{
-			_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			btnInventoryClick(nullptr);
 		}
 		else
 		{
-			_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			if (_ftaUI)
+			{
+				_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			}
+			else
+			{
+				_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			}
+		}
+	}
+	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	{
+		size_t idx = _lstSoldiers->getSelectedRow();
+		if (idx < _filteredIndicesOfSoldiers.size())
+		{
+			if (_ftaUI)
+			{
+				_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			}
+			else
+			{
+				_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
+			}
 		}
 	}
 	else

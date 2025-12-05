@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
 
@@ -47,8 +47,8 @@ private:
 	int _listOrder, _cost, _transferTime, _recoveryTime;
 	int _transformationTime;
 	int _minRank;
-	bool _includeBonusesForMinStats;
-	UnitStats _requiredMinStats, _flatOverallStatChange, _percentOverallStatChange, _percentGainedStatChange;
+	bool _includeBonusesForMinStats, _includeBonusesForMaxStats;
+	UnitStats _requiredMinStats, _requiredMaxStats, _flatOverallStatChange, _percentOverallStatChange, _percentGainedStatChange;
 	UnitStats _flatMin, _flatMax, _percentMin, _percentMax, _percentGainedMin, _percentGainedMax;
 	bool _showMinMax;
 	UnitStats _rerollStats;
@@ -57,6 +57,7 @@ private:
 	SoldierRole _addRole;
 	std::map<SoldierRole, int> _roleRankRequirements;
 	SoldierRole _forbiddenRole;
+	std::vector<std::string> _removeTransformations;
 	bool _reset;
 	bool _resetRank;
 	std::string _soldierBonusType;
@@ -66,7 +67,7 @@ public:
 	/// Default constructor
 	RuleSoldierTransformation(const std::string &name, int listOrder);
 	/// Loads the project data from YAML
-	void load(const YAML::Node& node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Gets the unique name id of the project
 	const std::string &getName() const;
 	/// Gets the description of the project
@@ -103,8 +104,12 @@ public:
 	const std::vector<std::string > &getForbiddenPreviousTransformations() const;
 	/// Gets whether or not to include soldier bonuses when checking required min stats.
 	bool getIncludeBonusesForMinStats() const { return _includeBonusesForMinStats; }
+	/// Gets whether or not to include soldier bonuses when checking required max stats.
+	bool getIncludeBonusesForMaxStats() const { return _includeBonusesForMaxStats; }
 	/// Gets the minimum stats a soldier needs to be eligible for this project
 	const UnitStats &getRequiredMinStats() const;
+	/// Gets the maximum stats a soldier can have to be eligible for this project
+	const UnitStats &getRequiredMaxStats() const;
 	/// Gets the list of items necessary to complete this project
 	const std::map<std::string, int> &getRequiredItems() const;
 	/// Gets the list of commendations necessary to complete this project
@@ -153,10 +158,15 @@ public:
 	/// Gets whether to use soft upper bound limit or not.
 	bool isSoftLimit(bool isSameSoldierType) const;
 
+	/// Gets the role to add to the soldier when undergoing this project
 	SoldierRole getRoleToAdd() const { return _addRole; }
+	/// Gets the map of role rank requirements for this project
 	std::map<SoldierRole, int> getRoleRankRequirments() const { return _roleRankRequirements; }
+	/// Gets the role that forbids a soldier from undergoing this project
 	SoldierRole getForbiddenRole() const { return _forbiddenRole; }
 
+	/// Gets the list of (potential) previous soldier transformations to remove when undergoing this project
+	const std::vector<std::string>& getRemoveTransformations() const { return _removeTransformations; }
 	/// Gets whether or not this project should reset info about all previous transformations and all previously assigned soldier bonuses
 	bool getReset() const;
 	/// Gets whether or not this project should reset the rank of the destination soldier to rookie

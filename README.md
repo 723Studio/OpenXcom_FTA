@@ -163,6 +163,7 @@ User and Config folder:
 
 Data folders:
 - C:\Documents and Settings\\\<user\>\My Documents\OpenXcom\data (Windows 2000/XP)
+- DATADIR build flag
 - C:\Users\\\<user\>\Documents\OpenXcom\data (Windows Vista/7/8)
 - \<game directory\>
 - . (the current directory)
@@ -178,8 +179,9 @@ User and Config folder:
 Data folders:
 - $XDG\_DATA\_HOME/openxcom (if $XDG\_DATA\_HOME is defined)
 - $HOME/Library/Application Support/OpenXcom (if $XDG\_DATA\_HOME is not defined)
+- DATADIR build flag
 - $XDG\_DATA\_DIRS/openxcom (for each directory in $XDG\_DATA\_DIRS if $XDG\_DATA\_DIRS is defined)
-- /Users/Shared/OpenXcom
+- /Users/Shared/OpenXcom (if $XDG\_DATA\_DIRS is not defined or is empty)
 - . (the current directory)
 
 ### Linux
@@ -197,9 +199,11 @@ Config folder:
 Data folders:
 - $XDG\_DATA\_HOME/openxcom (if $XDG\_DATA\_HOME is defined)
 - $HOME/.local/share/openxcom (if $XDG\_DATA\_HOME is not defined)
+- DATADIR build flag
 - $XDG\_DATA\_DIRS/openxcom (for each directory in $XDG\_DATA\_DIRS if $XDG\_DATA\_DIRS is defined)
-- /usr/local/share/openxcom
-- /usr/share/openxcom
+- /usr/local/share/openxcom (if $XDG\_DATA\_DIRS is not defined or is empty)
+- /usr/share/openxcom (if $XDG\_DATA\_DIRS is not defined or is empty)
+- the directory data files were installed to
 - . (the current directory)
 
 ## Configuration
@@ -230,7 +234,6 @@ OpenXcom requires the following developer libraries:
 - [SDL\_mixer](https://www.libsdl.org/projects/SDL_mixer/) (libsdl-mixer1.2)
 - [SDL\_gfx](https://www.ferzkopp.net/wordpress/2016/01/02/sdl_gfx-sdl2_gfx/) (libsdl-gfx1.2), version 2.0.22 or later
 - [SDL\_image](https://www.libsdl.org/projects/SDL_image/) (libsdl-image1.2)
-- [yaml-cpp](https://github.com/jbeder/yaml-cpp), version 0.5.3 or later
 
 - [tiny-AES-c](https://github.com/kokke/tiny-AES-c) — Embedded AES-256-CBC implementation adapted from the tiny-AES-c project (MIT license). The adapted source files are included in `src/Engine/tiny_aes.c` and `src/Engine/tiny_aes.h`.
 

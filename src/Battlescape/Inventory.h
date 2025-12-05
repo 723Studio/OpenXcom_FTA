@@ -56,6 +56,7 @@ private:
 	std::string _searchString;
 	Timer *_animTimer;
 	int _depth, _groundSlotsX, _groundSlotsY;
+	int _xMax;
 	RuleInventory *_inventorySlotRightHand = nullptr;
 	RuleInventory *_inventorySlotLeftHand = nullptr;
 	RuleInventory *_inventorySlotBackPack = nullptr;
@@ -114,6 +115,8 @@ public:
 	void mouseOver(Action *action, State *state) override;
 	/// Special handling for mouse clicks.
 	void mouseClick(Action *action, State *state) override;
+	/// Quickly drops the selected item on the ground.
+	bool quickDrop();
 	/// Unloads the selected weapon.
 	bool unload(bool quickUnload = false);
 	/// Checks whether the given item is visible with the current search string.

@@ -112,7 +112,8 @@ void BuildFacilitiesState::populateBuildList()
 		{
 			continue;
 		}
-		if (rule->isLift() || !_game->getSavedGame()->isResearched(rule->getRequirements()))
+		if ((rule->isLift() && !rule->isUpgradeOnly())
+			|| !_game->getSavedGame()->isResearched(rule->getRequirements()))
 		{
 			continue;
 		}
@@ -139,6 +140,20 @@ void BuildFacilitiesState::populateBuildList()
 				continue;
 			}
 			if ((futureBaseFunc & forb).any())
+			{
+				_disabledFacilities.push_back(rule);
+				continue;
+			}
+		}
+		// but we can still check at least the inherent base funcs (of the base country/region)
+		else
+		{
+			if ((_base->getInherentForbiddenBaseFunc() & prov).any())
+			{
+				_disabledFacilities.push_back(rule);
+				continue;
+			}
+			if ((_base->getInherentFutureBaseFunc() & forb).any())
 			{
 				_disabledFacilities.push_back(rule);
 				continue;

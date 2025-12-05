@@ -16,6 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <assert.h>
 #include <sstream>
 #include "BattlescapeGenerator.h"
@@ -646,8 +647,7 @@ void BattlescapeGenerator::nextStage()
 			{
 				++soldiersTotal;
 				bu->resetTurnsSinceStunned();
-				bu->setTurnsSinceSpotted(255);
-				bu->setTurnsLeftSpottedForSnipers(0);
+				bu->resetTurnsSince();
 				if (!selectedFirstSoldier && bu->getGeoscapeSoldier())
 				{
 					_save->setSelectedUnit(bu);
@@ -986,6 +986,11 @@ void BattlescapeGenerator::run()
 		{
 			deployCivilians(markCiviliansAsVIP, civilianSpawnNodeRank, pair.second, true, pair.first);
 		}
+	}
+
+	if (!isPreview && _craftInventoryTile && ruleDeploy->getNoWeaponPile())
+	{
+		sendItemsToLimbo();
 	}
 
 	if (!isPreview && _generateFuel)
@@ -1391,7 +1396,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		// set all the items on this tile as belonging to the XCOM faction.
 		bi->setXCOMProperty(true);
 		// don't let the soldiers take extra ammo yet
-		if (bi->getRules()->getBattleType() == BT_AMMO)
+		if (bi->getRules()->getBattleType() == BT_AMMO && !Options::oxceAlternateCraftEquipmentManagement)
 			continue;
 		placeItemByLayout(bi, tempItemList);
 	}
@@ -1402,10 +1407,19 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 	// refresh list
 	tempItemList = *_craftInventoryTile->getInventory();
 
+	// sort it, so that ammo is loaded in a predictable and moddable manner
+	std::sort(tempItemList.begin(), tempItemList.end(),
+		[](const BattleItem* a, const BattleItem* b)
+		{
+			return a->getRules()->getLoadOrder() < b->getRules()->getLoadOrder();
+		}
+	);
+
 	// load weapons before loadouts take extra clips.
 	loadWeapons(tempItemList);
 
 	// refresh list
+	// (unsorts it again, which is not a problem)
 	tempItemList = *_craftInventoryTile->getInventory();
 
 	for (BattleItem* bi : tempItemList)
@@ -1588,11 +1602,16 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 		}
 		if ((_craft == 0 || !_craftDeployed) && _covertOperation == 0)
 		{
+			setCustomCraftInventoryTile();
+
 			Node* node = _save->getSpawnNode(NR_XCOM, unit);
 			if (node)
 			{
 				_save->setUnitPosition(unit, node->getPosition());
-				_craftInventoryTile = _save->getTile(node->getPosition());
+				if (!_craftInventoryTile)
+				{
+					_craftInventoryTile = _save->getTile(node->getPosition());
+				}
 				unit->setDirection(RNG::generate(0, 7));
 				_save->getUnits()->push_back(unit);
 				_save->initUnit(unit);
@@ -1602,7 +1621,10 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 			{
 				if (placeUnitNearFriend(unit))
 				{
-					_craftInventoryTile = _save->getTile(unit->getPosition());
+					if (!_craftInventoryTile)
+					{
+						_craftInventoryTile = _save->getTile(unit->getPosition());
+					}
 					unit->setDirection(RNG::generate(0, 7));
 					_save->getUnits()->push_back(unit);
 					_save->initUnit(unit);
@@ -1753,10 +1775,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 		}
 		else
 		{
-			if (_craft)
-			{
-				setCustomCraftInventoryTile();
-			}
+			setCustomCraftInventoryTile();
 
 			for (int i = 0; i < _mapsize_x * _mapsize_y * _mapsize_z; ++i)
 			{
@@ -1781,7 +1800,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
  */
 void BattlescapeGenerator::setCustomCraftInventoryTile()
 {
-	if (_craftInventoryTile == 0)
+	if (_craftInventoryTile == 0 && _craft && _craftDeployed && _craftRules)
 	{
 		// Craft inventory tile position defined in the ruleset
 		const std::vector<int> coords = _craftRules->getCraftInventoryTile();
@@ -1789,6 +1808,16 @@ void BattlescapeGenerator::setCustomCraftInventoryTile()
 		{
 			Position craftInventoryTilePosition = Position(coords[0] + (_craftPos.x * 10), coords[1] + (_craftPos.y * 10), coords[2] + _craftZ);
 			canPlaceXCOMUnit(_save->getTile(craftInventoryTilePosition));
+		}
+	}
+	if (_craftInventoryTile == 0)
+	{
+		// Mapblock inventory tile position defined in the ruleset
+		if (!_backupInventoryTiles.empty())
+		{
+			int pilePick = RNG::generate(0, _backupInventoryTiles.size() - 1);
+			Tile* pileTile = _backupInventoryTiles[pilePick];
+			_craftInventoryTile = pileTile; // no checks
 		}
 	}
 }
@@ -1886,9 +1915,11 @@ void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 
 			std::string alienName = dd.customUnitType.empty() ? race->getMember(dd.alienRank) : dd.customUnitType;
 
-			bool outside = RNG::generate(0,99) < dd.percentageOutsideUfo;
-			if (_ufo == 0)
+			bool outside = RNG::percent(dd.percentageOutsideUfo);
+			if (_ufo == 0 && !deployment->getForcePercentageOutsideUfo())
+			{
 				outside = false;
+			}
 			Unit *rule = _game->getMod()->getUnit(alienName, true);
 			BattleUnit *unit = addAlien(rule, dd.alienRank, outside);
 			size_t itemLevel = (size_t)(_game->getMod()->getAlienItemLevels().at(_save->getAlienItemLevel()).at(RNG::generate(0,9)));
@@ -1988,7 +2019,7 @@ BattleUnit *BattlescapeGenerator::addAlien(Unit *rules, int alienRank, bool outs
 	else
 	{
 		// DEMIGOD DIFFICULTY: screw the player: spawn as many aliens as possible.
-		if (_game->getMod()->isDemigod() && placeUnitNearFriend(unit))
+		if ((_game->getMod()->isDemigod() || Mod::EXTENDED_FORCE_SPAWN) && placeUnitNearFriend(unit))
 		{
 			unit->setRankInt(alienRank);
 			int dir = _save->getTileEngine()->faceWindow(unit->getPosition());
@@ -2388,7 +2419,6 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 			// mixed = false
 			int index = RNG::generate(0, rngItems.itemList.size() - 1);
 			RuleItem *rule = _game->getMod()->getItem(rngItems.itemList[index], true);
-			std::map<std::string, std::pair<int, int> >::const_iterator prime = mapblock->getItemsFuseTimers()->find(rngItems.itemList[index]);
 
 			for (int j = 0; j < rngItems.amount; ++j)
 			{
@@ -2410,13 +2440,85 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
 					throw Exception(ss.str());
 				}
-				BattleItem *item = _save->createItemForTile(rule, _save->getTile(rngItems.position + Position(xoff, yoff, zoff)));
-				if (_game->getMod()->isFTAGame() && prime != primeEnd)
+				BattleItem* newRandItem = _save->createItemForTile(rule, _save->getTile(rngItems.position + Position(xoff, yoff, zoff)));
+				if (rule->getFuseTimerType() != BFT_NONE && rngItems.fuseTimerMin > -1 && rngItems.fuseTimerMax > -1 && rngItems.fuseTimerMin <= rngItems.fuseTimerMax)
 				{
-					item->setFuseTimer(RNG::generate(prime->second.first, prime->second.second));
+					newRandItem->setFuseTimer(RNG::generate(rngItems.fuseTimerMin, rngItems.fuseTimerMax));
 				}
 			}
 		}
+	}
+	// extended items
+	for (auto& extItemDef : *mapblock->getExtendedItems())
+	{
+		RuleItem* extRule = _game->getMod()->getItem(extItemDef.type, true);
+		if (extRule->getBattleType() == BT_CORPSE)
+		{
+			throw Exception("Placing corpse items (battleType: 11) on the map is not allowed. Item: " + extRule->getType() + ", map block: " + mapblock->getName());
+		}
+		for (auto& extPos : extItemDef.pos)
+		{
+			if (extPos.x >= mapblock->getSizeX() || extPos.y >= mapblock->getSizeY() || extPos.z >= mapblock->getSizeZ())
+			{
+				ss << "Extended item " << extRule->getType() << " is outside of map block " << mapblock->getName() << ", position: [";
+				ss << extPos.x << "," << extPos.y << "," << extPos.z << "], block size: [";
+				ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
+				throw Exception(ss.str());
+			}
+			BattleItem* newExtItem = _save->createItemForTile(extRule, _save->getTile(extPos + Position(xoff, yoff, zoff)));
+			if (extItemDef.fuseTimerMin > -1 && extItemDef.fuseTimerMax > -1 && extItemDef.fuseTimerMin <= extItemDef.fuseTimerMax)
+			{
+				newExtItem->setFuseTimer(RNG::generate(extItemDef.fuseTimerMin, extItemDef.fuseTimerMax));
+			}
+			for (auto& extAmmoDef : extItemDef.ammoDef)
+			{
+				RuleItem* extAmmoRule = _game->getMod()->getItem(extAmmoDef.first, true);
+				if (extAmmoRule)
+				{
+					if (extAmmoRule->getBattleType() == BT_CORPSE)
+					{
+						throw Exception("Placing corpse items (battleType: 11) on the map is not allowed. Ammo item: " + extAmmoRule->getType() + ", map block: " + mapblock->getName());
+					}
+					BattleItem* newExtAmmoItem = _save->createItemForTile(extAmmoRule, _save->getTile(extPos + Position(xoff, yoff, zoff)));
+					if (extAmmoDef.second > 0 && extAmmoDef.second < newExtAmmoItem->getAmmoQuantity())
+					{
+						newExtAmmoItem->setAmmoQuantity(extAmmoDef.second);
+					}
+					if (newExtItem->isWeaponWithAmmo())
+					{
+						int slotAmmo = extRule->getSlotForAmmo(extAmmoRule);
+						if (slotAmmo == -1)
+						{
+							throw Exception("Ammo is not compatible. Weapon: " + extRule->getType() + ", ammo: " + extAmmoRule->getType() + ", map block: " + mapblock->getName());
+						}
+						else
+						{
+							if (newExtItem->getAmmoForSlot(slotAmmo) != 0)
+							{
+								throw Exception("Weapon is already loaded. Weapon: " + extRule->getType() + ", ammo: " + extAmmoRule->getType() + ", map block: " + mapblock->getName());
+							}
+							else
+							{
+								// Put ammo in weapon
+								newExtItem->setAmmoForSlot(slotAmmo, newExtAmmoItem);
+							}
+						}
+					}
+					else
+					{
+						// ammo is not needed, crash or ignore?
+					}
+				}
+			}
+		}
+	}
+
+	if (mapblock->getCraftInventoryTile().size() >= 3)
+	{
+		auto& coords = mapblock->getCraftInventoryTile();
+		Position pilePos = Position(coords[0] + xoff, coords[1] + yoff, coords[2] + zoff);
+		Tile* pileTile = _save->getTile(pilePos);
+		_backupInventoryTiles.push_back(pileTile);
 	}
 
 	for (std::map<std::string, std::vector<Position> >::const_iterator i = mapblock->getObjects()->begin(); i != mapblock->getObjects()->end(); ++i)
@@ -2563,6 +2665,46 @@ int BattlescapeGenerator::loadExtraTerrain(RuleTerrain *terrain)
 	}
 
 	return mapDataSetIDOffset;
+}
+
+/**
+ * Hide the "weapon pile".
+ */
+void BattlescapeGenerator::sendItemsToLimbo()
+{
+	std::vector<BattleItem*>* takeHomeGuaranteed = _save->getGuaranteedRecoveredItems();
+	for (auto* bi : *_craftInventoryTile->getInventory())
+	{
+		bi->setTile(0);
+		bi->setFuseTimer(-1);
+		takeHomeGuaranteed->push_back(bi);
+
+		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+		{
+			BattleItem* ammo = bi->getAmmoForSlot(slot);
+			if (ammo && ammo != bi)
+			{
+				ammo->setTile(0);
+				ammo->setFuseTimer(-1);
+				takeHomeGuaranteed->push_back(ammo);
+			}
+		}
+	}
+	_craftInventoryTile->getInventory()->clear();
+
+	// still need to clean up the full item list
+	std::vector<BattleItem*>* allItems = _save->getItems();
+	std::sort(allItems->begin(), allItems->end(), [](const BattleItem* a, const BattleItem* b) { return a < b; });
+	std::sort(takeHomeGuaranteed->begin(), takeHomeGuaranteed->end(), [](const BattleItem* a, const BattleItem* b) { return a < b; });
+
+	std::vector<BattleItem*> difference;
+	std::set_difference(allItems->begin(), allItems->end(), takeHomeGuaranteed->begin(), takeHomeGuaranteed->end(), std::back_inserter(difference));
+
+	allItems->swap(difference);
+
+	// beautify
+	std::sort(allItems->begin(), allItems->end(), [](const BattleItem* a, const BattleItem* b) { return a->getId() < b->getId(); });
+	std::sort(takeHomeGuaranteed->begin(), takeHomeGuaranteed->end(), [](const BattleItem* a, const BattleItem* b) { return a->getId() < b->getId(); });
 }
 
 /**
@@ -2825,6 +2967,8 @@ void BattlescapeGenerator::loadWeapons(const std::vector<BattleItem*> &itemList)
  */
 void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, const std::string &customUfoName, const RuleStartingCondition* startingCondition)
 {
+	_backupInventoryTiles.clear(); // just in case
+
 	// reset ambient sound
 	_save->setAmbientSound(Mod::NO_SOUND);
 	_save->setAmbienceRandom({});

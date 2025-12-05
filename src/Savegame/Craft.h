@@ -57,7 +57,8 @@ enum CraftPlacementErrors : int
 	CPE_TooManyLargeUnits = 7,
 	CPE_SoldierGroupNotAllowed = 8,
 	CPE_SoldierGroupNotSame = 9,
-	CPE_SoldierPendingTransformation = 10,
+	CPE_ArmorGroupNotAllowed = 10,
+	CPE_SoldierPendingTransformation = 11,
 };
 
 typedef std::pair<Position, int> SoldierDeploymentData;
@@ -89,7 +90,7 @@ public:
 private:
 	const RuleCraft *_rules;
 	Base *_base;
-	int _fuel, _damage, _shield, _interceptionOrder, _takeoff;
+	int _fuel, _excessFuel, _damage, _shield, _interceptionOrder, _takeoff;
 	std::vector<CraftWeapon*> _weapons;
 	ItemContainer *_items;
 	ItemContainer *_tempSoldierItems;
@@ -119,15 +120,15 @@ public:
 	/// Cleans up the craft.
 	~Craft();
 	/// Loads the craft from YAML.
-	void load(const YAML::Node& node, const ScriptGlobal *shared, const Mod *mod, SavedGame *save);
+	void load(const YAML::YamlNodeReader& reader, const ScriptGlobal *shared, const Mod *mod, SavedGame *save);
 	/// Finishes loading the craft from YAML (called after all other XCOM craft are loaded too).
-	void finishLoading(const YAML::Node& node, SavedGame *save);
+	void finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save);
 	/// Initializes fixed weapons.
 	void initFixedWeapons(const Mod* mod);
 	/// Saves the craft to YAML.
-	YAML::Node save(const ScriptGlobal *shared) const;
+	void save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const;
 	/// Loads a craft ID from YAML.
-	static CraftId loadId(const YAML::Node &node);
+	static CraftId loadId(const YAML::YamlNodeReader& reader);
 	/// Gets the craft's type.
 	std::string getType() const override;
 	/// Gets the craft's ruleset.
@@ -180,7 +181,7 @@ public:
 	void calculateTotalSoldierEquipment();
 
 	/// Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
-	double getTotalItemStorageSize(const Mod* mod) const;
+	double getTotalItemStorageSize() const;
 	/// Gets the total number of items of a given type in the craft. Including vehicles+ammo and craft weapons+ammo.
 	int getTotalItemCount(const RuleItem* item) const;
 
@@ -249,9 +250,11 @@ public:
 	/// Gets the item limit for this craft.
 	int getMaxItemsClamped() const { return std::max(0, _stats.maxItems); }
 	int getMaxItemsRaw() const { return _stats.maxItems; }
+	void setMaxItemsRaw(int p) { _stats.maxItems = p; }
 	/// Gets the item storage space limit for this craft.
 	double getMaxStorageSpaceClamped() const { return std::max(0.0, _stats.maxStorageSpace); }
 	double getMaxStorageSpaceRaw() const { return _stats.maxStorageSpace; }
+	void setMaxStorageSpaceRaw(double p) { _stats.maxStorageSpace = p; }
 
 	double getBaseRange() const;
 	/// Returns the craft to its base.
@@ -298,8 +301,12 @@ public:
 	bool areRequiredItemsOnboard(const std::map<std::string, int>& requiredItems) const;
 	/// Destroys given required items.
 	void destroyRequiredItems(const std::map<std::string, int>& requiredItems);
+	/// Checks item limits.
+	bool areTooManyItemsOnboard();
+	/// Checks armor constraints.
+	bool areBannedArmorsOnboard();
 	/// Checks if there are enough pilots onboard.
-	bool arePilotsOnboard();
+	bool arePilotsOnboard(const Mod* mod);
 	/// Checks if a pilot is already on the list.
 	bool isPilot(int pilotId);
 	/// Adds a pilot to the list.
@@ -307,7 +314,7 @@ public:
 	/// Removes all pilots from the list.
 	void removeAllPilots();
 	/// Gets the list of craft pilots.
-	const std::vector<Soldier*> getPilotList(bool autoAdd);
+	const std::vector<Soldier*> getPilotList(bool autoAdd, const Mod* mod);
 	/// Calculates the accuracy bonus based on pilot skills.
 	int getPilotAccuracyBonus(const std::vector<Soldier*> &pilots, const Mod *mod) const;
 	/// Calculates the dodge bonus based on pilot skills.
@@ -381,5 +388,9 @@ public:
 	/// Validates craft space and craft constraints on adding vehicles to a craft.
 	int validateAddingVehicles(int totalSize) const;
 };
+
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, VehicleDeploymentData* val);
+void write(ryml::NodeRef* n, VehicleDeploymentData const& val);
 
 }

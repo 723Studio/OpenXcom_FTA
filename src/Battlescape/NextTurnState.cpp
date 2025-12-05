@@ -163,7 +163,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setHighContrast(true);
-	_txtTitle->setText(tr("STR_OPENXCOM"));
+	_txtTitle->setText(tr("STR_OPENXCOM").arg(Options::getActiveMasterInfo()->getVersionDisplay()));
 
 
 	_txtTurn->setBig();
@@ -231,7 +231,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 			bool anyoneStanding = false;
 			for (const auto* bu : *_battleGame->getUnits())
 			{
-				if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut())
+				if (bu->getOriginalFaction() == FACTION_HOSTILE && !bu->isOut() && !bu->isOutThresholdExceed())
 				{
 					anyoneStanding = true;
 				}
@@ -453,10 +453,13 @@ bool NextTurnState::applyEnvironmentalConditionToFaction(UnitFaction faction, En
 		}
 	}
 
-	// now check for new casualties
-	_battleGame->getBattleGame()->checkForCasualties(nullptr, BattleActionAttack{ }, true, false);
-	// revive units if damage could give hp or reduce stun
-	//_battleGame->reviveUnconsciousUnits(true);
+	if (showMessage)
+	{
+		// now check for new casualties
+		_battleGame->getBattleGame()->checkForCasualties(nullptr, BattleActionAttack{ }, true, false);
+		// revive units if damage could give hp or reduce stun
+		//_battleGame->reviveUnconsciousUnits(true);
+	}
 
 	return showMessage;
 }

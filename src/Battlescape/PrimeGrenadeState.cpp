@@ -41,7 +41,8 @@ namespace OpenXcom
  * @param inInventoryView Called from inventory?
  * @param grenadeInInventory Pointer to associated grenade.
  */
-PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView, BattleItem *grenadeInInventory) : _action(action), _inInventoryView(inInventoryView), _grenadeInInventory(grenadeInInventory)
+PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView, BattleItem *grenadeInInventory) :
+	_action(action), _inInventoryView(inInventoryView), _grenadeInInventory(grenadeInInventory)
 {
 	_screen = false;
 
@@ -68,7 +69,7 @@ PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView,
 		_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
 	}
 
-	Element *grenadeBackground = _game->getMod()->getInterface("battlescape")->getElement("grenadeBackground");
+	const Element *grenadeBackground = _game->getMod()->getInterface("battlescape")->getElement("grenadeBackground");
 
 	// Set up objects
 	add(_bg);
@@ -110,6 +111,12 @@ PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView,
 		_number[i]->setVerticalAlign(ALIGN_MIDDLE);
 	}
 
+	_button[0]->onKeyboardRelease((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_q); // FIXME: this is just a workaround, fix it better!
+	_button[0]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_0);
+	_button[1]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_1);
+	_button[2]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_2);
+	_button[3]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_3);
+
 	centerAllSurfaces();
 	lowerAllSurfaces();
 }
@@ -130,6 +137,11 @@ void PrimeGrenadeState::handle(Action *action)
 {
 	State::handle(action);
 	if (action->getDetails()->type == SDL_MOUSEBUTTONDOWN && _game->isRightClick(action))
+	{
+		if (!_inInventoryView) _action->value = -1;
+		_game->popState();
+	}
+	else if (action->getDetails()->type == SDL_KEYDOWN && action->getDetails()->key.keysym.sym == Options::keyCancel)
 	{
 		if (!_inInventoryView) _action->value = -1;
 		_game->popState();

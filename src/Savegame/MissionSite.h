@@ -19,13 +19,14 @@
  */
 #include "Target.h"
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
 
 class RuleAlienMission;
 class AlienDeployment;
+class Ufo;
 
 /**
  * Represents an alien mission site on the world.
@@ -40,15 +41,17 @@ private:
 	size_t _secondsRemaining;
 	std::string _race, _city;
 	bool _inBattlescape, _detected;
+	Ufo* _ufo;
+	int _ufoUniqueId;
 public:
 	/// Creates a mission site.
 	MissionSite(const RuleAlienMission *rules, const AlienDeployment *deployment, const AlienDeployment *alienWeaponDeploy);
 	/// Cleans up the mission site.
 	~MissionSite();
 	/// Loads the mission site from YAML.
-	void load(const YAML::Node& node) override;
+	void load(const YAML::YamlNodeReader& reader) override;
 	/// Saves the mission site to YAML.
-	YAML::Node save() const override;
+	void save(YAML::YamlNodeWriter writer) const override;
 	/// Gets the waypoint's type.
 	std::string getType() const override;
 	/// Gets the mission site's ruleset.
@@ -85,6 +88,12 @@ public:
 	bool getDetected() const;
 	/// Sets the mission site's detection state.
 	void setDetected(bool detected);
+	/// Gets the mission site's corresponding Ufo.
+	Ufo* getUfo() const { return _ufo; }
+	/// Sets the mission site's corresponding Ufo.
+	void setUfo(Ufo* ufo) { _ufo = ufo; }
+	/// DO NOT USE! Used only for loading saved games.
+	int getUfoUniqueId() const { return _ufoUniqueId; }
 };
 
 }

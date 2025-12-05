@@ -350,9 +350,13 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		{
 			increment *= 10;
 		}
-		else if (i == &Options::oxceResearchScrollSpeedWithCtrl || i == &Options::oxceManufactureScrollSpeedWithCtrl)
+		else if (i == &Options::oxceResearchScrollSpeedWithCtrl || i == &Options::oxceManufactureScrollSpeedWithCtrl || i == &Options::oxceReactionFireThreshold)
 		{
 			increment *= 5;
+		}
+		else if (i == &Options::oxceInterceptTableSize)
+		{
+			increment *= 4;
 		}
 		*i += increment;
 
@@ -386,17 +390,27 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 1;
 			max = 5;
 		}
-		else if (i == &Options::autosaveSlots || i == &Options::oxceResearchScrollSpeed || i == &Options::oxceManufactureScrollSpeed)
+		else if (i == &Options::oxceGeoAutosaveFrequency)
+		{
+			min = 0;
+			max = 10;
+		}
+		else if (i == &Options::autosaveSlots || i == &Options::oxceGeoAutosaveSlots || i == &Options::oxceResearchScrollSpeed || i == &Options::oxceManufactureScrollSpeed)
 		{
 			min = 1;
 			max = 10;
 		}
-		else if (i == &Options::oxceInterceptGuiMaintenanceTime || i == &Options::oxceShowETAMode)
+		else if (i == &Options::oxceInterceptGuiMaintenanceTime || i == &Options::oxceShowETAMode || i == &Options::oxceShowAccuracyOnCrosshair || i == &Options::oxceCrashedOrLanded)
 		{
 			min = 0;
 			max = 2;
 		}
-		else if (i == &Options::oxceWoundedDefendBaseIf) {
+		else if (i == &Options::oxceInterceptTableSize)
+		{
+			min = 8;
+			max = 80;
+		}
+		else if (i == &Options::oxceWoundedDefendBaseIf || i == &Options::oxceReactionFireThreshold) {
 			min = 0;
 			max = 100;
 		}

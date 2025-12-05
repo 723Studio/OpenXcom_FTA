@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "GeoscapeEventState.h"
+#include "GeoscapeState.h"
+#include <map>
 #include "../Basescape/SellState.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -27,6 +29,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
+#include "../Menu/CutsceneState.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/City.h"
 #include "../Mod/Mod.h"
@@ -35,9 +38,11 @@
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleDiplomacyFaction.h"
+#include "../Mod/RuleVideo.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/Region.h"
+#include "../Savegame/ResearchDiary.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
@@ -213,7 +218,11 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_txtQuantity->setVisible(false);
 	_lstTransfers->setVisible(false);
 
-	if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery || !_customAnswers.empty())
+	if (_eventRule.getInvert())
+	{
+		_btnItemsArriving->setText(tr("STR_SUMMARY"));
+	}
+	else if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery || !_customAnswers.empty())
 	{
 		_btnOk->setX((_btnOk->getX() + _btnItemsArriving->getX()) / 2);
 		_btnItemsArriving->setVisible(false);
@@ -225,10 +234,16 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 */
 void GeoscapeEventState::eventLogic()
 {
-	SavedGame* save = _game->getSavedGame();
-	Base* hq = save->getBases()->front();
-	const Mod* mod = _game->getMod();
-	const RuleEvent& rule = _eventRule;
+	if (!_eventRule.getAdhocMissionScriptTags().empty())
+	{
+		auto* geo = _game->getGeoscapeState();
+		geo->determineAlienMissions(false, &_eventRule);
+	}
+
+	SavedGame *save = _game->getSavedGame();
+	Base *hq = save->getBases()->front();
+	const Mod *mod = _game->getMod();
+	const RuleEvent &rule = _eventRule;
 
 	RuleRegion *regionRule = nullptr;
 	City* city = nullptr;
@@ -335,7 +350,8 @@ void GeoscapeEventState::eventLogic()
 					Transfer* t = new Transfer(24);
 					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, city);
 					Soldier* s = mod->genSoldier(save, ruleSoldier, nationality);
-					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
+					YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
+					s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
 					if (!rule.getSpawnedPersonName().empty())
 					{
 						s->setName(tr(rule.getSpawnedPersonName()));
@@ -351,7 +367,53 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
-	// 5. spawn/transfer item into the HQ
+	// 5. spawn/transfer multiple soldiers into the HQ
+	{
+		std::map<const RuleSoldier*, int> soldiersToTransfer;
+
+		for (auto& pair : rule.getEveryMultiSoldierList())
+		{
+			const RuleSoldier* soldierRule = mod->getSoldier(pair.first, true);
+			if (soldierRule)
+			{
+				soldiersToTransfer[soldierRule] += pair.second;
+			}
+		}
+
+		if (!rule.getRandomMultiSoldierList().empty())
+		{
+			size_t pickSoldier = RNG::generate(0, rule.getRandomMultiSoldierList().size() - 1);
+			auto& sublist = rule.getRandomMultiSoldierList().at(pickSoldier);
+			for (auto& pair : sublist)
+			{
+				const RuleSoldier* soldierRule = mod->getSoldier(pair.first, true);
+				if (soldierRule)
+				{
+					soldiersToTransfer[soldierRule] += pair.second;
+				}
+			}
+		}
+
+		for (auto& ts : soldiersToTransfer)
+		{
+			for (int i = 0; i < ts.second; ++i)
+			{
+				Transfer* t = new Transfer(24);
+				int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ts.first, city);
+				Soldier* s = mod->genSoldier(save, ts.first, nationality);
+				YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
+				s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
+				{
+					// reset what may have been loaded
+					s->genName();
+				}
+				t->setSoldier(s);
+				hq->getTransfers()->push_back(t);
+			}
+		}
+	}
+
+	// 6. spawn/transfer item into the HQ
 	std::map<std::string, int> itemsToTransfer;
 
 	for (auto& pair : rule.getEveryMultiItemList())
@@ -407,9 +469,53 @@ void GeoscapeEventState::eventLogic()
 
 	for (auto& ti : itemsToTransfer)
 	{
-		if (Options::oxceGeoscapeEventsInstantDelivery)
+		if (rule.getInvert())
+		{
+			RuleItem* r = mod->getItem(ti.first, true);
+			int removed = 0;
+			for (auto* xbase : *save->getBases())
+			{
+				int bQty = xbase->getStorageItems()->getItem(r);
+				if (bQty > 0)
+				{
+					int toRemove = std::min(bQty, ti.second);
+					xbase->getStorageItems()->removeItem(r, toRemove);
+					ti.second -= toRemove;
+					removed += toRemove;
+				}
+				if (ti.second <= 0) break; // already removed enough
+			}
+			if (ti.second > 0)
+			{
+				for (auto* xbase : *save->getBases())
+				{
+					for (auto* xcraft : *xbase->getCrafts())
+					{
+						int cQty = xcraft->getItems()->getItem(r);
+						if (cQty > 0 && xcraft->getStatus() != "STR_OUT")
+						{
+							int toRemove = std::min(cQty, ti.second);
+							xcraft->getItems()->removeItem(r, toRemove);
+							ti.second -= toRemove;
+							removed += toRemove;
+						}
+						if (ti.second <= 0) break; // already removed enough
+					}
+					if (ti.second <= 0) break; // already removed enough
+				}
+			}
+
+			std::ostringstream ss;
+			ss << -removed;
+			_lstTransfers->addRow(2, tr(ti.first).c_str(), ss.str().c_str());
+		}
+		else if (Options::oxceGeoscapeEventsInstantDelivery)
 		{
 			hq->getStorageItems()->addItem(mod->getItem(ti.first, true), ti.second);
+
+			std::ostringstream ss;
+			ss << ti.second;
+			_lstTransfers->addRow(2, tr(ti.first).c_str(), ss.str().c_str());
 		}
 		else
 		{
@@ -417,13 +523,9 @@ void GeoscapeEventState::eventLogic()
 			t->setItems(mod->getItem(ti.first, true), ti.second);
 			hq->getTransfers()->push_back(t);
 		}
-
-		std::ostringstream ss;
-		ss << ti.second;
-		_lstTransfers->addRow(2, tr(ti.first).c_str(), ss.str().c_str());
 	}
 
-	// 5b. spawn craft into the HQ
+	// 6b. spawn craft into the HQ
 	const RuleCraft* craftRule = mod->getCraft(rule.getSpawnedCraftType(), true);
 	if (craftRule)
 	{
@@ -445,10 +547,10 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
-	// 6. give bonus research
+	// 7. give bonus research
 	std::vector<const RuleResearch*> possibilities;
 
-	for (auto& rName : rule.getResearchList())
+	for (auto* rRule : rule.getResearchList())
 	{
 		std::vector<const RuleResearch*> researches;
 		for (const auto &rName : rule.getResearchList())
@@ -459,7 +561,7 @@ void GeoscapeEventState::eventLogic()
 		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
-	// 7. handle counters
+	// 8. handle counters
 	for (auto& inc : rule.getIncreaseCounter())
 	{
 		_game->getSavedGame()->increaseCustomCounter(inc, rule.getCounterValue());
@@ -469,7 +571,7 @@ void GeoscapeEventState::eventLogic()
 		_game->getSavedGame()->decreaseCustomCounter(dec, rule.getCounterValue());
 	}
 
-	// 8. Add reputation
+	// 9. Add reputation
 	auto reputationScore = _eventRule.getReputationScore();
 	if (!reputationScore.empty())
 	{
@@ -541,7 +643,18 @@ void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
 
-	if (!_game->getMod()->isFTAGame())
+	if (!_eventRule.getCutscene().empty())
+	{
+		_game->pushState(new CutsceneState(_eventRule.getCutscene()));
+		if (_game->getSavedGame()->getEnding() == END_NONE)
+		{
+			const RuleVideo* videoRule = _game->getMod()->getVideo(_eventRule.getCutscene(), true);
+			if (videoRule->getWinGame()) _game->getSavedGame()->setEnding(END_WIN);
+			if (videoRule->getLoseGame()) _game->getSavedGame()->setEnding(END_LOSE);
+		}
+	}
+
+	if (_game->getSavedGame()->getEnding() == END_NONE && !_game->getMod()->isFTAGame())
 	{
 		Base* base = _game->getSavedGame()->getBases()->front();
 		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())

@@ -75,7 +75,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnQuickSearch = new TextEdit(this, 48, 9, 264, 12);
+	_btnQuickSearch = new TextEdit(this, 48, 9, Options::oxceBaseTouchButtons ? 10 : 264, Options::oxceBaseTouchButtons ? 13 : 12);
 	_btnOk = new TextButton((craftHasACrew || _isNewBattle)?30:140, 16, (craftHasACrew || _isNewBattle)?274:164, 176);
 	_btnClear = new TextButton(102, 16, 164, 176);
 	_btnInventory = new TextButton(102, 16, 164, 176);
@@ -87,6 +87,8 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_txtCrew = new Text(71, 9, 244, 24);
 	_lstEquipment = new TextList(288, 128, 8, 40);
 	_cbxFilterBy = new ComboBox(this, 140, 16, 16, 176, true);
+
+	touchComponentsCreate(_txtTitle);
 
 	// Set palette
 	setInterface("craftEquipment");
@@ -107,10 +109,14 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	add(_lstEquipment, "list", "craftEquipment");
 	add(_cbxFilterBy, "button", "craftEquipment");
 
+	touchComponentsAdd("button2", "craftEquipment", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "craftEquipment");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftEquipmentState::btnOkClick);
@@ -129,7 +135,16 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_btnInventory->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnInventoryClick, Options::keyBattleInventory);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(tr("STR_EQUIPMENT_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	if (Options::oxceBaseTouchButtons)
+	{
+		_txtTitle->setAlign(ALIGN_CENTER);
+		_txtTitle->setText(c->getName(_game->getLanguage()));
+	}
+	else
+	{
+		_txtTitle->setAlign(ALIGN_LEFT);
+		_txtTitle->setText(tr("STR_EQUIPMENT_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	}
 
 	_txtItem->setText(tr("STR_ITEM"));
 
@@ -206,7 +221,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&CraftEquipmentState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&CraftEquipmentState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
@@ -272,6 +287,8 @@ void CraftEquipmentState::init()
 	_returningFromGlobalTemplates = false;
 	_returningFromInventory = false;
 	_firstInit = false;
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -530,7 +547,7 @@ void CraftEquipmentState::btnOkClick(Action *)
 void CraftEquipmentState::lstEquipmentLeftArrowPress(Action *action)
 {
 	_sel = _lstEquipment->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerLeft->isRunning()) _timerLeft->start();
+	if (_game->isLeftClick(action, true) && !_timerLeft->isRunning()) _timerLeft->start();
 }
 
 /**
@@ -539,7 +556,7 @@ void CraftEquipmentState::lstEquipmentLeftArrowPress(Action *action)
  */
 void CraftEquipmentState::lstEquipmentLeftArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerLeft->stop();
 	}
@@ -551,10 +568,10 @@ void CraftEquipmentState::lstEquipmentLeftArrowRelease(Action *action)
  */
 void CraftEquipmentState::lstEquipmentLeftArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) moveLeftByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) moveLeftByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		moveLeftByValue(1);
+		moveLeftByValue(_game->getScrollStep());
 		_timerRight->setInterval(250);
 		_timerLeft->setInterval(250);
 	}
@@ -567,7 +584,7 @@ void CraftEquipmentState::lstEquipmentLeftArrowClick(Action *action)
 void CraftEquipmentState::lstEquipmentRightArrowPress(Action *action)
 {
 	_sel = _lstEquipment->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerRight->isRunning()) _timerRight->start();
+	if (_game->isLeftClick(action, true) && !_timerRight->isRunning()) _timerRight->start();
 }
 
 /**
@@ -576,7 +593,7 @@ void CraftEquipmentState::lstEquipmentRightArrowPress(Action *action)
  */
 void CraftEquipmentState::lstEquipmentRightArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerRight->stop();
 	}
@@ -588,10 +605,10 @@ void CraftEquipmentState::lstEquipmentRightArrowRelease(Action *action)
  */
 void CraftEquipmentState::lstEquipmentRightArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) moveRightByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) moveRightByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		moveRightByValue(1);
+		moveRightByValue(_game->getScrollStep());
 		_timerRight->setInterval(250);
 		_timerLeft->setInterval(250);
 	}
@@ -624,7 +641,7 @@ void CraftEquipmentState::lstEquipmentMousePress(Action *action)
 			moveLeftByValue(Options::changeValueByMouseWheel);
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+	else if (_game->isMiddleClick(action, true))
 	{
 		_lstScroll = _lstEquipment->getScroll();
 		RuleItem *rule = _game->getMod()->getItem(_items[_sel]);
@@ -707,7 +724,7 @@ void CraftEquipmentState::moveLeft()
 {
 	_timerLeft->setInterval(50);
 	_timerRight->setInterval(50);
-	moveLeftByValue(1);
+	moveLeftByValue(_game->getScrollStep());
 }
 
 /**
@@ -796,7 +813,7 @@ void CraftEquipmentState::moveRight()
 {
 	_timerLeft->setInterval(50);
 	_timerRight->setInterval(50);
-	moveRightByValue(1);
+	moveRightByValue(_game->getScrollStep());
 }
 
 /**
@@ -965,6 +982,13 @@ void CraftEquipmentState::btnInventoryClick(Action *)
 
 			auto& extras = *craft->getExtraItems();
 			extras.clear();
+
+			// temporarily ignore craft limits
+			int maxItemsBackup = craft->getCraftStats().maxItems;
+			double maxStorageSpaceBackup = craft->getCraftStats().maxStorageSpace;
+			craft->setMaxItemsRaw(999999);
+			craft->setMaxStorageSpaceRaw(99999.0);
+
 			for (_sel = 0; _sel != _items.size(); ++_sel)
 			{
 				RuleItem* rule = _game->getMod()->getItem(_items[_sel], true);
@@ -977,12 +1001,15 @@ void CraftEquipmentState::btnInventoryClick(Action *)
 					moveRightByValue(INT_MAX, true);
 				}
 			}
+			// restore limits
+			craft->setMaxItemsRaw(maxItemsBackup);
+			craft->setMaxStorageSpaceRaw(maxStorageSpaceBackup);
 		}
 
 		SavedBattleGame *bgame = new SavedBattleGame(_game->getMod(), _game->getLanguage());
 		_game->getSavedGame()->setBattleGame(bgame);
 
-		if (_game->isCtrlPressed() && _game->isAltPressed())
+		if (_game->isCtrlPressed(true) && _game->isAltPressed(true))
 		{
 			_game->getSavedGame()->setDisableSoldierEquipment(true);
 		}
@@ -1127,7 +1154,7 @@ void CraftEquipmentState::loadGlobalLoadout(int index, bool onlyAddItems)
 */
 void CraftEquipmentState::btnLoadClick(Action *)
 {
-	if (!_isNewBattle)
+	//if (!_isNewBattle)
 	{
 		_game->pushState(new CraftEquipmentLoadState(this));
 		_returningFromGlobalTemplates = true;

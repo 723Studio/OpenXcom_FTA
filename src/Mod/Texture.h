@@ -20,7 +20,7 @@
 #include "../fmath.h"
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -34,6 +34,7 @@ struct TerrainCriteria
 };
 
 class Target;
+class Mod;
 
 /**
  * Represents the relations between a Geoscape texture
@@ -43,6 +44,8 @@ class Texture
 {
 private:
 	int _id;
+	int _baseGridSprite;
+	bool _isOcean;
 	bool _fakeUnderwater;
 	std::string _startingCondition;
 	std::map<std::string, int> _deployments;
@@ -54,7 +57,7 @@ public:
 	/// Cleans up the texture.
 	~Texture();
 	/// Loads the texture from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Gets the list of terrain criteria.
 	std::vector<TerrainCriteria> *getTerrain();
 	/// Gets a random texture terrain for a given target.
@@ -67,49 +70,17 @@ public:
 	const std::map<std::string, int> &getDeployments() const;
 	/// Gets a random deployment.
 	std::string getRandomDeployment() const;
+	/// Gets the index into BASEBITS.PCK sprite set. Used to draw the base grid.
+	int getBaseGridSprite() const { return _baseGridSprite; }
+	/// Is the texture a cosmetic-only ocean texture?
+	bool isCosmeticOcean() const { return _isOcean; }
 	/// Is the texture a fake underwater texture?
 	bool isFakeUnderwater() const { return _fakeUnderwater; }
 	/// Gets the Texture's starting condition.
 	const std::string &getStartingCondition() const { return _startingCondition; }
 };
 
-}
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, TerrainCriteria* val);
 
-namespace YAML
-{
-	template<>
-	struct convert < OpenXcom::TerrainCriteria >
-	{
-		static Node encode(const OpenXcom::TerrainCriteria& rhs)
-		{
-			Node node;
-			node["name"] = rhs.name;
-			node["weight"] = rhs.weight;
-			std::vector<double> area;
-			area.push_back(rhs.lonMin);
-			area.push_back(rhs.lonMax);
-			area.push_back(rhs.latMin);
-			area.push_back(rhs.latMax);
-			node["area"] = area;
-			return node;
-		}
-
-		static bool decode(const Node& node, OpenXcom::TerrainCriteria& rhs)
-		{
-			if (!node.IsMap())
-				return false;
-
-			rhs.name = node["name"].as<std::string>(rhs.name);
-			rhs.weight = node["weight"].as<int>(rhs.weight);
-			if (node["area"])
-			{
-				std::vector<double> area = node["area"].as< std::vector<double> >();
-				rhs.lonMin = Deg2Rad(area[0]);
-				rhs.lonMax = Deg2Rad(area[1]);
-				rhs.latMin = Deg2Rad(area[2]);
-				rhs.latMax = Deg2Rad(area[3]);
-			}
-			return true;
-		}
-	};
 }

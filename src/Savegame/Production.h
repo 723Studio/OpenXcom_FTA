@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -31,6 +31,33 @@ enum productionProgress_e { PROGRESS_NOT_COMPLETE, PROGRESS_COMPLETE, PROGRESS_N
 
 class Production
 {
+public:
+	Production (const RuleManufacture * rules, int amount);
+	int getAmountTotal() const{ return _amount; }
+	void setAmountTotal (int amount){ _amount = amount; }
+	bool getInfiniteAmount() const{ return _infinite; }
+	void setInfiniteAmount (bool infinite){ _infinite = infinite; }
+	int getTimeSpent() const{ return _timeSpent; }
+	void setTimeSpent (int timeSpent){ _timeSpent = timeSpent; }
+	bool isQueuedOnly() const;
+	int getAmountProduced() const;
+	int getAssignedEngineers() const { return _engineers; }
+	void setAssignedEngineers (int engineers){ _engineers = engineers; }
+	bool getSellItems() const { return _sell; }
+	void setSellItems (bool sell){ _sell = sell; }
+	bool isFallback() const { return _isFallback; }
+	void setFallback(bool newValue) { _isFallback = newValue; }
+	std::vector<Soldier*> getAssignedSoldiers(Base* b);
+	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
+	int getTimeLeft();
+	
+	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang);
+	const RuleManufacture * getRules() const;
+	void startItem(Base * b, SavedGame * g, const Mod *m) const;
+	void refundItem(Base * b, SavedGame * g, const Mod *m) const;
+	void save(YAML::YamlNodeWriter writer) const;
+	void load(const YAML::YamlNodeReader& reader);
+	const std::map<std::string, int> &getRandomProductionInfo() const { return _randomProductionInfo; }
 private:
 	const RuleManufacture * _rules;
 	int _amount;
@@ -39,36 +66,11 @@ private:
 	int _engineers;
 	int _efficiency;
 	bool _sell;
+	bool _isFallback;
 	std::map<std::string, int> _randomProductionInfo;
 	bool haveEnoughMoneyForOneMoreUnit(SavedGame * g) const;
 	bool haveEnoughLivingSpaceForOneMoreUnit(Base * b);
 	bool haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const;
-public:
-	Production (const RuleManufacture * rules, int amount);
-	int getAmountTotal() const { return _amount; }
-	void setAmountTotal (int amount) { _amount = amount; }
-	bool getInfiniteAmount() const { return _infinite; }
-	void setInfiniteAmount (bool inf) { _infinite = inf; }
-	int getTimeSpent() const { return _timeSpent; }
-	void setTimeSpent (int done) { _timeSpent = done; }
-	int getAmountProduced() const;
-	int getAssignedEngineers() const { return _engineers; }
-	void setAssignedEngineers (int engineers) { _engineers = engineers; }
-	int getEfficiency() const { return _efficiency; }
-	void setEfficiency(int efficiency) { _efficiency = efficiency; }
-	bool getSellItems() const { return _sell; }
-	void setSellItems (bool sell) { _sell = sell; }
-	std::vector<Soldier*> getAssignedSoldiers(Base* b);
-	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
-	int getTimeLeft();
-	
-	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);
-	const RuleManufacture * getRules() const;
-	void startItem(Base * b, SavedGame * g, const Mod *m) const;
-	void refundItem(Base * b, SavedGame * g, const Mod *m) const;
-	YAML::Node save() const;
-	void load(const YAML::Node &node);
-	const std::map<std::string, int> &getRandomProductionInfo() const { return _randomProductionInfo; }
 };
 
 }
