@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include "../Savegame/Soldier.h"
+#include <set>
 
 namespace OpenXcom
 {

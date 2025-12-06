@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -42,9 +42,9 @@ public:
 	/// Cleans up the item container.
 	~SoldierPool();
 	/// Loads the item container from YAML.
-	void load(const YAML::Node& node, SavedGame* save, const Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, SavedGame* save, const Mod* mod);
 	/// Saves the item container to YAML.
-	YAML::Node save(const Mod* mod) const;
+	void save(YAML::YamlNodeWriter writer, const Mod* mod) const;
 	/// Creates a new generated soldier for the pool.
 	void createSoldier(const RuleSoldier* rule, const Mod* mod, SavedGame* save);
 	/// Adds an item to the container.

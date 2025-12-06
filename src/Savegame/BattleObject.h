@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Mod/RuleObject.h"
 #include "../Battlescape/Position.h"
 
@@ -53,9 +53,9 @@ public:
 	/// Cleans up the item.
 	~BattleObject();
 	/// Loads the item from YAML.
-	void load(const YAML::Node& node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Saves the item to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Gets the item's ruleset.
 	const RuleObject* getRules() const { return _rules; }
 

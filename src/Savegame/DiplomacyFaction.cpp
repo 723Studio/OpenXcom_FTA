@@ -61,28 +61,29 @@ DiplomacyFaction::~DiplomacyFaction()
  * Loads the Diplomacy Faction from YAML.
  * @param node The YAML node containing the data.
  */
-void DiplomacyFaction::load(const YAML::Node &node, SavedGame *save)
+void DiplomacyFaction::load(const YAML::YamlNodeReader &reader, SavedGame *save)
 {
-	_reputationScore = node["reputationScore"].as<int>(_reputationScore);
-	_reputationLvL = node["reputationLvL"].as<int>(_reputationLvL);
-	_reputationName = node["reputationName"].as<std::string>(_reputationName);
-	_repLvlChanged = node["repLvlChanged"].as<bool>(_repLvlChanged);
-	_funds = node["funds"].as<int>(_funds);
-	_power = node["power"].as<int>(_power);
-	_vigilance = node["vigilance"].as<int>(_vigilance);
-	_helpTreatyTimer = node["helpTreatyTimer"].as<int>(_helpTreatyTimer);
-	_discovered = node["discovered"].as<bool>(_discovered);
-	_thisMonthDiscovered = node["thisMonthDiscovered"].as<bool>(_thisMonthDiscovered);
-	_treaties = node["treaties"].as<std::vector<std::string>>(_treaties);
-	_unlockedResearches = node["unlockedResearches"].as<std::vector<std::string>>(_unlockedResearches);
-	_items->load(node["items"], _mod);
-	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
+	reader.tryRead("reputationScore", _reputationScore);
+	reader.tryRead("reputationLvL", _reputationLvL);
+	reader.tryRead("reputationName", _reputationName);
+	reader.tryRead("repLvlChanged", _repLvlChanged);
+	reader.tryRead("funds", _funds);
+	reader.tryRead("power", _power);
+	reader.tryRead("vigilance", _vigilance);
+	reader.tryRead("helpTreatyTimer", _helpTreatyTimer);
+	reader.tryRead("discovered", _discovered);
+	reader.tryRead("thisMonthDiscovered", _thisMonthDiscovered);
+	reader.tryRead("treaties", _treaties);
+	reader.tryRead("unlockedResearches", _unlockedResearches);
+	_items->load(reader["items"], _mod);
+	for (const auto& researchReader : reader["research"].children())
 	{
-		std::string name = (*i)["name"].as<std::string>();
+		std::string name;
+		researchReader.tryRead("name", name);
 		if (_mod->getResearch(name))
 		{
 			FactionalResearch* r = new FactionalResearch(_mod->getResearch(name), this);
-			r->load(*i, save, _mod);
+			r->load(researchReader, save, _mod);
 			_research.push_back(r);
 		}
 		else
@@ -91,49 +92,49 @@ void DiplomacyFaction::load(const YAML::Node &node, SavedGame *save)
 		}
 	}
 
-	_staffPool->load(node["soldierPool"], save, _mod);
-	
-	_dailyRepScore = node["dailyRepScore"].as<std::vector<int>>(_dailyRepScore);
+	_staffPool->load(reader["soldierPool"], save, _mod);
+
+	reader.tryRead("dailyRepScore", _dailyRepScore);
 }
 
 /**
  * Saves the Diplomacy Faction to YAML.
  * @return YAML node.
  */ 
-YAML::Node DiplomacyFaction::save() const
+void DiplomacyFaction::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["name"] = _rule->getName();
-	node["reputationScore"] = _reputationScore;
-	node["reputationLvL"] = _reputationLvL;
-	node["reputationName"] = _reputationName;
+	writer.write("name", _rule->getName());
+	writer.write("reputationScore", _reputationScore);
+	writer.write("reputationLvL", _reputationLvL);
+	writer.write("reputationName", _reputationName);
 	if (_repLvlChanged)
 	{
-		node["repLvlChanged"] = _repLvlChanged;
+		writer.write("repLvlChanged", _repLvlChanged);
 	}
-	node["funds"] = _funds;
-	node["power"] = _power;
-	node["vigilance"] = _vigilance;
-	node["helpTreatyTimer"] = _helpTreatyTimer;
+	writer.write("funds", _funds);
+	writer.write("power", _power);
+	writer.write("vigilance", _vigilance);
+	writer.write("helpTreatyTimer", _helpTreatyTimer);
 	if (_discovered)
 	{
-		node["discovered"] = _discovered;
+		writer.write("discovered", _discovered);
 	}
 	if (_thisMonthDiscovered)
 	{
-		node["thisMonthDiscovered"] = _thisMonthDiscovered;
+		writer.write("thisMonthDiscovered", _thisMonthDiscovered);
 	}
-	node["treaties"] = _treaties;
-	node["unlockedResearches"] = _unlockedResearches;
-	node["items"] = _items->save();
-	node["soldierPool"] = _staffPool->save(_mod);
+	writer.write("treaties", _treaties);
+	writer.write("unlockedResearches", _unlockedResearches);
+	_items->save(writer["items"]);
+	_staffPool->save(writer["soldierPool"], _mod);
 	
-	for (auto i : _research)
-	{
-		node["research"].push_back(i->save(_mod));
-	}
-	node["dailyRepScore"] = _dailyRepScore;
-	return node;
+	writer.write("research", _research,
+		[&](YAML::YamlNodeWriter& vectorWriter, FactionalResearch* r)
+		{
+			r->save(vectorWriter, _mod);
+		}
+	);
+	writer.write("dailyRepScore", _dailyRepScore);
 }
 
 /**
@@ -501,7 +502,7 @@ void DiplomacyFaction::factionMissionGenerator(Game& engine)
 						// item requirements
 						for (auto& triggerItem : ruleScript->getItemTriggers())
 						{
-							triggerHappy = (save.isItemObtained(triggerItem.first) == triggerItem.second);
+							triggerHappy = (save.isItemObtained(triggerItem.first, &mod) == triggerItem.second);
 						}
 					}
 					if (triggerHappy)

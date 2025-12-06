@@ -196,7 +196,8 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 			}
 			if (const auto& op = soldierReader["covertOperation"])
 			{
-				std::string covertOperation = op.as<std::string>();
+				std::string covertOperation;
+				op.tryReadVal(covertOperation);
 				for (auto* covertOperationPtr : _covertOperations)
 				{
 					if (covertOperationPtr->getOperationName() == covertOperation)
@@ -208,7 +209,8 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 			}
 			if (const auto& rp = soldierReader["researchProject"])
 			{
-				std::string researchProject = rp.as<std::string>();
+				std::string researchProject;
+				rp.tryReadVal(researchProject);
 				for (auto* researchProjectPtr : _research)
 				{
 					if (researchProjectPtr->getRules()->getName() == researchProject)
@@ -220,7 +222,8 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 			}
 			if (const auto& pr = soldierReader["production"])
 			{
-				std::string production = pr.as<std::string>();
+				std::string production;
+				pr.tryReadVal(production);
 				for (auto* productionPtr : _productions)
 				{
 					if (productionPtr->getRules()->getName() == production)
@@ -233,7 +236,8 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 
 			if (const auto& ip = soldierReader["intelProject"])
 			{
-				std::string intelProject = ip.as<std::string>();
+				std::string intelProject;
+				ip.tryReadVal(intelProject);
 				for (auto* intelProjectPtr : _intelProjects)
 				{
 					if (intelProjectPtr->getName() == intelProject)
@@ -246,7 +250,8 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 
 			if (const auto& p = soldierReader["activePrisoner"])
 			{
-				std::string prisoner = p.as<std::string>();
+				std::string prisoner;
+				p.tryReadVal(prisoner);
 				for (auto* _prisoner : _prisoners)
 				{
 					if (_prisoner->getId() == prisoner)
@@ -328,8 +333,10 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 
 	for (const auto& prisonerReader : reader["prisoners"].children())
 	{
-		std::string id = prisonerReader["id"].as<std::string>();
-		std::string type = prisonerReader["type"].as<std::string>();
+		std::string id;
+		prisonerReader["id"].tryReadVal(id);
+		std::string type;
+		prisonerReader["type"].tryReadVal(type);
 		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
 		prisoner->load(prisonerReader, _mod);
 		addPrisoner(prisoner);
@@ -351,7 +358,7 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 	reader.tryRead("fakeUnderwater", _fakeUnderwater);
 	reader.tryRead("trackingBonus", _trackingBonus);
 	reader.tryRead("operationsBonus", _operationsBonus);
-	reader.tryRead("deploymentHints", _deploymentHints);
+	reader.tryRead("deploymentHintsBonus", _deploymentHintsBonus);
 
 	isOverlappingOrOverflowing(); // don't crash, just report in the log file...
 }

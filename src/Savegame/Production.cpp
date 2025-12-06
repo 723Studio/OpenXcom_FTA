@@ -37,7 +37,7 @@
 namespace OpenXcom
 {
 Production::Production(const RuleManufacture * rules, int amount) :
-	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false), _isFallback(false)
+	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false)
 {
 	_efficiency = 100;
 }
@@ -219,24 +219,6 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 
 productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating)
 {
-	if (_isFallback)
-	{
-		int availableEngineer = b->getAvailableEngineers();
-		int availableWorkSpace = b->getFreeWorkshops();
-
-		if (isQueuedOnly())
-		{
-			// start counting the workshop space now
-			availableWorkSpace -= _rules->getRequiredSpace();
-		}
-		if (availableEngineer > 0 && availableWorkSpace > 0)
-		{
-			int change = std::min(availableEngineer, availableWorkSpace);
-			setAssignedEngineers(getAssignedEngineers() + change);
-			b->setEngineers(b->getEngineers() - change);
-		}
-	}
-
 	int done = getAmountProduced();
 	int progress = getProgress(b, g, m, rating);
 	_timeSpent += progress;
@@ -487,11 +469,9 @@ void Production::save(YAML::YamlNodeWriter writer) const
 	writer.write("spent", getTimeSpent());
 	writer.write("amount", getAmountTotal());
 	writer.write("infinite", getInfiniteAmount());
-	writer.wite("efficiency", _efficiency);
+	writer.write("efficiency", _efficiency);
 	if (getSellItems())
 		writer.write("sell", getSellItems());
-	if (_isFallback)
-		writer.write("isFallback", _isFallback);
 	if (!_rules->getRandomProducedItems().empty())
 		writer.write("randomProductionInfo", _randomProductionInfo);
 }
@@ -504,7 +484,6 @@ void Production::load(const YAML::YamlNodeReader& reader)
 	setInfiniteAmount(reader["infinite"].readVal(getInfiniteAmount()));
 	setSellItems(reader["sell"].readVal(getSellItems()));
 	setEfficiency(reader["efficiency"].readVal(getEfficiency()));
-	reader.tryRead("isFallback", _isFallback);
 	if (!_rules->getRandomProducedItems().empty())
 	{
 		_randomProductionInfo = reader["randomProductionInfo"].readVal(_randomProductionInfo);

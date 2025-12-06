@@ -69,41 +69,38 @@ CovertOperation::~CovertOperation()
 * Loads the event from YAML.
 * @param node The YAML node containing the data.
 */
-void CovertOperation::load(const YAML::Node& node)
+void CovertOperation::load(const YAML::YamlNodeReader& reader)
 {
-	_spent = node["spent"].as<int>(_spent);
-	_cost = node["cost"].as<int>(_cost);
-	_successChance = node["successChance"].as<int>(_successChance);
-	_inBattlescape = node["inBattlescape"].as<bool>(_inBattlescape);
-	_hasBattlescapeResolve = node["hasBattlescapeResolve"].as<bool>(_hasBattlescapeResolve);
-	_hasPsi =  node["hasPsi"].as<bool>(_hasPsi);
-	_over = node["over"].as<bool>(_over);
-	_progressEventSpawned = node["progressEventSpawned"].as<bool>(_progressEventSpawned);
-	_items->load(node["items"], _mod);
+	reader.tryRead("spent", _spent);
+	reader.tryRead("cost", _cost);
+	reader.tryRead("successChance", _successChance);
+	reader.tryRead("inBattlescape", _inBattlescape);
+	reader.tryRead("hasBattlescapeResolve", _hasBattlescapeResolve);
+	reader.tryRead("hasPsi", _hasPsi);
+	reader.tryRead("over", _over);
+	reader.tryRead("progressEventSpawned", _progressEventSpawned);
+	_items->load(reader["items"], _mod);
 }
 
 /**
 	* Saves the Operation to YAML.
 	* @return YAML node.
 	*/
-YAML::Node CovertOperation::save() const
+void CovertOperation::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["name"] = getRules()->getName();
-	node["spent"] = _spent;
-	node["cost"] = _cost;
-	node["successChance"] = _successChance;
-	node["hasPsi"] = _hasPsi;
-	node["inBattlescape"] = _inBattlescape;
-	node["hasBattlescapeResolve"] = _hasBattlescapeResolve;
-	node["progressEventSpawned"] = _progressEventSpawned;
+	writer.write("name", getRules()->getName());
+	writer.write("spent", _spent);
+	writer.write("cost", _cost);
+	writer.write("successChance", _successChance);
+	writer.write("hasPsi", _hasPsi);
+	writer.write("inBattlescape", _inBattlescape);
+	writer.write("hasBattlescapeResolve", _hasBattlescapeResolve);
+	writer.write("progressEventSpawned", _progressEventSpawned);
 	if (_over)
 	{
-		node["over"] = _over;
+		writer.write("over", _over);
 	}
-	node["items"] = _items->save();
-
-	return node;
+	_items->save(writer["items"]);
 }
 
 

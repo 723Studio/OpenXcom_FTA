@@ -138,7 +138,9 @@ void AlienDeployment::load(const YAML::YamlNodeReader& node, Mod *mod)
 		_durationMax = reader["duration"][1].readVal(_durationMax);
 	}
 	reader.tryRead("music", _music);
-	reader.tryRead("objectiveType", _objectiveType);
+	int objectiveType = static_cast<int>(_objectiveType);
+	reader.tryRead("objectiveType", objectiveType);
+	_objectiveType = static_cast<ObjectiveType>(objectiveType);
 	reader.tryRead("objectivesRequired", _objectivesRequired);
 	reader.tryRead("objectivePopup", _objectivePopup);
 
@@ -171,16 +173,23 @@ void AlienDeployment::load(const YAML::YamlNodeReader& node, Mod *mod)
 	reader.tryRead("points", _points);
 	reader.tryRead("cheatTurn", _cheatTurn);
 	reader.tryRead("turnLimit", _turnLimit);
-	reader.tryRead("chronoTrigger", _chronoTrigger);
+	int chronoTrigger = static_cast<int>(_chronoTrigger);
+	reader.tryRead("chronoTrigger", chronoTrigger);
+	_chronoTrigger = static_cast<ChronoTrigger>(chronoTrigger);
 	reader.tryRead("alienBase", _isAlienBase);
 	reader.tryRead("isHidden", _isHidden);
 	reader.tryRead("isHiddenAlienBase", _isHiddenAlienBase);
-	reader.tryRead("isHiddentXcomBase", _isHiddentXcom
+	reader.tryRead("isHiddentXcomBase", _isHiddentXcomBase);
 	reader.tryRead("fakeUnderwaterSpawnChance", _fakeUnderwaterSpawnChance);
 	reader.tryRead("keepCraftAfterFailedMission", _keepCraftAfterFailedMission);
 	reader.tryRead("allowObjectiveRecovery", _allowObjectiveRecovery);
-	reader.tryRead("escapeType", _escapeType);
-	reader.tryRead("extendedObjectiveType", _extendedObjectiveType);
+	int escapeType = static_cast<int>(_escapeType);
+	reader.tryRead("escapeType", escapeType);
+	_escapeType = static_cast<EscapeType>(escapeType);
+
+	int extendedObjectiveType = static_cast<int>(_extendedObjectiveType);
+	reader.tryRead("extendedObjectiveType", extendedObjectiveType);
+	_extendedObjectiveType = static_cast<ObjectiveType>(extendedObjectiveType);
 	reader.tryRead("vipSurvivalPercentage", _vipSurvivalPercentage);
 	if (reader["genMission"])
 	{

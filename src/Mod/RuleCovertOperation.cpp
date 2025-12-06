@@ -49,37 +49,38 @@ RuleCovertOperation::~RuleCovertOperation()
 * @param modIndex A value that offsets the sounds and sprite values to avoid conflicts.
 * @param listOrder The list weight for this CovertOperation.
 */
-void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
+void RuleCovertOperation::load(const YAML::YamlNodeReader& node, Mod* mod, int listOrder)
 {
-	if (const YAML::Node& parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(reader["refNode"], mod, listOrder);
 	}
-	_name = node["name"].as<std::string>(_name);
-	_description = node["description"].as<std::string>(_description);
-	_categories = node["categories"].as<std::vector<std::string>>(_requires);
-	_successBackground = node["successBackground"].as<std::string>(_successBackground);
-	_failureBackground = node["failureBackground"].as<std::string>(_failureBackground);
-	_successDescription = node["successDescription"].as<std::string>(_successDescription);
-	_failureDescription = node["failureDescription"].as<std::string>(_failureDescription);
-	_successMusic = node["successMusic"].as<std::string>(_successMusic);
-	_failureMusic = node["failureMusic"].as<std::string>(_failureMusic);
-	_successEvent = node["successEvent"].as<std::string>(_successEvent);
-	_failureEvent = node["failureEvent"].as<std::string>(_failureEvent);
-	if (node["progressEvent"])
+	reader.tryRead("name", _name);
+	reader.tryRead("description", _description);
+	reader.tryRead("categories", _categories);
+	reader.tryRead("successBackground", _successBackground);
+	reader.tryRead("failureBackground", _failureBackground);
+	reader.tryRead("successDescription", _successDescription);
+	reader.tryRead("failureDescription", _failureDescription);
+	reader.tryRead("successMusic", _successMusic);
+	reader.tryRead("failureMusic", _failureMusic);
+	reader.tryRead("successEvent", _successEvent);
+	reader.tryRead("failureEvent", _failureEvent);
+	if (reader["progressEvent"])
 	{
-		_progressEvent.load(node["progressEvent"]);
+		_progressEvent.load(reader["progressEvent"]);
 	}
-	_repeatProgressEvent = node["repeatProgressEvent"].as<bool>(_repeatProgressEvent);
-	_requires = node["requires"].as<std::vector<std::string>>(_requires);
-	_allowedRoles = node["allowedRoles"].as<std::vector<int>>(_allowedRoles);
-	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
-	_soldiersMin = node["soldiersMin"].as<int>(_soldiersMin);
+	reader.tryRead("repeatProgressEvent", _repeatProgressEvent);
+	reader.tryRead("requires", _requires);
+	reader.tryRead("allowedRoles", _allowedRoles);
+	mod->loadBaseFunction(_name, _requiresBaseFunc, reader["requiresBaseFunc"]);
+	reader.tryRead("soldiersMin", _soldiersMin);
 	if (_soldiersMin < 1)
 	{
 		throw Exception("Error in loading operation '" + _name + "'! It must have at least 1 soldier!");
 	}
-	_soldiersMax = node["soldiersMax"].as<int>(_soldiersMax);
+	reader.tryRead("soldiersMax", _soldiersMax);
 	if (_soldiersMax == 0)
 	{
 		_soldiersMax = _soldiersMin;
@@ -88,59 +89,59 @@ void RuleCovertOperation::load(const YAML::Node& node, Mod* mod, int listOrder)
 	{
 		throw Exception("Error in loading operation '" + _name + "'! soldiersMax < _soldiersMin!");
 	}
-	_optionalSoldierEffect = node["optionalSoldierEffect"].as<int>(_optionalSoldierEffect);
-	_baseChances = node["baseChances"].as<int>(_baseChances);
-	_costs = node["costs"].as<int>(_costs);
+	reader.tryRead("optionalSoldierEffect", _optionalSoldierEffect);
+	reader.tryRead("baseChances", _baseChances);
+	reader.tryRead("costs", _costs);
 	if (_costs < 0)
 	{
 		throw Exception("Error in loading operation '" + _name + "'! Costs is less than 0, this is not allowed.");
 	}
-	_progressEventChance = node["progressEventChance"].as<int>(_progressEventChance);
-	_trapChance = node["trapChance"].as<int>(_trapChance);
-	_danger = node["danger"].as<int>(_danger);
-	_successScore = node["successScore"].as<int>(_successScore);
-	_failureScore = node["failureScore"].as<int>(_failureScore);
-	_successLoyalty = node["successLoyalty"].as<int>(_successLoyalty);
-	_failureLoyalty = node["failureLoyalty"].as<int>(_failureLoyalty);
-	_successFunds = node["successFunds"].as<int>(_successFunds);
-	_failureFunds = node["failureFunds"].as<int>(_failureFunds);
-	_successItemNames = node["successItemNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_successItemNames);
-	_failureItemNames = node["failureItemNames"].as< std::vector<std::pair<int, std::map<std::string, int> > > >(_failureItemNames);
-	_addSoldiersStr = node["addSoldiers"].as<std::map<std::string, int> >(_addSoldiersStr);
-	_successResearchList = node["successResearchList"].as<std::vector<std::string> >(_successResearchList);
-	_failureResearchList = node["failureResearchList"].as<std::vector<std::string> >(_failureResearchList);
-	if (node["successMissions"])
+	reader.tryRead("progressEventChance", _progressEventChance);
+	reader.tryRead("trapChance", _trapChance);
+	reader.tryRead("danger", _danger);
+	reader.tryRead("successScore", _successScore);
+	reader.tryRead("failureScore", _failureScore);
+	reader.tryRead("successLoyalty", _successLoyalty);
+	reader.tryRead("failureLoyalty", _failureLoyalty);
+	reader.tryRead("successFunds", _successFunds);
+	reader.tryRead("failureFunds", _failureFunds);
+	reader.tryRead("successItemNames", _successItemNames);
+	reader.tryRead("failureItemNames", _failureItemNames);
+	reader.tryRead("addSoldiers", _addSoldiersStr);
+	reader.tryRead("successResearchList", _successResearchList);
+	reader.tryRead("failureResearchList", _failureResearchList);
+	if (reader["successMissions"])
 	{
-		_successMissions.load(node["successMissions"]);
+		_successMissions.load(reader["successMissions"]);
 	}
-	if (node["failureMissions"])
+	if (reader["failureMissions"])
 	{
-		_failureMissions.load(node["failureMissions"]);
+		_failureMissions.load(reader["failureMissions"]);
 	}
-	if (node["instantTrapDeployment"])
+	if (reader["instantTrapDeployment"])
 	{
-		_instantTrapDeployment.load(node["instantTrapDeployment"]);
+		_instantTrapDeployment.load(reader["instantTrapDeployment"]);
 	}
-	if (node["instantSuccessDeployment"])
+	if (reader["instantSuccessDeployment"])
 	{
-		_instantSuccessDeployment.load(node["instantSuccessDeployment"]);
+		_instantSuccessDeployment.load(reader["instantSuccessDeployment"]);
 	}
-	_requiredReputationLvl = node["requiredReputationLvl"].as<std::map<std::string, int>>(_requiredReputationLvl);
-	_successReputationScore = node["successReputationScore"].as<std::map<std::string, int>>(_successReputationScore);
-	_failureReputationScore = node["failureReputationScore"].as<std::map<std::string, int>>(_failureReputationScore);
-	_itemSpaceLimit = node["itemSpaceLimit"].as<double>(_itemSpaceLimit);
-	_itemSpaceEffect = node["itemSpaceEffect"].as<double>(_itemSpaceEffect);
-	_requiredItemsStr = node["requiredItems"].as<std::map<std::string, int>>(_requiredItemsStr);
-	_bonusItemsStr = node["bonusItems"].as<std::map<std::string, int> >(_bonusItemsStr);
-	_bonusItemsEffect = node["bonusItemsEffect"].as<int>(_bonusItemsEffect);
-	_allowAllEquipment = node["allowAllEquipment"].as<bool>(_allowAllEquipment);
-	_removeRequiredItemsOnSuccess = node["removeRequiredItemsOnSuccess"].as<bool>(_removeRequiredItemsOnSuccess);
-	_removeRequiredItemsOnFailure = node["removeRequiredItemsOnFailure"].as<bool>(_removeRequiredItemsOnFailure);
-	_concealedItemsBonus = node["concealedItemsBonus"].as<int>(_concealedItemsBonus);
-	_allowedArmor = node["allowedArmor"].as<std::vector<std::string>>(_allowedArmor);
-	_armorEffect = node["armorEffect"].as<int>(_armorEffect);
-	_soldierTypeEffectiveness = node["soldierTypeEffectiveness"].as<std::map<std::string, int>>(_soldierTypeEffectiveness);
-	_specialRule = node["specialRule"].as<std::string>(_specialRule);
+	reader.tryRead("requiredReputationLvl", _requiredReputationLvl);
+	reader.tryRead("successReputationScore", _successReputationScore);
+	reader.tryRead("failureReputationScore", _failureReputationScore);
+	reader.tryRead("itemSpaceLimit", _itemSpaceLimit);
+	reader.tryRead("itemSpaceEffect", _itemSpaceEffect);
+	reader.tryRead("requiredItems", _requiredItemsStr);
+	reader.tryRead("bonusItems", _bonusItemsStr);
+	reader.tryRead("bonusItemsEffect", _bonusItemsEffect);
+	reader.tryRead("allowAllEquipment", _allowAllEquipment);
+	reader.tryRead("removeRequiredItemsOnSuccess", _removeRequiredItemsOnSuccess);
+	reader.tryRead("removeRequiredItemsOnFailure", _removeRequiredItemsOnFailure);
+	reader.tryRead("concealedItemsBonus", _concealedItemsBonus);
+	reader.tryRead("allowedArmor", _allowedArmor);
+	reader.tryRead("armorEffect", _armorEffect);
+	reader.tryRead("soldierTypeEffectiveness", _soldierTypeEffectiveness);
+	reader.tryRead("specialRule", _specialRule);
 	if (!_listOrder)
 	{
 		_listOrder = listOrder;

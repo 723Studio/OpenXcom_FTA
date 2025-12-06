@@ -285,7 +285,8 @@ private:
 	bool _showUfoPreviewInBaseDefense;
 	std::array<int, (size_t)(RANK_COMMANDER + 1)> _soldiersPerRank;
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
-	int _pilotBraveryThresholds[3]; _pilotCooperationZeroPoint, _pilotCooperationRange, _pilotTrackingZeroPoint, _pilotTrackingRange;
+	int _pilotBraveryThresholds[3], _pilotCooperationZeroPoint, _pilotCooperationRange, _pilotTrackingZeroPoint, _pilotTrackingRange;
+	int _minReactionAccuracy;
 	double _performanceBonusFactor;
 	int _covertOpsExperienceFactor, _covertOpsIntelBonusFactor;
 	bool _enableNewResearchSorting;
@@ -346,7 +347,7 @@ private:
 	std::vector<std::string> _diplomacyFactionIndex, _diplomacyFactionEventIndex, _covertOperationIndex, _objectIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> _transparencies;
-	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder;
+	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder;
 	int _alienRaceListOrder, _researchListOrder,  _manufactureListOrder, _intelligenceListOrder;
 	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder;
 	std::vector<ModData> _modData;

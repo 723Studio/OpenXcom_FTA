@@ -60,7 +60,7 @@ private:
 	Ufo *_ufo;
 	std::vector<Soldier*> _pilots;
 	bool _ufoIsAttacking, _missileCraft, _missileImpact;
-	bool _disableDisengage, _disableCautious,  _disableStandard, _disableAggressive;
+	bool _disableDisengage, _disableStandoff, _disableCautious,  _disableStandard, _disableAggressive;
 	bool _craftIsDefenseless, _selfDestructPressed, _panicing;
 	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax], _panicTimeout;
 	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];

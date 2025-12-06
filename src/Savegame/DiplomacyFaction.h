@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -99,9 +99,9 @@ public:
 	/// Cleans up the Faction info.
 	~DiplomacyFaction();
 	/// Loads the Faction from YAML.
-	void load(const YAML::Node &node, SavedGame *save);
+	void load(const YAML::YamlNodeReader &reader, SavedGame *save);
 	/// Saves the Faction to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Gets the Faction's ruleset.
 	const RuleDiplomacyFaction* getRules() const { return _rule; }
 	/// Gets current player's reputation in this Faction.

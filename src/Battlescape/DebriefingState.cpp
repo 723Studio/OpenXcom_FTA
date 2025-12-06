@@ -93,7 +93,7 @@ namespace OpenXcom
  * Initializes all the elements in the Debriefing screen.
  * @param game Pointer to the core game.
  */
-DebriefingState::DebriefingState() : 
+DebriefingState::DebriefingState() :
 	_eventToSpawn(nullptr), _region(0), _country(0),
 	_pageNumber(0), _positiveScore(true), _destroyBase(false), _promotions(false), _showSellButton(true), _initDone(false),
 	_recoveredItemObjs(0)
@@ -130,7 +130,7 @@ DebriefingState::DebriefingState() :
 		_txtRating = new Text(104, 9, 64, 180);
 		_txtLoyalty = new Text(73, 9, 173, 180);
 	}
-	
+
 	_lstStats = new TextList(290, 80, 16, 32);
 	_lstRecovery = new TextList(290, 80, 16, 32);
 	_lstTotal = new TextList(290, 9, 16, 12);
@@ -442,7 +442,7 @@ void DebriefingState::init()
 	_initDone = true;
 
 	prepareDebriefing();
-	
+
 	int row = 0;
 	for (const auto& sse : _soldierStats)
 	{
@@ -917,7 +917,7 @@ void DebriefingState::init()
 	}
 	else if (Options::oxceAutomaticPromotions)
 	{
-		
+
 		_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 	}
 
@@ -1008,7 +1008,7 @@ void DebriefingState::btnNonCombatStatsClick(Action* action)
 void DebriefingState::btnOkClick(Action *)
 {
 	_game->popState();
-		
+
 	if (_game->getSavedGame()->getMonthsPassed() == -1)
 	{
 		_game->setState(new MainMenuState);
@@ -1115,7 +1115,7 @@ void DebriefingState::btnOkClick(Action *)
 							_game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
 					}
 				}
-				
+
 			}
 
 			if (Options::storageLimitsEnforced && _base->storesOverfull())
@@ -1633,10 +1633,11 @@ void DebriefingState::prepareDebriefing()
 	{
 		// Set up new xcom base
 		Base* hiddenBase = new Base(_game->getMod());
-		hiddenBase->load(_game->getMod()->getHiddenXcomBase(), save, true);
+		YAML::YamlRootNodeReader hiddenBaseReader(_game->getMod()->getHiddenXcomBase(), "(hidden base template)");
+		hiddenBase->load(hiddenBaseReader, save, true);
 		hiddenBase->setLongitude(craft->getLongitude());
 		hiddenBase->setLatitude(craft->getLatitude());
-		
+
 		hiddenBase->setName(_game->getLanguage()->getString(_ruleDeploy->getType()));
 		save->getBases()->push_back(hiddenBase);
 	}
@@ -1683,9 +1684,9 @@ void DebriefingState::prepareDebriefing()
 	// time to care for units.
 	bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(_game->getMod()->getPsiRequirements()));
 	bool ignoreLivingCivilians = false;
-	if (ruleDeploy)
+	if (_ruleDeploy)
 	{
-		ignoreLivingCivilians = ruleDeploy->getIgnoreLivingCivilians();
+		ignoreLivingCivilians = _ruleDeploy->getIgnoreLivingCivilians();
 	}
 	for (auto* bunit : *battle->getUnits())
 	{
@@ -1700,7 +1701,7 @@ void DebriefingState::prepareDebriefing()
 		{
 			terminateObj = bunit->getSpecialObjective() == SPECOBJ_ENEMY_VIP;
 		}
-		
+
 		Soldier *soldier = save->getSoldier(bunit->getId());
 
 		if (!bunit->getTile())
@@ -1740,7 +1741,7 @@ void DebriefingState::prepareDebriefing()
 				{
 					type = race->getRaceType();
 				}
-				
+
 				if (!_fta || type == RACE_TYPE_ALIEN)
 				{
 					addStat("STR_ALIENS_KILLED", 1, value);
@@ -1871,10 +1872,10 @@ void DebriefingState::prepareDebriefing()
 					//noncombat stats
 					if (statIncrease.statGrowth.biology > 0 || statIncrease.statGrowth.hacking > 0)
 						_nonComatStatIncreaseList.emplace(std::pair(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));
-					
+
 					if (bunit->getGeoscapeSoldier())
-						_soldierStats.push_back(std::pair<std::string, UnitStats>(bunit->getGeoscapeSoldier()->getName(), statIncrease.statGrowth));
-					
+						_soldierStats.push_back(std::pair<Soldier *, UnitStats>(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));
+
 					playersInExitArea2++;
 
 					recoverItems(bunit->getInventory(), base, craft);
@@ -1958,7 +1959,7 @@ void DebriefingState::prepareDebriefing()
 				{
 					battle->getTileEngine()->itemDropInventory(bunit->getTile(), bunit);
 				}
-				
+
 				if (_fta && bunit->getUnitRules()->getPrisoner())
 				{
 					recoverPrisoner(bunit, base);
@@ -3070,7 +3071,7 @@ void DebriefingState::recoverPrisoner(BattleUnit* from, Base* base)
 			p->setStats(from->getBaseStats());
 			p->setHealth(from->getHealth());
 			p->setCooperation(p->getRules()->getStartingCooperation());
-			
+
 			int morale = from->getMorale() + p->getStats()->bravery * 2;
 			if (from->isSurrendering())
 			{
@@ -3207,7 +3208,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 	{
 		ruleLiveAlienItem = _game->getMod()->getItem(altUnit->getType());
 	}
-	
+
 	// Transform a live alien into one or more recovered items?
 	if (ruleLiveAlienItem && !ruleLiveAlienItem->getRecoveryTransformations().empty())
 	{
@@ -3292,7 +3293,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 					{
 						addStat("STR_ENEMY_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
 					}
-					
+
 					auto* corpseItem = from->getArmor()->getCorpseGeoscape();
 					addItemsToBaseStores(corpseItem, base, 1, true);
 				}

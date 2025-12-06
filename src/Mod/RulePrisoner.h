@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -46,7 +46,7 @@ public:
 	PrisonerInterrogationRules();
 	~PrisonerInterrogationRules();
 
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	void afterLoad(const Mod* mod);
 
 	int getBaseResistance() { return _baseResistance; }
@@ -70,7 +70,7 @@ public:
 	PrisonerRecruitingRules();
 	~PrisonerRecruitingRules();
 
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	void afterLoad(const Mod* mod);
 
 	int getDifficulty() { return _difficulty; }
@@ -92,7 +92,7 @@ public:
 	PrisonerTortureRules();
 	~PrisonerTortureRules();
 
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 
 	int getDifficulty() { return _difficulty; }
 	int getLoyalty() { return _loyaltyChange; }
@@ -117,7 +117,7 @@ public:
 	PrisonerContainingRules();
 	~PrisonerContainingRules();
 
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	void afterLoad(const Mod* mod);
 
 	int getFunds() { return _funds; }
@@ -145,7 +145,7 @@ public:
 	/// Cleans up the prisoner ruleset.
 	~RulePrisoner();
 	/// Loads the event definition from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::YamlNodeReader& reader);
 	void afterLoad(const Mod* mod);
 
 	const std::string &getType() const { return _type; }

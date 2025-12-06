@@ -408,21 +408,27 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 
 	for (const auto& battleObjectReader : reader["battleObjects"].children())
 	{
-		BattleObject* object;
-		std::string type = battleObjectReader["type"].as<std::string>();
+		std::string type;
+		battleObjectReader["type"].tryReadVal(type);
 		if (!mod->getObject(type))
 			continue;
-		object = new BattleObject(mod->getObject(type));
+		BattleObject* object = new BattleObject(mod->getObject(type));
 		object->load(battleObjectReader, mod);
-		
-		Position pos = battleObjectReader["position"].as<Position>(Position(-1, -1, -1));
+
+		Position pos = Position(-1, -1, -1);
+		if (battleObjectReader["position"])
+		{
+			battleObjectReader["position"].tryReadVal(pos);
+		}
 		auto tile = getTile(pos);
 		tile->setBattleObject(object);
 		object->setTile(tile);
 
 		_battleObjects.push_back(object);
 	}
-	reader.tryRead("vipEscapeType", _vipEscapeType);
+	int vipEscapeType = static_cast<int>(_vipEscapeType);
+	reader.tryRead("vipEscapeType", vipEscapeType);
+	_vipEscapeType = static_cast<EscapeType>(vipEscapeType);
 	reader.tryRead("vipSurvivalPercentage", _vipSurvivalPercentage);
 	reader.tryRead("vipsSaved", _vipsSaved);
 	reader.tryRead("vipsLost", _vipsLost);
@@ -1659,7 +1665,7 @@ void SavedBattleGame::endTurn()
 		{
 			updateAlarm();
 		}
-		
+
 		_selectedUnit =  0;
 		_undoUnit = nullptr;
 		_side = FACTION_NEUTRAL;

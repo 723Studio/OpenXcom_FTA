@@ -192,7 +192,6 @@ public:
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
 	std::vector<Soldier*> getPromotedSolders() { return _promotedSoldiers; }
-private:
 	/// Handle alien mission generation.
 	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* eventRules = nullptr);
 private:

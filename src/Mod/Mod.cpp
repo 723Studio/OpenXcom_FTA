@@ -3028,7 +3028,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		RulePrisoner *rule = loadRule(ruleReader, &_prisoners, &_prisonerIndex, "type");
 		if (rule != 0)
 		{
-			rule->load(ruleReader, this);
+			rule->load(ruleReader);
 		}
 	}
 	for (const auto& ruleReader : iterateRules("soldierBonuses", "name"))
@@ -3119,9 +3119,9 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 			rule->load(ruleReader);
 		}
 	}
-	for (const auto& ruleReader : iterateRules("diplomacyFactionEvents", "name"))
+	for (const auto& ruleReader : iterateRules("diplomacyFactionEvents", "type"))
 	{
-		RuleDiplomacyFactionEvent* rule = loadRule(ruleReader, &_diplomacyFactionEvents, &_diplomacyFactionEventIndex, "name");
+		RuleDiplomacyFactionEvent* rule = loadRule(ruleReader, &_diplomacyFactionEvents, &_diplomacyFactionEventIndex, "type");
 		if (rule != 0)
 		{
 			rule->load(ruleReader);
@@ -3384,24 +3384,25 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		nodeHealth.tryRead("replenishAfterMission", _healthReplenishAfterMission);
 	}
 
-	_hackingBaseTuCost = doc["hackingBaseTuCost"].as<int>(_hackingBaseTuCost);
-	_hackingFirewallBaseTuCost = doc["hackingFirewallBaseTuCost"].as<int>(_hackingFirewallBaseTuCost);
-	_hackingFirewallBaseHpCost = doc["hackingFirewallBaseHpCost"].as<int>(_hackingFirewallBaseHpCost);
-	_hackingStatToTuCoef = doc["hackingStatToTuCoef"].as<int>(_hackingStatToTuCoef);
-	_hackingStatToHpCoef = doc["hackingStatToHpCoef"].as<int>(_hackingStatToHpCoef);
+	reader.tryRead("hackingBaseTuCost", _hackingBaseTuCost);
+	reader.tryRead("hackingFirewallBaseTuCost", _hackingFirewallBaseTuCost);
+	reader.tryRead("hackingFirewallBaseHpCost", _hackingFirewallBaseHpCost);
+	reader.tryRead("hackingStatToTuCoef", _hackingStatToTuCoef);
+	reader.tryRead("hackingStatToHpCoef", _hackingStatToHpCoef);
 
 
-	if (const YAML::Node& nodeLoyalty = doc["loyaltySettings"])
+	if (reader["loyaltySettings"])
 	{
-		_coefBattlescape = nodeLoyalty["coefBattlescape"].as<int>(_coefBattlescape);
-		_coefGeoscape = nodeLoyalty["coefGeoscape"].as<int>(_coefGeoscape);
-		_coefDogfight = nodeLoyalty["coefDogfight"].as<int>(_coefDogfight);
-		_coefResearch = nodeLoyalty["coefResearch"].as<int>(_coefResearch);
-		_coefAlienMission = nodeLoyalty["coefAlienMission"].as<int>(_coefAlienMission);
-		_coefUfo = nodeLoyalty["coefUfo"].as<int>(_coefUfo);
-		_coefAlienBase = nodeLoyalty["coefAlienBase"].as<int>(_coefAlienBase);
-		_noFundsPenalty = nodeLoyalty["noFundsPenalty"].as<int>(_noFundsPenalty);
-		_noFundsValue = nodeLoyalty["noFundsValue"].as<int>(_noFundsValue);
+		const auto& nodeLoyalty = reader["loyaltySettings"];
+		nodeLoyalty.tryRead("coefBattlescape", _coefBattlescape);
+		nodeLoyalty.tryRead("coefGeoscape", _coefGeoscape);
+		nodeLoyalty.tryRead("coefDogfight", _coefDogfight);
+		nodeLoyalty.tryRead("coefResearch", _coefResearch);
+		nodeLoyalty.tryRead("coefAlienMission", _coefAlienMission);
+		nodeLoyalty.tryRead("coefUfo", _coefUfo);
+		nodeLoyalty.tryRead("coefAlienBase", _coefAlienBase);
+		nodeLoyalty.tryRead("noFundsPenalty", _noFundsPenalty);
+		nodeLoyalty.tryRead("noFundsValue", _noFundsValue);
 	}
 
 	if (const auto& nodeGameOver = loadDocInfoHelper("gameOver"))
@@ -3514,7 +3515,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		}
 	}
 
-	
+
 	if (const auto& arrayReader = reader["sellPriceCoefficient"])
 	{
 		for (size_t j = 0; j < std::size(SELL_PRICE_COEFFICIENT); j++)
@@ -4104,8 +4105,8 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 			{
 				for (auto* craft : *base->getCrafts())
 				{
-					// We setup crafts with required fta-pilots first. 
-					const std::vector<Soldier*> pilots = craft->getPilotList(false);
+					// We setup crafts with required fta-pilots first.
+					const std::vector<Soldier*> pilots = craft->getPilotList(false, this);
 					if ((int)(pilots.size()) < craft->getRules()->getPilots())
 					{
 						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
@@ -4116,7 +4117,7 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 							craft->addPilot(soldier->getId());
 						}
 					}
-					
+
 				}
 			}
 			else

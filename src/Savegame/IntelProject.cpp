@@ -285,35 +285,33 @@ std::string IntelProject::getName() const
  * Loads the research project from a YAML file.
  * @param node YAML node.
  */
-void IntelProject::load(const YAML::Node& node)
+void IntelProject::load(const YAML::YamlNodeReader& reader)
 {
-	_stageRolls = node["stageRolls"].as<std::map<std::string, int>>(_stageRolls);
-	_active = node["active"].as<int>(_active);
-	_rolls = node["rolls"].as<int>(_rolls);
-	_spent = node["spent"].as<int>(_spent);
-	_cost = node["cost"].as<int>(_cost);
+	reader.tryRead("stageRolls", _stageRolls);
+	reader.tryRead("active", _active);
+	reader.tryRead("rolls", _rolls);
+	reader.tryRead("spent", _spent);
+	reader.tryRead("cost", _cost);
 }
 
 /**
  * Saves the research project to a YAML file.
  * @return YAML node.
  */
-YAML::Node IntelProject::save() const
+void IntelProject::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["name"] = getRules()->getName();
+	writer.write("name", getRules()->getName());
 	if (!_stageRolls.empty())
 	{
-		node["stageRolls"] = _stageRolls;
+		writer.write("stageRolls", _stageRolls);
 	}
 	if (_active)
 	{
-		node["active"] = _active;
+		writer.write("active", _active);
 	}
-	node["rolls"] = _rolls;
-	node["spent"] = _spent;
-	node["cost"] = _cost;
-	return node;
+	writer.write("rolls", _rolls);
+	writer.write("spent", _spent);
+	writer.write("cost", _cost);
 }
 
 /**

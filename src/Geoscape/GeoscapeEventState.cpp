@@ -553,9 +553,8 @@ void GeoscapeEventState::eventLogic()
 	for (auto* rRule : rule.getResearchList())
 	{
 		std::vector<const RuleResearch*> researches;
-		for (const auto &rName : rule.getResearchList())
+		for (const auto &rRule : rule.getResearchList())
 		{
-			const RuleResearch* rRule = mod->getResearch(rName, true);
 			researches.push_back(rRule);
 		}
 		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);

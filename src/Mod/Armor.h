@@ -187,7 +187,7 @@ private:
 
 	ScriptValues<Armor> _scriptValues;
 	std::vector<int> _customArmorPreviewIndex;
-	std::vector<std::string> _allowedItemCategories, _forbiddenItemCategoiries;
+	std::vector<std::string> _allowedItemCategories, _forbiddenItemCategories;
 	Sint8 _allowsRunning, _allowsStrafing, _allowsSneaking, _allowsKneeling, _allowsMoving;
 	bool _isPilotArmor;
 	bool _allowTwoMainWeapons;
@@ -271,7 +271,7 @@ public:
 	/// Gets the list of item categories, that this unit can carry. All allowed if empty.
 	const std::vector<std::string>& getAllowedItemCategories() const { return _allowedItemCategories; }
 	/// Gets the list of item categories, that this unit can not carry. No restrictions if empty.
-	const std::vector<std::string>& getForbiddenItemCategoiries() const { return _forbiddenItemCategoiries; }
+	const std::vector<std::string>& getForbiddenItemCategoiries() const { return _forbiddenItemCategories; }
 
 	/// Gets weight value as hostile unit.
 	NullableValue<AIAttackWeight> getAITargetWeightAsHostile() const { return _aiTargetWeightAsHostile; }

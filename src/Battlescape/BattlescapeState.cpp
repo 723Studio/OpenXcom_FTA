@@ -655,7 +655,7 @@ BattlescapeState::BattlescapeState() :
 		std::ostringstream tooltip;
 		_btnVisibleUnit[i]->onMouseClick((ActionHandler)&BattlescapeState::btnVisibleUnitClick);
 		_btnVisibleUnit[i]->onMouseClick((ActionHandler)&BattlescapeState::btnVisibleUnitClick, SDL_BUTTON_RIGHT);
-		_btnVisibleUnit[i]->onKeyboardPress((ActionHandler)&BattlescapeState::btnVisibleUnitClick, buttons[i]); // #FINNIKTODO - make 11-20 tiles also selectable with SHIFT + number
+		//_btnVisibleUnit[i]->onKeyboardPress((ActionHandler)&BattlescapeState::btnVisibleUnitClick, buttons[i]); // #FINNIKTODO - make 11-20 tiles also selectable with SHIFT + number
 		tooltip << "STR_CENTER_ON_ENEMY_" << (i+1);
 		_txtVisibleUnitTooltip[i] = tooltip.str();
 		_btnVisibleUnit[i]->setTooltip(_txtVisibleUnitTooltip[i]);

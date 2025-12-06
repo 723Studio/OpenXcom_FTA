@@ -99,7 +99,11 @@ void RuleSoldierTransformation::load(const YAML::YamlNodeReader& node, Mod* mod)
 	reader.tryRead("upperBoundType", _upperBoundType);
 	reader.tryRead("addRole", reinterpret_cast<int&>(_addRole));
 	if (reader["roleRankRequirements"])
-		loadRoleRequirements(reader["roleRankRequirements"].as<std::map<int, int>>());
+	{
+		std::map<int, int> reqs;
+		reader.tryRead("roleRankRequirements", reqs);
+		loadRoleRequirements(reqs);
+	}
 
 	mod->loadUnorderedNames(_name, _removeTransformations, reader["removeTransformations"]);
 	reader.tryRead("reset", _reset);

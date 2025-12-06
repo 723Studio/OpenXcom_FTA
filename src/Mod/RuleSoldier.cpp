@@ -81,9 +81,13 @@ void RuleSoldier::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScri
 	{
 		load(parent, mod, parsers);
 	}
-	_type = node["type"].as<std::string>(_type);
-	if (node["roles"])
-		loadRoles(node["roles"].as<std::vector<int> >());
+	reader.tryRead("type", _type);
+	if (reader["roles"])
+	{
+		std::vector<int> roles;
+		reader.tryRead("roles", roles);
+		loadRoles(roles);
+	}
 	// Just in case
 	if (_type == "XCOM")
 		_type = "STR_SOLDIER";

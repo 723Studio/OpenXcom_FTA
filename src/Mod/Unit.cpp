@@ -130,7 +130,9 @@ void Unit::load(const YAML::YamlNodeReader& node, Mod *mod)
 
 	if (reader["roles"])
 	{
-		loadRoles(reader["roles"].as<std::vector<int> >());
+		std::vector<int> roles;
+		reader.tryRead("roles", roles);
+		loadRoles(roles);
 	}
 
 	mod->loadSoundOffset(_type, _deathSound, reader["deathSound"], "BATTLE.CAT");

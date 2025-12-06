@@ -50,29 +50,26 @@ BattleObject::~BattleObject()
 * @param node YAML node.
 * @param mod Mod for the item.
 */
-void BattleObject::load(const YAML::Node& node, Mod* mod)
+void BattleObject::load(const YAML::YamlNodeReader& reader, Mod* mod)
 {
-	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
-	_failedAttempts = node["failedAttempts"].as<int>(_failedAttempts);
-	_wasUsed = node["wasUsed"].as<bool>(_wasUsed);
-	_position = node["position"].as<Position>(_position);
+	reader.tryRead("hackingDefence", _hackingDefence);
+	reader.tryRead("failedAttempts", _failedAttempts);
+	reader.tryRead("wasUsed", _wasUsed);
+	reader.tryRead("position", _position);
 }
 
 /**
 * Saves the BattleObject to a YAML file.
 * @return YAML node.
 */
-YAML::Node BattleObject::save() const
+void BattleObject::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["type"] = _rules->getName();
-	node["hackingDefence"] = _hackingDefence;
-	node["failedAttempts"] = _failedAttempts;
-	node["wasUsed"] = _wasUsed;
+	writer.write("type", _rules->getName());
+	writer.write("hackingDefence", _hackingDefence);
+	writer.write("failedAttempts", _failedAttempts);
+	writer.write("wasUsed", _wasUsed);
 	if (_tile)
-		node["position"] = _tile->getPosition();
-
-	return node;
+		writer.write("position", _tile->getPosition());
 }
 
 void BattleObject::setTile(Tile *tile)

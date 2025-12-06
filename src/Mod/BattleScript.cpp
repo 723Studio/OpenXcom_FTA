@@ -18,7 +18,7 @@
  */
 
 #include "BattleScript.h"
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Logger.h"
@@ -43,13 +43,13 @@ BattleScript::~BattleScript()
 * Loads a map script command from YAML.
 * @param node the YAML node from which to read.
 */
-void BattleScript::load(const YAML::Node& node)
+void BattleScript::load(const YAML::YamlNodeReader& reader)
 {
 
 	std::string command;
-	if (const YAML::Node& map = node["type"])
+		if (reader["type"])
 	{
-		command = map.as<std::string>("");
+			reader.tryRead("type", command);
 		if (command == "spawnItem")
 			_type = BSC_SPAWN_ITEM;
 		else if (command == "spawnUnit")
@@ -68,44 +68,42 @@ void BattleScript::load(const YAML::Node& node)
 		throw Exception("Missing command type.");
 	}
 
-	if (const YAML::Node& map = node["conditionals"])
+	if (reader["conditionals"])
 	{
-		if (map.Type() == YAML::NodeType::Sequence)
-		{
-			_conditionals = map.as<std::vector<int> >(_conditionals);
-		}
-		else
-		{
-			_conditionals.push_back(map.as<int>(0));
-		}
+		   std::vector<int> tmp = _conditionals;
+		   reader.tryRead("conditionals", tmp);
+		   _conditionals = tmp;
 	}
 
-	_executionChances = node["executionChances"].as<int>(_executionChances);
-	_executions = node["executions"].as<int>(_executions);
-	_maxRuns = node["maxRuns"].as<int>(_maxRuns);
-	_variable = node["variable"].as<std::string>(_variable);
-	_label = std::abs(node["label"].as<int>(_label));
-	_itemSet = node["itemSet"].as<std::vector<std::string>>(_itemSet);
-	_unitSet = node["unitSet"].as<std::vector<std::string>>(_unitSet);
-	_spawnBlocks = node["spawnBlocks"].as< std::vector<std::string> >(_spawnBlocks);
-	_groups = node["groups"].as< std::vector<int> >(_groups);
-	_packSize = node["packSize"].as<int>(_packSize);
-	_randomPackSize = node["randomPackSize"].as<bool>(_randomPackSize);
-	_minLevel = node["minLevel"].as<int>(_minLevel);
-	_maxLevel = node["maxLevel"].as<int>(_maxLevel);
-	_unitSide = node["unitSide"].as<int>(_unitSide);
-	_startTurn = node["startTurn"].as<int>(_startTurn);
-	_endTurn = node["endTurn"].as<int>(_endTurn);
-	_minDifficulty = node["minDifficulty"].as<int>(_minDifficulty);
-	_maxDifficulty = node["maxDifficulty"].as<int>(_maxDifficulty);
-	_minAlarmLevel = node["minAlarmLevel"].as<int>(_minAlarmLevel);
-	_maxAlarmLevel = node["maxAlarmLevel"].as<int>(_maxAlarmLevel);
-	_spawnNodeRanks = node["spawnNodeRanks"].as<std::vector<int> >(_spawnNodeRanks);
-	if (const YAML::Node& messages = node["messages"])
+	reader.tryRead("executionChances", _executionChances);
+	reader.tryRead("executions", _executions);
+	reader.tryRead("maxRuns", _maxRuns);
+	reader.tryRead("variable", _variable);
+	reader.tryRead("label", _label);
+	_label = std::abs(_label);
+	reader.tryRead("itemSet", _itemSet);
+	reader.tryRead("unitSet", _unitSet);
+	reader.tryRead("spawnBlocks", _spawnBlocks);
+	reader.tryRead("groups", _groups);
+	reader.tryRead("packSize", _packSize);
+	reader.tryRead("randomPackSize", _randomPackSize);
+	reader.tryRead("minLevel", _minLevel);
+	reader.tryRead("maxLevel", _maxLevel);
+	reader.tryRead("unitSide", _unitSide);
+	reader.tryRead("startTurn", _startTurn);
+	reader.tryRead("endTurn", _endTurn);
+	reader.tryRead("minDifficulty", _minDifficulty);
+	reader.tryRead("maxDifficulty", _maxDifficulty);
+	reader.tryRead("minAlarmLevel", _minAlarmLevel);
+	reader.tryRead("maxAlarmLevel", _maxAlarmLevel);
+	reader.tryRead("spawnNodeRanks", _spawnNodeRanks);
+	if (reader["messages"])
 	{
-		for (YAML::const_iterator i = messages.begin(); i != messages.end(); ++i)
+		for (const auto& child : reader["messages"].children())
 		{
-			_message[i->first.as<int>()].load(i->second);
+			int key;
+			child.tryReadKey(key);
+			_message[key].load(child);
 		}
 	}
 

@@ -31,45 +31,40 @@ RuleDiplomacyFaction::RuleDiplomacyFaction(const std::string &name) :
 {
 }
 
-/**
- * Loads the event definition from YAML.
- * @param node YAML node.
- */
-void RuleDiplomacyFaction::load(const YAML::Node &node)
+void RuleDiplomacyFaction::load(const YAML::YamlNodeReader& node)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent);
+		load(reader["refNode"]);
 	}
-	_name = node["name"].as<std::string>(_name);
-	_description = node["description"].as<std::string>(_description);
-	_background = node["background"].as<std::string>(_background);
-	_cardBackground = node["cardBackground"].as<std::string>(_cardBackground); 
-	_discoverResearch = node["discoverResearch"].as<std::string>(_discoverResearch);
-	_discoverEvent = node["discoverEvent"].as<std::string>(_discoverEvent);
-	_helpTreatyMissions = node["helpTreatyMissions"].as<std::vector<std::string>>(_helpTreatyMissions);
-	_helpTreatyEventScripts = node["helpTreatyEventScripts"].as<std::vector<std::string>>(_helpTreatyEventScripts);
-	_genMissionFrequency = node["genMissionFreq"].as<int>(_genMissionFrequency);
-	_helpTreatyGap = node["helpTreatyGap"].as<int>(_helpTreatyGap);
-	_usualEventsScripts = node["usualEventsScripts"].as<std::vector<std::string>>(_usualEventsScripts);
-	_happyEvents = node["happyEvents"].as<std::vector<std::string>>(_happyEvents);
-	_angryEvents = node["angryEvents"].as<std::vector<std::string>>(_angryEvents);
-
-	_factionalEvents = node["factionalEvents"].as<std::vector<std::string>>(_factionalEvents);
-	_sellPriceFactor = node["sellPriceFactor"].as<int>(_sellPriceFactor);
-	_buyPriceFactor = node["buyPriceFactor"].as<int>(_buyPriceFactor);
-	_repPriceFactor = node["repPriceFactor"].as<int>(_repPriceFactor);
-	_wishList = node["wishList"].as<std::map<std::string, double>>(_wishList);
-	_staffWeights = node["staffWeights"].as<std::map<std::string, int>>(_staffWeights);
-	_powerHungry = node["powerHungry"].as<int>(_powerHungry);
-	_scienceBaseCost = node["scienceBaseCost"].as<int>(_scienceBaseCost);
-
-	_startingReputation = node["startingReputation"].as<int>(_startingReputation);
-	_startingFunds = node["startingFunds"].as<int>(_startingFunds);
-	_startingPower = node["startingPower"].as<int>(_startingPower);
-	_startingItems = node["startingItems"].as<std::map<std::string, int>>(_startingItems);
-	_startingStaff = node["startingStaff"].as<std::map<std::string, int>>(_startingStaff);
-	_startingResearches = node["startingResearches"].as<std::vector<std::string>>(_startingResearches);
+	reader.tryRead("name", _name);
+	reader.tryRead("description", _description);
+	reader.tryRead("background", _background);
+	reader.tryRead("cardBackground", _cardBackground);
+	reader.tryRead("discoverResearch", _discoverResearch);
+	reader.tryRead("discoverEvent", _discoverEvent);
+	reader.tryRead("helpTreatyMissions", _helpTreatyMissions);
+	reader.tryRead("helpTreatyEventScripts", _helpTreatyEventScripts);
+	reader.tryRead("genMissionFreq", _genMissionFrequency);
+	reader.tryRead("helpTreatyGap", _helpTreatyGap);
+	reader.tryRead("usualEventsScripts", _usualEventsScripts);
+	reader.tryRead("happyEvents", _happyEvents);
+	reader.tryRead("angryEvents", _angryEvents);
+	reader.tryRead("factionalEvents", _factionalEvents);
+	reader.tryRead("sellPriceFactor", _sellPriceFactor);
+	reader.tryRead("buyPriceFactor", _buyPriceFactor);
+	reader.tryRead("repPriceFactor", _repPriceFactor);
+	reader.tryRead("wishList", _wishList);
+	reader.tryRead("staffWeights", _staffWeights);
+	reader.tryRead("powerHungry", _powerHungry);
+	reader.tryRead("scienceBaseCost", _scienceBaseCost);
+	reader.tryRead("startingReputation", _startingReputation);
+	reader.tryRead("startingFunds", _startingFunds);
+	reader.tryRead("startingPower", _startingPower);
+	reader.tryRead("startingItems", _startingItems);
+	reader.tryRead("startingStaff", _startingStaff);
+	reader.tryRead("startingResearches", _startingResearches);
 }
 
 }

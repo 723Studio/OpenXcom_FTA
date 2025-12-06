@@ -56,7 +56,9 @@ void AlienRace::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 	reader.tryRead("members", _members);
 	reader.tryRead("membersRandom", _membersRandom);
 	reader.tryRead("retaliationAggression", _retaliationAggression);
-	reader.tryRead("raceType", _raceType);
+	int raceType = static_cast<int>(_raceType);
+	reader.tryRead("raceType", raceType);
+	_raceType = static_cast<RaceType>(raceType);
 
 	for (const auto& weights : reader["retaliationMissionWeights"].children())
 	{

@@ -39,19 +39,18 @@ public:
 	void setInfiniteAmount (bool infinite){ _infinite = infinite; }
 	int getTimeSpent() const{ return _timeSpent; }
 	void setTimeSpent (int timeSpent){ _timeSpent = timeSpent; }
-	bool isQueuedOnly() const;
 	int getAmountProduced() const;
 	int getAssignedEngineers() const { return _engineers; }
 	void setAssignedEngineers (int engineers){ _engineers = engineers; }
 	bool getSellItems() const { return _sell; }
 	void setSellItems (bool sell){ _sell = sell; }
-	bool isFallback() const { return _isFallback; }
-	void setFallback(bool newValue) { _isFallback = newValue; }
+	int getEfficiency() const { return _efficiency; }
+	void setEfficiency(int efficiency) { _efficiency = efficiency; }
 	std::vector<Soldier*> getAssignedSoldiers(Base* b);
 	int getProgress(Base* b, SavedGame* g, const Mod* m, int loyalty, bool prediction = false);
 	int getTimeLeft();
 	
-	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang);
+	productionProgress_e step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating);
 	const RuleManufacture * getRules() const;
 	void startItem(Base * b, SavedGame * g, const Mod *m) const;
 	void refundItem(Base * b, SavedGame * g, const Mod *m) const;
@@ -66,7 +65,6 @@ private:
 	int _engineers;
 	int _efficiency;
 	bool _sell;
-	bool _isFallback;
 	std::map<std::string, int> _randomProductionInfo;
 	bool haveEnoughMoneyForOneMoreUnit(SavedGame * g) const;
 	bool haveEnoughLivingSpaceForOneMoreUnit(Base * b);

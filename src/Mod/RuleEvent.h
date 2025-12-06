@@ -78,6 +78,7 @@ private:
 	bool _invert;
 	std::map<std::string, int> _everyMultiSoldierList;
 	std::vector<std::map<std::string, int> > _randomMultiSoldierList;
+	std::map<std::string, int> _reputationScore;
 	std::map<int, CustomAnswer> _answers;
 public:
 	/// Creates a blank RuleEvent.

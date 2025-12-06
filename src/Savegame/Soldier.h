@@ -62,21 +62,18 @@ struct SoldierRoleRanks
 	int experience;
 
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		role = (SoldierRole)node["role"].as<int>(role);
-		rank = node["rank"].as<int>(rank);
-		experience = node["experience"].as<int>(experience);
+		reader.tryRead("role", role);
+		reader.tryRead("rank", rank);
+		reader.tryRead("experience", experience);
 	}
 	/// Saves stats to YAML.
-	YAML::Node save()
+	void save(YAML::YamlNodeWriter& writer)
 	{
-		YAML::Node node;
-		node["role"] = (int)role;
-		node["rank"] = rank;
-		node["experience"] = experience;
-
-		return node;
+		writer.write("role", (int)role);
+		writer.write("rank", rank);
+		writer.write("experience", experience);
 	}
 };
 

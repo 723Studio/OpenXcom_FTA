@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "RuleResearch.h"
 #include "../Mod/Unit.h"
@@ -47,10 +47,10 @@ class RuleIntelProject
 	std::vector<RuleIntelStage*> _stages;
 	int _listOrder;
 public:
-	RuleIntelProject(const std::string &name);
+	RuleIntelProject(const std::string &name, int listOrder);
 
 	/// Loads the research from YAML.
-	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the intel project name.
@@ -89,7 +89,7 @@ private:
 	bool _finalStage;
 public:
 	RuleIntelStage();
-	void load(const YAML::Node& node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	void afterLoad(const Mod* mod);
 	const std::string& getName() const { return _stageName; }
 	int getOdds() const { return _odds; }

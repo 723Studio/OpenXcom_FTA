@@ -20,7 +20,7 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -45,7 +45,7 @@ public:
 	/// Cleans up the Faction ruleset.
 	~RuleDiplomacyFaction() = default;
 	/// Loads the Faction definition from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the Faction's name.
 	const std::string &getName() const { return _name; }
 	/// Gets the Faction's description.

@@ -283,8 +283,8 @@ void NewManufactureListState::lstProdClickRight(Action *)
 void NewManufactureListState::lstProdClickMiddle(Action *)
 {
 	_doInit = false;
+	const RuleManufacture *selectedTopic = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
 
-	std::string articleId = _displayedStrings[_lstManufacture->getSelectedRow()];
 	if (_game->isCtrlPressed(false))
 	{
 		auto itemList = selectedTopic->getProducedItems();

@@ -77,6 +77,8 @@ private:
 	void cbxScreenActionsChange(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
+	/// Handler for clicking the Inventory button/hotkey.
+	void btnInventoryClick(Action* action);
 };
 
 }

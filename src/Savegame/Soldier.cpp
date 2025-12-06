@@ -60,7 +60,7 @@ int Soldier::generateScienceStat(int min, int max)
 	{
 		return 0;
 	}
-	
+
 }
 
 /**
@@ -273,10 +273,8 @@ Soldier::~Soldier()
  * @param mod Game mod.
  * @param save Pointer to savegame.
  */
-void Soldier::load(const YAML::YamlNodeReader& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
+void Soldier::load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
 {
-	const auto& reader = node.useIndex();
-
 	if (!soldierTemplate)
 		reader.tryRead("id", _id);
 	reader.tryRead("name", _name);
@@ -909,7 +907,7 @@ std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &
 		}
 	}
 
-	
+
 	if (_craft)
 	{
 		if (_craft->getStatus() == "STR_OUT")
@@ -2936,7 +2934,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 				addExperience(ROLE_SOLDIER, rate, "mana stat improvement");
 		}
 	}
-	
+
 	//pilot stats
 	{
 		if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
@@ -2981,7 +2979,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			addExperience(ROLE_PILOT, rate, "gravity stat improvement");
 		}
 	}
-	
+
 	//science stats
 	{
 		if (exp->physics && stats->physics < caps.physics)
@@ -3043,7 +3041,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			addExperience(ROLE_SCIENTIST, rate, "xenolinguistics stat improvement");
 		}
 	}
-	
+
 	//engineer stats
 	{
 		if (exp->weaponry && stats->weaponry < caps.weaponry)
@@ -3105,7 +3103,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			addExperience(ROLE_ENGINEER, rate, "reverseEngineering stat improvement");
 		}
 	}
-	
+
 	//agent stats
 	{
 		if (exp->stealth && stats->stealth < caps.stealth)
@@ -3139,7 +3137,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 			addExperience(ROLE_AGENT, rate, "interrogation stat improvement");
 		}
 	}
-	
+
 	_monthlyExperienceCache += *getCurrentStats() - origStats;
 }
 
@@ -3171,6 +3169,8 @@ bool Soldier::rolePromoteSoldier(SoldierRole promotionRole)
 		}
 	}
 	return promoted;
+}
+
 /**
  * Check if the soldier has all the required soldier bonuses for the given soldier skill.
  * @param skillRules Skill rules.
@@ -3221,44 +3221,46 @@ bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
 		currentStats.mana < minStats.mana ||
 		currentStats.strength < minStats.strength ||
 		currentStats.psiStrength < minStats.psiStrength ||
-		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
-		currentStats.maneuvering > maxStats.maneuvering ||
-		currentStats.missiles > maxStats.missiles ||
-		currentStats.dogfight > maxStats.dogfight ||
-		currentStats.tracking > maxStats.tracking ||
-		currentStats.cooperation > maxStats.cooperation ||
-		currentStats.beams > maxStats.beams ||
-		currentStats.synaptic > maxStats.synaptic ||
-		currentStats.gravity > maxStats.gravity ||
-		currentStats.physics > maxStats.physics ||
-		currentStats.chemistry > maxStats.chemistry ||
-		currentStats.biology > maxStats.biology ||
-		currentStats.insight > maxStats.insight ||
-		currentStats.data > maxStats.data ||
-		currentStats.computers > maxStats.computers ||
-		currentStats.tactics > maxStats.tactics ||
-		currentStats.materials > maxStats.materials ||
-		currentStats.designing > maxStats.designing ||
-		currentStats.psionics > maxStats.psionics ||
-		currentStats.xenolinguistics > maxStats.xenolinguistics ||
-		currentStats.weaponry > maxStats.weaponry ||
-		currentStats.explosives > maxStats.explosives ||
-		currentStats.efficiency > maxStats.efficiency ||
-		currentStats.microelectronics > maxStats.microelectronics ||
-		currentStats.metallurgy > maxStats.metallurgy ||
-		currentStats.processing > maxStats.processing ||
-		currentStats.hacking > maxStats.hacking ||
-		currentStats.robotics > maxStats.robotics ||
-		currentStats.diligence > maxStats.diligence ||
-		currentStats.alienTech > maxStats.alienTech ||
-		currentStats.reverseEngineering > maxStats.reverseEngineering ||
-		currentStats.stealth > maxStats.stealth ||
-		currentStats.perception > maxStats.perception ||
-		currentStats.charisma > maxStats.charisma ||
-		currentStats.investigation > maxStats.investigation ||
-		currentStats.deception > maxStats.deception ||
-		currentStats.interrogation > maxStats.interrogation)
+		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0) || // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+		currentStats.maneuvering > minStats.maneuvering ||
+		currentStats.missiles > minStats.missiles ||
+		currentStats.dogfight > minStats.dogfight ||
+		currentStats.tracking > minStats.tracking ||
+		currentStats.cooperation > minStats.cooperation ||
+		currentStats.beams > minStats.beams ||
+		currentStats.synaptic > minStats.synaptic ||
+		currentStats.gravity > minStats.gravity ||
+		currentStats.physics > minStats.physics ||
+		currentStats.chemistry > minStats.chemistry ||
+		currentStats.biology > minStats.biology ||
+		currentStats.insight > minStats.insight ||
+		currentStats.data > minStats.data ||
+		currentStats.computers > minStats.computers ||
+		currentStats.tactics > minStats.tactics ||
+		currentStats.materials > minStats.materials ||
+		currentStats.designing > minStats.designing ||
+		currentStats.psionics > minStats.psionics ||
+		currentStats.xenolinguistics > minStats.xenolinguistics ||
+		currentStats.weaponry > minStats.weaponry ||
+		currentStats.explosives > minStats.explosives ||
+		currentStats.efficiency > minStats.efficiency ||
+		currentStats.microelectronics > minStats.microelectronics ||
+		currentStats.metallurgy > minStats.metallurgy ||
+		currentStats.processing > minStats.processing ||
+		currentStats.hacking > minStats.hacking ||
+		currentStats.robotics > minStats.robotics ||
+		currentStats.diligence > minStats.diligence ||
+		currentStats.alienTech > minStats.alienTech ||
+		currentStats.reverseEngineering > minStats.reverseEngineering ||
+		currentStats.stealth > minStats.stealth ||
+		currentStats.perception > minStats.perception ||
+		currentStats.charisma > minStats.charisma ||
+		currentStats.investigation > minStats.investigation ||
+		currentStats.deception > minStats.deception ||
+		currentStats.interrogation > minStats.interrogation)
+	{
 		return false;
+	}
 
 	// Does this soldier have all required soldier bonuses for piloting the current craft?
 	for (auto* requiredBonusRule : craft->getRules()->getPilotSoldierBonusesRequired())

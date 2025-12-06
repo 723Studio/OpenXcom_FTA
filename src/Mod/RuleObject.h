@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -50,7 +50,7 @@ public:
 	/// Cleans up the RuleObject ruleset.
 	~RuleObject();
 	/// Loads the RuleObject definition from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the RuleObject's name.
 	const std::string& getName() const { return _type; }
 	/// Gets the RuleObject's type.

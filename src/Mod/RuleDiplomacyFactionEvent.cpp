@@ -42,34 +42,35 @@ RuleDiplomacyFactionEvent::~RuleDiplomacyFactionEvent()
 
 /**
 * Loads an event script from YAML.
-* @param node YAML node.
+* @param reader YAML reader.
 */
-void RuleDiplomacyFactionEvent::load(const YAML::Node& node)
+void RuleDiplomacyFactionEvent::load(const YAML::YamlNodeReader& node)
 {
-	if (const YAML::Node& parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent);
+		load(reader["refNode"]);
 	}
-	_type = node["type"].as<std::string>(_type);
-	_firstMonth = node["firstMonth"].as<int>(_firstMonth);
-	_lastMonth = node["lastMonth"].as<int>(_lastMonth);
-	_executionOdds = node["executionOdds"].as<int>(_executionOdds);
-	_minDifficulty = node["minDifficulty"].as<int>(_minDifficulty);
-	_maxDifficulty = node["maxDifficulty"].as<int>(_maxDifficulty);
-	_minPlayerScore = node["minPlayerScore"].as<int>(_minPlayerScore);
-	_maxPlayerScore = node["maxPlayerScore"].as<int>(_maxPlayerScore);
-	_minPower = node["minPower"].as<int>(_minPower);
-	_maxPower = node["maxPower"].as<int>(_maxPower);
-	_powerChange = node["powerChange"].as<int>(_powerChange);
-	_vigilanceChange = node["vigilanceChange"].as<int>(_vigilanceChange);
-	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
-	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
-	_fundsChange = node["fundsChange"].as<int64_t>(_fundsChange);
-	_playerResearchTriggers = node["playerResearchTriggers"].as<std::map<std::string, bool> >(_playerResearchTriggers);
-	_factionResearchTriggers = node["factionResearchTriggers"].as<std::map<std::string, bool> >(_factionResearchTriggers);
-	_itemTriggers = node["itemTriggers"].as<std::map<std::string, bool> >(_itemTriggers);
-	_itemsToAdd = node["itemsToAdd"].as<std::map<std::string, int> >(_itemsToAdd);
-	_staffToAdd = node["staffToAdd"].as<std::map<std::string, int> >(_staffToAdd);
-	_discoveredResearches = node["discoveredResearches"].as<std::vector<std::string>>(_discoveredResearches);
+	reader.tryRead("type", _type);
+	reader.tryRead("firstMonth", _firstMonth);
+	reader.tryRead("lastMonth", _lastMonth);
+	reader.tryRead("executionOdds", _executionOdds);
+	reader.tryRead("minDifficulty", _minDifficulty);
+	reader.tryRead("maxDifficulty", _maxDifficulty);
+	reader.tryRead("minPlayerScore", _minPlayerScore);
+	reader.tryRead("maxPlayerScore", _maxPlayerScore);
+	reader.tryRead("minPower", _minPower);
+	reader.tryRead("maxPower", _maxPower);
+	reader.tryRead("powerChange", _powerChange);
+	reader.tryRead("vigilanceChange", _vigilanceChange);
+	reader.tryRead("minFunds", _minFunds);
+	reader.tryRead("maxFunds", _maxFunds);
+	reader.tryRead("fundsChange", _fundsChange);
+	reader.tryRead("playerResearchTriggers", _playerResearchTriggers);
+	reader.tryRead("factionResearchTriggers", _factionResearchTriggers);
+	reader.tryRead("itemTriggers", _itemTriggers);
+	reader.tryRead("itemsToAdd", _itemsToAdd);
+	reader.tryRead("staffToAdd", _staffToAdd);
+	reader.tryRead("discoveredResearches", _discoveredResearches);
 }
 }

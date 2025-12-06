@@ -465,7 +465,7 @@ void CovertOperationArmorState::lstSoldiersClick(Action* action)
 			SavedGame* save;
 			save = _game->getSavedGame();
 			Armor* a = _game->getMod()->getArmor(save->getLastSelectedArmor());
-			if (a && a->getCanBeUsedBy(s->getRules()))
+			if (a && a->getCanBeUsedBy(s))
 			{
 				if (save->getMonthsPassed() != -1)
 				{
@@ -697,7 +697,7 @@ CovertOperationSoldierArmorState::CovertOperationSoldierArmorState(Base* base, s
 	{
 		if (a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
 			continue;
-		if (!a->getCanBeUsedBy(s->getRules()))
+		if (!a->getCanBeUsedBy(s))
 			continue;
 		if (a->hasInfiniteSupply())
 		{

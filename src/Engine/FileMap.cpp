@@ -39,9 +39,11 @@
 #include <string>
 #include <sstream>
 #include <istream>
+#include <exception>
+#include <cstring>
+#include <cstdlib>
 #include <unordered_map>
 #include <unordered_set>
-#include <algorithm>
 
 #include "FileMap.h"
 #include "Unicode.h"
@@ -177,9 +179,6 @@ namespace OpenXcom
 {
 namespace FileMap
 {
-static std::vector<OXCContainer *> OXCContainers; // OXC container contexts
-// Track files that have already had YAML tabs sanitized to avoid spamming the logs
-static std::unordered_set<std::string> SanitizedYAMLFiles;
 
 static inline std::string concatPaths(const std::string& basePath, const std::string& relativePath)
 {
@@ -210,18 +209,13 @@ static inline std::string concatOptionalPaths(const std::string& basePath, const
 	}
 }
 
-FileRecord::FileRecord() : fullpath(""), zip(NULL), findex(0), oxc(NULL) { }
+FileRecord::FileRecord() : fullpath(""), zip(NULL), findex(0), oxc(NULL), oxcRelpath("") { }
 
 SDL_RWops *FileRecord::getRWops() const
 {
 	SDL_RWops *rv;
 	if (oxc != NULL) {
-		try {
-			rv = ((OXCContainer *)oxc)->extractFileToRWops(fullpath);
-		} catch (const Exception& e) {
-			Log(LOG_ERROR) << "FileRecord::getRWops(): OXC extraction failed: " << e.what();
-			return NULL;
-		}
+		rv = oxc->extractFileToRWops(oxcRelpath);
 	} else if (zip != NULL) {
 		rv = SDL_RWFromMZ((mz_zip_archive *)zip, findex);
 	} else {
@@ -236,12 +230,7 @@ SDL_RWops *FileRecord::getRWopsReadAll() const
 	SDL_RWops *rv;
 	if (oxc != NULL)
 	{
-		try {
-			rv = ((OXCContainer *)oxc)->extractFileToRWops(fullpath);
-		} catch (const Exception& e) {
-			Log(LOG_ERROR) << "FileRecord::getRWopsReadAll(): OXC extraction failed: " << e.what();
-			return NULL;
-		}
+		rv = oxc->extractFileToRWops(oxcRelpath);
 	}
 	else if (zip != NULL)
 	{
@@ -286,13 +275,7 @@ SDL_RWops *FileRecord::getRWopsReadAll() const
 std::unique_ptr<std::istream> FileRecord::getIStream() const
 {
 	if (oxc != NULL) {
-		std::vector<uint8_t> data = ((OXCContainer *)oxc)->extractFile(fullpath);
-		void *dataCopy = malloc(data.size());
-		if (!dataCopy) {
-			throw Exception("Failed to allocate memory for OXC file");
-		}
-		memcpy(dataCopy, data.data(), data.size());
-		return std::unique_ptr<std::istream>(new StreamData(RawData{dataCopy, data.size(), free}));
+		return std::unique_ptr<std::istream>(new StreamData(getUnzippedData()));
 	} else if (zip != NULL) {
 		return std::unique_ptr<std::istream>(new StreamData(getUnzippedData()));
 	} else {
@@ -302,6 +285,24 @@ std::unique_ptr<std::istream> FileRecord::getIStream() const
 
 RawData FileRecord::getUnzippedData() const
 {
+	if (oxc != NULL)
+	{
+		std::vector<uint8_t> extracted = oxc->extractFile(oxcRelpath);
+		void *copy = nullptr;
+		size_t size = extracted.size();
+		if (size > 0)
+		{
+			copy = SDL_malloc(size);
+			if (!copy)
+			{
+				Log(LOG_FATAL) << "FileRecord::getUnzippedData(): out of memory for " << fullpath;
+				throw Exception("Out of memory");
+			}
+			std::memcpy(copy, extracted.data(), size);
+		}
+		return RawData(copy, size, SDL_free);
+	}
+
 	size_t size;
 	void* data = mz_zip_reader_extract_to_heap((mz_zip_archive*)zip, findex, &size, 0);
 	if (data == NULL)
@@ -318,39 +319,8 @@ YAML::YamlRootNodeReader FileRecord::getYAML() const
 {
 	try
 	{
-		RawData data = zip != NULL ? getUnzippedData() : CrossPlatform::readFileRaw(fullpath);
-		try
-		{
-			return YAML::YamlRootNodeReader(data, fullpath);
-		}
-		catch (const std::exception &e)
-		{
-			// fallback: sanitize tabs and try again
-			std::string original((char*)data.data, data.size);
-			std::string text; text.reserve(original.size());
-			bool hadTabs = false;
-			for (char c : original) {
-				if (c == '\t') { text.push_back(' '); text.push_back(' '); hadTabs = true; }
-				else { text.push_back(c); }
-			}
-			if (hadTabs) {
-				void *dataCopy = malloc(text.size());
-				if (!dataCopy) {
-					throw Exception("Failed to allocate memory for sanitized YAML");
-				}
-				memcpy(dataCopy, text.data(), text.size());
-				RawData sanitized{dataCopy, text.size(), free};
-				if (SanitizedYAMLFiles.find(fullpath) == SanitizedYAMLFiles.end()) {
-					Log(LOG_WARNING) << "YAML tabs sanitized in: " << fullpath;
-					SanitizedYAMLFiles.insert(fullpath);
-				}
-				return YAML::YamlRootNodeReader(sanitized, fullpath);
-			}
-			else
-			{
-				throw; // rethrow original exception
-			}
-		}
+		RawData data = (zip != NULL || oxc != NULL) ? getUnzippedData() : CrossPlatform::readFileRaw(fullpath);
+		return YAML::YamlRootNodeReader(data, fullpath);
 	}
 	catch(...)
 	{
@@ -361,39 +331,12 @@ YAML::YamlRootNodeReader FileRecord::getYAML() const
 
 std::vector<YAML::YamlNodeReader> FileRecord::getAllYAML() const
 {
-	// Read entire stream first to enable fallback sanitization
-	std::unique_ptr<std::istream> is;
-	try { is = getIStream(); }
-	catch (...) { Log(LOG_FATAL) << "Error loading file '" << fullpath << "'"; throw; }
-
-	try {
-		return YAML::LoadAll(*is);
-	} catch (const std::exception &e) {
-		// fallback: sanitize tabs and try again
-		try {
-			is->clear();
-			is->seekg(0, std::ios::beg);
-			std::ostringstream buf; buf << is->rdbuf();
-			std::string original = buf.str();
-			std::string text; text.reserve(original.size());
-			bool hadTabs = false;
-			for (char c : original) {
-				if (c == '\t') { text.push_back(' '); text.push_back(' '); hadTabs = true; }
-				else { text.push_back(c); }
-			}
-			if (hadTabs) {
-				std::istringstream iss(text);
-				std::vector<YAML::Node> nodes = YAML::LoadAll(iss);
-				if (SanitizedYAMLFiles.find(fullpath) == SanitizedYAMLFiles.end()) {
-					Log(LOG_WARNING) << "YAML tabs sanitized in: " << fullpath;
-					SanitizedYAMLFiles.insert(fullpath);
-				}
-				return nodes;
-			}
-		} catch (...) {}
-		Log(LOG_FATAL) << "Error loading file '" << fullpath << "'";
-		throw;
-	}
+	Log(LOG_FATAL) << "Error loading file '" << fullpath << "'";
+	throw Exception("getAllYAML(): Not implemented");
+	/*
+	The function would have to load a file, parse it, then emit each document child separately, and parse each child again.
+	This obviously doesn't make sense. Just use a normal getYAML() and handle multiple yaml documents accordingly
+	*/
 }
 
 
@@ -448,6 +391,9 @@ static bool isRuleset(const std::string& fname)
 typedef std::unordered_map<std::string, FileRecord> FileSet;
 static const NameSet emptySet;
 static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwops);
+static OXCContainer *newOxcContext(const std::string& log_ctx, SDL_RWops *rwops, const std::string& fullpath, bool takeOwnership);
+static OXCContainer *newOxcContext(const std::string& log_ctx, const std::string& fullpath);
+static std::string getOxcPassphrase();
 
 struct VFSLayer {
 	std::string fullpath;				// the origin
@@ -585,6 +531,75 @@ struct VFSLayer {
 		Log(LOG_VERBOSE) << log_ctx << "mapped_count=" << mapped_count;
 		return mapped_count > 1;
 	}
+
+	bool mapOxcFile(const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxcFile(" + oxcpath + ", '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		auto ctx = newOxcContext(log_ctx, oxcpath);
+		if (!ctx) {
+			return false;
+		}
+		return mapOxc(ctx, oxcpath, prefix, ignore_ruls);
+	}
+
+	bool mapOxcFileRW(SDL_RWops *rwops, const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxcFileRW(rwops, '" + oxcpath + "', '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		auto ctx = newOxcContext(log_ctx, rwops, oxcpath, true);
+		if (!ctx) {
+			return false;
+		}
+		return mapOxc(ctx, oxcpath, prefix, ignore_ruls);
+	}
+
+	bool mapOxc(OXCContainer *ctx, const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxc('" + oxcpath + "', '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		if (mapped) {
+			auto err = log_ctx + "Fatal: already mapped.";
+			Log(LOG_FATAL) << err;
+			throw Exception(err);
+		}
+
+		auto prefixlen = prefix.size();
+		if ((prefixlen) > 0 && (prefix[prefixlen - 1] != '/')) {
+			auto err = log_ctx + "Bogus prefix of '" + prefix;
+			Log(LOG_FATAL) << err;
+			throw Exception(err);
+		}
+
+		mapped = true;
+		fullpath = oxcpath;
+
+		FileRecord frec;
+		frec.zip = NULL;
+		frec.oxc = ctx;
+		frec.findex = 0;
+
+		size_t mapped_count = 0;
+		for (const auto& fnameOriginal : ctx->getFileList()) {
+			std::string fname = fnameOriginal;
+			if (!sanitizeZipEntryName(fname)) {
+				Log(LOG_WARNING) << "Bogus filename " << hexDumpBogusData(fname) << " in " << oxcpath << ", ignoring.";
+				continue;
+			}
+
+			std::string relfname = fname;
+			if (fname.size() <= prefixlen) { continue; }
+			if (prefixlen > 0) {
+				auto tprefix = fname.substr(0, prefixlen);
+				if (tprefix != prefix) { continue; }
+				relfname = fname.substr(prefixlen, fname.npos);
+			}
+
+			if (relfname.empty()) { continue; }
+			frec.oxcRelpath = fname;
+			frec.fullpath = concatPaths(fullpath, fname);
+			if (isRuleset(relfname) && ignore_ruls) { continue; }
+			insert(relfname, frec);
+			mapped_count++;
+		}
+
+		Log(LOG_VERBOSE) << log_ctx << "mapped_count=" << mapped_count;
+		return mapped_count > 1;
+	}
 	bool mapPlainDir(const std::string& dirpath, bool ignore_ruls = false) {
 		std::string log_ctx = "mapPlainDir(" + dirpath + ", " + (ignore_ruls ? "true" : "false") + "): ";
 		if (mapped) {
@@ -610,70 +625,6 @@ struct VFSLayer {
 		}
 		return mapped_count > 1;
 	}
-	
-	/** maps an OXC encrypted container from filesystem
-	* @param oxcpath - path to the .oxc file
-	* @param passphrase - encryption passphrase
-	* @param prefix - prefix in the .oxc in case there are multiple mods; files outside prefix are ignored. Prefix may be empty. If non-empty, trailing '/' is optional.
-	* @param ignore_ruls - skip rulesets
-	* @return - did we map anything (false if failed to load)
-	*/
-	bool mapOXCFile(const std::string& oxcpath, const std::string& passphrase, const std::string& prefix = "", bool ignore_ruls = false) {
-		std::string log_ctx = "mapOXCFile(" + oxcpath + ", <passphrase>, " + (ignore_ruls ? "true" : "false") + "): ";
-		
-		if (mapped) {
-			auto err = log_ctx + "Fatal: already mapped.";
-			Log(LOG_FATAL) << err;
-			throw Exception(err);
-		}
-
-		// normalize prefix: remove leading '/', ensure trailing '/' if non-empty
-		std::string normPrefix = prefix;
-		while (!normPrefix.empty() && normPrefix.front() == '/') normPrefix.erase(normPrefix.begin());
-		if (!normPrefix.empty() && normPrefix.back() != '/') normPrefix.push_back('/');
-		
-		OXCContainer *oxc = nullptr;
-		try {
-			oxc = new OXCContainer(oxcpath, passphrase);
-		} catch (const Exception& e) {
-			Log(LOG_WARNING) << log_ctx << "Failed to load OXC container: " << e.what();
-			return false;
-		}
-		
-		// Register the container for lifetime management
-		OXCContainers.push_back(oxc);
-		
-		mapped = true;
-		fullpath = oxcpath;
-		
-		FileRecord frec;
-		frec.zip = NULL;
-		frec.oxc = oxc;
-		
-		mz_uint mapped_count = 0;
-		std::vector<std::string> fileList = oxc->getFileList();
-		
-		for (const std::string& relpath : fileList) {
-			// filter by prefix if provided
-			std::string effectiveRel = relpath;
-			if (!normPrefix.empty()) {
-				if (effectiveRel.compare(0, normPrefix.size(), normPrefix) != 0) {
-					continue; // outside of prefix
-				}
-				effectiveRel = effectiveRel.substr(normPrefix.size());
-			}
-			// Store original path for extraction, but expose trimmed key in VFS
-			frec.fullpath = relpath;
-			
-			if (isRuleset(effectiveRel) && ignore_ruls) { continue; }
-			insert(effectiveRel, frec);
-			mapped_count++;
-		}
-		
-		Log(LOG_VERBOSE) << log_ctx << "mapped_count=" << mapped_count;
-		return mapped_count > 0;
-	}
-	
 	void dump(std::ostream &out, const std::string &prefix, bool verbose) {
 		out << prefix << "origin: " << fullpath << "; " << resources.size()
 						 << " resources, " << rulesets.size() << " rulesets";
@@ -838,6 +789,7 @@ static std::unordered_set<VFSLayer *> MappedVFSLayers; // owned here so we can h
 													   // only the layers that get dropped on FileMap::clear()
 static std::vector<mz_zip_archive *> ZipContexts;	   // zip decompression contexts shared between layers that came from
 													   // the same .zip. this makes the whole thing very thread-unsafe
+static std::vector<OXCContainer *> OXCContexts;        // oxc contexts shared between layers
 static VFS TheVFS;
 
 static VFSLayer* MappedVFSLayersAdd(std::unique_ptr<VFSLayer>&& layer)
@@ -879,12 +831,46 @@ static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwop
 	return zip;
 }
 
-static std::string getOXCPassphrase() {
-	const char* envKey = std::getenv("OXC_CONTENT_KEY");
-	if (envKey != nullptr) {
-		return std::string(envKey);
+static std::string getOxcPassphrase() {
+	const char *env = std::getenv("OXC_CONTENT_KEY");
+	if (env && *env) {
+		return std::string(env);
 	}
-	return "";
+	return "public_oxc_content_key";
+}
+
+static OXCContainer *newOxcContext(const std::string& log_ctx, SDL_RWops *rwops, const std::string& fullpath, bool takeOwnership) {
+	try {
+		auto ctx = new OXCContainer(rwops, fullpath, getOxcPassphrase(), takeOwnership);
+		OXCContexts.push_back(ctx);
+		return ctx;
+	} catch (const Exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (const std::exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (...) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: unknown error.";
+	}
+
+	if (takeOwnership && rwops) {
+		SDL_RWclose(rwops);
+	}
+	return NULL;
+}
+
+static OXCContainer *newOxcContext(const std::string& log_ctx, const std::string& fullpath) {
+	try {
+		auto ctx = new OXCContainer(fullpath, getOxcPassphrase());
+		OXCContexts.push_back(ctx);
+		return ctx;
+	} catch (const Exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (const std::exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (...) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: unknown error.";
+	}
+	return NULL;
 }
 
 void clear(bool clearOnly, bool embeddedOnly) {
@@ -895,8 +881,8 @@ void clear(bool clearOnly, bool embeddedOnly) {
 	MappedVFSLayers.clear();
 	for (auto i : ZipContexts) { mz_zip_reader_end_rwops(i); SDL_free(i); }
 	ZipContexts.clear();
-	for (auto i : OXCContainers) { delete i; }
-	OXCContainers.clear();
+	for (auto ctx : OXCContexts) { delete ctx; }
+	OXCContexts.clear();
 	if (!clearOnly)
 	{
 		Log(LOG_VERBOSE) << "FileMap::clear(): mapping 'common'";
@@ -972,9 +958,14 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 	std::string log_ctx = "FileMap::mapExtResources(" + modId + ", " + basename + "): ";
 	bool mapped_anything = false;
 	std::string zipname = basename + ".zip";
+	std::string oxcname = basename + ".oxc";
 	SDL_RWops *embedded_rwops = NULL;
+	SDL_RWops *embedded_oxc = NULL;
 	if (zipname == "common.zip" || zipname == "standard.zip") {
 		embedded_rwops = CrossPlatform::getEmbeddedAsset(zipname);
+	}
+	if (oxcname == "common.oxc" || oxcname == "standard.oxc" || oxcname == "content.oxc") {
+		embedded_oxc = CrossPlatform::getEmbeddedAsset(oxcname);
 	}
 	// first try finding a directory (ass-backwards since we got to push this into front re layers.
 	if (!embedded_rwops || ! embeddedOnly) {
@@ -1016,42 +1007,26 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 			Log(LOG_VERBOSE) << log_ctx << "zip not found ("<<fullname<<")";
 		}
 	}
-	// try finding an OXC encrypted container
-	if (!embedded_rwops || ! embeddedOnly) {
-		std::string oxcname = basename + ".oxc";
-		Log(LOG_DEBUG) << log_ctx << "looking for OXC external resources: " << oxcname;
+	// then try finding an oxc file
+	if (!embedded_oxc || !embeddedOnly) {
 		std::string fullname = Options::getUserFolder() + oxcname;
 		if (!CrossPlatform::fileExists(fullname)) {
 			fullname = CrossPlatform::searchDataFile(oxcname);
-			// fallback: try generic content.oxc
-			if (fullname.empty()) {
-				Log(LOG_DEBUG) << log_ctx << oxcname << " not found, trying fallback 'content.oxc'";
-				std::string generic = "content.oxc";
-				fullname = Options::getUserFolder() + generic;
-				if (!CrossPlatform::fileExists(fullname)) {
-					fullname = CrossPlatform::searchDataFile(generic);
-				}
-			}
 		}
 		if (CrossPlatform::fileExists(fullname)) {
-			Log(LOG_DEBUG) << log_ctx << "found OXC container for external resources: " << fullname;
-			std::string passphrase = getOXCPassphrase();
-			if (passphrase.empty()) {
-				Log(LOG_WARNING) << log_ctx << "found OXC container ("<<fullname<<") but OXC_CONTENT_KEY environment variable is not set";
-			} else {
-				Log(LOG_DEBUG) << log_ctx << "OXC_CONTENT_KEY is set, loading external resources from: " << fullname;
-				auto layer = new VFSLayer(fullname);
-				if (layer->mapOXCFile(fullname, passphrase, "", true)) {
-					Log(LOG_DEBUG) << log_ctx << "successfully mapped external resources from OXC container";
-					mrec->push_front(layer);
-					MappedVFSLayers.insert(layer);
-					mapped_anything = true;
-				} else {
-					delete layer;
-				}
+			Log(LOG_VERBOSE) << log_ctx << "found oxc (" << fullname << ")";
+			auto layer = std::make_unique<VFSLayer>(fullname);
+			auto mapped = layer->mapOxcFile(fullname, basename + "/", true);
+			if (!mapped) {
+				layer = std::make_unique<VFSLayer>(fullname);
+				mapped = layer->mapOxcFile(fullname, "", true);
+			}
+			if (mapped) {
+				mrec->push_front(MappedVFSLayersAdd(std::move(layer)));
+				mapped_anything = true;
 			}
 		} else {
-			Log(LOG_DEBUG) << log_ctx << "OXC container not found ("<<fullname<<")";
+			Log(LOG_VERBOSE) << log_ctx << "oxc not found (" << fullname << ")";
 		}
 	}
 	// now try the embedded zip
@@ -1068,8 +1043,22 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 			Log(LOG_VERBOSE) << log_ctx << "embedded asset not found ("<<zipname<<")";
 		}
 	}
+	// and finally try an embedded oxc
+	{
+		if (embedded_oxc) {
+			Log(LOG_VERBOSE) << log_ctx << "found embedded asset (" << oxcname << ")";
+			std::string eoxcname = "exe:" + oxcname;
+			auto layer = std::make_unique<VFSLayer>(eoxcname);
+			if (layer->mapOxcFileRW(embedded_oxc, eoxcname, "", true)) {
+				mrec->push_front(MappedVFSLayersAdd(std::move(layer)));
+				mapped_anything = true;
+			}
+		} else {
+			Log(LOG_VERBOSE) << log_ctx << "embedded asset not found (" << oxcname << ")";
+		}
+	}
 	if (!mapped_anything) { // well, nothing found. say so.
-		Log(LOG_DEBUG) << log_ctx << "external resources not found.";
+		Log(LOG_INFO) << log_ctx << "external resources not found.";
 	}
 	return mapped_anything;
 }
@@ -1107,127 +1096,36 @@ static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const
 	mrec->push_back(MappedVFSLayersAdd(std::move(layer)));
 	ModsAvailableAdd(std::move(mrec));
 }
-/** Scan a single OXC file containing one or more mods and register them */
-static void scanModOXC(const std::string& fullpath) {
-	std::string log_ctx = "scanModOXC(" + fullpath + "): ";
-	std::string passphrase = getOXCPassphrase();
-	if (passphrase.empty()) {
-		Log(LOG_WARNING) << log_ctx << "OXC_CONTENT_KEY not set; skipping '" << fullpath << "'";
+
+static void mapOxcMod(OXCContainer *oxc, const std::string& oxcname, const std::string& prefix) {
+	std::string log_ctx = "mapOxcMod(" + oxcname + ", '" + prefix + "'): ";
+	auto layer = std::make_unique<VFSLayer>(concatPaths(oxcname, prefix));
+	if (!layer->mapOxc(oxc, oxcname, prefix)) {
+		Log(LOG_WARNING) << log_ctx << "Failed to map, skipping.";
 		return;
 	}
-	Log(LOG_DEBUG) << log_ctx << "loading OXC container";
-	OXCContainer tmp(fullpath, passphrase);
-	auto list = tmp.getFileList();
-		Log(LOG_DEBUG) << log_ctx << "container has " << list.size() << " files";
-
-	bool anyMapped = false;
-	// Try single-mod at root
-	if (std::find(list.begin(), list.end(), std::string("metadata.yml")) != list.end()) {
-		Log(LOG_DEBUG) << log_ctx << "root metadata.yml found; mapping single-mod";
-		auto layer = new VFSLayer(fullpath);
-		if (layer->mapOXCFile(fullpath, passphrase, "")) {
-			auto frec = layer->at("metadata.yml");
-			if (frec != NULL) {
-				auto doc = frec->getYAML();
-				if (doc.IsMap()) {
-					auto mrec = new ModRecord(fullpath);
-					mrec->modInfo.load(doc);
-					auto mri = ModsAvailable.find(mrec->modInfo.getId());
-					if (mri != ModsAvailable.end()) {
-						Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped; skipping root";
-						delete mrec;
-						delete layer;
-					} else {
-						Log(LOG_DEBUG) << log_ctx << "registered mod '" << mrec->modInfo.getId() << "' from root";
-						MappedVFSLayers.insert(layer);
-						mrec->push_back(layer);
-						ModsAvailable.insert(std::make_pair(mrec->modInfo.getId(), mrec));
-						anyMapped = true;
-					}
-				}
-			}
-		} else {
-			delete layer;
-		}
+	auto frec = layer->at("metadata.yml");
+	if (frec == NULL) {
+		Log(LOG_WARNING) << log_ctx << "No metadata.yml found, skipping.";
+		return;
 	}
-	if (anyMapped) return;
-
-	// Multi-mod: infer prefixes
-	std::unordered_set<std::string> toplevel;
-	for (auto &p : list) {
-		auto slash = p.find('/');
-		if (slash != std::string::npos && slash > 0) {
-			toplevel.insert(p.substr(0, slash));
-		}
+	auto modpath = concatOptionalPaths(oxcname, prefix);
+	const auto& reader = frec->getYAML();
+	if (!reader.isMap()) {
+		Log(LOG_WARNING) << log_ctx << "Bad metadata.yml found, skipping.";
+		return;
 	}
-		std::vector<std::string> candidatePrefixes;
-	if (toplevel.size() == 1 && (toplevel.count("mods") || toplevel.count("standard"))) {
-		std::string parent = toplevel.count("mods") ? std::string("mods") : std::string("standard");
-		Log(LOG_DEBUG) << log_ctx << "nested under '" << parent << "'";
-		std::unordered_set<std::string> second;
-		for (auto &p : list) {
-			if (p.compare(0, parent.size()+1, parent+"/") != 0) continue;
-			auto rest = p.substr(parent.size()+1);
-			auto slash = rest.find('/');
-			if (slash != std::string::npos && slash > 0) {
-				second.insert(rest.substr(0, slash));
-			}
-		}
-		for (const auto &dir : second) {
-			candidatePrefixes.push_back(parent + "/" + dir + "/");
-		}
-	} else {
-		for (const auto &dir : toplevel) {
-			candidatePrefixes.push_back(dir + "/");
-		}
+	auto mrec = std::make_unique<ModRecord>(modpath);
+	mrec->modInfo.load(reader);
+	auto mri = ModsAvailable.find(mrec->modInfo.getId());
+	if (mri != ModsAvailable.end()) {
+		Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
+		return;
 	}
-		Log(LOG_DEBUG) << log_ctx << "candidate prefixes: " << candidatePrefixes.size();
-		// Fallback: if none found yet, look for any path ending with '/metadata.yml' anywhere
-		if (candidatePrefixes.empty()) {
-			for (auto &p : list) {
-				if (p.size() >= 13) {
-					// ensure normalized forward slashes in list
-					std::string s = p;
-					for (auto &c : s) { if (c == '\\') c = '/'; }
-					if (s.size() >= 13 && s.compare(s.size()-13, 13, "/metadata.yml") == 0) {
-						auto slash = s.find_last_of('/');
-						if (slash != std::string::npos) {
-							candidatePrefixes.push_back(s.substr(0, slash + 1));
-						}
-					}
-				}
-			}
-			Log(LOG_DEBUG) << log_ctx << "fallback candidate prefixes: " << candidatePrefixes.size();
-		}
-	for (const auto &prefixDir : candidatePrefixes) {
-		auto metaPath = prefixDir + "metadata.yml";
-		if (std::find(list.begin(), list.end(), metaPath) == list.end()) continue;
-		auto layer = new VFSLayer(concatPaths(fullpath, prefixDir));
-		if (!layer->mapOXCFile(fullpath, passphrase, prefixDir)) {
-			delete layer; continue;
-		}
-		auto frec = layer->at("metadata.yml");
-		if (frec == NULL) { delete layer; continue; }
-		auto doc = frec->getYAML();
-		if (!doc.IsMap()) { delete layer; continue; }
-		std::string dirName = prefixDir;
-		if (!dirName.empty() && dirName.back() == '/') dirName.pop_back();
-		auto mrec = new ModRecord(concatPaths(fullpath, dirName));
-		mrec->modInfo.load(doc);
-		auto mri = ModsAvailable.find(mrec->modInfo.getId());
-		if (mri != ModsAvailable.end()) {
-			Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped; skipping " << dirName;
-			delete mrec; delete layer; continue;
-		}
-		Log(LOG_DEBUG) << log_ctx << "registered mod '" << mrec->modInfo.getId() << "' from prefix '" << prefixDir << "'";
-		MappedVFSLayers.insert(layer);
-		mrec->push_back(layer);
-		ModsAvailable.insert(std::make_pair(mrec->modInfo.getId(), mrec));
-		anyMapped = true;
-	}
-	if (!anyMapped) {
-		Log(LOG_WARNING) << log_ctx << "no mods discovered in OXC";
-	}
+	Log(LOG_VERBOSE) << log_ctx << "mapped mod '" << mrec->modInfo.getId() << "' from " << modpath
+					 << " master=" << mrec->modInfo.getMaster() << " version=" << mrec->modInfo.getVersion();
+	mrec->push_back(MappedVFSLayersAdd(std::move(layer)));
+	ModsAvailableAdd(std::move(mrec));
 }
 /** now this scans a zip of mods or of a single mod
  * @param rwops - SDL_RWops to the zip data
@@ -1263,6 +1161,46 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 		// Do we want to handle this somehow or do we just call it unsupported?
 		mapZippedMod(mzip, fullpath, prefix);
 	}
+}
+
+static void scanModOxcContext(OXCContainer *ctx, const std::string& fullpath, const std::string& log_ctx) {
+	if (!ctx) { return; }
+
+	if (ctx->hasFile("metadata.yml")) {
+		Log(LOG_VERBOSE) << log_ctx << "retrying as a single-mod .oxc";
+		mapOxcMod(ctx, fullpath, "");
+		return;
+	}
+
+	std::unordered_set<std::string> prefixes;
+	for (const auto& fnameOrig : ctx->getFileList()) {
+		std::string fname = fnameOrig;
+		if (!sanitizeZipEntryName(fname)) {
+			Log(LOG_WARNING) << "Bogus dirname " << hexDumpBogusData(fname) << " in " << fullpath << ", ignoring.";
+			continue;
+		}
+		auto slashpos = fname.find_first_of("/");
+		if (slashpos == std::string::npos) { continue; }
+		prefixes.insert(fname.substr(0, slashpos));
+	}
+
+	for (const auto& prefix : prefixes) {
+		std::string withSlash = prefix + "/";
+		if (!ctx->hasFile(withSlash + "metadata.yml")) { continue; }
+		mapOxcMod(ctx, fullpath, withSlash);
+	}
+}
+
+void scanModOxcRW(SDL_RWops *rwops, const std::string& fullpath) {
+	std::string log_ctx = "scanModOxcRW(rwops, " + fullpath + "): ";
+	auto ctx = newOxcContext(log_ctx, rwops, fullpath, true);
+	scanModOxcContext(ctx, fullpath, log_ctx);
+}
+
+void scanModOxc(const std::string& fullpath) {
+	std::string log_ctx = "scanModOxc(" + fullpath + "): ";
+	auto ctx = newOxcContext(log_ctx, fullpath);
+	scanModOxcContext(ctx, fullpath, log_ctx);
 }
 /** Filesystem wrapper for scanModZipRW()
  * @param fullpath - full path to the .zip.
@@ -1415,157 +1353,14 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 	} else {
 		Log(LOG_VERBOSE) << log_ctx << "no zip " << fullname;
 	}
-	// then check for a single OXC container holding mods
-	{
-		std::string oxcname = dirname + basename + ".oxc";
-		Log(LOG_DEBUG) << log_ctx << "looking for OXC container: " << oxcname;
-		if (!CrossPlatform::fileExists(oxcname)) {
-			// fallback to a generic content.oxc if present
-			std::string fallback = dirname + std::string("content.oxc");
-			Log(LOG_DEBUG) << log_ctx << "'" << oxcname << "' not found, checking fallback: " << fallback;
-			if (CrossPlatform::fileExists(fallback)) {
-				Log(LOG_DEBUG) << log_ctx << "found fallback OXC container: " << fallback;
-				oxcname = fallback;
-			} else {
-				Log(LOG_DEBUG) << log_ctx << "no OXC container found (neither '" << basename << ".oxc' nor 'content.oxc')";
-			}
-		}
-		if (CrossPlatform::fileExists(oxcname)) {
-			Log(LOG_DEBUG) << log_ctx << "OXC container exists: " << oxcname;
-			std::string passphrase = getOXCPassphrase();
-			if (passphrase.empty()) {
-				Log(LOG_WARNING) << log_ctx << "found OXC mods container (" << oxcname << ") but OXC_CONTENT_KEY environment variable is not set";
-			} else {
-				Log(LOG_DEBUG) << log_ctx << "OXC_CONTENT_KEY is set, loading container: " << oxcname;
-				// Load the container to enumerate files and infer top-level dirs
-				OXCContainer tmp(oxcname, passphrase);
-				Log(LOG_DEBUG) << log_ctx << "OXC container loaded successfully";
-				Log(LOG_INFO) << log_ctx << "OXC container loaded successfully";
-				auto list = tmp.getFileList();
-				Log(LOG_INFO) << log_ctx << "OXC container has " << list.size() << " files";
-				// First, check single-mod at root (metadata.yml at top level)
-				bool anyMapped = false;
-				bool hasRootMetadata = std::find(list.begin(), list.end(), std::string("metadata.yml")) != list.end();
-				Log(LOG_INFO) << log_ctx << "checking for root metadata.yml: " << (hasRootMetadata ? "found" : "not found");
-				if (hasRootMetadata) {
-					Log(LOG_INFO) << log_ctx << "attempting to map root-level mod from OXC";
-					auto layer = new VFSLayer(oxcname);
-					if (layer->mapOXCFile(oxcname, passphrase, "")) {
-						auto frec = layer->at("metadata.yml");
-						if (frec != NULL) {
-							auto doc = frec->getYAML();
-							if (doc.IsMap()) {
-								auto mrec = new ModRecord(oxcname);
-								mrec->modInfo.load(doc);
-								Log(LOG_INFO) << log_ctx << "found mod in OXC root: '" << mrec->modInfo.getId() << "' (" << mrec->modInfo.getName() << ")";
-								auto mri = ModsAvailable.find(mrec->modInfo.getId());
-								if (mri != ModsAvailable.end()) {
-									Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping OXC root";
-									delete mrec;
-									delete layer;
-								} else {
-									Log(LOG_INFO) << log_ctx << "successfully registered mod '" << mrec->modInfo.getId() << "' from OXC root";
-									MappedVFSLayers.insert(layer);
-									mrec->push_back(layer);
-									ModsAvailable.insert(std::make_pair(mrec->modInfo.getId(), mrec));
-									anyMapped = true;
-								}
-							}
-						}
-					}
-					else {
-						delete layer;
-					}
-				}
-				// Else, infer top-level directories and try map each containing metadata.yml
-				if (!anyMapped) {
-					Log(LOG_INFO) << log_ctx << "no root mod found, analyzing directory structure";
-					std::unordered_set<std::string> toplevel;
-					for (auto &p : list) {
-						auto slash = p.find('/');
-						if (slash != std::string::npos && slash > 0) {
-							toplevel.insert(p.substr(0, slash));
-						}
-					}
-					Log(LOG_INFO) << log_ctx << "found " << toplevel.size() << " top-level directories in OXC";
-					// If container has a single top-level directory 'mods' or 'standard', go one level deeper
-					std::vector<std::string> candidatePrefixes;
-					if (toplevel.size() == 1 && (toplevel.count("mods") || toplevel.count("standard"))) {
-						std::string parent = toplevel.count("mods") ? std::string("mods") : std::string("standard");
-						Log(LOG_INFO) << log_ctx << "detected nested structure with parent: " << parent;
-						std::unordered_set<std::string> second;
-						for (auto &p : list) {
-							if (p.compare(0, parent.size()+1, parent+"/") != 0) continue;
-							auto rest = p.substr(parent.size()+1);
-							auto slash = rest.find('/');
-							if (slash != std::string::npos && slash > 0) {
-								second.insert(rest.substr(0, slash));
-							}
-						}
-						for (const auto &dir : second) {
-							candidatePrefixes.push_back(parent + "/" + dir + "/");
-						}
-						Log(LOG_INFO) << log_ctx << "found " << second.size() << " second-level directories under " << parent;
-					} else {
-						for (const auto &dir : toplevel) {
-							candidatePrefixes.push_back(dir + "/");
-						}
-					}
-					Log(LOG_INFO) << log_ctx << "scanning " << candidatePrefixes.size() << " candidate mod prefixes in OXC";
-					for (const auto &prefixDir : candidatePrefixes) {
-						Log(LOG_INFO) << log_ctx << "checking prefix: " << prefixDir;
-						std::string dirName = prefixDir;
-						if (!dirName.empty() && dirName.back() == '/') dirName.pop_back();
-						auto lastSlash = dirName.find_last_of('/');
-						std::string leaf = (lastSlash == std::string::npos) ? dirName : dirName.substr(lastSlash+1);
-						if (protectedLocation) {
-							if (standardMods.find(leaf) == standardMods.end()) {
-								Log(LOG_ERROR) << "Invalid standard mod '" << leaf << "' in OXC, skipping.";
-								continue;
-							}
-						}
-						// Only consider if it contains metadata.yml directly under it
-						std::string metaPath = prefixDir + "metadata.yml";
-						Log(LOG_INFO) << log_ctx << "looking for: " << metaPath;
-						if (std::find(list.begin(), list.end(), metaPath) == list.end()) {
-							Log(LOG_INFO) << log_ctx << "metadata.yml not found in " << prefixDir;
-							continue;
-						}
-						Log(LOG_INFO) << log_ctx << "metadata.yml found, attempting to map mod from prefix: " << prefixDir;
-						auto layer = new VFSLayer(concatPaths(oxcname, prefixDir));
-						if (!layer->mapOXCFile(oxcname, passphrase, prefixDir)) {
-							Log(LOG_WARNING) << log_ctx << "failed to map OXC prefix: " << prefixDir;
-							delete layer;
-							continue;
-						}
-						auto frec = layer->at("metadata.yml");
-						if (frec == NULL) { delete layer; continue; }
-						auto doc = frec->getYAML();
-						if (!doc.IsMap()) { delete layer; continue; }
-						auto mrec = new ModRecord(concatPaths(oxcname, dirName));
-						mrec->modInfo.load(doc);
-						Log(LOG_INFO) << log_ctx << "found mod in OXC prefix '" << prefixDir << "': '" << mrec->modInfo.getId() << "' (" << mrec->modInfo.getName() << ")";
-						auto mri = ModsAvailable.find(mrec->modInfo.getId());
-						if (mri != ModsAvailable.end()) {
-							Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << dirName;
-							delete mrec;
-							delete layer;
-							continue;
-						}
-						Log(LOG_INFO) << log_ctx << "successfully registered mod '" << mrec->modInfo.getId() << "' from OXC prefix '" << prefixDir << "'";
-						MappedVFSLayers.insert(layer);
-						mrec->push_back(layer);
-						ModsAvailable.insert(std::make_pair(mrec->modInfo.getId(), mrec));
-						anyMapped = true;
-					}
-					if (!anyMapped) {
-						Log(LOG_WARNING) << log_ctx << "OXC container '" << oxcname << "' didn't contain any recognizable mods.";
-					}
-				}
-			}
-		}
+	// now check for a .oxc
+	fullname = dirname + basename + ".oxc";
+	if (CrossPlatform::fileExists(fullname)) {
+		Log(LOG_VERBOSE) << log_ctx << "scanning oxc " << fullname;
+		scanModOxc(fullname);
+	} else {
+		Log(LOG_VERBOSE) << log_ctx << "no oxc " << fullname;
 	}
-
 	// then check for a dir
 	fullname = dirname  + basename;
 	if (!CrossPlatform::folderExists(fullname)) {
@@ -1574,8 +1369,8 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 	}
 	Log(LOG_VERBOSE) << log_ctx << "scanning dir " << fullname;
 
-	// now this dir can contain moddirs, mod zips and mod oxcs.
-	// first scan for mod files : anything but a directory
+	// now this dir can contain both moddirs and modzips.
+	// first scan for modzips : that is, anything but a directory
 	auto contents = CrossPlatform::getFolderContents(fullname);
 	std::vector<std::string> dirlist;
 	for (auto zi = contents.begin(); zi != contents.end(); ++zi) {
@@ -1598,16 +1393,13 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 			continue;
 		}
 		auto subpath = concatPaths(fullname, std::get<0>(*zi));
-		// Treat .oxc specially
-		if (std::get<0>(*zi).size() >= 4) {
-			auto ext = std::get<0>(*zi).substr(std::get<0>(*zi).size()-4);
-			std::string extLower = canonicalize(ext);
-			if (extLower == ".oxc") {
-				scanModOXC(subpath);
-				continue;
-			}
+		std::string lowerName = std::get<0>(*zi);
+		Unicode::lowerCase(lowerName);
+		if (lowerName.size() >= 4 && lowerName.substr(lowerName.size() - 4) == ".zip") {
+			scanModZip(subpath);
+		} else if (lowerName.size() >= 4 && lowerName.substr(lowerName.size() - 4) == ".oxc") {
+			scanModOxc(subpath);
 		}
-		scanModZip(subpath);
 	}
 	for (auto di = dirlist.begin(); di != dirlist.end(); ++di) {
 		auto mp_basename = *di;

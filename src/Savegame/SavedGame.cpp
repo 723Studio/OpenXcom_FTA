@@ -511,9 +511,9 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		std::string diplomacyFactionName = diplomacyFaction["name"].readVal<std::string>();
 		if (mod->getDiplomacyFaction(diplomacyFactionName))
 		{
-			const DiplomacyFaction *diplomacyFaction = new DiplomacyFaction(mod, diplomacyFactionName);
-			diplomacyFaction->load(diplomacyFaction, this);
-			_diplomacyFactions.push_back(diplomacyFaction);
+			DiplomacyFaction *faction = new DiplomacyFaction(mod, diplomacyFactionName);
+			faction->load(diplomacyFaction, this);
+			_diplomacyFactions.push_back(faction);
 		}
 		else
 		{
@@ -857,7 +857,7 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	saveVector(writer, _ufos, "ufos", mod->getScriptGlobal(), getMonthsPassed() == -1);
 	saveVector(writer, _geoscapeEvents, "geoscapeEvents");
 	saveVector(writer, _diplomacyFactions, "diplomacyFactions");
-	saveVector(writer, _perdomedOperations, "performedCovertOperations");
+	writer.write("performedCovertOperations", _performedOperations);
 	if (!_discovered.empty())
 	{
 		auto discoveredWriter = writer["discovered"];

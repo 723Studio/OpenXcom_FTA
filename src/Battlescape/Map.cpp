@@ -106,7 +106,7 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _hackingObjectPointer(0), _samplingObjectPointer(0), _isAltPressed(false), _isCtrlPressed(false),
+	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _hackingObjectPointer(0), _samplingObjectPointer(0), _missionPointer(0), _isAltPressed(false), _isCtrlPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
@@ -250,10 +250,8 @@ Map::~Map()
 	delete _fadeTimer;
 	delete _obstacleTimer;
 	delete _arrow;
-	delete _missionPointer;
 	delete _hackingObjectPointer;
 	delete _samplingObjectPointer;
-	delete _sensorPointer;
 	delete _message;
 	delete _camera;
 	delete _txtAccuracy;
@@ -351,28 +349,6 @@ void Map::init()
 			for (int x = 0; x < 9; ++x)
 				_samplingObjectPointer->setPixel(x, y, pixels[x + (y * 9)]);
 		_samplingObjectPointer->unlock();
-	}
-	// load motion scanner pointer into a surface
-	{
-		int f = Palette::blockOffset(1); // yellow
-		int b = 15; // black
-		int pixels[81] = { 0, 0, 0, b, b, b, 0, 0, 0,
-						   0, 0, b, f, f, f, b, 0, 0,
-						   0, b, f, f, f, f, f, b, 0,
-						   b, f, f, f, f, f, f, f, b,
-						   b, f, f, f, f, f, f, f, b,
-						   b, f, f, f, f, f, f, f, b,
-						   0, b, f, f, f, f, f, b, 0,
-						   0, 0, b, f, f, f, b, 0, 0,
-						   0, 0, 0, b, b, b, 0, 0, 0 };
-
-		_sensorPointer = new Surface(9, 9);
-		_sensorPointer->setPalette(this->getPalette());
-		_sensorPointer->lock();
-		for (int y = 0; y < 9; ++y)
-			for (int x = 0; x < 9; ++x)
-				_sensorPointer->setPixel(x, y, pixels[x + (y * 9)]);
-		_sensorPointer->unlock();
 	}
 
 	_projectile = 0;

@@ -129,7 +129,9 @@ bool Transfer::load(const YAML::YamlNodeReader& reader, Base *base, const Mod *m
 
 /**
  * Saves the transfer to a YAML file.
- * @return YAML node.
+ * @param writer YAML writer.
+ * @param b Base the transfer belongs to.
+ * @param mod Mod for the transfer.
  */
 void Transfer::save(YAML::YamlNodeWriter writer, const Base* b, const Mod* mod) const
 {
@@ -158,7 +160,7 @@ void Transfer::save(YAML::YamlNodeWriter writer, const Base* b, const Mod* mod) 
 	}
 	else if (_prisoner != 0)
 	{
-		node["prisoner"] = _prisoner->save();
+		_prisoner->save(writer["prisoner"]);
 	}
 
 	if (_delivered)

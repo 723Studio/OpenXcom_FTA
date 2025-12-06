@@ -82,18 +82,18 @@ void RuleEvent::load(const YAML::YamlNodeReader& node, Mod* mod)
 	if (reader["customAnswers"])
 	{
 		const auto& customAnswers = reader["customAnswers"];
-		if (customAnswers.size() > 4)
+		if (customAnswers.childrenCount() > 4)
 		{
 			throw Exception("Geoscape Event named: '" + this->getName() + "' has more than 4 custom answers, this is not allowed!");
 		}
-		if (customAnswers.size() < 2)
+		if (customAnswers.childrenCount() < 2)
 		{
 			throw Exception("Geoscape Event named: '" + this->getName() + "' has less than 2 custom answers, this is not allowed!");
 		}
-		for (const auto& answerNode : customAnswers)
+		for (const auto& child : customAnswers.children())
 		{
-			int answerIndex = answerNode.first.readVal<int>();
-			_answers[answerIndex].load(answerNode.second);
+			int answerIndex = child.readKey<int>();
+			_answers[answerIndex].load(child);
 		}
 	}
 

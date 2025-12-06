@@ -2125,6 +2125,7 @@ void GeoscapeState::time30Minutes()
  */
 void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCrafts)
 {
+	auto mod = _game->getMod();
 	auto maskTest = [](UfoDetection value, UfoDetection mask)
 	{
 		return (value & mask) == mask;
@@ -2145,12 +2146,12 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 
 	for (auto craft : *activeCrafts)
 	{
-		int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
+		int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false, mod), mod);
 		detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
 		if (!alreadyTracked && detected == DETECTION_RADAR && tracking < 100)
 		{
 			int exp = RNG::generate(1, static_cast<int>(ceil((100 - tracking) / 20)));
-			for (auto s : craft->getPilotList(false))
+			for (auto s : craft->getPilotList(false, mod))
 			{
 				s->getDogfightExperience()->tracking += exp;
 			}
@@ -2890,7 +2891,6 @@ void GeoscapeState::time1Day()
 
 	// Autosave 3 times a month
 	bool performGeoAutosave = false;
-	int day = saveGame->getTime()->getDay();
 	if (Options::oxceGeoAutosaveFrequency == 0 && (day == 10 || day == 20))
 	{
 		// OXC backwards-compatibility

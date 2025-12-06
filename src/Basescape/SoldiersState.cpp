@@ -45,6 +45,8 @@
 #include "../Savegame/SavedBattleGame.h"
 #include <algorithm>
 #include "../Engine/Unicode.h"
+#include "../Battlescape/BattlescapeGenerator.h"
+#include "../Battlescape/InventoryState.h"
 
 namespace OpenXcom
 {
@@ -778,7 +780,7 @@ void SoldiersState::lstSoldiersClick(Action *action)
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		size_t idx = _lstSoldiers->getSelectedRow();
-		if (idx < _filteredIndicesOfSoldiers.size())
+		if (idx < _filteredListOfSoldiers.size())
 		{
 			if (_ftaUI)
 			{

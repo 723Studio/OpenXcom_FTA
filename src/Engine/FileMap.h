@@ -32,6 +32,8 @@
 namespace OpenXcom
 {
 
+class OXCContainer;
+
 /**
  * Maps canonical names to file paths and maintains the virtual file system
  * for resource files.
@@ -41,10 +43,10 @@ namespace FileMap
 	struct FileRecord {
 		std::string fullpath; 	// includes zip file name if any
 
-		void *zip; 				// borrowed reference/weakref. NOTNULL: points to mz_zip_archive
+		void *zip; 				// borrowed reference/weakref. NOTNULL:
 		size_t findex;       	// file index in the zipfile.
-		
-		void *oxc;				// borrowed reference/weakref. NOTNULL: points to OXCContainer
+		OXCContainer *oxc;   // borrowed reference, owned by FileMap.
+		std::string oxcRelpath; // relative path inside the .oxc container
 
 		FileRecord();
 
