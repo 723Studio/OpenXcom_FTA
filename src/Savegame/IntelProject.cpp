@@ -51,7 +51,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 	auto projStats = _rules->getStats();
 	int trainingFactor = mod->getIntelTrainingFactor();
 	double speedFactor = (double)mod->getIntelSpeedFactor() / 100;
-	
+
 	for (auto s : assignedAgents)
 	{
 		if (s.first->getCraft()->getStatus() == "STR_OUT")
@@ -122,7 +122,7 @@ int IntelProject::getStepProgress(std::map<Soldier*, int>& assignedAgents, Mod* 
 		soldierEffort += insightBonus;
 		if (!estimate)
 			Log(LOG_INFO) << "Total agent effort: " << soldierEffort << " with insight bonus: " << insightBonus; //#FINNIKTODO #CLEARLOGS
-		
+
 		soldierEffort /= statsN + 1;
 		if (!estimate)
 			Log(LOG_INFO) << "Adjusted agent effort: " << soldierEffort << " with statsN: " << statsN + 1; //#FINNIKTODO #CLEARLOGS
@@ -163,7 +163,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	finalRoll = false;
 	bool specialRule = _rules->getSpecialRule() != INTEL_NONE;
 	_active = progress > 0 && specialRule;
-	
+
 	if (_spent > (_rolls * getRules()->getCostIncrease()))
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
@@ -223,7 +223,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 			{
 				_stageRolls.insert(std::make_pair(pickedStage->getName(), 1));
 			}
-			
+
 			return true; //we finish stage rolling, this would tell the game to prepare data for the next one
 		}
 	}
@@ -241,11 +241,11 @@ std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* s
 		if (it == _stageRolls.end() //case we have not rolled this stage before.
 			|| it->second < stage->getAvailableRolls()) //case we don't have enough rolls for this stage yet.
 		{
-			triggerHappy = true; 
+			triggerHappy = true;
 		}
 		else if (stage->isFinalStage()) //we already done with this project, abort the search with empty result.
 		{
-			availableStages.clear(); 
+			availableStages.clear();
 			break;
 		}
 
@@ -300,6 +300,7 @@ void IntelProject::load(const YAML::YamlNodeReader& reader)
  */
 void IntelProject::save(YAML::YamlNodeWriter writer) const
 {
+	writer.setAsMap();
 	writer.write("name", getRules()->getName());
 	if (!_stageRolls.empty())
 	{
@@ -354,7 +355,7 @@ std::string IntelProject::getState(int progress) const
 			result = "STR_EXCELLENT";
 		}
 	}
-	
+
 	return result;
 }
 

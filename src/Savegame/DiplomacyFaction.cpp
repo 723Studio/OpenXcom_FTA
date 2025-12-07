@@ -100,9 +100,10 @@ void DiplomacyFaction::load(const YAML::YamlNodeReader &reader, SavedGame *save)
 /**
  * Saves the Diplomacy Faction to YAML.
  * @return YAML node.
- */ 
+ */
 void DiplomacyFaction::save(YAML::YamlNodeWriter writer) const
 {
+	writer.setAsMap();
 	writer.write("name", _rule->getName());
 	writer.write("reputationScore", _reputationScore);
 	writer.write("reputationLvL", _reputationLvL);
@@ -127,11 +128,11 @@ void DiplomacyFaction::save(YAML::YamlNodeWriter writer) const
 	writer.write("unlockedResearches", _unlockedResearches);
 	_items->save(writer["items"]);
 	_staffPool->save(writer["soldierPool"], _mod);
-	
+
 	writer.write("research", _research,
 		[&](YAML::YamlNodeWriter& vectorWriter, FactionalResearch* r)
 		{
-			r->save(vectorWriter, _mod);
+			r->save(vectorWriter.write(), _mod);
 		}
 	);
 	writer.write("dailyRepScore", _dailyRepScore);
@@ -649,7 +650,7 @@ void DiplomacyFaction::manageStaff(Game& engine)
 			int nationality = engine.getSavedGame()->selectSoldierNationalityByLocation(engine.getMod(), rule, nullptr);
 			_staffPool->addSoldier(engine.getMod()->genSoldier(engine.getSavedGame(), rule, nationality));
 		}
-		
+
 	}
 }
 
@@ -774,7 +775,7 @@ void DiplomacyFaction::handleResearch(Game& engine) //#FINNIKTODO - refactor wit
 				//		(*p)->setScientists((*p)->getScientists() - qty);
 				//	}
 				//}
-				
+
 				//else if (_staff->getItem("STR_SCIENTIST") > 0 && _funds > reqFunds / 2 && RNG::percent(40)) // we choose to rise funding on this project
 				//{
 				//	int qty = floor(RNG::generate(0, _staff->getItem("STR_SCIENTIST") / 4));

@@ -2397,7 +2397,7 @@ void Soldier::postponeTransformation(RuleSoldierTransformation* transformationRu
 	_craft = 0;
 
 	int time = transformationRule->getTransformationTime();
-	time += RNG::generate(time * -0.2, time * 0.2);
+	time += RNG::generate((int)(time * -0.2), int(time * 0.2));
 	_pendingTransformations[transformationRule->getName()] = time;
 }
 

@@ -105,6 +105,7 @@ void BasePrisoner::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 // */
 void BasePrisoner::save(YAML::YamlNodeWriter writer) const
 {
+	writer.setAsMap();
 	writer.write("id", _id);
 	writer.write("type", _type);
 	writer.write("name", _name);
@@ -140,11 +141,11 @@ void BasePrisoner::setMorale(int morale)
 		morale = 100;
 
 	_morale = morale;
-	
+
 }
 
 /**
- * Geoscape logic 
+ * Geoscape logic
  * @param engine - game pointer
  * @param promotedSoldiers - a pointer to a vector to return in geoscape for promotion screen
  */
@@ -202,7 +203,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 				int charismaCoef = 20;
 				int deceptionCoef = 40;
 				int psiCoef = 5;
-				
+
 				statEffort = stats->interrogation;
 				soldierEffort += (statEffort / interrogationCoef);
 				if (stats->interrogation < caps.interrogation
@@ -240,7 +241,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 					statsN++;
 					statEffort = stats->psiSkill;
 					soldierEffort += (statEffort / psiCoef);
-					
+
 					if (stats->psiSkill < caps.psiSkill
 						&& RNG::generate(0, caps.psiSkill) > stats->psiSkill
 						&& RNG::percent(trainingFactor / 2))
@@ -329,7 +330,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 						psionics++;
 				}
 			}
-			
+
 			torturePower *= psionics + 1;
 			if (torturePower > 0)
 			{

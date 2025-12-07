@@ -63,10 +63,11 @@ void SoldierPool::load(const YAML::YamlNodeReader &reader, SavedGame* save, cons
  */
 void SoldierPool::save(YAML::YamlNodeWriter writer, const Mod* mod) const
 {
+	writer.setAsMap();
 	writer.write("soldiers", _pool,
 		[&](YAML::YamlNodeWriter& vectorWriter, Soldier* s)
 		{
-			s->save(vectorWriter, mod->getScriptGlobal());
+			s->save(vectorWriter.write(), mod->getScriptGlobal());
 		}
 	);
 }

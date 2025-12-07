@@ -658,7 +658,7 @@ class ScriptWorkerBase
 	template<size_t BaseOffset, template<typename> class Filter, typename... Args, typename T, int... I>
 	void forRegImpl(T&& arg, helper::ListTag<I...>)
 	{
-		(forRegImplLoop<BaseOffset, I, Args...>(Filter<Args>{}, std::forward<T>(arg)), ...);
+		[[maybe_unused]] int dummy[] = { 0, (forRegImplLoop<BaseOffset, I, Args...>(Filter<Args>{}, std::forward<T>(arg)), 0)... };
 	}
 
 	template<size_t BaseOffset, template<typename> class Filter, typename... Args, typename T>

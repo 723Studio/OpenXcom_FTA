@@ -88,6 +88,7 @@ void CovertOperation::load(const YAML::YamlNodeReader& reader)
 	*/
 void CovertOperation::save(YAML::YamlNodeWriter writer) const
 {
+	writer.setAsMap();
 	writer.write("name", getRules()->getName());
 	writer.write("spent", _spent);
 	writer.write("cost", _cost);
@@ -155,7 +156,7 @@ std::string CovertOperation::getOddsName()
 		return ("STR_VERY_LOW");
 	else
 		return ("STR_NONE");
-	
+
 }
 
 /**
@@ -405,7 +406,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			}
 		}
 	}
-	
+
 	if (!reputationScore.empty())
 	{
 		for (const auto& i : reputationScore)
@@ -427,7 +428,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	if (!_rule->getRequiredItemList().empty())
 	{
 		bool removeItems = false;
-		
+
 		if (_finishedResult)
 		{
 			removeItems = _rule->getRemoveRequiredItemsOnSuccess();
@@ -478,7 +479,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		bool hasBase = true;
 		bool hasZone = true;
 		int tries = 0;
-		
+
 		while (!placed || tries < 50)
 		{
 			if (missionRules->hasRegionWeights())
@@ -563,7 +564,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 
 		//now we are ready to set up new alien mission
 		AlienMission* mission = new AlienMission(*missionRules);
-		mission->setRace(missionRace); 
+		mission->setRace(missionRace);
 		mission->setId(save.getId("ALIEN_MISSIONS"));
 		mission->setRegion(targetRegion, mod);
 		mission->setMissionSiteZoneArea(targetZone);
@@ -604,7 +605,7 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 			if (criticalFail && trapRoll > 0) trapRoll = trapRoll + 35;
 			process = RNG::generate(0, 99) < trapRoll;
 		}
-		if (process && !_inBattlescape) 
+		if (process && !_inBattlescape)
 		{//oh, boy, we are going to generate battlescape to resolve our covert operation!
 			AlienDeployment* deployment = mod.getDeployment(deploymentName);
 			if (deployment != 0)
@@ -650,7 +651,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 	SavedGame& save = *engine.getSavedGame();
 
 	int danger = this->getRules()->getDanger(); //only dangerous operations train battle stats
-	
+
 	//first, we calculate how much experience we can award for the operation (expRolls)
 	int effCost = (int)ceil(this->getRules()->getCosts() / 15);
 	int expRolls = (effCost * mod.getCovertOpsExpFactor() / 100) + 1;
@@ -686,7 +687,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		int wound = 0;
 		++operationSoldierN;
 		UnitStats* exp = new UnitStats();
-		
+
 		if (danger > 0)
 		{
 			int damage = 0;
@@ -871,7 +872,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		soldier->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
 		soldier->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
 		soldier->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
-			
+
 		UnitStats improvement = *soldier->getCurrentStats() - origStat;
 		_results->addSoldierImprovement(soldier->getName(), improvement);
 
@@ -949,5 +950,3 @@ void CovertOperation::finishOperation()
 }
 
 }
-
-

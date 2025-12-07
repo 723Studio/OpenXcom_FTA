@@ -61,6 +61,7 @@ void FactionalResearch::load(const YAML::YamlNodeReader& reader, SavedGame* save
 */
 void FactionalResearch::save(YAML::YamlNodeWriter writer, const Mod* mod) const
 {
+	writer.setAsMap();
 	writer.write("name", _rule->getName());
 	_scientists->save(writer["scientists"], mod);
 	writer.write("timeLeft", _timeLeft);

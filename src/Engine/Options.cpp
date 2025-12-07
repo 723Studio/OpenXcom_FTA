@@ -959,7 +959,7 @@ void refreshMods()
 
 	if (it != mods.end())
 	{
-		Log(LOG_INFO) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
+		Log(LOG_DEBUG) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
 	}
 	else
 	{

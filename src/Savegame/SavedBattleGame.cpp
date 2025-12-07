@@ -572,7 +572,15 @@ void SavedBattleGame::save(YAML::YamlNodeWriter writer) const
 	writer.write("stealthMission", _stealthMission);
 	writer.write("hackingObjective", _hackingObjective);
 	writer.write("alarmLvl", _alarmLvl);
-	writer.write("battleScriptVars", _battleScriptVars);
+	if (!_battleScriptVars.empty())
+	{
+		auto bsv = writer["battleScriptVars"];
+		bsv.setAsMap();
+		for (const auto& p : _battleScriptVars)
+		{
+			bsv.write(bsv.saveString(p.first), p.second);
+		}
+	}
 	writer.write("bughuntMinTurn", _bughuntMinTurn);
 	writer.write("animFrame", _animFrame);
 	writer.write("bughuntMode", _bughuntMode);

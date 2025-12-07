@@ -64,6 +64,7 @@ void BattleObject::load(const YAML::YamlNodeReader& reader, Mod* mod)
 */
 void BattleObject::save(YAML::YamlNodeWriter writer) const
 {
+	writer.setAsMap();
 	writer.write("type", _rules->getName());
 	writer.write("hackingDefence", _hackingDefence);
 	writer.write("failedAttempts", _failedAttempts);
@@ -79,7 +80,7 @@ void BattleObject::setTile(Tile *tile)
 
 /**
  * Process battleobject value updates on hacking
- * @param result - result of hacking, true if success 
+ * @param result - result of hacking, true if success
  */
 void BattleObject::hackingPostProcess(bool result, Game* game)
 {
