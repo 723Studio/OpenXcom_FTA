@@ -111,6 +111,7 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 	sortOptions.push_back(tr(strId)); \
 	_sortFunctors.push_back(new SortFunctor(_game, functor));
 	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getSavedGame()->isManaUnlocked(_game->getMod()) && _game->getMod()->isManaFeatureEnabled();
 
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
@@ -122,7 +123,7 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -135,13 +136,12 @@ CovertOperationSoldiersState::CovertOperationSoldiersState(Base* base, CovertOpe
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStat);
+	if (showMana)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
+	}
 	if (showPsiStats)
 	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			// "unlock" is checked later
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
-		}
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
 	}

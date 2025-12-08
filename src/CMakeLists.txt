@@ -141,7 +141,6 @@ set ( battlescape_src
   Battlescape/MiniMapState.cpp
   Battlescape/MiniMapView.cpp
   Battlescape/NextTurnState.cpp
-  Battlescape/NoExperienceState.cpp
   Battlescape/Particle.cpp
   Battlescape/Pathfinding.cpp
   Battlescape/PathfindingNode.cpp

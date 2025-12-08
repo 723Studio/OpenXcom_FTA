@@ -98,6 +98,7 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 	_txtAssignment->setText(tr("STR_ASSIGNMENT"));
 
 	// populate sort options
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
@@ -114,13 +115,8 @@ IntelAllocateAgentsState::IntelAllocateAgentsState(Base *base, IntelProject* pro
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::bravery), braveryStat);
-	if (_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
+	if (showPsiStats)
 	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			// "unlock" is checked later
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
-		}
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
 	}

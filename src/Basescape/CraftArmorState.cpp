@@ -103,23 +103,22 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
+	bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
 	_sortFunctors.push_back(new SortFunctor(_game, functor));
-
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_CRAFT", craftIdStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
 	PUSH_IN("STR_RANK", rankStat);
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsi)
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -132,13 +131,16 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
 	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
 	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && showPsi)
 	{
 		// "unlock" is checked later
 		PUSH_IN("STR_MANA_POOL", manaStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	if (showPsi)
+	{
+		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
+		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	}
 
 #undef PUSH_IN
 

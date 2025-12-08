@@ -4244,19 +4244,9 @@ void BattleUnit::addBiologyExp()
 /**
  * Adds one the anomaly (phisics, chemistry or alienTech) exp counter.
  */
-void BattleUnit::addAnomalyExp()
+void BattleUnit::addPhysicsExp()
 {
-	int roll = RNG::generate(1, 100) - 1; // 0..99
-	int idx = std::min(2, roll / 40);     // 0 for 0..39, 1 for 40..79, 2 for 80..99
-
-	// pointer-to-member to avoid branching
-	static constexpr Sint16 UnitStats::* members[] = {
-		&UnitStats::physics,
-		&UnitStats::chemistry,
-		&UnitStats::alienTech
-	};
-
-	++(_exp.*members[idx]);
+	_exp.physics++;
 }
 
 /**

@@ -552,8 +552,8 @@ public:
 	void addHackingExp();
 	/// Adds one the biology exp counter.
 	void addBiologyExp();
-	///Adds one the anomaly(phisics or chemistry) exp counter.
-	void addAnomalyExp();
+	///Adds one the phisics exp counter.
+	void addPhysicsExp();
 	/// Did the unit gain any experience yet?
 	bool hasGainedAnyExperience();
 	/// Updates the stats of a Geoscape soldier.

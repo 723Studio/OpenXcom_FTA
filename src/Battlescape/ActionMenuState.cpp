@@ -518,7 +518,7 @@ void ActionMenuState::handleAction()
 						}
 						else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 						{
-							power += std::ceil((stats->physics + stats->chemistry + stats->alienTech) / 3);
+							power += stats->physics;
 						}
 						
 						if (soldier && soldier->getRoleRank(ROLE_SCIENTIST) < 1)
@@ -560,7 +560,7 @@ void ActionMenuState::handleAction()
 								}
 								else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 								{
-									unit->addAnomalyExp();
+									unit->addPhysicsExp();
 								}
 
 								if (soldier && soldier->isRookieScientist())

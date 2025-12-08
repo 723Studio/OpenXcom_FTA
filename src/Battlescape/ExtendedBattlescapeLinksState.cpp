@@ -23,7 +23,6 @@
 #include "BriefingState.h"
 #include "InfoboxState.h"
 #include "Map.h"
-#include "NoExperienceState.h"
 #include "TurnDiaryState.h"
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
@@ -32,6 +31,7 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
+#include "../Battlescape/ExperienceOverviewState.h"
 #include "../Menu/NotesState.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/HitLog.h"
@@ -125,7 +125,7 @@ ExtendedBattlescapeLinksState::ExtendedBattlescapeLinksState(BattlescapeState* p
 	_btnBriefing->setText(tr("STR_BRIEFING"));
 	_btnBriefing->onMouseClick((ActionHandler)&ExtendedBattlescapeLinksState::btnBriefingClick);
 
-	_btnNotes->setText(Options::oxceReplaceNotesLink ? tr("STR_NO_EXPERIENCE_YET") : tr("STR_NOTES"));
+	_btnNotes->setText(tr("STR_NOTES"));
 	_btnNotes->onMouseClick((ActionHandler)&ExtendedBattlescapeLinksState::btnNotesClick);
 
 	_btnMusic->setText(tr("STR_SELECT_MUSIC_TRACK"));
@@ -191,11 +191,7 @@ void ExtendedBattlescapeLinksState::btnBriefingClick(Action *)
 void ExtendedBattlescapeLinksState::btnNotesClick(Action *)
 {
 	_game->popState();
-
-	if (Options::oxceReplaceNotesLink)
-		_game->pushState(new NoExperienceState());
-	else
-		_game->pushState(new NotesState(OPT_BATTLESCAPE));
+	_game->pushState(new ExperienceOverviewState(_parent));
 }
 
 void ExtendedBattlescapeLinksState::btnMusicClick(Action *)

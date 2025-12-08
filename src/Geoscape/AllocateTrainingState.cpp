@@ -148,11 +148,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	_sortFunctorsPlus.push_back(NULL);
-	bool showPsiStats = true;
-	if (_ftaUI)
-	{
-		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
-	}
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod());
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -167,7 +164,7 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -188,13 +185,12 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStatBase, throwingStatPlus);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStatBase, meleeStatPlus);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStatBase, strengthStatPlus);
+	if (showMana)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStatBase, manaStatPlus);
+	}
 	if (showPsiStats)
 	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			// "unlock" is checked later
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStatBase, manaStatPlus);
-		}
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStatBase, psiStrengthStatPlus);
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), psiSkillStatBase, psiSkillStatPlus);
 	}

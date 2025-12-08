@@ -162,20 +162,6 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
 
-	if (!_ftaUI)
-	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			_lstStatChanges->setColumns(14, 72, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 0);
-		}
-		else
-		{
-			_lstStatChanges->setColumns(13, 90, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 0);
-		}
-		_lstStatChanges->setAlign(ALIGN_RIGHT);
-		_lstStatChanges->setAlign(ALIGN_LEFT, 0);
-	}
-
 	if (!_transformationRule->getDescription().empty())
 	{
 		_txtDescription->setText(tr(_transformationRule->getDescription()));

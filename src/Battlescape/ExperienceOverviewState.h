@@ -38,9 +38,9 @@ private:
 	TextButton *_btnOk;
 	Window *_window;
 	Text *_txtTitle, *_txtName;
-	Text *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtPsiSkill, *_txtPsiStrength, *_txtMelee, *_txtMana;
+	Text *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtHacking, *_txtBiology, *_txtPhysics, *_txtPsiSkill, *_txtMana;
 	TextList *_lstSoldiers;
-
+	bool _showPsi, _showMana;
 	BattlescapeState* _parent;
 	std::vector<BattleUnit*> _soldiers;
 public:

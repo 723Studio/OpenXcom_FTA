@@ -294,7 +294,7 @@ DebriefingState::DebriefingState() :
 	_txtStrength->onMouseOut((ActionHandler)&DebriefingState::txtTooltipOut);
 
 	_txtPsiStrength->setAlign(ALIGN_CENTER);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
 	{
 		_txtPsiStrength->setText(tr(UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_ABBREV)));
 		_txtPsiStrength->setTooltip(UnitStats::getStatString(&UnitStats::mana));
@@ -447,7 +447,7 @@ void DebriefingState::init()
 	for (const auto& sse : _soldierStats)
 	{
 		auto tmp = sse.second.psiStrength;
-		if (_game->getMod()->isManaFeatureEnabled())
+		if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
 		{
 			tmp = sse.second.mana;
 		}
