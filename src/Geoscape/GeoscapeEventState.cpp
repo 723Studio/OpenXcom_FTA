@@ -42,7 +42,6 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/Region.h"
-#include "../Savegame/ResearchDiary.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
@@ -307,7 +306,7 @@ void GeoscapeEventState::eventLogic()
 		}
 		_game->getMasterMind()->updateLoyalty(points, XCOM_GEOSCAPE);
 	}
-	
+
 
 	// 2. give/take funds and loyalty
 	save->setFunds(save->getFunds() + rule.getFunds());
@@ -802,7 +801,7 @@ void GeoscapeEventState::txtTooltipIn(Action* action)
  */
 void GeoscapeEventState::txtTooltipOut(Action* action)
 {
-	if (_currentTooltip == action->getSender()->getTooltip()) 
+	if (_currentTooltip == action->getSender()->getTooltip())
 		{
 			_currentTooltip = "";
 			_txtTooltip->setText("");

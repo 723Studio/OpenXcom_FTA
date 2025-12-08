@@ -99,7 +99,6 @@
 #include "../Savegame/ResearchProject.h"
 #include "ResearchCompleteState.h"
 #include "../Mod/RuleResearch.h"
-#include "../Savegame/ResearchDiary.h"
 #include "ResearchRequiredState.h"
 #include "NewPossibleResearchState.h"
 #include "NewPossibleManufactureState.h"
@@ -1847,7 +1846,7 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
 	{
 		// Unlock research defined in alien deployment, if the mission site despawned
 		const RuleResearch* research = _game->getMod()->getResearch(site->getDeployment()->getUnlockedResearchOnDespawn());
-		_game->getSavedGame()->handleResearchUnlockedByMissions(research, _game->getMod(), site->getDeployment());
+		_game->getSavedGame()->handleResearchUnlockedByMissions(research, _game->getMod());
 
 		// Increase counters
 		_game->getSavedGame()->increaseCustomCounter(site->getDeployment()->getCounterDespawn());
@@ -2500,26 +2499,6 @@ void GeoscapeState::time1Day()
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	bool availableIntelInformed = false;
-
-	auto addResearchDiaryEntryForBase = [&](const RuleResearch* discoveredResearch, DiscoverySourceType sourceType, const Base* sourceBase, const RuleResearch* sourceResearch)
-	{
-		if (!saveGame->isResearched(discoveredResearch) && !saveGame->isResearchRuleStatusDisabled(discoveredResearch->getName()))
-		{
-			ResearchDiaryEntry* entry = new ResearchDiaryEntry(discoveredResearch);
-			entry->setDate(saveGame->getTime());
-			entry->source.type = sourceType;
-			if (sourceType == DiscoverySourceType::BASE)
-			{
-				entry->source.name = sourceBase->getName();
-			}
-			else // sourceType == DiscoverySourceType::FREE_FROM
-			{
-				entry->source.research = sourceResearch;
-				entry->source.name = sourceResearch->getName();
-			}
-			saveGame->addResearchDiaryEntry(entry);
-		}
-	};
 
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{

@@ -1422,22 +1422,6 @@ interfaces: #done
         border: 1
       - id: button
         color: 1
-  - type: globalResearchDiary
-    backgroundImage: BACK05.SCR
-    elements:
-      - id: palette
-        color: 0
-      - id: window
-        color: 1
-      - id: text
-        color: 1
-        color2: 239
-      - id: list
-        color: 239
-        color2: 1
-        border: 1
-      - id: button
-        color: 1
   - type: selectNewResearch
     backgroundImage: BACK05.SCR
     parent: researchMenu

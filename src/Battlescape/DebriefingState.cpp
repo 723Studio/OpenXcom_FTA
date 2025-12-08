@@ -2531,7 +2531,7 @@ void DebriefingState::prepareDebriefing()
 		// Unlock research defined in alien deployment, if the mission was a success
 		const RuleResearch *research = _game->getMod()->getResearch(_ruleDeploy->getUnlockedResearchOnSuccess());
 		bool showPedia = !_game->getSavedGame()->isResearched(research) && research != nullptr;
-		save->handleResearchUnlockedByMissions(research, _game->getMod(), _ruleDeploy);
+		save->handleResearchUnlockedByMissions(research, _game->getMod());
 		if (showPedia)
 		{
 			if (!research->getLookup().empty())
@@ -2574,7 +2574,7 @@ void DebriefingState::prepareDebriefing()
 	{
 		// Unlock research defined in alien deployment, if the mission was a failure
 		const RuleResearch* research = _game->getMod()->getResearch(_ruleDeploy->getUnlockedResearchOnFailure());
-		save->handleResearchUnlockedByMissions(research, _game->getMod(), _ruleDeploy);
+		save->handleResearchUnlockedByMissions(research, _game->getMod());
 
 		// Increase counters
 		save->increaseCustomCounter(_ruleDeploy->getCounterFailure());

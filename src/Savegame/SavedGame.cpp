@@ -68,7 +68,6 @@
 #include "MissionStatistics.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
-#include "ResearchDiary.h"
 #include "../Mod/AlienRace.h"
 #include "RankCount.h"
 
@@ -116,7 +115,7 @@ SavedGame::SavedGame() :
 	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
 	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
-	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(), 
+	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(),
 	_disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
@@ -200,10 +199,6 @@ SavedGame::~SavedGame()
 	for (auto* ms : _missionStatistics)
 	{
 		delete ms;
-	}
-	for (auto* rde : _researchDiary)
-	{
-		delete rde;
 	}
 
 	delete _battleGame;
@@ -610,22 +605,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 	sortReserchVector(_discovered);
 
-	// Research Diary
-	{
-		std::string name;
-		for (const auto& researchDiaryEntryReader : reader["researchDiary"].children())
-		{
-			researchDiaryEntryReader.readNode("name", name);
-			// only valid topics are loaded
-			if (RuleResearch* research = mod->getResearch(name, false))
-			{
-				ResearchDiaryEntry* entry = new ResearchDiaryEntry(research);
-				entry->load(researchDiaryEntryReader, mod);
-				_researchDiary.push_back(entry);
-			}
-		}
-	}
-
 	reader.tryRead("generatedEvents", _generatedEvents);
 	loadUfopediaRuleStatus(reader["ufopediaRuleStatus"]);
 	reader.tryRead("manufactureRuleStatus", _manufactureRuleStatus);
@@ -872,7 +851,6 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 			}
 		}
 	}
-	saveVector(writer, _researchDiary, "researchDiary");
 	writer.write("poppedResearch", _poppedResearch,
 		[](YAML::YamlNodeWriter& w, const RuleResearch* r)
 		{ w.write(r->getName()); });
@@ -1655,16 +1633,6 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 				sortReserchVector(_discovered);
 			}
 
-			if (currentQueueItem != research)
-			{
-				ResearchDiaryEntry* entry = new ResearchDiaryEntry(currentQueueItem);
-				entry->setDate(_time);
-				entry->source.type = DiscoverySourceType::FREE_AFTER;
-				entry->source.research = research;
-				entry->source.name = research->getName();
-				addResearchDiaryEntry(entry);
-			}
-
 			if (!hasUndiscoveredProtectedUnlocks && !hasAnyUndiscoveredGetOneFrees)
 			{
 				// If the currentQueueItem can't tell you anything anymore, remove it from popped research
@@ -1767,11 +1735,6 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 		// 4. process remaining items in the queue
 		++currentQueueIndex;
 	}
-}
-
-void SavedGame::addResearchDiaryEntry(ResearchDiaryEntry* entry)
-{
-	_researchDiary.push_back(entry);
 }
 
 /**
@@ -3448,7 +3411,7 @@ bool SavedGame::spawnEvent(std::vector<std::string> eventNames, const Mod* mod)
 {
 	size_t pickEvent = RNG::generate(0, eventNames.size() - 1);
 	auto eventName = eventNames.at(pickEvent);
-	
+
 	return spawnEvent(mod->getEvent(eventName));
 }
 
@@ -3486,7 +3449,7 @@ bool SavedGame::canSpawnInstantEvent(const RuleEvent* eventRules)
  * 2. Adds also getOneFree bonus and possible lookup(s). Also silently.
  * 3. Handles alien mission interruption.
  */
-bool SavedGame::handleResearchUnlockedByMissions(const RuleResearch* research, const Mod* mod, const AlienDeployment* deployment)
+bool SavedGame::handleResearchUnlockedByMissions(const RuleResearch* research, const Mod* mod)
 {
 	if (!research)
 	{
@@ -3498,47 +3461,22 @@ bool SavedGame::handleResearchUnlockedByMissions(const RuleResearch* research, c
 	}
 	Base* base = _bases.front();
 
-	auto addResearchDiaryEntryForMission = [&](const RuleResearch* discoveredResearch, DiscoverySourceType sourceType, const AlienDeployment* sourceMission, const RuleResearch* sourceResearch)
-	{
-		if (!isResearched(discoveredResearch, false) && !isResearchRuleStatusDisabled(discoveredResearch->getName()))
-		{
-			ResearchDiaryEntry* entry = new ResearchDiaryEntry(discoveredResearch);
-			entry->setDate(_time);
-			entry->source.type = sourceType;
-			if (sourceType == DiscoverySourceType::MISSION)
-			{
-				entry->source.mission = sourceMission;
-				entry->source.name = sourceMission->getType();
-			}
-			else // sourceType == DiscoverySourceType::FREE_FROM
-			{
-				entry->source.research = sourceResearch;
-				entry->source.name = sourceResearch->getName();
-			}
-			addResearchDiaryEntry(entry);
-		}
-	};
-
 	std::vector<const RuleResearch*> researchVec;
 	researchVec.push_back(research);
-	addResearchDiaryEntryForMission(research, DiscoverySourceType::MISSION, deployment, nullptr);
 	addFinishedResearch(research, mod, base, true);
 	if (!research->getLookup().empty())
 	{
 		researchVec.push_back(mod->getResearch(research->getLookup(), true));
-		addResearchDiaryEntryForMission(researchVec.back(), DiscoverySourceType::MISSION, deployment, nullptr);
 		addFinishedResearch(researchVec.back(), mod, base, true);
 	}
 
 	if (auto* bonus = selectGetOneFree(research))
 	{
 		researchVec.push_back(bonus);
-		addResearchDiaryEntryForMission(bonus, DiscoverySourceType::FREE_FROM, nullptr, research);
 		addFinishedResearch(bonus, mod, base, true);
 		if (!bonus->getLookup().empty())
 		{
 			researchVec.push_back(mod->getResearch(bonus->getLookup(), true));
-			addResearchDiaryEntryForMission(researchVec.back(), DiscoverySourceType::FREE_FROM, nullptr, research);
 			addFinishedResearch(researchVec.back(), mod, base, true);
 		}
 	}

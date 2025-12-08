@@ -33,7 +33,6 @@ set ( basescape_src
   Basescape/EngineersState.cpp
   Basescape/GlobalAlienContainmentState.cpp
   Basescape/GlobalManufactureState.cpp
-  Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/IntelAllocateAgentsState.cpp
   Basescape/IntelState.cpp

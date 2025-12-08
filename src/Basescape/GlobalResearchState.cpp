@@ -32,7 +32,6 @@
 #include "../Savegame/ResearchProject.h"
 #include "../Mod/RuleResearch.h"
 #include "TechTreeViewerState.h"
-#include "GlobalResearchDiaryState.h"
 
 namespace OpenXcom
 {
@@ -44,8 +43,7 @@ GlobalResearchState::GlobalResearchState(bool openedFromBasescape) : _openedFrom
 {
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnDiary = new TextButton(148, 16, 8, 176);
-	_btnOk = new TextButton(148, 16, 164, 176);
+	_btnOk = new TextButton(304, 16, 8, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtAvailable = new Text(150, 9, 10, 24);
 	_txtAllocated = new Text(150, 9, 160, 24);
@@ -59,7 +57,6 @@ GlobalResearchState::GlobalResearchState(bool openedFromBasescape) : _openedFrom
 	setInterface("globalResearchMenu");
 
 	add(_window, "window", "globalResearchMenu");
-	add(_btnDiary, "button", "globalResearchMenu");
 	add(_btnOk, "button", "globalResearchMenu");
 	add(_txtTitle, "text", "globalResearchMenu");
 	add(_txtAvailable, "text", "globalResearchMenu");
@@ -74,10 +71,6 @@ GlobalResearchState::GlobalResearchState(bool openedFromBasescape) : _openedFrom
 
 	// Set up objects
 	setWindowBackground(_window, "globalResearchMenu");
-
-	_btnDiary->setText(tr("STR_RESEARCH_DIARY"));
-	_btnDiary->onMouseClick((ActionHandler)&GlobalResearchState::btnDiaryClick);
-	_btnDiary->onKeyboardPress((ActionHandler)&GlobalResearchState::btnDiaryClick, Options::keyGeoGlobalResearch);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&GlobalResearchState::btnOkClick);
@@ -109,15 +102,6 @@ GlobalResearchState::GlobalResearchState(bool openedFromBasescape) : _openedFrom
  */
 GlobalResearchState::~GlobalResearchState()
 {
-}
-
-/**
- * Displays the Research Diary UI.
- * @param action Pointer to an action.
- */
-void GlobalResearchState::btnDiaryClick(Action *)
-{
-	_game->pushState(new GlobalResearchDiaryState());
 }
 
 /**

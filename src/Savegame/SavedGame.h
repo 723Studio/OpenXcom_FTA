@@ -31,7 +31,6 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleCraft.h"
 #include "../Engine/Script.h"
-#include "ResearchDiary.h"
 
 namespace OpenXcom
 {
@@ -150,7 +149,6 @@ private:
 	std::vector<const RuleResearch*> _discovered;
 	std::vector<std::string> _performedOperations;
 	std::map<std::string, int> _missionScriptsTimers, _eventScriptsTimers;
-	std::vector<ResearchDiaryEntry*> _researchDiary;
 	std::map<std::string, int> _generatedEvents;
 	std::map<std::string, int> _ufopediaRuleStatus;
 	std::map<std::string, int> _manufactureRuleStatus;
@@ -330,10 +328,6 @@ public:
 	void makeAllResearchDiscovered(const Mod* mod);
 	/// Add a finished ResearchProject
 	void addFinishedResearch(const RuleResearch *research, const Mod *mod, Base *base, bool score = true);
-	/// Add a new record to the research diary
-	void addResearchDiaryEntry(ResearchDiaryEntry* entry);
-	/// Gets the research diary.
-	const std::vector<ResearchDiaryEntry*> & getResearchDiary() const { return _researchDiary; }
 	/// Get the list of already discovered research projects
 	const std::vector<const RuleResearch*> & getDiscoveredResearch() const;
 	/// Does this item correspond to at least one research topic that can be researched now or in the future?
@@ -578,7 +572,7 @@ public:
 	/// Checks if an instant Geoscape event can be spawned.
 	bool canSpawnInstantEvent(const RuleEvent* eventRules);
 	/// Handles research unlocked by successful/failed missions and despawned mission sites.
-	bool handleResearchUnlockedByMissions(const RuleResearch* research, const Mod* mod, const AlienDeployment* deployment);
+	bool handleResearchUnlockedByMissions(const RuleResearch* research, const Mod* mod);
 	/// Handles research side effects for primary research sources.
 	void handlePrimaryResearchSideEffects(const std::vector<const RuleResearch*> &topicsToCheck, const Mod* mod, Base* base);
 	/// Gets the list of user notes.
