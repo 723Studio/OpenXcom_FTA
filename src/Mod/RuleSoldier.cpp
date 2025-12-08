@@ -733,6 +733,32 @@ std::string debugDisplayScript(const RuleSoldier* rs)
 }
 
 /**
+ * Converts SoldierRole enum to string.
+ * @param role The SoldierRole enum value.
+ * @return The string representation.
+ */
+std::string RuleSoldier::getRoleString(SoldierRole role)
+{
+	switch (role)
+	{
+	case ROLE_SOLDIER:
+		return "SOLDIER";
+	case ROLE_ROBOT:
+		return "ROBOT";
+	case ROLE_PILOT:
+		return "PILOT";
+	case ROLE_AGENT:
+		return "AGENT";
+	case ROLE_SCIENTIST:
+		return "SCIENTIST";
+	case ROLE_ENGINEER:
+		return "ENGINEER";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+/**
  * Register Armor in script parser.
  * @param parser Script parser.
  */

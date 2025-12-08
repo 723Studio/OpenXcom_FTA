@@ -38,9 +38,9 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Basescape/ItemLocationsState.h"
 #include "ManufactureStartState.h"
 #include "TechTreeViewerState.h"
-#include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
 {
@@ -213,65 +213,77 @@ void NewManufactureListState::lstProdClickLeft(Action *)
 */
 void NewManufactureListState::lstProdClickRight(Action *)
 {
-	ManufacturingFilterType basicFilter = (ManufacturingFilterType)(_cbxFilter->getSelected());
-	if (basicFilter == MANU_FILTER_FACILITY_REQUIRED)
+	if (_game->isCtrlPressed(true))
 	{
-		// display either category or requirements
-		_showRequirements = !_showRequirements;
-		RuleBaseFacilityFunctions baseFunc = _base->getProvidedBaseFunc({});
+		RuleManufacture* rule = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
+		if (rule->getProducedItems().size() != 1)
+			return;
 
-		for (size_t row = 0; row < _lstManufacture->getTexts(); ++row)
-		{
-			RuleManufacture *info = _game->getMod()->getManufacture(_displayedStrings[row]);
-			if (info)
-			{
-				if (_showRequirements)
-				{
-					std::ostringstream ss;
-					int count = 0;
-					std::vector<std::string> missed = _game->getMod()->getBaseFunctionNames(~baseFunc & info->getRequireBaseFunc());
-					for (const auto& name : missed)
-					{
-						if (count > 0)
-						{
-							ss << ", ";
-						}
-						ss << tr(name);
-						count++;
-					}
-					_lstManufacture->setCellText(row, 1, ss.str().c_str());
-				}
-				else
-				{
-					_lstManufacture->setCellText(row, 1, tr(info->getCategory()));
-				}
-			}
-		}
+		const RuleItem* item = rule->getProducedItems().begin()->first;
+		_game->pushState(new ItemLocationsState(item));
 	}
 	else
 	{
-		// change status
-		const std::string rule = _displayedStrings[_lstManufacture->getSelectedRow()];
-		int oldState = _game->getSavedGame()->getManufactureRuleStatus(rule);
-		int newState = (oldState + 1) % RuleManufacture::MANU_STATUSES;
-		if (!Options::oxceHighlightNewTopics)
+		ManufacturingFilterType basicFilter = (ManufacturingFilterType)(_cbxFilter->getSelected());
+		if (basicFilter == MANU_FILTER_FACILITY_REQUIRED)
 		{
-			// only switch between hidden and not hidden
-			newState = (oldState == RuleManufacture::MANU_STATUS_HIDDEN) ? RuleManufacture::MANU_STATUS_NORMAL : RuleManufacture::MANU_STATUS_HIDDEN;
-		}
-		_game->getSavedGame()->setManufactureRuleStatus(rule, newState);
+			// display either category or requirements
+			_showRequirements = !_showRequirements;
+			RuleBaseFacilityFunctions baseFunc = _base->getProvidedBaseFunc({});
 
-		if (newState == RuleManufacture::MANU_STATUS_HIDDEN)
-		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorHidden);
-		}
-		else if (newState == RuleManufacture::MANU_STATUS_NEW)
-		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNew);
+			for (size_t row = 0; row < _lstManufacture->getTexts(); ++row)
+			{
+				RuleManufacture* info = _game->getMod()->getManufacture(_displayedStrings[row]);
+				if (info)
+				{
+					if (_showRequirements)
+					{
+						std::ostringstream ss;
+						int count = 0;
+						std::vector<std::string> missed = _game->getMod()->getBaseFunctionNames(~baseFunc & info->getRequireBaseFunc());
+						for (const auto& name : missed)
+						{
+							if (count > 0)
+							{
+								ss << ", ";
+							}
+							ss << tr(name);
+							count++;
+						}
+						_lstManufacture->setCellText(row, 1, ss.str().c_str());
+					}
+					else
+					{
+						_lstManufacture->setCellText(row, 1, tr(info->getCategory()));
+					}
+				}
+			}
 		}
 		else
 		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNormal);
+			// change status
+			const std::string rule = _displayedStrings[_lstManufacture->getSelectedRow()];
+			int oldState = _game->getSavedGame()->getManufactureRuleStatus(rule);
+			int newState = (oldState + 1) % RuleManufacture::MANU_STATUSES;
+			if (!Options::oxceHighlightNewTopics)
+			{
+				// only switch between hidden and not hidden
+				newState = (oldState == RuleManufacture::MANU_STATUS_HIDDEN) ? RuleManufacture::MANU_STATUS_NORMAL : RuleManufacture::MANU_STATUS_HIDDEN;
+			}
+			_game->getSavedGame()->setManufactureRuleStatus(rule, newState);
+
+			if (newState == RuleManufacture::MANU_STATUS_HIDDEN)
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorHidden);
+			}
+			else if (newState == RuleManufacture::MANU_STATUS_NEW)
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNew);
+			}
+			else
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNormal);
+			}
 		}
 	}
 }

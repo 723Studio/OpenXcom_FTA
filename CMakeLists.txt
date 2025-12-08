@@ -1,6 +1,12 @@
-cmake_minimum_required ( VERSION 3.6 )
+cmake_minimum_required ( VERSION 3.10 )
 
 project ( OpenXcom )
+
+if(WIN32)
+  if(NOT CMAKE_GENERATOR MATCHES "Visual Studio 17")
+    message(FATAL_ERROR "Please generate with Visual Studio 17 2022: cmake -G \"Visual Studio 17 2022\"")
+  endif()
+endif()
 
 set ( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules" )
 include(BuildType)

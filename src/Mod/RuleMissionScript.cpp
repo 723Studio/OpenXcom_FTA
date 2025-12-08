@@ -122,7 +122,6 @@ void RuleMissionScript::load(const YAML::YamlNodeReader& node)
 	reader.tryRead("soldierTypeTriggers", _soldierTypeTriggers);
 	reader.tryRead("xcomBaseInRegionTriggers", _xcomBaseInRegionTriggers);
 	reader.tryRead("xcomBaseInCountryTriggers", _xcomBaseInCountryTriggers);
-	reader.tryRead("pactCountryTriggers", _pactCountryTriggers);
 
 	reader.tryRead("useTable", _useTable);
 	if (_varName.empty() && (_maxRuns > 0 || _avoidRepeats > 0))

@@ -103,7 +103,6 @@ en-US:
   STR_MORE_DEPENDENCIES: "There are even deeper dependencies..."
   STR_END_OF_SEARCH: "End of search."
 #ManufactureInfoState.cpp
-  STR_FALLBACK_PRODUCTION: "FALLBACK"
   STR_REFUND_PRODUCTION: "REFUND!"
   STR_HOURS_PER_UNIT: "HOURS PER UNIT>{ALT}{0}"
 #ManufactureStartState.cpp

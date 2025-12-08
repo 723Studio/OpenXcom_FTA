@@ -37,12 +37,13 @@ namespace OpenXcom
 * Initializes an FactionalResearch with no contents.
 */
 FactionalResearch::FactionalResearch(const RuleResearch* rule, DiplomacyFaction* faction) :
-_rule(rule), _faction(faction), _priority(0), _timeLeft(0), _scientists(0)
+_rule(rule), _faction(faction), _priority(0), _timeLeft(0), _scientists(new SoldierPool())
 {
 }
 
 FactionalResearch::~FactionalResearch()
 {
+	delete _scientists;
 }
 
 /**
@@ -51,6 +52,7 @@ FactionalResearch::~FactionalResearch()
 */
 void FactionalResearch::load(const YAML::YamlNodeReader& reader, SavedGame* save, const Mod* mod)
 {
+	reader.tryRead("priority", _priority);
 	_scientists->load(reader, save, mod);
 	reader.tryRead("timeLeft", _timeLeft);
 }
@@ -63,6 +65,7 @@ void FactionalResearch::save(YAML::YamlNodeWriter writer, const Mod* mod) const
 {
 	writer.setAsMap();
 	writer.write("name", _rule->getName());
+	writer.write("priority", _priority);
 	_scientists->save(writer["scientists"], mod);
 	writer.write("timeLeft", _timeLeft);
 }

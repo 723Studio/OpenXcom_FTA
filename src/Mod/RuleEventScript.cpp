@@ -97,7 +97,6 @@ void RuleEventScript::load(const YAML::YamlNodeReader& node)
 	reader.tryRead("soldierTypeTriggers", _soldierTypeTriggers);
 	reader.tryRead("xcomBaseInRegionTriggers", _xcomBaseInRegionTriggers);
 	reader.tryRead("xcomBaseInCountryTriggers", _xcomBaseInCountryTriggers);
-	reader.tryRead("pactCountryTriggers", _pactCountryTriggers);
 
 	reader.tryRead("affectsGameProgression", _affectsGameProgression);
 	reader.tryRead("allowedProcessor", _allowedProcessor); //0 - monthly only, 1 - faction only, 2 - xcom only, 3 - special scripts

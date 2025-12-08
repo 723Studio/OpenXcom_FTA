@@ -1358,6 +1358,8 @@ void SoldierCommendations::save(YAML::YamlNodeWriter writer) const
 	if (_noun != "noNoun")
 		writer.write("noun", _noun);
 	writer.write("decorationLevel", _decorationLevel);
+	if (_isNew)
+		writer.write("isNew", _isNew);
 }
 
 /**

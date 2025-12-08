@@ -69,8 +69,9 @@ struct SoldierRoleRanks
 		reader.tryRead("experience", experience);
 	}
 	/// Saves stats to YAML.
-	void save(YAML::YamlNodeWriter& writer)
+	void save(YAML::YamlNodeWriter writer)
 	{
+		writer.setAsMap();
 		writer.write("role", (int)role);
 		writer.write("rank", rank);
 		writer.write("experience", experience);

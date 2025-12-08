@@ -170,6 +170,78 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 		}
 	}
 
+	_items->load(reader["items"], _mod);
+
+	reader.tryRead("scientists", _scientists);
+	reader.tryRead("engineers", _engineers);
+	reader.tryRead("inBattlescape", _inBattlescape);
+
+	for (const auto& transfersReader : reader["transfers"].children())
+	{
+		int hours = transfersReader["hours"].readVal<int>();
+		Transfer *t = new Transfer(hours);
+		if (t->load(transfersReader, this, _mod, save))
+		{
+			_transfers.push_back(t);
+		}
+	}
+	for (const auto& researchReader : reader["research"].children())
+	{
+		std::string research = researchReader["project"].readVal<std::string>();
+		if (_mod->getResearch(research))
+		{
+			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
+			r->load(researchReader);
+			_research.push_back(r);
+		}
+		else
+		{
+			_scientists += researchReader["assigned"].readVal(0);
+			Log(LOG_ERROR) << "Failed to load research " << research;
+		}
+	}
+	for (const auto& productionReader : reader["productions"].children())
+	{
+		std::string item = productionReader["item"].readVal<std::string>();
+		if (_mod->getManufacture(item))
+		{
+			Production *p = new Production(_mod->getManufacture(item), 0);
+			p->load(productionReader);
+			_productions.push_back(p);
+		}
+		else
+		{
+			_engineers += productionReader["assigned"].readVal(0);
+			Log(LOG_ERROR) << "Failed to load manufacture " << item;
+		}
+	}
+
+	for (const auto& intelProjectReader : reader["intelProjects"].children())
+	{
+		std::string name = intelProjectReader["name"].readVal<std::string>();
+		if (_mod->getIntelProject(name))
+		{
+			IntelProject* p = new IntelProject(_mod->getIntelProject(name), this, 0);
+			p->load(intelProjectReader);
+			_intelProjects.push_back(p);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load intelProjects " << name;
+		}
+	}
+
+	for (const auto& prisonerReader : reader["prisoners"].children())
+	{
+		std::string id;
+		prisonerReader["id"].tryReadVal(id);
+		std::string type;
+		prisonerReader["type"].tryReadVal(type);
+		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
+		prisoner->load(prisonerReader, _mod);
+		addPrisoner(prisoner);
+	}
+
 	for (const auto& soldierReader : reader["soldiers"].children())
 	{
 		std::string type = soldierReader["type"].readVal(_mod->getSoldiersList().front());
@@ -268,78 +340,6 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 		{
 			Log(LOG_ERROR) << "Failed to load soldier " << type;
 		}
-	}
-
-	_items->load(reader["items"], _mod);
-
-	reader.tryRead("scientists", _scientists);
-	reader.tryRead("engineers", _engineers);
-	reader.tryRead("inBattlescape", _inBattlescape);
-
-	for (const auto& transfersReader : reader["transfers"].children())
-	{
-		int hours = transfersReader["hours"].readVal<int>();
-		Transfer *t = new Transfer(hours);
-		if (t->load(transfersReader, this, _mod, save))
-		{
-			_transfers.push_back(t);
-		}
-	}
-	for (const auto& researchReader : reader["research"].children())
-	{
-		std::string research = researchReader["project"].readVal<std::string>();
-		if (_mod->getResearch(research))
-		{
-			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
-			r->load(researchReader);
-			_research.push_back(r);
-		}
-		else
-		{
-			_scientists += researchReader["assigned"].readVal(0);
-			Log(LOG_ERROR) << "Failed to load research " << research;
-		}
-	}
-	for (const auto& productionReader : reader["productions"].children())
-	{
-		std::string item = productionReader["item"].readVal<std::string>();
-		if (_mod->getManufacture(item))
-		{
-			Production *p = new Production(_mod->getManufacture(item), 0);
-			p->load(productionReader);
-			_productions.push_back(p);
-		}
-		else
-		{
-			_engineers += productionReader["assigned"].readVal(0);
-			Log(LOG_ERROR) << "Failed to load manufacture " << item;
-		}
-	}
-
-	for (const auto& intelProjectReader : reader["intelProjects"].children())
-	{
-		std::string name = intelProjectReader["name"].readVal<std::string>();
-		if (_mod->getIntelProject(name))
-		{
-			IntelProject* p = new IntelProject(_mod->getIntelProject(name), this, 0);
-			p->load(intelProjectReader);
-			_intelProjects.push_back(p);
-		}
-		else
-		{
-			Log(LOG_ERROR) << "Failed to load intelProjects " << name;
-		}
-	}
-
-	for (const auto& prisonerReader : reader["prisoners"].children())
-	{
-		std::string id;
-		prisonerReader["id"].tryReadVal(id);
-		std::string type;
-		prisonerReader["type"].tryReadVal(type);
-		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
-		prisoner->load(prisonerReader, _mod);
-		addPrisoner(prisoner);
 	}
 
 	reader.tryRead("retaliationTarget", _retaliationTarget);
@@ -670,7 +670,7 @@ int Base::getAvailableInterrogationSpace()
 int Base::getUsedInterrogationSpace()
 {
 	int used = 0;
-	
+
 	for (auto p : _prisoners)
 	{
 		if (p->getPrisonerState() == PRISONER_STATE_INTERROGATION

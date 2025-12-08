@@ -350,6 +350,7 @@ void Soldier::load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame
 	reader.tryRead("psiTraining", _psiTraining);
 	reader.tryRead("training", _training);
 	reader.tryRead("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
+	reader.tryRead("returnToTrainingsWhenOperationOver", _returnToTrainingsWhenOperationOver);
 	reader.tryRead("justSaved", _justSaved);
 	reader.tryRead("improvement", _improvement);
 	reader.tryRead("psiStrImprovement", _psiStrImprovement);
@@ -489,20 +490,28 @@ void Soldier::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) cons
 		writer.write("training", _training);
 	if (_returnToTrainingWhenHealed)
 		writer.write("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
+	if (_returnToTrainingsWhenOperationOver != NONE)
+		writer.write("returnToTrainingsWhenOperationOver", _returnToTrainingsWhenOperationOver);
 	if (_justSaved)
 		writer.write("justSaved", _justSaved);
-	if (_isRookieSoldier)
-		writer.write("isRookieSoldier", _isRookieSoldier);
-	if (_isRookieScientist)
-		writer.write("isRookieScientist", _isRookieScientist);
-	if (_isRookieEngineer)
-		writer.write("isRookieEngineer", _isRookieEngineer);
-	if (_isRookieAgent)
-		writer.write("isRookieAgent", _isRookieAgent);
-	if (_isRookiePilot)
-		writer.write("isRookiePilot", _isRookiePilot);
+	writer.write("isRookieSoldier", _isRookieSoldier);
+	writer.write("isRookieScientist", _isRookieScientist);
+	writer.write("isRookieEngineer", _isRookieEngineer);
+	writer.write("isRookieAgent", _isRookieAgent);
+	writer.write("isRookiePilot", _isRookiePilot);
 	writer.write("improvement", _improvement);
 	writer.write("psiStrImprovement", _psiStrImprovement);
+	if (!_roles.empty())
+	{
+		auto rolesWriter = writer["roles"];
+		rolesWriter.setAsSeq();
+		for (auto* r : _roles)
+		{
+			if (r->rank == 0 && r->experience == 0)
+				continue; // skip empty role entries
+			r->save(rolesWriter.write());
+		}
+	}
 	writer.write("equipmentLayout", _equipmentLayout,
 		[](YAML::YamlNodeWriter& w, EquipmentLayoutItem* i)
 		{ i->save(w.write()); });
@@ -3275,6 +3284,13 @@ bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
 			}
 		}
 		if (!found)
+			return false;
+	}
+
+	// Does this soldier have all required soldier roles for piloting the current craft?
+	for (auto requiredRole : craft->getRules()->getPilotSoldierRolesRequired())
+	{
+		if (getRoleRank(requiredRole) <= 0)
 			return false;
 	}
 

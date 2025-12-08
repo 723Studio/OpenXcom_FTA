@@ -280,7 +280,6 @@ public:
 	int getRankSpriteBattlescape() const;
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
-	/// Getters for FtA's roles sprite IDs.
 	int getRequiredExperience(SoldierRole role, int rank) const;
 	int getPilotRankSprite() const { return _pilotRankSprite; }
 	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; }
@@ -294,8 +293,12 @@ public:
 	int getEngineerRankSprite() const { return _engineerRankSprite; }
 	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; }
 	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; }
+	/// Gets the list of role experience requirments.
 	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
+	/// Gets the list of role rank strings.
 	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() const { return _roleRankStrings; }
+	/// Converts SoldierRole enum to string.
+	static std::string getRoleString(SoldierRole role);
 
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }
@@ -304,6 +307,7 @@ public:
 	int getManaWoundThreshold() const { return _manaMissingWoundThreshold; }
 	/// How much missing health will act as "fatal wounds" and prevent the soldier from going into battle.
 	int getHealthWoundThreshold() const { return _healthMissingWoundThreshold; }
+
 };
 
 }

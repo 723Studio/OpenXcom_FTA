@@ -22,6 +22,7 @@
 #include "../Engine/Yaml.h"
 #include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
+#include "RuleSoldier.h"
 #include "ModScript.h"
 
 namespace OpenXcom
@@ -238,6 +239,7 @@ private:
 	std::string _customPreview;
 	std::vector<int> _selectSound, _takeoffSound;
 	UnitStats _pilotMinStatsRequired;
+	std::vector<SoldierRole> _pilotSoldierRolesRequired;
 	std::vector<std::string> _pilotSoldierBonusesRequiredNames;
 	std::vector<const RuleSoldierBonus*> _pilotSoldierBonusesRequired;
 
@@ -415,6 +417,8 @@ public:
 	const UnitStats& getPilotMinStatsRequired() const { return _pilotMinStatsRequired; }
 	/// Gets the list of soldier bonuses a soldier needs to be eligible for piloting this craft
 	const std::vector<const RuleSoldierBonus*>& getPilotSoldierBonusesRequired() const { return _pilotSoldierBonusesRequired; }
+	/// Gets the list of soldier roles a soldier needs to be eligible for piloting this craft
+	const std::vector<SoldierRole>& getPilotSoldierRolesRequired() const { return _pilotSoldierRolesRequired; }
 
 	/// Gets script.
 	template<typename Script>

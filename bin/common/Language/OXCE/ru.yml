@@ -83,7 +83,6 @@ ru:
   STR_LEVEL_4_DEPENDENCIES: "Зависимости 4-го уровня"
   STR_MORE_DEPENDENCIES: "Более далекие зависимости..."
   STR_END_OF_SEARCH: "Поиск окончен."
-  STR_FALLBACK_PRODUCTION: "РЕЗЕРВ"
   STR_REFUND_PRODUCTION: "ВОЗВРАТ!"
   STR_HOURS_PER_UNIT: "ЧАСОВ НА ЕД.>{ALT}{0}"
   STR_PERSON_JOINING: "Присоединяется персонаж"

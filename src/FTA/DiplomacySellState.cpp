@@ -46,7 +46,7 @@
 #include "../Mod/RuleCraft.h"
 #include "../Savegame/CraftWeapon.h"
 #include "../Mod/RuleCraftWeapon.h"
-#include "../Mod/RuleSoldier.h"
+#include "../Basescape/ItemLocationsState.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
@@ -289,6 +289,12 @@ void DiplomacySellState::delayedInit()
 		{
 			_cats.clear();
 			_cats.push_back("STR_ALL_ITEMS");
+			_cats.push_back("STR_FILTER_HIDDEN");
+			if (Options::oxceBaseFilterResearchable)
+			{
+				_cats.push_back("STR_FILTER_RESEARCHED");
+				_cats.push_back("STR_FILTER_RESEARCHABLE");
+			}
 			_vanillaCategories = _cats.size();
 		}
 		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
@@ -449,6 +455,43 @@ bool DiplomacySellState::belongsToCategory(int sel, const std::string& cat) cons
 	return false;
 }
 
+bool DiplomacySellState::isHidden(int sel) const
+{
+	std::string itemName;
+
+	switch (_items[sel].type)
+	{
+	case TRANSFER_SOLDIER:
+	case TRANSFER_SCIENTIST:
+	case TRANSFER_ENGINEER:
+		return false;
+	case TRANSFER_CRAFT:
+		return false;
+	case TRANSFER_ITEM:
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
+		if (rule != 0)
+		{
+			itemName = rule->getType();
+		}
+		if (!itemName.empty())
+		{
+			auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
+			auto iter = hiddenMap.find(itemName);
+			if (iter != hiddenMap.end())
+			{
+				return iter->second;
+			}
+			else
+			{
+				// not found = not hidden
+				return false;
+			}
+		}
+	}
+
+	return false;
+}
+
 /**
 * Quick search toggle.
 * @param action Pointer to an action.
@@ -492,6 +535,9 @@ void DiplomacySellState::updateList()
 	const std::string selectedCategory = _cats[selCategory];
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
+	bool categoryHidden = (selectedCategory == "STR_FILTER_HIDDEN");
+	bool categoryResearched = (selectedCategory == "STR_FILTER_RESEARCHED");
+	bool categoryResearchable = (selectedCategory == "STR_FILTER_RESEARCHABLE");
 
 	if (_previousSort != _currentSort)
 	{
@@ -523,7 +569,30 @@ void DiplomacySellState::updateList()
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
-		if (selCategory >= _vanillaCategories)
+		if (categoryHidden)
+		{
+			bool hidden = isHidden(i);
+			if (!hidden)
+			{
+				continue;
+			}
+		}
+		else if (categoryResearched || categoryResearchable)
+		{
+			if (_items[i].type == TRANSFER_ITEM)
+			{
+				RuleItem* rule = (RuleItem*)_items[i].rule;
+				bool isResearchable = _game->getSavedGame()->isResearchable(rule, _game->getMod());
+				if (categoryResearched && isResearchable) continue;
+				if (categoryResearchable && !isResearchable) continue;
+			}
+			else
+			{
+				// don't show non-items (e.g. craft, personnel)
+				continue;
+			}
+		}
+		else if (selCategory >= _vanillaCategories)
 		{
 			if (categoryUnassigned && _items[i].type == TRANSFER_ITEM)
 			{
@@ -972,7 +1041,14 @@ void DiplomacySellState::lstItemsMousePress(Action* action)
 			RuleItem* rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				_game->pushState(new ManufactureDependenciesTreeState(rule->getType()));
+				if (_game->isCtrlPressed(true))
+				{
+					_game->pushState(new ItemLocationsState(rule));
+				}
+				else
+				{
+					_game->pushState(new ManufactureDependenciesTreeState(rule->getType()));
+				}
 			}
 		}
 	}

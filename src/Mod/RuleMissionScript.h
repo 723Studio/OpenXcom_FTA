@@ -52,7 +52,6 @@ private:
 	std::map<std::string, bool> _soldierTypeTriggers;
 	std::map<std::string, bool> _xcomBaseInRegionTriggers;
 	std::map<std::string, bool> _xcomBaseInCountryTriggers;
-	std::map<std::string, bool> _pactCountryTriggers;
 
 	bool _useTable, _siteType;
 
@@ -144,8 +143,6 @@ public:
 	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const;
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const;
-	/// Gets the country pact triggers that may apply to this command.
-	const std::map<std::string, bool> &getPactCountryTriggers() const { return _pactCountryTriggers; }
 
 	/// Delete this mission from the table? stops it coming up again in random selection, but NOT if a missionScript calls it by name.
 	bool getUseTable() const;

@@ -337,7 +337,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	{
 		_btnFunding->setText(tr("STR_FUNDING_UC"));
 	}
-	
+
 	_btnFunding->onMouseClick((ActionHandler)&GeoscapeState::btnFundingClick);
 	_btnFunding->onKeyboardPress((ActionHandler)&GeoscapeState::btnFundingClick, Options::keyGeoFunding);
 	_btnFunding->setGeoscapeButton(true);
@@ -548,24 +548,6 @@ void GeoscapeState::handle(Action *action)
 
 	if (action->getDetails()->type == SDL_KEYDOWN)
 	{
-		if (!_dogfights.empty() && _dogfights.size() > _minimizedDogfights)
-		{
-			if (action->getDetails()->key.keysym.sym == SDLK_1)
-			{
-				Options::dogfightSpeed = 50;
-				_dogfightTimer->setInterval(Options::dogfightSpeed);
-			}
-			else if (action->getDetails()->key.keysym.sym == SDLK_2)
-			{
-				Options::dogfightSpeed = 35;
-				_dogfightTimer->setInterval(Options::dogfightSpeed);
-			}
-			else if (action->getDetails()->key.keysym.sym == SDLK_3)
-			{
-				Options::dogfightSpeed = 20;
-				_dogfightTimer->setInterval(Options::dogfightSpeed);
-			}
-		}
 		// "ctrl-d" - enable debug mode
 		if (Options::debug && action->getDetails()->key.keysym.sym == SDLK_d && _game->isCtrlPressed())
 		{
@@ -657,7 +639,7 @@ void GeoscapeState::handle(Action *action)
 					_txtDebug->setText("PEOPLE ARE LOYAL NOW: ADDED 1000 LOYALTY");
 					_game->getSavedGame()->setLoyalty(_game->getSavedGame()->getLoyalty() + 1000);
 				}
-				
+
 			}
 			// "ctrl-7"
 			if (action->getDetails()->key.keysym.sym == SDLK_7)
@@ -2297,7 +2279,7 @@ void GeoscapeState::time1Hour()
 						(*s)->setProductionProject(0);
 					}
 				}
-				
+
 				popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, _promotedSoldiers, pair.second, pair.first));
 				xbase->removeProduction(pair.first);
 				_promotedSoldiers.clear();
@@ -2364,7 +2346,7 @@ void GeoscapeState::time1Hour()
 					else
 					{
 						throw Exception("Attempting to transform soldier " + soldier->getName() + ". ERROR! No rules found for transformation!");
-					}			
+					}
 				}
 			}
 		}
@@ -2567,7 +2549,7 @@ void GeoscapeState::time1Day()
 				popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, _promotedSoldiers, PROGRESS_CONSTRUCTION));
 			}
 		}
-		
+
 		// Handle science project
 		if (!_fta)
 			handleResearch(xbase);
@@ -2633,7 +2615,7 @@ void GeoscapeState::time1Day()
 			default:
 				break;
 			}
-			
+
 			if (intelProjectFinished)
 			{
 				_game->pushState(new IntelCompleteState(project, this, xbase));
@@ -2739,7 +2721,7 @@ void GeoscapeState::time1Day()
 			}
 		}
 	}
-	
+
 	// Handle mission and event scripts gap timers
 	_game->getSavedGame()->handleMissionScriptTimers();
 	_game->getSavedGame()->handleEventScriptTimers();
@@ -2853,7 +2835,7 @@ void GeoscapeState::time1Day()
 	// Handle alien base detection (by xcom base facilities).
 	for (auto* alienBase : *_game->getSavedGame()->getAlienBases())
 	{
-		if (alienBase->isDiscovered()|| alienBase->getDeployment()->isHiddenAlienBase()) 
+		if (alienBase->isDiscovered()|| alienBase->getDeployment()->isHiddenAlienBase())
 		{
 			continue;
 		}
@@ -3878,17 +3860,6 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 							break;
 					}
 				}
-				if (triggerHappy)
-				{
-					// country with pact
-					for (auto& triggerPact : arcScript->getPactCountryTriggers())
-					{
-						bool found = (pactCountries.find(triggerPact.first) != pactCountries.end());
-						triggerHappy = (found == triggerPact.second);
-						if (!triggerHappy)
-							break;
-					}
-				}
 				// level three condition check: does random chance favour this command's execution?
 				if (triggerHappy && RNG::percent(arcScript->getExecutionOdds()))
 				{
@@ -4117,17 +4088,6 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 				{
 					bool found = (xcomBaseCountries.find(triggerXcomBase2.first) != xcomBaseCountries.end());
 					triggerHappy = (found == triggerXcomBase2.second);
-					if (!triggerHappy)
-						break;
-				}
-			}
-			if (triggerHappy)
-			{
-				// country with pact
-				for (auto& triggerPact : command->getPactCountryTriggers())
-				{
-					bool found = (pactCountries.find(triggerPact.first) != pactCountries.end());
-					triggerHappy = (found == triggerPact.second);
 					if (!triggerHappy)
 						break;
 				}
@@ -4903,12 +4863,12 @@ void GeoscapeState::handleResearch(Base* base)
 		{
 			progress = project->getAssigned();
 		}
-			
+
 		if (project->step(progress))
 		{
 			finished.push_back(std::make_pair(assignedScientists, project));
 		}
-		
+
 	}
 	// 2. remember available research before adding new finished research
 	std::vector<RuleResearch*> before;
