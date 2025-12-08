@@ -106,13 +106,31 @@ void DebriefingExtraStatsState::generateStatsList()
 		row++;
 		if (stats.biology > 0)
 		{
-			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC)).c_str(), stats.biology);
+			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC)).c_str(), stats.biology);
+			_lstStats->setRowColor(row, _lstStats->getSecondaryColor());
+			row++;
+		}
+		if (stats.physics > 0)
+		{
+			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC)).c_str(), stats.physics);
 			_lstStats->setRowColor(row, _lstStats->getSecondaryColor());
 			row++;
 		}
 		if (stats.hacking > 0)
 		{
-			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC)).c_str(), stats.hacking);
+			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::hacking, UnitStats::STATSTR_LC)).c_str(), stats.hacking);
+			_lstStats->setRowColor(row, _lstStats->getSecondaryColor());
+			row++;
+		}
+		if (stats.stealth > 0)
+		{
+			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::stealth, UnitStats::STATSTR_LC)).c_str(), stats.stealth);
+			_lstStats->setRowColor(row, _lstStats->getSecondaryColor());
+			row++;
+		}
+		if (stats.perception > 0)
+		{
+			_lstStats->addRow(2, tr(UnitStats::getStatString(&UnitStats::perception, UnitStats::STATSTR_LC)).c_str(), stats.perception);
 			_lstStats->setRowColor(row, _lstStats->getSecondaryColor());
 			row++;
 		}
