@@ -191,7 +191,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 			double effort = 0;
 			for (auto s : _agents)
 			{
-				if (s->getCraft()->getStatus() == "STR_OUT")
+				if (s->getCraft() != nullptr && s->getCraft()->getStatus() == "STR_OUT")
 				{
 					continue;
 				}

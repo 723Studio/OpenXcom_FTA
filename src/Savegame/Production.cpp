@@ -107,7 +107,7 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 			int summEfficiency = 0;
 			for (auto s : assignedEngineers)
 			{
-				if (s->getCraft()->getStatus() == "STR_OUT")
+				if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
 				{
 					continue;
 				}

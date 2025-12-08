@@ -43,7 +43,6 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItemCategory.h"
 #include "../Mod/RuleSkill.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleStartingCondition.h"
 #include "Soldier.h"
