@@ -37,8 +37,7 @@ Unit::Unit(const std::string &type) :
 	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
 	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _avoidsFire(defBoolNullable),
-	_vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
-	_canPanic(true), _canBeMindControlled(true), _berserkChance(-1)
+	_vip(false), _cosmetic(false), _ignoredByAI(false), _canPanic(true), _canBeMindControlled(true), _berserkChance(-1)
 {
 }
 
@@ -112,7 +111,6 @@ void Unit::load(const YAML::YamlNodeReader& node, Mod *mod)
 	reader.tryRead("vip", _vip); //OXCE variant
 	reader.tryRead("cosmetic", _cosmetic);
 	reader.tryRead("ignoredByAI", _ignoredByAI);
-	reader.tryRead("treatedByAI", _treatedByAI);
 	reader.tryRead("canPanic", _canPanic);
 	reader.tryRead("canBeMindControlled", _canBeMindControlled);
 	reader.tryRead("berserkChance", _berserkChance);

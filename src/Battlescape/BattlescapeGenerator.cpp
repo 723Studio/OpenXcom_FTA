@@ -2411,6 +2411,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 		}
 	}
 	// randomized items
+	const auto* mapblockFuseTimers = mapblock->getItemsFuseTimers();
 	for (auto& rngItems : *mapblock->getRandomizedItems())
 	{
 		if (rngItems.itemList.size() < 1)
@@ -2444,9 +2445,20 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					throw Exception(ss.str());
 				}
 				BattleItem* newRandItem = _save->createItemForTile(rule, _save->getTile(rngItems.position + Position(xoff, yoff, zoff)));
-				if (rule->getFuseTimerType() != BFT_NONE && rngItems.fuseTimerMin > -1 && rngItems.fuseTimerMax > -1 && rngItems.fuseTimerMin <= rngItems.fuseTimerMax)
+				if (rule->getFuseTimerType() != BFT_NONE)
 				{
-					newRandItem->setFuseTimer(RNG::generate(rngItems.fuseTimerMin, rngItems.fuseTimerMax));
+					if (rngItems.fuseTimerMin > -1 && rngItems.fuseTimerMax > -1 && rngItems.fuseTimerMin <= rngItems.fuseTimerMax)
+					{
+						newRandItem->setFuseTimer(RNG::generate(rngItems.fuseTimerMin, rngItems.fuseTimerMax));
+					}
+					else
+					{
+						auto prime = mapblockFuseTimers->find(rule->getType());
+						if (prime != mapblockFuseTimers->end() && prime->second.first <= prime->second.second)
+						{
+							newRandItem->setFuseTimer(RNG::generate(prime->second.first, prime->second.second));
+						}
+					}
 				}
 			}
 		}

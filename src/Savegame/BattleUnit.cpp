@@ -5985,14 +5985,6 @@ bool BattleUnit::isIgnoredByAI() const
 }
 
 /**
- * Should this AI unit (alien or civilian) be treated as an enemy by other AI units?
- */
-bool BattleUnit::isTreatedByAI() const
-{
-	return _unitRules && _unitRules->isTreatedByAI();
-}
-
-/**
  * Is the unit afraid to pathfind through fire?
  * @return True if this unit has a penalty when pathfinding through fire.
  */

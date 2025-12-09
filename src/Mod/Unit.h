@@ -851,7 +851,7 @@ private:
 	int _pickUpWeaponsMoreActively;
 	Sint8 _avoidsFire;
 	bool _vip;
-	bool _cosmetic, _ignoredByAI, _treatedByAI;
+	bool _cosmetic, _ignoredByAI;
 	bool _canPanic;
 	bool _canBeMindControlled;
 	int _berserkChance;
@@ -981,8 +981,6 @@ public:
 	bool isCosmetic() const { return _cosmetic; }
 	/// Should this unit be ignored by the AI?
 	bool isIgnoredByAI() const { return _ignoredByAI; }
-	/// Should this unit be treated by the AI as an enemy no matter side?
-	bool isTreatedByAI() const { return _treatedByAI; }
 	/// Checks if this unit can panic.
 	bool canPanic() const { return _canPanic; }
 	/// Checks if this unit can be mind controlled.

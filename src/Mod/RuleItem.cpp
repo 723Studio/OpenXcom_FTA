@@ -643,6 +643,8 @@ void RuleItem::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript&
 	mod->loadNameNull(_type, _zombieUnit, reader["zombieUnit"]);
 	mod->loadNameNull(_type, _spawnUnitName, reader["spawnUnit"]);
 	mod->loadNameNull(_type, _spawnItemName, reader["spawnItem"]);
+	mod->loadNameNull(_type, _spawnSoldier, reader["spawnSoldier"]);
+
 	reader.tryRead("spawnUnitFaction", _spawnUnitFaction);
 	reader.tryRead("zombieUnitFaction", _zombieUnitFaction);
 	loadIntNullable(_spawnUnitChance, reader["spawnUnitChance"]);

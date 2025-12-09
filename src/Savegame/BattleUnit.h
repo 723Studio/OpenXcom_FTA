@@ -902,8 +902,6 @@ public:
 	bool isCosmetic() const;
 	/// Should this AI unit (alien or civilian) be ignored by other AI units?
 	bool isIgnoredByAI() const;
-	/// Should this AI unit (alien or civilian) be treated as an enemy by other AI units?
-	bool isTreatedByAI() const;
 	/// Marks this unit as resummoned fake civilian and therefore won't count for civilian scoring in the Debriefing.
 	void markAsResummonedFakeCivilian() { _resummonedFakeCivilian = true; _status = STATUS_IGNORE_ME; }
 	/// Is this unit a resummoned fake civilian?

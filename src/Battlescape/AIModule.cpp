@@ -2991,15 +2991,9 @@ bool AIModule::validTarget(BattleUnit *target, bool assessDanger, bool includeCi
 	if (target->isOut() ||
 		(assessDanger && target->getTile()->getDangerous()) ||
 		(target->getFaction() != FACTION_PLAYER && target->isIgnoredByAI())||
-		(target->getUndercover() && !_unit->getUnitWarned()) ||
-		(target->getFaction() == _unit->getFaction() && !target->isTreatedByAI())) //#FINNIKTODO - consider removing this line and handling friendly fire via getTargetAttackWeight only
+		(target->getUndercover() && !_unit->getUnitWarned()))
 	{
 		return false;
-	}
-
-	if (target->isTreatedByAI())
-	{
-		return true;
 	}
 
 	if (includeCivs)

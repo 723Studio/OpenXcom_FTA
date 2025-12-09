@@ -129,3 +129,4 @@ cmake-build-debug/.cmake/api/v1/query/cache-v2
 .idea/.name
 .idea/editor.xml
 .vscode/settings.json
+.github/copilot-instructions.md
