@@ -26,7 +26,7 @@ jobs:
           sed -i "s/GAME_VERSION_GIT \"[^\"]*\"/GAME_VERSION_GIT \" git ${{ env.DATEVERSION }}\"/" install/win/version.nsh
           sed -i "s/GAME_DATE_GIT \"[^\"]*\"/GAME_DATE_GIT \"${{ env.DATEFILE }}\"/" install/win/version.nsh
 
-          sed -i "s/OPENXCOM_VERSION_GIT \"[^\"]*\"/OPENXCOM_VERSION_GIT \" git ${{ env.DATEVERSION }}\"/" src/version.h
+          sed -i "s/OPENXCOM_FTA_VERSION_GIT \"[^\"]*\"/OPENXCOM_FTA_VERSION_GIT \" git ${{ env.DATEVERSION }}\"/" src/version.h
 
           echo "FILENAME=oxce_git_${{ env.DATEFILE }}" >> $GITHUB_ENV
 
@@ -94,7 +94,7 @@ jobs:
 
       - name: Setup version info
         run: |
-          sed -i "s/OPENXCOM_VERSION_GIT \"[^\"]*\"/OPENXCOM_VERSION_GIT \" git ${{ env.DATEVERSION }}\"/" src/version.h
+          sed -i "s/OPENXCOM_FTA_VERSION_GIT \"[^\"]*\"/OPENXCOM_FTA_VERSION_GIT \" git ${{ env.DATEVERSION }}\"/" src/version.h
           echo "FILENAME=oxce_git_${{ env.DATEFILE }}" >> $GITHUB_ENV
 
       - name: Install packages
@@ -156,7 +156,7 @@ jobs:
 
       - name: Setup version info
         run: |
-          sed -i '' "s|OPENXCOM_VERSION_GIT \"[^\"]*\"|OPENXCOM_VERSION_GIT \" git ${{ env.DATEVERSION }}\"|" src/version.h
+          sed -i '' "s|OPENXCOM_FTA_VERSION_GIT \"[^\"]*\"|OPENXCOM_FTA_VERSION_GIT \" git ${{ env.DATEVERSION }}\"|" src/version.h
           echo "FILENAME=oxce_git_${{ env.DATEFILE }}" >> $GITHUB_ENV
 
       - name: Install libraries (macOS)

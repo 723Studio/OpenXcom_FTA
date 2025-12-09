@@ -541,6 +541,9 @@ void BattlescapeGenerator::nextStage()
 	// recovery arrays, or deleted from existence at this point.
 	std::swap(*_save->getItems(), carryToNextStage);
 
+	// reset stage-specific state that must not leak into the next deployment
+	_save->prepareForNextStage();
+
 	_alienCustomDeploy = _game->getMod()->getDeployment(_save->getAlienCustomDeploy());
 	_alienCustomMission = _game->getMod()->getDeployment(_save->getAlienCustomMission());
 
@@ -827,7 +830,7 @@ void BattlescapeGenerator::run()
 			noAlter = true;
 		}
 	}
-	
+
 	_save->setTurnLimit(ruleDeploy->getTurnLimit());
 	_save->setChronoTrigger(ruleDeploy->getChronoTrigger());
 	_save->setCheatTurn(ruleDeploy->getCheatTurn());
@@ -1031,7 +1034,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		_base = _craft->getBase();
 		_craft->resetTemporaryCustomVehicleDeploymentFlags();
 	}
-	if (_covertOperation != 0) 
+	if (_covertOperation != 0)
 	{
 		_base = _covertOperation->getBase();
 	}
@@ -1499,7 +1502,7 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 						bool placed = false;
 						int stackSize = bi->getRules()->getStackSize();
 						auto itemType = bi->getRules()->getType(); // remember current item type so we can stop filling the stack if we run out of items of this type.
-						for (int s = 0; s < stackSize; ++s) //we want to fill all stack 
+						for (int s = 0; s < stackSize; ++s) //we want to fill all stack
 						{
 							if (bu->addItem(bi, mod, allowSecondClip, allowAutoLoadout))
 							{
@@ -1768,7 +1771,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 							}
 							--iter;
 						}
-					}	
+					}
 					--tries;
 				}
 			}
@@ -2523,7 +2526,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 
 	for (std::map<std::string, std::vector<Position> >::const_iterator i = mapblock->getObjects()->begin(); i != mapblock->getObjects()->end(); ++i)
 	{
-		
+
 		RuleObject* rule = _game->getMod()->getObject((*i).first, true);
 		for (std::vector<Position>::const_iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
 		{

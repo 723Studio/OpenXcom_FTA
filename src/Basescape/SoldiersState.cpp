@@ -60,31 +60,14 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
-	_ftaUI = _game->getMod()->isFTAGame();
 	std::vector<RuleSoldierTransformation* > availableTransformations;
 	_game->getSavedGame()->getAvailableTransformations(availableTransformations, _game->getMod(), _base);
 	bool isTransformationAvailable = availableTransformations.size() > 0;
 
-	// if both training buttons would be displayed, or if there are any transformations, switch to combobox
-	bool showCombobox = isTransformationAvailable || (isPsiBtnVisible && isTrnBtnVisible) || Options::oxceAlternateCraftEquipmentManagement || _ftaUI;
-
-	// 3 buttons or 2 buttons?
-	bool showThreeButtons = !showCombobox && (isPsiBtnVisible || isTrnBtnVisible);
-
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (showThreeButtons)
-	{
-		_btnOk = new TextButton(96, 16, 216, 176);
-		_btnMemorial = new TextButton(96, 16, 8, 176);
-	}
-	else
-	{
-		_btnOk = new TextButton(148, 16, 164, 176);
-		_btnMemorial = new TextButton(148, 16, 8, 176);
-	}
-	_btnPsiTraining = new TextButton(96, 16, 112, 176);
-	_btnTraining = new TextButton(96, 16, 112, 176);
+
+	_btnOk = new TextButton(148, 16, 164, 176);
 	_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
 	_txtTitle = new Text(168, 17, 16, 8);
 	_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
@@ -104,16 +87,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	add(_txtCraft, "text2", "soldierList");
 	add(_lstSoldiers, "list", "soldierList");
 	add(_cbxSortBy, "button", "soldierList");
-	if (showCombobox)
-	{
-		add(_cbxScreenActions, "button", "soldierList");
-	}
-	else
-	{
-		add(_btnMemorial, "button", "soldierList");
-		add(_btnPsiTraining, "button", "soldierList");
-		add(_btnTraining, "button", "soldierList");
-	}
+	add(_cbxScreenActions, "button", "soldierList");
 
 	centerAllSurfaces();
 
@@ -126,73 +100,51 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnInventoryClick, Options::keyBattleInventory);
 	_btnOk->onKeyboardPress((ActionHandler)&SoldiersState::btnTransformationsOverviewClick, SDLK_t);
 
-	_btnPsiTraining->setText(tr("STR_PSI_TRAINING"));
-	_btnPsiTraining->onMouseClick((ActionHandler)&SoldiersState::btnPsiTrainingClick);
-	_btnPsiTraining->setVisible(isPsiBtnVisible);
-
-	_btnTraining->setText(tr("STR_TRAINING"));
-	_btnTraining->onMouseClick((ActionHandler)&SoldiersState::btnTrainingClick);
-	_btnTraining->setVisible(isTrnBtnVisible);
-
-	_btnMemorial->setText(tr("STR_MEMORIAL"));
-	_btnMemorial->onMouseClick((ActionHandler)&SoldiersState::btnMemorialClick);
-
 	_availableOptions.clear();
-	if (showCombobox)
+
+	_availableOptions.push_back("STR_PERSONNEL_INFO");
+	_availableOptions.push_back("STR_SOLDIER_INFO");
+	_availableOptions.push_back("STR_PILOT_INFO");
+	_availableOptions.push_back("STR_AGENT_INFO");
+	_availableOptions.push_back("STR_SCIENTIST_INFO");
+	_availableOptions.push_back("STR_ENGINEER_INFO");
+	_availableOptions.push_back("STR_ROBOT_INFO");
+
+	_availableOptions.push_back("STR_MEMORIAL");
+	_availableOptions.push_back("STR_INVENTORY");
+
+	if (isPsiBtnVisible)
+		_availableOptions.push_back("STR_PSI_TRAINING");
+
+	if (isTrnBtnVisible)
+		_availableOptions.push_back("STR_TRAINING");
+
+	if (isTransformationAvailable)
 	{
-		_btnMemorial->setVisible(false);
-		_btnPsiTraining->setVisible(false);
-		_btnTraining->setVisible(false);
-
-		if (_ftaUI)
-		{
-			_availableOptions.push_back("STR_PERSONNEL_INFO");
-		}
-		_availableOptions.push_back("STR_SOLDIER_INFO");
-		if (_ftaUI)
-		{
-			_availableOptions.push_back("STR_PILOT_INFO");
-			_availableOptions.push_back("STR_AGENT_INFO");
-			_availableOptions.push_back("STR_SCIENTIST_INFO");
-			_availableOptions.push_back("STR_ENGINEER_INFO");
-			_availableOptions.push_back("STR_ROBOT_INFO");
-		}
-		_availableOptions.push_back("STR_MEMORIAL");
-		_availableOptions.push_back("STR_INVENTORY");
-
-		if (isPsiBtnVisible)
-			_availableOptions.push_back("STR_PSI_TRAINING");
-
-		if (isTrnBtnVisible)
-			_availableOptions.push_back("STR_TRAINING");
-
-		if (isTransformationAvailable)
-		{
-			_mainOffset = _availableOptions.size();
-			_availableOptions.push_back("STR_TRANSFORMATIONS_OVERVIEW");
-		}
-
-		bool refreshDeadSoldierStats = false;
-		for (const auto* transformationRule : availableTransformations)
-		{
-			_availableOptions.push_back(transformationRule->getName());
-			if (transformationRule->isAllowingDeadSoldiers())
-			{
-				refreshDeadSoldierStats = true;
-			}
-		}
-		if (refreshDeadSoldierStats)
-		{
-			for (auto* deadMan : *_game->getSavedGame()->getDeadSoldiers())
-			{
-				deadMan->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
-			}
-		}
-
-		_cbxScreenActions->setOptions(_availableOptions, true);
-		_cbxScreenActions->setSelected(0);
-		_cbxScreenActions->onChange((ActionHandler)&SoldiersState::cbxScreenActionsChange);
+		_mainOffset = _availableOptions.size();
+		_availableOptions.push_back("STR_TRANSFORMATIONS_OVERVIEW");
 	}
+
+	bool refreshDeadSoldierStats = false;
+	for (const auto* transformationRule : availableTransformations)
+	{
+		_availableOptions.push_back(transformationRule->getName());
+		if (transformationRule->isAllowingDeadSoldiers())
+		{
+			refreshDeadSoldierStats = true;
+		}
+	}
+	if (refreshDeadSoldierStats)
+	{
+		for (auto* deadMan : *_game->getSavedGame()->getDeadSoldiers())
+		{
+			deadMan->prepareStatsWithBonuses(_game->getMod()); // refresh stats for sorting
+		}
+	}
+
+	_cbxScreenActions->setOptions(_availableOptions, true);
+	_cbxScreenActions->setSelected(0);
+	_cbxScreenActions->onChange((ActionHandler)&SoldiersState::cbxScreenActionsChange);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_LEFT);
@@ -202,14 +154,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 
 	_txtRank->setText(tr("STR_RANK"));
 
-	if (_game->getMod()->isFTAGame())
-	{
-		_txtCraft->setText(tr("STR_ASSIGNMENT"));
-	}
-	else
-	{
-		_txtCraft->setText(tr("STR_CRAFT"));
-	}
+	_txtCraft->setText(tr("STR_ASSIGNMENT"));
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
@@ -225,16 +170,9 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_CRAFT", craftIdStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	if (_ftaUI)
-	{
-		PUSH_IN("STR_ROLE_UC", roleStat);
-		PUSH_IN("STR_RANK", roleRankStat);
-	}
-	else
-	{
-		PUSH_IN("STR_RANK", rankStat);
-	}
+	//PUSH_IN("STR_SOLDIER_TYPE", typeStat);
+	PUSH_IN("STR_ROLE_UC", roleStat);
+	PUSH_IN("STR_RANK", roleRankStat);
 	// #FINNIKTODO add rank per roles
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
@@ -337,7 +275,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick);
+	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, 0);
 }
 
 /**
@@ -468,18 +406,14 @@ void SoldiersState::initList(size_t scrl)
 	_soldierNumbers.clear();
 	int i = 0;
 
-	std::string selAction = "STR_SOLDIER_INFO";
-	if (_ftaUI)
-	{
-		selAction = "STR_PERSONNEL_INFO";
-	}
+	std::string selAction = "STR_PERSONNEL_INFO";
 	
 	if (!_availableOptions.empty())
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
 	}
 
-	int offset = 0;
+	int offset = 20;
 	if (selAction == "STR_PERSONNEL_INFO" ||
 		selAction == "STR_SOLDIER_INFO" ||
 		selAction == "STR_PILOT_INFO" ||
@@ -488,38 +422,24 @@ void SoldiersState::initList(size_t scrl)
 		selAction == "STR_ENGINEER_INFO" ||
 		selAction == "STR_ROBOT_INFO")
 	{
-		if (_ftaUI)
+		for (auto& soldier : *_base->getSoldiers())
 		{
-			offset = 20;
-			for (auto &soldier : *_base->getSoldiers())
+			if (selAction == "STR_PERSONNEL_INFO" ||
+				(soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO") ||
+				(soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
+				(soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
+				(soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
+				(soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO") ||
+				(soldier->getRoleRank(ROLE_ROBOT) > 0 && selAction == "STR_ROBOT_INFO"))
 			{
-				if (selAction == "STR_PERSONNEL_INFO" ||
-				    (soldier->getRoleRank(ROLE_SOLDIER) > 0 && selAction == "STR_SOLDIER_INFO") ||
-				    (soldier->getRoleRank(ROLE_PILOT) > 0 && selAction == "STR_PILOT_INFO") ||
-				    (soldier->getRoleRank(ROLE_AGENT) > 0 && selAction == "STR_AGENT_INFO") ||
-				    (soldier->getRoleRank(ROLE_SCIENTIST) > 0 && selAction == "STR_SCIENTIST_INFO") ||
-				    (soldier->getRoleRank(ROLE_ENGINEER) > 0 && selAction == "STR_ENGINEER_INFO") ||
-				    (soldier->getRoleRank(ROLE_ROBOT) > 0 && selAction == "STR_ROBOT_INFO"))
-				{
-					_filteredListOfSoldiers.push_back(soldier);
-					_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
-				}
-				i++;
+				_filteredListOfSoldiers.push_back(soldier);
+				_soldierNumbers.push_back(i); // don't forget soldier's number on the base!
 			}
-		}
-		else
-		{
-			for (auto& soldier : *_base->getSoldiers())
-			{
-				_soldierNumbers.push_back(i);
-				i++;
-			}
-			_filteredListOfSoldiers = *_base->getSoldiers();
+			i++;
 		}
 	}
 	else
 	{
-		offset = 20;
 		_lstSoldiers->setArrowColumn(-1, ARROW_VERTICAL);
 
 
@@ -541,14 +461,11 @@ void SoldiersState::initList(size_t scrl)
 				}
 				i++;
 			}
-			if (!_ftaUI) // sorry, we don't like necromancy!
+			for (auto* deadMan : *_game->getSavedGame()->getDeadSoldiers())
 			{
-				for (auto* deadMan : *_game->getSavedGame()->getDeadSoldiers())
+				if (deadMan->isEligibleForTransformation(transformationRule))
 				{
-					if (deadMan->isEligibleForTransformation(transformationRule))
-					{
-						_filteredListOfSoldiers.push_back(deadMan);
-					}
+					_filteredListOfSoldiers.push_back(deadMan);
 				}
 			}
 		}
@@ -576,11 +493,11 @@ void SoldiersState::initList(size_t scrl)
 			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), tr(soldier->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, soldier->getName(true).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, soldier->getName(true).c_str(), tr(soldier->getRankString(true)).c_str(), duty.c_str());
 		}
 		Uint8 color = _lstSoldiers->getColor();
 		if (isBusy || !isFree || soldier->getCraft())
@@ -663,7 +580,7 @@ void SoldiersState::cbxScreenActionsChange(Action *action)
 	else if (selAction == "STR_INVENTORY")
 	{
 		_cbxScreenActions->setSelected(0);
-		//btnInventoryClick(nullptr); #FINNIKCHECK
+		btnInventoryClick(nullptr); //#FINNIKCHECK
 	}
 	else if (selAction == "STR_PSI_TRAINING")
 	{
@@ -760,14 +677,7 @@ void SoldiersState::lstSoldiersClick(Action *action)
 		}
 		else
 		{
-			if (_ftaUI)
-			{
-				_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
-			}
-			else
-			{
-				_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
-			}
+			_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
 		}
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
@@ -775,14 +685,7 @@ void SoldiersState::lstSoldiersClick(Action *action)
 		size_t idx = _lstSoldiers->getSelectedRow();
 		if (idx < _filteredListOfSoldiers.size())
 		{
-			if (_ftaUI)
-			{
-				_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
-			}
-			else
-			{
-				_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
-			}
+			_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(_lstSoldiers->getSelectedRow())));
 		}
 	}
 	else

@@ -153,7 +153,7 @@ namespace OpenXcom
 }
 
 #ifdef __MORPHOS__
-const char Version[] = "$VER: OpenXCom " OPENXCOM_VERSION_SHORT " (" __AMIGADATE__  ")";
+const char Version[] = "$VER: OpenXCom " OPENXCOM_FTA_VERSION_SHORT " (" __AMIGADATE__  ")";
 #endif
 
 

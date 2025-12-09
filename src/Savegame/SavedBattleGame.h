@@ -245,6 +245,8 @@ public:
 	std::vector<BattleObject*>* getBattleObjects() { return &_battleObjects; }
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
+	/// Clears state that should not persist between multi-stage missions.
+	void prepareForNextStage();
 	/// Gets terrain size x.
 	int getMapSizeX() const { return _mapsize_x; }
 	/// Gets terrain size y.

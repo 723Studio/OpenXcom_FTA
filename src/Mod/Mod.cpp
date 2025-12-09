@@ -396,7 +396,7 @@ public:
 		addConst("RuleList." + ModNameMaster, (int)0);
 		addConst("RuleList." + ModNameCurrent, (int)0);
 
-		auto v = OxceVersionDate(OPENXCOM_VERSION_GIT);
+		auto v = OxceVersionDate(OPENXCOM_FTA_VERSION_GIT);
 		addConst("SCRIPT_VERSION_DATE", (int)(v.year * 10000 + v.month * 100 + v.day));
 	}
 	/// Finishing loading data.
@@ -1151,7 +1151,7 @@ bool Mod::checkForObsoleteErrorByYear(const std::string &parent, const YAML::Yam
 	SeverityLevel level = LOG_INFO;
 	bool r = true;
 
-	const static OxceVersionDate currYear = { OPENXCOM_VERSION_GIT };
+	const static OxceVersionDate currYear = { OPENXCOM_FTA_VERSION_GIT };
 	if (currYear)
 	{
 		if (currYear.year < year)
@@ -6929,7 +6929,7 @@ void Mod::ScriptRegister(ScriptParserBase *parser)
 
 static auto dummyParseDate = ([]
 {
-	assert(OxceVersionDate(OPENXCOM_VERSION_GIT));
+	assert(OxceVersionDate(OPENXCOM_FTA_VERSION_GIT));
 	assert(OxceVersionDate(" (v1976-04-23)"));
 	assert(OxceVersionDate(" (v9999-99-99)")); //accept impossible dates
 	assert(OxceVersionDate(" (v   6-04-23)"));

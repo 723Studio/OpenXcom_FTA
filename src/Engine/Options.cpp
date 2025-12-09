@@ -771,7 +771,7 @@ static bool showHelp()
 			}
 			if (argname == "version")
 			{
-				std::cout << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << std::endl;
+				std::cout << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT << std::endl;
 				return true;
 			}
 			if (argname == "cont" || argname == "continue")
@@ -1022,13 +1022,13 @@ void updateMods()
 			if (!modInf->isEngineOk())
 			{
 				forceQuit = true;
-				if (modInf->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+				if (modInf->getRequiredExtendedEngine() != OPENXCOM_FTA_VERSION_ENGINE)
 				{
 					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require OXC " << modInf->getRequiredExtendedEngine() << " engine to run";
 				}
 				else
 				{
-					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_FTA_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
 				}
 			}
 			if (!modInf->isParentMasterOk(masterInf))

@@ -421,6 +421,13 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			battleObjectReader["position"].tryReadVal(pos);
 		}
 		auto tile = getTile(pos);
+		if (!tile)
+		{
+			Log(LOG_ERROR) << "Failed to load battle object '" << type
+				<< "' at invalid position " << pos.x << "," << pos.y << "," << pos.z;
+			delete object;
+			continue;
+		}
 		tile->setBattleObject(object);
 		object->setTile(tile);
 
@@ -3314,6 +3321,35 @@ void SavedBattleGame::playRandomAmbientSound()
 		int soundIndex = RNG::seedless(0, _ambienceRandom.size() - 1);
 		getMod()->getSoundByDepth(_depth, _ambienceRandom.at(soundIndex))->play(3); // use fixed ambience channel; don't check if previous sound is still playing or not
 	}
+}
+
+void SavedBattleGame::prepareForNextStage()
+{
+	// stage-specific flags shouldn't carry over
+	_stealthMission = false;
+	_hackingObjective = false;
+	_alarmLvl = 0;
+	_battleScriptVars.clear();
+	// _objectiveType = -1;
+	// _objectivesNeeded = 0;
+	// _objectivesDestroyed = 0;
+	// _exposedUnits.clear();
+	// _fallingUnits.clear();
+	// _unitsFalling = false;
+
+	// clear battle objects from previous stage
+	for (auto* object : _battleObjects)
+	{
+		if (object)
+		{
+			if (Tile* tile = object->getTile())
+			{
+				tile->setBattleObject(nullptr);
+			}
+			delete object;
+		}
+	}
+	_battleObjects.clear();
 }
 
 void SavedBattleGame::defineStealth()

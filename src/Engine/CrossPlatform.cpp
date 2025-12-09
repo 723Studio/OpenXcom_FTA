@@ -1795,7 +1795,7 @@ std::array<int, 4> parseVersion(const std::string& newVersion)
  */
 bool isHigherThanCurrentVersion(const std::string& newVersion)
 {
-	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_VERSION_NUMBER });
+	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_FTA_VERSION_NUMBER });
 }
 
 /**

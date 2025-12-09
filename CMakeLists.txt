@@ -129,7 +129,7 @@ endif()
 # Read version number
 set ( file "${CMAKE_SOURCE_DIR}/src/version.h" )
 file ( READ ${file} lines )
-string ( REGEX MATCH ".*OPENXCOM_VERSION_LONG \"([0-9]+)\\.([0-9]+)\\.([0-9]+)" version_line "${lines}" )
+string ( REGEX MATCH ".*OPENXCOM_FTA_VERSION_LONG \"([0-9]+)\\.([0-9]+)\\.([0-9]+)" version_line "${lines}" )
 set ( CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1} )
 set ( CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2} )
 set ( CPACK_PACKAGE_VERSION_PATCH "${CMAKE_MATCH_3}" )
@@ -159,7 +159,7 @@ else ()
   message( WARNING "Git not found.")
 endif()
 
-set ( OPENXCOM_VERSION_GIT "${GIT_STATE}" CACHE STRING "Git version string (after x.x.x)" )
+set ( OPENXCOM_FTA_VERSION_GIT "${GIT_STATE}" CACHE STRING "Git version string (after x.x.x)" )
 
 configure_file("${CMAKE_SOURCE_DIR}/src/git_version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/git_version.h" )
 include_directories ( "${CMAKE_CURRENT_BINARY_DIR}" )

@@ -75,7 +75,7 @@ namespace OpenXcom
 		{
 			_txtTitle->setText(tr("STR_MASTER_MOD_VERSION_REQUIRED_QUESTION").arg(modInfo->getRequiredMasterVersion()).arg(masterInfo->getVersion()));
 		}
-		else if (modInfo->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+		else if (modInfo->getRequiredExtendedEngine() != OPENXCOM_FTA_VERSION_ENGINE)
 		{
 			_txtTitle->setText(tr("STR_OXCE_REQUIRED_QUESTION").arg(modInfo->getRequiredExtendedEngine()));
 		}

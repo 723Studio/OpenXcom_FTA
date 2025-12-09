@@ -40,7 +40,7 @@ struct SortFunctor;
 class SoldiersState : public State
 {
 private:
-	TextButton *_btnOk, *_btnPsiTraining, *_btnTraining, *_btnMemorial;
+	TextButton *_btnOk;
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft;
 	ComboBox *_cbxSortBy, *_cbxScreenActions;
@@ -50,7 +50,6 @@ private:
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
 	std::vector<std::string> _availableOptions;
-	bool _ftaUI;
 	std::vector<int> _soldierNumbers;
 	size_t _mainOffset;
 	///initializes the display list based on the craft soldier's list and the position to display
