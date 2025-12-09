@@ -19,9 +19,10 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include <SDL_types.h>
 #include "../Engine/RNG.h"
+#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -43,9 +44,26 @@ enum SoldierRole : int;
 enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEMALE };
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
 enum UnitStatus {STATUS_STANDING, STATUS_WALKING, STATUS_FLYING, STATUS_TURNING, STATUS_AIMING, STATUS_COLLAPSING, STATUS_DEAD, STATUS_UNCONSCIOUS, STATUS_PANICKING, STATUS_BERSERK, STATUS_IGNORE_ME};
-enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2};
+
+/**
+ * Faction naming "absolute":
+ *
+ * Xcom for FACTION_PLAYER.
+ * Aliens for FACTION_HOSTILE.
+ * Civilians for FACTION_NEUTRAL.
+ *
+ *
+ * Faction naming "relative":
+ *
+ * Hostile: between Aliens and Xcom, between Aliens and Civilians.
+ * Friendly: Xcom to Xcom, Aliens to Aliens, Civilians to Civilians.
+ * Neutral: between Xcom and Civilians.
+ * HostileCivilians: Special case for relation of Aliens to Civilians as it should be handled sometimes different than to Xcom.
+ */
+enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2, FACTION_MAX };
 enum UnitBodyPart : int {BODYPART_HEAD, BODYPART_TORSO, BODYPART_RIGHTARM, BODYPART_LEFTARM, BODYPART_RIGHTLEG, BODYPART_LEFTLEG, BODYPART_MAX};
 enum UnitBodyPartEx {BODYPART_LEGS = BODYPART_MAX, BODYPART_COLLAPSING, BODYPART_ITEM_RIGHTHAND, BODYPART_ITEM_LEFTHAND, BODYPART_ITEM_FLOOR, BODYPART_ITEM_INVENTORY, BODYPART_LARGE_TORSO, BODYPART_LARGE_PROPULSION = BODYPART_LARGE_TORSO + 4, BODYPART_LARGE_TURRET = BODYPART_LARGE_PROPULSION + 4};
+
 
 /**
  * This struct holds some plain unit attribute data together.
@@ -800,7 +818,7 @@ private:
 	std::string _civilianRecoveryTypeName, _spawnedPersonName, _liveAlienName;
 	const RuleSoldier* _civilianRecoverySoldierType = nullptr;
 	const RuleItem* _civilianRecoveryItemType = nullptr;
-	YAML::Node _spawnedSoldier;
+	YAML::YamlString _spawnedSoldier;
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
@@ -825,6 +843,7 @@ private:
 	std::string _meleeWeapon, _psiWeapon, _altRecoveredUnit;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
 	std::vector<std::vector<const RuleItem*> > _builtInWeapons;
+	std::vector<WeightedOptions*> _weightedBuiltInWeapons;
 	bool _capturable;
 	bool _canSurrender, _autoSurrender;
 	bool _isLeeroyJenkins;
@@ -832,7 +851,7 @@ private:
 	int _pickUpWeaponsMoreActively;
 	Sint8 _avoidsFire;
 	bool _vip;
-	bool _cosmetic, _ignoredByAI, _treatedByAI;
+	bool _cosmetic, _ignoredByAI;
 	bool _canPanic;
 	bool _canBeMindControlled;
 	int _berserkChance;
@@ -845,7 +864,7 @@ public:
 	/// Cleans up the unit ruleset.
 	~Unit();
 	/// Loads the unit data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
@@ -865,7 +884,7 @@ public:
 	/// Gets the custom name of the "spawned person".
 	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
-	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 
 	/// Gets the unit's stats.
 	UnitStats *getStats();
@@ -935,6 +954,8 @@ public:
 	const std::string &getPsiWeapon() const;
 	/// Gets a vector of integrated items this unit has available.
 	const std::vector<std::vector<const RuleItem*> > &getBuiltInWeapons() const;
+	/// Gets a vector of integrated item options this unit has available.
+	const std::vector<WeightedOptions*>& getWeightedBuiltInWeapons() const { return _weightedBuiltInWeapons; }
 	/// Gets whether the alien can be captured alive.
 	bool getCapturable() const;
 	/// Checks if this unit can surrender.
@@ -960,8 +981,6 @@ public:
 	bool isCosmetic() const { return _cosmetic; }
 	/// Should this unit be ignored by the AI?
 	bool isIgnoredByAI() const { return _ignoredByAI; }
-	/// Should this unit be treated by the AI as an enemy no matter side?
-	bool isTreatedByAI() const { return _treatedByAI; }
 	/// Checks if this unit can panic.
 	bool canPanic() const { return _canPanic; }
 	/// Checks if this unit can be mind controlled.
@@ -975,157 +994,8 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 };
 
-}
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, UnitStats* val);
+void write(ryml::NodeRef* n, UnitStats const& val);
 
-namespace YAML
-{
-	template<>
-	struct convert<OpenXcom::UnitStats>
-	{
-		static Node encode(const OpenXcom::UnitStats& rhs)
-		{
-			Node node;
-			node["tu"] = rhs.tu;
-			node["stamina"] = rhs.stamina;
-			node["health"] = rhs.health;
-			node["bravery"] = rhs.bravery;
-			node["reactions"] = rhs.reactions;
-			node["firing"] = rhs.firing;
-			node["throwing"] = rhs.throwing;
-			node["strength"] = rhs.strength;
-			node["psiStrength"] = rhs.psiStrength;
-			node["psiSkill"] = rhs.psiSkill;
-			node["melee"] = rhs.melee;
-			node["mana"] = rhs.mana;
-			if (rhs.maneuvering > 0)
-				node["maneuvering"] = rhs.maneuvering;
-			if (rhs.missiles > 0)
-				node["missiles"] = rhs.missiles;
-			if (rhs.dogfight > 0)
-				node["dogfight"] = rhs.dogfight;
-			if (rhs.tracking > 0)
-				node["tracking"] = rhs.tracking;
-			if (rhs.cooperation > 0)
-				node["cooperation"] = rhs.cooperation;
-			if (rhs.beams > 0)
-				node["beams"] = rhs.beams;
-			if (rhs.synaptic > 0)
-				node["synaptic"] = rhs.synaptic;
-			if (rhs.gravity > 0)
-				node["gravity"] = rhs.gravity;
-			if (rhs.physics > 0)
-				node["physics"] = rhs.physics;
-			if (rhs.chemistry > 0)
-				node["chemistry"] = rhs.chemistry;
-			if (rhs.biology > 0)
-				node["biology"] = rhs.biology;
-			if (rhs.insight > 0)
-				node["insight"] = rhs.insight;
-			if (rhs.data > 0)
-				node["data"] = rhs.data;
-			if (rhs.computers > 0)
-				node["computers"] = rhs.computers;
-			if (rhs.tactics > 0)
-				node["tactics"] = rhs.tactics;
-			if (rhs.materials > 0)
-				node["materials"] = rhs.materials;
-			if (rhs.designing > 0)
-				node["designing"] = rhs.designing;
-			if (rhs.psionics > 0)
-				node["psionics"] = rhs.psionics;
-			if (rhs.xenolinguistics > 0)
-				node["xenolinguistics"] = rhs.xenolinguistics;
-			if (rhs.weaponry > 0)
-				node["weaponry"] = rhs.weaponry;
-			if (rhs.explosives > 0)
-				node["explosives"] = rhs.explosives;
-			if (rhs.efficiency > 0)
-				node["efficiency"] = rhs.efficiency;
-			if (rhs.microelectronics > 0)
-				node["microelectronics"] = rhs.microelectronics;
-			if (rhs.metallurgy > 0)
-				node["metallurgy"] = rhs.metallurgy;
-			if (rhs.processing > 0)
-				node["processing"] = rhs.processing;
-			if (rhs.hacking > 0)
-				node["hacking"] = rhs.hacking;
-			if (rhs.robotics > 0)
-				node["robotics"] = rhs.robotics;
-			if (rhs.diligence > 0)
-				node["diligence"] = rhs.diligence;
-			if (rhs.alienTech > 0)
-				node["alienTech"] = rhs.alienTech;
-			if (rhs.reverseEngineering > 0)
-				node["reverseEngineering"] = rhs.reverseEngineering;
-			if (rhs.stealth > 0)
-				node["stealth"] = rhs.stealth;
-			if (rhs.perception > 0)
-				node["perception"] = rhs.perception;
-			if (rhs.charisma > 0)
-				node["charisma"] = rhs.charisma;
-			if (rhs.investigation > 0)
-				node["investigation"] = rhs.investigation;
-			if (rhs.deception > 0)
-				node["deception"] = rhs.deception;
-			if (rhs.interrogation > 0)
-				node["interrogation"] = rhs.interrogation;
-			return node;
-		}
-
-		static bool decode(const Node& node, OpenXcom::UnitStats& rhs)
-		{
-			if (!node.IsMap())
-				return false;
-
-			rhs.tu = node["tu"].as<int>(rhs.tu);
-			rhs.stamina = node["stamina"].as<int>(rhs.stamina);
-			rhs.health = node["health"].as<int>(rhs.health);
-			rhs.bravery = node["bravery"].as<int>(rhs.bravery);
-			rhs.reactions = node["reactions"].as<int>(rhs.reactions);
-			rhs.firing = node["firing"].as<int>(rhs.firing);
-			rhs.throwing = node["throwing"].as<int>(rhs.throwing);
-			rhs.strength = node["strength"].as<int>(rhs.strength);
-			rhs.psiStrength = node["psiStrength"].as<int>(rhs.psiStrength);
-			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
-			rhs.melee = node["melee"].as<int>(rhs.melee);
-			rhs.mana = node["mana"].as<int>(rhs.mana);
-			rhs.maneuvering = node["maneuvering"].as<int>(rhs.maneuvering);
-			rhs.missiles = node["missiles"].as<int>(rhs.missiles);
-			rhs.dogfight = node["dogfight"].as<int>(rhs.dogfight);
-			rhs.tracking = node["tracking"].as<int>(rhs.tracking);
-			rhs.cooperation = node["cooperation"].as<int>(rhs.cooperation);
-			rhs.beams = node["beams"].as<int>(rhs.beams);
-			rhs.synaptic = node["synaptic"].as<int>(rhs.synaptic);
-			rhs.gravity = node["gravity"].as<int>(rhs.gravity);
-			rhs.physics = node["physics"].as<int>(rhs.physics);
-			rhs.chemistry = node["chemistry"].as<int>(rhs.chemistry);
-			rhs.biology = node["biology"].as<int>(rhs.biology);
-			rhs.insight = node["insight"].as<int>(rhs.insight);
-			rhs.data = node["data"].as<int>(rhs.data);
-			rhs.computers = node["computers"].as<int>(rhs.computers);
-			rhs.tactics = node["tactics"].as<int>(rhs.tactics);
-			rhs.materials = node["materials"].as<int>(rhs.materials);
-			rhs.designing = node["designing"].as<int>(rhs.designing);
-			rhs.psionics = node["psionics"].as<int>(rhs.psionics);
-			rhs.xenolinguistics = node["xenolinguistics"].as<int>(rhs.xenolinguistics);
-			rhs.weaponry = node["weaponry"].as<int>(rhs.weaponry);
-			rhs.explosives = node["explosives"].as<int>(rhs.explosives);
-			rhs.efficiency = node["efficiency"].as<int>(rhs.efficiency);
-			rhs.microelectronics = node["microelectronics"].as<int>(rhs.microelectronics);
-			rhs.metallurgy = node["metallurgy"].as<int>(rhs.metallurgy);
-			rhs.processing = node["processing"].as<int>(rhs.processing);
-			rhs.hacking = node["hacking"].as<int>(rhs.hacking);
-			rhs.robotics = node["robotics"].as<int>(rhs.robotics);
-			rhs.diligence = node["diligence"].as<int>(rhs.diligence);
-			rhs.alienTech = node["alienTech"].as<int>(rhs.alienTech);
-			rhs.reverseEngineering = node["reverseEngineering"].as<int>(rhs.reverseEngineering);
-			rhs.stealth = node["stealth"].as<int>(rhs.stealth);
-			rhs.perception = node["perception"].as<int>(rhs.perception);
-			rhs.charisma = node["charisma"].as<int>(rhs.charisma);
-			rhs.investigation = node["investigation"].as<int>(rhs.investigation);
-			rhs.deception = node["deception"].as<int>(rhs.deception);
-			rhs.interrogation = node["interrogation"].as<int>(rhs.interrogation);
-			return true;
-		}
-	};
 }

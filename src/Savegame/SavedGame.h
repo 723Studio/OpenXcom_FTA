@@ -78,7 +78,7 @@ enum GameDifficulty : int { DIFF_BEGINNER = 0, DIFF_EXPERIENCED, DIFF_VETERAN, D
 /**
  * Enumerator for the various save types.
  */
-enum SaveType { SAVE_DEFAULT, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
+enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
 
 /**
  * Enumerator for the current game ending.
@@ -166,6 +166,8 @@ private:
 	int _toggleBrightness;
 	int _monthsPassed;
 	int _loyalty, _lastMonthsLoyalty;
+	int _daysPassed;
+	int _vehiclesLost;
 	std::string _graphRegionToggles;
 	std::string _graphCountryToggles;
 	std::string _graphFinanceToggles;
@@ -198,6 +200,8 @@ public:
 	static std::vector<SaveInfo> getList(Language *lang, bool autoquick);
 	/// Loads a saved game from YAML.
 	void load(const std::string &filename, Mod *mod, Language *lang);
+	void loadTemplates(const YAML::YamlNodeReader& reader, const Mod* mod);
+	void loadUfopediaRuleStatus(const YAML::YamlNodeReader& reader);
 	/// Saves a saved game to YAML.
 	void save(const std::string &filename, Mod *mod) const;
 	/// Gets the game name.
@@ -320,12 +324,14 @@ public:
 	const RuleResearch* selectGetOneFree(const RuleResearch* research);
 	/// Remove a research from the "already discovered" list
 	void removeDiscoveredResearch(const RuleResearch *research);
-	/// Add a finished ResearchProject
-	void addFinishedResearchSimple(const RuleResearch *research);
+	/// Make all research discovered (used in New Battle)
+	void makeAllResearchDiscovered(const Mod* mod);
 	/// Add a finished ResearchProject
 	void addFinishedResearch(const RuleResearch *research, const Mod *mod, Base *base, bool score = true);
 	/// Get the list of already discovered research projects
 	const std::vector<const RuleResearch*> & getDiscoveredResearch() const;
+	/// Does this item correspond to at least one research topic that can be researched now or in the future?
+	bool isResearchable(const RuleItem* item, const Mod* mod) const;
 	/// Get the list of ResearchProject which can be researched in a Base
 	void getAvailableResearchProjects(std::vector<RuleResearch*> & projects, const Mod *mod, Base *base, bool considerDebugMode = false) const;
 	/// Get the list of newly available research projects once a research has been completed.
@@ -365,7 +371,7 @@ public:
 	/// Gets if a research still has undiscovered non-disabled "getOneFree".
 	bool hasUndiscoveredGetOneFree(const RuleResearch * r, bool checkOnlyAvailableTopics) const;
 	/// Gets if a research still has undiscovered non-disabled "protected unlocks".
-	bool hasUndiscoveredProtectedUnlock(const RuleResearch * r, const Mod * mod) const;
+	bool hasUndiscoveredProtectedUnlock(const RuleResearch * r) const;
 	/// Gets if a certain research has been completed.
 	bool isResearched(const std::string &research, bool considerDebugMode = true) const;
 	/// Gets if a certain research has been completed.
@@ -375,7 +381,7 @@ public:
 	/// Gets if a certain list of research topics has been completed.
 	bool isResearched(const std::vector<const RuleResearch *> &research, bool considerDebugMode = true, bool skipDisabled = false) const;
 	/// Gets if a certain item has been obtained.
-	bool isItemObtained(const std::string &itemType) const;
+	bool isItemObtained(const std::string &itemType, const Mod* mod) const;
 	/// Gets if a certain facility has been built.
 	bool isFacilityBuilt(const std::string &facilityType) const;
 	/// Gets if a certain soldier type has been hired.
@@ -452,6 +458,12 @@ public:
 	int selectSoldierNationalityByLocation(const Mod* mod, const RuleSoldier* rule, const Target* target) const;
 	/// Return the month counter.
 	int getMonthsPassed() const;
+	/// Return the day counter.
+	int getDaysPassed() const { return _daysPassed; }
+	void increaseDaysPassed() { _daysPassed++; }
+	/// Return the vehicles lost counter.
+	int getVehiclesLost() const { return _vehiclesLost; }
+	void increaseVehiclesLost() { _vehiclesLost++; }
 	/// Return the GraphRegionToggles.
 	const std::string &getGraphRegionToggles() const;
 	/// Return the GraphCountryToggles.

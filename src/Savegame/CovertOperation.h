@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Mod/Unit.h"
 
 namespace OpenXcom
@@ -58,9 +58,9 @@ public:
 	/// Cleans up the Covert Operation info.
 	~CovertOperation();
 	/// Loads the Covert Operation from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Saves the Covert Operation to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Gets the operation's ruleset.
 	const RuleCovertOperation* getRules() const { return _rule; }
 	/// Gets the operation's base.

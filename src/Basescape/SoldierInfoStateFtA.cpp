@@ -666,7 +666,7 @@ void SoldierInfoStateFtA::defineStatLines()
 {
 	int yPos = 80;
 	_step = 11;
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
 	{
 		yPos = 81;
 		_step = 10;

@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "../Engine/Script.h"
@@ -51,11 +51,14 @@ struct SoldierRoleRanksRequirments
 	SoldierRole role;
 	std::map<int, int> requirments;
 
+	/// Default constructor.
+	SoldierRoleRanksRequirments() : role(ROLE_NONE) {}
+
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		role = (SoldierRole)node["role"].as<int>(role);
-		requirments = node["requirments"].as<std::map<int, int>>(requirments);
+		reader.tryRead("role", role);
+		reader.tryRead("requirments", requirments);
 	}
 };
 
@@ -64,11 +67,14 @@ struct SoldierRoleRanksStrings
 	SoldierRole role;
 	std::map<int, std::string> strings;
 
+	/// Default constructor.
+	SoldierRoleRanksStrings() : role(ROLE_NONE) {}
+
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		role = (SoldierRole)node["role"].as<int>(role);
-		strings = node["strings"].as<std::map<int, std::string>>(strings);
+		reader.tryRead("role", role);
+		reader.tryRead("strings", strings);
 	}
 };
 
@@ -101,6 +107,7 @@ public:
 private:
 	std::string _type;
 	std::vector<SoldierRole> _roles;
+	YAML::YamlString _spawnedSoldier;
 	int _group;
 	int _listOrder;
 	std::vector<std::string> _requires;
@@ -154,13 +161,15 @@ public:
 	/// Cleans up the soldier ruleset.
 	~RuleSoldier();
 	/// Loads the soldier data from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript &parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the soldier's type.
 	const std::string& getType() const;
 	/// Gets the soldier's role.
 	std::vector<SoldierRole> getRoles() const { return _roles; }
+	/// Gets the spawned soldier template.
+	const YAML::YamlString& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 	/// Gets the soldier type group.
 	int getGroup() const { return _group; }
 	/// Gets whether or not the soldier type should be displayed in the inventory.
@@ -189,8 +198,6 @@ public:
 	int getBuyCost() const;
 	/// Does salary depend on rank?
 	bool isSalaryDynamic() const;
-	/// Is a skill menu defined for this soldier type?
-	bool isSkillMenuDefined() const;
 	/// Gets the list of defined skills.
 	const std::vector<const RuleSkill*> &getSkills() const;
 	/// Returns the sprite index for the skill icon sprite.
@@ -273,7 +280,6 @@ public:
 	int getRankSpriteBattlescape() const;
 	/// Gets the offset of the rank sprite in TinyRanks.
 	int getRankSpriteTiny() const;
-	/// Getters for FtA's roles sprite IDs.
 	int getRequiredExperience(SoldierRole role, int rank) const;
 	int getPilotRankSprite() const { return _pilotRankSprite; }
 	int getPilotRankSpriteBattlescape() const { return _pilotRankSpriteBattlescape; }
@@ -287,8 +293,12 @@ public:
 	int getEngineerRankSprite() const { return _engineerRankSprite; }
 	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; }
 	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; }
+	/// Gets the list of role experience requirments.
 	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
+	/// Gets the list of role rank strings.
 	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() const { return _roleRankStrings; }
+	/// Converts SoldierRole enum to string.
+	static std::string getRoleString(SoldierRole role);
 
 	/// Get all script values.
 	const ScriptValues<RuleSoldier> &getScriptValuesRaw() const { return _scriptValues; }
@@ -297,6 +307,7 @@ public:
 	int getManaWoundThreshold() const { return _manaMissingWoundThreshold; }
 	/// How much missing health will act as "fatal wounds" and prevent the soldier from going into battle.
 	int getHealthWoundThreshold() const { return _healthMissingWoundThreshold; }
+
 };
 
 }

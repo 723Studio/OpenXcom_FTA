@@ -87,6 +87,7 @@ SoldierTransformationListState::SoldierTransformationListState(Base *base, Combo
 	setWindowBackground(_window, "transformationList");
 
 	_btnOnlyEligible->setText(tr("STR_SHOW_ONLY_ELIGIBLE"));
+	_btnOnlyEligible->setPressed(Options::oxceBaseSoldierTransformationShowOnlyEligible);
 	_btnOnlyEligible->onMouseClick((ActionHandler)&SoldierTransformationListState::btnOnlyEligibleClick);
 
 	_btnOK->setText(tr("STR_OK"));
@@ -141,7 +142,7 @@ SoldierTransformationListState::SoldierTransformationListState(Base *base, Combo
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&SoldierTransformationListState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOK->onKeyboardRelease((ActionHandler)&SoldierTransformationListState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
@@ -363,6 +364,8 @@ void SoldierTransformationListState::cbxSoldierStatusChange(Action *)
  */
 void SoldierTransformationListState::btnOnlyEligibleClick(Action *)
 {
+	Options::oxceBaseSoldierTransformationShowOnlyEligible = _btnOnlyEligible->getPressed();
+
 	initList();
 }
 

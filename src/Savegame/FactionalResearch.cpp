@@ -34,39 +34,40 @@ namespace OpenXcom
 {
 
 /**
-* Initializes an FactionalContainer with no contents.
+* Initializes an FactionalResearch with no contents.
 */
 FactionalResearch::FactionalResearch(const RuleResearch* rule, DiplomacyFaction* faction) :
-_rule(rule), _faction(faction), _priority(0), _timeLeft(0), _scientists(0)
+_rule(rule), _faction(faction), _priority(0), _timeLeft(0), _scientists(new SoldierPool())
 {
 }
 
 FactionalResearch::~FactionalResearch()
 {
+	delete _scientists;
 }
 
 /**
 * Loads the Diplomacy Faction from YAML.
 * @param node The YAML node containing the data.
 */
-void FactionalResearch::load(const YAML::Node& node, SavedGame* save, const Mod* mod)
+void FactionalResearch::load(const YAML::YamlNodeReader& reader, SavedGame* save, const Mod* mod)
 {
-	_scientists->load(node, save, mod);
-	_timeLeft = node["timeLeft"].as<int>(_timeLeft);
+	reader.tryRead("priority", _priority);
+	_scientists->load(reader, save, mod);
+	reader.tryRead("timeLeft", _timeLeft);
 }
 
 /**
 * Saves the Factional Research to YAML.
 * @return YAML node.
 */
-YAML::Node FactionalResearch::save(const Mod* mod) const
+void FactionalResearch::save(YAML::YamlNodeWriter writer, const Mod* mod) const
 {
-	YAML::Node node;
-	node["name"] = _rule->getName();
-	node["scientists"] = _scientists->save(mod);
-	node["timeLeft"] = _timeLeft;
-
-	return node;
+	writer.setAsMap();
+	writer.write("name", _rule->getName());
+	writer.write("priority", _priority);
+	_scientists->save(writer["scientists"], mod);
+	writer.write("timeLeft", _timeLeft);
 }
 
 /**

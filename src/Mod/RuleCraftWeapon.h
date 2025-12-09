@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleCraft.h"
 #include "../Savegame/CraftWeaponProjectile.h"
 
@@ -41,8 +41,8 @@ class RuleCraftWeapon
 {
 private:
 	std::string _type;
-	int _sprite, _sound, _damage, _shieldDamageModifier, _range, _accuracy, _reloadCautious, _reloadStandard, _reloadAggressive;
-	int _ammoMax, _rearmRate, _projectileSpeed, _weaponType;
+	std::string _tooltip;
+	int _sprite, _sound, _damage, _shieldDamageModifier, _range, _accuracy, _reloadCautious, _reloadStandard, _reloadAggressive, _ammoMax, _rearmRate, _projectileSpeed, _weaponType;
 	CraftWeaponProjectileType _projectileType;
 	CraftWeaponProjectileSubType _projectileSubType;
 	std::string _launcherName, _clipName;
@@ -53,18 +53,21 @@ private:
 	int _tractorBeamPower;
 	bool _hidePediaInfo;
 	bool _statisticalBulletSaving;
+	bool _unifiedDamageFormula;
 public:
 	/// Creates a blank craft weapon ruleset.
 	RuleCraftWeapon(const std::string &type);
 	/// Cleans up the craft weapon ruleset.
 	~RuleCraftWeapon();
 	/// Loads craft weapon data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
 	/// Gets the craft weapon's type.
 	const std::string& getType() const;
+	/// Gets the craft weapon's tooltip.
+	const std::string& getTooltip() const { return _tooltip; }
 	/// Gets the craft weapon's sprite.
 	int getSprite() const;
 	/// Gets the craft weapon's sound.
@@ -75,6 +78,8 @@ public:
 	bool getHidePediaInfo() const { return _hidePediaInfo; }
 	/// Should the statistical bullet saving be used or not?
 	bool useStatisticalBulletSaving() const { return _statisticalBulletSaving; }
+	/// Should unified or vanilla formula be used?
+	bool unifiedDamageFormula() const { return _unifiedDamageFormula; }
 	/// Gets the craft weapon's effectiveness against shields.
 	int getShieldDamageModifier() const;
 	/// Gets the craft weapon's range.

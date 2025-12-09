@@ -40,7 +40,7 @@ struct SortFunctor;
 class SoldiersState : public State
 {
 private:
-	TextButton *_btnOk, *_btnPsiTraining, *_btnTraining, *_btnMemorial;
+	TextButton *_btnOk;
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft;
 	ComboBox *_cbxSortBy, *_cbxScreenActions;
@@ -50,8 +50,8 @@ private:
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
 	std::vector<std::string> _availableOptions;
-	bool _ftaUI;
 	std::vector<int> _soldierNumbers;
+	size_t _mainOffset;
 	///initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
   public:
@@ -70,10 +70,14 @@ private:
 	void btnTrainingClick(Action *action);
 	/// Handler for clicking the Memorial button.
 	void btnMemorialClick(Action *action);
+	/// Handler for clicking the Transformations Overview button/hotkey.
+	void btnTransformationsOverviewClick(Action *action);
 	/// Handler for changing the screen actions combo box.
 	void cbxScreenActionsChange(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
+	/// Handler for clicking the Inventory button/hotkey.
+	void btnInventoryClick(Action* action);
 };
 
 }

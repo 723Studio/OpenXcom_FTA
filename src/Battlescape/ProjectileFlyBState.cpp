@@ -473,7 +473,7 @@ bool ProjectileFlyBState::createNewProjectile()
 		const RuleItem *ruleItem = _action.weapon->getRules();
 		if (_projectileImpact == V_FLOOR || _projectileImpact == V_UNIT || _projectileImpact == V_OBJECT)
 		{
-			if (_unit->getFaction() != FACTION_PLAYER && ruleItem->getBattleType() == BT_GRENADE)
+			if (_unit->getFaction() != FACTION_PLAYER && ruleItem->isGrenadeOrProxy())
 			{
 				_action.weapon->setFuseTimer(ruleItem->getFuseTimerDefault());
 			}
@@ -592,6 +592,14 @@ bool ProjectileFlyBState::createNewProjectile()
 }
 
 /**
+ * Deinitialize the state.
+ */
+void ProjectileFlyBState::deinit()
+{
+	_parent->getMap()->setFollowProjectile(true); // turn back on when done shooting
+}
+
+/**
  * Animates the projectile (moves to the next point in its trajectory).
  * If the animation is finished the projectile sprite is removed from the map,
  * and this state is finished.
@@ -613,20 +621,15 @@ void ProjectileFlyBState::think()
 			&& _ammo->getAmmoQuantity() != 0
 			&& (hasFloor || unitCanFly))
 		{
-			bool success = createNewProjectile();
+			createNewProjectile();
 			if (_action.cameraPosition.z != -1)
 			{
 				_parent->getMap()->getCamera()->setMapOffset(_action.cameraPosition);
 				_parent->getMap()->invalidate();
 			}
-			if (!success)
-			{
-				_parent->getMap()->setFollowProjectile(true); // turn back on when done shooting
-			}
 		}
 		else
 		{
-			_parent->getMap()->setFollowProjectile(true); // turn back on when done shooting
 			if (_action.cameraPosition.z != -1 && _action.waypoints.size() <= 1)
 			{
 				_parent->getMap()->getCamera()->setMapOffset(_action.cameraPosition);
@@ -689,7 +692,7 @@ void ProjectileFlyBState::think()
 				else
 				{
 					_parent->dropItem(pos, _action.weapon);
-					if (_unit->getFaction() != FACTION_PLAYER && ruleItem->getBattleType() == BT_GRENADE)
+					if (_unit->getFaction() != FACTION_PLAYER && ruleItem->isGrenadeOrProxy())
 					{
 						_parent->getTileEngine()->setDangerZone(pos, ruleItem->getExplosionRadius(attack), _action.actor);
 					}
@@ -803,7 +806,15 @@ void ProjectileFlyBState::think()
 										projectileHitUnit(proj->getPosition(offset));
 									}
 									Explosion *explosion = new Explosion(proj->getPosition(offset), _ammo->getRules()->getHitAnimation(), 0, false, false, _ammo->getRules()->getHitAnimationFrames());
-									int power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
+									int power = 0;
+									if (_action.weapon->getRules()->getIgnoreAmmoPower())
+									{
+										power = _action.weapon->getRules()->getPowerBonus(attack) - _action.weapon->getRules()->getPowerRangeReduction(proj->getDistance());
+									}
+									else
+									{
+										power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
+									}
 									_parent->getMap()->getExplosions()->push_back(explosion);
 									_parent->getSave()->getTileEngine()->hit(attack, proj->getPosition(offset), power, _ammo->getRules()->getDamageType());
 
@@ -880,19 +891,11 @@ bool ProjectileFlyBState::validThrowRange(BattleAction *action, Position origin,
 	int ydiff = action->target.y - action->actor->getPosition().y;
 	int realDistanceSq = (xdiff * xdiff) + (ydiff * ydiff);
 
-	if (depth > 0)
+	int compatibilityDistanceSq = action->actor->distance3dToPositionSq(action->target); // 3d distance for compatibility with Map::drawTerrain()
+	if (action->weapon->getRules()->isOutOfThrowRange(compatibilityDistanceSq, depth))
 	{
-		if (action->weapon->getRules()->getUnderwaterThrowRange() > 0)
-		{
-			return realDistanceSq <= action->weapon->getRules()->getUnderwaterThrowRangeSq();
-		}
-	}
-	else
-	{
-		if (action->weapon->getRules()->getThrowRange() > 0)
-		{
-			return realDistanceSq <= action->weapon->getRules()->getThrowRangeSq();
-		}
+		// if out of item's throw range, stop... no need to check weight- and strength-based range
+		return false;
 	}
 
 	double realDistance = sqrt((double)realDistanceSq);
@@ -978,27 +981,18 @@ void ProjectileFlyBState::projectileHitUnit(Position pos)
 			int distanceSq = _action.actor->distance3dToUnitSq(victim);
 			int distance = (int)std::ceil(sqrt(float(distanceSq)));
 			int accuracy = BattleUnit::getFiringAccuracy(BattleActionAttack::GetAferShoot(_action, _ammo), _parent->getMod());
-			// code from Map::drawTerrain(), where the crosshair accuracy is calculated
-			if (Options::battleUFOExtenderAccuracy)
+
 			{
-				const RuleItem* weapon = _action.weapon->getRules();
-				int upperLimit = weapon->getAimRange();
-				int lowerLimit = weapon->getMinRange();
-				if (_action.type == BA_AUTOSHOT)
-				{
-					upperLimit = weapon->getAutoRange();
-				}
-				else if (_action.type == BA_SNAPSHOT)
-				{
-					upperLimit = weapon->getSnapRange();
-				}
+				int upperLimit, lowerLimit;
+				int dropoff = _action.weapon->getRules()->calculateLimits(upperLimit, lowerLimit, _parent->getSave()->getDepth(), _action.type);
+
 				if (distance > upperLimit)
 				{
-					accuracy -= (distance - upperLimit) * weapon->getDropoff();
+					accuracy -= (distance - upperLimit) * dropoff;
 				}
 				else if (distance < lowerLimit)
 				{
-					accuracy -= (lowerLimit - distance) * weapon->getDropoff();
+					accuracy -= (lowerLimit - distance) * dropoff;
 				}
 				if (accuracy < 0)
 				{
@@ -1014,16 +1008,6 @@ void ProjectileFlyBState::projectileHitUnit(Position pos)
 			if (accuracy < distance)
 			{
 				_unit->getStatistics()->lowAccuracyHitCounter++;
-			}
-		}
-		if (victim->getFaction() == FACTION_HOSTILE)
-		{
-			AIModule *ai = victim->getAIModule();
-			if (ai != 0)
-			{
-				ai->setWasHitBy(_unit);
-				_unit->setTurnsSinceSpotted(0);
-				_unit->setTurnsLeftSpottedForSnipers(std::max(victim->getSpotterDuration(), _unit->getTurnsLeftSpottedForSnipers()));
 			}
 		}
 	}

@@ -321,6 +321,8 @@ interfaces:
         color: 239   # bright green
         color2: 138  # yellow
         border: 133  # minty green
+      - id: disabled
+        color: 100   # grey
   - type: ufoTracker
     backgroundImage: BACK12.SCR
     elements:
@@ -521,6 +523,18 @@ interfaces:
         color: 218   # blue
       - id: button
         color: 218   # blue
+  - type: baseDefense_geo
+    backgroundImage: BACK04.SCR
+    elements:
+      - id: palette
+        color: 2     # red/orange
+      - id: window
+        color: 133   # minty green
+      - id: text
+        color: 239   # bright green
+        color2: 138  # yellow
+      - id: button
+        color: 133   # minty green
   - type: terrorSite
     elements:
       - id: palette
@@ -699,6 +713,8 @@ interfaces:
         color: 89
       - id: distance
         color: 89
+      - id: oceanIndicator
+        color: 80
       - id: minimizedNumber
         color: 80
       - id: radarDetail
@@ -945,6 +961,7 @@ interfaces:
       - id: list
         color: 239   # bright green
         color2: 138  # yellow
+        custom: 254  # min=90, max=254
       - id: totals
         color: 133   # minty green
       - id: button
@@ -1002,6 +1019,10 @@ interfaces:
         color: 244   # even lighter blue
         color2: 133  # minty green
         custom: -12  # above Intercept button
+      - id: trainingIndicator
+        color: 244   # even lighter blue
+        color2: 133  # minty green
+        custom: 4  # below standard visible area
       - id: genericWindow
         color: 239   # bright green
       - id: genericText
@@ -1034,6 +1055,10 @@ interfaces:
         color: 246   # purple
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
   - type: dependencyTree
     backgroundImage: BACK13.SCR
     palette: PAL_BASESCAPE
@@ -1047,6 +1072,22 @@ interfaces:
         color2: 208  # white
       - id: list
         color: 218   # blue
+        color2: 241  # pink
+      - id: button
+        color: 218   # blue
+  - type: itemLocations
+    backgroundImage: BACK13.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 0     # brown
+      - id: window
+        color: 218   # blue
+      - id: text
+        color: 218   # blue
+        color2: 208  # white
+      - id: list
+        color: 208   # white
         color2: 241  # pink
       - id: button
         color: 218   # blue
@@ -1068,6 +1109,10 @@ interfaces:
         color: 246   # purple
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
       - id: errorPalette
         color: 0     # brown
       - id: errorMessage
@@ -1089,6 +1134,10 @@ interfaces:
         border: 218  # blue
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
       - id: errorPalette
         color: 6     # oxide
       - id: errorMessage
@@ -1143,6 +1192,10 @@ interfaces:
         color: 246   # purple
       - id: button
         color: 246   # purple
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
       - id: errorPalette
         color: 0     # brown
       - id: errorMessage
@@ -1275,6 +1328,10 @@ interfaces:
         color2: 213  # gold
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 213   # gold
+      - id: touchButton
+        color: 213   # gold
       - id: catBox
         color: 241   # pink
   - type: allocateManufacture
@@ -1357,6 +1414,10 @@ interfaces:
         color2: 213  # gold
       - id: button
         color: 246   # purple
+      - id: button2
+        color: 213   # gold
+      - id: touchButton
+        color: 213   # gold
   - type: allocateResearch
     backgroundImage: BACK05.SCR
     parent: researchMenu
@@ -1484,7 +1545,7 @@ interfaces:
         color: 241   # pink
       - id: numbers
         color: 208   # white
-        color2: 208 
+        color2: 208
       - id: button
         color: 246   # purple
       - id: barTUs
@@ -1612,6 +1673,21 @@ interfaces:
         border: 213  # gold
       - id: button
         color: 213   # gold
+  - type: soldierDiaryLight
+    backgroundImage: BACK14.SCR
+    palette: PAL_BASESCAPE
+    elements:
+      - id: palette
+        color: 4     # green
+      - id: window
+        color: 218   # blue
+      - id: text
+        color: 213   # gold
+      - id: list
+        color: 208   # white
+        border: 213  # gold
+      - id: button
+        color: 213   # gold
   - type: soldierBonus
     backgroundImage: BACK14.SCR
     palette: PAL_BASESCAPE
@@ -1714,6 +1790,10 @@ interfaces:
         color2: 208  # white
       - id: button
         color: 241   # pink
+      - id: button2
+        color: 218   # blue
+      - id: touchButton
+        color: 218   # blue
       - id: list
         color: 218   # blue
         color2: 208  # white
@@ -1766,6 +1846,10 @@ interfaces:
         color: 218   # blue
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
       - id: list
         color: 218   # blue
         color2: 208  # white
@@ -1825,6 +1909,10 @@ interfaces:
         border: 246  # purple
       - id: button
         color: 218   # blue
+      - id: button2
+        color: 241   # pink
+      - id: touchButton
+        color: 241   # pink
       - id: otherCraft
         color: 246   # purple
   - type: craftPilots
@@ -1961,6 +2049,10 @@ interfaces:
         color: -1
         color2: 10
         border: 2
+      - id: infoBoxText
+        color: -1
+        color2: 14
+        border: 2
       - id: grenadeMenu
         color: 15
         color2: 27
@@ -2031,6 +2123,11 @@ interfaces:
         color: 133
   - type: inventory
     elements:
+      - id: textSlot
+        color: 64
+        color2: 16
+        pos: [65, 95]
+        size: [70, 9]
       - id: textName
         color: 64
       - id: textTUs
@@ -2074,6 +2171,10 @@ interfaces:
         color2: 32
   - type: stats
     elements:
+      - id: numMaxHealth
+        color: 144
+        pos: [278, 0]    # only X counts, Y is ignored (because it's dynamic)
+        custom: 2        # 0 + 1(=show also when current hp is equal to max hp) + 2(=show '/' prefix)
       - id: textName
         color: 64
       - id: barTUs

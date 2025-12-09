@@ -75,7 +75,9 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <pwd.h>
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include <cxxabi.h>
 #include <dlfcn.h>
 #include <dirent.h>
@@ -246,7 +248,10 @@ std::vector<std::string> findDataFolders()
 		Log(LOG_DEBUG) << "findDataFolders(): SHGetSpecialFolderPathW: " << path;
 		if (seen.end() == seen.find(path)) { seen.insert(path); list.push_back(path); }
 	}
-
+#ifdef DATADIR
+	snprintf(path, MAX_PATH, "%s\\", DATADIR);
+	list.push_back(path);
+#endif
 	// Get binary directory
 	if (GetModuleFileNameW(NULL, pathW, MAX_PATH) != 0)
 	{
@@ -276,7 +281,8 @@ std::vector<std::string> findDataFolders()
 	char path[MAXPATHLEN];
 
 	// Get user-specific data folders
-	if (char const *const xdg_data_home = getenv("XDG_DATA_HOME"))
+	char const *const xdg_data_home = getenv("XDG_DATA_HOME");
+	if (xdg_data_home && *xdg_data_home)
  	{
 		snprintf(path, MAXPATHLEN, "%s/openxcomfta/", xdg_data_home);
  	}
@@ -289,9 +295,13 @@ std::vector<std::string> findDataFolders()
 #endif
  	}
  	list.push_back(path);
-
+#ifdef DATADIR
+	snprintf(path, MAXPATHLEN, "%s/" DATADIR);
+	list.push_back(path);
+#endif
 	// Get global data folders
-	if (char const *const xdg_data_dirs = getenv("XDG_DATA_DIRS"))
+	char const *const xdg_data_dirs = getenv("XDG_DATA_DIRS");
+	if (xdg_data_dirs && *xdg_data_dirs)
 	{
 		char xdg_data_dirs_copy[strlen(xdg_data_dirs)+1];
 		strcpy(xdg_data_dirs_copy, xdg_data_dirs);
@@ -303,16 +313,18 @@ std::vector<std::string> findDataFolders()
 			dir = strtok(0, ":");
 		}
 	}
+	else
+	{
 #ifdef __APPLE__
-	list.push_back("/Users/Shared/OpenXcomFtA/");
+		list.push_back("/Users/Shared/OpenXcomFta/");
 #else
-	list.push_back("/usr/local/share/openxcomfta/");
-	list.push_back("/usr/share/openxcomfta/");
-#ifdef DATADIR
-	snprintf(path, MAXPATHLEN, "%s/", DATADIR);
-	list.push_back(path);
+		list.push_back("/usr/local/share/openxcomfta/");
+		list.push_back("/usr/share/openxcomfta/");
 #endif
-
+	}
+#ifdef INSTALLDIR
+	snprintf(path, MAXPATHLEN, "%s", INSTALLDIR);
+	list.push_back(path);
 #endif
 
 #ifdef __linux
@@ -327,6 +339,7 @@ std::vector<std::string> findDataFolders()
 			if (dir_pos != std::string::npos) {
 				std::string dir = exe_path.substr(0, dir_pos);
 				list.push_back( dir.append("/") );
+				list.push_back( dir.append("/../share/openxcom/") ); // Relative FHS
 			}
 		}
 	}
@@ -481,7 +494,7 @@ std::string searchDataFile(const std::string &filename)
 	return filename;
 }
 
-std::string searchDataFolder(const std::string &foldername)
+std::string searchDataFolder(const std::string &foldername, std::size_t size)
 {
 	// Correct folder separator
 	std::string name = foldername;
@@ -492,14 +505,14 @@ std::string searchDataFolder(const std::string &foldername)
 		foldername == "TFTD" || foldername == "UFO" ? 9 : // At least 9 dictionaries with original data data
 		foldername == "common" ? 6 : // Files: "Language/", "Palettes/", "Resources/", "Shaders/", "SoldierName/", "openxcom.png"
 		foldername == "standard" ? 20 : // Now 48 mods, some buffer if some decide to drop some mods
-		0
+		size
 	);
 
 	if (Options::getDataFolder() != "")
 	{
 		// Check current data path
 		path = Options::getDataFolder() + name;
-		if (folderExists(path) && (minNumOfElementsInFolder == 0 || getFolderContents(path).size() >= minNumOfElementsInFolder))
+		if (folderMinSize(path, minNumOfElementsInFolder))
 		{
 			return path;
 		}
@@ -509,7 +522,7 @@ std::string searchDataFolder(const std::string &foldername)
 	for (auto& dataPath : Options::getDataList())
 	{
 		path = dataPath + name;
-		if (folderExists(path) && (minNumOfElementsInFolder == 0 || getFolderContents(path).size() >= minNumOfElementsInFolder))
+		if (folderMinSize(path, minNumOfElementsInFolder))
 		{
 			return path;
 		}
@@ -628,13 +641,28 @@ std::vector<std::tuple<std::string, bool, time_t>> getFolderContents(const std::
 	}
 	closedir(dp);
 #endif
-	std::sort(files.begin(), files.end(),
-		[](const std::tuple<std::string,bool,time_t>& a,
-           const std::tuple<std::string,bool,time_t>& b) -> bool
-       {
-         return std::get<0>(a) > std::get<0>(b);
-       });
 	return files;
+}
+
+/**
+ * Gets the contents of a folder and checks
+ * if they meet a required minimum size.
+ * @param path Full path to folder.
+ * @param size Size of the folder (number of contents).
+ * @return False if the folder doesn't exist or doesn't meet the size.
+ */
+bool folderMinSize(const std::string &path, std::size_t size)
+{
+	if (!folderExists(path))
+	{
+		return false;
+	}
+	if (size == 0)
+	{
+		return true;
+	}
+
+	return (getFolderContents(path).size() >= size);
 }
 
 /**
@@ -1063,25 +1091,39 @@ bool writeFile(const std::string& filename, const std::vector<unsigned char>& da
 }
 
 /**
- * Gets an istream to a file
+ * Fully reads a file and returns a stream
  * @param filename - what to readFile
  * @return the istream
  */
-std::unique_ptr<std::istream> readFile(const std::string& filename) {
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "r");
-	if (!rwops) {
+std::unique_ptr<std::istream> readFile(const std::string& filename)
+{
+	return std::unique_ptr<std::istream>(new StreamData(readFileRaw(filename)));
+}
+
+/**
+ * Fully reads a file and returns a pointer to the data
+ * @param filename - what to readFile
+ * @param pSize - returned data size
+ * @return pointer to file data
+ */
+RawData readFileRaw(const std::string& filename)
+{
+	SDL_RWops* rwops = SDL_RWFromFile(filename.c_str(), "r");
+	if (!rwops)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	size_t size;
-	char *data = (char *)SDL_LoadFile_RW(rwops, &size, SDL_TRUE);
-	if (data == NULL) {
+	size_t s;
+	char* data = (char*)SDL_LoadFile_RW(rwops, &s, SDL_TRUE);
+	if (data == NULL)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, SDL_free}));
+	return RawData(data, s, SDL_free);
 }
 
 /**
@@ -1090,9 +1132,23 @@ std::unique_ptr<std::istream> readFile(const std::string& filename) {
  * @param filename - what to read
  * @return the istream
  */
-std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "r");
-	if (!rwops) {
+std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename)
+{
+	return std::unique_ptr<std::istream>(new StreamData(getYamlSaveHeaderRaw(filename)));
+}
+
+/**
+ * Reads a file up to and including first "\n---" sequence.
+ * To be used only for savegames.
+ * @param filename - what to read
+ * @param pSize - returned data size
+ * @return pointer to file data
+ */
+RawData getYamlSaveHeaderRaw(const std::string& filename)
+{
+	SDL_RWops* rwops = SDL_RWFromFile(filename.c_str(), "r");
+	if (!rwops)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
@@ -1100,25 +1156,30 @@ std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
 	const size_t chunksize = 4096;
 	size_t size = 0;
 	size_t offs = 0;
-	char *data = (char *)SDL_malloc(chunksize + 1);
-	if (data == NULL) {
+	char* data = (char*)SDL_malloc(chunksize + 1);
+	if (data == NULL)
+	{
 		std::string err(SDL_GetError());
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	while(true) {
+	while (true)
+	{
 		auto actually_read = SDL_RWread(rwops, data + offs, 1, chunksize);
-		if (actually_read == 0 || actually_read == -1) {
+		if (actually_read == 0 || actually_read == -1)
+		{
 			break;
 		}
 		size += actually_read;
 		data[size] = 0;
 		size_t search_from = offs > 4 ? offs - 4 : 0;
-		if (NULL != strstr(data+search_from, "\n---")) {
+		if (NULL != strstr(data + search_from, "\n---"))
+		{
 			break;
 		}
-		char *newdata = (char *)SDL_realloc(data, size+chunksize+1);
-		if (newdata == NULL) {
+		char* newdata = (char*)SDL_realloc(data, size + chunksize + 1);
+		if (newdata == NULL)
+		{
 			std::string err(SDL_GetError());
 			Log(LOG_ERROR) << err;
 			throw Exception(err);
@@ -1127,7 +1188,7 @@ std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
 		offs = size;
 	}
 	SDL_RWclose(rwops);
-	return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, SDL_free}));
+	return RawData(data, size, SDL_free);
 }
 
 /**
@@ -1658,7 +1719,7 @@ SDL_RWops *getEmbeddedAsset(const std::string& assetName) {
 	return rv;
 #else
 	/* Asset embedding disabled. */
-	Log(LOG_DEBUG) << log_ctx << "assets were not embedded.";
+	Log(LOG_VERBOSE) << log_ctx << "assets were not embedded.";
 	return NULL;
 #endif
 }
@@ -1734,7 +1795,7 @@ std::array<int, 4> parseVersion(const std::string& newVersion)
  */
 bool isHigherThanCurrentVersion(const std::string& newVersion)
 {
-	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_VERSION_NUMBER });
+	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_FTA_VERSION_NUMBER });
 }
 
 /**
@@ -1761,6 +1822,42 @@ bool isHigherThanCurrentVersion(const std::array<int, 4>& newOxceVersion, const 
 	}
 
 	return isHigher;
+}
+
+/**
+ * Is the given version number lower than the minimum required version number?
+ * @param dataVersion Version to compare.
+ * @return True if the given version number is lower than the minimum required version number.
+ */
+bool isLowerThanRequiredVersion(const std::string& dataVersion)
+{
+	return isLowerThanRequiredVersion(parseVersion(dataVersion), { MIN_REQUIRED_RULESET_VERSION_NUMBER });
+}
+
+/**
+ * Is the first version number lower than the second version number?
+ * @param dataVersion Version to compare.
+ * @param ver Minimum required version.
+ * @return True if the first version number is lower than the second version number.
+ */
+bool isLowerThanRequiredVersion(const std::array<int, 4>& dataVersion, const int(&ver)[4])
+{
+	bool isLower = false;
+
+	for (size_t k = 0; k < std::size(ver); ++k)
+	{
+		if (dataVersion[k] < ver[k])
+		{
+			isLower = true;
+			break;
+		}
+		else if (dataVersion[k] > ver[k])
+		{
+			break;
+		}
+	}
+
+	return isLower;
 }
 
 /**
@@ -1822,7 +1919,7 @@ void startUpdateProcess()
 
 
 
-#ifdef OXCE_AUTO_TEST
+#ifndef NDEBUG
 
 static auto dummy = ([]
 {

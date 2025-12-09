@@ -120,19 +120,18 @@ Base::~Base()
  * @param newGame Is this the first base of a new game?
  * @param newBattleGame Is this the base of a skirmish game?
  */
-void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newBattleGame)
+void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGame, bool newBattleGame)
 {
-	Target::load(node);
-
+	Target::load(reader);
 	if (!newGame || !Options::customInitialBase || newBattleGame)
 	{
-		for (YAML::const_iterator i = node["facilities"].begin(); i != node["facilities"].end(); ++i)
+		for (const auto& facilityReader : reader["facilities"].children())
 		{
-			std::string type = (*i)["type"].as<std::string>();
+			std::string type = facilityReader["type"].readVal<std::string>();
 			if (_mod->getBaseFacility(type))
 			{
-				BaseFacility *f = new BaseFacility(_mod->getBaseFacility(type), this);
-				f->load(*i);
+				BaseFacility* f = new BaseFacility(_mod->getBaseFacility(type), this);
+				f->load(facilityReader);
 				_facilities.push_back(f);
 			}
 			else
@@ -141,14 +140,13 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			}
 		}
 	}
-
-	for (YAML::const_iterator i = node["crafts"].begin(); i != node["crafts"].end(); ++i)
+	for (const auto& craftReader : reader["crafts"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = craftReader["type"].readVal<std::string>();
 		if (_mod->getCraft(type))
 		{
-			Craft *c = new Craft(_mod->getCraft(type), this);
-			c->load(*i, _mod->getScriptGlobal(), _mod, save);
+			Craft* c = new Craft(_mod->getCraft(type), this);
+			c->load(craftReader, _mod->getScriptGlobal(), _mod, save);
 			_crafts.push_back(c);
 		}
 		else
@@ -157,13 +155,13 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	for (YAML::const_iterator i = node["covertOperations"].begin(); i != node["covertOperations"].end(); ++i)
+	for (const auto& covertOperationReader : reader["covertOperations"].children())
 	{
-		std::string name = (*i)["name"].as<std::string>();
+		std::string name = covertOperationReader["name"].readVal<std::string>();
 		if (_mod->getCovertOperation(name))
 		{
 			CovertOperation* c = new CovertOperation(_mod->getCovertOperation(name), _mod, this, 0);
-			c->load(*i);
+			c->load(covertOperationReader);
 			_covertOperations.push_back(c);
 		}
 		else
@@ -172,45 +170,59 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
+	_items->load(reader["items"], _mod);
+
+	reader.tryRead("scientists", _scientists);
+	reader.tryRead("engineers", _engineers);
+	reader.tryRead("inBattlescape", _inBattlescape);
+
+	for (const auto& transfersReader : reader["transfers"].children())
 	{
-		std::string research = (*i)["project"].as<std::string>();
+		int hours = transfersReader["hours"].readVal<int>();
+		Transfer *t = new Transfer(hours);
+		if (t->load(transfersReader, this, _mod, save))
+		{
+			_transfers.push_back(t);
+		}
+	}
+	for (const auto& researchReader : reader["research"].children())
+	{
+		std::string research = researchReader["project"].readVal<std::string>();
 		if (_mod->getResearch(research))
 		{
-			ResearchProject* r = new ResearchProject(_mod->getResearch(research));
-			r->load(*i);
+			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
+			r->load(researchReader);
 			_research.push_back(r);
 		}
 		else
 		{
-			_scientists += (*i)["assigned"].as<int>(0);
+			_scientists += researchReader["assigned"].readVal(0);
 			Log(LOG_ERROR) << "Failed to load research " << research;
 		}
 	}
-
-	for (YAML::const_iterator i = node["productions"].begin(); i != node["productions"].end(); ++i)
+	for (const auto& productionReader : reader["productions"].children())
 	{
-		std::string item = (*i)["item"].as<std::string>();
+		std::string item = productionReader["item"].readVal<std::string>();
 		if (_mod->getManufacture(item))
 		{
-			Production* p = new Production(_mod->getManufacture(item), 0);
-			p->load(*i);
+			Production *p = new Production(_mod->getManufacture(item), 0);
+			p->load(productionReader);
 			_productions.push_back(p);
 		}
 		else
 		{
-			_engineers += (*i)["assigned"].as<int>(0);
+			_engineers += productionReader["assigned"].readVal(0);
 			Log(LOG_ERROR) << "Failed to load manufacture " << item;
 		}
 	}
 
-	for (YAML::const_iterator i = node["intelProjects"].begin(); i != node["intelProjects"].end(); ++i)
+	for (const auto& intelProjectReader : reader["intelProjects"].children())
 	{
-		std::string name = (*i)["name"].as<std::string>();
+		std::string name = intelProjectReader["name"].readVal<std::string>();
 		if (_mod->getIntelProject(name))
 		{
 			IntelProject* p = new IntelProject(_mod->getIntelProject(name), this, 0);
-			p->load(*i);
+			p->load(intelProjectReader);
 			_intelProjects.push_back(p);
 		}
 		else
@@ -219,30 +231,32 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	for (YAML::const_iterator i = node["prisoners"].begin(); i != node["prisoners"].end(); ++i)
+	for (const auto& prisonerReader : reader["prisoners"].children())
 	{
-		std::string id = (*i)["id"].as<std::string>();
-		std::string type = (*i)["type"].as<std::string>();
+		std::string id;
+		prisonerReader["id"].tryReadVal(id);
+		std::string type;
+		prisonerReader["type"].tryReadVal(type);
 		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
-		prisoner->load(*i, _mod);
+		prisoner->load(prisonerReader, _mod);
 		addPrisoner(prisoner);
 	}
 
-	for (YAML::const_iterator i = node["soldiers"].begin(); i != node["soldiers"].end(); ++i)
+	for (const auto& soldierReader : reader["soldiers"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>(_mod->getSoldiersList().front());
+		std::string type = soldierReader["type"].readVal(_mod->getSoldiersList().front());
 		if (_mod->getSoldier(type))
 		{
-			Soldier *s = new Soldier(_mod->getSoldier(type), nullptr, 0 /*nationality*/);
-			s->load(*i, _mod, save, _mod->getScriptGlobal());
+			Soldier* s = new Soldier(_mod->getSoldier(type), nullptr, 0 /*nationality*/);
+			s->load(soldierReader, _mod, save, _mod->getScriptGlobal());
 			s->setCraft(0);
 			s->setCovertOperation(0);
 			s->setResearchProject(0);
 			s->setProductionProject(0);
 			s->setActivePrisoner(0);
-			if (const YAML::Node &craft = (*i)["craft"])
+			if (const auto& craftIdReader = soldierReader["craft"])
 			{
-				CraftId craftId = Craft::loadId(craft);
+				CraftId craftId = Craft::loadId(craftIdReader);
 				for (auto* xcraft : _crafts)
 				{
 					if (xcraft->getUniqueId() == craftId)
@@ -252,60 +266,65 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 					}
 				}
 			}
-			if (const YAML::Node& op = (*i)["covertOperation"])
+			if (const auto& op = soldierReader["covertOperation"])
 			{
-				std::string covertOperation = op.as<std::string>();
-				for (std::vector<CovertOperation*>::iterator j = _covertOperations.begin(); j != _covertOperations.end(); ++j)
+				std::string covertOperation;
+				op.tryReadVal(covertOperation);
+				for (auto* covertOperationPtr : _covertOperations)
 				{
-					if ((*j)->getOperationName() == covertOperation)
+					if (covertOperationPtr->getOperationName() == covertOperation)
 					{
-						s->setCovertOperation((*j));
+						s->setCovertOperation(covertOperationPtr);
 						break;
 					}
 				}
 			}
-			if (const YAML::Node &rp = (*i)["researchProject"])
+			if (const auto& rp = soldierReader["researchProject"])
 			{
-				std::string researchProject = rp.as<std::string>();
-				for (std::vector<ResearchProject *>::iterator j = _research.begin(); j != _research.end(); ++j)
+				std::string researchProject;
+				rp.tryReadVal(researchProject);
+				for (auto* researchProjectPtr : _research)
 				{
-					if ((*j)->getRules()->getName() == researchProject)
+					if (researchProjectPtr->getRules()->getName() == researchProject)
 					{
-						s->setResearchProject((*j));
+						s->setResearchProject(researchProjectPtr);
 						break;
 					}
 				}
 			}
-			if (const YAML::Node& pr = (*i)["production"])
+			if (const auto& pr = soldierReader["production"])
 			{
-				std::string production = pr.as<std::string>();
-				for (std::vector<Production*>::iterator j = _productions.begin(); j != _productions.end(); ++j)
+				std::string production;
+				pr.tryReadVal(production);
+				for (auto* productionPtr : _productions)
 				{
-					if ((*j)->getRules()->getName() == production)
+					if (productionPtr->getRules()->getName() == production)
 					{
-						s->setProductionProject((*j));
-						break;
-					}
-				}
-			}
-
-			if (const YAML::Node &ip = (*i)["intelProject"])
-			{
-				std::string intelProject = ip.as<std::string>();
-				for (std::vector< IntelProject*>::iterator j = _intelProjects.begin(); j != _intelProjects.end(); ++j)
-				{
-					if ((*j)->getName() == intelProject)
-					{
-						s->setIntelProject((*j));
+						s->setProductionProject(productionPtr);
 						break;
 					}
 				}
 			}
 
-			if (const YAML::Node& p = (*i)["activePrisoner"])
+			if (const auto& ip = soldierReader["intelProject"])
 			{
-				std::string prisoner = p.as<std::string>();
-				for (auto& _prisoner : _prisoners)
+				std::string intelProject;
+				ip.tryReadVal(intelProject);
+				for (auto* intelProjectPtr : _intelProjects)
+				{
+					if (intelProjectPtr->getName() == intelProject)
+					{
+						s->setIntelProject(intelProjectPtr);
+						break;
+					}
+				}
+			}
+
+			if (const auto& p = soldierReader["activePrisoner"])
+			{
+				std::string prisoner;
+				p.tryReadVal(prisoner);
+				for (auto* _prisoner : _prisoners)
 				{
 					if (_prisoner->getId() == prisoner)
 					{
@@ -323,26 +342,10 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	_items->load(node["items"], _mod);
-
-	_scientists = node["scientists"].as<int>(_scientists);
-	_engineers = node["engineers"].as<int>(_engineers);
-	_inBattlescape = node["inBattlescape"].as<bool>(_inBattlescape);
-
-	for (YAML::const_iterator i = node["transfers"].begin(); i != node["transfers"].end(); ++i)
+	reader.tryRead("retaliationTarget", _retaliationTarget);
+	if (const auto& missionIdReader = reader["retaliationMissionUniqueId"])
 	{
-		int hours = (*i)["hours"].as<int>();
-		Transfer *t = new Transfer(hours);
-		if (t->load(*i, this, _mod, save))
-		{
-			_transfers.push_back(t);
-		}
-	}
-
-	_retaliationTarget = node["retaliationTarget"].as<bool>(_retaliationTarget);
-	if (const YAML::Node& mission = node["retaliationMissionUniqueId"])
-	{
-		int missionId = mission.as<int>();
+		int missionId = missionIdReader.readVal<int>();
 		for (auto* am : save->getAlienMissions())
 		{
 			if (am->getId() == missionId)
@@ -352,10 +355,10 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			}
 		}
 	}
-	_fakeUnderwater = node["fakeUnderwater"].as<bool>(_fakeUnderwater);
-	_trackingBonus = node["trackingBonus"].as<int>(_trackingBonus);
-	_operationsBonus = node["operationsBonus"].as<int>(_operationsBonus);
-	_deploymentHintsBonus = node["deploymentHints"].as<int>(_deploymentHintsBonus);
+	reader.tryRead("fakeUnderwater", _fakeUnderwater);
+	reader.tryRead("trackingBonus", _trackingBonus);
+	reader.tryRead("operationsBonus", _operationsBonus);
+	reader.tryRead("deploymentHintsBonus", _deploymentHintsBonus);
 
 	isOverlappingOrOverflowing(); // don't crash, just report in the log file...
 }
@@ -365,12 +368,12 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
  * @param node YAML node.
  * @param save Pointer to saved game.
  */
-void Base::finishLoading(const YAML::Node &node, SavedGame *save)
+void Base::finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save)
 {
-	for (YAML::const_iterator i = node["crafts"].begin(); i != node["crafts"].end(); ++i)
+	for (const auto& craftsReader : reader["crafts"].children())
 	{
-		int id = (*i)["id"].as<int>();
-		std::string type = (*i)["type"].as<std::string>();
+		int id = craftsReader["id"].readVal<int>();
+		std::string type = craftsReader["type"].readVal<std::string>();
 		if (_mod->getCraft(type))
 		{
 			Craft *craft = 0;
@@ -384,7 +387,7 @@ void Base::finishLoading(const YAML::Node &node, SavedGame *save)
 			}
 			if (craft)
 			{
-				craft->finishLoading(*i, save);
+				craft->finishLoading(craftsReader, save);
 			}
 		}
 		else
@@ -483,60 +486,51 @@ bool Base::isOverlappingOrOverflowing()
  * Saves the base to a YAML file.
  * @return YAML node.
  */
-YAML::Node Base::save() const
+void Base::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node = Target::save();
-	for (const auto* fac : _facilities)
-	{
-		node["facilities"].push_back(fac->save());
-	}
-	for (auto* soldier : _soldiers)
-	{
-		node["soldiers"].push_back(soldier->save(_mod->getScriptGlobal()));
-	}
-	for (const auto* xcraft : _crafts)
-	{
-		node["crafts"].push_back(xcraft->save(_mod->getScriptGlobal()));
-	}
-	for (const auto* operation : _covertOperations)
-	{
-		node["covertOperations"].push_back(operation->save());
-	}
-	for (const auto* proj : _intelProjects)
-	{
-		node["intelProjects"].push_back(proj->save());
-	}
-	for (const auto* prisoner : _prisoners)
-	{
-		node["prisoners"].push_back(prisoner->save());
-	}
-	node["items"] = _items->save();
-	node["scientists"] = _scientists;
-	node["engineers"] = _engineers;
+	writer.setAsMap();
+	Target::save(writer);
+	writer.write("facilities", _facilities,
+		[](YAML::YamlNodeWriter& vectorWriter, BaseFacility* f)
+		{ f->save(vectorWriter.write()); });
+	writer.write("soldiers", _soldiers,
+		[&](YAML::YamlNodeWriter& vectorWriter, Soldier* s)
+		{ s->save(vectorWriter.write(), _mod->getScriptGlobal()); });
+	writer.write("crafts", _crafts,
+		[&](YAML::YamlNodeWriter& vectorWriter, Craft* c)
+		{ c->save(vectorWriter.write(), _mod->getScriptGlobal()); });
+	writer.write("covertOperations", _covertOperations,
+		[](YAML::YamlNodeWriter& vectorWriter, CovertOperation* c)
+		{ c->save(vectorWriter.write()); });
+	writer.write("intelProjects", _intelProjects,
+		[](YAML::YamlNodeWriter& vectorWriter, IntelProject* p)
+		{ p->save(vectorWriter.write()); });
+	writer.write("prisoners", _prisoners,
+		[](YAML::YamlNodeWriter& vectorWriter, BasePrisoner* p)
+		{ p->save(vectorWriter.write()); });
+	_items->save(writer["items"]);
+	writer.write("scientists", _scientists);
+	writer.write("engineers", _engineers);
 	if (_inBattlescape)
-		node["inBattlescape"] = _inBattlescape;
-	for (const auto* transfer : _transfers)
-	{
-		node["transfers"].push_back(transfer->save(this, _mod));
-	}
-	for (const auto* proj : _research)
-	{
-		node["research"].push_back(proj->save());
-	}
-	for (const auto* prod : _productions)
-	{
-		node["productions"].push_back(prod->save());
-	}
+		writer.write("inBattlescape", _inBattlescape);
+	writer.write("transfers", _transfers,
+		[&](YAML::YamlNodeWriter& vectorWriter, Transfer* t)
+		{ t->save(vectorWriter.write(), this, _mod); });
+	writer.write("research", _research,
+		[](YAML::YamlNodeWriter& vectorWriter, ResearchProject* r)
+		{ r->save(vectorWriter.write()); });
+	writer.write("productions", _productions,
+		[](YAML::YamlNodeWriter& vectorWriter, Production* p)
+		{ p->save(vectorWriter.write()); });
 	if (_retaliationTarget)
-		node["retaliationTarget"] = _retaliationTarget;
+		writer.write("retaliationTarget", _retaliationTarget);
 	if (_retaliationMission)
-		node["retaliationMissionUniqueId"] = _retaliationMission->getId();
+		writer.write("retaliationMissionUniqueId", _retaliationMission->getId());
 	if (_fakeUnderwater)
-		node["fakeUnderwater"] = _fakeUnderwater;
-	node["trackingBonus"] = _trackingBonus;
-	node["operationsBonus"] = _operationsBonus;
-	node["deploymentHintsBonus"] = _deploymentHintsBonus;
-	return node;
+		writer.write("fakeUnderwater", _fakeUnderwater);
+	writer.write("trackingBonus", _trackingBonus);
+	writer.write("operationsBonus", _operationsBonus);
+	writer.write("deploymentHintsBonus", _deploymentHintsBonus);
 }
 
 /**
@@ -676,7 +670,7 @@ int Base::getAvailableInterrogationSpace()
 int Base::getUsedInterrogationSpace()
 {
 	int used = 0;
-	
+
 	for (auto p : _prisoners)
 	{
 		if (p->getPrisonerState() == PRISONER_STATE_INTERROGATION
@@ -1113,10 +1107,10 @@ int Base::getAvailableQuarters() const
  */
 double Base::getUsedStores(bool excludeNormalItems) const
 {
-	double total = excludeNormalItems ? 0.0 : _items->getTotalSize(_mod);
+	double total = excludeNormalItems ? 0.0 : _items->getTotalSize();
 	for (const auto* xcraft : _crafts)
 	{
-		total += xcraft->getTotalItemStorageSize(_mod);
+		total += xcraft->getTotalItemStorageSize();
 	}
 	for (auto* transfer : _transfers)
 	{
@@ -1126,7 +1120,7 @@ double Base::getUsedStores(bool excludeNormalItems) const
 		}
 		else if (transfer->getType() == TRANSFER_CRAFT)
 		{
-			total += transfer->getCraft()->getTotalItemStorageSize(_mod);
+			total += transfer->getCraft()->getTotalItemStorageSize();
 		}
 	}
 	return total;
@@ -2543,10 +2537,10 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 
 	Av available;
 	Av removed;
-	RuleBaseFacilityFunctions provide;
+	RuleBaseFacilityFunctions provide = _provideBaseFunc;
 	RuleBaseFacilityFunctions require;
-	RuleBaseFacilityFunctions forbidden;
-	RuleBaseFacilityFunctions future;
+	RuleBaseFacilityFunctions forbidden = _forbiddenBaseFunc;
+	RuleBaseFacilityFunctions future = _provideBaseFunc;
 	RuleBaseFacilityFunctions missed;
 
 	int removedBuildings = 0;

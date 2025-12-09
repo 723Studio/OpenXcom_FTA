@@ -19,7 +19,7 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -32,12 +32,12 @@ struct BattleMessage
 	std::string title, content, answer, background;
 
 	/// Loads stats from YAML.
-	void load(const YAML::Node& node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		title = node["title"].as<std::string>(title);
-		content = node["content"].as<std::string>(content);
-		answer = node["answer"].as<std::string>(answer);
-		background = node["background"].as<std::string>(background);
+		reader.tryRead("title", title);
+		reader.tryRead("content", content);
+		reader.tryRead("answer", answer);
+		reader.tryRead("background", background);
 	}
 
 };
@@ -68,7 +68,7 @@ public:
 	BattleScript();
 	~BattleScript();
 	/// Loads information from a ruleset file.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets what type of command this is.
 	BattleScriptCommand getType() const { return _type; }
 	/// Get the chances of this command executing.

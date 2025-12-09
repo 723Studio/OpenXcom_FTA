@@ -19,7 +19,7 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "RuleSoldier.h"
@@ -61,7 +61,7 @@ public:
 	/// Cleans up the craft ruleset.
 	~RuleCovertOperation();
 	/// Loads craft data from YAML.
-	void load(const YAML::Node& node, Mod* mod, int listOrder);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod, int listOrder);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the operation's name.

@@ -25,6 +25,7 @@
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
 #include "../Basescape/SoldierInfoStateFtA.h"
+#include "../Basescape/SoldierDiaryLightState.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
 #include "../Mod/Mod.h"
@@ -110,6 +111,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_soldier = new Surface(320, 200, 0, 0);
+	_txtPosition = new Text(70, 9, 65, 95);
+	_txtNameStatic = new Text(210, 17, 28, 6);
 	_txtName = new TextEdit(this, 210, 17, 28, 6);
 	_txtTus = new Text(40, 9, 245, 24);
 	_txtWeight = new Text(70, 9, 245, 24);
@@ -128,7 +131,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnArmor = new BattlescapeButton(RuleInventory::PAPERDOLL_W, RuleInventory::PAPERDOLL_H, RuleInventory::PAPERDOLL_X, RuleInventory::PAPERDOLL_Y);
 	_btnCreateTemplate = new BattlescapeButton(32, 22, _templateBtnX, _createTemplateBtnY);
 	_btnApplyTemplate = new BattlescapeButton(32, 22, _templateBtnX, _applyTemplateBtnY);
-	Element* pixelShift = _game->getMod()->getInterface("inventory")->getElement("buttonLinks");
+	const Element* pixelShift = _game->getMod()->getInterface("inventory")->getElementOptional("buttonLinks");
 	if (pixelShift && pixelShift->TFTDMode)
 	{
 		_btnLinks = new BattlescapeButton(23, 22, 213, 0);
@@ -148,10 +151,11 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	// Set up objects
 	_game->getMod()->getSurface("TAC01.SCR")->blitNShade(_bg, 0, 0);
-	add(_btnArmor, "buttonOK", "inventory", _bg);
+	add(_btnArmor, "buttonArmor", "inventory", _bg);
 
 	add(_soldier);
 	add(_btnQuickSearch, "textItem", "inventory");
+	add(_txtNameStatic, "textName", "inventory", _bg);
 	add(_txtName, "textName", "inventory", _bg);
 	add(_txtTus, "textTUs", "inventory", _bg);
 	add(_txtWeight, "textWeight", "inventory", _bg);
@@ -172,6 +176,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	add(_btnLinks, "buttonLinks", "inventory", _bg);
 	add(_selAmmo);
 	add(_inv);
+	add(_txtPosition, "textSlot", "inventory", _bg);
 
 	// move the TU display down to make room for the weight display
 	if (Options::showMoreStatsInInventoryView)
@@ -182,11 +187,24 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	centerAllSurfaces();
 
 
+	_txtPosition->setHighContrast(true);
+
+	_txtNameStatic->setBig();
+	_txtNameStatic->setHighContrast(true);
 
 	_txtName->setBig();
 	_txtName->setHighContrast(true);
 	_txtName->onChange((ActionHandler)&InventoryState::edtSoldierChange);
 	_txtName->onMousePress((ActionHandler)&InventoryState::edtSoldierPress);
+
+	if (Options::oxceLinksDisableTextEdit)
+	{
+		_txtName->setVisible(false);
+	}
+	else
+	{
+		_txtNameStatic->setVisible(false);
+	}
 
 	_txtTus->setHighContrast(true);
 
@@ -216,8 +234,9 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnCreatePersonalTemplateClick, Options::keyInvSavePersonalEquipment);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnApplyPersonalTemplateClick, Options::keyInvLoadPersonalEquipment);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnShowPersonalTemplateClick, Options::keyInvShowPersonalEquipment);
+	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnDiaryLightClick, Options::keyInventoryDiaryLight);
 	_btnOk->setTooltip("STR_OK");
-	_btnOk->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
+	_btnOk->onMouseIn((ActionHandler)&InventoryState::txtTooltipInExtraOK);
 	_btnOk->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::invMouseOver, SDLK_LALT);
 	_btnOk->onKeyboardRelease((ActionHandler)&InventoryState::invMouseOver, SDLK_LALT);
@@ -286,13 +305,13 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnQuickSearch->setHighContrast(true);
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&InventoryState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&InventoryState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
 	_game->getMod()->getSurface("oxceLinksInv")->blitNShade(_btnLinks, 0, 0);
 	_btnLinks->initSurfaces();
-	_btnLinks->setVisible(Options::oxceLinks && !_tu);
+	_btnLinks->setVisible(Options::oxceLinks);
 
 	// only use copy/paste buttons in setup (i.e. non-tu) mode
 	if (_tu)
@@ -420,10 +439,36 @@ void InventoryState::init()
 	_soldier->clear();
 	_btnRank->clear();
 
+	if (Options::oxceInventoryShowUnitSlot)
+	{
+		int unitSlot = 1;
+		int totalSlots = 99;
+		for (auto* tmpUnit : *_battleGame->getUnits())
+		{
+			if (tmpUnit == unit)
+			{
+				if (!_noCraft && _battleGame->getMissionType() != "STR_BASE_DEFENSE")
+				{
+					auto* tmpCraft = unit->getGeoscapeSoldier() ? unit->getGeoscapeSoldier()->getCraft() : nullptr;
+					if (tmpCraft)
+					{
+						totalSlots = tmpCraft->getMaxUnitsClamped();
+					}
+				}
+				break;
+			}
+			unitSlot += tmpUnit->getArmor()->getTotalSize();
+		}
+		_txtPosition->setText(tr("STR_SLOT").arg(unitSlot).arg(totalSlots));
+	}
+
+	_txtNameStatic->setBig();
+	_txtNameStatic->setText(unit->getName(_game->getLanguage()));
+
 	_txtName->setBig();
 	_txtName->setText(unit->getName(_game->getLanguage()));
 
-	_btnLinks->setVisible(Options::oxceLinks && !_tu);
+	_btnLinks->setVisible(Options::oxceLinks);
 
 	bool resetGroundOffset = _tu;
 	static bool s_prevUnitIsSummoned = false;
@@ -648,7 +693,7 @@ void InventoryState::updateStats()
 
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{
-		Element *element = _game->getMod()->getInterface("inventory")->getElement(elementId);
+		const Element *element = _game->getMod()->getInterface("inventory")->getElementOptional(elementId);
 		if (element)
 		{
 			switch (element->custom)
@@ -776,6 +821,23 @@ void InventoryState::btnArmorClick(Action *action)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// but we can reuse this for quickly dropping an item (as a Ctrl+L-click alternative)
+		if (Options::oxceInventoryDropItemOverPaperdoll)
+		{
+			if (_inv->quickDrop())
+			{
+				// hide selected item info
+				invMouseOut(action);
+
+				// refresh ui
+				_inv->arrangeGround();
+				updateStats();
+				refreshMouse();
+
+				// give audio feedback
+				_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
+			}
+		}
 		return;
 	}
 
@@ -844,6 +906,23 @@ void InventoryState::btnArmorClickRight(Action *action)
 
 		_game->pushState(new SoldierAvatarState(_base, soldierIndex));
 	}
+}
+
+/**
+ * Opens the Soldier Diary Light GUI
+ * @param action Pointer to an action.
+ */
+void InventoryState::btnDiaryLightClick(Action *action)
+{
+	// don't accept clicks when moving items
+	if (_inv->getSelectedItem() != 0)
+	{
+		return;
+	}
+
+	BattleUnit* unit = _battleGame->getSelectedUnit();
+	Soldier* s = unit->getGeoscapeSoldier();
+	_game->pushState(new SoldierDiaryLightState(s));
 }
 
 /**
@@ -940,10 +1019,16 @@ bool InventoryState::tryArmorChange(const std::string& armorName)
 				armorAvailable = false;
 			}
 		}
-		// does the armor fit on the current unit?
-		if (!next->getCanBeUsedBy(soldier->getRules()))
+		if (armorAvailable)
 		{
-			armorAvailable = false;
+			// refresh soldier's _bonusCache, needed below in Armor::getCanBeUsedBy()
+			//soldier->getBonuses(_game->getMod());
+
+			// does the armor fit on the current unit?
+			if (!next->getCanBeUsedBy(soldier))
+			{
+				armorAvailable = false;
+			}
 		}
 	}
 
@@ -1234,7 +1319,18 @@ void InventoryState::btnQuickSearchApply(Action *)
  */
 void InventoryState::btnGroundClickForward(Action *action)
 {
-	if (_game->isShiftPressed())
+	bool scrollBackwards = _game->isShiftPressed();
+	if (Options::oxceInventorySplitScrollButton)
+	{
+		double mx = action->getAbsoluteXMouse();
+		if (mx <= _btnGround->getX() + (_btnGround->getWidth() / 2.0))
+		{
+			// clicked on the left half of the button
+			scrollBackwards = true;
+		}
+	}
+
+	if (scrollBackwards)
 	{
 		// scroll backwards
 		_inv->arrangeGround(-1);
@@ -1318,6 +1414,10 @@ void InventoryState::btnLinksClick(Action *)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// but we can reuse this for ufopedia (as an M-click alternative)
+		std::string articleId = _inv->getSelectedItem()->getRules()->getUfopediaType();
+		Ufopaedia::openArticle(_game, articleId);
+
 		return;
 	}
 
@@ -1655,7 +1755,14 @@ void InventoryState::btnApplyPersonalTemplateClick(Action *)
 
 		auto& personalTemplate = *unit->getGeoscapeSoldier()->getPersonalEquipmentLayout();
 
-		_applyInventoryTemplate(personalTemplate);
+		if (personalTemplate.empty())
+		{
+			_inv->showWarning(tr("STR_PERSONAL_EQUIPMENT_NOT_DEFINED"));
+		}
+		else
+		{
+			_applyInventoryTemplate(personalTemplate);
+		}
 
 		// refresh ui
 		_inv->arrangeGround();
@@ -1837,7 +1944,14 @@ void InventoryState::calculateCurrentDamageTooltip()
 		if (rule->getBattleType() != BT_CORPSE)
 		{
 			int totalDamage = 0;
-			totalDamage += rule->getPowerBonus({ BA_NONE, currentUnit, _currentDamageTooltipItem, damageItem }); //TODO: find what exactly attack we can do
+			if (weaponRule->getIgnoreAmmoPower())
+			{
+				totalDamage += weaponRule->getPowerBonus({ BA_NONE, currentUnit, _currentDamageTooltipItem, damageItem });
+			}
+			else
+			{
+				totalDamage += rule->getPowerBonus({ BA_NONE, currentUnit, _currentDamageTooltipItem, damageItem }); //TODO: find what exactly attack we can do
+			}
 			//totalDamage -= rule->getPowerRangeReduction(distance * 16);
 			if (totalDamage < 0) totalDamage = 0;
 			std::ostringstream ss;
@@ -1966,7 +2080,7 @@ void InventoryState::invMouseOver(Action *)
 			_mouseHoverItem = nullptr;
 			updateTemplateButtons(!_tu);
 			std::string s;
-			if (item->getAmmoQuantity() != 0 && item->getRules()->getBattleType() == BT_AMMO)
+			if (item->getRules()->getBattleType() == BT_AMMO && (item->getAmmoQuantity() != 0 || item->getRules()->isAmmoRechargeable()))
 			{
 				s = tr("STR_AMMO_ROUNDS_LEFT").arg(item->getAmmoQuantity());
 			}
@@ -2191,6 +2305,46 @@ void InventoryState::think()
 	}
 	State::think();
 }
+
+/**
+ * Shows a tooltip for the OK button.
+ * @param action Pointer to an action.
+ */
+void InventoryState::txtTooltipInExtraOK(Action *action)
+{
+	if (_inv->getSelectedItem() == 0 && Options::battleTooltips)
+	{
+		_currentTooltip = action->getSender()->getTooltip();
+
+		std::ostringstream ss;
+		ss << tr(_currentTooltip);
+
+		if (!_tu && !_base)
+		{
+			ss << " - ";
+
+			if (_battleGame->getGlobalShade() <= 0)
+			{
+				// day (0)
+				ss << tr("STR_DAY");
+			}
+			else if (_battleGame->getGlobalShade() > _game->getMod()->getMaxDarknessToSeeUnits())
+			{
+				// night (10-15); note: this is configurable in the ruleset (in OXCE only)
+				ss << tr("STR_NIGHT");
+			}
+			else
+			{
+				// dusk/dawn (1-9)
+				ss << tr("STR_DAY");
+				ss << "*";
+			}
+		}
+
+		_txtItem->setText(ss.str().c_str());
+	}
+}
+
 
 /**
  * Shows a tooltip for the appropriate button.

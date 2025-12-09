@@ -62,8 +62,21 @@ SaveGameState::SaveGameState(OptionsOrigin origin, SaveType type, SDL_Color *pal
 	case SAVE_QUICK:
 		_filename = SavedGame::QUICKSAVE;
 		break;
+	case SAVE_INSTA:
+		_filename = "Instasave_" + CrossPlatform::sanitizeFilename(CrossPlatform::now()) + ".sav";
+		break;
 	case SAVE_AUTO_GEOSCAPE:
-		_filename = SavedGame::AUTOSAVE_GEOSCAPE;
+		if (Options::oxceGeoAutosaveFrequency > 0 && Options::oxceGeoAutosaveSlots >= 2 && Options::oxceGeoAutosaveSlots <= 10 && currentTurn > 0)
+		{
+			// multi-slot autosave
+			int slotIndex = (currentTurn / Options::oxceGeoAutosaveFrequency) % Options::oxceGeoAutosaveSlots;
+			_filename = "_" + std::to_string(slotIndex) + SavedGame::AUTOSAVE_GEOSCAPE;
+		}
+		else
+		{
+			// classic autosave
+			_filename = SavedGame::AUTOSAVE_GEOSCAPE;
+		}
 		break;
 	case SAVE_AUTO_BATTLESCAPE:
 		if (currentTurn > 0 && Options::autosaveSlots >= 2 && Options::autosaveSlots <= 10)
@@ -155,6 +168,10 @@ void SaveGameState::think()
 				// and pause screen too
 				_game->popState();
 			}
+			break;
+		case SAVE_INSTA:
+			// timestamp is visible already, no need to repeat it
+			_game->getSavedGame()->setName(tr("STR_INSTA_SAVE"));
 			break;
 		case SAVE_QUICK:
 		case SAVE_AUTO_GEOSCAPE:

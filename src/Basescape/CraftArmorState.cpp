@@ -63,6 +63,8 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 
+	touchComponentsCreate(_txtTitle, true);
+
 	// Set palette
 	setInterface("craftArmor");
 
@@ -75,10 +77,14 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	add(_lstSoldiers, "list", "craftArmor");
 	add(_cbxSortBy, "button", "craftArmor");
 
+	touchComponentsAdd("button2", "craftArmor", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "craftArmor");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftArmorState::btnOkClick);
@@ -97,23 +103,22 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 
 	// populate sort options
 	std::vector<std::string> sortOptions;
+	bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
 	_sortFunctors.push_back(new SortFunctor(_game, functor));
-
 	PUSH_IN("STR_ID", idStat);
 	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_CRAFT", craftIdStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
 	PUSH_IN("STR_RANK", rankStat);
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsi)
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -126,13 +131,16 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
 	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
 	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && showPsi)
 	{
 		// "unlock" is checked later
 		PUSH_IN("STR_MANA_POOL", manaStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	if (showPsi)
+	{
+		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
+		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	}
 
 #undef PUSH_IN
 
@@ -169,7 +177,7 @@ CraftArmorState::~CraftArmorState()
  */
 void CraftArmorState::cbxSortByChange(Action *action)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
+	bool ctrlPressed = _game->isCtrlPressed(true);
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
@@ -228,7 +236,7 @@ void CraftArmorState::cbxSortByChange(Action *action)
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
 			}
-			if (_game->isShiftPressed())
+			if (_game->isShiftPressed(true))
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
@@ -269,6 +277,8 @@ void CraftArmorState::init()
 		_lstSoldiers->setCellText(row, 2, tr(soldier->getArmor()->getType()));
 		row++;
 	}
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -340,11 +350,11 @@ void CraftArmorState::lstItemsLeftArrowClick(Action *action)
 	unsigned int row = _lstSoldiers->getSelectedRow();
 	if (row > 0)
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			moveSoldierUp(action, row);
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			moveSoldierUp(action, row, true);
 		}
@@ -393,11 +403,11 @@ void CraftArmorState::lstItemsRightArrowClick(Action *action)
 	size_t numSoldiers = _base->getSoldiers()->size();
 	if (0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			moveSoldierDown(action, row);
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			moveSoldierDown(action, row, true);
 		}
@@ -461,16 +471,16 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 	Craft* c = _base->getCrafts()->at(_craft);
 	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0)
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			_savedScrollPosition = _lstSoldiers->getScroll();
 			_game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			SavedGame *save;
 			save = _game->getSavedGame();
-			Armor *a = _game->getMod()->getArmor(save->getLastSelectedArmor());
+			Armor *a = _game->isCtrlPressed(true) ? s->getRules()->getDefaultArmor() : _game->getMod()->getArmor(save->getLastSelectedArmor());
 			bool armorUnlocked = true;
 			if (a && a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
 			{
@@ -485,11 +495,14 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 					_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 				}
 			}
-			if (armorUnlocked && a && a->getCanBeUsedBy(s->getRules()))
+
+			if (armorUnlocked && a && a->getCanBeUsedBy(s))
 			{
 				if (save->getMonthsPassed() != -1)
 				{
-					if (a->getStoreItem() == nullptr || _base->getStorageItems()->getItem(a->getStoreItem()) > 0)
+					if (a->getStoreItem() == nullptr ||
+						a->getStoreItem() == s->getArmor()->getStoreItem() ||
+						_base->getStorageItems()->getItem(a->getStoreItem()) > 0)
 					{
 						if (s->getArmor()->getStoreItem())
 						{
@@ -513,7 +526,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 				}
 			}
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+		else if (_game->isMiddleClick(action, true))
 		{
 			std::string articleId = s->getArmor()->getUfopediaType();
 			Ufopaedia::openArticle(_game, articleId);

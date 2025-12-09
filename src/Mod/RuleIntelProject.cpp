@@ -24,8 +24,12 @@
 
 namespace OpenXcom
 {
-
-RuleIntelProject::RuleIntelProject(const std::string &name) : _name(name), _cost(100), _costIncrease(0), _specialRule(INTEL_NONE), _listOrder(0)
+/**
+ * Creates a new intel project with the given name.
+ * @param name The name of the intel project.
+ * @param listOrder The list weight for this project.
+ */
+RuleIntelProject::RuleIntelProject(const std::string &name, int listOrder) : _name(name), _cost(100), _costIncrease(0), _specialRule(INTEL_NONE), _listOrder(listOrder)
 {
 }
 
@@ -34,26 +38,29 @@ RuleIntelProject::RuleIntelProject(const std::string &name) : _name(name), _cost
  * @param node YAML node.
  * @param listOrder The list weight for this project.
  */
-void RuleIntelProject::load(const YAML::Node &node, Mod* mod, int listOrder)
+void RuleIntelProject::load(const YAML::YamlNodeReader& node, Mod* mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent, mod, listOrder);
+		load(reader["refNode"], mod);
 	}
 
-	_name = node["name"].as<std::string>(_name);
-	_description = node["description"].as<std::string>(_description);
-	_cost = node["cost"].as<int>(_cost);
-	_costIncrease = node["costIncrease"].as<int>(_costIncrease);
-	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
-	_specialRule = (IntelProjectSpecialRule)node["specialRule"].as<int>(_specialRule);
+	reader.tryRead("name", _name);
+	reader.tryRead("description", _description);
+	reader.tryRead("cost", _cost);
+	reader.tryRead("costIncrease", _costIncrease);
+	reader.tryRead("requiredResearch", _requiredResearchName);
+	int specialRule = static_cast<int>(_specialRule);
+	reader.tryRead("specialRule", specialRule);
+	_specialRule = static_cast<IntelProjectSpecialRule>(specialRule);
 
-	if (const YAML::Node& stages = node["stages"])
+	if (reader["stages"])
 	{
-		for (YAML::const_iterator i = stages.begin(); i != stages.end(); ++i)
+		for (const auto& child : reader["stages"].children())
 		{
 			RuleIntelStage* stage = new RuleIntelStage();
-			stage->load(*i, mod);
+			stage->load(child, mod);
 			_stages.push_back(stage);
 		}
 	}
@@ -61,12 +68,8 @@ void RuleIntelProject::load(const YAML::Node &node, Mod* mod, int listOrder)
 	{
 		throw Exception("No stages defined for intelligence project " + _name);
 	}
-	_stats.merge(node["stats"].as<UnitStats>(_stats));
-	_listOrder = node["listOrder"].as<int>(_listOrder);
-	if (!_listOrder)
-	{
-		_listOrder = listOrder;
-	}
+	reader.tryRead("stats", _stats);
+	reader.tryRead("listOrder", _listOrder);
 }
 
 /**
@@ -93,21 +96,21 @@ void RuleIntelProject::afterLoad(const Mod* mod)
 */
 RuleIntelStage::RuleIntelStage() : _odds(100), _requireRolls(0), _availableRolls(1), _finalStage(false)
 { /*Empty by Design*/ };
-	
+
 
 /// Loads stats from YAML.
-void RuleIntelStage::load(const YAML::Node& node, Mod* mod)
+void RuleIntelStage::load(const YAML::YamlNodeReader& reader, Mod* mod)
 {
-	_stageName = node["stageName"].as<std::string>(_stageName);
-	_odds = node["odds"].as<int>(_odds);
-	_requireRolls = node["requireRolls"].as<int>(_requireRolls);
-	//_availableRolls = node["availableRolls"].as<int>(_availableRolls);
-	_eventScripts = node["eventScripts"].as<std::vector<std::string>>(_eventScripts);
-	_spawnMission = node["spawnMission"].as<std::string>(_spawnMission);
-	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
-	_disabledByResearchName = node["disabledByResearch"].as<std::string>(_disabledByResearchName);
-	//mod->loadBaseFunction(_stageName, _requiresBaseFunc, node["requiresBaseFunc"]);
-	_finalStage = node["finalStage"].as<bool>(_finalStage);
+	reader.tryRead("stageName", _stageName);
+	reader.tryRead("odds", _odds);
+	reader.tryRead("requireRolls", _requireRolls);
+	//reader.tryRead("availableRolls", _availableRolls);
+	reader.tryRead("eventScripts", _eventScripts);
+	reader.tryRead("spawnMission", _spawnMission);
+	reader.tryRead("requiredResearch", _requiredResearchName);
+	reader.tryRead("disabledByResearch", _disabledByResearchName);
+	//mod->loadBaseFunction(_stageName, _requiresBaseFunc, reader["requiresBaseFunc"]);
+	reader.tryRead("finalStage", _finalStage);
 }
 
 void RuleIntelStage::afterLoad(const Mod* mod)

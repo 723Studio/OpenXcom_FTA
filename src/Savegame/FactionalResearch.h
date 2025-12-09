@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -46,9 +46,9 @@ public:
 	/// Cleans up the Factional Research info.
 	~FactionalResearch();
 	/// Loads the FactionalResearch from YAML.
-	void load(const YAML::Node& node, SavedGame* save, const Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, SavedGame* save, const Mod* mod);
 	/// Saves the FactionalResearch to YAML.
-	YAML::Node save(const Mod* mod) const;
+	void save(YAML::YamlNodeWriter writer, const Mod* mod) const;
 	/// Process ongoing research project, decreasing timer and returns true if it is over.
 	bool step();
 	SoldierPool* getScientists() { return _scientists; }

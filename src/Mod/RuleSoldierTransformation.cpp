@@ -30,72 +30,85 @@ RuleSoldierTransformation::RuleSoldierTransformation(const std::string &name, in
 	_name(name),
 	_keepSoldierArmor(false), _createsClone(false), _needsCorpseRecovered(true),
 	_allowsDeadSoldiers(false), _allowsLiveSoldiers(false), _allowsWoundedSoldiers(false),
-	_listOrder(listOrder), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false),
+	_listOrder(listOrder), _cost(0), _transferTime(0), _recoveryTime(0), _transformationTime(0), _minRank(0), _includeBonusesForMinStats(false), _includeBonusesForMaxStats(false),
 	_showMinMax(false), _lowerBoundAtMinStats(true), _upperBoundAtMaxStats(false), _upperBoundAtStatCaps(false), _upperBoundType(0), _addRole(ROLE_NONE), _forbiddenRole(ROLE_NONE),
 	_reset(false), _resetRank(false)
 {
+	_requiredMaxStats = UnitStats::scalar(9999); // set all default max stats to 9999
 }
 
 /**
  * Loads the transformation project from a YAML file.
- * @param node YAML node.
+ * @param node YAML node.`
  * @param listOrder The list weight for this transformation project.
  */
-void RuleSoldierTransformation::load(const YAML::Node &node, Mod* mod)
+void RuleSoldierTransformation::load(const YAML::YamlNodeReader& node, Mod* mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	_listOrder = node["listOrder"].as<int>(_listOrder);
+	reader.tryRead("listOrder", _listOrder);
 
-	mod->loadUnorderedNames(_name, _requires, node["requires"]);
-	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
-	_description = node["description"].as<std::string>(_description);
-	_producedItem = node["producedItem"].as<std::string >(_producedItem);
-	_producedSoldierType = node["producedSoldierType"].as<std::string >(_producedSoldierType);
-	_producedSoldierArmor = node["producedSoldierArmor"].as<std::string >(_producedSoldierArmor);
-	_keepSoldierArmor = node["keepSoldierArmor"].as<bool >(_keepSoldierArmor);
-	_createsClone = node["createsClone"].as<bool >(_createsClone);
-	_needsCorpseRecovered = node["needsCorpseRecovered"].as<bool >(_needsCorpseRecovered);
-	_allowsDeadSoldiers = node["allowsDeadSoldiers"].as<bool >(_allowsDeadSoldiers);
-	_allowsLiveSoldiers = node["allowsLiveSoldiers"].as<bool >(_allowsLiveSoldiers);
-	_allowsWoundedSoldiers = node["allowsWoundedSoldiers"].as<bool >(_allowsWoundedSoldiers);
-	mod->loadUnorderedNames(_name, _allowedSoldierTypes, node["allowedSoldierTypes"]);
-	mod->loadUnorderedNames(_name, _requiredPreviousTransformations, node["requiredPreviousTransformations"]);
-	mod->loadUnorderedNames(_name, _forbiddenPreviousTransformations, node["forbiddenPreviousTransformations"]);
-	_includeBonusesForMinStats = node["includeBonusesForMinStats"].as<bool >(_includeBonusesForMinStats);
-	_requiredMinStats = node["requiredMinStats"].as<UnitStats >(_requiredMinStats);
-	mod->loadUnorderedNamesToInt(_name, _requiredItems, node["requiredItems"]);
-	mod->loadUnorderedNamesToInt(_name, _requiredCommendations, node["requiredCommendations"]);
-	_cost = node["cost"].as<int>(_cost);
-	_transferTime = node["transferTime"].as<int>(_transferTime);
-	_recoveryTime = node["recoveryTime"].as<int>(_recoveryTime);
-	_transformationTime = node["transformationTime"].as<int>(_transformationTime);
-	_minRank = node["minRank"].as<int>(_minRank);
-	_flatOverallStatChange = node["flatOverallStatChange"].as<UnitStats >(_flatOverallStatChange);
-	_percentOverallStatChange = node["percentOverallStatChange"].as<UnitStats >(_percentOverallStatChange);
-	_percentGainedStatChange = node["percentGainedStatChange"].as<UnitStats >(_percentGainedStatChange);
-	_flatMin = node["flatMin"].as<UnitStats >(_flatMin);
-	_flatMax = node["flatMax"].as<UnitStats >(_flatMax);
-	_percentMin = node["percentMin"].as<UnitStats >(_percentMin);
-	_percentMax = node["percentMax"].as<UnitStats >(_percentMax);
-	_percentGainedMin = node["percentGainedMin"].as<UnitStats >(_percentGainedMin);
-	_percentGainedMax = node["percentGainedMax"].as<UnitStats >(_percentGainedMax);
-	_showMinMax = node["showMinMax"].as<bool >(_showMinMax);
-	_rerollStats = node["rerollStats"].as<UnitStats >(_rerollStats);
-	_lowerBoundAtMinStats = node["lowerBoundAtMinStats"].as<bool >(_lowerBoundAtMinStats);
-	_upperBoundAtMaxStats = node["upperBoundAtMaxStats"].as<bool >(_upperBoundAtMaxStats);
-	_upperBoundAtStatCaps = node["upperBoundAtStatCaps"].as<bool >(_upperBoundAtStatCaps);
-	_upperBoundType = node["upperBoundType"].as<int>(_upperBoundType);
-	_addRole = (SoldierRole)node["addRole"].as<int>(_addRole);
-	if (node["roleRankRequirements"])
-		loadRoleRequirements(node["roleRankRequirements"].as<std::map<int, int>>());
-	_forbiddenRole = (SoldierRole)node["forbiddenRole"].as<int>(_forbiddenRole);
-	_reset = node["reset"].as<bool >(_reset);
-	_resetRank = node["resetRank"].as<bool >(_resetRank);
-	_soldierBonusType = node["soldierBonusType"].as<std::string >(_soldierBonusType);
+	mod->loadUnorderedNames(_name, _requires, reader["requires"]);
+	mod->loadBaseFunction(_name, _requiresBaseFunc, reader["requiresBaseFunc"]);
+	reader.tryRead("description", _description);
+	reader.tryRead("producedItem", _producedItem);
+	reader.tryRead("producedSoldierType", _producedSoldierType);
+	reader.tryRead("producedSoldierArmor", _producedSoldierArmor);
+	reader.tryRead("keepSoldierArmor", _keepSoldierArmor);
+	reader.tryRead("createsClone", _createsClone);
+	reader.tryRead("needsCorpseRecovered", _needsCorpseRecovered);
+	reader.tryRead("allowsDeadSoldiers", _allowsDeadSoldiers);
+	reader.tryRead("allowsLiveSoldiers", _allowsLiveSoldiers);
+	reader.tryRead("allowsWoundedSoldiers", _allowsWoundedSoldiers);
+	mod->loadUnorderedNames(_name, _allowedSoldierTypes, reader["allowedSoldierTypes"]);
+	mod->loadUnorderedNames(_name, _requiredPreviousTransformations, reader["requiredPreviousTransformations"]);
+	mod->loadUnorderedNames(_name, _forbiddenPreviousTransformations, reader["forbiddenPreviousTransformations"]);
+	reader.tryRead("includeBonusesForMinStats", _includeBonusesForMinStats);
+	reader.tryRead("includeBonusesForMaxStats", _includeBonusesForMaxStats);
+	reader.tryRead("requiredMinStats", _requiredMinStats);
+	if (reader["requiredMaxStats"])
+	{
+		UnitStats tmp = reader["requiredMaxStats"].readVal(_requiredMaxStats);
+		_requiredMaxStats.merge(tmp);
+	}
+	mod->loadUnorderedNamesToInt(_name, _requiredItems, reader["requiredItems"]);
+	mod->loadUnorderedNamesToInt(_name, _requiredCommendations, reader["requiredCommendations"]);
+	reader.tryRead("cost", _cost);
+	reader.tryRead("transferTime", _transferTime);
+	reader.tryRead("recoveryTime", _recoveryTime);
+	reader.tryRead("transformationTime", _transformationTime);
+	reader.tryRead("minRank", _minRank);
+	reader.tryRead("flatOverallStatChange", _flatOverallStatChange);
+	reader.tryRead("percentOverallStatChange", _percentOverallStatChange);
+	reader.tryRead("percentGainedStatChange", _percentGainedStatChange);
+	reader.tryRead("flatMin", _flatMin);
+	reader.tryRead("flatMax", _flatMax);
+	reader.tryRead("percentMin", _percentMin);
+	reader.tryRead("percentMax", _percentMax);
+	reader.tryRead("percentGainedMin", _percentGainedMin);
+	reader.tryRead("percentGainedMax", _percentGainedMax);
+	reader.tryRead("showMinMax", _showMinMax);
+	reader.tryRead("rerollStats", _rerollStats);
+	reader.tryRead("lowerBoundAtMinStats", _lowerBoundAtMinStats);
+	reader.tryRead("upperBoundAtMaxStats", _upperBoundAtMaxStats);
+	reader.tryRead("upperBoundAtStatCaps", _upperBoundAtStatCaps);
+	reader.tryRead("upperBoundType", _upperBoundType);
+	reader.tryRead("addRole", reinterpret_cast<int&>(_addRole));
+	if (reader["roleRankRequirements"])
+	{
+		std::map<int, int> reqs;
+		reader.tryRead("roleRankRequirements", reqs);
+		loadRoleRequirements(reqs);
+	}
+
+	mod->loadUnorderedNames(_name, _removeTransformations, reader["removeTransformations"]);
+	reader.tryRead("reset", _reset);
+	reader.tryRead("resetRank", _resetRank);
+	reader.tryRead("soldierBonusType", _soldierBonusType);
 }
 
 /**
@@ -231,6 +244,15 @@ const std::vector<std::string > &RuleSoldierTransformation::getForbiddenPrevious
 const UnitStats &RuleSoldierTransformation::getRequiredMinStats() const
 {
 	return _requiredMinStats;
+}
+
+/**
+ * Gets the maximum stats a soldier can have to be eligible for this project
+ * @return The stat requirements
+ */
+const UnitStats &RuleSoldierTransformation::getRequiredMaxStats() const
+{
+	return _requiredMaxStats;
 }
 
 /**

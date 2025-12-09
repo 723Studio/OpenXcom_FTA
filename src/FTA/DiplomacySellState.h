@@ -121,6 +121,8 @@ public:
 	void increase();
 	/// Decreases the quantity of an item by one.
 	void decrease();
+	/// Determines if the current selection is hidden by the category filter.
+	bool isHidden(int sel) const;
 	/// Changes the quantity of an item by the given value.
 	void changeByValue(int change, int dir);
 	/// Updates the quantity-strings of the selected item.

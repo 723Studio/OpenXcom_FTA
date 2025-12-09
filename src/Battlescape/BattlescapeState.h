@@ -55,7 +55,7 @@ private:
 	BattlescapeButton *_btnInventory, *_btnCenter, *_btnNextSoldier, *_btnNextStop, *_btnShowLayers, *_btnHelp;
 	BattlescapeButton *_btnEndTurn, *_btnAbort, *_btnLaunch, *_btnPsi, *_btnSpecial, *_btnSkills, *_reserve;
 	BattlescapeButton *_btnCtrl, *_btnAlt, *_btnShift, *_btnRMB, *_btnMMB;
-	bool _touchButtonsEnabled, _touchButtonsEnabledLastTurn;
+	bool _touchButtonsEnabled;
 	InteractiveSurface *_btnStats;
 	BattlescapeButton *_btnReserveNone, *_btnReserveSnap, *_btnReserveAimed, *_btnReserveAuto, *_btnReserveKneel, *_btnZeroTUs;
 	InteractiveSurface *_btnLeftHandItem, *_btnRightHandItem;
@@ -113,7 +113,7 @@ private:
 	void toggleKneelButton(BattleUnit* unit);
 public:
 	/// Selects the next soldier.
-	void selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false, bool checkFOV = true);
+	void selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false, bool checkFOV = true, bool byDistance = false);
 	/// Selects the previous soldier.
 	void selectPreviousPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	static const int DEFAULT_ANIM_SPEED = 100;
@@ -153,7 +153,9 @@ public:
 	/// Handler for clicking the Next Soldier button.
 	void btnNextSoldierClick(Action *action);
 	/// Handler for clicking the Next Stop button.
-	void btnNextStopClick(Action *action);
+	void btnNextStopLClick(Action *action);
+	void btnNextStopMClick(Action *action);
+	void btnNextStopRClick(Action *action);
 	/// Handler for clicking the Previous Soldier button.
 	void btnPrevSoldierClick(Action *action);
 	/// Handler for clicking the Show Layers button.

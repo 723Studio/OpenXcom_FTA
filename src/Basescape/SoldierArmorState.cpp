@@ -109,17 +109,25 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	_lstArmor->setBackground(_window);
 	_lstArmor->setMargin(8);
 
+	//_sortName->setX(_sortName->getX() + _txtType->getTextWidth() + 4);
+	//_sortName->onMouseClick((ActionHandler)&SoldierArmorState::sortNameClick);
+
+	//{
+	//	// refresh soldier's _bonusCache, needed below in Armor::getCanBeUsedBy()
+	//	//s->getBonuses(_game->getMod());
+	//}
+
 	for (auto* a : _game->getMod()->getArmorsForSoldiers())
 	{
 		if (a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
 			continue;
-		if (!a->getCanBeUsedBy(s->getRules()))
+		if (!a->getCanBeUsedBy(s))
 			continue;
 		if (a->hasInfiniteSupply())
 		{
 			_armors.push_back(ArmorItem(a->getType(), tr(a->getType()), ""));
 		}
-		else if (_base->getStorageItems()->getItem(a->getStoreItem()) > 0)
+		else if (_base->getStorageItems()->getItem(a->getStoreItem()) > 0 || a->getStoreItem() == s->getArmor()->getStoreItem())
 		{
 			std::ostringstream ss;
 			if (_game->getSavedGame()->getMonthsPassed() > -1)
@@ -136,7 +144,7 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&SoldierArmorState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnCancel->onKeyboardRelease((ActionHandler)&SoldierArmorState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 

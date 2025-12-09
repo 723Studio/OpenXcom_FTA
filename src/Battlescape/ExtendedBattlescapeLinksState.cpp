@@ -31,6 +31,7 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
+#include "../Battlescape/ExperienceOverviewState.h"
 #include "../Menu/NotesState.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/HitLog.h"
@@ -190,7 +191,7 @@ void ExtendedBattlescapeLinksState::btnBriefingClick(Action *)
 void ExtendedBattlescapeLinksState::btnNotesClick(Action *)
 {
 	_game->popState();
-	_game->pushState(new NotesState(OPT_BATTLESCAPE));
+	_game->pushState(new ExperienceOverviewState(_parent));
 }
 
 void ExtendedBattlescapeLinksState::btnMusicClick(Action *)

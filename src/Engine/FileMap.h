@@ -22,13 +22,17 @@
 #include <string>
 #include <vector>
 #include <istream>
+#include <memory>
 #include <unordered_set>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
+#include "../Engine/CrossPlatform.h"
 #include <SDL_rwops.h>
 #include "ModInfo.h"
 
 namespace OpenXcom
 {
+
+class OXCContainer;
 
 /**
  * Maps canonical names to file paths and maintains the virtual file system
@@ -39,10 +43,10 @@ namespace FileMap
 	struct FileRecord {
 		std::string fullpath; 	// includes zip file name if any
 
-		void *zip; 				// borrowed reference/weakref. NOTNULL: points to mz_zip_archive
+		void *zip; 				// borrowed reference/weakref. NOTNULL:
 		size_t findex;       	// file index in the zipfile.
-		
-		void *oxc;				// borrowed reference/weakref. NOTNULL: points to OXCContainer
+		OXCContainer *oxc;   // borrowed reference, owned by FileMap.
+		std::string oxcRelpath; // relative path inside the .oxc container
 
 		FileRecord();
 
@@ -52,8 +56,9 @@ namespace FileMap
 		SDL_RWops *getRWopsReadAll() const;
 
 		std::unique_ptr<std::istream> getIStream() const;
-		YAML::Node getYAML() const;
-		std::vector<YAML::Node> getAllYAML() const;
+		RawData getUnzippedData() const;
+		YAML::YamlRootNodeReader getYAML() const;
+		std::vector<YAML::YamlNodeReader> getAllYAML() const;
 	};
 
 	/// For common operations on bunches of filenames
@@ -76,8 +81,8 @@ namespace FileMap
 	const std::vector<const FileRecord *> getSlice(const std::string &relativeFilePath);
 
 	/// Returns parsed YAML for a filename
-	YAML::Node getYAML(const std::string &relativeFilePath);
-	std::vector<YAML::Node> getAllYAML(const std::string &relativeFilePath);
+	YAML::YamlRootNodeReader getYAML(const std::string &relativeFilePath);
+	std::vector<YAML::YamlNodeReader> getAllYAML(const std::string& relativeFilePath);
 
 	/// if we have the file
 	bool fileExists(const std::string &relativeFilePath);

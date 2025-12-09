@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "BattleUnit.h"
 #include "SavedGame.h"
 
@@ -41,15 +41,15 @@ private:
 
 public:
 	/// Creates a new commendation and loads its contents from YAML.
-	SoldierCommendations(const YAML::Node& node, const Mod* mod);
+	SoldierCommendations(const YAML::YamlNodeReader& reader, const Mod* mod);
 	/// Creates a commendation of the specified type.
 	SoldierCommendations(const std::string& commendationName, const std::string& noun, const Mod* mod);
 	/// Cleans up the commendation.
 	~SoldierCommendations();
 	/// Loads the commendation information from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Saves the commendation information to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 
 	/// Get commendation rule config.
 	RuleCommendations* getRule() { return _rule; }
@@ -91,9 +91,9 @@ public:
 	/// Cleans up a diary.
 	~SoldierDiary();
 	/// Load a diary.
-	void load(const YAML::Node& node, const Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, const Mod *mod);
 	/// Save a diary.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Update the diary statistics.
 	void updateDiary(BattleUnitStatistics*, std::vector<MissionStatistics*>*, Mod*);
 	/// Get the list of kills, mapped by rank.
@@ -130,8 +130,10 @@ public:
 	int getDaysWoundedTotal() const;
 	/// Get the solder's commendations.
 	std::vector<SoldierCommendations*> *getSoldierCommendations();
+	/// Checks whether the diary contains a given commendation.
+	bool containsCommendation(const RuleCommendations* rule) const;
 	/// Manage commendations, return true if a medal is awarded.
-	bool manageCommendations(Mod*, std::vector<MissionStatistics*>*);
+	bool manageCommendations(const Mod* mod, SavedGame* save, const Soldier* soldier);
 	/// Increment the soldier's service time.
 	void addMonthlyService();
 	/// Get the total months in service.
@@ -156,9 +158,9 @@ public:
 	/// Get the soldier's accuracy.
 	int getAccuracy() const;
 	/// Get the total number of trap kills.
-	int getTrapKillTotal(Mod*) const;
+	int getTrapKillTotal(const Mod* mod) const;
 	/// Get the total number of reaction fire kills.
-	int getReactionFireKillTotal(Mod*) const;
+	int getReactionFireKillTotal(const Mod* mod) const;
 	/// Get the total number of terror missions.
 	int getTerrorMissionTotal(std::vector<MissionStatistics*>*) const;
 	/// Get the total number of night missions.

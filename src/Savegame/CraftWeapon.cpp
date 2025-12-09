@@ -49,27 +49,27 @@ CraftWeapon::~CraftWeapon()
  * Loads the craft weapon from a YAML file.
  * @param node YAML node.
  */
-void CraftWeapon::load(const YAML::Node &node)
+void CraftWeapon::load(const YAML::YamlNodeReader& reader)
 {
-	_ammo = node["ammo"].as<int>(_ammo);
-	_rearming = node["rearming"].as<bool>(_rearming);
-	_disabled = node["disabled"].as<bool>(_disabled);
+	reader.tryRead("ammo", _ammo);
+	reader.tryRead("rearming", _rearming);
+	reader.tryRead("disabled", _disabled);
 }
 
 /**
  * Saves the base to a YAML file.
  * @return YAML node.
  */
-YAML::Node CraftWeapon::save() const
+void CraftWeapon::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["type"] = _rules->getType();
-	node["ammo"] = _ammo;
+	writer.setAsMap();
+
+	writer.write("type", _rules->getType());
+	writer.write("ammo", _ammo);
 	if (_rearming)
-		node["rearming"] = _rearming;
+		writer.write("rearming", _rearming);
 	if (_disabled)
-		node["disabled"] = _disabled;
-	return node;
+		writer.write("disabled", _disabled);
 }
 
 /**
@@ -193,7 +193,12 @@ int CraftWeapon::rearm(const int available, const int clipSize)
  */
 CraftWeaponProjectile* CraftWeapon::fire() const
 {
-	CraftWeaponProjectile *p = new CraftWeaponProjectile();
+	const RuleItem* damageItem = nullptr;
+	if (this->getRules()->unifiedDamageFormula())
+	{
+		damageItem = this->getRules()->getClipItem() ? this->getRules()->getClipItem() : this->getRules()->getLauncherItem();
+	}
+	CraftWeaponProjectile *p = new CraftWeaponProjectile(damageItem);
 	p->setType(this->getRules()->getProjectileType());
 	p->setSpeed(this->getRules()->getProjectileSpeed());
 	p->setAccuracy(this->getRules()->getAccuracy());

@@ -21,7 +21,7 @@
 #include "OXCCrypto.h"
 #include "Exception.h"
 #include "Logger.h"
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include <cstring>
 #include <sstream>
 #include <algorithm>
@@ -55,60 +55,60 @@ static const uint8_t base64_table[256] = {
 std::vector<uint8_t> OXCContainer::_base64Decode(const std::string& encoded) {
 	std::vector<uint8_t> result;
 	result.reserve((encoded.size() * 3) / 4);
-	
+
 	uint32_t buffer = 0;
 	int bits = 0;
-	
+
 	for (char c : encoded) {
 		if (c == '=') break;
 		uint8_t val = base64_table[(uint8_t)c];
 		if (val == 64) continue; // Skip invalid characters
-		
+
 		buffer = (buffer << 6) | val;
 		bits += 6;
-		
+
 		if (bits >= 8) {
 			bits -= 8;
 			result.push_back((buffer >> bits) & 0xFF);
 		}
 	}
-	
+
 	return result;
 }
 
 std::vector<uint8_t> OXCContainer::_readFixed(size_t pos, size_t len) {
 	std::vector<uint8_t> buf(len);
-	
+
 	if (SDL_RWseek(_rwops, pos, RW_SEEK_SET) != (Sint64)pos) {
 		throw Exception("Failed to seek in OXC container");
 	}
-	
+
 	size_t read = SDL_RWread(_rwops, buf.data(), 1, len);
 	if (read != len) {
 		throw Exception("Failed to read expected bytes from OXC container");
 	}
-	
+
 	return buf;
 }
 
 void OXCContainer::_parseContainer(const std::string& passphrase) {
 	size_t pos = 0;
-	
+
 	// Read and verify magic
 	std::vector<uint8_t> magic = _readFixed(pos, 8);
 	pos += 8;
-	
+
 	const uint8_t expectedMagic[8] = {'O', 'X', 'F', 'T', 'A', '1', '\0', '\0'};
 	if (memcmp(magic.data(), expectedMagic, 8) != 0) {
 		throw Exception("Invalid OXC container: bad magic bytes");
 	}
 	Log(LOG_DEBUG) << "OXC magic OK for " << _fullpath;
-	
+
 	// Read version
 	std::vector<uint8_t> versionBuf = _readFixed(pos, 1);
 	pos += 1;
 	uint8_t version = versionBuf[0];
-	
+
 	Log(LOG_DEBUG) << "OXC container version: " << (int)version;
 	if (version < 1 || version > 3) {
 		std::ostringstream err;
@@ -118,15 +118,15 @@ void OXCContainer::_parseContainer(const std::string& passphrase) {
 	if (version != 3) {
 		Log(LOG_WARNING) << "Parsing OXC version " << (int)version << ", expected 3; attempting compatibility";
 	}
-	
+
 	// Read salt
 	std::vector<uint8_t> salt = _readFixed(pos, 16);
 	pos += 16;
-	
+
 	// Read manifest IV
 	std::vector<uint8_t> ivMan = _readFixed(pos, 16);
 	pos += 16;
-	
+
 	// Read manifest length (endianness/semantics may differ across versions)
 	std::vector<uint8_t> lenBuf = _readFixed(pos, 4);
 	uint32_t lenBE = ((uint32_t)lenBuf[0] << 24) | ((uint32_t)lenBuf[1] << 16) |
@@ -180,15 +180,15 @@ void OXCContainer::_parseContainer(const std::string& passphrase) {
 	pos += (size_t)encLen64;
 	std::vector<uint8_t> macMan = _readFixed(pos, 32);
 	pos += 32;
-	
+
 	// Derive key from passphrase
 	_key = OXCCrypto::deriveKey(passphrase, salt);
-	
+
 	std::vector<uint8_t> encKey(32);
 	std::vector<uint8_t> hmacKey(32);
 	std::copy(_key.begin(), _key.begin() + 32, encKey.begin());
 	std::copy(_key.begin() + 32, _key.end(), hmacKey.begin());
-	
+
 	// Decrypt manifest
 	std::vector<uint8_t> manifestPlaintext;
 	try {
@@ -197,45 +197,74 @@ void OXCContainer::_parseContainer(const std::string& passphrase) {
 		Log(LOG_ERROR) << "Failed to decrypt OXC container manifest: " << e.what();
 		throw Exception("Failed to decrypt OXC container - wrong password?");
 	}
-	
-	// Parse manifest YAML
+
+	// Parse manifest YAML using Engine/Yaml
 	std::string manifestStr(manifestPlaintext.begin(), manifestPlaintext.end());
-	YAML::Node manifest;
-	
+	// Sanitize manifest: strip BOM, normalize CRLF, and remove control chars except \n and \t
+	if (!manifestStr.empty() && (unsigned char)manifestStr[0] == 0xEF && manifestStr.size() >= 3
+		&& (unsigned char)manifestStr[1] == 0xBB && (unsigned char)manifestStr[2] == 0xBF)
+	{
+		manifestStr.erase(0, 3);
+	}
+	// normalize CRLF to LF
+	manifestStr.erase(std::remove(manifestStr.begin(), manifestStr.end(), '\r'), manifestStr.end());
+	// replace other ASCII control characters with spaces to avoid rapidyaml parse errors
+	size_t sanitizedCount = 0;
+	for (size_t i = 0; i < manifestStr.size(); ++i)
+	{
+		unsigned char ch = (unsigned char)manifestStr[i];
+		if (ch < 0x20 && ch != '\n' && ch != '\t')
+		{
+			manifestStr[i] = ' ';
+			++sanitizedCount;
+		}
+	}
+	if (sanitizedCount > 0)
+	{
+		Log(LOG_WARNING) << "Sanitized " << (unsigned long)sanitizedCount << " control characters in OXC manifest";
+	}
+	YAML::YamlRootNodeReader manifestRoot(YAML::YamlString{manifestStr}, "manifest");
 	try {
-		manifest = YAML::Load(manifestStr);
-	} catch (const std::exception& e) {
+		// manifestRoot is already loaded
+	} catch (...) {
 		throw Exception("Failed to parse OXC container manifest YAML");
 	}
-	
-	if (!manifest.IsMap() || !manifest["files"] || !manifest["files"].IsSequence()) {
+	auto filesSeq = manifestRoot["files"].children();
+	if (filesSeq.empty()) {
 		throw Exception("Invalid or corrupted OXC container manifest");
 	}
-	
+
 	// Store data section start position
 	_dataSectionStart = pos;
-	
+
 	// Parse file entries
-	for (const auto& fileNode : manifest["files"]) {
+	for (const auto& fileNode : filesSeq) {
 		FileEntry entry;
-		entry.path = fileNode["path"].as<std::string>();
+		fileNode.tryRead("path", entry.path);
 		// normalize separators to forward slash
 		std::replace(entry.path.begin(), entry.path.end(), '\\', '/');
+		// trim leading/trailing whitespace from path
+		auto notSpace = [](int ch){ return !std::isspace(ch); };
+		entry.path.erase(entry.path.begin(), std::find_if(entry.path.begin(), entry.path.end(), notSpace));
+		entry.path.erase(std::find_if(entry.path.rbegin(), entry.path.rend(), notSpace).base(), entry.path.end());
 		while (!entry.path.empty() && (entry.path.front() == '/' || entry.path.front() == '.')) {
 			// trim leading '/' or './'
 			if (entry.path.front() == '/') { entry.path.erase(entry.path.begin()); }
 			else if (entry.path.size() >= 2 && entry.path.substr(0,2) == "./") { entry.path.erase(0,2); }
 			else { break; }
 		}
-		entry.offset = fileNode["offset"].as<size_t>();
-		entry.length = fileNode["length"].as<size_t>();
-		entry.compressed = fileNode["compressed"].as<bool>();
-		entry.iv = fileNode["iv"].as<std::string>();
-		entry.mac = fileNode["mac"].as<std::string>();
-		
+		uint32_t offset = 0, length = 0;
+		fileNode.tryRead("offset", offset);
+		fileNode.tryRead("length", length);
+		entry.offset = (size_t)offset;
+		entry.length = (size_t)length;
+		fileNode.tryRead("compressed", entry.compressed);
+		fileNode.tryRead("iv", entry.iv);
+		fileNode.tryRead("mac", entry.mac);
+
 		_files[entry.path] = entry;
 	}
-	
+
 	_loaded = true;
 	Log(LOG_DEBUG) << "Loaded OXC container: " << _fullpath << " with " << _files.size() << " files";
 }
@@ -247,7 +276,7 @@ OXCContainer::OXCContainer(const std::string& fullpath, const std::string& passp
 	if (!_rwops) {
 		throw Exception("Failed to open OXC container file: " + fullpath);
 	}
-	
+
 	try {
 		_parseContainer(passphrase);
 	} catch (...) {
@@ -258,13 +287,13 @@ OXCContainer::OXCContainer(const std::string& fullpath, const std::string& passp
 	}
 }
 
-OXCContainer::OXCContainer(SDL_RWops* rwops, const std::string& fullpath, const std::string& passphrase)
-	: _fullpath(fullpath), _rwops(rwops), _ownsRwops(false), _dataSectionStart(0), _loaded(false)
+OXCContainer::OXCContainer(SDL_RWops* rwops, const std::string& fullpath, const std::string& passphrase, bool takeOwnership)
+	: _fullpath(fullpath), _rwops(rwops), _ownsRwops(takeOwnership), _dataSectionStart(0), _loaded(false)
 {
 	if (!_rwops) {
 		throw Exception("Invalid SDL_RWops for OXC container");
 	}
-	
+
 	_parseContainer(passphrase);
 }
 
@@ -275,51 +304,119 @@ OXCContainer::~OXCContainer() {
 }
 
 bool OXCContainer::hasFile(const std::string& relpath) const {
-	return _files.find(relpath) != _files.end();
+	// Exact match
+	if (_files.find(relpath) != _files.end()) return true;
+	// Try common alias: .yml <-> .yaml
+	if (relpath.size() >= 4) {
+		if (relpath.size() >= 4 && relpath.substr(relpath.size()-4) == ".yml") {
+			std::string alt = relpath;
+			alt.replace(relpath.size()-4, 4, ".yaml");
+			if (_files.find(alt) != _files.end()) return true;
+		} else if (relpath.size() >= 5 && relpath.substr(relpath.size()-5) == ".yaml") {
+			std::string alt = relpath;
+			alt.replace(relpath.size()-5, 5, ".yml");
+			if (_files.find(alt) != _files.end()) return true;
+		}
+	}
+	// Case-insensitive match scan (container paths may differ in case)
+	for (const auto& kv : _files) {
+		if (_stricmp(kv.first.c_str(), relpath.c_str()) == 0) return true;
+	}
+	return false;
 }
 
 std::vector<std::string> OXCContainer::getFileList() const {
 	std::vector<std::string> result;
 	result.reserve(_files.size());
-	
+
 	for (const auto& pair : _files) {
 		result.push_back(pair.first);
 	}
-	
+
 	return result;
 }
 
 std::vector<uint8_t> OXCContainer::extractFile(const std::string& relpath) {
 	auto it = _files.find(relpath);
 	if (it == _files.end()) {
+		// Try .yml <-> .yaml alias
+		if (relpath.size() >= 4 && relpath.substr(relpath.size()-4) == ".yml") {
+			std::string alt = relpath;
+			alt.replace(relpath.size()-4, 4, ".yaml");
+			it = _files.find(alt);
+		} else if (relpath.size() >= 5 && relpath.substr(relpath.size()-5) == ".yaml") {
+			std::string alt = relpath;
+			alt.replace(relpath.size()-5, 5, ".yml");
+			it = _files.find(alt);
+		}
+	}
+	if (it == _files.end()) {
+		// Case-insensitive search
+		for (auto fit = _files.begin(); fit != _files.end(); ++fit) {
+			if (_stricmp(fit->first.c_str(), relpath.c_str()) == 0) {
+				it = fit;
+				break;
+			}
+		}
+	}
+	if (it == _files.end()) {
+		// Extra diagnostics: log nearby keys to aid debugging
+		std::string dirPrefix = relpath;
+		size_t slashPos = dirPrefix.find_last_of('/');
+		if (slashPos != std::string::npos) {
+			dirPrefix = dirPrefix.substr(0, slashPos + 1);
+		} else {
+			dirPrefix.clear();
+		}
+		int logged = 0;
+		for (const auto& kv : _files) {
+			if (!dirPrefix.empty() && kv.first.size() >= dirPrefix.size() && kv.first.compare(0, dirPrefix.size(), dirPrefix) == 0) {
+				if (logged < 10) {
+					Log(LOG_DEBUG) << "OXC nearby key: " << kv.first;
+					++logged;
+				}
+			}
+			else if (logged < 5) {
+				// Also log a few candidates ending with metadata file names
+				if (kv.first.size() >= 13 && (kv.first.substr(kv.first.size()-13) == "metadata.yml" || kv.first.substr(kv.first.size()-14) == "metadata.yaml")) {
+					Log(LOG_DEBUG) << "OXC candidate key: " << kv.first;
+					++logged;
+				}
+			}
+			if (logged >= 15) break;
+		}
+		Log(LOG_ERROR) << "File not found in OXC container (after diagnostics): " << relpath;
 		throw Exception("File not found in OXC container: " + relpath);
 	}
-	
+	if (it == _files.end()) {
+		throw Exception("File not found in OXC container: " + relpath);
+	}
+
 	const FileEntry& entry = it->second;
-	
+
 	// Read encrypted blob (ciphertext + MAC)
 	if (entry.length < 32) {
 		throw Exception("Invalid encrypted blob size in OXC container");
 	}
-	
+
 	std::vector<uint8_t> encBlob = _readFixed(_dataSectionStart + entry.offset, entry.length);
 	std::vector<uint8_t> cipher(encBlob.begin(), encBlob.end() - 32);
 	std::vector<uint8_t> mac(encBlob.end() - 32, encBlob.end());
-	
+
 	// Decode IV and MAC from base64
 	std::vector<uint8_t> iv = _base64Decode(entry.iv);
 	std::vector<uint8_t> expectedMac = _base64Decode(entry.mac);
-	
+
 	if (iv.size() != 16 || expectedMac.size() != 32) {
 		throw Exception("Invalid IV or MAC in OXC container file entry");
 	}
-	
+
 	// Decrypt
 	std::vector<uint8_t> encKey(32);
 	std::vector<uint8_t> hmacKey(32);
 	std::copy(_key.begin(), _key.begin() + 32, encKey.begin());
 	std::copy(_key.begin() + 32, _key.end(), hmacKey.begin());
-	
+
 	std::vector<uint8_t> plain;
 	try {
 		plain = OXCCrypto::decryptCbcHmac(encKey, hmacKey, iv, cipher, mac);
@@ -327,51 +424,51 @@ std::vector<uint8_t> OXCContainer::extractFile(const std::string& relpath) {
 		Log(LOG_ERROR) << "Failed to decrypt file from OXC container: " << relpath;
 		throw;
 	}
-	
+
 	// Decompress if needed
 	if (entry.compressed) {
 		uLongf decompressedSize = plain.size() * 10; // Initial guess
 		std::vector<uint8_t> decompressed(decompressedSize);
-		
+
 		int result = Z_BUF_ERROR;
 		while (result == Z_BUF_ERROR) {
 			decompressedSize = decompressed.size();
 			result = uncompress(decompressed.data(), &decompressedSize,
 			                   plain.data(), plain.size());
-			
+
 			if (result == Z_BUF_ERROR) {
 				decompressed.resize(decompressed.size() * 2);
 			}
 		}
-		
+
 		if (result != Z_OK) {
 			throw Exception("Failed to decompress file from OXC container: " + relpath);
 		}
-		
+
 		decompressed.resize(decompressedSize);
 		return decompressed;
 	}
-	
+
 	return plain;
 }
 
 SDL_RWops* OXCContainer::extractFileToRWops(const std::string& relpath) {
 	std::vector<uint8_t> data = extractFile(relpath);
-	
+
 	// Allocate memory that SDL will own
 	void* mem = SDL_malloc(data.size());
 	if (!mem) {
 		throw Exception("Failed to allocate memory for OXC file extraction");
 	}
-	
+
 	memcpy(mem, data.data(), data.size());
-	
+
 	SDL_RWops* rwops = SDL_RWFromConstMem(mem, data.size());
 	if (!rwops) {
 		SDL_free(mem);
 		throw Exception("Failed to create SDL_RWops for OXC file");
 	}
-	
+
 	// Set up close callback to free memory
 	rwops->close = [](struct SDL_RWops* context) -> int {
 		if (context) {
@@ -382,7 +479,7 @@ SDL_RWops* OXCContainer::extractFileToRWops(const std::string& relpath) {
 		}
 		return 0;
 	};
-	
+
 	return rwops;
 }
 

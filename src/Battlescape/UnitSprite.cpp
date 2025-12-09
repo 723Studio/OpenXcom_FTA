@@ -38,7 +38,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet) :
+UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
 	_unit(0), _itemR(0), _itemL(0),
 	_unitSurface(0),
 	_itemSurface(const_cast<Mod*>(mod)->getSurfaceSet("HANDOB.PCK")),
@@ -49,6 +49,7 @@ UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* sav
 	_dest(dest), _save(save), _mod(mod),
 	_part(0), _animationFrame(frame), _drawingRoutine(0),
 	_helmet(helmet),
+	_red(red), _blue(blue),
 	_x(0), _y(0), _shade(0), _burn(0),
 	_mask(0, 0)
 {
@@ -98,7 +99,7 @@ void UnitSprite::selectItem(Part& p, const BattleItem *item, int dir)
 	//enforce compatibility with basic version
 	if (!_itemSurface->getFrame(index + dir))
 	{
-		throw Exception("Frame(s) missing in 'HANDOB.PCK' for item '" + item->getRules()->getName() + "'");
+		throw Exception("Frame(s) missing in 'HANDOB.PCK' for item '" + item->getRules()->getType() + "'");
 	}
 
 	int result = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
@@ -178,7 +179,7 @@ void UnitSprite::blitBody(Part& body)
  * Draws a unit, using the drawing rules of the unit.
  * This function is called by Map, for each unit on the screen.
  */
-void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool isAltPressed)
+void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool drawFacingIndicator)
 {
 	_x = x;
 	_y = y;
@@ -261,11 +262,18 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 			tmpSurface->blitNShade(_dest, _x, _y- 30 + (22 - unit->getHeight()), shade, _mask);
 		}
 	}
-	if (isAltPressed)
+	if (drawFacingIndicator && part == 0)
 	{
 		// draw unit facing indicator
 		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
-		tmpSurface->blitNShade(_dest, _x, _y, 0);
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			tmpSurface->blitNShade(_dest, _x, _y, 0);
+		}
+		else
+		{
+			Surface::blitRaw(_dest, tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
+		}
 	}
 	drawUnitIcon();
 }

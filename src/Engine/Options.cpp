@@ -27,7 +27,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Exception.h"
 #include "Logger.h"
 #include "CrossPlatform.h"
@@ -55,6 +55,7 @@ std::map<std::string, ModInfo> _modInfos;
 std::string _masterMod;
 int _passwordCheck = -1;
 bool _loadLastSave = false;
+std::string _loadThisSave = "";
 bool _loadLastSaveExpended = false;
 
 /**
@@ -146,6 +147,7 @@ void createOptionsOXC()
 	_info.push_back(OptionInfo(OPTION_OXC, "dragScrollPixelTolerance", &dragScrollPixelTolerance, 10)); // count of pixels
 	_info.push_back(OptionInfo(OPTION_OXC, "battleFireSpeed", &battleFireSpeed, 6));
 	_info.push_back(OptionInfo(OPTION_OXC, "battleXcomSpeed", &battleXcomSpeed, 30));
+	battleXcomSpeedOrig = -1;
 	_info.push_back(OptionInfo(OPTION_OXC, "battleAlienSpeed", &battleAlienSpeed, 30));
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXC, "battleNewPreviewPath", (int*)&battleNewPreviewPath, PATH_FULL)); // for android, set full preview by default
@@ -364,6 +366,7 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableThinkingProgressBar", &oxceDisableThinkingProgressBar, false));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceListVFSContents", &oxceListVFSContents, false));
@@ -376,12 +379,23 @@ void createOptionsOXCE()
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSlowdownFactor", &oxceGeoSlowdownFactor, 1, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoShowScoreInsteadOfFunds", &oxceGeoShowScoreInsteadOfFunds, false)); // debug only
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoEnableTrainingIndicator", &oxceGeoEnableTrainingIndicator, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressRedundantHKAlert", &oxceGeoSuppressRedundantHKAlert, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressLandingWithoutEquipment", &oxceGeoSuppressLandingWithoutEquipment, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoGoToNearestBase", &oxceGeoGoToNearestBase, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSortCraftByDistanceToTarget", &oxceGeoSortCraftByDistanceToTarget, false, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseInfoDefenseScaleMultiplier", &oxceBaseInfoDefenseScaleMultiplier, 100, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierTransformationShowOnlyEligible", &oxceBaseSoldierTransformationShowOnlyEligible, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseFilterResearchable", &oxceBaseFilterResearchable, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureFallbackButton", &oxceBaseManufactureFallbackButton, false, "", "HIDDEN"));
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureInfinityButton", &oxceBaseManufactureInfinityButton, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseTouchButtons", &oxceBaseTouchButtons, true, "", "HIDDEN"));
 #else
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureInfinityButton", &oxceBaseManufactureInfinityButton, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseTouchButtons", &oxceBaseTouchButtons, false, "", "HIDDEN"));
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableAlienInventory", &oxceDisableAlienInventory, false, "", "HIDDEN"));
@@ -395,8 +409,21 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceToggleNightVisionType", &oxceToggleNightVisionType, 1, "", "HIDDEN"));     // per battle
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceToggleBrightnessType", &oxceToggleBrightnessType, 0, "", "HIDDEN"));       // not persisted
 
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowBurningAsWounded", &oxceShowBurningAsWounded, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableInfoOnThrowCursor", &oxceDisableInfoOnThrowCursor, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSwapDontReselectActions", &oxceSwapDontReselectActions, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReplaceNotesLink", &oxceReplaceNotesLink, false, "", "HIDDEN"));
+
+#ifdef __MOBILE__
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventorySplitScrollButton", &oxceInventorySplitScrollButton, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryDropItemOverPaperdoll", &oxceInventoryDropItemOverPaperdoll, true, "", "HIDDEN"));
+#else
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventorySplitScrollButton", &oxceInventorySplitScrollButton, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryDropItemOverPaperdoll", &oxceInventoryDropItemOverPaperdoll, false, "", "HIDDEN"));
+#endif
 
 	// TODO: needs restart (or code change) to work properly
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMaxEquipmentLayoutTemplates", &oxceMaxEquipmentLayoutTemplates, 20, "", "HIDDEN"));
@@ -410,19 +437,28 @@ void createAdvancedOptionsOXCE()
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "autosaveSlots", &autosaveSlots, 1, "STR_AUTOSAVE_SLOTS", "STR_GENERAL")); // OXCE only
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveFrequency", &oxceGeoAutosaveFrequency, 0, "STR_GEO_AUTOSAVE_FREQUENCY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveSlots", &oxceGeoAutosaveSlots, 1, "STR_GEO_AUTOSAVE_SLOTS", "STR_GENERAL"));
 
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, true, "STR_OXCE_LINKS", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinksDisableTextEdit", &oxceLinksDisableTextEdit, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBattleTouchButtonsEnabled", &oxceBattleTouchButtonsEnabled, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, true, "", "HIDDEN"));
 #else
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, false, "STR_OXCE_LINKS", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinksDisableTextEdit", &oxceLinksDisableTextEdit, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBattleTouchButtonsEnabled", &oxceBattleTouchButtonsEnabled, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, false, "", "HIDDEN"));
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHighlightNewTopics", &oxceHighlightNewTopics, true, "STR_HIGHLIGHT_NEW", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePediaShowClipSize", &oxcePediaShowClipSize, false, "STR_PEDIA_SHOW_CLIP_SIZE", "STR_GENERAL"));
 
 	// OXCE options geoscape
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptTableSize", &oxceInterceptTableSize, 8, "STR_INTERCEPT_TABLE_SIZE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true, "STR_SHOW_SLACKING_INDICATOR", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptGuiMaintenanceTime", &oxceInterceptGuiMaintenanceTime, 2, "STR_SHOW_MAINTENANCE_TIME", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
@@ -447,15 +483,20 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReactionFireThreshold", &oxceReactionFireThreshold, 0, "STR_REACTION_FIRE_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoSell", &oxceAutoSell, false, "STR_AUTO_SELL", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableOffCentreShooting", &oxceEnableOffCentreShooting, false, "STR_OFF_CENTRE_SHOOTING", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUniformShootingSpread", &oxceUniformShootingSpread, false, "STR_UNIFORM_SHOOTING_SPREAD", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCrashedOrLanded", &oxceCrashedOrLanded, 0, "STR_CRASHED_OR_LANDED", "STR_BATTLESCAPE"));
 }
 
 void createControlsOXCE()
 {
 	// OXCE controls general
-	_info.push_back(OptionInfo(OPTION_OXCE, "keyToggleQuickSearch", &keyToggleQuickSearch, SDLK_q, "STR_TOGGLE_QUICK_SEARCH", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyToggleQuickSearch", &keyToggleQuickSearch, SDLK_q, "STR_TOGGLE_QUICK_SEARCH", "STR_GENERAL")); //
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyInstaSave", &keyInstaSave, SDLK_F6, "STR_INSTA_SAVE", "STR_GENERAL"));
 
 	// OXCE controls geoscape
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoUfoTracker", &keyGeoUfoTracker, SDLK_t, "STR_UFO_TRACKER", "STR_GEOSCAPE"));
@@ -497,6 +538,7 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInvShowPersonalEquipment", &keyInvShowPersonalEquipment, SDLK_p, "STR_PERSONAL_EQUIPMENT", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryArmor", &keyInventoryArmor, SDLK_a, "STR_INVENTORY_ARMOR", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryAvatar", &keyInventoryAvatar, SDLK_m, "STR_INVENTORY_AVATAR", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyInventoryDiaryLight", &keyInventoryDiaryLight, SDLK_d, "STR_INVENTORY_DIARY_LIGHT", "STR_BASESCAPE"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySellAll", &keySellAll, SDLK_x, "STR_SELL_ALL", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySellAllButOne", &keySellAllButOne, SDLK_z, "STR_SELL_ALL_BUT_ONE", "STR_BASESCAPE"));
@@ -505,6 +547,8 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyMarkAllAsSeen", &keyMarkAllAsSeen, SDLK_x, "STR_MARK_ALL_AS_SEEN", "STR_BASESCAPE"));
 
 	// OXCE controls battlescape
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitUp", &keyBattleUnitUp, SDLK_UNKNOWN, "STR_UNIT_LEVEL_ABOVE", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitDown", &keyBattleUnitDown, SDLK_UNKNOWN, "STR_UNIT_LEVEL_BELOW", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleShowLayers", &keyBattleShowLayers, SDLK_UNKNOWN, "STR_MULTI_LEVEL_VIEW", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUseSpecial", &keyBattleUseSpecial, SDLK_w, "STR_USE_SPECIAL_ITEM", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleActionItem1", &keyBattleActionItem1, SDLK_1, "STR_ACTION_ITEM_1", "STR_BATTLESCAPE"));
@@ -540,12 +584,12 @@ void createControlsOTHER()
 static bool _gameIsInstalled(const std::string &gameName)
 {
 	// look for game data in either the data or user directories
-	std::string dataGameFolder = CrossPlatform::searchDataFolder(gameName);
+	std::string dataGameFolder = CrossPlatform::searchDataFolder(gameName, 8);
 	std::string dataGameZipFile = CrossPlatform::searchDataFile(gameName + ".zip");
 	std::string userGameFolder = _userFolder + gameName;
 	std::string userGameZipFile = _userFolder + gameName + ".zip";
-	return (CrossPlatform::folderExists(dataGameFolder)	&& CrossPlatform::getFolderContents(dataGameFolder).size() >= 8)
-	    || (CrossPlatform::folderExists(userGameFolder)	&& CrossPlatform::getFolderContents(userGameFolder).size() >= 8)
+	return (CrossPlatform::folderMinSize(dataGameFolder, 8))
+	    || (CrossPlatform::folderMinSize(userGameFolder, 8))
 		||  CrossPlatform::fileExists( dataGameZipFile )
 		||  CrossPlatform::fileExists( userGameZipFile );
 }
@@ -655,6 +699,11 @@ static void loadArgs()
 				{
 					_masterMod = argv[i];
 				}
+				else if (argname == "load")
+				{
+					_loadLastSave = true;
+					_loadThisSave = argv[i];
+				}
 				else
 				{
 					//save this command line option for now, we will apply it later
@@ -691,6 +740,8 @@ static bool showHelp()
 	help << "        override option KEY with VALUE (eg. -displayWidth 640)" << std::endl << std::endl;
 	help << "-continue" << std::endl;
 	help << "        load last save" << std::endl << std::endl;
+	help << "-load FILENAME" << std::endl;
+	help << "        load the specified FILENAME (from the corresponding master mod subfolder)" << std::endl << std::endl;
 	help << "-version" << std::endl;
 	help << "        show version number" << std::endl << std::endl;
 	help << "-help" << std::endl;
@@ -720,7 +771,7 @@ static bool showHelp()
 			}
 			if (argname == "version")
 			{
-				std::cout << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << std::endl;
+				std::cout << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT << std::endl;
 				return true;
 			}
 			if (argname == "cont" || argname == "continue")
@@ -908,7 +959,7 @@ void refreshMods()
 
 	if (it != mods.end())
 	{
-		Log(LOG_INFO) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
+		Log(LOG_DEBUG) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
 	}
 	else
 	{
@@ -971,13 +1022,13 @@ void updateMods()
 			if (!modInf->isEngineOk())
 			{
 				forceQuit = true;
-				if (modInf->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+				if (modInf->getRequiredExtendedEngine() != OPENXCOM_FTA_VERSION_ENGINE)
 				{
 					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require OXC " << modInf->getRequiredExtendedEngine() << " engine to run";
 				}
 				else
 				{
-					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_FTA_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
 				}
 			}
 			if (!modInf->isParentMasterOk(masterInf))
@@ -1037,9 +1088,26 @@ const ModInfo* getActiveMasterInfo()
 	return &_modInfos.at(_masterMod);
 }
 
+/**
+ * Gets the xcom ruleset info.
+ */
+const ModInfo* getXcomRulesetInfo()
+{
+	if (_modInfos.find("xcom1") != _modInfos.end())
+		return &_modInfos.at("xcom1");
+	else if (_modInfos.find("xcom2") != _modInfos.end())
+		return &_modInfos.at("xcom2");
+	else return nullptr;
+}
+
 bool getLoadLastSave()
 {
 	return _loadLastSave && !_loadLastSaveExpended;
+}
+
+const std::string& getLoadThisSave()
+{
+	return _loadThisSave;
 }
 
 void expendLoadLastSave()
@@ -1150,22 +1218,22 @@ bool load(const std::string &filename)
 	std::string s = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc = YAML::Load(*CrossPlatform::readFile(s));
+		YAML::YamlRootNodeReader reader(s);
 		// Ignore old options files
-		if (doc["options"]["NewBattleMission"])
+		if (reader["options"]["NewBattleMission"])
 		{
 			return false;
 		}
 		for (auto& optionInfo : _info)
 		{
-			optionInfo.load(doc["options"]);
+			optionInfo.load(reader["options"]);
 		}
 
 		mods.clear();
-		for (YAML::const_iterator i = doc["mods"].begin(); i != doc["mods"].end(); ++i)
+		for (const auto& mod : reader["mods"].children())
 		{
-			std::string id = (*i)["id"].as<std::string>();
-			bool active = (*i)["active"].as<bool>(false);
+			std::string id = mod["id"].readVal<std::string>();
+			bool active = mod["active"].readVal(false);
 			mods.push_back(std::pair<std::string, bool>(id, active));
 		}
 		if (mods.empty())
@@ -1181,88 +1249,54 @@ bool load(const std::string &filename)
 	return true;
 }
 
-void writeNode(const YAML::Node& node, YAML::Emitter& emitter)
-{
-	switch (node.Type())
-	{
-		case YAML::NodeType::Sequence:
-		{
-			emitter << YAML::BeginSeq;
-			for (size_t i = 0; i < node.size(); i++)
-			{
-				writeNode(node[i], emitter);
-			}
-			emitter << YAML::EndSeq;
-			break;
-		}
-		case YAML::NodeType::Map:
-		{
-			emitter << YAML::BeginMap;
-
-			// First collect all the keys
-			std::vector<std::string> keys(node.size());
-			int key_it = 0;
-			for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-			{
-				keys[key_it++] = it->first.as<std::string>();
-			}
-
-			// Then sort them
-			std::sort(keys.begin(), keys.end());
-
-			// Then emit all the entries in sorted order.
-			for (size_t i = 0; i < keys.size(); i++)
-			{
-				emitter << YAML::Key;
-				emitter << keys[i];
-				emitter << YAML::Value;
-				writeNode(node[keys[i]], emitter);
-			}
-			emitter << YAML::EndMap;
-			break;
-		}
-		default:
-			emitter << node;
-			break;
-	}
-}
-
 /**
  * Saves options to a YAML file.
  * @param filename YAML filename.
  * @return Was the saving successful?
  */
-bool save(const std::string &filename)
+bool save(bool reset, const std::string& filename)
 {
-	YAML::Emitter out;
+	std::string yaml;
+	std::string filepath = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc, node;
-		for (const auto& optionInfo : _info)
-		{
-			optionInfo.save(node);
-		}
-		doc["options"] = node;
-
+		YAML::YamlRootNodeWriter writer;
+		writer.setAsMap();
+		auto modsWriter = writer["mods"];
+		modsWriter.setAsSeq();
 		for (const auto& pair : mods)
 		{
-			YAML::Node mod;
-			mod["id"] = pair.first;
-			mod["active"] = pair.second;
-			doc["mods"].push_back(mod);
+			auto modWriter = modsWriter.write();
+			modWriter.setAsMap();
+			modWriter.write("active", pair.second);
+			modWriter.write("id", pair.first);
 		}
-
-		writeNode(doc, out);
+		auto optionsWriter = writer["options"];
+		optionsWriter.setAsMap();
+		auto sortedInfo = _info;
+		std::sort(sortedInfo.begin(), sortedInfo.end(), [](const OptionInfo& a, const OptionInfo& b) { return a.id() < b.id(); });
+		for (const auto& optionInfo : sortedInfo)
+		{
+			optionInfo.save(optionsWriter);
+		}
+		if (!reset && CrossPlatform::fileExists(filepath))
+		{
+			// Preserve any undefined options, because they could be from a different fork
+			YAML::YamlRootNodeReader old(filepath);
+			const YAML::YamlNodeReader& currentOptions = optionsWriter.toReader();
+			std::string oldKey, oldVal;
+			for (const auto& oldOption : old["options"].children())
+				if (!currentOptions[oldOption.readKey<ryml::csubstr>()])
+					optionsWriter.write(optionsWriter.saveString(oldKey.assign(oldOption.key())), oldVal.assign(oldOption.val()));
+		}
+		yaml = writer.emit().yaml;
 	}
 	catch (YAML::Exception &e)
 	{
 		Log(LOG_WARNING) << e.what();
 		return false;
 	}
-	std::string filepath = _configFolder + filename + ".cfg";
-	std::string data(out.c_str());
-
-	if (!CrossPlatform::writeFile(filepath, data + "\n" ))
+	if (!CrossPlatform::writeFile(filepath, yaml + "\n"))
 	{
 		Log(LOG_WARNING) << "Failed to save " << filepath;
 		return false;

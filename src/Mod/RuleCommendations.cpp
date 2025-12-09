@@ -41,20 +41,23 @@ RuleCommendations::~RuleCommendations()
  * Loads the commendations from YAML.
  * @param node YAML node.
  */
-void RuleCommendations::load(const YAML::Node &node, const Mod* mod)
+void RuleCommendations::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	_description = node["description"].as<std::string>(_description);
-	mod->loadUnorderedNamesToInts(_type, _criteria, node["criteria"]);
-	_sprite = node["sprite"].as<int>(_sprite);
-	mod->loadKillCriteria(_type, _killCriteria, node["killCriteria"]);
-	mod->loadNames(_type, _soldierBonusTypesNames, node["soldierBonusTypes"]);
-	mod->loadNames(_type, _missionMarkerNames, node["missionMarkerFilter"]);
-	mod->loadNames(_type, _missionTypeNames, node["missionTypeFilter"]);
+	reader.tryRead("description", _description);
+	mod->loadUnorderedNamesToInts(_type, _criteria, reader["criteria"]);
+	reader.tryRead("sprite", _sprite);
+	mod->loadKillCriteria(_type, _killCriteria, reader["killCriteria"]);
+	mod->loadNames(_type, _soldierBonusTypesNames, reader["soldierBonusTypes"]);
+	mod->loadNames(_type, _missionMarkerNames, reader["missionMarkerFilter"]);
+	mod->loadNames(_type, _missionTypeNames, reader["missionTypeFilter"]);
+
+	mod->loadUnorderedNames(_type, _requiresNames, reader["requires"]);
+	mod->loadUnorderedNames(_type, _unitsNames, reader["units"]);
 }
 
 /**
@@ -63,6 +66,11 @@ void RuleCommendations::load(const YAML::Node &node, const Mod* mod)
 void RuleCommendations::afterLoad(const Mod* mod)
 {
 	mod->linkRule(_soldierBonusTypes, _soldierBonusTypesNames);
+
+	mod->linkRule(_requires, _requiresNames);
+	mod->linkRule(_units, _unitsNames);
+
+	Collections::sortVector(_units);
 }
 
 /**
@@ -132,6 +140,14 @@ const std::vector<std::string>& RuleCommendations::getMissionMarkerNames() const
 const std::vector<std::string>& RuleCommendations::getMissionTypeNames() const
 {
 	return _missionTypeNames;
+}
+
+/**
+ * Check if a given soldier type can be awarded this commendation.
+ */
+bool RuleCommendations::isSupportedBy(const RuleSoldier* soldier) const
+{
+	return _units.empty() || Collections::sortVectorHave(_units, soldier);
 }
 
 }

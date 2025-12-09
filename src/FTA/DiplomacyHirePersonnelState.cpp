@@ -114,6 +114,7 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	//sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod());
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -133,13 +134,12 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStat);
+	if (showMana)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
+	}
 	if (showPsiStats)
 	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			// "unlock" is checked later
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
-		}
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
 	}

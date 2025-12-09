@@ -162,20 +162,6 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
 
-	if (!_ftaUI)
-	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			_lstStatChanges->setColumns(14, 72, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 0);
-		}
-		else
-		{
-			_lstStatChanges->setColumns(13, 90, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 0);
-		}
-		_lstStatChanges->setAlign(ALIGN_RIGHT);
-		_lstStatChanges->setAlign(ALIGN_LEFT, 0);
-	}
-
 	if (!_transformationRule->getDescription().empty())
 	{
 		_txtDescription->setText(tr(_transformationRule->getDescription()));
@@ -646,6 +632,14 @@ void SoldierTransformationState::performTransformation()
 
 	if ((_transformationRule->getTransferTime() > 0 && toTransfer) || _transformationRule->isCreatingClone() || _sourceSoldier->getDeath())
 	{
+		// handle training (transfer rules)
+		destinationSoldier->setPsiTraining(false);
+		if (destinationSoldier->isInTraining())
+		{
+			destinationSoldier->setReturnToTrainingWhenHealed(true);
+		}
+		destinationSoldier->setTraining(false);
+
 		int transferTime = _transformationRule->getTransferTime() > 0 ? _transformationRule->getTransferTime() : 24;
 		Transfer *transfer = new Transfer(transferTime);
 		transfer->setSoldier(destinationSoldier);

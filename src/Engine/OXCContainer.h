@@ -29,7 +29,7 @@ namespace OpenXcom
 
 /**
  * Represents an encrypted OXC container file (.oxc format).
- * 
+ *
  * Container format:
  * - Magic: "OXFTA1\0\0" (8 bytes)
  * - Version: 3 (1 byte)
@@ -38,7 +38,7 @@ namespace OpenXcom
  * - Manifest encrypted length: 4 bytes (big-endian)
  * - Encrypted manifest + HMAC (32 bytes)
  * - File data blobs (encrypted + HMAC)
- * 
+ *
  * The manifest is a YAML document containing file metadata.
  */
 class OXCContainer
@@ -76,15 +76,15 @@ public:
 	 * @param passphrase Encryption passphrase
 	 */
 	OXCContainer(const std::string& fullpath, const std::string& passphrase);
-	
+
 	/**
 	 * Create an OXC container from SDL_RWops.
 	 * @param rwops SDL_RWops to read from
 	 * @param fullpath Virtual path for logging
 	 * @param passphrase Encryption passphrase
 	 */
-	OXCContainer(SDL_RWops* rwops, const std::string& fullpath, const std::string& passphrase);
-	
+	OXCContainer(SDL_RWops* rwops, const std::string& fullpath, const std::string& passphrase, bool takeOwnership = false);
+
 	~OXCContainer();
 
 	/**

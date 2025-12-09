@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -61,9 +61,9 @@ public:
 	int getCost() { return _cost; }
 	void setCost(int cost) { _cost = cost; }
 	/// load the IntelProject from YAML
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// save the IntelProject to YAML
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 };
 
 }

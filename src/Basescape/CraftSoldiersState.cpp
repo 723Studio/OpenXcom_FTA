@@ -92,6 +92,8 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	}
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
+	touchComponentsCreate(_txtTitle, true);
+
 	// Set palette
 	setInterface("craftSoldiers");
 
@@ -108,12 +110,16 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_cbxSortBy, "button", "craftSoldiers");
 	add(_cbxScreenActions, "button", "craftSoldiers");
 
+	touchComponentsAdd("button2", "craftSoldiers", _window);
+
 	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
 
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "craftSoldiers");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftSoldiersState::btnOkClick);
@@ -126,7 +132,16 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview->onMouseClick((ActionHandler)&CraftSoldiersState::btnPreviewClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	if (Options::oxceBaseTouchButtons)
+	{
+		_txtTitle->setAlign(ALIGN_CENTER);
+		_txtTitle->setText(c->getName(_game->getLanguage()));
+	}
+	else
+	{
+		_txtTitle->setAlign(ALIGN_LEFT);
+		_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	}
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
@@ -145,11 +160,8 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
-	bool showPsiStats = true;
-	if (_ftaUI)
-	{
-		showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
-	}
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getSavedGame()->isManaUnlocked(_game->getMod()) && _game->getMod()->isManaFeatureEnabled();
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -173,7 +185,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission() && showPsiStats)
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -186,81 +198,77 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStat);
 	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStat);
+	if (showMana)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
+	}
 	if (showPsiStats)
 	{
-		if (_game->getMod()->isManaFeatureEnabled())
-		{
-			// "unlock" is checked later
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
-		}
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
 		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
 	}
-	if (_ftaUI)
+	//pilot section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::maneuvering), maneuveringStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::missiles), missilesStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::dogfight), dogfightStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tracking), trackingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::cooperation), cooperationStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
 	{
-		//pilot section
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::maneuvering), maneuveringStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::missiles), missilesStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::dogfight), dogfightStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tracking), trackingStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::cooperation), cooperationStat);
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::beams), beamsStat);
-		}
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::synaptic), synapticStat);
-		}
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::gravity), gravityStat);
-		}
-
-		// scientist section
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::physics), physicsStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::chemistry), chemistryStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::biology), biologyStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::insight), insightStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::data), dataStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::computers), computersStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tactics), tacticsStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::materials), materialsStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::designing), designingStat);
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
-		}
-		if (showPsiStats)
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psionics), psionicsStat);
-		}
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getXenolinguisticsUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::xenolinguistics), xenolinguisticsStat);
-		}
-		// engineer section
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::robotics), roboticsStat);
-		if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
-		{
-			PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
-		}
-		// agent section
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stealth), stealthStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::perception), perceptionStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::charisma), charismaStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::deception), deceptionStat);
-		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::interrogation), interrogationStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::beams), beamsStat);
 	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::synaptic), synapticStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::gravity), gravityStat);
+	}
+
+	// scientist section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::physics), physicsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::chemistry), chemistryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::biology), biologyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::insight), insightStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::data), dataStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::computers), computersStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tactics), tacticsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::materials), materialsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::designing), designingStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
+	}
+	if (showPsiStats)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psionics), psionicsStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getXenolinguisticsUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::xenolinguistics), xenolinguisticsStat);
+	}
+	// engineer section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::robotics), roboticsStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
+	}
+	// agent section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stealth), stealthStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::perception), perceptionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::charisma), charismaStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::deception), deceptionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::interrogation), interrogationStat);
 
 #undef PUSH_IN
 
@@ -308,7 +316,7 @@ CraftSoldiersState::~CraftSoldiersState()
  */
 void CraftSoldiersState::cbxSortByChange(Action *)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
+	bool ctrlPressed = _game->isCtrlPressed(true);
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
@@ -367,7 +375,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
 			}
-			if (_game->isShiftPressed())
+			if (_game->isShiftPressed(true))
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
@@ -522,7 +530,7 @@ void CraftSoldiersState::init()
 {
 	State::init();
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
-	initList(0);
+	initList(_lstSoldiers->getScroll());
 
 	// update the label to indicate presence of a saved craft deployment
 	Craft* c = _base->getCrafts()->at(_craft);
@@ -530,6 +538,8 @@ void CraftSoldiersState::init()
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW_SAVED"));
 	else
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -544,7 +554,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		return;
 	}
 	int row = _lstSoldiers->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
 
@@ -616,6 +626,14 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
+			else if (err == CPE_ArmorGroupNotAllowed)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_ARMOR_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_SoldierPendingTransformation)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
 			else if (err == CPE_NotEnoughSpace)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"),
@@ -629,7 +647,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	else if (_game->isRightClick(action, true))
 	{
 		if (_ftaUI)
 		{

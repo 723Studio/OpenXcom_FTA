@@ -45,6 +45,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Basescape/ItemLocationsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFaction.h"
@@ -138,55 +139,10 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
+	_cats.push_back("STR_FILTER_EQUIPPED");
 
 	auto providedBaseFunc = _base->getProvidedBaseFunc({});
-	/*const std::vector<std::string> &soldiers = _game->getMod()->getSoldiersList();
-	for (std::vector<std::string>::const_iterator i = soldiers.begin(); i != soldiers.end(); ++i)
-	{
-		const RuleSoldier *rule = _game->getMod()->getSoldier(*i);
-		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
-		int stock = getFactionItemStock(rule->getType());
-		if (rule->getBuyCost() != 0
-			&& _game->getSavedGame()->isResearched(rule->getRequirements())
-			&& (~providedBaseFunc & purchaseBaseFunc).none()
-			&& stock > 0)
-		{
-			TransferRow row = { TRANSFER_SOLDIER, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getSoldierCountAndSalary(rule->getType()).first, 0, 0, stock, -4, 0, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
-	{
-		int stock = getFactionItemStock("STR_SCIENTIST");
-		if (stock > 0 && (_game->getMod()->getHireScientistsUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireScientistsUnlockResearch(), true)))
-		{
-			TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), getCostAdjustment(_game->getMod()->getHireScientistCost()), _base->getTotalScientists(), 0, 0, stock, -3, 0, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
-	{
-		int stock = getFactionItemStock("STR_ENGINEER");
-		if (stock > 0 && (_game->getMod()->getHireEngineersUnlockResearch().empty() || _game->getSavedGame()->isResearched(_game->getMod()->getHireEngineersUnlockResearch(), true)))
-		{
-			TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), getCostAdjustment(_game->getMod()->getHireEngineerCost()), _base->getTotalEngineers(), 0, 0, stock, -2, 0, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
 
-	}*/
 	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
 	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
 	{
@@ -260,6 +216,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 			_cats.clear();
 			_cats.push_back("STR_ALL_ITEMS");
 			_cats.push_back("STR_FILTER_HIDDEN");
+			_cats.push_back("STR_FILTER_EQUIPPED");
 			_vanillaCategories = _cats.size();
 		}
 		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
@@ -454,6 +411,36 @@ bool DiplomacyPurchaseState::isHidden(int sel) const
 }
 
 /**
+ * Determines if a row item corresponds to equipped items
+ * @param sel Selected row.
+ * @returns True if row item is considered equipped
+ */
+bool DiplomacyPurchaseState::isEquipped(int sel) const
+{
+	switch (_items[sel].type)
+	{
+	case TRANSFER_SOLDIER:
+	case TRANSFER_SCIENTIST:
+	case TRANSFER_ENGINEER:
+	case TRANSFER_CRAFT:
+		return false;
+	case TRANSFER_ITEM:
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
+		if (rule)
+		{
+			// iterate all craft, also craft which are currently not at the base
+			for (auto* xcraft : *_base->getCrafts())
+			{
+				if (xcraft->getItems()->getItem(rule) > 0)
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
 * Quick search toggle.
 * @param action Pointer to an action.
 */
@@ -497,10 +484,20 @@ void DiplomacyPurchaseState::updateList()
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 	bool categoryHidden = (selectedCategory == "STR_FILTER_HIDDEN");
+	bool categoryEquipped = (selectedCategory == "STR_FILTER_EQUIPPED");
+	bool categoryMissing = (selectedCategory == "STR_FILTER_MISSING");
 
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
+		if (categoryEquipped)
+		{
+			// Note: showing also hidden items (if they are equipped)
+			if (!isEquipped(i))
+			{
+				continue;
+			}
+		}
 		bool hidden = isHidden(i);
 		if (categoryHidden)
 		{
@@ -791,7 +788,14 @@ void DiplomacyPurchaseState::lstItemsMousePress(Action *action)
 			RuleItem *rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				itemName = rule->getType();
+				if (_game->isCtrlPressed(true))
+				{
+					_game->pushState(new ItemLocationsState(rule));
+				}
+				else
+				{
+					itemName = rule->getType();
+				}
 			}
 		}
 		else if (getRow().type == TRANSFER_CRAFT)

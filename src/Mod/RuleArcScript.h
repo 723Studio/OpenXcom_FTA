@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -39,18 +39,21 @@ private:
 	std::map<std::string, int> _requiredReputation;
 	std::string _missionVarName, _missionMarkerName;
 	int _counterMin, _counterMax;
+
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _soldierTypeTriggers;
 	std::map<std::string, bool> _xcomBaseInRegionTriggers;
 	std::map<std::string, bool> _xcomBaseInCountryTriggers;
+
 public:
 	/// Creates a new arc script.
 	RuleArcScript(const std::string& type);
 	/// Deletes an arc script.
 	~RuleArcScript();
 	/// Loads an arc script from yaml.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the name of the script command.
 	const std::string &getType() const { return _type; }
 	/// Gets the sequential arcs list.
@@ -91,12 +94,15 @@ public:
 	int getCounterMin() const { return _counterMin; }
 	/// Gets the maximum number of missions generated for this command to run.
 	int getCounterMax() const { return _counterMax; }
+
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const { return _researchTriggers; }
 	/// Gets the item triggers that may apply to this command.
 	const std::map<std::string, bool> &getItemTriggers() const { return _itemTriggers; }
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const { return _facilityTriggers; }
+	/// Gets the soldier type triggers that may apply to this command.
+	const std::map<std::string, bool> &getSoldierTypeTriggers() const { return _soldierTypeTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const { return _xcomBaseInRegionTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.

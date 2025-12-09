@@ -19,8 +19,10 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
+#include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
+#include "RuleSoldier.h"
 #include "ModScript.h"
 
 namespace OpenXcom
@@ -41,7 +43,7 @@ struct RuleCraftStats
 {
 	int fuelMax, damageMax, speedMax, accel;
 	int radarRange, radarChance, sightRange;
-	int hitBonus, avoidBonus, powerBonus, armor;
+	int hitBonus, avoidBonus, avoidBonus2, powerBonus, armor;
 	int shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough;
 	int engineCooldown, relay;
 	int soldiers, vehicles;
@@ -52,7 +54,7 @@ struct RuleCraftStats
 	RuleCraftStats() :
 		fuelMax(0), damageMax(0), speedMax(0), accel(0),
 		radarRange(0), radarChance(0), sightRange(0),
-		hitBonus(0), avoidBonus(0), powerBonus(0), armor(0),
+		hitBonus(0), avoidBonus(0), avoidBonus2(0), powerBonus(0), armor(0),
 		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0),
 		engineCooldown(0), relay(0),
 		soldiers(0), vehicles(0),
@@ -72,6 +74,7 @@ struct RuleCraftStats
 		sightRange += r.sightRange;
 		hitBonus += r.hitBonus;
 		avoidBonus += r.avoidBonus;
+		avoidBonus2 += r.avoidBonus2;
 		powerBonus += r.powerBonus;
 		armor += r.armor;
 		shieldCapacity += r.shieldCapacity;
@@ -98,6 +101,7 @@ struct RuleCraftStats
 		sightRange -= r.sightRange;
 		hitBonus -= r.hitBonus;
 		avoidBonus -= r.avoidBonus;
+		avoidBonus2 -= r.avoidBonus2;
 		powerBonus -= r.powerBonus;
 		armor -= r.armor;
 		shieldCapacity -= r.shieldCapacity;
@@ -120,29 +124,31 @@ struct RuleCraftStats
 		return s;
 	}
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		fuelMax = node["fuelMax"].as<int>(fuelMax);
-		damageMax = node["damageMax"].as<int>(damageMax);
-		speedMax = node["speedMax"].as<int>(speedMax);
-		accel = node["accel"].as<int>(accel);
-		radarRange = node["radarRange"].as<int>(radarRange);
-		radarChance = node["radarChance"].as<int>(radarChance);
-		sightRange = node["sightRange"].as<int>(sightRange);
-		hitBonus = node["hitBonus"].as<int>(hitBonus);
-		avoidBonus = node["avoidBonus"].as<int>(avoidBonus);
-		powerBonus = node["powerBonus"].as<int>(powerBonus);
-		armor = node["armor"].as<int>(armor);
-		shieldCapacity = node["shieldCapacity"].as<int>(shieldCapacity);
-		shieldRecharge = node["shieldRecharge"].as<int>(shieldRecharge);
-		shieldRechargeInGeoscape = node["shieldRechargeInGeoscape"].as<int>(shieldRechargeInGeoscape);
-		shieldBleedThrough = node["shieldBleedThrough"].as<int>(shieldBleedThrough);
-		engineCooldown = node["engineCooldown"].as<int>(engineCooldown);
-		relay = node["relay"].as<int>(relay);
-		soldiers = node["soldiers"].as<int>(soldiers);
-		vehicles = node["vehicles"].as<int>(vehicles);
-		maxItems = node["maxItems"].as<int>(maxItems);
-		maxStorageSpace = node["maxStorageSpace"].as<double>(maxStorageSpace);
+		//const auto& reader = r.useIndex();
+		reader.tryRead("fuelMax", fuelMax);
+		reader.tryRead("damageMax", damageMax);
+		reader.tryRead("speedMax", speedMax);
+		reader.tryRead("accel", accel);
+		reader.tryRead("radarRange", radarRange);
+		reader.tryRead("radarChance", radarChance);
+		reader.tryRead("sightRange", sightRange);
+		reader.tryRead("hitBonus", hitBonus);
+		reader.tryRead("avoidBonus", avoidBonus);
+		reader.tryRead("avoidBonus2", avoidBonus2);
+		reader.tryRead("powerBonus", powerBonus);
+		reader.tryRead("armor", armor);
+		reader.tryRead("shieldCapacity", shieldCapacity);
+		reader.tryRead("shieldRecharge", shieldRecharge);
+		reader.tryRead("shieldRechargeInGeoscape", shieldRechargeInGeoscape);
+		reader.tryRead("shieldBleedThrough", shieldBleedThrough);
+		reader.tryRead("engineCooldown", engineCooldown);
+		reader.tryRead("relay", relay);
+		reader.tryRead("soldiers", soldiers);
+		reader.tryRead("vehicles", vehicles);
+		reader.tryRead("maxItems", maxItems);
+		reader.tryRead("maxStorageSpace", maxStorageSpace);
 	}
 
 	template<auto Stat, typename TBind>
@@ -157,6 +163,7 @@ struct RuleCraftStats
 		b.template addField<Stat, &RuleCraftStats::sightRange>(prefix + "getSightRange");
 		b.template addField<Stat, &RuleCraftStats::hitBonus>(prefix + "getHitBonus");
 		b.template addField<Stat, &RuleCraftStats::avoidBonus>(prefix + "getAvoidBonus");
+		b.template addField<Stat, &RuleCraftStats::avoidBonus2>(prefix + "getAvoidBonus2");
 		b.template addField<Stat, &RuleCraftStats::powerBonus>(prefix + "getPowerBonus");
 		b.template addField<Stat, &RuleCraftStats::armor>(prefix + "getArmor");
 		b.template addField<Stat, &RuleCraftStats::shieldCapacity>(prefix + "getShieldCapacity");
@@ -216,12 +223,14 @@ private:
 	RuleTerrain *_battlescapeTerrainData;
 	int _maxSkinIndex;
 	bool _keepCraftAfterFailedMission, _allowLanding, _spacecraft, _notifyWhenRefueled, _autoPatrol, _undetectable;
+	int _missilePower;
 	int _listOrder, _maxAltitude;
 	std::string _defaultAltitude;
 	RuleCraftDeployment _deployment;
 	std::vector<int> _craftInventoryTile;
 	std::vector<int> _groups;
 	std::vector<int> _allowedSoldierGroups;
+	std::vector<int> _allowedArmorGroups;
 	bool _onlyOneSoldierGroupAllowed;
 	RuleCraftStats _stats;
 	int _shieldRechargeAtBase;
@@ -229,6 +238,10 @@ private:
 	bool _useAllStartTiles;
 	std::string _customPreview;
 	std::vector<int> _selectSound, _takeoffSound;
+	UnitStats _pilotMinStatsRequired;
+	std::vector<SoldierRole> _pilotSoldierRolesRequired;
+	std::vector<std::string> _pilotSoldierBonusesRequiredNames;
+	std::vector<const RuleSoldierBonus*> _pilotSoldierBonusesRequired;
 
 	ModScript::CraftScripts::Container _craftScripts;
 	ScriptValues<RuleCraft> _scriptValues;
@@ -242,7 +255,7 @@ public:
 	/// Cleans up the craft ruleset.
 	~RuleCraft();
 	/// Loads craft data from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript &parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the craft's type.
@@ -341,6 +354,10 @@ public:
 	bool canAutoPatrol() const;
 	/// Is this craft immune to detection by HKs and alien bases?
 	bool isUndetectable() const { return _undetectable; }
+	/// Is this craft a self-destruct missile?
+	bool isMissile() const { return (_missilePower > 0); }
+	/// Gets the missile power.
+	int missilePower() const { return _missilePower; }
 	/// Gets the list weight for this craft.
 	int getListOrder() const;
 	/// Gets the deployment priority for the craft.
@@ -351,6 +368,8 @@ public:
 	const std::vector<int>& getGroups() const { return _groups; }
 	/// Gets the list of allowed soldier groups.
 	const std::vector<int>& getAllowedSoldierGroups() const { return _allowedSoldierGroups; }
+	/// Gets the list of allowed armor groups.
+	const std::vector<int>& getAllowedArmorGroups() const { return _allowedArmorGroups; }
 	/// Does this craft allow soldiers of the same group only?
 	bool isOnlyOneSoldierGroupAllowed() const { return _onlyOneSoldierGroupAllowed; }
 	/// Gets the item limit for this craft.
@@ -393,6 +412,13 @@ public:
 	/// Gets the sound played when a craft takes off from a base.
 	int getTakeoffSound() const;
 	const std::vector<int>& getTakeoffSoundRaw() const { return _takeoffSound; }
+
+	/// Gets the minimum stats a soldier needs to be eligible for piloting this craft
+	const UnitStats& getPilotMinStatsRequired() const { return _pilotMinStatsRequired; }
+	/// Gets the list of soldier bonuses a soldier needs to be eligible for piloting this craft
+	const std::vector<const RuleSoldierBonus*>& getPilotSoldierBonusesRequired() const { return _pilotSoldierBonusesRequired; }
+	/// Gets the list of soldier roles a soldier needs to be eligible for piloting this craft
+	const std::vector<SoldierRole>& getPilotSoldierRolesRequired() const { return _pilotSoldierRolesRequired; }
 
 	/// Gets script.
 	template<typename Script>

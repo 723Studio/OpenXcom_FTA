@@ -297,7 +297,7 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 					// item requirements
 					for (auto& triggerItem : ruleScript->getItemTriggers())
 					{
-						triggerHappy = (save.isItemObtained(triggerItem.first) == triggerItem.second);
+						triggerHappy = (save.isItemObtained(triggerItem.first, &mod) == triggerItem.second);
 						if (!triggerHappy)
 							break;;
 					}

@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "MapData.h"
 #include "Unit.h"
 #include "RuleStatBonus.h"
@@ -31,11 +31,14 @@ namespace OpenXcom
 
 enum ForcedTorso : Uint8;
 enum UnitSide : Uint8;
+enum AIAttackWeight : int;
 
 class BattleUnit;
 class RuleItem;
 class RuleResearch;
 class RuleSoldier;
+class RulesoldierBonus;
+class RuleCommendations;
 
 /**
  * Move cost multipler.
@@ -62,16 +65,19 @@ struct ArmorMoveCost
 		return !(*this == c);
 	}
 
-	void load(const YAML::Node& node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		if (node)
-		{
-			std::tie(TimePercent, EnergyPercent) = node.as<std::pair<int, int>>();
-		}
+		if (!reader)
+			return;
+		TimePercent = reader[0].readVal<int>();
+		EnergyPercent = reader[1].readVal<int>();
 	}
-	void save(YAML::Node& node, const char* name) const
+	void save(YAML::YamlNodeWriter writer, const char* name) const
 	{
-		node[name] = std::make_pair(TimePercent, EnergyPercent);
+		auto pairWriter = writer[writer.saveString(name)];
+		pairWriter.setAsSeq();
+		pairWriter.write(TimePercent);
+		pairWriter.write(EnergyPercent);
 	}
 };
 
@@ -95,6 +101,8 @@ private:
 	std::string _ufopediaType;
 	std::string _type, _spriteSheet, _spriteInv, _corpseGeoName, _storeItemName, _selfDestructItemName, _specWeaponName;
 	std::string _requiresName;
+	std::string _requiresAwardName;
+	std::string _requiresBonusName;
 	std::string _layersDefaultPrefix;
 	std::map<int, std::string> _layersSpecificPrefix;
 	std::map<std::string, std::vector<std::string> > _layersDefinition;
@@ -105,7 +113,10 @@ private:
 	std::vector<const RuleItem*> _corpseBattle;
 	std::vector<const RuleItem*> _builtInWeapons;
 	std::vector<const RuleSoldier*> _units;
+	std::vector<int> _ranks;
 	const RuleResearch* _requires = nullptr;
+	const RuleCommendations* _requiresAward = nullptr;
+	const RuleSoldierBonus* _requiresBonus = nullptr;
 	const RuleItem* _corpseGeo = nullptr;
 	const RuleItem* _storeItem = nullptr;
 	const RuleItem* _selfDestructItem = nullptr;
@@ -116,6 +127,11 @@ private:
 	bool _drawBubbles;
 	MovementType _movementType;
 	SpecialAbility _specab;
+
+	NullableValue<AIAttackWeight> _aiTargetWeightAsHostile = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsHostileCivilians  = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsFriendly  = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsNeutral = { };
 
 	bool _turnBeforeFirstStep;
 	int _turnCost;
@@ -151,7 +167,9 @@ private:
 	int _personalLightHostile = 0;
 	int _personalLightNeutral = 0;
 
-	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision, _psiCamouflage;
+	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark;
+	int _visibilityThroughSmoke, _visibilityThroughFire;
+	int _psiVision, _psiCamouflage;
 	float _damageModifier[DAMAGE_TYPES];
 	std::vector<int> _loftempsSet;
 	UnitStats _stats;
@@ -169,7 +187,7 @@ private:
 
 	ScriptValues<Armor> _scriptValues;
 	std::vector<int> _customArmorPreviewIndex;
-	std::vector<std::string> _allowedItemCategories, _forbiddenItemCategoiries;
+	std::vector<std::string> _allowedItemCategories, _forbiddenItemCategories;
 	Sint8 _allowsRunning, _allowsStrafing, _allowsSneaking, _allowsKneeling, _allowsMoving;
 	bool _isPilotArmor;
 	bool _allowTwoMainWeapons;
@@ -177,14 +195,17 @@ private:
 	bool _isAlwaysVisible = false;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _hackingDefense;
+	int _meleeOriginVoxelVerticalOffset;
+	int _group;
+	int _listOrder;
 public:
 	/// Creates a blank armor ruleset.
-	Armor(const std::string &type);
+	Armor(const std::string &type, int listOrder);
 	/// Cleans up the armor ruleset.
 	~Armor();
 
 	/// Loads the armor data from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ModScript& parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript& parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets whether or not there is an infinite supply of this armor.
@@ -223,6 +244,10 @@ public:
 	const RuleItem* getSpecialWeapon() const;
 	/// Gets the research required to be able to equip this armor.
 	const RuleResearch* getRequiredResearch() const;
+	/// Gets the commendation required to be able to equip this armor.
+	const RuleCommendations* getRequiredAward() const { return _requiresAward; }
+	/// Gets the soldier bonus required to be able to equip this armor.
+	const RuleSoldierBonus* getRequiredBonus() const { return _requiresBonus; }
 
 	/// Armor have layered armor definition. Check by Prefix.
 	bool hasLayersDefinition() const { return !_layersDefaultPrefix.empty(); }
@@ -246,7 +271,16 @@ public:
 	/// Gets the list of item categories, that this unit can carry. All allowed if empty.
 	const std::vector<std::string>& getAllowedItemCategories() const { return _allowedItemCategories; }
 	/// Gets the list of item categories, that this unit can not carry. No restrictions if empty.
-	const std::vector<std::string>& getForbiddenItemCategoiries() const { return _forbiddenItemCategoiries; }
+	const std::vector<std::string>& getForbiddenItemCategoiries() const { return _forbiddenItemCategories; }
+
+	/// Gets weight value as hostile unit.
+	NullableValue<AIAttackWeight> getAITargetWeightAsHostile() const { return _aiTargetWeightAsHostile; }
+	/// Gets weight value as civilian unit when consider by aliens.
+	NullableValue<AIAttackWeight> getAITargetWeightAsHostileCivilians() const { return _aiTargetWeightAsHostileCivilians; }
+	/// Gets weight value as same faction unit.
+	NullableValue<AIAttackWeight> getAITargetWeightAsFriendly() const { return _aiTargetWeightAsFriendly; }
+	/// Gets weight value as neutral unit (xcom to civ or vice versa).
+	NullableValue<AIAttackWeight> getAITargetWeightAsNeutral() const { return _aiTargetWeightAsNeutral; }
 
 	/// Should turning before first step cost TU or not?
 	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
@@ -372,7 +406,9 @@ public:
 	/// Gets info about anti camouflage at dark.
 	int getAntiCamouflageAtDark() const;
 	/// Gets info about heat vision.
-	int getHeatVision() const;
+	int getVisibilityThroughSmoke() const { return _visibilityThroughSmoke; }
+	/// Gets info about visibility through fire.
+	int getVisibilityThroughFire() const { return _visibilityThroughFire; }
 	/// Gets info about psi vision.
 	int getPsiVision() const;
 	/// Gets info about psi camouflage.
@@ -429,10 +465,11 @@ public:
 	const ScriptValues<Armor> &getScriptValuesRaw() const { return _scriptValues; }
 
 	/// Gets the armor's units.
-	const std::vector<const RuleSoldier*> &getUnits() const;
+	const std::vector<const RuleSoldier*> &getUnitsRaw() const;
+	/// Gets the armor's supported soldier ranks.
+	const std::vector<int>& getRanksRaw() const { return _ranks; }
 	/// Check if a soldier can use this armor.
-	bool getCanBeUsedBy(const RuleSoldier* soldier) const;
-
+	bool getCanBeUsedBy(const Soldier* soldier) const;
 
 	/// Gets the index of the sprite in the CustomArmorPreview sprite set
 	const std::vector<int> &getCustomArmorPreviewIndex() const;
@@ -460,6 +497,12 @@ public:
 	int getFloatHeight() const;
 	/// Gets a unit's hacking defense value
 	int getHackingDefense() const { return _hackingDefense; }
+	/// Gets a unit's offset for melee attacks.
+	int getMeleeOriginVoxelVerticalOffset() const { return _meleeOriginVoxelVerticalOffset; }
+	/// Gets the armor type group.
+	int getGroup() const { return _group; }
+	/// Get the list weight for this armor.
+	int getListOrder() const { return _listOrder; }
 };
 
 }

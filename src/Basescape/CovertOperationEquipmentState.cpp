@@ -116,7 +116,7 @@ CovertOperationEquipmentState::CovertOperationEquipmentState(Base* base, CovertO
 	_txtStores->setText(tr("STR_STORES"));
 
 	std::ostringstream ss;
-	double itemsSize = _operation->getItems()->getTotalSize(_game->getMod());
+	double itemsSize = _operation->getItems()->getTotalSize();
 	ss << itemsSize << "/" << _rule->getItemSpaceLimit(); 
 	_txtAvailable->setText(tr("STR_SPACE_USED").arg(ss.str()));
 	_txtAvailable->setVisible(_rule->getItemSpaceLimit() >= 0);
@@ -233,7 +233,7 @@ void CovertOperationEquipmentState::init()
 	{
 		initList();
 		std::ostringstream ss;
-		double itemsSize = _operation->getItems()->getTotalSize(_game->getMod());
+		double itemsSize = _operation->getItems()->getTotalSize();
 		ss << itemsSize << "/" << _rule->getItemSpaceLimit();
 		_txtAvailable->setText(tr("STR_SPACE_USED").arg(ss.str()));
 		_txtChances->setText(tr("STR_OPERATION_CHANCES_US").arg(tr(_operation->getOperationOddsString(_game->getSavedGame()->getDebugMode()))));
@@ -601,7 +601,7 @@ void CovertOperationEquipmentState::updateQuantity()
 	_lstEquipment->setCellText(_sel, 2, ss2.str());
 
 	std::ostringstream sse;
-	double itemsSize = _operation->getItems()->getTotalSize(_game->getMod());
+	double itemsSize = _operation->getItems()->getTotalSize();
 	sse << itemsSize << "/" << _rule->getItemSpaceLimit();
 	_txtAvailable->setText(tr("STR_SPACE_USED").arg(sse.str()));
 	_txtChances->setText(tr("STR_OPERATION_CHANCES_US").arg(tr(_operation->getOperationOddsString(_game->getSavedGame()->getDebugMode()))));
@@ -671,7 +671,7 @@ void CovertOperationEquipmentState::moveRightByValue(int change, bool suppressEr
 					msg,
 					_palette,
 					_game->getMod()->getInterface("operationEquipment")->getElement("errorMessage")->color,
-					_game->getMod()->getInterface("operationEquipment")->getBackgroundImage(),
+					_game->getMod()->getInterface("operationEquipment")->getBackgroundImage(_game->getMod(), _game->getSavedGame()),
 					_game->getMod()->getInterface("operationEquipment")->getElement("errorPalette")->color
 				)
 			);

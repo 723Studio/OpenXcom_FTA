@@ -34,7 +34,9 @@ class TextList;
 class ComboBox;
 class Timer;
 class Base;
+class CannotReequipState;
 class DiplomacyFaction;
+class RuleItem;
 
 /**
  * Purchase/Hire screen that lets the player buy
@@ -68,6 +70,8 @@ private:
 	bool belongsToCategory(int sel, const std::string &cat) const;
 	/// Checks for hidden items
 	bool isHidden(int sel) const;
+	/// Checks for equipped items
+	bool isEquipped(int sel) const;
 	/// Gets the row of the current selection.
 	TransferRow &getRow() { return _items[_rows[_sel]]; }
 	/// Calculate price adjustment.

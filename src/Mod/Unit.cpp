@@ -36,9 +36,8 @@ Unit::Unit(const std::string &type) :
 	_moraleLossWhenKilled(100), _moveSound(-1), _intelligence(0), _aggression(0),
 	_spotter(0), _sniper(0), _energyRecovery(30), _specab(SPECAB_NONE), _specialObjective(SPECOBJ_NONE), _livingWeapon(false),
 	_psiWeapon("ALIEN_PSI_WEAPON"), _capturable(true), _canSurrender(false), _autoSurrender(false),
-	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _avoidsFire(defBoolNullable), 
-	_vip(false), _cosmetic(false), _ignoredByAI(false), _treatedByAI(false),
-	_canPanic(true), _canBeMindControlled(true), _berserkChance(33)
+	_isLeeroyJenkins(false), _waitIfOutsideWeaponRange(false), _pickUpWeaponsMoreActively(-1), _avoidsFire(defBoolNullable),
+	_vip(false), _cosmetic(false), _ignoredByAI(false), _canPanic(true), _canBeMindControlled(true), _berserkChance(-1)
 {
 }
 
@@ -47,7 +46,10 @@ Unit::Unit(const std::string &type) :
  */
 Unit::~Unit()
 {
-
+	for (auto* opts : _weightedBuiltInWeapons)
+	{
+		delete opts;
+	}
 }
 
 /**
@@ -55,88 +57,93 @@ Unit::~Unit()
  * @param node YAML node.
  * @param mod Mod for the unit.
  */
-void Unit::load(const YAML::Node &node, Mod *mod)
+void Unit::load(const YAML::YamlNodeReader& node, Mod *mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	mod->loadNameNull(_type, _civilianRecoveryTypeName, node["civilianRecoveryType"]);
-	mod->loadNameNull(_type, _spawnedPersonName, node["spawnedPersonName"]);
-	mod->loadNameNull(_type, _liveAlienName, node["liveAlien"]);
-	if (node["spawnedSoldier"])
+	mod->loadNameNull(_type, _civilianRecoveryTypeName, reader["civilianRecoveryType"]);
+	mod->loadNameNull(_type, _spawnedPersonName, reader["spawnedPersonName"]);
+	mod->loadNameNull(_type, _liveAlienName, reader["liveAlien"]);
+	if (reader["spawnedSoldier"])
 	{
-		_spawnedSoldier = node["spawnedSoldier"];
+		_spawnedSoldier = reader["spawnedSoldier"].emitDescendants(YAML::YamlRootNodeReader(_spawnedSoldier, "(spawned soldier template)"));
 	}
-	_race = node["race"].as<std::string>(_race);
-	_showFullNameInAlienInventory = node["showFullNameInAlienInventory"].as<int>(_showFullNameInAlienInventory);
-	_rank = node["rank"].as<std::string>(_rank);
-	_stats.merge(node["stats"].as<UnitStats>(_stats));
-	_statsRandom.merge(node["statsRandom"].as<UnitStats>(_statsRandom));
-	mod->loadName(_type, _armorName, node["armor"]);
-	_standHeight = node["standHeight"].as<int>(_standHeight);
-	_kneelHeight = node["kneelHeight"].as<int>(_kneelHeight);
-	_floatHeight = node["floatHeight"].as<int>(_floatHeight);
+	reader.tryRead("race", _race);
+	reader.tryRead("showFullNameInAlienInventory", _showFullNameInAlienInventory);
+
+	reader.tryRead("rank", _rank);
+	_stats.merge(reader["stats"].readVal(_stats));
+	_statsRandom.merge(reader["statsRandom"].readVal(_statsRandom));
+	mod->loadName(_type, _armorName, reader["armor"]);
+	reader.tryRead("standHeight", _standHeight);
+	reader.tryRead("kneelHeight", _kneelHeight);
+	reader.tryRead("floatHeight", _floatHeight);
 	if (_floatHeight + _standHeight > 25)
 	{
 		throw Exception("Error with unit "+ _type +": Unit height may not exceed 25");
 	}
-	_value = node["value"].as<int>(_value);
-	_moraleLossWhenKilled = node["moraleLossWhenKilled"].as<int>(_moraleLossWhenKilled);
-	_intelligence = node["intelligence"].as<int>(_intelligence);
-	_aggression = node["aggression"].as<int>(_aggression);
-	_spotter = node["spotter"].as<int>(_spotter);
-	_sniper = node["sniper"].as<int>(_sniper);
-	_energyRecovery = node["energyRecovery"].as<int>(_energyRecovery);
-	_specab = (SpecialAbility)node["specab"].as<int>(_specab);
-	if (const YAML::Node& spawn = node["spawnUnit"])
+	reader.tryRead("value", _value);
+	reader.tryRead("moraleLossWhenKilled", _moraleLossWhenKilled);
+	reader.tryRead("intelligence", _intelligence);
+	reader.tryRead("aggression", _aggression);
+	reader.tryRead("spotter", _spotter);
+	reader.tryRead("sniper", _sniper);
+	reader.tryRead("energyRecovery", _energyRecovery);
+	reader.tryRead("specab", _specab);
+	reader.tryRead("spawnUnit", _spawnUnitName);
+	reader.tryRead("livingWeapon", _livingWeapon);
+	reader.tryRead("canSurrender", _canSurrender);
+	reader.tryRead("autoSurrender", _autoSurrender);
+	reader.tryRead("isLeeroyJenkins", _isLeeroyJenkins);
+	reader.tryRead("waitIfOutsideWeaponRange", _waitIfOutsideWeaponRange);
+	reader.tryRead("pickUpWeaponsMoreActively", _pickUpWeaponsMoreActively);
+	loadBoolNullable(_avoidsFire, reader["avoidsFire"]);
+	reader.tryRead("meleeWeapon", _meleeWeapon);
+	reader.tryRead("psiWeapon", _psiWeapon);
+	reader.tryRead("capturable", _capturable);
+	reader.tryRead("altRecoveredUnit", _altRecoveredUnit);
+	reader.tryRead("specialObjective", _specialObjective); //FtA way to define special units
+	reader.tryRead("prisoner", _prisonerName);
+	reader.tryRead("vip", _vip); //OXCE variant
+	reader.tryRead("cosmetic", _cosmetic);
+	reader.tryRead("ignoredByAI", _ignoredByAI);
+	reader.tryRead("canPanic", _canPanic);
+	reader.tryRead("canBeMindControlled", _canBeMindControlled);
+	reader.tryRead("berserkChance", _berserkChance);
+	reader.tryRead("builtInWeaponSets", _builtInWeaponsNames);
+	if (reader["builtInWeapons"])
 	{
-		_spawnUnitName = spawn.as<std::string>();
+		_builtInWeaponsNames.push_back(reader["builtInWeapons"].readVal<std::vector<std::string> >());
 	}
-	_livingWeapon = node["livingWeapon"].as<bool>(_livingWeapon);
-	_canSurrender = node["canSurrender"].as<bool>(_canSurrender);
-	_autoSurrender = node["autoSurrender"].as<bool>(_autoSurrender);
-	_isLeeroyJenkins = node["isLeeroyJenkins"].as<bool>(_isLeeroyJenkins);
-	_waitIfOutsideWeaponRange = node["waitIfOutsideWeaponRange"].as<bool>(_waitIfOutsideWeaponRange);
-	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<int>(_pickUpWeaponsMoreActively);
-	loadBoolNullable(_avoidsFire, node["avoidsFire"]);
-	_meleeWeapon = node["meleeWeapon"].as<std::string>(_meleeWeapon);
-	_psiWeapon = node["psiWeapon"].as<std::string>(_psiWeapon);
-	_capturable = node["capturable"].as<bool>(_capturable);
-	_altRecoveredUnit = node["altRecoveredUnit"].as<std::string>(_altRecoveredUnit);
-	_specialObjective = (SpecialObjective)node["specialObjective"].as<int>(_specialObjective); //FtA way to define special units
-	_vip = node["vip"].as<bool>(_vip); //OXCE variant
-	_cosmetic = node["cosmetic"].as<bool>(_cosmetic);
-	_ignoredByAI = node["ignoredByAI"].as<bool>(_ignoredByAI);
-	_treatedByAI = node["treatedByAI"].as<bool>(_treatedByAI);
-	_canPanic = node["canPanic"].as<bool>(_canPanic);
-	_canBeMindControlled = node["canBeMindControlled"].as<bool>(_canBeMindControlled);
-	_berserkChance = node["berserkChance"].as<int>(_berserkChance);
-
-	_builtInWeaponsNames = node["builtInWeaponSets"].as<std::vector<std::vector<std::string> > >(_builtInWeaponsNames);
-	if (node["builtInWeapons"])
+	for (const auto& weights : reader["weightedBuiltInWeaponSets"].children())
 	{
-		_builtInWeaponsNames.push_back(node["builtInWeapons"].as<std::vector<std::string> >());
+		WeightedOptions* nw = new WeightedOptions();
+		nw->load(weights);
+		_weightedBuiltInWeapons.push_back(nw);
 	}
 
-	if (node["roles"])
-		loadRoles(node["roles"].as<std::vector<int> >());
+	if (reader["roles"])
+	{
+		std::vector<int> roles;
+		reader.tryRead("roles", roles);
+		loadRoles(roles);
+	}
 
-	_prisonerName = node["prisoner"].as<std::string>(_prisonerName);
+	mod->loadSoundOffset(_type, _deathSound, reader["deathSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _panicSound, reader["panicSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _berserkSound, reader["berserkSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _aggroSound, reader["aggroSound"], "BATTLE.CAT");
 
-	mod->loadSoundOffset(_type, _deathSound, node["deathSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _panicSound, node["panicSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _berserkSound, node["berserkSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _aggroSound, node["aggroSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectUnitSound, reader["selectUnitSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _startMovingSound, reader["startMovingSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _selectWeaponSound, reader["selectWeaponSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _annoyedSound, reader["annoyedSound"], "BATTLE.CAT");
 
-	mod->loadSoundOffset(_type, _selectUnitSound, node["selectUnitSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _startMovingSound, node["startMovingSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _selectWeaponSound, node["selectWeaponSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _annoyedSound, node["annoyedSound"], "BATTLE.CAT");
-	mod->loadSoundOffset(_type, _spawnedUnitSound, node["spawnedUnitSound"], "BATTLE.CAT");
-
-	mod->loadSoundOffset(_type, _moveSound, node["moveSound"], "BATTLE.CAT");
+	mod->loadSoundOffset(_type, _moveSound, reader["moveSound"], "BATTLE.CAT");
 }
 
 /**
@@ -568,6 +575,115 @@ void StatAdjustment::ScriptRegister(ScriptParserBase* parser)
 	Bind<StatAdjustment> sa = { parser };
 
 	UnitStats::addGetStatsScript<&StatAdjustment::statGrowth>(sa, "");
+}
+
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, UnitStats* val)
+{
+	YAML::YamlNodeReader reader(n);
+	reader.tryRead("tu", val->tu);
+	reader.tryRead("stamina", val->stamina);
+	reader.tryRead("health", val->health);
+	reader.tryRead("bravery", val->bravery);
+	reader.tryRead("reactions", val->reactions);
+	reader.tryRead("firing", val->firing);
+	reader.tryRead("throwing", val->throwing);
+	reader.tryRead("strength", val->strength);
+	reader.tryRead("psiStrength", val->psiStrength);
+	reader.tryRead("psiSkill", val->psiSkill);
+	reader.tryRead("melee", val->melee);
+	reader.tryRead("mana", val->mana);
+	reader.tryRead("maneuvering", val->maneuvering);
+	reader.tryRead("missiles", val->missiles);
+	reader.tryRead("dogfight", val->dogfight);
+	reader.tryRead("tracking", val->tracking);
+	reader.tryRead("cooperation", val->cooperation);
+	reader.tryRead("beams", val->beams);
+	reader.tryRead("synaptic", val->synaptic);
+	reader.tryRead("gravity", val->gravity);
+	reader.tryRead("physics", val->physics);
+	reader.tryRead("chemistry", val->chemistry);
+	reader.tryRead("biology", val->biology);
+	reader.tryRead("insight", val->insight);
+	reader.tryRead("data", val->data);
+	reader.tryRead("computers", val->computers);
+	reader.tryRead("tactics", val->tactics);
+	reader.tryRead("materials", val->materials);
+	reader.tryRead("designing", val->designing);
+	reader.tryRead("psionics", val->psionics);
+	reader.tryRead("xenolinguistics", val->xenolinguistics);
+	reader.tryRead("weaponry", val->weaponry);
+	reader.tryRead("explosives", val->explosives);
+	reader.tryRead("efficiency", val->efficiency);
+	reader.tryRead("microelectronics", val->microelectronics);
+	reader.tryRead("metallurgy", val->metallurgy);
+	reader.tryRead("processing", val->processing);
+	reader.tryRead("hacking", val->hacking);
+	reader.tryRead("robotics", val->robotics);
+	reader.tryRead("diligence", val->diligence);
+	reader.tryRead("alienTech", val->alienTech);
+	reader.tryRead("reverseEngineering", val->reverseEngineering);
+	reader.tryRead("stealth", val->stealth);
+	reader.tryRead("perception", val->perception);
+	reader.tryRead("charisma", val->charisma);
+	reader.tryRead("investigation", val->investigation);
+	reader.tryRead("deception", val->deception);
+	reader.tryRead("interrogation", val->interrogation);
+	return true;
+}
+
+void write(ryml::NodeRef* n, UnitStats const& val)
+{
+	YAML::YamlNodeWriter writer(*n);
+	writer.setAsMap();
+	writer.write("tu", val.tu);
+	writer.write("stamina", val.stamina);
+	writer.write("health", val.health);
+	writer.write("bravery", val.bravery);
+	writer.write("reactions", val.reactions);
+	writer.write("firing", val.firing);
+	writer.write("throwing", val.throwing);
+	writer.write("strength", val.strength);
+	writer.write("psiStrength", val.psiStrength);
+	writer.write("psiSkill", val.psiSkill);
+	writer.write("melee", val.melee);
+	writer.write("mana", val.mana);
+	writer.write("maneuvering", val.maneuvering);
+	writer.write("missiles", val.missiles);
+	writer.write("dogfight", val.dogfight);
+	writer.write("tracking", val.tracking);
+	writer.write("cooperation", val.cooperation);
+	writer.write("beams", val.beams);
+	writer.write("synaptic", val.synaptic);
+	writer.write("gravity", val.gravity);
+	writer.write("physics", val.physics);
+	writer.write("chemistry", val.chemistry);
+	writer.write("biology", val.biology);
+	writer.write("insight", val.insight);
+	writer.write("data", val.data);
+	writer.write("computers", val.computers);
+	writer.write("tactics", val.tactics);
+	writer.write("materials", val.materials);
+	writer.write("designing", val.designing);
+	writer.write("psionics", val.psionics);
+	writer.write("xenolinguistics", val.xenolinguistics);
+	writer.write("weaponry", val.weaponry);
+	writer.write("explosives", val.explosives);
+	writer.write("efficiency", val.efficiency);
+	writer.write("microelectronics", val.microelectronics);
+	writer.write("metallurgy", val.metallurgy);
+	writer.write("processing", val.processing);
+	writer.write("hacking", val.hacking);
+	writer.write("robotics", val.robotics);
+	writer.write("diligence", val.diligence);
+	writer.write("alienTech", val.alienTech);
+	writer.write("reverseEngineering", val.reverseEngineering);
+	writer.write("stealth", val.stealth);
+	writer.write("perception", val.perception);
+	writer.write("charisma", val.charisma);
+	writer.write("investigation", val.investigation);
+	writer.write("deception", val.deception);
+	writer.write("interrogation", val.interrogation);
 }
 
 } // namespace OpenXcom

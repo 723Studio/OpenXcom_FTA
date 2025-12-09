@@ -64,43 +64,29 @@ AlienMission::~AlienMission()
  * @param node The YAML node containing the data.
  * @param game The game data, required to locate the alien base.
  */
-void AlienMission::load(const YAML::Node& node, SavedGame &game, const Mod* mod)
+void AlienMission::load(const YAML::YamlNodeReader& reader, SavedGame &game, const Mod* mod)
 {
-	_region = node["region"].as<std::string>(_region);
-	_race = node["race"].as<std::string>(_race);
-	_nextWave = node["nextWave"].as<size_t>(_nextWave);
-	_nextUfoCounter = node["nextUfoCounter"].as<size_t>(_nextUfoCounter);
-	_spawnCountdown = node["spawnCountdown"].as<size_t>(_spawnCountdown);
-	_liveUfos = node["liveUfos"].as<size_t>(_liveUfos);
-	_interrupted = node["interrupted"].as<bool>(_interrupted);
-	_multiUfoRetaliationInProgress = node["multiUfoRetaliationInProgress"].as<bool>(_multiUfoRetaliationInProgress);
-	_uniqueID = node["uniqueID"].as<int>(_uniqueID);
-	if (const YAML::Node &base = node["alienBase"])
+	reader.tryRead("region", _region);
+	reader.tryRead("race", _race);
+	reader.tryRead("nextWave", _nextWave);
+	reader.tryRead("nextUfoCounter", _nextUfoCounter);
+	reader.tryRead("spawnCountdown", _spawnCountdown);
+	reader.tryRead("liveUfos", _liveUfos);
+	reader.tryRead("interrupted", _interrupted);
+	reader.tryRead("multiUfoRetaliationInProgress", _multiUfoRetaliationInProgress);
+	reader.tryRead("uniqueID", _uniqueID);
+	if (const auto& base = reader["alienBase"])
 	{
-		int id = base.as<int>(-1);
-		std::string type = "STR_ALIEN_BASE";
-		// New format
-		if (id == -1)
-		{
-			id = base["id"].as<int>();
-			type = base["type"].as<std::string>();
-		}
-		AlienBase* found = nullptr;
-		for (auto* ab : *game.getAlienBases())
-		{
-			if (ab->getId() == id && ab->getDeployment()->getMarkerName() == type)
-			{
-				found = ab;
-				break;
-			}
-		}
-		if (!found)
-		{
+		int id = base.isMap() ? base["id"].readVal<int>() : base.readVal<int>();
+		std::string type = base.isMap() ? base["type"].readVal<std::string>() : "STR_ALIEN_BASE";
+		auto found = std::find_if(game.getAlienBases()->begin(), game.getAlienBases()->end(),
+								   [&](AlienBase* ab)
+								   { return ab->getId() == id && ab->getDeployment()->getMarkerName() == type; });
+		if (found == game.getAlienBases()->end())
 			throw Exception("Corrupted save: Invalid base for mission.");
-		}
-		_base = found;
+		_base = *found;
 	}
-	_missionSiteZoneArea = node["missionSiteZone"].as<int>(_missionSiteZoneArea);
+	reader.tryRead("missionSiteZone", _missionSiteZoneArea);
 
 	// fix invalid saves
 	RuleRegion* region = mod->getRegion(_region, false);
@@ -137,31 +123,24 @@ void AlienMission::load(const YAML::Node& node, SavedGame &game, const Mod* mod)
  * Saves the alien mission to a YAML file.
  * @return YAML node.
  */
-YAML::Node AlienMission::save() const
+void AlienMission::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["type"] = _rule.getType();
-	node["region"] = _region;
-	node["race"] = _race;
-	node["nextWave"] = _nextWave;
-	node["nextUfoCounter"] = _nextUfoCounter;
-	node["spawnCountdown"] = _spawnCountdown;
-	node["liveUfos"] = _liveUfos;
+	writer.setAsMap();
+	writer.write("type", _rule.getType());
+	writer.write("region", _region);
+	writer.write("race", _race);
+	writer.write("nextWave", _nextWave);
+	writer.write("nextUfoCounter", _nextUfoCounter);
+	writer.write("spawnCountdown", _spawnCountdown);
+	writer.write("liveUfos", _liveUfos);
 	if (_interrupted)
-	{
-		node["interrupted"] = _interrupted;
-	}
+		writer.write("interrupted", _interrupted);
 	if (_multiUfoRetaliationInProgress)
-	{
-		node["multiUfoRetaliationInProgress"] = _multiUfoRetaliationInProgress;
-	}
-	node["uniqueID"] = _uniqueID;
+		writer.write("multiUfoRetaliationInProgress", _multiUfoRetaliationInProgress);
+	writer.write("uniqueID", _uniqueID);
 	if (_base)
-	{
-		node["alienBase"] = _base->saveId();
-	}
-	node["missionSiteZone"] = _missionSiteZoneArea;
-	return node;
+		_base->saveId(writer["alienBase"]);
+	writer.write("missionSiteZone", _missionSiteZoneArea);
 }
 
 /**
@@ -250,7 +229,12 @@ void AlienMission::think(Game &engine, const Globe &globe)
 	}
 	if (_rule.getObjective() == OBJECTIVE_INFILTRATION && _nextWave == _rule.getWaveCount())
 	{
-		for (auto* c : *game.getCountries())
+		std::vector<Country*> countriesCopy = *game.getCountries();
+		if (mod.getInfiltrateRandomCountryInTheRegion())
+		{
+			RNG::shuffle(countriesCopy);
+		}
+		for (auto* c : countriesCopy)
 		{
 			RuleRegion *region = mod.getRegion(_region, true);
 			if (c->canBeInfiltrated() && region->insideRegion(c->getRules()->getLabelLongitude(), c->getRules()->getLabelLatitude()))
@@ -360,6 +344,10 @@ void AlienMission::think(Game &engine, const Globe &globe)
 	if (_rule.getObjective() == OBJECTIVE_BASE && _nextWave == _rule.getWaveCount() && !wave.objectiveOnTheLandingSite)
 	{
 		RuleRegion *region = mod.getRegion(_region, true);
+		if (_rule.getSpawnZone() < 0 || _rule.getSpawnZone() >= (int)region->getMissionZones().size())
+		{
+			throw Exception("Cannot spawn alien base, invalid spawnZone! Mission: " + _rule.getType());
+		}
 		std::vector<MissionArea> areas = region->getMissionZones().at(_rule.getSpawnZone()).areas;
 		std::pair<double, double> pos;
 		int tries = 0;
@@ -565,7 +553,7 @@ Ufo *AlienMission::spawnUfo(SavedGame &game, const Mod &mod, const Globe &globe,
 				pos = regionRules.getRandomPoint(trajectory.getZone(0));
 			}
 			ufo->setAltitude(assaultTrajectory.getAltitude(0));
-			ufo->setSpeed(assaultTrajectory.getSpeedPercentage(0) * ufo->getCraftStats().speedMax);
+			ufo->setSpeed(assaultTrajectory.applySpeedPercentage(0, ufo->getCraftStats().speedMax));
 			ufo->setLongitude(pos.first);
 			ufo->setLatitude(pos.second);
 			Waypoint *wp = new Waypoint();
@@ -616,7 +604,7 @@ Ufo *AlienMission::spawnUfo(SavedGame &game, const Mod &mod, const Globe &globe,
 			pos = regionRules.getRandomPoint(trajectory.getZone(0));
 		}
 		ufo->setAltitude(trajectory.getAltitude(0));
-		ufo->setSpeed(trajectory.getSpeedPercentage(0) * ufo->getCraftStats().speedMax);
+		ufo->setSpeed(trajectory.applySpeedPercentage(0, ufo->getCraftStats().speedMax));
 		ufo->setLongitude(pos.first);
 		ufo->setLatitude(pos.second);
 		Waypoint *wp = new Waypoint();
@@ -678,7 +666,7 @@ Ufo *AlienMission::spawnUfo(SavedGame &game, const Mod &mod, const Globe &globe,
 	{
 		ufo->setSecondsRemaining(trajectory.groundTimer()*5);
 	}
-	ufo->setSpeed(trajectory.getSpeedPercentage(0) * ufo->getCraftStats().speedMax);
+	ufo->setSpeed(trajectory.applySpeedPercentage(0, ufo->getCraftStats().speedMax));
 	ufo->setLongitude(pos.first);
 	ufo->setLatitude(pos.second);
 	if (_rule.getOperationType() != AMOT_SPACE && _base)
@@ -791,6 +779,10 @@ void AlienMission::start(Game &engine, const Globe &globe, size_t initialCount)
 			{
 				// 3. spawn a new base
 				RuleRegion *region = mod.getRegion(_region, true);
+				if (_rule.getOperationSpawnZone() < 0 || _rule.getOperationSpawnZone() >= (int)region->getMissionZones().size())
+				{
+					throw Exception("Cannot spawn alien base, invalid operationSpawnZone! Mission: " + _rule.getType());
+				}
 				std::vector<MissionArea> areas = region->getMissionZones().at(_rule.getOperationSpawnZone()).areas;
 				std::pair<double, double> pos;
 				int tries = 0;
@@ -895,7 +887,7 @@ void AlienMission::ufoReachedWaypoint(Ufo &ufo, Game &engine, const Globe &globe
 			ufo.setLandId(0);
 		}
 		// Set next waypoint.
-		ufo.setSpeed((int)(ufo.getCraftStats().speedMax * trajectory.getSpeedPercentage(nextWaypoint)));
+		ufo.setSpeed(trajectory.applySpeedPercentage(nextWaypoint, ufo.getCraftStats().speedMax));
 	}
 	else
 	{
@@ -904,7 +896,6 @@ void AlienMission::ufoReachedWaypoint(Ufo &ufo, Game &engine, const Globe &globe
 		{
 			// Remove UFO, replace with MissionSite.
 			addScore(ufo.getLongitude(), ufo.getLatitude(), game);
-			ufo.setStatus(Ufo::DESTROYED);
 
 			MissionArea area = regionRules.getMissionZones().at(trajectory.getZone(curWaypoint)).areas.at(_missionSiteZoneArea);
 			if (wave.objectiveOnTheLandingSite)
@@ -916,6 +907,15 @@ void AlienMission::ufoReachedWaypoint(Ufo &ufo, Game &engine, const Globe &globe
 				area.latMax = ufo.getLatitude();
 			}
 			MissionSite *missionSite = spawnMissionSite(game, mod, area, &ufo);
+			if (missionSite && _rule.respawnUfoAfterSiteDespawn())
+			{
+				ufo.setStatus(Ufo::IGNORE_ME);
+				missionSite->setUfo(&ufo);
+			}
+			else
+			{
+				ufo.setStatus(Ufo::DESTROYED);
+			}
 			if (missionSite)
 			{
 				for (auto* follower : ufo.getCraftFollowers())
@@ -923,6 +923,10 @@ void AlienMission::ufoReachedWaypoint(Ufo &ufo, Game &engine, const Globe &globe
 					if (follower->getNumTotalUnits() > 0)
 					{
 						follower->setDestination(missionSite);
+					}
+					else if (ufo.getStatus() == Ufo::IGNORE_ME)
+					{
+						follower->returnToBase(); // no craft is allowed to follow an ignored UFO
 					}
 				}
 			}
@@ -1019,6 +1023,8 @@ void AlienMission::ufoShotDown(Ufo &ufo)
 			_spawnCountdown += 30 * (RNG::generate(0, 400) + 48);
 		}
 		break;
+	case Ufo::IGNORE_ME:
+		break;
 	}
 }
 
@@ -1037,6 +1043,7 @@ void AlienMission::ufoLifting(Ufo &ufo, SavedGame &game)
 		assert(0 && "Ufo is already on the air!");
 		break;
 	case Ufo::LANDED:
+	case Ufo::IGNORE_ME:
 		{
 			// base missions only get points when they are completed.
 			if (_rule.getPoints() > 0 && _rule.getObjective() != OBJECTIVE_BASE)
@@ -1044,7 +1051,7 @@ void AlienMission::ufoLifting(Ufo &ufo, SavedGame &game)
 				addScore(ufo.getLongitude(), ufo.getLatitude(), game);
 			}
 			ufo.setAltitude("STR_VERY_LOW");
-			ufo.setSpeed((int)(ufo.getCraftStats().speedMax * ufo.getTrajectory().getSpeedPercentage(ufo.getTrajectoryPoint())));
+			ufo.setSpeed(ufo.getTrajectory().applySpeedPercentage(ufo.getTrajectoryPoint(), ufo.getCraftStats().speedMax));
 		}
 		break;
 	case Ufo::CRASHED:

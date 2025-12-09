@@ -255,12 +255,20 @@ void ActionMenuState::handle(Action *action)
 	{
 		_game->popState();
 	}
-	else if (action->getDetails()->type == SDL_KEYDOWN &&
-		(action->getDetails()->key.keysym.sym == Options::keyCancel ||
-		action->getDetails()->key.keysym.sym == Options::keyBattleUseLeftHand ||
-		action->getDetails()->key.keysym.sym == Options::keyBattleUseRightHand))
+	else if (action->getDetails()->type == SDL_KEYDOWN)
 	{
-		_game->popState();
+		auto key = action->getDetails()->key.keysym.sym;
+		if (key == Options::keyCancel || key == Options::keyBattleUseLeftHand || key == Options::keyBattleUseRightHand)
+		{
+			if (key != Options::keyBattleActionItem1 &&
+				key != Options::keyBattleActionItem2 &&
+				key != Options::keyBattleActionItem3 &&
+				key != Options::keyBattleActionItem4 &&
+				key != Options::keyBattleActionItem5)
+			{
+				_game->popState();
+			}
+		}
 	}
 }
 
@@ -510,7 +518,7 @@ void ActionMenuState::handleAction()
 						}
 						else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 						{
-							power += std::ceil((stats->physics + stats->chemistry + stats->alienTech) / 3);
+							power += stats->physics;
 						}
 						
 						if (soldier && soldier->getRoleRank(ROLE_SCIENTIST) < 1)
@@ -552,7 +560,7 @@ void ActionMenuState::handleAction()
 								}
 								else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
 								{
-									unit->addAnomalyExp();
+									unit->addPhysicsExp();
 								}
 
 								if (soldier && soldier->isRookieScientist())

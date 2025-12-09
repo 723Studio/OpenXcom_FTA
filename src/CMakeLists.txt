@@ -37,6 +37,7 @@ set ( basescape_src
   Basescape/IntelAllocateAgentsState.cpp
   Basescape/IntelState.cpp
   Basescape/IntelligenceProjectDetailsState.cpp
+  Basescape/ItemLocationsState.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
@@ -71,6 +72,7 @@ set ( basescape_src
   Basescape/SoldierAvatarState.cpp
   Basescape/SoldierExperienceState.cpp
   Basescape/SoldierBonusState.cpp
+  Basescape/SoldierDiaryLightState.cpp
   Basescape/SoldierDiaryMissionState.cpp
   Basescape/SoldierDiaryOverviewState.cpp
   Basescape/SoldierDiaryPerformanceState.cpp
@@ -116,6 +118,7 @@ set ( battlescape_src
   Battlescape/CustomBattleMessageState.cpp
   Battlescape/DebriefingExtraStatsState.cpp
   Battlescape/DebriefingState.cpp
+  Battlescape/ExperienceOverviewState.cpp
   Battlescape/Explosion.cpp
   Battlescape/ExplosionBState.cpp
   Battlescape/ExtendedBattlescapeLinksState.cpp
@@ -142,6 +145,7 @@ set ( battlescape_src
   Battlescape/Pathfinding.cpp
   Battlescape/PathfindingNode.cpp
   Battlescape/PathfindingOpenSet.cpp
+  Battlescape/Position.cpp
   Battlescape/PrimeGrenadeState.cpp
   Battlescape/Projectile.cpp
   Battlescape/ProjectileFlyBState.cpp
@@ -205,7 +209,9 @@ set ( engine_src
   Engine/Surface.cpp
   Engine/SurfaceSet.cpp
   Engine/Timer.cpp
+  Engine/TouchState.cpp
   Engine/Unicode.cpp
+  Engine/Yaml.cpp
   Engine/Zoom.cpp
 )
 
@@ -391,6 +397,7 @@ set ( mod_src
   Mod/RuleTerrain.cpp
   Mod/RuleUfo.cpp
   Mod/RuleVideo.cpp
+  Mod/RuleWeaponSet.cpp
   Mod/SoldierNamePool.cpp
   Mod/SoundDefinition.cpp
   Mod/StatString.cpp
@@ -473,6 +480,27 @@ set ( ufopedia_src
   Ufopaedia/UfopaediaStartState.cpp
 )
 
+set ( rapidyaml_src
+  ../libs/rapidyaml/c4/base64.cpp
+  ../libs/rapidyaml/c4/char_traits.cpp
+  ../libs/rapidyaml/c4/error.cpp
+  ../libs/rapidyaml/c4/format.cpp
+  ../libs/rapidyaml/c4/language.cpp
+  ../libs/rapidyaml/c4/memory_resource.cpp
+  ../libs/rapidyaml/c4/memory_util.cpp
+  ../libs/rapidyaml/c4/utf.cpp
+  ../libs/rapidyaml/c4/yml/common.cpp
+  ../libs/rapidyaml/c4/yml/node.cpp
+  ../libs/rapidyaml/c4/yml/node_type.cpp
+  ../libs/rapidyaml/c4/yml/parse.cpp
+  ../libs/rapidyaml/c4/yml/preprocess.cpp
+  ../libs/rapidyaml/c4/yml/reference_resolver.cpp
+  ../libs/rapidyaml/c4/yml/tag.cpp
+  ../libs/rapidyaml/c4/yml/tree.cpp
+  ../libs/rapidyaml/c4/yml/version.cpp
+
+)
+
 set ( cxx_src
     ${root_src}
     ${basescape_src}
@@ -485,13 +513,16 @@ set ( cxx_src
     ${mod_src}
     ${savegame_src}
     ${ufopedia_src}
+    ${rapidyaml_src}
 )
 
 set ( c_src
   ../libs/miniz/miniz.c
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
-set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
+if ( NOT MSVC )
+  set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
+endif ()
 
 set ( data_install_dir bin )
 if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -584,9 +615,12 @@ set ( openxcom_src ${c_src} ${cxx_src} ${embed_src} )
 set ( install_dest RUNTIME )
 set ( set_exec_path ON )
 set ( install_dest_dir bin )
+if ( NOT "${DATADIR}" STREQUAL "" )
+  add_definitions( -DDATADIR="${DATADIR}" )
+endif ()
 if ( UNIX AND NOT APPLE )
   set ( data_install_dir "${CMAKE_INSTALL_FULL_DATADIR}/openxcom" )
-  set_property ( SOURCE main.cpp APPEND PROPERTY COMPILE_DEFINITIONS DATADIR="${data_install_dir}/" )
+  set_property ( SOURCE main.cpp APPEND PROPERTY COMPILE_DEFINITIONS INSTALLDIR="${data_install_dir}/" )
 endif ()
 if ( APPLE )
   set ( sdl_src "${MACOS_SDLMAIN_M_PATH}" )
@@ -613,7 +647,7 @@ if ( APPLE )
     endif ()
   else ()
     set ( data_install_dir "${CMAKE_INSTALL_FULL_DATADIR}/openxcom" )
-    add_definitions( -DDATADIR="${data_install_dir}/" )
+    add_definitions( -DINSTALLDIR="${data_install_dir}/" )
   endif ()
 endif ()
 if ( set_exec_path )
@@ -655,11 +689,13 @@ if (${CMAKE_SYSTEM_NAME} MATCHES FreeBSD OR ${CMAKE_SYSTEM_NAME} MATCHES NetBSD 
 endif ()
 
 if (WIN32)
-  set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  if ( NOT MSVC )
+    set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  endif ()
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${WIN32_LIBS} )
+target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )

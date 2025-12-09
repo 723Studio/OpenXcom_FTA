@@ -90,7 +90,7 @@ namespace Options
 	/// Loads options from YAML.
 	bool load(const std::string &filename = "options");
 	/// Saves options to YAML.
-	bool save(const std::string &filename = "options");
+	bool save(bool reset = false, const std::string &filename = "options");
 	/// Gets the game's data folder.
 	std::string getDataFolder();
 	/// Sets the game's data folder.
@@ -119,6 +119,8 @@ namespace Options
 	std::string getActiveMaster();
 	/// Gets the master mod info.
 	const ModInfo* getActiveMasterInfo();
+	/// Gets the xcom ruleset info.
+	const ModInfo* getXcomRulesetInfo();
 	/// Gets the map of mod ids to mod infos
 	const std::map<std::string, ModInfo> &getModInfos();
 	/// Refreshes the mods.
@@ -129,6 +131,8 @@ namespace Options
 	std::vector<const ModInfo*> getActiveMods();
 	/// If we should skip the main menu and just load the last save
 	bool getLoadLastSave();
+	/// If we should skip the main menu and just load the specified save
+	const std::string& getLoadThisSave();
 	/// And do it only at startup
 	void expendLoadLastSave();
 }

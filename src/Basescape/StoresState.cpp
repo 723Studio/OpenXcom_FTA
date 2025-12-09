@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "StoresState.h"
+#include "ItemLocationsState.h"
 #include <sstream>
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/Game.h"
@@ -148,6 +149,7 @@ StoresState::StoresState(Base *base) : _base(base)
 	_lstStores->setSelectable(true);
 	_lstStores->setBackground(_window);
 	_lstStores->setMargin(2);
+	_lstStores->onMouseClick((ActionHandler)&StoresState::lstStoresClick, SDL_BUTTON_LEFT);
 	_lstStores->onMouseClick((ActionHandler)&StoresState::lstStoresClick, SDL_BUTTON_MIDDLE);
 
 	_sortName->setX(_sortName->getX() + _txtItem->getTextWidth() + 4);
@@ -166,7 +168,7 @@ StoresState::StoresState(Base *base) : _base(base)
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&StoresState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(false);
+	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
 
 	_btnOk->onKeyboardRelease((ActionHandler)&StoresState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 }
@@ -494,6 +496,12 @@ void StoresState::lstStoresClick(Action* action)
 
 		std::string articleId = rule->getUfopediaType();
 		Ufopaedia::openArticle(_game, articleId);
+	}
+	else if (_game->isLeftClick(action))
+	{
+		auto* rule = _itemList[_lstStores->getSelectedRow()].rule;
+
+		_game->pushState(new ItemLocationsState(rule));
 	}
 }
 

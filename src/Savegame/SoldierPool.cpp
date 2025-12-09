@@ -41,15 +41,16 @@ SoldierPool::~SoldierPool()
  * Loads the item container from a YAML file.
  * @param node YAML node.
  */
-void SoldierPool::load(const YAML::Node &node, SavedGame* save, const Mod* mod)
+void SoldierPool::load(const YAML::YamlNodeReader &reader, SavedGame* save, const Mod* mod)
 {
-	for (YAML::const_iterator i = node["soldiers"].begin(); i != node["soldiers"].end(); ++i)
+	for (const auto& child : reader["soldiers"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>(mod->getSoldiersList().front());
+		std::string type = mod->getSoldiersList().front();
+		child.tryRead("type", type);
 		if (mod->getSoldier(type))
 		{
 			Soldier* s = new Soldier(mod->getSoldier(type), nullptr, 0);
-			s->load(*i, mod, save, mod->getScriptGlobal());
+			s->load(child, mod, save, mod->getScriptGlobal());
 			s->clearBaseDuty();
 			_pool.push_back(s);
 		}
@@ -60,15 +61,15 @@ void SoldierPool::load(const YAML::Node &node, SavedGame* save, const Mod* mod)
  * Saves the item container to a YAML file.
  * @return YAML node.
  */
-YAML::Node SoldierPool::save(const Mod* mod) const
+void SoldierPool::save(YAML::YamlNodeWriter writer, const Mod* mod) const
 {
-	YAML::Node node;
-	for (std::vector<Soldier*>::const_iterator i = _pool.begin(); i != _pool.end(); ++i)
-	{
-		node["soldiers"].push_back((*i)->save(mod->getScriptGlobal()));
-	}
-	
-	return node;
+	writer.setAsMap();
+	writer.write("soldiers", _pool,
+		[&](YAML::YamlNodeWriter& vectorWriter, Soldier* s)
+		{
+			s->save(vectorWriter.write(), mod->getScriptGlobal());
+		}
+	);
 }
 
 void SoldierPool::createSoldier(const RuleSoldier* rule, const Mod* mod, SavedGame* save)

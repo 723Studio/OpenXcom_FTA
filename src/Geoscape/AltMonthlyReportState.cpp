@@ -308,7 +308,7 @@ void AltMonthlyReportState::btnOkClick(Action*)
 				Soldier* soldier = _game->getSavedGame()->getSoldier((*s)->getId());
 				// Award medals to eligible soldiers
 				soldier->getDiary()->addMonthlyService();
-				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
+				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame(), soldier))
 				{
 					_soldiersMedalled.push_back(soldier);
 				}

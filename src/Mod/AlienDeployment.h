@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -101,9 +101,11 @@ private:
 	std::string _missionBountyItem;
 	int _missionBountyItemCount;
 	int _bughuntMinTurn;
+	bool _forcePercentageOutsideUfo;
 	std::vector<DeploymentData> _data;
 	std::vector<ReinforcementsData> _reinforcements;
 	int _width, _length, _height, _civilians;
+	bool _ignoreLivingCivilians;
 	bool _markCiviliansAsVIP;
 	int _civilianSpawnNodeRank;
 	std::map<std::string, int> _civiliansByType;
@@ -137,13 +139,15 @@ private:
 	std::vector<std::pair<size_t, WeightedOptions*> > _alienBaseUpgrades;
 	bool _resetAlienBaseAgeAfterUpgrade, _resetAlienBaseAge;
 	std::string _upgradeRace;
+	std::vector<std::tuple<size_t, std::string, std::string> > _alienRaceEvolution;
+	bool _noWeaponPile;
 public:
 	/// Creates a blank Alien Deployment ruleset.
 	AlienDeployment(const std::string &type);
 	/// Cleans up the Alien Deployment ruleset.
 	~AlienDeployment();
 	/// Loads Alien Deployment data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& node, Mod *mod);
 	/// Gets the Alien Deployment's type.
 	const std::string& getType() const;
 	/// Gets the custom UFO name to use for the dummy/blank 'addUFO' mapscript command.
@@ -184,6 +188,8 @@ public:
 	int getMissionBountyItemCount() const { return _missionBountyItemCount; }
 	/// Gets the bug hunt mode minimum turn requirement (default = 0 = not used).
 	int getBughuntMinTurn() const;
+	/// Should `percentageOutsideUfo` be forced for all kinds of missions? (instead of just UFO crash/landing sites)
+	bool getForcePercentageOutsideUfo() const { return _forcePercentageOutsideUfo; }
 	/// Gets a pointer to the data.
 	const std::vector<DeploymentData>* getDeploymentData() const;
 	/// Gets the highest used alien rank.
@@ -194,6 +200,8 @@ public:
 	void getDimensions(int *width, int *length, int *height) const;
 	/// Gets civilians.
 	int getCivilians() const;
+	/// Should living civilians be ignored for scoring, commendations, etc.?
+	bool getIgnoreLivingCivilians() const { return _ignoreLivingCivilians; }
 	/// Gets the civilian spawn node rank.
 	bool getMarkCiviliansAsVIP() const { return _markCiviliansAsVIP; }
 	/// Gets the civilian spawn node rank.
@@ -326,6 +334,17 @@ public:
 	/// Gets the new race for an alien base after an upgrade (into this type).
 	const std::string& getUpgradeRace() const { return _upgradeRace; }
 
+	/// Gets the alien race evolution rules.
+	const auto& getAlienRaceEvolution() const { return _alienRaceEvolution; }
+
+	/// Should items on the "weapon pile" be hidden from the player?
+	bool getNoWeaponPile() const { return _noWeaponPile; }
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, ItemSet* val);
+bool read(ryml::ConstNodeRef const& n, DeploymentData* val);
+bool read(ryml::ConstNodeRef const& n, BriefingData* val);
+bool read(ryml::ConstNodeRef const& n, ReinforcementsData* val);
 
 }

@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -41,6 +41,7 @@ private:
 	int _spawnGap, _randomSpawnGap;
 	std::string _missionVarName, _missionMarkerName;
 	int _counterMin, _counterMax;
+	
 	std::map<std::string, int> _requiredReputation;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
@@ -48,14 +49,16 @@ private:
 	std::map<std::string, bool> _soldierTypeTriggers;
 	std::map<std::string, bool> _xcomBaseInRegionTriggers;
 	std::map<std::string, bool> _xcomBaseInCountryTriggers;
+
 	bool _affectsGameProgression;
+
 public:
 	/// Creates a blank RuleEventScript.
 	RuleEventScript(const std::string &type);
 	/// Cleans up the event script ruleset.
 	~RuleEventScript();
 	/// Loads an event script from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the name of the script command.
 	const std::string &getType() const { return _type; }
 	/// Gets the list of one time sequential events.
@@ -98,6 +101,7 @@ public:
 	int getCounterMin() const { return _counterMin; }
 	/// Gets the maximum number of missions generated for this command to run.
 	int getCounterMax() const { return _counterMax; }
+
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const { return _researchTriggers; }
 	/// Gets the diplomacy faction requirements that may apply to this command.
@@ -112,6 +116,7 @@ public:
 	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const { return _xcomBaseInRegionTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const { return _xcomBaseInCountryTriggers; }
+
 	/// Gets a flag used for TechTreeViewer.
 	bool getAffectsGameProgression() const { return _affectsGameProgression; }
 	/// Generates an event based on the month.

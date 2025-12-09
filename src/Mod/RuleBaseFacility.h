@@ -21,7 +21,7 @@
 #include <vector>
 #include <map>
 #include <bitset>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleBaseFacilityFunctions.h"
 
 namespace OpenXcom
@@ -64,6 +64,8 @@ private:
 	int _radarRange, _radarChance, _defense, _hitRatio, _fireSound, _hitSound, _placeSound;
 	int _ammoMax, _rearmRate;
 	int _ammoNeeded;
+	bool _unifiedDamageFormula;
+	int _shieldDamageModifier;
 	const RuleItem* _ammoItem = nullptr;
 	std::string _ammoItemName;
 	std::string _mapName;
@@ -79,6 +81,7 @@ private:
 	std::vector<const RuleBaseFacility*> _leavesBehindOnSell;
 	int _removalTime;
 	bool _canBeBuiltOver;
+	bool _upgradeOnly;
 	std::vector<const RuleBaseFacility*> _buildOverFacilities;
 	std::vector<Position> _storageTiles;
 	std::string _destroyedFacilityName;
@@ -95,7 +98,7 @@ public:
 	/// Cleans up the facility ruleset.
 	~RuleBaseFacility();
 	/// Loads the facility from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the facility's type.
@@ -183,6 +186,10 @@ public:
 	int getRearmRate() const { return _rearmRate; }
 	/// Gets the facility's weapon ammo spent per shot.
 	int getAmmoNeeded() const { return _ammoNeeded; }
+	/// Should unified or vanilla formula be used?
+	bool unifiedDamageFormula() const { return _unifiedDamageFormula; }
+	/// Gets the facility's weapon effectiveness against shields.
+	int getShieldDamageModifier() const { return _shieldDamageModifier; }
 	/// Gets the facility's weapon ammo item.
 	const RuleItem* getAmmoItem() const { return _ammoItem; }
 	/// Gets the facility's battlescape map name.
@@ -220,6 +227,8 @@ public:
 	int getRemovalTime() const;
 	/// Gets whether or not this facility can be built over by other ones
 	bool getCanBeBuiltOver() const;
+	/// Gets whether or not this facility can ONLY be built over another facility (i.e. not standalone)
+	bool isUpgradeOnly() const { return _upgradeOnly; }
 	/// Check if a given facility `fac` can be replaced by this facility.
 	BasePlacementErrors getCanBuildOverOtherFacility(const RuleBaseFacility* fac) const;
 	/// Gets which facilities are allowed to be replaced by this building

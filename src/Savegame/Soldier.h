@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
 #include "../Mod/RuleSoldier.h"
@@ -51,6 +51,7 @@ class SoldierDiary;
 class SavedGame;
 class RuleSoldierTransformation;
 class RuleSoldierBonus;
+class RuleSkill;
 class Base;
 struct BaseSumDailyRecovery;
 
@@ -61,21 +62,19 @@ struct SoldierRoleRanks
 	int experience;
 
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		role = (SoldierRole)node["role"].as<int>(role);
-		rank = node["rank"].as<int>(rank);
-		experience = node["experience"].as<int>(experience);
+		reader.tryRead("role", role);
+		reader.tryRead("rank", rank);
+		reader.tryRead("experience", experience);
 	}
 	/// Saves stats to YAML.
-	YAML::Node save()
+	void save(YAML::YamlNodeWriter writer)
 	{
-		YAML::Node node;
-		node["role"] = (int)role;
-		node["rank"] = rank;
-		node["experience"] = experience;
-
-		return node;
+		writer.setAsMap();
+		writer.write("role", (int)role);
+		writer.write("rank", rank);
+		writer.write("experience", experience);
 	}
 };
 
@@ -141,9 +140,9 @@ private:
 	/// Cleans up the soldier.
 	~Soldier();
 	/// Loads the soldier from YAML.
-	void load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate = false);
+	void load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate = false);
 	/// Saves the soldier to YAML.
-	YAML::Node save(const ScriptGlobal *shared);
+	void save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const;
 	/// Gets the soldier's name.
 	std::string getName(bool statstring = false, unsigned int maxLength = 20) const;
 	/// Sets the soldier's name.
@@ -440,6 +439,8 @@ private:
 
 	/// Calculates how this project changes the soldier's stats
 	UnitStats calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType);
+	/// Checks whether the soldier has a given bonus. Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+	bool hasBonus(const RuleSoldierBonus* bonus) const;
 	/// Gets all the soldier bonuses
 	const std::vector<const RuleSoldierBonus*> *getBonuses(const Mod *mod);
 	/// Get pointer to current stats with soldier bonuses, but without armor bonuses.
@@ -456,6 +457,10 @@ private:
 	UnitStats* getMonthlyExperienceCache();
 	/// Resets the monthly soldier experience cache.
 	void resetMonthlyExperienceCache();
+	/// Check if the soldier has all the required soldier bonuses for the given soldier skill.
+	bool hasAllRequiredBonusesForSkill(const RuleSkill* skillRules);
+	/// Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+	bool hasAllPilotingRequirements(const Craft* newCraft = nullptr) const;
 
 private:
 	std::string generateCallsign(const std::vector<SoldierNamePool*> &names);

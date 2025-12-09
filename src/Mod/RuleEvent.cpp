@@ -25,8 +25,7 @@ namespace OpenXcom
 
 RuleEvent::RuleEvent(const std::string &name) :
 	_name(name), _background("BACK13.SCR"), _alignBottom(false),
-	_city(false), _points(0), _funds(0), _loyalty(0), 
-	_spawnedPersons(0), _timer(30), _timerRandom(0), _counterValue(1)
+	_city(false), _points(0), _funds(0), _loyalty(0), _spawnedPersons(0), _timer(30), _timerRandom(0), _invert(false)
 {
 }
 
@@ -34,64 +33,80 @@ RuleEvent::RuleEvent(const std::string &name) :
  * Loads the event definition from YAML.
  * @param node YAML node.
  */
-void RuleEvent::load(const YAML::Node &node, Mod* mod)
+void RuleEvent::load(const YAML::YamlNodeReader& node, Mod* mod)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod);
 	}
 
-	_description = node["description"].as<std::string>(_description);
-	_alignBottom = node["alignBottom"].as<bool>(_alignBottom);
-	_background = node["background"].as<std::string>(_background);
-	_music = node["music"].as<std::string>(_music);
-	_regionList = node["regionList"].as<std::vector<std::string> >(_regionList);
-	_city = node["city"].as<bool>(_city);
-	_points = node["points"].as<int>(_points);
-	_funds = node["funds"].as<int>(_funds);
-	_loyalty = node["loyalty"].as<int>(_loyalty);
-	_spawnedCraftType = node["spawnedCraftType"].as<std::string>(_spawnedCraftType);
-	_spawnedPersons = node["spawnedPersons"].as<int>(_spawnedPersons);
-	_spawnedPersonType = node["spawnedPersonType"].as<std::string>(_spawnedPersonType);
-	_spawnedPersonName = node["spawnedPersonName"].as<std::string>(_spawnedPersonName);
-	_removedCovertOperationsList = node["removedCovertOperationsList"].as<std::vector<std::string> >(_removedCovertOperationsList);
-	if (node["spawnedSoldier"])
+	reader.tryRead("description", _description);
+	reader.tryRead("alignBottom", _alignBottom);
+	reader.tryRead("background", _background);
+	reader.tryRead("music", _music);
+	reader.tryRead("cutscene", _cutscene);
+	reader.tryRead("regionList", _regionList);
+	reader.tryRead("city", _city);
+	reader.tryRead("points", _points);
+	reader.tryRead("funds", _funds);
+	reader.tryRead("loyalty", _loyalty);
+	reader.tryRead("spawnedCraftType", _spawnedCraftType);
+	reader.tryRead("spawnedPersons", _spawnedPersons);
+	reader.tryRead("spawnedPersonType", _spawnedPersonType);
+	reader.tryRead("spawnedPersonName", _spawnedPersonName);
+	reader.tryRead("removedCovertOperationsList", _removedCovertOperationsList);
+	if (reader["spawnedSoldier"])
 	{
-		_spawnedSoldier = node["spawnedSoldier"];
+		_spawnedSoldier = reader["spawnedSoldier"].emitDescendants(YAML::YamlRootNodeReader(_spawnedSoldier, "(spawned soldier template)"));
 	}
-	_reputationScore = node["reputationScore"].as<std::map<std::string, int>>(_reputationScore);
-	_everyMultiItemList = node["everyMultiItemList"].as<std::map<std::string, int> >(_everyMultiItemList);
-	_everyItemList = node["everyItemList"].as<std::vector<std::string> >(_everyItemList);
-	_randomItemList = node["randomItemList"].as<std::vector<std::string> >(_randomItemList);
-	_randomMultiItemList = node["randomMultiItemList"].as<std::vector<std::map<std::string, int> > >(_randomMultiItemList);
-	if (node["weightedItemList"])
+	reader.tryRead("reputationScore", _reputationScore);
+	reader.tryRead("everyMultiItemList", _everyMultiItemList);
+	reader.tryRead("everyItemList", _everyItemList);
+	reader.tryRead("randomItemList", _randomItemList);
+	reader.tryRead("randomMultiItemList", _randomMultiItemList);
+	if (reader["weightedItemList"])
 	{
-		_weightedItemList.load(node["weightedItemList"]);
+		_weightedItemList.load(reader["weightedItemList"]);
 	}
-	_researchList = node["researchList"].as<std::vector<std::string> >(_researchList);
-	_interruptResearch = node["interruptResearch"].as<std::string>(_interruptResearch);
-	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
-	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
-	_counterValue = node["counterValue"].as<int>(_counterValue);
-	_timer = node["timer"].as<int>(_timer);
-	_timerRandom = node["timerRandom"].as<int>(_timerRandom);
+	reader.tryRead("researchList", _researchNames);
+	reader.tryRead("adhocMissionScriptTags", _adhocMissionScriptTags);
+	reader.tryRead("interruptResearch", _interruptResearch);
+	mod->loadUnorderedNames(_name, _decreaseCounter, reader["decreaseCounter"]);
+	mod->loadUnorderedNames(_name, _increaseCounter, reader["increaseCounter"]);
+	reader.tryRead("counterValue", _counterValue);
+	reader.tryRead("timer", _timer);
+	reader.tryRead("timerRandom", _timerRandom);
+	reader.tryRead("invert", _invert);
 
-	if (const YAML::Node& customAnswers = node["customAnswers"])
+	if (reader["customAnswers"])
 	{
-		if (customAnswers.size() > 4)
+		const auto& customAnswers = reader["customAnswers"];
+		if (customAnswers.childrenCount() > 4)
 		{
 			throw Exception("Geoscape Event named: '" + this->getName() + "' has more than 4 custom answers, this is not allowed!");
 		}
-		if (customAnswers.size() < 2)
+		if (customAnswers.childrenCount() < 2)
 		{
 			throw Exception("Geoscape Event named: '" + this->getName() + "' has less than 2 custom answers, this is not allowed!");
 		}
-		for (YAML::const_iterator i = customAnswers.begin(); i != customAnswers.end(); ++i)
+		for (const auto& child : customAnswers.children())
 		{
-
-			_answers[i->first.as<int>()].load(i->second);
+			int answerIndex = child.readKey<int>();
+			_answers[answerIndex].load(child);
 		}
 	}
+
+	reader.tryRead("everyMultiSoldierList", _everyMultiSoldierList);
+	reader.tryRead("randomMultiSoldierList", _randomMultiSoldierList);
+}
+
+/**
+ * Cross link with other Rules.
+ */
+void RuleEvent::afterLoad(const Mod* mod)
+{
+	mod->linkRule(_research, _researchNames);
 }
 
 }

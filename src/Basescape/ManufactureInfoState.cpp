@@ -335,6 +335,7 @@ void ManufactureInfoState::btnOkClick(Action*)
 		_production->startItem(_base, _game->getSavedGame(), _game->getMod());
 	}
 	_production->setSellItems(_btnSell->getPressed());
+
 	exitState();
 }
 

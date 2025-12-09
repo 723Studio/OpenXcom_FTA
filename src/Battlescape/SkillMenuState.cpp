@@ -77,7 +77,7 @@ SkillMenuState::SkillMenuState(BattleAction *action, int x, int y) : ActionMenuS
 	for (auto* skill : soldier->getRules()->getSkills())
 	{
 		if (!hotkeys.empty()
-			&& soldierHasAllRequiredBonusesForSkill(soldier, skill)
+			&& soldier->hasAllRequiredBonusesForSkill(skill)
 			&& (skill->getCost().Time > 0 || skill->getCost().Mana > 0)
 			&& (!skill->isPsiRequired() || _action->actor->getBaseStats()->psiSkill > 0))
 		{
@@ -86,7 +86,7 @@ SkillMenuState::SkillMenuState(BattleAction *action, int x, int y) : ActionMenuS
 			_action->type = skill->getTargetMode();
 
 			// Attention: we are modifying _action->weapon inside!
-			chooseWeaponForSkill(_action, skill->getCompatibleWeapons(), skill->getCompatibleBattleType(), skill->checkHandsOnly());
+			chooseWeaponForSkill(_action, skill);
 
 			// Attention: here the modified values are consumed
 			addItem(skill, &id, hotkeys.back());
@@ -107,30 +107,6 @@ SkillMenuState::SkillMenuState(BattleAction *action, int x, int y) : ActionMenuS
 SkillMenuState::~SkillMenuState()
 {
 
-}
-
-/**
- * Check if the given soldier has all the required soldier bonuses for this soldier skill.
- * @param soldier Soldier to check.
- * @param skillRules Skill rules.
- */
-bool SkillMenuState::soldierHasAllRequiredBonusesForSkill(Soldier *soldier, const RuleSkill *skillRules)
-{
-	for (auto* requiredBonusRule : skillRules->getRequiredBonuses())
-	{
-		bool found = false;
-		for (auto* bonusRule : *soldier->getBonuses(nullptr))
-		{
-			if (bonusRule == requiredBonusRule)
-			{
-				found = true;
-				break;
-			}
-		}
-		if (!found)
-			return false;
-	}
-	return true;
 }
 
 /**
@@ -207,7 +183,7 @@ void SkillMenuState::btnActionMenuItemClick(Action *action)
 		const RuleSkill *selectedSkill = _actionMenu[btnID]->getSkill();
 		_action->skillRules = selectedSkill;
 		_action->type = _actionMenu[btnID]->getAction();
-		chooseWeaponForSkill(_action, selectedSkill->getCompatibleWeapons(), selectedSkill->getCompatibleBattleType(), selectedSkill->checkHandsOnly());
+		chooseWeaponForSkill(_action, selectedSkill);
 		_action->updateTU();
 
 		bool continueAction = tileEngine->skillUse(_action, selectedSkill);
@@ -252,7 +228,7 @@ void SkillMenuState::btnActionMenuItemClick(Action *action)
 	}
 }
 
-void SkillMenuState::chooseWeaponForSkill(BattleAction* action, const std::vector<const RuleItem*> &compatibleWeaponTypes, BattleType compatibleBattleType, bool checkHandsOnly)
+void SkillMenuState::chooseWeaponForSkill(BattleAction* action, const RuleSkill* skillRules)
 {
 	auto* unit = action->actor;
 	action->weapon = nullptr;
@@ -263,9 +239,9 @@ void SkillMenuState::chooseWeaponForSkill(BattleAction* action, const std::vecto
 	}
 
 	// 1. choose by weapon's name
-	if (!compatibleWeaponTypes.empty())
+	if (!skillRules->getCompatibleWeapons().empty())
 	{
-		for (auto* itemRule : compatibleWeaponTypes)
+		for (auto* itemRule : skillRules->getCompatibleWeapons())
 		{
 			// check both hands, right first
 			if (unit->getRightHandWeapon() && unit->getRightHandWeapon()->getRules() == itemRule)
@@ -278,7 +254,7 @@ void SkillMenuState::chooseWeaponForSkill(BattleAction* action, const std::vecto
 				action->weapon = unit->getLeftHandWeapon();
 				return;
 			}
-			if (!checkHandsOnly)
+			if (!skillRules->checkHandsOnly())
 			{
 				// check special weapons
 				BattleItem *item = unit->getSpecialWeapon(itemRule);
@@ -301,16 +277,36 @@ void SkillMenuState::chooseWeaponForSkill(BattleAction* action, const std::vecto
 	}
 
 	// 2. if not found, try by weapon's battle type
-	if (compatibleBattleType != BT_NONE)
+	if (skillRules->getCompatibleBattleType() != BT_NONE)
 	{
-		// check inventory
-		for (auto* invItem : *unit->getInventory())
+		// check both hands, right first
+		if (unit->getRightHandWeapon() && unit->getRightHandWeapon()->getRules()->getBattleType() == skillRules->getCompatibleBattleType())
 		{
-			// Note: checkHandsOnly is not considered here
-			if (invItem->getRules()->getBattleType() == compatibleBattleType)
+			action->weapon = unit->getRightHandWeapon();
+			return;
+		}
+		else if (unit->getLeftHandWeapon() && unit->getLeftHandWeapon()->getRules()->getBattleType() == skillRules->getCompatibleBattleType())
+		{
+			action->weapon = unit->getLeftHandWeapon();
+			return;
+		}
+		if (!skillRules->checkHandsOnly2())
+		{
+			// check special weapons
+			BattleItem* item = unit->getSpecialWeapon(skillRules->getCompatibleBattleType());
+			if (item)
 			{
-				action->weapon = invItem;
+				action->weapon = item;
 				return;
+			}
+			// check inventory
+			for (auto* invItem : *unit->getInventory())
+			{
+				if (invItem->getRules()->getBattleType() == skillRules->getCompatibleBattleType())
+				{
+					action->weapon = invItem;
+					return;
+				}
 			}
 		}
 	}

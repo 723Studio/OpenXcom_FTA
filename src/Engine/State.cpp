@@ -83,12 +83,12 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
 	{
 		_ruleInterfaceParent = _game->getMod()->getInterface(_ruleInterface->getParent());
 		pal = _ruleInterface->getPalette();
-		Element *element = _ruleInterface->getElement("palette");
+		const Element *element = _ruleInterface->getElementOptional("palette");
 		if (_ruleInterfaceParent)
 		{
 			if (!element)
 			{
-				element = _ruleInterfaceParent->getElement("palette");
+				element = _ruleInterfaceParent->getElementOptional("palette");
 			}
 			if (pal.empty())
 			{
@@ -126,7 +126,7 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
  */
 void State::setWindowBackground(Window *window, const std::string &s)
 {
-	auto& bgImageName = _game->getMod()->getInterface(s)->getBackgroundImage();
+	auto& bgImageName = _game->getMod()->getInterface(s)->getBackgroundImage(_game->getMod(), _game->getSavedGame());
 	setWindowBackgroundImage(window, bgImageName);
 }
 
@@ -181,9 +181,9 @@ void State::add(Surface *surface, const std::string &id, const std::string &cate
 	// this only works if we're dealing with a battlescape button
 	BattlescapeButton *bsbtn = dynamic_cast<BattlescapeButton*>(surface);
 
-	if (_game->getMod()->getInterface(category))
+	if (_game->getMod()->getInterface(category, false))
 	{
-		Element *element = _game->getMod()->getInterface(category)->getElement(id);
+		const Element *element = _game->getMod()->getInterface(category)->getElementOptional(id);
 		if (element)
 		{
 			if (parent && element->w != INT_MAX && element->h != INT_MAX)
@@ -477,7 +477,7 @@ void State::lowerAllSurfaces()
  */
 void State::applyBattlescapeTheme(const std::string& category)
 {
-	Element * element = _game->getMod()->getInterface("mainMenu")->getElement("battlescapeTheme");
+	const Element * element = _game->getMod()->getInterface("mainMenu")->getElement("battlescapeTheme");
 	std::string altBg = _game->getMod()->getInterface(category)->getAltBackgroundImage();
 	if (altBg.empty())
 	{
@@ -521,6 +521,23 @@ void State::redrawText()
 			surface->draw();
 		}
 	}
+}
+
+/**
+ * does the state only have one text list (to scroll)?
+ */
+bool State::hasOnlyOneScrollableTextList() const
+{
+	int count = 0;
+	for (auto* surface : _surfaces)
+	{
+		TextList* list = dynamic_cast<TextList*>(surface);
+		if (list && (list->getRowsDoNotUse() > list->getVisibleRows()))
+		{
+			count++;
+		}
+	}
+	return (count == 1);
 }
 
 /**
@@ -643,6 +660,16 @@ void State::recenter(int dX, int dY)
 		surface->setX(surface->getX() + dX / 2);
 		surface->setY(surface->getY() + dY / 2);
 	}
+}
+
+int State::getCursorX() const
+{
+	return _game->getCursor()->getX();
+}
+
+int State::getCursorY() const
+{
+	return _game->getCursor()->getY();
 }
 
 void State::setGamePtr(Game* game)

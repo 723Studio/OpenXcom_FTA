@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -45,7 +45,7 @@ public:
 	/// Cleans up the event script ruleset.
 	~RuleDiplomacyFactionEvent();
 	/// Loads an event script from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the name of the script command.
 	const std::string& getType() const { return _type; }
 	/// Gets the first month this command will run.

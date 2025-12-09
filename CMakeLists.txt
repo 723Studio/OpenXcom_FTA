@@ -1,12 +1,18 @@
-cmake_minimum_required ( VERSION 3.6 )
+cmake_minimum_required ( VERSION 3.10 )
 
 project ( OpenXcom )
+
+if(WIN32)
+  if(NOT CMAKE_GENERATOR MATCHES "Visual Studio 17")
+    message(FATAL_ERROR "Please generate with Visual Studio 17 2022: cmake -G \"Visual Studio 17 2022\"")
+  endif()
+endif()
 
 set ( CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules" )
 include(BuildType)
 include(GNUInstallDirs)
 
-# For yaml-cpp
+
 set (CMAKE_CXX_STANDARD 17)
 # use std=c++11 rather than std=gnu++11
 #set (CMAKE_CXX_EXTENSIONS OFF)
@@ -21,7 +27,7 @@ option ( ENABLE_CLANG_ANALYSIS "When building with clang, enable the static anal
 option ( CHECK_CCACHE "Check if ccache is installed and use it" OFF )
 set ( MSVC_WARNING_LEVEL 3 CACHE STRING "Visual Studio warning levels" )
 option ( FORCE_INSTALL_DATA_TO_BIN "Force installation of data to binary directory" OFF )
-set ( DATADIR "" CACHE STRING "Where to place datafiles" )
+set ( DATADIR "" CACHE STRING "Where to search for datafiles" )
 
 if ( CHECK_CCACHE )
   find_program( CCACHE_PROGRAM ccache )
@@ -81,8 +87,11 @@ else ()
   message ( STATUS "OpenGL libraries: ${OPENGL_LIBRARIES}" )
 endif ()
 
+# Include rapidyaml lib
+include_directories(${CMAKE_SOURCE_DIR}/libs/rapidyaml)
+
 if(NOT UNIX AND IS_DIRECTORY ${DEPS_DIR})
-   include_directories ( ${DEPS_DIR}/include/SDL ${DEPS_DIR}/include/yaml-cpp ${DEPS_DIR}/include )
+   include_directories ( ${DEPS_DIR}/include/SDL ${DEPS_DIR}/include )
    if ( CMAKE_CL_64 )
      link_directories ( ${DEPS_DIR}/lib/x64 )
    else ( )
@@ -92,8 +101,7 @@ if(NOT UNIX AND IS_DIRECTORY ${DEPS_DIR})
    set ( SDLGFX_LIBRARY SDL_gfx )
    set ( SDLMIXER_LIBRARY SDL_mixer )
    set ( SDLIMAGE_LIBRARY SDL_image )
-   set ( YAMLCPP_LIBRARY yaml-cpp )
-   set ( PKG_DEPS_LDFLAGS ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLGFX_LIBRARY} ${SDL_LIBRARY} ${YAMLCPP_LIBRARY} ${OPENGL_LIBRARIES} )
+   set ( PKG_DEPS_LDFLAGS ${SDLIMAGE_LIBRARY} ${SDLMIXER_LIBRARY} ${SDLGFX_LIBRARY} ${SDL_LIBRARY} ${OPENGL_LIBRARIES} )
 elseif(UNIX OR MINGW OR CYGWIN)
   if(IS_DIRECTORY ${DEPS_DIR})
      set(ENV{PKG_CONFIG_PATH} "${DEPS_DIR}/lib/pkgconfig/")
@@ -105,11 +113,10 @@ elseif(UNIX OR MINGW OR CYGWIN)
   pkg_check_modules(PKG_SDLIMAGE REQUIRED SDL_image)
   pkg_check_modules(PKG_SDLGFX REQUIRED SDL_gfx)
   pkg_check_modules(PKG_SDLMIXER REQUIRED SDL_mixer)
-  pkg_check_modules(PKG_YAMLCPP REQUIRED yaml-cpp)
 
   include_directories(${PKG_SDL_INCLUDE_DIRS} ${PKG_ZLIB_INCLUDE_DIRS} ${PKG_SDLIMAGE_INCLUDE_DIRS})
-  include_directories(${PKG_SDLGFX_INCLUDE_DIRS} ${PKG_SDLMIXER_INCLUDE_DIRS} ${PKG_YAMLCPP_INCLUDE_DIRS})
-  set(PKG_DEPS_LDFLAGS ${PKG_SDL_LDFLAGS} ${PKG_ZLIB_LDFLAGS} ${PKG_SDLIMAGE_LDFLAGS} ${PKG_SDLGFX_LDFLAGS} ${PKG_SDLMIXER_LDFLAGS} ${PKG_YAMLCPP_LDFLAGS} ${OPENGL_LIBRARIES})
+  include_directories(${PKG_SDLGFX_INCLUDE_DIRS} ${PKG_SDLMIXER_INCLUDE_DIRS})
+  set(PKG_DEPS_LDFLAGS ${PKG_SDL_LDFLAGS} ${PKG_ZLIB_LDFLAGS} ${PKG_SDLIMAGE_LDFLAGS} ${PKG_SDLGFX_LDFLAGS} ${PKG_SDLMIXER_LDFLAGS} ${OPENGL_LIBRARIES})
 
   if (UNIX)
     set(PKG_DEPS_LDFLAGS "${PKG_DEPS_LDFLAGS};dl")
@@ -122,7 +129,7 @@ endif()
 # Read version number
 set ( file "${CMAKE_SOURCE_DIR}/src/version.h" )
 file ( READ ${file} lines )
-string ( REGEX MATCH ".*OPENXCOM_VERSION_LONG \"([0-9]+)\\.([0-9]+)\\.([0-9]+)" version_line "${lines}" )
+string ( REGEX MATCH ".*OPENXCOM_FTA_VERSION_LONG \"([0-9]+)\\.([0-9]+)\\.([0-9]+)" version_line "${lines}" )
 set ( CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_MATCH_1} )
 set ( CPACK_PACKAGE_VERSION_MINOR ${CMAKE_MATCH_2} )
 set ( CPACK_PACKAGE_VERSION_PATCH "${CMAKE_MATCH_3}" )
@@ -152,7 +159,7 @@ else ()
   message( WARNING "Git not found.")
 endif()
 
-set ( OPENXCOM_VERSION_GIT "${GIT_STATE}" CACHE STRING "Git version string (after x.x.x)" )
+set ( OPENXCOM_FTA_VERSION_GIT "${GIT_STATE}" CACHE STRING "Git version string (after x.x.x)" )
 
 configure_file("${CMAKE_SOURCE_DIR}/src/git_version.h.in" "${CMAKE_CURRENT_BINARY_DIR}/git_version.h" )
 include_directories ( "${CMAKE_CURRENT_BINARY_DIR}" )

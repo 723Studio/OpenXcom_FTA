@@ -42,6 +42,7 @@
 #include "Unicode.h"
 #include "../Ufopaedia/UfopaediaStartState.h"
 #include "../Menu/NotesState.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Menu/TestState.h"
 #include <algorithm>
 #include "../fallthrough.h"
@@ -57,7 +58,7 @@ const double Game::VOLUME_GRADIENT = 10.0;
  * @param title Title of the game window.
  */
 Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0), _mod(0), _mind(0), _quit(false), _init(false), _update(false),  _mouseActive(true), _timeUntilNextFrame(0),
-	_ctrl(false), _alt(false), _shift(false), _rmb(false), _mmb(false)
+	_ctrl(false), _alt(false), _shift(false), _rmb(false), _mmb(false), _scrollStep(1)
 {
 	Options::reload = false;
 	Options::mute = false;
@@ -567,6 +568,23 @@ bool Game::containsNotesState() const
 }
 
 /**
+ * Returns the GeoscapeState from the background (if available).
+ * @return Pointer to GeoscapeState, or nullptr if not available.
+ */
+GeoscapeState* Game::getGeoscapeState() const
+{
+	for (auto* state : _states)
+	{
+		auto* geoscape = dynamic_cast<GeoscapeState*>(state);
+		if (geoscape)
+		{
+			return geoscape;
+		}
+	}
+	return nullptr;
+}
+
+/**
  * Checks if the game is currently quitting.
  * @return whether the game is shutting down or not.
  */
@@ -792,6 +810,7 @@ void Game::resetTouchButtonFlags()
 	_shift = false;
 	_rmb = false;
 	_mmb = false;
+	_scrollStep = 1;
 }
 
 }

@@ -39,28 +39,31 @@ RuleObject::~RuleObject()
 	* Loads the event definition from YAML.
 	* @param node YAML node.
 	*/
-void RuleObject::load(const YAML::Node& node)
+void RuleObject::load(const YAML::YamlNodeReader& node)
 {
-	if (const YAML::Node& parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent);
+		load(reader["refNode"]);
 	}
-	_type = node["type"].as<std::string>(_type);
-	_useType = (BattleObjectType)node["useType"].as<int>(_useType);
-	_hackingDefence = node["hackingDefence"].as<int>(_hackingDefence);
-	_samplingDefence = node["samplingDefence"].as<int>(_samplingDefence);
-	_isMissionObjective = node["isMissionObjective"].as<bool>(_isMissionObjective);
-	_spawnedEvents = node["spawnedEvents"].as<std::vector<std::string>>(_spawnedEvents);
-	_spawnedItem = node["spawnedItem"].as<std::string >(_spawnedItem);;
-	_alterationMCDNumber= node["alterationMCDNumber"].as<int>(_alterationMCDNumber);
-	_alterationMCDRadius= node["alterationMCDRadius"].as<int>(_alterationMCDRadius);
-	if (const YAML::Node& weights = node["eventWeights"])
+	reader.tryRead("type", _type);
+	reader.tryRead("useType", _useType);
+	reader.tryRead("hackingDefence", _hackingDefence);
+	reader.tryRead("samplingDefence", _samplingDefence);
+	reader.tryRead("isMissionObjective", _isMissionObjective);
+	reader.tryRead("spawnedEvents", _spawnedEvents);
+	reader.tryRead("spawnedItem", _spawnedItem);
+	reader.tryRead("alterationMCDNumber", _alterationMCDNumber);
+	reader.tryRead("alterationMCDRadius", _alterationMCDRadius);
+	if (reader["eventWeights"])
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
+		for (const auto& child : reader["eventWeights"].children())
 		{
 			WeightedOptions* nw = new WeightedOptions();
-			nw->load(nn->second);
-			_eventWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
+			nw->load(child);
+			size_t key = 0;
+			child.tryReadKey(key);
+			_eventWeights.push_back(std::make_pair(key, nw));
 		}
 	}
 }

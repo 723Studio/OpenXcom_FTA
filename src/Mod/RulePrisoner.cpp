@@ -31,12 +31,12 @@ PrisonerInterrogationRules::~PrisonerInterrogationRules()
 {
 }
 
-void PrisonerInterrogationRules::load(const YAML::Node& node)
+void PrisonerInterrogationRules::load(const YAML::YamlNodeReader& reader)
 {
-	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
-	_unlockResearchNames = node["unlockResearches"].as<std::vector<std::string>>(_unlockResearchNames);
-	_baseResistance = node["baseResistance"].as<int>(_baseResistance);
-	_diesAfter = node["diesAfter"].as<bool>(_diesAfter);
+	reader.tryRead("requiredResearch", _requiredResearchName);
+	reader.tryRead("unlockResearches", _unlockResearchNames);
+	reader.tryRead("baseResistance", _baseResistance);
+	reader.tryRead("diesAfter", _diesAfter);
 }
 
 void PrisonerInterrogationRules::afterLoad(const Mod* mod)
@@ -62,13 +62,13 @@ PrisonerRecruitingRules::~PrisonerRecruitingRules()
 {
 }
 
-void PrisonerRecruitingRules::load(const YAML::Node& node)
+void PrisonerRecruitingRules::load(const YAML::YamlNodeReader& reader)
 {
-	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
-	_spawnedSoldierRuleName = node["spawnedSoldierRule"].as<std::string>(_spawnedSoldierRuleName);
-	_difficulty = node["difficulty"].as<int>(_difficulty);
-	_eventChance = node["eventChance"].as<int>(_eventChance);
-	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
+	reader.tryRead("requiredResearch", _requiredResearchName);
+	reader.tryRead("spawnedSoldierRule", _spawnedSoldierRuleName);
+	reader.tryRead("difficulty", _difficulty);
+	reader.tryRead("eventChance", _eventChance);
+	reader.tryRead("spawnEvents", _spawnEvents);
 }
 
 void PrisonerRecruitingRules::afterLoad(const Mod* mod)
@@ -93,22 +93,24 @@ PrisonerTortureRules::~PrisonerTortureRules()
 	//}
 }
 
-void PrisonerTortureRules::load(const YAML::Node& node)
+void PrisonerTortureRules::load(const YAML::YamlNodeReader& reader)
 {
-	_difficulty = node["difficulty"].as<int>(_difficulty);
-	_loyaltyChange = node["loyaltyChange"].as<int>(_loyaltyChange);
-	_moraleChange = node["moraleChange"].as<int>(_moraleChange);
-	_cooperationChange = node["cooperationChange"].as<int>(_cooperationChange);
-	_eventChance = node["eventChance"].as<int>(_eventChance);
-	_isMultipleEventsPossible = node["isMultipleEventsPossible"].as<bool>(_isMultipleEventsPossible);
-	_spawnEvents = node["spawnEvents"].as<std::vector<std::string>>(_spawnEvents);
-	if (const YAML::Node& weights = node["eventWeights"])
+	reader.tryRead("difficulty", _difficulty);
+	reader.tryRead("loyaltyChange", _loyaltyChange);
+	reader.tryRead("moraleChange", _moraleChange);
+	reader.tryRead("cooperationChange", _cooperationChange);
+	reader.tryRead("eventChance", _eventChance);
+	reader.tryRead("isMultipleEventsPossible", _isMultipleEventsPossible);
+	reader.tryRead("spawnEvents", _spawnEvents);
+	if (reader["eventWeights"])
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
+		for (const auto& child : reader["eventWeights"].children())
 		{
 			WeightedOptions* nw = new WeightedOptions();
-			nw->load(nn->second);
-			_eventWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
+			nw->load(child);
+			size_t key = 0;
+			child.tryReadKey(key);
+			_eventWeights.push_back(std::make_pair(key, nw));
 		}
 	}
 }
@@ -133,11 +135,11 @@ PrisonerContainingRules::~PrisonerContainingRules()
 {
 }
 
-void PrisonerContainingRules::load(const YAML::Node& node)
+void PrisonerContainingRules::load(const YAML::YamlNodeReader& reader)
 {
-	_requiredResearchName = node["requiredResearch"].as<std::string>(_requiredResearchName);
-	_funds = node["funds"].as<int>(_funds);
-	_cooperationChange = node["cooperationChange"].as<int>(_cooperationChange);
+	reader.tryRead("requiredResearch", _requiredResearchName);
+	reader.tryRead("funds", _funds);
+	reader.tryRead("cooperationChange", _cooperationChange);
 }
 
 void PrisonerContainingRules::afterLoad(const Mod* mod)
@@ -163,40 +165,41 @@ RulePrisoner::~RulePrisoner()
 
 /**
  * Loads the event definition from YAML.
- * @param node YAML node.
+ * @param reader YAML reader.
  */
-void RulePrisoner::load(const YAML::Node &node)
+void RulePrisoner::load(const YAML::YamlNodeReader& node)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const YAML::YamlNodeReader& parent = reader["refNode"])
 	{
-		load(parent);
+		load(reader["refNode"]);
 	}
 
-	_startingCooperation = node["startingCooperation"].as<int>(_startingCooperation);
-	_damageOverTime = node["damageOverTime"].as<int>(_damageOverTime);
+	reader.tryRead("startingCooperation", _startingCooperation);
+	reader.tryRead("damageOverTime", _damageOverTime);
 	
-	if (const YAML::Node& yml = node["interrogation"])
+	if (reader["interrogation"])
 	{
 		PrisonerInterrogationRules *rules = new PrisonerInterrogationRules();
-		rules->load(yml);
+		rules->load(reader["interrogation"]);
 		_interrogationRules = rules;
 	}
-	if (const YAML::Node& yml = node["recruiting"])
+	if (reader["recruiting"])
 	{
 		PrisonerRecruitingRules* rules = new PrisonerRecruitingRules();
-		rules->load(yml);
+		rules->load(reader["recruiting"]);
 		_recruitingRules = rules;
 	}
-	if (const YAML::Node& yml = node["torture"])
+	if (reader["torture"])
 	{
 		PrisonerTortureRules* rules = new PrisonerTortureRules();
-		rules->load(yml);
+		rules->load(reader["torture"]);
 		_tortureRules = rules;
 	}
-	if (const YAML::Node& yml = node["contain"])
+	if (reader["contain"])
 	{
 		PrisonerContainingRules* rules = new PrisonerContainingRules();
-		rules->load(yml);
+		rules->load(reader["contain"]);
 		_containingRules = rules;
 	}
 }

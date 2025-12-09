@@ -88,6 +88,8 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 	_txtInterrogatedAliens = new Text(54, 18, 261, 32);
 	_lstAliens = new TextList(286, 112, 8, 53);
 
+	touchComponentsCreate(_txtTitle);
+
 	// Set palette
 	setInterface("manageContainment");
 
@@ -107,10 +109,14 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 	add(_txtInterrogatedAliens, "text", "manageContainment");
 	add(_lstAliens, "list", "manageContainment");
 
+	touchComponentsAdd("button2", "manageContainment", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "manageContainment");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(trAlt(_threeButtons ? "STR_KILL_SELECTED" : "STR_REMOVE_SELECTED", _prisonType));
 	_btnOk->onMouseClick((ActionHandler)&ManageAlienContainmentState::btnOkClick);
@@ -195,6 +201,8 @@ void ManageAlienContainmentState::init()
 	}
 
 	resetListAndTotals();
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -427,7 +435,7 @@ void ManageAlienContainmentState::btnCleanupClick(Action *)
 void ManageAlienContainmentState::lstItemsRightArrowPress(Action *action)
 {
 	_sel = _lstAliens->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerInc->isRunning()) _timerInc->start();
+	if (_game->isLeftClick(action, true) && !_timerInc->isRunning()) _timerInc->start();
 }
 
 /**
@@ -436,7 +444,7 @@ void ManageAlienContainmentState::lstItemsRightArrowPress(Action *action)
  */
 void ManageAlienContainmentState::lstItemsRightArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerInc->stop();
 	}
@@ -449,10 +457,10 @@ void ManageAlienContainmentState::lstItemsRightArrowRelease(Action *action)
  */
 void ManageAlienContainmentState::lstItemsRightArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) increaseByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) increaseByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		increaseByValue(1);
+		increaseByValue(_game->getScrollStep());
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -465,7 +473,7 @@ void ManageAlienContainmentState::lstItemsRightArrowClick(Action *action)
 void ManageAlienContainmentState::lstItemsLeftArrowPress(Action *action)
 {
 	_sel = _lstAliens->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerDec->isRunning()) _timerDec->start();
+	if (_game->isLeftClick(action, true) && !_timerDec->isRunning()) _timerDec->start();
 }
 
 /**
@@ -474,7 +482,7 @@ void ManageAlienContainmentState::lstItemsLeftArrowPress(Action *action)
  */
 void ManageAlienContainmentState::lstItemsLeftArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerDec->stop();
 	}
@@ -487,10 +495,10 @@ void ManageAlienContainmentState::lstItemsLeftArrowRelease(Action *action)
  */
 void ManageAlienContainmentState::lstItemsLeftArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) decreaseByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) decreaseByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		decreaseByValue(1);
+		decreaseByValue(_game->getScrollStep());
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -523,7 +531,7 @@ void ManageAlienContainmentState::lstItemsMousePress(Action *action)
 			decreaseByValue(Options::changeValueByMouseWheel);
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+	else if (_game->isMiddleClick(action, true))
 	{
 		RuleResearch *selectedTopic = _game->getMod()->getResearch(_aliens[_sel]);
 		if (selectedTopic != 0)
@@ -557,7 +565,7 @@ void ManageAlienContainmentState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	increaseByValue(1);
+	increaseByValue(_game->getScrollStep());
 }
 
 /**
@@ -582,7 +590,7 @@ void ManageAlienContainmentState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	decreaseByValue(1);
+	decreaseByValue(_game->getScrollStep());
 }
 
 /**

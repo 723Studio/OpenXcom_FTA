@@ -63,9 +63,9 @@ public:
 	/// Creates a BasePrisoner.
 	BasePrisoner(const RulePrisoner* rule, Base* base, const std::string &type, std::string id);
 	/// Loads the unit from YAML.
-	void load(const YAML::Node &node, const Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, const Mod *mod);
 	/// Saves the unit to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Geoscape logic
 	bool think(Game &engine, std::vector<Soldier*>& promotedSoldiers);
 	void promoteAgents(std::vector<Soldier*>& promotedSoldiers);

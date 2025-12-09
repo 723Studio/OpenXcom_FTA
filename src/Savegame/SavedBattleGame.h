@@ -19,7 +19,8 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include <list>
+#include "../Engine/Yaml.h"
 #include "Tile.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleCraft.h"
@@ -65,6 +66,8 @@ public:
 	static constexpr const char *ScriptName = "BattleGame";
 	/// Register all useful function used by script.
 	static void ScriptRegister(ScriptParserBase* parser);
+	/// Register useful function used by graphic scripts.
+	static void ScriptRegisterUnitAnimations(ScriptParserBase* parser);
 
 private:
 	bool _isPreview;
@@ -77,7 +80,7 @@ private:
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	std::vector<MapDataSet*> _mapDataSets;
 	std::vector<Tile> _tiles;
-	BattleUnit *_selectedUnit, *_lastSelectedUnit;
+	BattleUnit *_selectedUnit, *_undoUnit, *_lastSelectedUnit;
 	std::vector<Node*> _nodes;
 	std::vector<BattleUnit*> _units;
 	std::vector<BattleItem*> _items, _deleted;
@@ -131,6 +134,8 @@ private:
 	bool _beforeGame;
 	bool _togglePersonalLight, _toggleNightVision;
 	int _toggleBrightness;
+	bool _togglePersonalLightTemp = false, _toggleNightVisionTemp = false;
+	int _toggleBrightnessTemp = 0, _toggleNightVisionColorTemp = 0;
 	std::string _hiddenMovementBackground;
 	std::map<std::string, int> _battleScriptVars;
 	HitLog *_hitLog;
@@ -147,9 +152,9 @@ public:
 	/// Cleans up the saved game.
 	~SavedBattleGame();
 	/// Loads a saved battle game from YAML.
-	void load(const YAML::Node& node, Mod *mod, SavedGame* savedGame);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, SavedGame* savedGame);
 	/// Saves a saved battle game to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Sets the dimensions of the map and initializes it.
 	void initMap(int mapsize_x, int mapsize_y, int mapsize_z, bool resetTerrain = true);
 	/// Initialises the pathfinding and tile engine.
@@ -240,6 +245,8 @@ public:
 	std::vector<BattleObject*>* getBattleObjects() { return &_battleObjects; }
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
+	/// Clears state that should not persist between multi-stage missions.
+	void prepareForNextStage();
 	/// Gets terrain size x.
 	int getMapSizeX() const { return _mapsize_x; }
 	/// Gets terrain size y.
@@ -391,12 +398,17 @@ public:
 	BattleUnit *getSelectedUnit() const;
 	/// Sets the currently selected unit.
 	void setSelectedUnit(BattleUnit *unit);
+	/// Gets the "undo" unit.
+	BattleUnit* getUndoUnit() const { return _undoUnit; }
+	/// Sets the "undo" unit.
+	void setUndoUnit(BattleUnit* unit) { _undoUnit = unit; }
 	/// Clear state that given unit is selected.
 	void clearUnitSelection(BattleUnit *unit);
 	/// Selects the previous soldier.
 	BattleUnit *selectPreviousPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the next soldier.
 	BattleUnit *selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
+	BattleUnit *selectNextPlayerUnitByDistance(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the unit with position on map.
 	BattleUnit *selectUnit(Position pos);
 	/// Gets the pathfinding object.
@@ -595,12 +607,14 @@ public:
 	void playRandomAmbientSound();
 	/// Gets if this battle is a stealth mission.
 	bool isStealthMission() const { return _stealthMission; }
+	/// Defines this battle as a stealth mission.
 	void defineStealth();
 	/// Gets if the mission objective gained with hacking special BattleObject.
 	bool isHackingObjectiveGained() const { return _hackingObjective; }
+	/// Sets if the mission objective gained with hacking special BattleObject.
 	void setHackingObjectiveGained(bool hackingObjective) { _hackingObjective = hackingObjective; }
-	// gets ruleset.
-	const Mod *getMod() const;
+	/// Gets ruleset.
+	const Mod *getMod() const { return _rule; }
 	/// gets the list of items we're guaranteed.
 	std::vector<BattleItem*> *getGuaranteedRecoveredItems();
 	/// gets the list of items we MIGHT get.
@@ -668,6 +682,15 @@ public:
 	int getToggleBrightness() const { return _toggleBrightness; }
 	/// sets brightness toggle
 	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+
+	/// sets final value for personal light toggle (for scripts)
+	void setTogglePersonalLightTemp(bool togglePersonalLight) { _togglePersonalLightTemp = togglePersonalLight; }
+	/// sets final value for night vision toggle (for scripts)
+	void setToggleNightVisionTemp(bool toggleNightVision) { _toggleNightVisionTemp = toggleNightVision; }
+	/// sets final value for night vision color toggle (for scripts)
+	void setToggleNightVisionColorTemp(int toggleNightColorVision) { _toggleNightVisionColorTemp = toggleNightColorVision; }
+	/// sets final value for brightness toggle (for scripts)
+	void setToggleBrightnessTemp(int toggleBrightness) { _toggleBrightnessTemp = toggleBrightness; }
 
 	/// Randomly chooses hidden movement background.
 	void setRandomHiddenMovementBackground(const Mod *mod);

@@ -61,27 +61,32 @@ void BasePrisoner::loadRoles(const std::vector<int>& r)
 // * Loads the unit from a YAML file.
 // * @param node YAML node.
 // */
-void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
+void BasePrisoner::load(const YAML::YamlNodeReader& reader, const Mod* mod)
 {
-	_name = node["name"].as<std::string>(_name);
-	_type = node["type"].as<std::string>(_type);
-	_state = (PrisonerState)node["state"].as<int>(_state);
-	if (node["roles"])
-		loadRoles(node["roles"].as<std::vector<int> >());
-	_health = node["health"].as<int>(_health);
-	_faction = (UnitFaction)node["faction"].as<int>(_faction);
-	_stats = node["stats"].as<UnitStats>(_stats);
-	_intelligence = node["intelligence"].as<int>(_intelligence);
-	_aggression = node["aggression"].as<int>(_aggression);
-	_morale = node["morale"].as<int>(_morale);
-	_cooperation = node["cooperation"].as<int>(_cooperation);
-	_spawnedTortureEvent = node["spawnedTortureEvent"].as<bool>(_spawnedTortureEvent);
-	_interrogationProgress = node["interrogationProgress"].as<int>(_interrogationProgress);
-	_recruitingProgress = node["recruitingProgress"].as<int>(_recruitingProgress);
-	_interrogationDone = node["interrogationDone"].as<bool>(_interrogationDone);
-	if (node["armor"])
+	reader.tryRead("name", _name);
+	reader.tryRead("type", _type);
+	reader.tryRead("state", _state);
+	if (reader["roles"])
 	{
-		std::string armor = node["armor"].as<std::string>();
+		std::vector<int> roles;
+		reader.tryRead("roles", roles);
+		loadRoles(roles);
+	}
+	reader.tryRead("health", _health);
+	reader.tryRead("faction", _faction);
+	reader.tryRead("stats", _stats);
+	reader.tryRead("intelligence", _intelligence);
+	reader.tryRead("aggression", _aggression);
+	reader.tryRead("morale", _morale);
+	reader.tryRead("cooperation", _cooperation);
+	reader.tryRead("spawnedTortureEvent", _spawnedTortureEvent);
+	reader.tryRead("interrogationProgress", _interrogationProgress);
+	reader.tryRead("recruitingProgress", _recruitingProgress);
+	reader.tryRead("interrogationDone", _interrogationDone);
+	if (reader["armor"].isValid())
+	{
+		std::string armor;
+		reader.tryRead("armor", armor);
 		_armor = mod->getArmor(armor);
 	}
 	//in case
@@ -98,37 +103,34 @@ void BasePrisoner::load(const YAML::Node& node, const Mod* mod)
 // * Saves the soldier to a YAML file.
 // * @return YAML node.
 // */
-YAML::Node BasePrisoner::save() const
+void BasePrisoner::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-
-	node["id"] = _id;
-	node["type"] = _type;
-	node["name"] = _name;
-	node["state"] = (int)_state;
+	writer.setAsMap();
+	writer.write("id", _id);
+	writer.write("type", _type);
+	writer.write("name", _name);
+	writer.write("state", (int)_state);
 	{
 		std::vector<int> roles;
 		for (auto r : _roles)
 		{
 			roles.push_back(r);
 		}
-		node["roles"] = roles;
+		writer.write("roles", roles);
 	}
 	if (_spawnedTortureEvent)
-		node["spawnedTortureEvent"] = _spawnedTortureEvent;
-	node["health"] = _health;
-	node["faction"] = (int)_faction;
-	node["stats"] = _stats;
-	node["intelligence"] = _intelligence;
-	node["aggression"] = _aggression;
-	node["morale"] = _morale;
-	node["cooperation"] = _cooperation;
-	node["interrogationProgress"] = _interrogationProgress;
-	node["recruitingProgress"] = _recruitingProgress;
-	node["interrogationDone"] = _interrogationDone;
-	node["armor"] = _armor->getType();
-
-	return node;
+		writer.write("spawnedTortureEvent", _spawnedTortureEvent);
+	writer.write("health", _health);
+	writer.write("faction", (int)_faction);
+	writer.write("stats", _stats);
+	writer.write("intelligence", _intelligence);
+	writer.write("aggression", _aggression);
+	writer.write("morale", _morale);
+	writer.write("cooperation", _cooperation);
+	writer.write("interrogationProgress", _interrogationProgress);
+	writer.write("recruitingProgress", _recruitingProgress);
+	writer.write("interrogationDone", _interrogationDone);
+	writer.write("armor", _armor->getType());
 }
 
 void BasePrisoner::setMorale(int morale)
@@ -139,11 +141,11 @@ void BasePrisoner::setMorale(int morale)
 		morale = 100;
 
 	_morale = morale;
-	
+
 }
 
 /**
- * Geoscape logic 
+ * Geoscape logic
  * @param engine - game pointer
  * @param promotedSoldiers - a pointer to a vector to return in geoscape for promotion screen
  */
@@ -189,7 +191,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 			double effort = 0;
 			for (auto s : _agents)
 			{
-				if (s->getCraft()->getStatus() == "STR_OUT")
+				if (s->getCraft() != nullptr && s->getCraft()->getStatus() == "STR_OUT")
 				{
 					continue;
 				}
@@ -201,7 +203,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 				int charismaCoef = 20;
 				int deceptionCoef = 40;
 				int psiCoef = 5;
-				
+
 				statEffort = stats->interrogation;
 				soldierEffort += (statEffort / interrogationCoef);
 				if (stats->interrogation < caps.interrogation
@@ -239,7 +241,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 					statsN++;
 					statEffort = stats->psiSkill;
 					soldierEffort += (statEffort / psiCoef);
-					
+
 					if (stats->psiSkill < caps.psiSkill
 						&& RNG::generate(0, caps.psiSkill) > stats->psiSkill
 						&& RNG::percent(trainingFactor / 2))
@@ -328,7 +330,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 						psionics++;
 				}
 			}
-			
+
 			torturePower *= psionics + 1;
 			if (torturePower > 0)
 			{

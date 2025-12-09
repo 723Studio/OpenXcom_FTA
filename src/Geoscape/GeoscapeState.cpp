@@ -143,6 +143,7 @@
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
 #include "../FTA/MasterMind.h"
+#include "../Mod/Texture.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
 
@@ -206,6 +207,8 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 
 	int slackingIndicatorOffset = _game->getMod()->getInterface("geoscape")->getElement("slackingIndicator")->custom;
 	_txtSlacking = new Text(59, 17, screenWidth - 61, screenHeight / 2 - 100 + slackingIndicatorOffset);
+	int trainingIndicatorOffset = _game->getMod()->getInterface("geoscape")->getElement("trainingIndicator")->custom;
+	_txtTraining = new Text(59, 17, screenWidth - 61, screenHeight / 2 + 100 + trainingIndicatorOffset);
 
 	_timeSpeed = _btn5Secs;
 	_gameTimer = new Timer(Options::geoClockSpeed);
@@ -263,6 +266,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	add(_txtMonth, "text", "geoscape");
 	add(_txtYear, "text", "geoscape");
 	add(_txtSlacking, "slackingIndicator", "geoscape");
+	add(_txtTraining, "trainingIndicator", "geoscape");
 
 	add(_txtDebug, "text", "geoscape");
 	add(_cbxRegion, "button", "geoscape");
@@ -332,7 +336,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	{
 		_btnFunding->setText(tr("STR_FUNDING_UC"));
 	}
-	
+
 	_btnFunding->onMouseClick((ActionHandler)&GeoscapeState::btnFundingClick);
 	_btnFunding->onKeyboardPress((ActionHandler)&GeoscapeState::btnFundingClick, Options::keyGeoFunding);
 	_btnFunding->setGeoscapeButton(true);
@@ -433,6 +437,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_txtYear->setAlign(ALIGN_CENTER);
 
 	_txtSlacking->setAlign(ALIGN_RIGHT);
+	_txtTraining->setAlign(ALIGN_RIGHT);
 
 	if (Options::showFundsOnGeoscape)
 	{
@@ -633,7 +638,7 @@ void GeoscapeState::handle(Action *action)
 					_txtDebug->setText("PEOPLE ARE LOYAL NOW: ADDED 1000 LOYALTY");
 					_game->getSavedGame()->setLoyalty(_game->getSavedGame()->getLoyalty() + 1000);
 				}
-				
+
 			}
 			// "ctrl-7"
 			if (action->getDetails()->key.keysym.sym == SDLK_7)
@@ -684,6 +689,10 @@ void GeoscapeState::handle(Action *action)
 			if (action->getDetails()->key.keysym.sym == Options::keyQuickSave)
 			{
 				popup(new SaveGameState(OPT_GEOSCAPE, SAVE_QUICK, _palette));
+			}
+			else if (action->getDetails()->key.keysym.sym == Options::keyInstaSave)
+			{
+				popup(new SaveGameState(OPT_GEOSCAPE, SAVE_INSTA, _palette));
 			}
 			else if (action->getDetails()->key.keysym.sym == Options::keyQuickLoad)
 			{
@@ -749,6 +758,7 @@ void GeoscapeState::init()
 		!_game->getSavedGame()->getBases()->front()->getName().empty())
 	{
 		_game->getSavedGame()->addMonth();
+		_game->getSavedGame()->increaseDaysPassed();
 		determineAlienMissions();
 		_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - (_game->getSavedGame()->getBaseMaintenance() - _game->getSavedGame()->getBases()->front()->getPersonnelMaintenance()));
 	}
@@ -800,7 +810,15 @@ void GeoscapeState::timeDisplay()
 {
 	if (Options::showFundsOnGeoscape)
 	{
-		_txtFunds->setText(Unicode::formatFunding(_game->getSavedGame()->getFunds()));
+		if (Options::oxceGeoShowScoreInsteadOfFunds)
+		{
+			// it's a cheat (you're not supposed to see this info in real time), for debugging only
+			_txtFunds->setText(std::to_string(_game->getSavedGame()->getCurrentScore(_game->getSavedGame()->getMonthsPassed() + 1)));
+		}
+		else
+		{
+			_txtFunds->setText(Unicode::formatFunding(_game->getSavedGame()->getFunds()));
+		}
 	}
 
 	std::ostringstream ss;
@@ -1045,7 +1063,7 @@ void GeoscapeState::time5Seconds()
 				if (Options::oxceUfoLandingAlert && ufo->getStatus() == Ufo::LANDED && ufo->getDetected() && ufo->getLandId() != 0)
 				{
 					std::string msg = tr("STR_UFO_HAS_LANDED").arg(ufo->getName(_game->getLanguage()));
-					popup(new CraftErrorState(this, msg));
+					popup(new CraftErrorState(this, msg, true, ufo));
 				}
 				if (detected != ufo->getDetected() && !ufo->getFollowers()->empty())
 				{
@@ -1069,7 +1087,8 @@ void GeoscapeState::time5Seconds()
 					timerReset();
 					if (!base->getDefenses()->empty() && !ufo->getMission()->getRules().ignoreBaseDefenses())
 					{
-						popup(new BaseDefenseState(base, ufo, this));
+						bool instaHyper = ufo->getRules()->isInstaHyper() || mission->getRules().isInstaHyper();
+						popup(new BaseDefenseState(base, ufo, this, instaHyper));
 						return; // don't allow multiple simultaneous attacks in the same game tick
 					}
 					else
@@ -1123,6 +1142,7 @@ void GeoscapeState::time5Seconds()
 			}
 			break;
 		case Ufo::DESTROYED:
+		case Ufo::IGNORE_ME:
 			// Nothing to do
 			break;
 		}
@@ -1206,7 +1226,7 @@ void GeoscapeState::time5Seconds()
 					{
 						xcraft->setInDogfight(false);
 					}
-					else if (u->getStatus() == Ufo::DESTROYED)
+					else if (u->getStatus() == Ufo::DESTROYED || u->getStatus() == Ufo::IGNORE_ME)
 					{
 						xcraft->returnToBase();
 					}
@@ -1253,6 +1273,7 @@ void GeoscapeState::time5Seconds()
 
 			if (!ufoIsAttacking && xcraft->reachedDestination())
 			{
+				bool suppressLanding = Options::oxceGeoSuppressLandingWithoutEquipment && xcraft->getItems()->empty();
 				Ufo* u = dynamic_cast<Ufo*>(xcraft->getDestination());
 				Waypoint *w = dynamic_cast<Waypoint*>(xcraft->getDestination());
 				MissionSite* m = dynamic_cast<MissionSite*>(xcraft->getDestination());
@@ -1355,7 +1376,7 @@ void GeoscapeState::time5Seconds()
 					case Ufo::LANDED:
 					case Ufo::CRASHED:
 					case Ufo::DESTROYED: // Just before expiration
-						if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding())
+						if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding() && !suppressLanding)
 						{
 							if (!xcraft->isInDogfight())
 							{
@@ -1372,6 +1393,8 @@ void GeoscapeState::time5Seconds()
 							xcraft->returnToBase();
 						}
 						break;
+					case Ufo::IGNORE_ME:
+						break;
 					}
 				}
 				else if (w != 0)
@@ -1384,13 +1407,20 @@ void GeoscapeState::time5Seconds()
 				}
 				else if (m != 0)
 				{
-					if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding())
+					if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding() && !suppressLanding)
 					{
 						// look up polygons texture
 						int texture, shade;
 						_globe->getPolygonTextureAndShade(m->getLongitude(), m->getLatitude(), &texture, &shade);
 						timerReset();
 						Texture* globeTexture = _game->getMod()->getGlobe()->getTexture(texture);
+						if (globeTexture->isCosmeticOcean())
+						{
+							// Unlike xcom bases, alien bases and ufo crash/land sites, mission sites can actually happen on ocean (=non-polygon part of the globe)
+							// e.g. TFTD surface attacks
+							// For backwards-compatibility, let's use texture = -1 instead of any cosmetic ocean texture
+							globeTexture = _game->getMod()->getGlobe()->getTexture(-1);
+						}
 						Texture* missionTexture = _game->getMod()->getGlobe()->getTexture(m->getTexture());
 						if (!missionTexture)
 						{
@@ -1407,7 +1437,7 @@ void GeoscapeState::time5Seconds()
 				{
 					if (b->isDiscovered())
 					{
-						if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding())
+						if (xcraft->getNumTotalUnits() > 0 && xcraft->getRules()->getAllowLanding() && !suppressLanding)
 						{
 							int texture, shade;
 							_globe->getPolygonTextureAndShade(b->getLongitude(), b->getLatitude(), &texture, &shade);
@@ -1503,6 +1533,7 @@ bool DetectXCOMBase::operator()(const Ufo *ufo) const
 	if ((ufo->getMission()->getRules().getObjective() != OBJECTIVE_RETALIATION && !Options::aggressiveRetaliation) ||	// only UFOs on retaliation missions actively scan for bases
 		ufo->getTrajectory().getID() == UfoTrajectory::RETALIATION_ASSAULT_RUN || 										// UFOs attacking a base don't detect!
 		ufo->isCrashed() ||																								// Crashed UFOs don't detect!
+		ufo->getStatus() == Ufo::IGNORE_ME ||
 		_base.getDistance(ufo) >= Nautical(ufo->getCraftStats().sightRange))											// UFOs have a detection range of 80 XCOM units. - we use a great circle formula and nautical miles.
 	{
 		return false;
@@ -1659,10 +1690,18 @@ void GeoscapeState::ufoHuntingAndEscorting()
 					{
 						_game->getMod()->getSound("GEO.CAT", ufo->getRules()->getHuntAlertSound())->play();
 					}
-					std::string msg = tr("STR_UFO_STARTED_HUNTING")
-						.arg(ufo->getName(_game->getLanguage()))
-						.arg(newTarget->getName(_game->getLanguage()));
-					popup(new CraftErrorState(this, msg));
+					if (Options::oxceGeoSuppressRedundantHKAlert && newTarget->getDestination() == ufo)
+					{
+						// Empty by design
+						// If the player sent an interceptor after the HK, the alert is redundant
+					}
+					else
+					{
+						std::string msg = tr("STR_UFO_STARTED_HUNTING")
+							.arg(ufo->getName(_game->getLanguage()))
+							.arg(newTarget->getName(_game->getLanguage()));
+						popup(new CraftErrorState(this, msg));
+					}
 				}
 			}
 			else if (originalTarget)
@@ -1849,6 +1888,14 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
 		}
 	}
 
+	Ufo* ufo = site->getUfo();
+	if (removeSite && ufo)
+	{
+		// "reactivate" the corresponding Ufo
+		site->setUfo(nullptr);
+		ufo->getMission()->ufoLifting(*ufo, *_game->getSavedGame());
+	}
+
 	return removeSite;
 }
 
@@ -2006,6 +2053,7 @@ void GeoscapeState::time30Minutes()
 			break;
 		case Ufo::CRASHED:
 		case Ufo::DESTROYED:
+		case Ufo::IGNORE_ME:
 			break;
 		}
 	}
@@ -2058,6 +2106,7 @@ void GeoscapeState::time30Minutes()
  */
 void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCrafts)
 {
+	auto mod = _game->getMod();
 	auto maskTest = [](UfoDetection value, UfoDetection mask)
 	{
 		return (value & mask) == mask;
@@ -2078,12 +2127,12 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 
 	for (auto craft : *activeCrafts)
 	{
-		int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false), _game->getMod());
+		int tracking = craft->getPilotTrackingBonus(craft->getPilotList(false, mod), mod);
 		detected = maskBitOr(detected, craft->detect(ufo, save, tracking, alreadyTracked));
 		if (!alreadyTracked && detected == DETECTION_RADAR && tracking < 100)
 		{
 			int exp = RNG::generate(1, static_cast<int>(ceil((100 - tracking) / 20)));
-			for (auto s : craft->getPilotList(false))
+			for (auto s : craft->getPilotList(false, mod))
 			{
 				s->getDogfightExperience()->tracking += exp;
 			}
@@ -2229,7 +2278,7 @@ void GeoscapeState::time1Hour()
 						(*s)->setProductionProject(0);
 					}
 				}
-				
+
 				popup(new ProductionCompleteState(xbase, tr(pair.first->getRules()->getName()), this, _promotedSoldiers, pair.second, pair.first));
 				xbase->removeProduction(pair.first);
 				_promotedSoldiers.clear();
@@ -2296,7 +2345,7 @@ void GeoscapeState::time1Hour()
 					else
 					{
 						throw Exception("Attempting to transform soldier " + soldier->getName() + ". ERROR! No rules found for transformation!");
-					}			
+					}
 				}
 			}
 		}
@@ -2444,10 +2493,13 @@ void GenerateSupplyMission::operator()(AlienBase *base) const
  */
 void GeoscapeState::time1Day()
 {
+	_game->getSavedGame()->increaseDaysPassed();
+
 	SavedGame *saveGame = _game->getSavedGame();
 	Mod *mod = _game->getMod();
 	bool psiStrengthEval = (Options::psiStrengthEval && saveGame->isResearched(mod->getPsiRequirements()));
 	bool availableIntelInformed = false;
+
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
 		// Handle facility construction
@@ -2476,7 +2528,7 @@ void GeoscapeState::time1Day()
 				popup(new ProductionCompleteState(xbase, tr(pair.first->getType()), this, _promotedSoldiers, PROGRESS_CONSTRUCTION));
 			}
 		}
-		
+
 		// Handle science project
 		if (!_fta)
 			handleResearch(xbase);
@@ -2542,7 +2594,7 @@ void GeoscapeState::time1Day()
 			default:
 				break;
 			}
-			
+
 			if (intelProjectFinished)
 			{
 				_game->pushState(new IntelCompleteState(project, this, xbase));
@@ -2648,7 +2700,7 @@ void GeoscapeState::time1Day()
 			}
 		}
 	}
-	
+
 	// Handle mission and event scripts gap timers
 	_game->getSavedGame()->handleMissionScriptTimers();
 	_game->getSavedGame()->handleEventScriptTimers();
@@ -2762,7 +2814,7 @@ void GeoscapeState::time1Day()
 	// Handle alien base detection (by xcom base facilities).
 	for (auto* alienBase : *_game->getSavedGame()->getAlienBases())
 	{
-		if (alienBase->isDiscovered()|| alienBase->getDeployment()->isHiddenAlienBase()) 
+		if (alienBase->isDiscovered()|| alienBase->getDeployment()->isHiddenAlienBase())
 		{
 			continue;
 		}
@@ -2799,7 +2851,18 @@ void GeoscapeState::time1Day()
 	}
 
 	// Autosave 3 times a month
-	if (day == 10 || day == 20)
+	bool performGeoAutosave = false;
+	if (Options::oxceGeoAutosaveFrequency == 0 && (day == 10 || day == 20))
+	{
+		// OXC backwards-compatibility
+		performGeoAutosave = true;
+	}
+	else if (Options::oxceGeoAutosaveFrequency >= 1 && Options::oxceGeoAutosaveFrequency <= 10)
+	{
+		// every X-th day
+		performGeoAutosave = (saveGame->getDaysPassed() % Options::oxceGeoAutosaveFrequency == 0);
+	}
+	if (performGeoAutosave)
 	{
 		if (saveGame->isIronman())
 		{
@@ -2807,7 +2870,7 @@ void GeoscapeState::time1Day()
 		}
 		else if (Options::autosave)
 		{
-			popup(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette));
+			popup(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette, saveGame->getDaysPassed()));
 		}
 	}
 	else if (saveGame->getEnding() != END_NONE && saveGame->isIronman())
@@ -2820,7 +2883,7 @@ void GeoscapeState::time1Day()
 	{
 		int month = _game->getSavedGame()->getMonthsPassed();
 		int currentScore = _game->getSavedGame()->getCurrentScore(month + 1);
-		int performanceBonus = currentScore * mod->getPerformanceBonusFactor();
+		int performanceBonus = mod->getPerformanceBonus(currentScore);
 		if (performanceBonus < 0)
 		{
 			performanceBonus = 0; // bonus only, no malus
@@ -2896,7 +2959,7 @@ void GeoscapeState::time1Month()
 	}
 
 	// Handle Xcom Operatives discovering bases
-	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(20))
+	if (!_game->getSavedGame()->getAlienBases()->empty() && RNG::percent(_game->getMod()->getChanceToDetectAlienBaseEachMonth()))
 	{
 		for (auto* ab : *_game->getSavedGame()->getAlienBases())
 		{
@@ -3123,6 +3186,24 @@ void GeoscapeState::btnBasesClick(Action *)
 	timerReset();
 	if (!_game->getSavedGame()->getBases()->empty())
 	{
+		if (Options::oxceGeoGoToNearestBase)
+		{
+			std::vector< std::pair<size_t, double> > xbaseSorting;
+			size_t baseIdx = 0;
+			for (auto* xbase : *_game->getSavedGame()->getBases())
+			{
+				double xdistance = xbase->getDistance(_game->getSavedGame()->getGlobeLongitude(), _game->getSavedGame()->getGlobeLatitude());
+				xbaseSorting.push_back(std::make_pair(baseIdx, xdistance));
+				baseIdx++;
+			}
+			std::stable_sort(xbaseSorting.begin(), xbaseSorting.end(),
+				[](const std::pair<size_t, double> &a, const std::pair<size_t, double> &b)
+				{
+					return a.second < b.second;
+				}
+			);
+			_game->getSavedGame()->setSelectedBase(xbaseSorting.front().first);
+		}
 		_game->pushState(new BasescapeState(_game->getSavedGame()->getSelectedBase(), _globe));
 	}
 	else
@@ -3580,7 +3661,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 /**
  * Determine the alien missions to start this month.
  */
-void GeoscapeState::determineAlienMissions()
+void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eventRules)
 {
 	SavedGame *save = _game->getSavedGame();
 	AlienStrategy &strategy = save->getAlienStrategy();
@@ -3588,18 +3669,22 @@ void GeoscapeState::determineAlienMissions()
 	int loyalty = save->getLoyalty();
 	int month = _game->getSavedGame()->getMonthsPassed();
 	int currentScore = save->getCurrentScore(month); // _monthsPassed was already increased by 1
-	int performanceBonus = currentScore * mod->getPerformanceBonusFactor();
+	int performanceBonus = mod->getPerformanceBonus(currentScore);
 	if (performanceBonus < 0)
 	{
 		performanceBonus = 0; // bonus only, no malus
 	}
 	int64_t currentFunds = save->getFunds();
-	currentFunds += save->getCountryFunding() + performanceBonus - save->getBaseMaintenance(); // peek into the next month
+	if (isNewMonth)
+	{
+		currentFunds += save->getCountryFunding() + performanceBonus - save->getBaseMaintenance(); // peek into the next month
+	}
 	std::vector<RuleMissionScript*> availableMissions;
-	std::map<int, bool> conditions;
+	std::unordered_map<int, bool> conditions;
 
-	std::set<std::string> xcomBaseRegions;
-	std::set<std::string> xcomBaseCountries;
+	std::unordered_set<std::string> xcomBaseRegions;
+	std::unordered_set<std::string> xcomBaseCountries;
+	std::unordered_set<std::string> pactCountries;
 	for (auto* xcomBase : *save->getBases())
 	{
 		auto* region = save->locateRegion(*xcomBase);
@@ -3613,8 +3698,16 @@ void GeoscapeState::determineAlienMissions()
 			xcomBaseCountries.insert(country->getRules()->getType());
 		}
 	}
+	for (auto* country : *save->getCountries())
+	{
+		if (country->getPact())
+		{
+			pactCountries.insert(country->getRules()->getType());
+		}
+	}
 
 	// sorry to interrupt, but before we start determining the actual monthly missions, let's determine and/or adjust our overall game plan
+	if (isNewMonth)
 	{
 		std::vector<RuleArcScript*> relevantArcScripts;
 
@@ -3699,7 +3792,7 @@ void GeoscapeState::determineAlienMissions()
 					// item requirements
 					for (auto& triggerItem : arcScript->getItemTriggers())
 					{
-						triggerHappy = (save->isItemObtained(triggerItem.first) == triggerItem.second);
+						triggerHappy = (save->isItemObtained(triggerItem.first, mod) == triggerItem.second);
 						if (!triggerHappy)
 							break;
 					}
@@ -3710,6 +3803,16 @@ void GeoscapeState::determineAlienMissions()
 					for (auto& triggerFacility : arcScript->getFacilityTriggers())
 					{
 						triggerHappy = (save->isFacilityBuilt(triggerFacility.first) == triggerFacility.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy)
+				{
+					// soldier type requirements
+					for (auto& triggerSoldierType : arcScript->getSoldierTypeTriggers())
+					{
+						triggerHappy = (save->isSoldierTypeHired(triggerSoldierType.first) == triggerSoldierType.second);
 						if (!triggerHappy)
 							break;
 					}
@@ -3815,11 +3918,28 @@ void GeoscapeState::determineAlienMissions()
 	}
 
 	// well, here it is, ladies and gents, the nuts and bolts behind the geoscape mission scheduling.
+	const std::vector<std::string>* scriptList = isNewMonth ? mod->getMissionScriptList() : mod->getAdhocScriptList();
 
 	// first we need to build a list of "valid" commands
-	for (auto& missionScriptName : *mod->getMissionScriptList())
+	for (auto& missionScriptName : *scriptList)
 	{
-		RuleMissionScript *command = mod->getMissionScript(missionScriptName);
+		RuleMissionScript *command = isNewMonth ? mod->getMissionScript(missionScriptName) : mod->getAdhocScript(missionScriptName);
+
+		// level zero condition check: filter adhoc mission scripts by tags
+		if (!isNewMonth && eventRules)
+		{
+			bool matchFound = false;
+			for (auto& atag : eventRules->getAdhocMissionScriptTags())
+			{
+				for (auto& btag : command->getAdhocMissionScriptTags())
+				{
+					if (atag == btag) matchFound = true;
+					break;
+				}
+				if (matchFound) break;
+			}
+			if (!matchFound) continue;
+		}
 
 			// level one condition check: make sure we're within our time constraints
 		if (command->getFirstMonth() <= month &&
@@ -3904,7 +4024,7 @@ void GeoscapeState::determineAlienMissions()
 				// item requirements
 				for (auto& triggerItem : command->getItemTriggers())
 				{
-					triggerHappy = (save->isItemObtained(triggerItem.first) == triggerItem.second);
+					triggerHappy = (save->isItemObtained(triggerItem.first, mod) == triggerItem.second);
 					if (!triggerHappy)
 						break;
 				}
@@ -3915,6 +4035,16 @@ void GeoscapeState::determineAlienMissions()
 				for (auto& triggerFacility : command->getFacilityTriggers())
 				{
 					triggerHappy = (save->isFacilityBuilt(triggerFacility.first) == triggerFacility.second);
+					if (!triggerHappy)
+						break;
+				}
+			}
+			if (triggerHappy)
+			{
+				// soldier type requirements
+				for (auto& triggerSoldierType : command->getSoldierTypeTriggers())
+				{
+					triggerHappy = (save->isSoldierTypeHired(triggerSoldierType.first) == triggerSoldierType.second);
 					if (!triggerHappy)
 						break;
 				}
@@ -4015,7 +4145,7 @@ void GeoscapeState::determineAlienMissions()
 	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
 
 	// Alien base upgrades happen only AFTER the first game month
-	if (month > 0)
+	if (isNewMonth && month > 0)
 	{
 		for (auto* alienBase : *save->getAlienBases())
 		{
@@ -4051,8 +4181,59 @@ void GeoscapeState::determineAlienMissions()
 			}
 		}
 	}
+
+	// Alien race evolution
+	if (isNewMonth && month > 0)
+	{
+		for (auto* alienBase : *save->getAlienBases())
+		{
+			if (!alienBase->getDeployment()->getAlienRaceEvolution().empty())
+			{
+				std::ostringstream ss;
+				ss << "month: " << month;
+				ss << " baseId: " << alienBase->getId();
+				ss << " baseType: " << alienBase->getType();
+				ss << " deployment: " << alienBase->getDeployment()->getType();
+				ss << " old race: " << alienBase->getAlienRace();
+				int tries = 0;
+				while (attemptAlienRaceEvolution(month, alienBase))
+				{
+					ss << " new race: " << alienBase->getAlienRace();
+					if (++tries >= 100)
+					{
+						throw Exception("Alien race evolution: endless loop detected. It's not my fault. Crashing now!");
+					}
+				}
+				ss << " end.";
+				if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
+				{
+					save->getGeoscapeDebugLog().push_back(ss.str());
+				}
+			}
+		}
+	}
 }
 
+/**
+ * Try to perform alien race evolution.
+ * @return whether the attempt was successful or not.
+ */
+bool GeoscapeState::attemptAlienRaceEvolution(int month, AlienBase* ab) const
+{
+	for (const auto& tuple : ab->getDeployment()->getAlienRaceEvolution())
+	{
+		if (std::get<0>(tuple) <= month && std::get<1>(tuple) == ab->getAlienRace())
+		{
+			auto* newRace = _game->getMod()->getAlienRace(std::get<2>(tuple), false);
+			if (newRace)
+			{
+				ab->setAlienRace(newRace->getId());
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 /**
  * Processes a directive to start up a mission, if possible.
@@ -4186,6 +4367,10 @@ bool GeoscapeState::processCommand(RuleMissionScript *command)
 				RuleRegion *region = mod->getRegion((*regionNameIt), true);
 				if ((int)(region->getMissionZones().size()) > targetZoneNumber)
 				{
+					if (targetZoneNumber < 0)
+					{
+						throw Exception("Cannot spawn mission site, invalid spawn zone! Command: " + command->getType() + "; mission: " + missionRules->getType());
+					}
 					std::vector<MissionArea> areas = region->getMissionZones()[targetZoneNumber].areas;
 					int counter = 0;
 					for (const auto& area : areas)
@@ -4560,6 +4745,25 @@ bool GeoscapeState::buttonsDisabled()
 
 void GeoscapeState::updateSlackingIndicator()
 {
+	if (Options::oxceGeoEnableTrainingIndicator)
+	{
+		int freeGym = 0;
+		int freePsi = 0;
+		for (auto* xcomBase : *_game->getSavedGame()->getBases())
+		{
+			freeGym += xcomBase->getFreeTrainingSpace();
+			freePsi += xcomBase->getFreePsiLabs();
+		}
+		if (freeGym > 0 || freePsi > 0)
+		{
+			_txtTraining->setText(tr("STR_TRAINING_INDICATOR").arg(freePsi).arg(freeGym));
+		}
+		else
+		{
+			_txtTraining->setText("");
+		}
+	}
+
 	if (!Options::oxceEnableSlackingIndicator)
 		return;
 
@@ -4638,12 +4842,12 @@ void GeoscapeState::handleResearch(Base* base)
 		{
 			progress = project->getAssigned();
 		}
-			
+
 		if (project->step(progress))
 		{
 			finished.push_back(std::make_pair(assignedScientists, project));
 		}
-		
+
 	}
 	// 2. remember available research before adding new finished research
 	std::vector<RuleResearch*> before;
