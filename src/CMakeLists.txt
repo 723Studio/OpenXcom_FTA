@@ -190,7 +190,6 @@ set ( engine_src
   Engine/Options.cpp
   Engine/OXCContainer.cpp
   Engine/OXCCrypto.cpp
-  Engine/tiny_aes.c
   Engine/Palette.cpp
   Engine/RNG.cpp
   Engine/Scalers/hq2x.cpp
@@ -518,6 +517,7 @@ set ( cxx_src
 
 set ( c_src
   ../libs/miniz/miniz.c
+  Engine/tiny_aes.c
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
 if ( NOT MSVC )
@@ -674,11 +674,23 @@ endif ()
 install ( TARGETS openxcom ${install_dest} DESTINATION ${CMAKE_INSTALL_BINDIR} )
 # Extra link flags for Windows. They need to be set before the SDL/YAML link flags, otherwise you will get strange link errors ('Undefined reference to WinMain@16')
 if ( WIN32 )
-  set ( basic_windows_libs advapi32.lib shell32.lib shlwapi.lib wininet.lib urlmon.lib )
   if ( MINGW )
-    set ( basic_windows_libs ${basic_windows_libs} mingw32 -mwindows )
+    # MinGW expects -l style libs; include multimedia/DirectX and bcrypt for OXCCrypto.
+    set ( basic_windows_libs
+      -ladvapi32 -lshell32 -lshlwapi -lwininet -lurlmon
+      -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -luuid -ldxguid -ldinput8
+      -lversion -lsetupapi -lmpr -lcomdlg32 -lbcrypt
+      mingw32 -mwindows
+    )
     set ( static_flags  -static )
     set ( SDLMIXER_LIBRARY "${SDLMIXER_LIBRARY} -lwinmm" )
+  else ()
+    # MSVC keeps .lib suffixes
+    set ( basic_windows_libs
+      advapi32.lib shell32.lib shlwapi.lib wininet.lib urlmon.lib
+      user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib uuid.lib dxguid.lib dinput8.lib
+      version.lib setupapi.lib mpr.lib comdlg32.lib bcrypt.lib
+    )
   endif ()
   set ( system_libs ${basic_windows_libs} SDLmain ${static_flags} )
 endif ()
@@ -693,6 +705,16 @@ if (WIN32)
     set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
   endif ()
   set(WIN32_LIBS imagehlp dbghelp)
+  if (MINGW)
+    list(APPEND WIN32_LIBS
+      -Wl,--start-group
+      -lvorbisfile -lvorbis -logg -lsmpeg -lmodplug
+      -ljpeg -lpng -lz -lwebp
+      -lwinmm -ldinput -ldxguid -lddraw -ldsound
+      -lole32 -loleaut32 -limm32 -lversion -lsetupapi -luuid -lgdi32 -luser32
+      -Wl,--end-group
+    )
+  endif()
 endif(WIN32)
 
 target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
@@ -721,8 +743,8 @@ if ( NOT EMBED_ASSETS )
   endforeach ()
 endif ()
 
-# Copy Windows DLLs to bin folder
-if ( WIN32 )
+# Copy Windows DLLs to bin folder only for native Windows builds
+if ( WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" )
   if ( CMAKE_CL_64 )
     file ( GLOB Windows_dll "${DEPS_DIR}/lib/x64/*.dll" )
   else ( )

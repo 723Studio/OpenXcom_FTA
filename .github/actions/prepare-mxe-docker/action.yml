@@ -18,7 +18,7 @@ runs:
   using: "composite"
   steps:
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ inputs.registry_username }}
@@ -32,22 +32,22 @@ runs:
         export MXE_IMAGE_VERSION=0.0.4
         export MXE_IMAGE_FALLBACK_NAME=ghcr.io/${{ inputs.registry_username }}/mxe
 
+        IMAGE_NAME=${MXE_IMAGE_NAME}
+        EXIT_CODE=0
+
         if docker pull ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}; then
-          echo ::set-output name=exit_code::$?
+          IMAGE_NAME=${MXE_IMAGE_NAME}
         elif docker pull ${MXE_IMAGE_FALLBACK_NAME}:${MXE_IMAGE_VERSION}; then
-          echo ::set-output name=exit_code::$?
-          echo "::set-output name=image-name::${MXE_IMAGE_FALLBACK_NAME}"
-          # echo "MXE_IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}" >> $GITHUB_ENV
+          IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}
         else
-          echo ::set-output name=exit_code::$?
-          echo "::set-output name=image-name::${MXE_IMAGE_FALLBACK_NAME}"
-          # echo "MXE_IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}" >> $GITHUB_ENV
+          EXIT_CODE=1
+          IMAGE_NAME=${MXE_IMAGE_FALLBACK_NAME}
         fi
 
-        echo "::set-output name=image-version::${MXE_IMAGE_VERSION}"
-
-        echo "::set-output name=docker-cmd::docker run -v $PWD:/app -v $HOME/.ccache:/root/.ccache \
-          -w /app --rm ${MXE_IMAGE_NAME}:${MXE_IMAGE_VERSION}"
+        echo "exit_code=${EXIT_CODE}" >> $GITHUB_OUTPUT
+        echo "image-name=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+        echo "image-version=${MXE_IMAGE_VERSION}" >> $GITHUB_OUTPUT
+        echo "docker-cmd=docker run -v $PWD:/app -v $HOME/.ccache:/root/.ccache -w /app --rm ${IMAGE_NAME}:${MXE_IMAGE_VERSION}" >> $GITHUB_OUTPUT
 
         # cat $GITHUB_ENV
 
@@ -66,7 +66,7 @@ runs:
             unzip wget xz-utils
         RUN cd /opt && git clone https://github.com/mxe/mxe.git
         RUN ln -s /usr/bin/python3 /usr/bin/python
-        RUN cd /opt/mxe && make MXE_PLUGIN_DIRS=plugins/gcc12 MXE_TARGETS=x86_64-w64-mingw32.static JOBS=8 gcc cmake sdl sdl_gfx sdl_mixer sdl_image yaml-cpp zlib
+        RUN cd /opt/mxe && make MXE_PLUGIN_DIRS=plugins/gcc12 MXE_TARGETS=x86_64-w64-mingw32.static JOBS=8 gcc cmake sdl sdl_gfx sdl_mixer sdl_image zlib
 
         FROM debian:bullseye-slim
         COPY --from=build /opt/mxe/usr /opt/mxe/usr

@@ -23,6 +23,9 @@
 #include "Logger.h"
 #include "../Engine/Yaml.h"
 #include <cstring>
+#ifndef _WIN32
+#include <strings.h>
+#endif
 #include <sstream>
 #include <algorithm>
 
@@ -31,6 +34,14 @@
 
 namespace OpenXcom
 {
+	inline int ciCompare(const std::string &lhs, const std::string &rhs)
+	{
+#ifdef _WIN32
+		return _stricmp(lhs.c_str(), rhs.c_str());
+#else
+		return strcasecmp(lhs.c_str(), rhs.c_str());
+#endif
+	}
 
 // Base64 decoding table
 static const uint8_t base64_table[256] = {
@@ -320,7 +331,7 @@ bool OXCContainer::hasFile(const std::string& relpath) const {
 	}
 	// Case-insensitive match scan (container paths may differ in case)
 	for (const auto& kv : _files) {
-		if (_stricmp(kv.first.c_str(), relpath.c_str()) == 0) return true;
+		if (ciCompare(kv.first, relpath) == 0) return true;
 	}
 	return false;
 }
@@ -353,7 +364,7 @@ std::vector<uint8_t> OXCContainer::extractFile(const std::string& relpath) {
 	if (it == _files.end()) {
 		// Case-insensitive search
 		for (auto fit = _files.begin(); fit != _files.end(); ++fit) {
-			if (_stricmp(fit->first.c_str(), relpath.c_str()) == 0) {
+			if (ciCompare(fit->first, relpath) == 0) {
 				it = fit;
 				break;
 			}

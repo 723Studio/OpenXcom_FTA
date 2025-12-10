@@ -3746,6 +3746,12 @@ void BattlescapeGame::autoEndBattle()
 	{
 		return;
 	}
+
+	if (!scriptsToProcess())
+	{
+		return;
+	}
+
 	if (Options::battleAutoEnd)
 	{
 		if (_save->getVIPSurvivalPercentage() > 0 && _save->getVIPEscapeType() != ESCAPE_NONE)
@@ -3770,12 +3776,9 @@ void BattlescapeGame::autoEndBattle()
 		}
 		if (end)
 		{
-			if (!scriptsToProcess())
-			{
-				_save->setSelectedUnit(0);
-				cancelCurrentAction(true);
-				requestEndTurn(askForConfirmation);
-			}
+			_save->setSelectedUnit(0);
+			cancelCurrentAction(true);
+			requestEndTurn(askForConfirmation);
 		}
 	}
 }
