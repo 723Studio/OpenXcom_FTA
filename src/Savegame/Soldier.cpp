@@ -3231,42 +3231,42 @@ bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
 		currentStats.strength < minStats.strength ||
 		currentStats.psiStrength < minStats.psiStrength ||
 		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0) || // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
-		currentStats.maneuvering > minStats.maneuvering ||
-		currentStats.missiles > minStats.missiles ||
-		currentStats.dogfight > minStats.dogfight ||
-		currentStats.tracking > minStats.tracking ||
-		currentStats.cooperation > minStats.cooperation ||
-		currentStats.beams > minStats.beams ||
-		currentStats.synaptic > minStats.synaptic ||
-		currentStats.gravity > minStats.gravity ||
-		currentStats.physics > minStats.physics ||
-		currentStats.chemistry > minStats.chemistry ||
-		currentStats.biology > minStats.biology ||
-		currentStats.insight > minStats.insight ||
-		currentStats.data > minStats.data ||
-		currentStats.computers > minStats.computers ||
-		currentStats.tactics > minStats.tactics ||
-		currentStats.materials > minStats.materials ||
-		currentStats.designing > minStats.designing ||
-		currentStats.psionics > minStats.psionics ||
-		currentStats.xenolinguistics > minStats.xenolinguistics ||
-		currentStats.weaponry > minStats.weaponry ||
-		currentStats.explosives > minStats.explosives ||
-		currentStats.efficiency > minStats.efficiency ||
-		currentStats.microelectronics > minStats.microelectronics ||
-		currentStats.metallurgy > minStats.metallurgy ||
-		currentStats.processing > minStats.processing ||
-		currentStats.hacking > minStats.hacking ||
-		currentStats.robotics > minStats.robotics ||
-		currentStats.diligence > minStats.diligence ||
-		currentStats.alienTech > minStats.alienTech ||
-		currentStats.reverseEngineering > minStats.reverseEngineering ||
-		currentStats.stealth > minStats.stealth ||
-		currentStats.perception > minStats.perception ||
-		currentStats.charisma > minStats.charisma ||
-		currentStats.investigation > minStats.investigation ||
-		currentStats.deception > minStats.deception ||
-		currentStats.interrogation > minStats.interrogation)
+		currentStats.maneuvering < minStats.maneuvering ||
+		currentStats.missiles < minStats.missiles ||
+		currentStats.dogfight < minStats.dogfight ||
+		currentStats.tracking < minStats.tracking ||
+		currentStats.cooperation < minStats.cooperation ||
+		currentStats.beams < minStats.beams ||
+		currentStats.synaptic < minStats.synaptic ||
+		currentStats.gravity < minStats.gravity ||
+		currentStats.physics < minStats.physics ||
+		currentStats.chemistry < minStats.chemistry ||
+		currentStats.biology < minStats.biology ||
+		currentStats.insight < minStats.insight ||
+		currentStats.data < minStats.data ||
+		currentStats.computers < minStats.computers ||
+		currentStats.tactics < minStats.tactics ||
+		currentStats.materials < minStats.materials ||
+		currentStats.designing < minStats.designing ||
+		currentStats.psionics < minStats.psionics ||
+		currentStats.xenolinguistics < minStats.xenolinguistics ||
+		currentStats.weaponry < minStats.weaponry ||
+		currentStats.explosives < minStats.explosives ||
+		currentStats.efficiency < minStats.efficiency ||
+		currentStats.microelectronics < minStats.microelectronics ||
+		currentStats.metallurgy < minStats.metallurgy ||
+		currentStats.processing < minStats.processing ||
+		currentStats.hacking < minStats.hacking ||
+		currentStats.robotics < minStats.robotics ||
+		currentStats.diligence < minStats.diligence ||
+		currentStats.alienTech < minStats.alienTech ||
+		currentStats.reverseEngineering < minStats.reverseEngineering ||
+		currentStats.stealth < minStats.stealth ||
+		currentStats.perception < minStats.perception ||
+		currentStats.charisma < minStats.charisma ||
+		currentStats.investigation < minStats.investigation ||
+		currentStats.deception < minStats.deception ||
+		currentStats.interrogation < minStats.interrogation)
 	{
 		return false;
 	}

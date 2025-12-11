@@ -1680,11 +1680,11 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd, const Mod* mod)
 			if (soldier->getCraft() == this && mod)
 			{
 				soldier->prepareStatsWithBonuses(mod); // refresh stats for checking pilot requirements
-			}
-			if (soldier->getCraft() == this && soldier->hasAllPilotingRequirements() && soldier->getRoleRank(ROLE_PILOT) > 0)
-			{
-				result.push_back(soldier);
-				total++;
+				if (soldier->hasAllPilotingRequirements() && soldier->getRoleRank(ROLE_PILOT) > 0)
+				{
+					result.push_back(soldier);
+					total++;
+				}
 			}
 		}
 		if (total == _rules->getPilots())
