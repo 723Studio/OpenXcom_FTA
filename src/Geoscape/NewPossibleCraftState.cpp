@@ -38,10 +38,18 @@ namespace OpenXcom
 NewPossibleCraftState::NewPossibleCraftState(Base * base, const std::vector<RuleCraft *> & possibilities) : _base(base)
 {
 	_screen = false;
+	bool fta = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 288, 180, 16, 10);
-	_btnOk = new TextButton(160, 14, 80, 149);
+	if (fta)
+	{
+		_btnOk = new TextButton(160, 14, 80, 165);
+	}
+	else
+	{
+		_btnOk = new TextButton(160, 14, 80, 149);
+	}
 	_btnPurchase = new TextButton(160, 14, 80, 165);
 	_txtTitle = new Text(288, 40, 16, 20);
 	_lstPossibilities = new TextList(250, 80, 35, 50);
@@ -68,6 +76,10 @@ NewPossibleCraftState::NewPossibleCraftState(Base * base, const std::vector<Rule
 	_btnPurchase->setText(tr("STR_PURCHASE_HIRE_PERSONNEL"));
 	_btnPurchase->onMouseClick((ActionHandler)&NewPossibleCraftState::btnPurchaseClick);
 	_btnPurchase->onKeyboardPress((ActionHandler)&NewPossibleCraftState::btnPurchaseClick, Options::keyOk);
+	if (fta)
+	{
+		_btnPurchase->setVisible(false);
+	}
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_WE_CAN_NOW_RENT"));

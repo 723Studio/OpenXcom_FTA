@@ -37,9 +37,10 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Ufopaedia/Ufopaedia.h"
+#include "../Basescape/ItemLocationsState.h"
 #include "ManufactureStartState.h"
 #include "TechTreeViewerState.h"
-#include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
 {
@@ -64,6 +65,8 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 	_cbxFilter = new ComboBox(this, 146, 16, 10, 46);
 	_cbxCategory = new ComboBox(this, 146, 16, 166, 46);
 
+	touchComponentsCreate(_txtTitle, true, -1, +22);
+
 	// Set palette
 	setInterface("selectNewManufacture");
 
@@ -78,6 +81,8 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 	add(_cbxFilter, "catBox", "selectNewManufacture");
 	add(_cbxCategory, "catBox", "selectNewManufacture");
 
+	touchComponentsAdd("button2", "selectNewManufacture", _window);
+
 	_colorNormal = _lstManufacture->getColor();
 	_colorNew = Options::oxceHighlightNewTopics ? _lstManufacture->getSecondaryColor() : _colorNormal;
 	_colorHidden = _game->getMod()->getInterface("selectNewManufacture")->getElement("listExtended")->color;
@@ -85,7 +90,10 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 
 	centerAllSurfaces();
 
+	// Set up objects
 	setWindowBackground(_window, "selectNewManufacture");
+
+	touchComponentsConfigure();
 
 	_txtTitle->setText(tr("STR_PRODUCTION_ITEMS"));
 	_txtTitle->setBig();
@@ -99,9 +107,9 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 	_lstManufacture->setSelectable(true);
 	_lstManufacture->setBackground(_window);
 	_lstManufacture->setMargin(2);
-	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickLeft, SDL_BUTTON_LEFT);
-	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickRight, SDL_BUTTON_RIGHT);
-	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClickMiddle, SDL_BUTTON_MIDDLE);
+	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_LEFT);
+	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_RIGHT);
+	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_MIDDLE);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&NewManufactureListState::btnOkClick);
@@ -147,6 +155,8 @@ void NewManufactureListState::init()
 	}
 	_doInit = true;
 	_refreshCategories = true;
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -156,6 +166,26 @@ void NewManufactureListState::init()
 void NewManufactureListState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * LRM-click routing.
+ * @param action A pointer to an Action.
+ */
+void NewManufactureListState::lstProdClick(Action* action)
+{
+	if (_game->isLeftClick(action, true))
+	{
+		lstProdClickLeft(action);
+	}
+	else if (_game->isRightClick(action, true))
+	{
+		lstProdClickRight(action);
+	}
+	else if (_game->isMiddleClick(action, true))
+	{
+		lstProdClickMiddle(action);
+	}
 }
 
 /**
@@ -183,65 +213,77 @@ void NewManufactureListState::lstProdClickLeft(Action *)
 */
 void NewManufactureListState::lstProdClickRight(Action *)
 {
-	ManufacturingFilterType basicFilter = (ManufacturingFilterType)(_cbxFilter->getSelected());
-	if (basicFilter == MANU_FILTER_FACILITY_REQUIRED)
+	if (_game->isCtrlPressed(true))
 	{
-		// display either category or requirements
-		_showRequirements = !_showRequirements;
-		RuleBaseFacilityFunctions baseFunc = _base->getProvidedBaseFunc({});
+		RuleManufacture* rule = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
+		if (rule->getProducedItems().size() != 1)
+			return;
 
-		for (size_t row = 0; row < _lstManufacture->getTexts(); ++row)
-		{
-			RuleManufacture *info = _game->getMod()->getManufacture(_displayedStrings[row]);
-			if (info)
-			{
-				if (_showRequirements)
-				{
-					std::ostringstream ss;
-					int count = 0;
-					std::vector<std::string> missed = _game->getMod()->getBaseFunctionNames(~baseFunc & info->getRequireBaseFunc());
-					for (const auto& name : missed)
-					{
-						if (count > 0)
-						{
-							ss << ", ";
-						}
-						ss << tr(name);
-						count++;
-					}
-					_lstManufacture->setCellText(row, 1, ss.str().c_str());
-				}
-				else
-				{
-					_lstManufacture->setCellText(row, 1, tr(info->getCategory()));
-				}
-			}
-		}
+		const RuleItem* item = rule->getProducedItems().begin()->first;
+		_game->pushState(new ItemLocationsState(item));
 	}
 	else
 	{
-		// change status
-		const std::string rule = _displayedStrings[_lstManufacture->getSelectedRow()];
-		int oldState = _game->getSavedGame()->getManufactureRuleStatus(rule);
-		int newState = (oldState + 1) % RuleManufacture::MANU_STATUSES;
-		if (!Options::oxceHighlightNewTopics)
+		ManufacturingFilterType basicFilter = (ManufacturingFilterType)(_cbxFilter->getSelected());
+		if (basicFilter == MANU_FILTER_FACILITY_REQUIRED)
 		{
-			// only switch between hidden and not hidden
-			newState = (oldState == RuleManufacture::MANU_STATUS_HIDDEN) ? RuleManufacture::MANU_STATUS_NORMAL : RuleManufacture::MANU_STATUS_HIDDEN;
-		}
-		_game->getSavedGame()->setManufactureRuleStatus(rule, newState);
+			// display either category or requirements
+			_showRequirements = !_showRequirements;
+			RuleBaseFacilityFunctions baseFunc = _base->getProvidedBaseFunc({});
 
-		if (newState == RuleManufacture::MANU_STATUS_HIDDEN)
-		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorHidden);
-		}
-		else if (newState == RuleManufacture::MANU_STATUS_NEW)
-		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNew);
+			for (size_t row = 0; row < _lstManufacture->getTexts(); ++row)
+			{
+				RuleManufacture* info = _game->getMod()->getManufacture(_displayedStrings[row]);
+				if (info)
+				{
+					if (_showRequirements)
+					{
+						std::ostringstream ss;
+						int count = 0;
+						std::vector<std::string> missed = _game->getMod()->getBaseFunctionNames(~baseFunc & info->getRequireBaseFunc());
+						for (const auto& name : missed)
+						{
+							if (count > 0)
+							{
+								ss << ", ";
+							}
+							ss << tr(name);
+							count++;
+						}
+						_lstManufacture->setCellText(row, 1, ss.str().c_str());
+					}
+					else
+					{
+						_lstManufacture->setCellText(row, 1, tr(info->getCategory()));
+					}
+				}
+			}
 		}
 		else
 		{
-			_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNormal);
+			// change status
+			const std::string rule = _displayedStrings[_lstManufacture->getSelectedRow()];
+			int oldState = _game->getSavedGame()->getManufactureRuleStatus(rule);
+			int newState = (oldState + 1) % RuleManufacture::MANU_STATUSES;
+			if (!Options::oxceHighlightNewTopics)
+			{
+				// only switch between hidden and not hidden
+				newState = (oldState == RuleManufacture::MANU_STATUS_HIDDEN) ? RuleManufacture::MANU_STATUS_NORMAL : RuleManufacture::MANU_STATUS_HIDDEN;
+			}
+			_game->getSavedGame()->setManufactureRuleStatus(rule, newState);
+
+			if (newState == RuleManufacture::MANU_STATUS_HIDDEN)
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorHidden);
+			}
+			else if (newState == RuleManufacture::MANU_STATUS_NEW)
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNew);
+			}
+			else
+			{
+				_lstManufacture->setRowColor(_lstManufacture->getSelectedRow(), _colorNormal);
+			}
 		}
 	}
 }
@@ -253,17 +295,48 @@ void NewManufactureListState::lstProdClickRight(Action *)
 void NewManufactureListState::lstProdClickMiddle(Action *)
 {
 	_doInit = false;
+	const RuleManufacture *selectedTopic = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
 
-	std::string articleId = _displayedStrings[_lstManufacture->getSelectedRow()];
-	if (_game->isCtrlPressed())
+	if (_game->isCtrlPressed(false))
 	{
-		Ufopaedia::openArticle(_game, articleId);
+		auto itemList = selectedTopic->getProducedItems();
+		if (!itemList.empty())
+		{
+			if (itemList.size() == 1)
+			{
+				auto ruleItem = itemList.begin()->first;
+				auto article = ruleItem->getName();
+				if (ruleItem->getBattleType() == BT_AMMO)
+				{
+					for (std::vector<std::string>::const_iterator iter = _game->getMod()->getItemsList().begin(); iter != _game->getMod()->getItemsList().end(); ++iter)
+					{
+						auto ruleIter = _game->getMod()->getItem((*iter));
+						auto it = std::find(ruleIter->getPrimaryCompatibleAmmo()->begin(), ruleIter->getPrimaryCompatibleAmmo()->end(), ruleItem);
+						if (it != ruleIter->getPrimaryCompatibleAmmo()->end())
+						{
+							article = ruleIter->getName();
+							break;
+						}
+					}
+				}
+				Ufopaedia::openArticle(_game, article);
+			}
+			return;
+		}
+		if (selectedTopic->getProducedCraft() != nullptr)
+		{
+			Ufopaedia::openArticle(_game, selectedTopic->getProducedCraft()->getType());
+		}
 	}
 	else
 	{
-		const RuleManufacture* selectedTopic = _game->getMod()->getManufacture(articleId);
+		if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+		{
+			return;
+		}
 		_game->pushState(new TechTreeViewerState(0, selectedTopic));
 	}
+
 }
 
 /**

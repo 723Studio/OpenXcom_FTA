@@ -52,11 +52,12 @@ private:
 	const BattleUnit *_unit;
 	const BattleItem *_itemR, *_itemL;
 	const SurfaceSet *_unitSurface, *_itemSurface, *_fireSurface, *_breathSurface, *_facingArrowSurface;
-	Surface *_dest;
+	Surface* _warnIndicator, *_dest;
 	const SavedBattleGame *_save;
 	const Mod *_mod;
 	int _part, _animationFrame, _drawingRoutine;
 	bool _helmet;
+	int _red, _blue;
 	int _x, _y, _shade, _burn;
 	GraphSubset _mask;
 
@@ -108,11 +109,13 @@ private:
 	void blitBody(Part& body);
 public:
 	/// Creates a new UnitSprite at the specified position and size.
-	UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet);
+	UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue);
 	/// Cleans up the UnitSprite.
 	~UnitSprite();
 	/// Draws the unit.
 	void draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool drawFacingIndicator);
+	/// Draws special icon near the unit
+	void drawUnitIcon();
 };
 
 } //namespace OpenXcom

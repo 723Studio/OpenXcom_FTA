@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <functional>
 #include <ctime>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../version.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Mod.h"
@@ -32,6 +32,8 @@
 #include "../Engine/Options.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/ScriptBind.h"
+#include "../Engine/Game.h"
+#include "../FTA/MasterMind.h"
 #include "SavedBattleGame.h"
 #include "SerializationHelper.h"
 #include "GameTime.h"
@@ -57,6 +59,7 @@
 #include "AlienStrategy.h"
 #include "AlienMission.h"
 #include "GeoscapeEvent.h"
+#include "DiplomacyFaction.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
@@ -70,6 +73,8 @@
 
 namespace OpenXcom
 {
+/// Initializes static member
+Game *SavedGame::_game = 0;
 
 const std::string SavedGame::AUTOSAVE_GEOSCAPE = "_autogeo_.asav",
 				  SavedGame::AUTOSAVE_BATTLESCAPE = "_autobattle_.asav",
@@ -107,10 +112,11 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
  * Initializes a brand new saved game according to the specified difficulty.
  */
 SavedGame::SavedGame() :
-	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0),
-	_battleGame(0), _previewBase(nullptr), _debug(false), _warned(false),
+	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
+	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
-	_monthsPassed(-1), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(), _disableSoldierEquipment(false), _alienContainmentChecked(false)
+	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(),
+	_disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
 	_alienStrategy = new AlienStrategy();
@@ -170,6 +176,10 @@ SavedGame::~SavedGame()
 	for (auto* ge : _geoscapeEvents)
 	{
 		delete ge;
+	}
+	for (auto* df : _diplomacyFactions)
+	{
+		delete df;
 	}
 	for (auto* soldier : _deadSoldiers)
 	{
@@ -276,7 +286,7 @@ std::vector<SaveInfo> SavedGame::getList(Language *lang, bool autoquick)
 			Log(LOG_ERROR) << filename << ": " << e.what();
 			continue;
 		}
-		catch (YAML::Exception &e)
+		catch (YAML::Exception& e)
 		{
 			Log(LOG_ERROR) << filename << ": " << e.what();
 			continue;
@@ -294,7 +304,7 @@ std::vector<SaveInfo> SavedGame::getList(Language *lang, bool autoquick)
 SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 {
 	std::string fullname = Options::getMasterUserFolder() + file;
-	YAML::Node doc = YAML::Load(*CrossPlatform::getYamlSaveHeader(fullname));
+	YAML::YamlRootNodeReader reader(fullname, true);
 	SaveInfo save;
 
 	save.fileName = file;
@@ -312,10 +322,8 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 	else if (save.fileName.find(AUTOSAVE_GEOSCAPE) != std::string::npos)
 	{
 		GameTime time = GameTime(6, 1, 1, 1999, 12, 0, 0);
-		if (doc["time"])
-		{
-			time.load(doc["time"]);
-		}
+		if (reader["time"])
+			time.load(reader["time"]);
 		save.displayName = lang->getString("STR_AUTO_SAVE_GEOSCAPE_SLOT_WITH_NUMBER").arg(time.getDayString(lang));
 		save.reserved = true;
 	}
@@ -326,24 +334,14 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 	}
 	else if (save.fileName.find(AUTOSAVE_BATTLESCAPE) != std::string::npos)
 	{
-		int turn = 0;
-		if (doc["turn"])
-		{
-			turn = doc["turn"].as<int>(turn);
-		}
+		int turn = reader["turn"].readVal(0);
 		save.displayName = lang->getString("STR_AUTO_SAVE_BATTLESCAPE_SLOT_WITH_NUMBER").arg(turn);
 		save.reserved = true;
 	}
 	else
 	{
-		if (doc["name"])
-		{
-			save.displayName = doc["name"].as<std::string>();
-		}
-		else
-		{
+		if (!reader.tryRead("name", save.displayName))
 			save.displayName = CrossPlatform::noExt(file);
-		}
 		save.reserved = false;
 	}
 
@@ -351,23 +349,23 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 	std::pair<std::string, std::string> str = CrossPlatform::timeToString(save.timestamp);
 	save.isoDate = str.first;
 	save.isoTime = str.second;
-	save.mods = doc["mods"].as<std::vector< std::string> >(std::vector<std::string>());
+	reader.tryRead("mods", save.mods);
 
 	std::ostringstream details;
-	if (doc["turn"])
+	if (reader["turn"])
 	{
-		details << lang->getString("STR_BATTLESCAPE") << ": " << lang->getString(doc["mission"].as<std::string>()) << ", ";
-		details << lang->getString("STR_TURN").arg(doc["turn"].as<int>());
+		details << lang->getString("STR_BATTLESCAPE") << ": " << lang->getString(reader["mission"].readVal<std::string>()) << ", ";
+		details << lang->getString("STR_TURN").arg(reader["turn"].readVal<int>());
 	}
 	else
 	{
 		GameTime time = GameTime(6, 1, 1, 1999, 12, 0, 0);
-		time.load(doc["time"]);
+		time.load(reader["time"]);
 		details << lang->getString("STR_GEOSCAPE") << ": ";
 		details << time.getDayString(lang) << " " << lang->getString(time.getMonthString()) << " " << time.getYear() << ", ";
 		details << time.getHour() << ":" << std::setfill('0') << std::setw(2) << time.getMinute();
 	}
-	if (doc["ironman"].as<bool>(false))
+	if (reader["ironman"].readVal(false))
 	{
 		details << " (" << lang->getString("STR_IRONMAN") << ")";
 	}
@@ -386,55 +384,52 @@ SaveInfo SavedGame::getSaveInfo(const std::string &file, Language *lang)
 void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 {
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	std::vector<YAML::Node> file = YAML::LoadAll(*CrossPlatform::readFile(filepath));
+	YAML::YamlRootNodeReader documents(filepath, false, false);
+
 	// Get brief save info
-	YAML::Node brief = file[0];
-	_time->load(brief["time"]);
-	if (brief["name"])
-	{
-		_name = brief["name"].as<std::string>();
-	}
-	else
-	{
-		_name = filename;
-	}
-	_ironman = brief["ironman"].as<bool>(_ironman);
+	const auto& header = documents[0];
+	_time->load(header["time"]);
+	header.readNode("name", _name, filename);
+	header.tryRead("ironman", _ironman);
+	header.tryRead("ftaGame", _ftaGame);
 
 	// Get full save data
-	YAML::Node doc = file[1];
-	_difficulty = (GameDifficulty)doc["difficulty"].as<int>(_difficulty);
-	_end = (GameEnding)doc["end"].as<int>(_end);
-	if (doc["rng"] && (_ironman || !Options::newSeedOnLoad))
-		RNG::setSeed(doc["rng"].as<uint64_t>());
-	_monthsPassed = doc["monthsPassed"].as<int>(_monthsPassed);
-	_daysPassed = doc["daysPassed"].as<int>(_daysPassed);
-	_vehiclesLost = doc["vehiclesLost"].as<int>(_vehiclesLost);
-	_graphRegionToggles = doc["graphRegionToggles"].as<std::string>(_graphRegionToggles);
-	_graphCountryToggles = doc["graphCountryToggles"].as<std::string>(_graphCountryToggles);
-	_graphFinanceToggles = doc["graphFinanceToggles"].as<std::string>(_graphFinanceToggles);
-	_funds = doc["funds"].as< std::vector<int64_t> >(_funds);
-	_maintenance = doc["maintenance"].as< std::vector<int64_t> >(_maintenance);
-	_userNotes = doc["userNotes"].as< std::vector<std::string> >(_userNotes);
-	_geoscapeDebugLog = doc["geoscapeDebugLog"].as<std::vector<std::string> >(_geoscapeDebugLog);
-	_researchScores = doc["researchScores"].as< std::vector<int> >(_researchScores);
-	_incomes = doc["incomes"].as< std::vector<int64_t> >(_incomes);
-	_expenditures = doc["expenditures"].as< std::vector<int64_t> >(_expenditures);
-	_warned = doc["warned"].as<bool>(_warned);
-	_togglePersonalLight = doc["togglePersonalLight"].as<bool>(_togglePersonalLight);
-	_toggleNightVision = doc["toggleNightVision"].as<bool>(_toggleNightVision);
-	_toggleBrightness = doc["toggleBrightness"].as<int>(_toggleBrightness);
-	_globeLon = doc["globeLon"].as<double>(_globeLon);
-	_globeLat = doc["globeLat"].as<double>(_globeLat);
-	_globeZoom = doc["globeZoom"].as<int>(_globeZoom);
-	_ids = doc["ids"].as< std::map<std::string, int> >(_ids);
+	const auto& reader = documents[1].useIndex();
+	reader.tryRead("difficulty", _difficulty);
+	reader.tryRead("end", _end);
+	if (reader["rng"] && (_ironman || !Options::newSeedOnLoad))
+		RNG::setSeed(reader["rng"].readVal<uint64_t>());
+	reader.tryRead("monthsPassed", _monthsPassed);
+	reader.tryRead("daysPassed", _daysPassed);
+	reader.tryRead("vehiclesLost", _vehiclesLost);
+	reader.tryRead("graphRegionToggles", _graphRegionToggles);
+	reader.tryRead("graphCountryToggles", _graphCountryToggles);
+	reader.tryRead("graphFinanceToggles", _graphFinanceToggles);
+	reader.tryRead("funds", _funds);
+	reader.tryRead("loyalty", _loyalty);
+	reader.tryRead("lastMonthsLoyalty", _lastMonthsLoyalty);
+	reader.tryRead("maintenance", _maintenance);
+	reader.tryRead("userNotes", _userNotes);
+	reader.tryRead("geoscapeDebugLog", _geoscapeDebugLog);
+	reader.tryRead("researchScores", _researchScores);
+	reader.tryRead("incomes", _incomes);
+	reader.tryRead("expenditures", _expenditures);
+	reader.tryRead("warned", _warned);
+	reader.tryRead("togglePersonalLight", _togglePersonalLight);
+	reader.tryRead("toggleNightVision", _toggleNightVision);
+	reader.tryRead("toggleBrightness", _toggleBrightness);
+	reader.tryRead("globeLon", _globeLon);
+	reader.tryRead("globeLat", _globeLat);
+	reader.tryRead("globeZoom", _globeZoom);
+	reader.tryRead("ids", _ids);
 
-	for (YAML::const_iterator i = doc["countries"].begin(); i != doc["countries"].end(); ++i)
+	for (const auto& country : reader["countries"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = country["type"].readVal<std::string>();
 		if (mod->getCountry(type))
 		{
 			Country *c = new Country(mod->getCountry(type), false);
-			c->load(*i, mod->getScriptGlobal());
+			c->load(country, mod->getScriptGlobal());
 			_countries.push_back(c);
 		}
 		else
@@ -443,13 +438,13 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	for (YAML::const_iterator i = doc["regions"].begin(); i != doc["regions"].end(); ++i)
+	for (const auto& region : reader["regions"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = region["type"].readVal<std::string>();
 		if (mod->getRegion(type))
 		{
 			Region *r = new Region(mod->getRegion(type));
-			r->load(*i);
+			r->load(region);
 			_regions.push_back(r);
 		}
 		else
@@ -459,13 +454,13 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 
 	// Alien bases must be loaded before alien missions
-	for (YAML::const_iterator i = doc["alienBases"].begin(); i != doc["alienBases"].end(); ++i)
+	for (const auto& alienBase : reader["alienBases"].children())
 	{
-		std::string deployment = (*i)["deployment"].as<std::string>("STR_ALIEN_BASE_ASSAULT");
+		std::string deployment = alienBase["deployment"].readVal<std::string>("STR_ALIEN_BASE_ASSAULT");
 		if (mod->getDeployment(deployment))
 		{
 			AlienBase *b = new AlienBase(mod->getDeployment(deployment), 0);
-			b->load(*i);
+			b->load(alienBase);
 			_alienBases.push_back(b);
 		}
 		else
@@ -475,15 +470,14 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 
 	// Missions must be loaded before UFOs.
-	const YAML::Node &missions = doc["alienMissions"];
-	for (YAML::const_iterator it = missions.begin(); it != missions.end(); ++it)
+	for (const auto& alienMission : reader["alienMissions"].children())
 	{
-		std::string missionType = (*it)["type"].as<std::string>();
+		std::string missionType = alienMission["type"].readVal<std::string>();
 		if (mod->getAlienMission(missionType))
 		{
 			const RuleAlienMission &mRule = *mod->getAlienMission(missionType);
 			AlienMission *mission = new AlienMission(mRule);
-			mission->load(*it, *this, mod);
+			mission->load(alienMission, *this, mod);
 			_activeMissions.push_back(mission);
 		}
 		else
@@ -492,13 +486,13 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	for (YAML::const_iterator i = doc["ufos"].begin(); i != doc["ufos"].end(); ++i)
+	for (const auto& ufo : reader["ufos"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = ufo["type"].readVal<std::string>();
 		if (mod->getUfo(type))
 		{
 			Ufo *u = new Ufo(mod->getUfo(type), 0);
-			u->load(*i, mod->getScriptGlobal(), *mod, *this);
+			u->load(ufo, mod->getScriptGlobal(), *mod, *this);
 			_ufos.push_back(u);
 		}
 		else
@@ -507,15 +501,29 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	const YAML::Node &geoEvents = doc["geoscapeEvents"];
-	for (YAML::const_iterator it = geoEvents.begin(); it != geoEvents.end(); ++it)
+	for (const auto& diplomacyFaction : reader["diplomacyFactions"].children())
 	{
-		std::string eventName = (*it)["name"].as<std::string>();
+		std::string diplomacyFactionName = diplomacyFaction["name"].readVal<std::string>();
+		if (mod->getDiplomacyFaction(diplomacyFactionName))
+		{
+			DiplomacyFaction *faction = new DiplomacyFaction(mod, diplomacyFactionName);
+			faction->load(diplomacyFaction, this);
+			_diplomacyFactions.push_back(faction);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load diplomacy faction " << diplomacyFactionName;
+		}
+	}
+
+	for (const auto& geoEvent : reader["geoscapeEvents"].children())
+	{
+		std::string eventName = geoEvent["name"].readVal<std::string>();
 		if (mod->getEvent(eventName))
 		{
 			const RuleEvent &eventRule = *mod->getEvent(eventName);
 			GeoscapeEvent *event = new GeoscapeEvent(eventRule);
-			event->load(*it);
+			event->load(geoEvent);
 			_geoscapeEvents.push_back(event);
 		}
 		else
@@ -524,22 +532,22 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	for (YAML::const_iterator i = doc["waypoints"].begin(); i != doc["waypoints"].end(); ++i)
+	for (const auto& waypoint : reader["waypoints"].children())
 	{
 		Waypoint *w = new Waypoint();
-		w->load(*i);
+		w->load(waypoint);
 		_waypoints.push_back(w);
 	}
 
 	// Backwards compatibility
-	for (YAML::const_iterator i = doc["terrorSites"].begin(); i != doc["terrorSites"].end(); ++i)
+	for (const auto& terrorSite : reader["terrorSites"].children())
 	{
 		std::string type = "STR_ALIEN_TERROR";
 		std::string deployment = "STR_TERROR_MISSION";
 		if (mod->getAlienMission(type) && mod->getDeployment(deployment))
 		{
 			MissionSite *m = new MissionSite(mod->getAlienMission(type), mod->getDeployment(deployment), nullptr);
-			m->load(*i);
+			m->load(terrorSite);
 			_missionSites.push_back(m);
 		}
 		else
@@ -548,15 +556,15 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		}
 	}
 
-	for (YAML::const_iterator i = doc["missionSites"].begin(); i != doc["missionSites"].end(); ++i)
+	for (const auto& missionSite : reader["missionSites"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
-		std::string deployment = (*i)["deployment"].as<std::string>("STR_TERROR_MISSION");
-		std::string alienWeaponDeploy = (*i)["missionCustomDeploy"].as<std::string>("");
+		std::string type = missionSite["type"].readVal<std::string>();
+		std::string deployment = missionSite["deployment"].readVal<std::string>("STR_TERROR_MISSION");
+		std::string alienWeaponDeploy = missionSite["missionCustomDeploy"].readVal<std::string>("");
 		if (mod->getAlienMission(type) && mod->getDeployment(deployment))
 		{
 			MissionSite *m = new MissionSite(mod->getAlienMission(type), mod->getDeployment(deployment), mod->getDeployment(alienWeaponDeploy));
-			m->load(*i);
+			m->load(missionSite);
 			_missionSites.push_back(m);
 			// link with UFO
 			if (m->getUfoUniqueId() > 0)
@@ -583,12 +591,12 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 
 	// Discovered Techs Should be loaded before Bases (e.g. for PSI evaluation)
-	for (YAML::const_iterator it = doc["discovered"].begin(); it != doc["discovered"].end(); ++it)
+	for (const auto& discovery : reader["discovered"].children())
 	{
-		std::string research = it->as<std::string>();
-		if (mod->getResearch(research))
+		std::string research = discovery.readVal<std::string>();
+		if (RuleResearch* researchRule = mod->getResearch(research))
 		{
-			_discovered.push_back(mod->getResearch(research));
+			_discovered.push_back(researchRule);
 		}
 		else
 		{
@@ -597,54 +605,29 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 	sortReserchVector(_discovered);
 
-	_generatedEvents = doc["generatedEvents"].as< std::map<std::string, int> >(_generatedEvents);
-	loadUfopediaRuleStatus(doc["ufopediaRuleStatus"]);
-	_manufactureRuleStatus = doc["manufactureRuleStatus"].as< std::map<std::string, int> >(_manufactureRuleStatus);
-	_researchRuleStatus = doc["researchRuleStatus"].as< std::map<std::string, int> >(_researchRuleStatus);
-	_monthlyPurchaseLimitLog = doc["monthlyPurchaseLimitLog"].as< std::map<std::string, int> >(_monthlyPurchaseLimitLog);
-	_hiddenPurchaseItemsMap = doc["hiddenPurchaseItems"].as< std::map<std::string, bool> >(_hiddenPurchaseItemsMap);
-	_customRuleCraftDeployments = doc["customRuleCraftDeployments"].as< std::map<std::string, RuleCraftDeployment > >(_customRuleCraftDeployments);
+	reader.tryRead("generatedEvents", _generatedEvents);
+	loadUfopediaRuleStatus(reader["ufopediaRuleStatus"]);
+	reader.tryRead("manufactureRuleStatus", _manufactureRuleStatus);
+	reader.tryRead("researchRuleStatus", _researchRuleStatus);
+	reader.tryRead("monthlyPurchaseLimitLog", _monthlyPurchaseLimitLog);
+	reader.tryRead("hiddenPurchaseItems", _hiddenPurchaseItemsMap);
+	reader.tryRead("customRuleCraftDeployments", _customRuleCraftDeployments);
 
-	for (YAML::const_iterator i = doc["bases"].begin(); i != doc["bases"].end(); ++i)
+	for (const auto& base : reader["bases"].children())
 	{
 		Base *b = new Base(mod);
-		b->load(*i, this, false);
+		b->load(base, this, false);
 		_bases.push_back(b);
 	}
 
 	// Finish loading crafts after bases (more specifically after all crafts) are loaded, because of references between crafts (i.e. friendly escorts)
-	{
-		for (YAML::const_iterator i = doc["bases"].begin(); i != doc["bases"].end(); ++i)
-		{
-			// Bases don't have IDs and names are not unique, so need to consider lon/lat too
-			double lon = (*i)["lon"].as<double>(0.0);
-			double lat = (*i)["lat"].as<double>(0.0);
-			std::string baseName = "";
-			if (const YAML::Node &name = (*i)["name"])
-			{
-				baseName = name.as<std::string>();
-			}
-
-			Base *base = 0;
-			for (auto* xbase : _bases)
-			{
-				if (AreSame(lon, xbase->getLongitude()) && AreSame(lat, xbase->getLatitude()) && xbase->getName() == baseName)
-				{
-					base = xbase;
-					break;
-				}
-			}
-			if (base)
-			{
-				base->finishLoading(*i, this);
-			}
-		}
-	}
+	for (size_t i = 0; i < _bases.size(); ++i)
+		_bases[i]->finishLoading(reader["bases"][i], this);
 
 	// Finish loading UFOs after all craft and all other UFOs are loaded
-	for (YAML::const_iterator i = doc["ufos"].begin(); i != doc["ufos"].end(); ++i)
+	for (const auto& ufoReader : reader["ufos"].children())
 	{
-		int uniqueUfoId = (*i)["uniqueId"].as<int>(0);
+		int uniqueUfoId = ufoReader["uniqueId"].readVal(0);
 		if (uniqueUfoId > 0)
 		{
 			Ufo *ufo = 0;
@@ -658,127 +641,111 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 			}
 			if (ufo)
 			{
-				ufo->finishLoading(*i, *this);
+				ufo->finishLoading(ufoReader, *this);
 			}
 		}
 	}
 
-	const YAML::Node &research = doc["poppedResearch"];
-	for (YAML::const_iterator it = research.begin(); it != research.end(); ++it)
+	for (const auto& popped : reader["poppedResearch"].children())
 	{
-		std::string id = it->as<std::string>();
+		std::string id = popped.readVal<std::string>();
 		if (mod->getResearch(id))
 		{
 			_poppedResearch.push_back(mod->getResearch(id));
 		}
 		else
 		{
-			Log(LOG_ERROR) << "Failed to load research " << id;
+			Log(LOG_ERROR) << "Failed to load popped research " << id;
 		}
 	}
-	_alienStrategy->load(doc["alienStrategy"], mod);
+	_alienStrategy->load(reader["alienStrategy"], mod);
 
-	for (YAML::const_iterator i = doc["deadSoldiers"].begin(); i != doc["deadSoldiers"].end(); ++i)
+	for (const auto& weHardlyKnewYe : reader["deadSoldiers"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>(mod->getSoldiersList().front());
+		std::string type = weHardlyKnewYe["type"].readVal(mod->getSoldiersList().front());
 		if (mod->getSoldier(type))
 		{
 			Soldier *soldier = new Soldier(mod->getSoldier(type), nullptr, 0 /*nationality*/);
-			soldier->load(*i, mod, this, mod->getScriptGlobal());
+			soldier->load(weHardlyKnewYe, mod, this, mod->getScriptGlobal());
 			_deadSoldiers.push_back(soldier);
 		}
 		else
 		{
-			Log(LOG_ERROR) << "Failed to load soldier " << type;
+			Log(LOG_ERROR) << "Failed to load dead soldier " << type;
 		}
 	}
 
-	loadTemplates(doc, mod);
+	loadTemplates(reader, mod);
 
-	for (YAML::const_iterator i = doc["missionStatistics"].begin(); i != doc["missionStatistics"].end(); ++i)
+	for (const auto& missionStats : reader["missionStatistics"].children())
 	{
 		MissionStatistics *ms = new MissionStatistics();
-		ms->load(*i);
+		ms->load(missionStats);
 		_missionStatistics.push_back(ms);
 	}
 
-	for (YAML::const_iterator it = doc["autoSales"].begin(); it != doc["autoSales"].end(); ++it)
+	for (const auto& autoSale : reader["autoSales"].children())
 	{
-		std::string itype = it->as<std::string>();
+		std::string itype = autoSale.readVal<std::string>();
 		if (mod->getItem(itype))
 		{
 			_autosales.insert(mod->getItem(itype));
 		}
 	}
 
-	if (const YAML::Node &battle = doc["battleGame"])
+	if (const YAML::YamlNodeReader& battle = reader["battleGame"])
 	{
 		_battleGame = new SavedBattleGame(mod, lang);
 		_battleGame->load(battle, mod, this);
 	}
 
-	_scriptValues.load(doc, mod->getScriptGlobal());
+	_scriptValues.load(reader, mod->getScriptGlobal());
 }
 
-void SavedGame::loadTemplates(const YAML::Node& doc, const Mod* mod)
+void SavedGame::loadTemplates(const YAML::YamlNodeReader& reader, const Mod* mod)
 {
 	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
-		std::ostringstream oss;
-		oss << "globalEquipmentLayout" << j;
-		std::string key = oss.str();
-		if (const YAML::Node &layout = doc[key])
+		for (const auto& layout : reader[ryml::to_csubstr("globalEquipmentLayout" + std::to_string(j))].children())
 		{
-			for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+			try
 			{
-				try
-				{
-					_globalEquipmentLayout[j].push_back(new EquipmentLayoutItem(*i, mod));
-				}
-				catch (Exception& ex)
-				{
-					Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
-				}
+				_globalEquipmentLayout[j].push_back(new EquipmentLayoutItem(layout, mod));
+			}
+			catch (Exception& ex)
+			{
+				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 			}
 		}
-		std::ostringstream oss2;
-		oss2 << "globalEquipmentLayoutName" << j;
-		std::string key2 = oss2.str();
-		if (doc[key2])
-		{
-			_globalEquipmentLayoutName[j] = doc[key2].as<std::string>();
-		}
-		std::ostringstream oss3;
-		oss3 << "globalEquipmentLayoutArmor" << j;
-		std::string key3 = oss3.str();
-		if (doc[key3])
-		{
-			_globalEquipmentLayoutArmor[j] = doc[key3].as<std::string>();
-		}
+		if (const auto& layoutName = reader[ryml::to_csubstr("globalEquipmentLayoutName" + std::to_string(j))])
+			_globalEquipmentLayoutName[j] = layoutName.readVal<std::string>();
+		if (const auto& layoutArmor = reader[ryml::to_csubstr("globalEquipmentLayoutArmor" + std::to_string(j))])
+			_globalEquipmentLayoutArmor[j] = layoutArmor.readVal<std::string>();
 	}
 
 	for (int j = 0; j < MAX_CRAFT_LOADOUT_TEMPLATES; ++j)
 	{
-		std::ostringstream oss;
-		oss << "globalCraftLoadout" << j;
-		std::string key = oss.str();
-		if (const YAML::Node &loadout = doc[key])
-		{
+		if (const auto& loadout = reader[ryml::to_csubstr("globalCraftLoadout" + std::to_string(j))])
 			_globalCraftLoadout[j]->load(loadout, mod);
-		}
-		std::ostringstream oss2;
-		oss2 << "globalCraftLoadoutName" << j;
-		std::string key2 = oss2.str();
-		if (doc[key2])
-		{
-			_globalCraftLoadoutName[j] = doc[key2].as<std::string>();
-		}
+		if (const auto& loadoutName = reader[ryml::to_csubstr("globalCraftLoadoutName" + std::to_string(j))])
+			_globalCraftLoadoutName[j] = loadoutName.readVal<std::string>();
 	}
 }
 
-void SavedGame::loadUfopediaRuleStatus(const YAML::Node& node)
+void SavedGame::loadUfopediaRuleStatus(const YAML::YamlNodeReader& reader)
 {
-	_ufopediaRuleStatus = node.as< std::map<std::string, int> >(_ufopediaRuleStatus);
+	reader.tryReadVal(_ufopediaRuleStatus);
+}
+
+template <typename T, typename... Args>
+void saveVector(YAML::YamlNodeWriter& writer, const std::vector<T*>& vector, const ryml::csubstr& key, Args... args)
+{
+	if (vector.empty())
+		return;
+	YAML::YamlNodeWriter sequenceWriter = writer[key];
+	sequenceWriter.setAsSeq();
+	for (const T* item : vector)
+		item->save(sequenceWriter.write(), args...);
 }
 
 /**
@@ -787,222 +754,174 @@ void SavedGame::loadUfopediaRuleStatus(const YAML::Node& node)
  */
 void SavedGame::save(const std::string &filename, Mod *mod) const
 {
-	YAML::Emitter out;
-
+	YAML::YamlRootNodeWriter headerWriter;
+	headerWriter.setAsMap();
 	// Saves the brief game info used in the saves list
-	YAML::Node brief;
-	brief["name"] = _name;
-	brief["version"] = OPENXCOM_VERSION_SHORT;
-	brief["engine"] = OPENXCOM_VERSION_ENGINE;
-	std::string git_sha = OPENXCOM_VERSION_GIT;
-	if (!git_sha.empty() && git_sha[0] ==  '.')
-	{
-		git_sha.erase(0,1);
-	}
-	brief["build"] = git_sha;
-	brief["time"] = _time->save();
+
+	headerWriter.write("name", _name);
+	headerWriter.write("version", OPENXCOM_FTA_VERSION_SHORT);
+	headerWriter.write("engine", OPENXCOM_FTA_VERSION_ENGINE);
+	std::string git_sha = OPENXCOM_FTA_VERSION_GIT;
+	if (!git_sha.empty() && git_sha[0] == '.')
+		git_sha.erase(0, 1);
+	headerWriter.write("build", git_sha);
+	_time->save(headerWriter["time"]);
 	if (_battleGame != 0)
 	{
-		brief["mission"] = _battleGame->getMissionType();
-		brief["target"] = _battleGame->getMissionTarget();
-		brief["craftOrBase"] = _battleGame->getMissionCraftOrBase();
-		brief["turn"] = _battleGame->getTurn();
+		headerWriter.write("mission", _battleGame->getMissionType());
+		headerWriter.write("target", _battleGame->getMissionTarget());
+		headerWriter.write("craftOrBase", _battleGame->getMissionCraftOrBase()).setAsQuotedAndEscaped();
+		headerWriter.write("turn", _battleGame->getTurn());
 	}
 
 	// only save mods that work with the current master
 	std::vector<std::string> modsList;
 	for (const auto* modInfo : Options::getActiveMods())
-	{
 		modsList.push_back(modInfo->getId() + " ver: " + modInfo->getVersion());
-	}
-	brief["mods"] = modsList;
+	headerWriter.write("mods", modsList);
+
 	if (_ironman)
-		brief["ironman"] = _ironman;
-	out << brief;
+		headerWriter.write("ironman", _ironman);
+	if (_ftaGame)
+		headerWriter.write("ftaGame", _ftaGame);
+
 	// Saves the full game data to the save
-	out << YAML::BeginDoc;
-	YAML::Node node;
-	node["difficulty"] = (int)_difficulty;
-	node["end"] = (int)_end;
-	node["monthsPassed"] = _monthsPassed;
-	node["daysPassed"] = _daysPassed;
-	node["vehiclesLost"] = _vehiclesLost;
-	node["graphRegionToggles"] = _graphRegionToggles;
-	node["graphCountryToggles"] = _graphCountryToggles;
-	node["graphFinanceToggles"] = _graphFinanceToggles;
-	node["rng"] = RNG::getSeed();
-	node["funds"] = _funds;
-	node["maintenance"] = _maintenance;
-	node["userNotes"] = _userNotes;
-	if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
+	YAML::YamlRootNodeWriter writer(1000000); //1MB starting buffer
+	writer.setAsMap();
+	writer.write("difficulty", _difficulty);
+	writer.write("end", _end);
+	writer.write("monthsPassed", _monthsPassed);
+	writer.write("daysPassed", _daysPassed);
+	writer.write("vehiclesLost", _vehiclesLost);
+	writer.write("graphRegionToggles", _graphRegionToggles);
+	writer.write("graphCountryToggles", _graphCountryToggles);
+	writer.write("graphFinanceToggles", _graphFinanceToggles);
+	writer.write("rng", RNG::getSeed());
+	writer.write("funds", _funds);
+	writer.write("loyalty", _loyalty);
+	writer.write("lastMonthsLoyalty", _lastMonthsLoyalty);
+	writer.write("maintenance", _maintenance);
+	writer.write("userNotes", _userNotes);
+	if (Options::oxceGeoscapeDebugLogMaxEntries > 0 && _geoscapeDebugLog.size() > 0)
 	{
-		if (_geoscapeDebugLog.size() > (size_t)Options::oxceGeoscapeDebugLogMaxEntries)
+		auto geoDebugLog = writer["geoscapeDebugLog"];
+		geoDebugLog.setAsSeq();
+		size_t lastEntriesToWrite = std::min(_geoscapeDebugLog.size(), (size_t)Options::oxceGeoscapeDebugLogMaxEntries);
+		for (size_t j = _geoscapeDebugLog.size() - lastEntriesToWrite; j < _geoscapeDebugLog.size(); ++j)
+			geoDebugLog.write(_geoscapeDebugLog[j]);
+	}
+
+	writer.write("researchScores", _researchScores);
+	writer.write("incomes", _incomes);
+	writer.write("expenditures", _expenditures);
+	writer.write("warned", _warned);
+	writer.write("togglePersonalLight", _togglePersonalLight);
+	writer.write("toggleNightVision", _toggleNightVision);
+	writer.write("toggleBrightness", _toggleBrightness);
+	writer.write("globeLon", _globeLon);
+	writer.write("globeLat", _globeLat);
+	writer.write("globeZoom", _globeZoom);
+	writer.write("ids", _ids);
+
+	saveVector(writer, _countries, "countries", mod->getScriptGlobal());
+	saveVector(writer, _regions, "regions");
+	saveVector(writer, _bases, "bases");
+	saveVector(writer, _waypoints, "waypoints");
+	saveVector(writer, _missionSites, "missionSites");
+	// Alien bases must be saved before alien missions.
+	saveVector(writer, _alienBases, "alienBases");
+	// Missions must be saved before UFOs, but after alien bases.
+	saveVector(writer, _activeMissions, "alienMissions");
+	// UFOs must be after missions
+	saveVector(writer, _ufos, "ufos", mod->getScriptGlobal(), getMonthsPassed() == -1);
+	saveVector(writer, _geoscapeEvents, "geoscapeEvents");
+	saveVector(writer, _diplomacyFactions, "diplomacyFactions");
+	writer.write("performedCovertOperations", _performedOperations);
+	if (!_discovered.empty())
+	{
+		auto discoveredWriter = writer["discovered"];
+		discoveredWriter.setAsSeq();
 		{
-			for (size_t j = _geoscapeDebugLog.size() - (size_t)Options::oxceGeoscapeDebugLogMaxEntries; j < _geoscapeDebugLog.size(); ++j)
+			auto discoveredCopy = _discovered;
+			std::sort(discoveredCopy.begin(), discoveredCopy.end(), [&](const RuleResearch* a, const RuleResearch* b)
+					  { return a->getName().compare(b->getName()) < 0; });
+			for (const auto* research : discoveredCopy)
 			{
-				node["geoscapeDebugLog"].push_back(_geoscapeDebugLog[j]);
+				discoveredWriter.write(research->getName());
 			}
 		}
-		else
-		{
-			node["geoscapeDebugLog"] = _geoscapeDebugLog;
-		}
 	}
-	node["researchScores"] = _researchScores;
-	node["incomes"] = _incomes;
-	node["expenditures"] = _expenditures;
-	node["warned"] = _warned;
-	node["togglePersonalLight"] = _togglePersonalLight;
-	node["toggleNightVision"] = _toggleNightVision;
-	node["toggleBrightness"] = _toggleBrightness;
-	node["globeLon"] = serializeDouble(_globeLon);
-	node["globeLat"] = serializeDouble(_globeLat);
-	node["globeZoom"] = _globeZoom;
-	node["ids"] = _ids;
-	for (const auto* country : _countries)
-	{
-		node["countries"].push_back(country->save(mod->getScriptGlobal()));
-	}
-	for (const auto* region : _regions)
-	{
-		node["regions"].push_back(region->save());
-	}
-	for (const auto* xbase : _bases)
-	{
-		node["bases"].push_back(xbase->save());
-	}
-	for (const auto* wp : _waypoints)
-	{
-		node["waypoints"].push_back(wp->save());
-	}
-	for (const auto* site : _missionSites)
-	{
-		node["missionSites"].push_back(site->save());
-	}
-	// Alien bases must be saved before alien missions.
-	for (const auto* ab : _alienBases)
-	{
-		node["alienBases"].push_back(ab->save());
-	}
-	// Missions must be saved before UFOs, but after alien bases.
-	for (const auto* am : _activeMissions)
-	{
-		node["alienMissions"].push_back(am->save());
-	}
-	// UFOs must be after missions
-	for (const auto* ufo : _ufos)
-	{
-		node["ufos"].push_back(ufo->save(mod->getScriptGlobal(), getMonthsPassed() == -1));
-	}
-	for (const auto* ge : _geoscapeEvents)
-	{
-		node["geoscapeEvents"].push_back(ge->save());
-	}
-	if (Options::oxceSortDiscoveredVectorByName)
-	{
-		auto discoveredCopy = _discovered;
-		std::sort(discoveredCopy.begin(), discoveredCopy.end(), [&](const RuleResearch* a, const RuleResearch* b) { return a->getName().compare(b->getName()) < 0; });
-		for (const auto* research : discoveredCopy)
-		{
-			node["discovered"].push_back(research->getName());
-		}
-	}
-	else
-	{
-		for (const auto* research : _discovered)
-		{
-			node["discovered"].push_back(research->getName());
-		}
-	}
-	for (const auto* research : _poppedResearch)
-	{
-		node["poppedResearch"].push_back(research->getName());
-	}
-	node["generatedEvents"] = _generatedEvents;
-	node["ufopediaRuleStatus"] = _ufopediaRuleStatus;
-	node["manufactureRuleStatus"] = _manufactureRuleStatus;
-	node["researchRuleStatus"] = _researchRuleStatus;
-	node["monthlyPurchaseLimitLog"] = _monthlyPurchaseLimitLog;
-	node["hiddenPurchaseItems"] = _hiddenPurchaseItemsMap;
-	node["customRuleCraftDeployments"] = _customRuleCraftDeployments;
-	node["alienStrategy"] = _alienStrategy->save();
-	for (const auto* soldier : _deadSoldiers)
-	{
-		node["deadSoldiers"].push_back(soldier->save(mod->getScriptGlobal()));
-	}
+	writer.write("poppedResearch", _poppedResearch,
+		[](YAML::YamlNodeWriter& w, const RuleResearch* r)
+		{ w.write(r->getName()); });
+	writer.write("generatedEvents", _generatedEvents);
+	writer.write("missionScriptsTimers", _missionScriptsTimers);
+	writer.write("eventScriptsTimers", _eventScriptsTimers);
+	writer.write("ufopediaRuleStatus", _ufopediaRuleStatus);
+	writer.write("manufactureRuleStatus", _manufactureRuleStatus);
+	writer.write("researchRuleStatus", _researchRuleStatus);
+	writer.write("monthlyPurchaseLimitLog", _monthlyPurchaseLimitLog);
+	writer.write("hiddenPurchaseItems", _hiddenPurchaseItemsMap);
+	writer.write("customRuleCraftDeployments", _customRuleCraftDeployments);
+	_alienStrategy->save(writer["alienStrategy"]);
+
+	saveVector(writer, _deadSoldiers, "deadSoldiers", mod->getScriptGlobal());
 	for (int j = 0; j < Options::oxceMaxEquipmentLayoutTemplates; ++j)
 	{
-		std::ostringstream oss;
-		oss << "globalEquipmentLayout" << j;
-		std::string key = oss.str();
 		if (!_globalEquipmentLayout[j].empty())
-		{
-			for (const auto* entry : _globalEquipmentLayout[j])
-				node[key].push_back(entry->save());
-		}
-		std::ostringstream oss2;
-		oss2 << "globalEquipmentLayoutName" << j;
-		std::string key2 = oss2.str();
+			saveVector(writer, _globalEquipmentLayout[j], writer.saveString("globalEquipmentLayout" + std::to_string(j)));
 		if (!_globalEquipmentLayoutName[j].empty())
-		{
-			node[key2] = _globalEquipmentLayoutName[j];
-		}
-		std::ostringstream oss3;
-		oss3 << "globalEquipmentLayoutArmor" << j;
-		std::string key3 = oss3.str();
+			writer.write(writer.saveString("globalEquipmentLayoutName" + std::to_string(j)), _globalEquipmentLayoutName[j]);
 		if (!_globalEquipmentLayoutArmor[j].empty())
-		{
-			node[key3] = _globalEquipmentLayoutArmor[j];
-		}
+			writer.write(writer.saveString("globalEquipmentLayoutArmor" + std::to_string(j)), _globalEquipmentLayoutArmor[j]);
 	}
 	for (int j = 0; j < MAX_CRAFT_LOADOUT_TEMPLATES; ++j)
 	{
-		std::ostringstream oss;
-		oss << "globalCraftLoadout" << j;
-		std::string key = oss.str();
 		if (!_globalCraftLoadout[j]->getContents()->empty())
-		{
-			node[key] = _globalCraftLoadout[j]->save();
-		}
-		std::ostringstream oss2;
-		oss2 << "globalCraftLoadoutName" << j;
-		std::string key2 = oss2.str();
+			_globalCraftLoadout[j]->save(writer[writer.saveString("globalCraftLoadout" + std::to_string(j))]);
 		if (!_globalCraftLoadoutName[j].empty())
-		{
-			node[key2] = _globalCraftLoadoutName[j];
-		}
+			writer.write(writer.saveString("globalCraftLoadoutName" + std::to_string(j)), _globalCraftLoadoutName[j]);
 	}
 	if (Options::soldierDiaries)
+		saveVector(writer, _missionStatistics, "missionStatistics");
+
+	if (!_autosales.empty())
 	{
-		for (const auto* ms : _missionStatistics)
+		auto autoSales = writer["autoSales"];
+		autoSales.setAsSeq();
 		{
-			node["missionStatistics"].push_back(ms->save());
+			std::vector<const RuleItem*> autosalesVector(_autosales.begin(), _autosales.end());
+			std::sort(autosalesVector.begin(), autosalesVector.end(), [&](const RuleItem* a, const RuleItem* b)
+				{ return a->getType().compare(b->getType()) < 0; });
+			for (const auto* sale : autosalesVector)
+			{
+				autoSales.write(sale->getType());
+			}
 		}
-	}
-	for (const auto* ruleItem : _autosales)
-	{
-		node["autoSales"].push_back(ruleItem->getName());
 	}
 	// snapshot of the user options (just for debugging purposes)
-	{
-		YAML::Node tmpNode;
-		for (const auto& info : Options::getOptionInfo())
-		{
-			info.save(tmpNode);
-		}
-		node["options"] = tmpNode;
-	}
-	if (_battleGame != 0)
-	{
-		node["battleGame"] = _battleGame->save();
-	}
-	_scriptValues.save(node, mod->getScriptGlobal());
+	auto optionsWriter = writer["options"];
+	optionsWriter.setAsMap();
+	for (const auto& optionInfo : Options::getOptionInfo())
+		optionInfo.save(optionsWriter);
 
-	out << node;
+	if (_battleGame)
+		_battleGame->save(writer["battleGame"]);
+	_scriptValues.save(writer.toBase(), mod->getScriptGlobal());
 
+	// concatenate header + separator + body
+	// per yaml standard, "bare documents" in a yaml "stream" can be separated by either a "document end" or "directives end" marker line
+	YAML::YamlString headerString = headerWriter.emit();
+	std::string directivesEndMarker = "---\n";
+	YAML::YamlString bodyString = writer.emit();
+	std::string finalString;
+	finalString.reserve(headerString.yaml.size() + directivesEndMarker.size() + bodyString.yaml.size());
+	finalString += headerString.yaml;
+	finalString	+= directivesEndMarker;
+	finalString += bodyString.yaml;
 
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	if (!CrossPlatform::writeFile(filepath, out.c_str()))
+	if (!CrossPlatform::writeFile(filepath, finalString))
 	{
 		throw Exception("Failed to save " + filepath);
 	}
@@ -1230,6 +1149,50 @@ void SavedGame::monthlyFunding()
 }
 
 /**
+ * Calculate monthly score and calcualte funds
+ * for FtA Game
+ */
+void SavedGame::monthlyScoring()
+{
+	auto baseMaintenance = getBaseMaintenance();
+	_funds.back() -= baseMaintenance;
+	_funds.push_back(_funds.back());
+	_maintenance.back() = baseMaintenance;
+	_maintenance.push_back(0);
+	_incomes.push_back(0);
+	_expenditures.push_back(baseMaintenance);
+	_researchScores.push_back(0);
+
+	if (_incomes.size() > 12)
+		_incomes.erase(_incomes.begin());
+	if (_expenditures.size() > 12)
+		_expenditures.erase(_expenditures.begin());
+	if (_researchScores.size() > 12)
+		_researchScores.erase(_researchScores.begin());
+	if (_funds.size() > 12)
+		_funds.erase(_funds.begin());
+	if (_maintenance.size() > 12)
+		_maintenance.erase(_maintenance.begin());
+}
+
+/**
+ *	Clears promotion flag on soldiers after revealing it to the player.
+ */
+void SavedGame::handlePromotionsPostprocessing()
+{
+	for (auto* base : _bases)
+	{
+		for (auto* soldier : *base->getSoldiers())
+		{
+			if (soldier->isPromoted())
+			{
+				soldier->setPromoted(false);
+			}
+		}
+	}
+}
+
+/**
  * Returns the current time of the game.
  * @return Pointer to the game time.
  */
@@ -1289,14 +1252,14 @@ int SavedGame::getLastId(const std::string& name)
  * Increase a custom counter.
  * @param name Counter name.
  */
-void SavedGame::increaseCustomCounter(const std::string& name)
+void SavedGame::increaseCustomCounter(const std::string& name, int value)
 {
 	if (!name.empty())
 	{
 		auto i = _ids.find(name);
 		if (i != _ids.end())
 		{
-			i->second++;
+			i->second += value;
 		}
 		else
 		{
@@ -1309,7 +1272,7 @@ void SavedGame::increaseCustomCounter(const std::string& name)
  * Decrease a custom counter.
  * @param name Counter name.
  */
-void SavedGame::decreaseCustomCounter(const std::string& name)
+void SavedGame::decreaseCustomCounter(const std::string& name, int value)
 {
 	if (!name.empty())
 	{
@@ -1317,9 +1280,9 @@ void SavedGame::decreaseCustomCounter(const std::string& name)
 		if (i != _ids.end())
 		{
 			// don't go below "zero" (which is saved as one)
-			if (i->second > 1)
+			if (i->second > value)
 			{
-				i->second--;
+				i->second -= value;
 			}
 		}
 		else
@@ -1542,6 +1505,20 @@ const std::map<std::string, bool> &SavedGame::getHiddenPurchaseItems()
 }
 
 /*
+ * Checks for and removes a covert operation from the "performed operation" list
+ * @param operation is the operation we are checking for and removing, if necessary.
+ */
+void SavedGame::removePerformedCovertOperation(const std::string& operation)
+{
+	bool erased = false;
+	std::vector<std::string>::iterator r = std::find(_performedOperations.begin(), _performedOperations.end(), operation);
+	if (r != _performedOperations.end()) {
+		_performedOperations.erase(r);
+		erased = true; }
+	if (!erased) { Log(LOG_ERROR) << "Covert Operation named " << operation << " was not deleted from <performed operation> list!";	}
+}
+
+ /*
  * Selects a "getOneFree" topic for the given research rule.
  * @param research Pointer to the given research rule.
  * @return Pointer to the selected getOneFree topic. Nullptr, if nothing was selected.
@@ -1557,14 +1534,14 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 			{
 				continue; // skip disabled topics
 			}
-			if (!isResearched(free, false))
+			if (!isResearched(free, false) || selectGetOneFree(free) != nullptr)
 			{
 				possibilities.push_back(free);
 			}
 		}
 		for (auto& pair : research->getGetOneFreeProtected())
 		{
-			if (isResearched(pair.first, false))
+			if (isResearched(pair.first, false) || selectGetOneFree(pair.first))
 			{
 				for (auto* res : pair.second)
 				{
@@ -1607,12 +1584,15 @@ void SavedGame::removeDiscoveredResearch(const RuleResearch * research)
 }
 
 /**
- * Add a ResearchProject to the list of already discovered ResearchProject
- * @param research The newly found ResearchProject
+ * Make all research discovered (used in New Battle)
+ * @param mod the game Mod
  */
-void SavedGame::addFinishedResearchSimple(const RuleResearch * research)
+void SavedGame::makeAllResearchDiscovered(const Mod* mod)
 {
-	_discovered.push_back(research);
+	for (auto& pair : mod->getResearchMap())
+	{
+		_discovered.push_back(pair.second);
+	}
 	sortReserchVector(_discovered);
 }
 
@@ -1647,8 +1627,12 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 		bool checkRelatedZeroCostTopics = true;
 		if (!isResearched(currentQueueItem, false))
 		{
-			_discovered.push_back(currentQueueItem);
-			sortReserchVector(_discovered);
+			if (!research->isRepeatable())
+			{
+				_discovered.push_back(currentQueueItem);
+				sortReserchVector(_discovered);
+			}
+
 			if (!hasUndiscoveredProtectedUnlocks && !hasAnyUndiscoveredGetOneFrees)
 			{
 				// If the currentQueueItem can't tell you anything anymore, remove it from popped research
@@ -1659,6 +1643,7 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			if (score)
 			{
 				addResearchScore(currentQueueItem->getPoints());
+				_game->getMasterMind()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
 			}
 			// process "disables"
 			for (const auto* dis : currentQueueItem->getDisabled())
@@ -1762,6 +1747,50 @@ const std::vector<const RuleResearch *> & SavedGame::getDiscoveredResearch() con
 }
 
 /**
+ * Does this item correspond to at least one research topic that can be researched now or in the future?
+ */
+bool SavedGame::isResearchable(const RuleItem* item, const Mod* mod) const
+{
+	for (const auto& pair : mod->getResearchMap())
+	{
+		if (pair.second->needItem() && pair.second->getNeededItem() == item)
+		{
+			// This research topic is "permanently" disabled, ignore it!
+			if (isResearchRuleStatusDisabled(pair.first))
+			{
+				continue;
+			}
+
+			if (isResearched(pair.second, false))
+			{
+				if (hasUndiscoveredGetOneFree(pair.second, false))
+				{
+					// This research topic still has some more undiscovered non-disabled "getOneFree" topics, keep it!
+					return true;
+				}
+				else if (hasUndiscoveredProtectedUnlock(pair.second))
+				{
+					// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
+					return true;
+				}
+				else
+				{
+					// This topic can't give you anything else anymore, ignore it!
+					continue;
+				}
+			}
+			else
+			{
+				// This research topic is not yet researched, keep it!
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Get the list of RuleResearch which can be researched in a Base.
  * @param projects the list of ResearchProject which are available.
  * @param mod the game Mod
@@ -1792,6 +1821,12 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		}
 
 		RuleResearch *research = pair.second;
+
+		// This research topic is hidden, don't ever show it to the player!
+		if (research->isHidden())
+		{
+			continue;
+		}
 
 		if ((considerDebugMode && _debug) || haveReserchVector(unlocked, research))
 		{
@@ -1827,6 +1862,12 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 			else if (hasUndiscoveredProtectedUnlock(research))
 			{
 				// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
+			}
+			else if (isFtAGame()
+				&& research->needItem()
+				&& (!research->getRandomEvents().empty() || !research->getSpawnedEvent().empty()))
+			{
+				// FtA logic: also let the player research items that can spawn events on being researched.
 			}
 			else
 			{
@@ -2748,8 +2789,14 @@ int SavedGame::selectSoldierNationalityByLocation(const Mod* mod, const RuleSold
 				++nationality;
 			}
 
+			// the modder wants to have regional name pools, but didn't provide any, sigh
+			if (totalFilteredNamePoolWeight < 1)
+			{
+				return -1; // let's just ignore the modder's unfulfillable wish
+			}
+
 			// select the nationality from the filtered pool, by weight
-			int tmp = RNG::generate(0, totalFilteredNamePoolWeight);
+			int tmp = RNG::generate(1, totalFilteredNamePoolWeight);
 			for (const auto& namepoolPair : filteredNames)
 			{
 				if (tmp <= namepoolPair.first->getGlobalWeight())
@@ -2883,6 +2930,76 @@ void SavedGame::addGeneratedEvent(const RuleEvent* event)
 bool SavedGame::wasEventGenerated(const std::string& eventName)
 {
 	return (_generatedEvents.find(eventName) != _generatedEvents.end());
+}
+
+/*
+ * Remembers that this mission script command should not be spawned before timer would drop
+ * @param name is the mission script command we want to remember
+ */
+void SavedGame::setMissionScriptGapTimer(const std::string& name, int timer)
+{
+	if (timer > 0)
+	{
+		_missionScriptsTimers[name] += timer;
+	}
+}
+
+/*
+ * Checks if this mission script command has positive gap timer
+ * @param name is the mission script command name we are checking for
+ * @return whether or not it is in the list of timed commands.
+ */
+bool SavedGame::getMissionScriptGapped(const std::string& name)
+{
+	return (_missionScriptsTimers.find(name) != _missionScriptsTimers.end());
+}
+
+/*
+ * Reducing mission script timers and cleans missionScriptsTimers list if needed.
+ */
+void SavedGame::handleMissionScriptTimers()
+{
+	for (auto it = _missionScriptsTimers.cbegin(); it != _missionScriptsTimers.cend();)
+	{
+		if ((*it).second < 1)
+		{
+			it = _missionScriptsTimers.erase(it);
+		}
+		else
+		{
+			_missionScriptsTimers.at((*it).first) -= 1;
+			++it;
+		}
+	}
+}
+
+void SavedGame::setEventScriptGapTimer(const std::string& name, int timer)
+{
+	if (timer > 0)
+	{
+		_eventScriptsTimers[name] += timer;
+	}
+}
+
+bool SavedGame::getEventScriptGapped(const std::string& name)
+{
+	return (_eventScriptsTimers.find(name) != _eventScriptsTimers.end());
+}
+
+void SavedGame::handleEventScriptTimers()
+{
+	for (auto it = _eventScriptsTimers.cbegin(); it != _eventScriptsTimers.cend();)
+	{
+		if ((*it).second < 1)
+		{
+			it = _eventScriptsTimers.erase(it);
+		}
+		else
+		{
+			_eventScriptsTimers.at((*it).first) -= 1;
+			++it;
+		}
+	}
 }
 
 /**
@@ -3290,6 +3407,14 @@ bool SavedGame::spawnEvent(const RuleEvent* eventRules)
 	return true;
 }
 
+bool SavedGame::spawnEvent(std::vector<std::string> eventNames, const Mod* mod)
+{
+	size_t pickEvent = RNG::generate(0, eventNames.size() - 1);
+	auto eventName = eventNames.at(pickEvent);
+
+	return spawnEvent(mod->getEvent(eventName));
+}
+
 /**
  * Checks if an instant Geoscape event can be spawned.
  */
@@ -3425,14 +3550,18 @@ void SavedGame::handlePrimaryResearchSideEffects(const std::vector<const RuleRes
 		// 3l. handle spawned events
 		RuleEvent* spawnedEventRule = mod->getEvent(myResearchRule->getSpawnedEvent());
 		spawnEvent(spawnedEventRule);
+		// 3l.2 and also random events from weighted list
+		RuleEvent* randomEventRule = mod->getEvent(myResearchRule->getRandomEvents().choose(), true); // take random
+		spawnEvent(randomEventRule);
+
 		// 3m. handle counters
 		for (auto& inc : myResearchRule->getIncreaseCounter())
 		{
-			increaseCustomCounter(inc);
+			increaseCustomCounter(inc, myResearchRule->getCounterValue());
 		}
 		for (auto& dec : myResearchRule->getDecreaseCounter())
 		{
-			decreaseCustomCounter(dec);
+			decreaseCustomCounter(dec, myResearchRule->getCounterValue());
 		}
 	}
 }
@@ -3479,6 +3608,19 @@ void randomChanceScript(RNG::RandomState* rs, int& val)
 		val = 0;
 	}
 }
+
+void getLoyaltyScript(SavedGame* sg, int& val)
+{
+	if (sg)
+	{
+		val = sg->getLoyalty();
+	}
+	else
+	{
+		val = 0;
+	}
+}
+
 
 void randomRangeScript(RNG::RandomState* rs, int& val, int min, int max)
 {
@@ -3618,6 +3760,16 @@ void isResearchedScript(const SavedGame* sg, int& val, const RuleResearch* name)
 	val = 0;
 }
 
+bool filterCountryConstScript(const SavedGame*, const Country*)
+{
+	return true;
+}
+
+bool filterCountryScript(SavedGame*, Country*)
+{
+	return true;
+}
+
 std::string debugDisplayScript(const SavedGame* p)
 {
 	if (p)
@@ -3645,6 +3797,7 @@ std::string debugDisplayScript(const SavedGame* p)
  */
 void SavedGame::ScriptRegister(ScriptParserBase* parser)
 {
+	parser->registerPointerType<Country>();
 
 	{
 		const auto name = std::string{ "RandomState" };
@@ -3679,8 +3832,14 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 
 	sgg.add<&getTimeScript>("getTime", "Get global time that is Greenwich Mean Time");
 	sgg.add<&getRandomScript>("getRandomState");
+	sgg.add<&getLoyaltyScript>("getLoyalty");
 
 	sgg.add<&difficultyLevelScript>("difficultyLevel", "Get difficulty level");
+	sgg.add<&SavedGame::getMonthsPassed>("getMonthsPassed", "Number of months passed from start");
+	sgg.add<&SavedGame::getDaysPassed>("getDaysPassed", "Number of days passed from start");
+
+	sgg.addList<&filterCountryConstScript, &SavedGame::_countries>("getCountries");
+	sgg.addList<&filterCountryScript, &SavedGame::_countries>("getCountries");
 
 	sgg.add<&isResearchedScript>("isResearched");
 

@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include <list>
+#include <map>
 
 namespace OpenXcom
 {
@@ -35,7 +36,11 @@ class Craft;
 class Ufo;
 class MissionSite;
 class Base;
+class ResearchProject;
+class Soldier;
 class RuleMissionScript;
+class RuleEvent;
+class AlienBase;
 
 /**
  * Geoscape screen which shows an overview of
@@ -53,15 +58,17 @@ private:
 	InteractiveSurface *_btnRotateLeft, *_btnRotateRight, *_btnRotateUp, *_btnRotateDown, *_btnZoomIn, *_btnZoomOut;
 	Text *_txtFunds, *_txtHour, *_txtHourSep, *_txtMin, *_txtMinSep, *_txtSec, *_txtWeekday, *_txtDay, *_txtMonth, *_txtYear;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
-	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
+	bool _pause, _zoomInEffectDone, _zoomOutEffectDone, _fta;
 	Text *_txtDebug;
-	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea, *_cbxCountry;
+	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea;
 	Text *_txtSlacking;
+	Text *_txtTraining;
 	std::list<State*> _popups;
 	std::list<DogfightState*> _dogfights, _dogfightsToBeStarted;
 	std::vector<Craft*> _activeCrafts;
 	size_t _minimizedDogfights;
 	int _slowdownCounter;
+	std::vector<Soldier*> _promotedSoldiers;
 
 	/// Update list of active crafts.
 	const std::vector<Craft*>* updateActiveCrafts();
@@ -70,7 +77,6 @@ private:
 	void cbxZoneChange(Action *action);
 	void cbxAreaChange(Action *action);
 	void updateZoneInfo();
-	void cbxCountryChange(Action *action);
 
 public:
 	/// Creates the Geoscape state.
@@ -171,8 +177,6 @@ public:
 	/// Multi-dogfights logic handling.
 	void handleDogfights();
 	void handleDogfightMultiAction(int button);
-	/// Dogfight experience handling.
-	void handleDogfightExperience();
 	/// Gets the number of minimized dogfights.
 	int minimizedDogfightsCount();
 	/// Starts a new dogfight.
@@ -187,13 +191,16 @@ public:
 	void handleBaseDefense(Base *base, Ufo *ufo);
 	/// Update the resolution settings, we just resized the window.
 	void resize(int &dX, int &dY) override;
-private:
+	std::vector<Soldier*> getPromotedSolders() { return _promotedSoldiers; }
 	/// Handle alien mission generation.
-	void determineAlienMissions();
+	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* eventRules = nullptr);
+private:
+	bool attemptAlienRaceEvolution(int month, AlienBase* ab) const;
 	/// Process each individual mission script command.
 	bool processCommand(RuleMissionScript *command);
 	bool buttonsDisabled();
 	void updateSlackingIndicator();
+	void handleResearch(Base *base);
 };
 
 }

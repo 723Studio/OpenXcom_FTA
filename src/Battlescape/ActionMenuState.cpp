@@ -31,6 +31,7 @@
 #include "PrimeGrenadeState.h"
 #include "MedikitState.h"
 #include "ScannerState.h"
+#include "HackingState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
@@ -38,6 +39,7 @@
 #include "Pathfinding.h"
 #include "TileEngine.h"
 #include "../Interface/Text.h"
+#include "../Savegame/BattleObject.h"
 
 namespace OpenXcom
 {
@@ -188,7 +190,14 @@ ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(a
 	{
 		addItem(BA_USE, weapon->getPsiAttackName().empty() ? "STR_USE_MIND_PROBE" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
 	}
-
+	else if (weapon->getBattleType() == BT_HACKING)
+	{
+		addItem(BA_HACK, weapon->getPsiAttackName().empty() ? "STR_USE_HACKING_TOOL" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
+	}
+	else if (weapon->getBattleType() == BT_SAMPLING)
+	{
+		addItem(BA_SAMPLE, weapon->getPsiAttackName().empty() ? "STR_USE_SAMPLING_TOOL" : weapon->getPsiAttackName(), &id, Options::keyBattleActionItem1);
+	}
 }
 
 /**
@@ -246,12 +255,20 @@ void ActionMenuState::handle(Action *action)
 	{
 		_game->popState();
 	}
-	else if (action->getDetails()->type == SDL_KEYDOWN &&
-		(action->getDetails()->key.keysym.sym == Options::keyCancel ||
-		action->getDetails()->key.keysym.sym == Options::keyBattleUseLeftHand ||
-		action->getDetails()->key.keysym.sym == Options::keyBattleUseRightHand))
+	else if (action->getDetails()->type == SDL_KEYDOWN)
 	{
-		_game->popState();
+		auto key = action->getDetails()->key.keysym.sym;
+		if (key == Options::keyCancel || key == Options::keyBattleUseLeftHand || key == Options::keyBattleUseRightHand)
+		{
+			if (key != Options::keyBattleActionItem1 &&
+				key != Options::keyBattleActionItem2 &&
+				key != Options::keyBattleActionItem3 &&
+				key != Options::keyBattleActionItem4 &&
+				key != Options::keyBattleActionItem5)
+			{
+				_game->popState();
+			}
+		}
 	}
 }
 
@@ -456,6 +473,117 @@ void ActionMenuState::handleAction()
 			{
 				_game->popState();
 			}
+		}
+		else if (_action->type == BA_HACK && weapon->getBattleType() == BT_HACKING)
+		{
+			// check beforehand if we have enough time units
+			if (!_action->haveTU(&_action->result))
+			{
+				//nothing
+			}
+			else
+			{
+				_action->targeting = true;
+				newHitLog = true;
+			}
+			_game->popState();
+		}
+		else if (_action->type == BA_SAMPLE && weapon->getBattleType() == BT_SAMPLING && _action->actor->getGeoscapeSoldier())
+		{
+			BattleUnit* unit = _action->actor;
+			Soldier* soldier = unit->getGeoscapeSoldier();
+			BattleObject* object = unit->getTile()->getBattleObject();
+			if (object == nullptr)
+			{
+				TileEngine* tileEngine = _game->getSavedGame()->getSavedBattle()->getTileEngine();
+				if (tileEngine->validMeleeRange(unit->getPosition(), unit->getDirection(), unit, 0, &_action->target, false))
+				{
+					object = _game->getSavedGame()->getSavedBattle()->getTile(_action->target)->getBattleObject();
+				}
+			}
+
+			auto rules = object ? object->getRules() : nullptr;
+			if (rules && !object->wasUsed())
+			{
+				int defence = rules->getSamplingDefence();
+				if (defence > 0)
+				{
+					if (_action->spendTU(&_action->result))
+					{
+						auto stats = unit->getBaseStats();
+						int power = weapon->getSamplingPower();
+						if (rules->getUseType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
+						{
+							power += stats->biology;
+						}
+						else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+						{
+							power += stats->physics;
+						}
+						
+						if (soldier && soldier->getRoleRank(ROLE_SCIENTIST) < 1)
+							power /= 2;
+
+						if (RNG::generate(0, power) >= defence) //we succeed in sampling!
+						{
+							std::vector<RuleEvent*> events;
+							bool result = false;
+							for (auto gEvent : rules->getSpawnedEvents())
+							{
+								auto eventRule = _game->getMod()->getEvent(gEvent);
+								if (eventRule)
+								{
+									events.push_back(eventRule);
+								}
+							}
+							if (!events.empty())
+							{
+								RuleEvent* ruleEvent = events[RNG::generate(0, events.size() - 1)];
+								_game->getSavedGame()->spawnEvent(ruleEvent);
+								result = true;
+							}
+
+							RuleItem* itemRule = _game->getMod()->getItem(object->getRules()->getSpawnedItem());
+							if (itemRule)
+							{
+								_game->getSavedGame()->getSavedBattle()->createItemForTile(itemRule, unit->getTile());
+								result = true;
+							}
+
+							if (result)
+							{
+								_action->result = "STR_SAMPLES_GATHERED";
+
+								if (rules->getUseType() == BATTLE_OBJECT_BIOLOGY_SAMPLING)
+								{
+									unit->addBiologyExp();
+								}
+								else if (rules->getUseType() == BATTLE_OBJECT_ANOMALY_SAMPLING)
+								{
+									unit->addPhysicsExp();
+								}
+
+								if (soldier && soldier->isRookieScientist())
+								{
+									soldier->addExperience(ROLE_SCIENTIST, RNG::generate(5, 10), "sampling");
+									soldier->setRookieScientist(false);
+								}
+							}
+						}
+						else
+						{
+							_action->result = "STR_SAMPLES_GATHERING_FAILED";
+						}
+
+						object->setWasUsed(true);
+					}
+				}
+			}
+			else
+			{
+				_action->result = "STR_NOTHING_TO_GATHER";
+			}
+		_game->popState();
 		}
 		else if (_action->type == BA_LAUNCH)
 		{

@@ -26,6 +26,8 @@ class TextButton;
 class Window;
 class Text;
 class TextList;
+class Base;
+class Soldier;
 
 /**
  * Promotions screen that displays new soldier ranks.
@@ -37,13 +39,17 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtBase;
 	TextList *_lstSoldiers;
-public:
+	std::vector<std::pair<Base*, Soldier*>> _filteredListOfSoldiers;
+	bool _fta = false;
+  public:
 	/// Creates the Promotions state.
-	PromotionsState();
+	PromotionsState(bool clearPromotions = false);
 	/// Cleans up the Promotions state.
 	~PromotionsState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Soldiers list.
+	void lstSoldiersClick(Action *action);
 };
 
 }

@@ -165,14 +165,17 @@ void GlobalManufactureState::onOpenTechTreeViewer(Action *)
 
 	if (selectedTopic)
 	{
-		if (_game->isCtrlPressed())
+		if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
 		{
-			std::string articleId = selectedTopic->getName();
-			Ufopaedia::openArticle(_game, articleId);
-		}
-		else
-		{
-			_game->pushState(new TechTreeViewerState(0, selectedTopic));
+			if (_game->isCtrlPressed())
+			{
+				std::string articleId = selectedTopic->getName();
+				Ufopaedia::openArticle(_game, articleId);
+			}
+			else
+			{
+				_game->pushState(new TechTreeViewerState(0, selectedTopic));
+			}
 		}
 	}
 }
@@ -259,7 +262,7 @@ void GlobalManufactureState::fillProductionList()
 
 		availableEngineers += xbase->getAvailableEngineers();
 		allocatedEngineers += xbase->getAllocatedEngineers();
-		freeWorkshops += xbase->getFreeWorkshops();
+		freeWorkshops += xbase->getFreeWorkshops(_game->getMod()->isFTAGame());
 	}
 
 	_txtAvailable->setText(tr("STR_ENGINEERS_AVAILABLE").arg(availableEngineers));

@@ -20,6 +20,7 @@
 #include "../Engine/Exception.h"
 #include "../Engine/RNG.h"
 #include <climits>
+#include <set>
 
 namespace OpenXcom
 {
@@ -31,7 +32,8 @@ namespace OpenXcom
 RuleMissionScript::RuleMissionScript(const std::string &type) :
 	_type(type), _firstMonth(0), _lastMonth(-1), _label(0), _executionOdds(100),
 	_targetBaseOdds(0), _minDifficulty(0), _maxDifficulty(4), _maxRuns(-1), _avoidRepeats(0), _delay(0), _randomDelay(0),
-	_minScore(INT_MIN), _maxScore(INT_MAX), _minFunds(INT64_MIN), _maxFunds(INT64_MAX),
+	_minScore(INT_MIN), _maxScore(INT_MAX), _minLoyalty(INT_MIN), _maxLoyalty(INT_MAX), _allowedProcessor(0), _spawnGap(0),
+	_randomSpawnGap(0), _minFunds(INT64_MIN), _maxFunds(INT64_MAX), _counterMin(INT_MIN), _counterMax(INT_MAX), 
 	_useTable(true), _siteType(false)
 {
 }
@@ -59,67 +61,69 @@ RuleMissionScript::~RuleMissionScript()
  * Loads a missionScript from a YML file.
  * @param node the node within the file we're reading.
  */
-void RuleMissionScript::load(const YAML::Node& node)
+void RuleMissionScript::load(const YAML::YamlNodeReader& node)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent);
 	}
 
-	_varName = node["varName"].as<std::string>(_varName);
-	_firstMonth = node["firstMonth"].as<int>(_firstMonth);
-	_lastMonth = node["lastMonth"].as<int>(_lastMonth);
-	_label = node["label"].as<unsigned int>(_label);
-	_executionOdds = node["executionOdds"].as<int>(_executionOdds);
-	_targetBaseOdds = node["targetBaseOdds"].as<int>(_targetBaseOdds);
-	_minDifficulty = node["minDifficulty"].as<int>(_minDifficulty);
-	_maxDifficulty = node["maxDifficulty"].as<int>(_maxDifficulty);
-	_maxRuns = node["maxRuns"].as<int>(_maxRuns);
-	_avoidRepeats = node["avoidRepeats"].as<int>(_avoidRepeats);
-	_delay = node["startDelay"].as<int>(_delay);
-	_randomDelay = node["randomDelay"].as<int>(_randomDelay);
-	_minScore = node["minScore"].as<int>(_minScore);
-	_maxScore = node["maxScore"].as<int>(_maxScore);
-	_minFunds = node["minFunds"].as<int64_t>(_minFunds);
-	_maxFunds = node["maxFunds"].as<int64_t>(_maxFunds);
-	_missionVarName = node["missionVarName"].as<std::string>(_missionVarName);
-	_missionMarkerName = node["missionMarkerName"].as<std::string>(_missionMarkerName);
-	_counterMin = node["counterMin"].as<int>(_counterMin);
-	_counterMax = node["counterMax"].as<int>(_counterMax);
-	_conditionals = node["conditionals"].as<std::vector<int> >(_conditionals);
-	if (const YAML::Node &weights = node["missionWeights"])
+	reader.tryRead("varName", _varName);
+	reader.tryRead("firstMonth", _firstMonth);
+	reader.tryRead("lastMonth", _lastMonth);
+	reader.tryRead("label", _label);
+	reader.tryRead("executionOdds", _executionOdds);
+	reader.tryRead("targetBaseOdds", _targetBaseOdds);
+	reader.tryRead("minDifficulty", _minDifficulty);
+	reader.tryRead("maxDifficulty", _maxDifficulty);
+	reader.tryRead("maxRuns", _maxRuns);
+	reader.tryRead("avoidRepeats", _avoidRepeats);
+	reader.tryRead("startDelay", _delay);
+	reader.tryRead("randomDelay", _randomDelay);
+	reader.tryRead("minScore", _minScore);
+	reader.tryRead("maxScore", _maxScore);
+	reader.tryRead("minLoyalty", _minLoyalty);
+	reader.tryRead("maxLoyalty", _maxLoyalty);
+	reader.tryRead("requiredReputation", _requiredReputation);
+	reader.tryRead("allowedProcessor", _allowedProcessor); //0 - monthly only, 1 - faction only
+	reader.tryRead("spawnGap", _spawnGap);
+	reader.tryRead("randomSpawnGap", _randomSpawnGap);
+	reader.tryRead("minFunds", _minFunds);
+	reader.tryRead("maxFunds", _maxFunds);
+	reader.tryRead("missionVarName", _missionVarName);
+	reader.tryRead("missionMarkerName", _missionMarkerName);
+	reader.tryRead("counterMin", _counterMin);
+	reader.tryRead("counterMax", _counterMax);
+	reader.tryRead("conditionals", _conditionals);
+	reader.tryRead("adhocMissionScriptTags", _adhocMissionScriptTags);
+	for (const auto& monthWeights : reader["missionWeights"].children())
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
-		{
-			WeightedOptions *nw = new WeightedOptions();
-			nw->load(nn->second);
-			_missionWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
-		}
+		WeightedOptions* nw = new WeightedOptions();
+		nw->load(monthWeights);
+		_missionWeights.push_back(std::make_pair(monthWeights.readKey<size_t>(0), nw));
 	}
-	if (const YAML::Node &weights = node["raceWeights"])
+	for (const auto& monthWeights : reader["raceWeights"].children())
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
-		{
-			WeightedOptions *nw = new WeightedOptions();
-			nw->load(nn->second);
-			_raceWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
-		}
+		WeightedOptions* nw = new WeightedOptions();
+		nw->load(monthWeights);
+		_raceWeights.push_back(std::make_pair(monthWeights.readKey<size_t>(0), nw));
 	}
-	if (const YAML::Node &weights = node["regionWeights"])
+	for (const auto& monthWeights : reader["regionWeights"].children())
 	{
-		for (YAML::const_iterator nn = weights.begin(); nn != weights.end(); ++nn)
-		{
-			WeightedOptions *nw = new WeightedOptions();
-			nw->load(nn->second);
-			_regionWeights.push_back(std::make_pair(nn->first.as<size_t>(0), nw));
-		}
+		WeightedOptions* nw = new WeightedOptions();
+		nw->load(monthWeights);
+		_regionWeights.push_back(std::make_pair(monthWeights.readKey<size_t>(0), nw));
 	}
-	_researchTriggers = node["researchTriggers"].as<std::map<std::string, bool> >(_researchTriggers);
-	_itemTriggers = node["itemTriggers"].as<std::map<std::string, bool> >(_itemTriggers);
-	_facilityTriggers = node["facilityTriggers"].as<std::map<std::string, bool> >(_facilityTriggers);
-	_xcomBaseInRegionTriggers = node["xcomBaseInRegionTriggers"].as<std::map<std::string, bool> >(_xcomBaseInRegionTriggers);
-	_xcomBaseInCountryTriggers = node["xcomBaseInCountryTriggers"].as<std::map<std::string, bool> >(_xcomBaseInCountryTriggers);
-	_useTable = node["useTable"].as<bool>(_useTable);
+
+	reader.tryRead("researchTriggers", _researchTriggers);
+	reader.tryRead("itemTriggers", _itemTriggers);
+	reader.tryRead("facilityTriggers", _facilityTriggers);
+	reader.tryRead("soldierTypeTriggers", _soldierTypeTriggers);
+	reader.tryRead("xcomBaseInRegionTriggers", _xcomBaseInRegionTriggers);
+	reader.tryRead("xcomBaseInCountryTriggers", _xcomBaseInCountryTriggers);
+
+	reader.tryRead("useTable", _useTable);
 	if (_varName.empty() && (_maxRuns > 0 || _avoidRepeats > 0))
 	{
 		throw Exception("Error in mission script: " + _type +": no varName provided for a script with maxRuns or repeatAvoidance.");

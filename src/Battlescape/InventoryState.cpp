@@ -24,6 +24,7 @@
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include "../Basescape/SoldierDiaryLightState.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
@@ -105,10 +106,13 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
+	_ftaUI = _game->getMod()->isFTAGame();
+
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_soldier = new Surface(320, 200, 0, 0);
 	_txtPosition = new Text(70, 9, 65, 95);
+	_txtNameStatic = new Text(210, 17, 28, 6);
 	_txtName = new TextEdit(this, 210, 17, 28, 6);
 	_txtTus = new Text(40, 9, 245, 24);
 	_txtWeight = new Text(70, 9, 245, 24);
@@ -127,7 +131,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnArmor = new BattlescapeButton(RuleInventory::PAPERDOLL_W, RuleInventory::PAPERDOLL_H, RuleInventory::PAPERDOLL_X, RuleInventory::PAPERDOLL_Y);
 	_btnCreateTemplate = new BattlescapeButton(32, 22, _templateBtnX, _createTemplateBtnY);
 	_btnApplyTemplate = new BattlescapeButton(32, 22, _templateBtnX, _applyTemplateBtnY);
-	Element* pixelShift = _game->getMod()->getInterface("inventory")->getElement("buttonLinks");
+	const Element* pixelShift = _game->getMod()->getInterface("inventory")->getElementOptional("buttonLinks");
 	if (pixelShift && pixelShift->TFTDMode)
 	{
 		_btnLinks = new BattlescapeButton(23, 22, 213, 0);
@@ -147,10 +151,11 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	// Set up objects
 	_game->getMod()->getSurface("TAC01.SCR")->blitNShade(_bg, 0, 0);
-	add(_btnArmor, "buttonOK", "inventory", _bg);
+	add(_btnArmor, "buttonArmor", "inventory", _bg);
 
 	add(_soldier);
 	add(_btnQuickSearch, "textItem", "inventory");
+	add(_txtNameStatic, "textName", "inventory", _bg);
 	add(_txtName, "textName", "inventory", _bg);
 	add(_txtTus, "textTUs", "inventory", _bg);
 	add(_txtWeight, "textWeight", "inventory", _bg);
@@ -184,10 +189,22 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_txtPosition->setHighContrast(true);
 
+	_txtNameStatic->setBig();
+	_txtNameStatic->setHighContrast(true);
+
 	_txtName->setBig();
 	_txtName->setHighContrast(true);
 	_txtName->onChange((ActionHandler)&InventoryState::edtSoldierChange);
 	_txtName->onMousePress((ActionHandler)&InventoryState::edtSoldierPress);
+
+	if (Options::oxceLinksDisableTextEdit)
+	{
+		_txtName->setVisible(false);
+	}
+	else
+	{
+		_txtNameStatic->setVisible(false);
+	}
 
 	_txtTus->setHighContrast(true);
 
@@ -252,6 +269,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickForward, Options::keyBattleRight);
 
 	_btnRank->onMouseClick((ActionHandler)&InventoryState::btnRankClick);
+	_btnRank->onMouseClick((ActionHandler)&InventoryState::btnRankClickRight, SDL_BUTTON_RIGHT);
 	_btnRank->setTooltip("STR_UNIT_STATS");
 	_btnRank->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnRank->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
@@ -293,7 +311,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_game->getMod()->getSurface("oxceLinksInv")->blitNShade(_btnLinks, 0, 0);
 	_btnLinks->initSurfaces();
-	_btnLinks->setVisible(Options::oxceLinks && !_tu);
+	_btnLinks->setVisible(Options::oxceLinks);
 
 	// only use copy/paste buttons in setup (i.e. non-tu) mode
 	if (_tu)
@@ -312,6 +330,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_inv->onMouseClick((ActionHandler)&InventoryState::invClick, 0);
 	_inv->onMouseOver((ActionHandler)&InventoryState::invMouseOver);
 	_inv->onMouseOut((ActionHandler)&InventoryState::invMouseOut);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_WHEELDOWN);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_WHEELUP);
 
 	if (_battleGame->getDebugMode() && _game->isShiftPressed())
 	{
@@ -442,15 +462,26 @@ void InventoryState::init()
 		_txtPosition->setText(tr("STR_SLOT").arg(unitSlot).arg(totalSlots));
 	}
 
+	_txtNameStatic->setBig();
+	_txtNameStatic->setText(unit->getName(_game->getLanguage()));
+
 	_txtName->setBig();
 	_txtName->setText(unit->getName(_game->getLanguage()));
 
-	_btnLinks->setVisible(Options::oxceLinks && !_tu);
+	_btnLinks->setVisible(Options::oxceLinks);
 
 	bool resetGroundOffset = _tu;
+	static bool s_prevUnitIsSummoned = false;
 	if (unit->isSummonedPlayerUnit())
 	{
 		resetGroundOffset = true; // this unit is likely not standing on the shared inventory tile, just re-arrange it every time
+		s_prevUnitIsSummoned = true; // when we switch between units we need to remember which is summoned (for FtA missions)
+	}
+	else
+	{
+		if (s_prevUnitIsSummoned)  // if we switch back from a summoned unit during the starting equipment phase (FtA possibility) we require re-arrangement. In other cases it's already set to re-arrange.
+			resetGroundOffset = true;
+		s_prevUnitIsSummoned = false;
 	}
 	_inv->setSelectedUnit(unit, resetGroundOffset);
 	Soldier *s = unit->getGeoscapeSoldier();
@@ -492,8 +523,13 @@ void InventoryState::init()
 			_reloadUnit = false;
 		}
 
+		SoldierRole role = s->getBestRole();
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
 		auto* frame = texture->getFrame(s->getRankSpriteBattlescape());
+		if (_ftaUI)
+		{
+			frame = texture->getFrame(s->getRoleRankSpriteBattlescape(role));
+		}
 		if (frame)
 		{
 			frame->blitNShade(_btnRank, 0, 0);
@@ -596,7 +632,7 @@ void InventoryState::edtSoldierPress(Action *action)
 		if (unit != 0)
 		{
 			Soldier *s = unit->getGeoscapeSoldier();
-			if (s)
+			if (s && !_game->getMod()->isFTAGame())
 			{
 				// set the soldier's name without a statstring
 				_txtName->setText(s->getName());
@@ -616,7 +652,7 @@ void InventoryState::edtSoldierChange(Action *)
 	if (unit != 0)
 	{
 		Soldier *s = unit->getGeoscapeSoldier();
-		if (s)
+		if (s && !_game->getMod()->isFTAGame())
 		{
 			// set the soldier's name
 			s->setName(_txtName->getText());
@@ -633,7 +669,7 @@ void InventoryState::updateStats()
 {
 	BattleUnit *unit = _battleGame->getSelectedUnit();
 
-	_txtTus->setText(tr("STR_TIME_UNITS_SHORT").arg(unit->getTimeUnits()));
+	_txtTus->setText(tr(UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_SHORT)).arg(unit->getTimeUnits()));
 
 	int weight = unit->getCarriedWeight(_inv->getSelectedItem());
 	_txtWeight->setText(tr("STR_WEIGHT").arg(weight).arg(unit->getBaseStats()->strength));
@@ -653,39 +689,60 @@ void InventoryState::updateStats()
 	}
 	bool showPsiStrength = (psiSkillWithoutAnyBonuses > 0 || (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
 
+	bool ftaGame = _game->getMod()->isFTAGame();
+
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{
-		Element *element = _game->getMod()->getInterface("inventory")->getElement(elementId);
+		const Element *element = _game->getMod()->getInterface("inventory")->getElementOptional(elementId);
 		if (element)
 		{
 			switch (element->custom)
 			{
 				case 1:
-					txtField->setText(tr("STR_ACCURACY_SHORT").arg(unit->getBaseStats()->firing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
 				case 2:
-					txtField->setText(tr("STR_REACTIONS_SHORT").arg(unit->getBaseStats()->reactions));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->reactions));
 					break;
 				case 3:
-					if (psiSkillWithoutAnyBonuses > 0)
-						txtField->setText(tr("STR_PSIONIC_SKILL_SHORT").arg(unit->getBaseStats()->psiSkill));
+					if (ftaGame)
+					{
+						txtField->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
+						break;
+					}
 					else
-						txtField->setText("");
-					break;
+					{
+						if (psiSkillWithoutAnyBonuses > 0)
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
+						else
+							txtField->setText("");
+						break;
+					}
 				case 4:
-					if (showPsiStrength)
-						txtField->setText(tr("STR_PSIONIC_STRENGTH_SHORT").arg(unit->getBaseStats()->psiStrength));
+					if (ftaGame)
+					{
+						if (psiSkillWithoutAnyBonuses > 0)
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
+						else
+							txtField->setText("");
+						break;
+					}
 					else
-						txtField->setText("");
-					break;
+					{
+						if (showPsiStrength)
+							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiStrength, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiStrength));
+						else
+							txtField->setText("");
+						break;
+					}
 				case 11:
-					txtField->setText(tr("STR_FIRING_SHORT").arg(unit->getBaseStats()->firing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
 				case 12:
-					txtField->setText(tr("STR_THROWING_SHORT").arg(unit->getBaseStats()->throwing));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->throwing));
 					break;
 				case 13:
-					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
 					if (showPsiStrength)
@@ -764,6 +821,23 @@ void InventoryState::btnArmorClick(Action *action)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// but we can reuse this for quickly dropping an item (as a Ctrl+L-click alternative)
+		if (Options::oxceInventoryDropItemOverPaperdoll)
+		{
+			if (_inv->quickDrop())
+			{
+				// hide selected item info
+				invMouseOut(action);
+
+				// refresh ui
+				_inv->arrangeGround();
+				updateStats();
+				refreshMouse();
+
+				// give audio feedback
+				_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
+			}
+		}
 		return;
 	}
 
@@ -799,6 +873,10 @@ void InventoryState::btnArmorClick(Action *action)
  */
 void InventoryState::btnArmorClickRight(Action *action)
 {
+	if (_game->getMod()->isFTAGame())
+	{
+		return;
+	}
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
@@ -941,10 +1019,16 @@ bool InventoryState::tryArmorChange(const std::string& armorName)
 				armorAvailable = false;
 			}
 		}
-		// does the armor fit on the current unit?
-		if (!next->getCanBeUsedBy(soldier->getRules()))
+		if (armorAvailable)
 		{
-			armorAvailable = false;
+			// refresh soldier's _bonusCache, needed below in Armor::getCanBeUsedBy()
+			//soldier->getBonuses(_game->getMod());
+
+			// does the armor fit on the current unit?
+			if (!next->getCanBeUsedBy(soldier))
+			{
+				armorAvailable = false;
+			}
 		}
 	}
 
@@ -1089,8 +1173,14 @@ void InventoryState::btnInventorySaveClick(Action *)
  */
 void InventoryState::btnUfopaediaClick(Action *)
 {
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+
+	// don't accept clicks when moving items or pedia loked
+	if (_inv->getSelectedItem() != 0 || !ftaUnlocked)
 	{
 		return;
 	}
@@ -1229,7 +1319,18 @@ void InventoryState::btnQuickSearchApply(Action *)
  */
 void InventoryState::btnGroundClickForward(Action *action)
 {
-	if (_game->isShiftPressed())
+	bool scrollBackwards = _game->isShiftPressed();
+	if (Options::oxceInventorySplitScrollButton)
+	{
+		double mx = action->getAbsoluteXMouse();
+		if (mx <= _btnGround->getX() + (_btnGround->getWidth() / 2.0))
+		{
+			// clicked on the left half of the button
+			scrollBackwards = true;
+		}
+	}
+
+	if (scrollBackwards)
 	{
 		// scroll backwards
 		_inv->arrangeGround(-1);
@@ -1266,6 +1367,25 @@ void InventoryState::btnRankClick(Action *)
 	_game->pushState(new UnitInfoState(_battleGame->getSelectedUnit(), _parent, true, false));
 }
 
+void InventoryState::btnRankClickRight(Action* action)
+{
+	// don't accept clicks when moving items
+	if (_inv->getSelectedItem() != 0)
+	{
+		return;
+	}
+
+	BattleUnit* unit = _inv->getSelectedUnit();
+	if (unit)
+	{
+		Soldier* s = unit->getGeoscapeSoldier();
+		if (s)
+		{
+			_game->pushState(new SoldierInfoStateFtA(0, s));
+		}
+	}
+}
+
 void InventoryState::_createInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
 {
 	// copy inventory instead of just keeping a pointer to it.  that way
@@ -1294,6 +1414,10 @@ void InventoryState::btnLinksClick(Action *)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// but we can reuse this for ufopedia (as an M-click alternative)
+		std::string articleId = _inv->getSelectedItem()->getRules()->getUfopediaType();
+		Ufopaedia::openArticle(_game, articleId);
+
 		return;
 	}
 
@@ -1534,12 +1658,22 @@ void InventoryState::_applyInventoryTemplate(std::vector<EquipmentLayoutItem*> &
 		}
 
 		// check if the slot is not occupied already (e.g. by a fixed weapon)
-		if (matchedWeapon && !_inv->overlapItems(
-			unit,
-			matchedWeapon,
-			equipmentLayoutItem->getSlot(),
-			equipmentLayoutItem->getSlotX(),
-			equipmentLayoutItem->getSlotY()))
+		if (matchedWeapon && (
+				!_inv->overlapItems(
+					unit,
+					matchedWeapon,
+					_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true),
+					equipmentLayoutItem->getSlotX(),
+					equipmentLayoutItem->getSlotY()
+				) ||
+				_inv->canBeStacked(
+					matchedWeapon,
+					unit->getItem(_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true), equipmentLayoutItem->getSlotX(), equipmentLayoutItem->getSlotY()),
+					_game->getMod()->getInventory(equipmentLayoutItem->getSlot()->getId(), true),
+					equipmentLayoutItem->getSlotX(),
+					equipmentLayoutItem->getSlotY()
+				)
+			))  // I'd really want to make this fragment more readable and reduce repeated function calls, but don't want to mess with the original code too much
 		{
 			// move matched item from ground to the appropriate inventory slot
 			matchedWeapon->moveToOwner(unit);
@@ -1621,7 +1755,14 @@ void InventoryState::btnApplyPersonalTemplateClick(Action *)
 
 		auto& personalTemplate = *unit->getGeoscapeSoldier()->getPersonalEquipmentLayout();
 
-		_applyInventoryTemplate(personalTemplate);
+		if (personalTemplate.empty())
+		{
+			_inv->showWarning(tr("STR_PERSONAL_EQUIPMENT_NOT_DEFINED"));
+		}
+		else
+		{
+			_applyInventoryTemplate(personalTemplate);
+		}
 
 		// refresh ui
 		_inv->arrangeGround();
@@ -1687,6 +1828,11 @@ void InventoryState::onAutoequip(Action *)
 	if (_inv->getSelectedItem() != 0)
 	{
 		return;
+	}
+
+	if (_game->getMod()->isFTAGame())
+	{
+		return; //#FINNIKTODO: repair stacking and allowed/forbidden categories for armor on this stupid auitoequip
 	}
 
 	BattleUnit               *unit          = _battleGame->getSelectedUnit();
@@ -1934,7 +2080,7 @@ void InventoryState::invMouseOver(Action *)
 			_mouseHoverItem = nullptr;
 			updateTemplateButtons(!_tu);
 			std::string s;
-			if (item->getAmmoQuantity() != 0 && item->getRules()->getBattleType() == BT_AMMO)
+			if (item->getRules()->getBattleType() == BT_AMMO && (item->getAmmoQuantity() != 0 || item->getRules()->isAmmoRechargeable()))
 			{
 				s = tr("STR_AMMO_ROUNDS_LEFT").arg(item->getAmmoQuantity());
 			}

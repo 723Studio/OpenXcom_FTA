@@ -171,10 +171,30 @@ BattleUnit *Inventory::getSelectedUnit() const
 void Inventory::setSelectedUnit(BattleUnit *unit, bool resetGroundOffset)
 {
 	_selUnit = unit;
+	updateUnitItems();
+
 	if (resetGroundOffset)
 	{
 		_groundOffset = 9999;
 		arrangeGround(1);
+	}
+}
+
+
+void Inventory::updateUnitItems()
+{
+	for (std::map<std::string, std::map<int, std::map<int, int> > >::iterator i = _stackLevel.begin(), next_it = i; i != _stackLevel.end(); i = next_it)
+	{
+		++next_it;
+		if (i->first != "STR_GROUND")
+		{
+			_stackLevel.erase(i);
+		}
+	}
+
+	for (std::vector<BattleItem*>::iterator i = _selUnit->getInventory()->begin(); i != _selUnit->getInventory()->end(); ++i)
+	{
+		_stackLevel[(*i)->getSlot()->getId()][(*i)->getSlotX()][(*i)->getSlotY()] += 1;
 	}
 }
 
@@ -319,6 +339,8 @@ void Inventory::drawItems()
 	if (_selUnit != 0)
 	{
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
+		Surface stackLayer(getWidth(), getHeight(), 0, 0);
+		stackLayer.setPalette(getPalette());
 		// Soldier items
 		for (auto* invItem : *_selUnit->getInventory())
 		{
@@ -366,10 +388,8 @@ void Inventory::drawItems()
 			{
 				primers(x, y, invItem->isFuseEnabled());
 			}
+			drawStackNumber(invItem, color, stackLayer);
 		}
-
-		Surface stackLayer(getWidth(), getHeight(), 0, 0);
-		stackLayer.setPalette(getPalette());
 
 		// Ground items
 		int fatalWounds = 0;
@@ -448,23 +468,47 @@ void Inventory::drawItems()
 				_stackNumber->blit(stackLayer.getSurface());
 			}
 
-			// item stacking
-			if (_stackLevel[groundItem->getSlotX()][groundItem->getSlotY()] > 1)
-			{
-				_stackNumber->setX((groundItem->getSlot()->getX() + ((groundItem->getSlotX() + groundItem->getRules()->getInventoryWidth()) - _groundOffset) * RuleInventory::SLOT_W)-4);
-				if (_stackLevel[groundItem->getSlotX()][groundItem->getSlotY()] > 9)
-				{
-					_stackNumber->setX(_stackNumber->getX()-4);
-				}
-				_stackNumber->setY((groundItem->getSlot()->getY() + (groundItem->getSlotY() + groundItem->getRules()->getInventoryHeight()) * RuleInventory::SLOT_H)-6);
-				_stackNumber->setValue(_stackLevel[groundItem->getSlotX()][groundItem->getSlotY()]);
-				_stackNumber->draw();
-				_stackNumber->setColor(color);
-				_stackNumber->blit(stackLayer.getSurface());
-			}
+			// draw item stack number
+			drawStackNumber(groundItem, color, stackLayer);
 		}
 
 		stackLayer.blitNShade(_items, 0, 0);
+	}
+}
+
+/**
+ * Draws stack number on given item
+ */
+void Inventory::drawStackNumber(BattleItem *battleItem, Uint8 color, Surface &stackLayer)
+{
+	int slotX = battleItem->getSlotX();
+	int slotY = battleItem->getSlotY();
+	int invX = battleItem->getSlot()->getX();
+	int invY = battleItem->getSlot()->getY();
+	int invWidth = battleItem->getRules()->getInventoryWidth();
+	int invHeight = battleItem->getRules()->getInventoryHeight();
+	const std::string &inventoryId = battleItem->getSlot()->getId();
+	if (_stackLevel[inventoryId][slotX][slotY] > -1000 && _stackLevel[inventoryId][slotX][slotY] > 1)
+	{
+		int stackX;
+		if (inventoryId == "STR_GROUND") // we need ground offset for items behind visible range that require scrolling
+		{
+			stackX = (invX + ((slotX + invWidth) - _groundOffset) * RuleInventory::SLOT_W) - 4;
+		}
+		else // soldier inventory is always on screen so ground offset is not applicable
+		{
+			stackX = (invX + ((slotX + invWidth)) * RuleInventory::SLOT_W) - 4;
+		}
+		if (_stackLevel[inventoryId][slotX][slotY] > 9)
+		{
+			stackX -= 4;
+		}
+		_stackNumber->setX(stackX);
+		_stackNumber->setY((invY + (slotY + invHeight) * RuleInventory::SLOT_H)-6);
+		_stackNumber->setValue(_stackLevel[inventoryId][slotX][slotY]);
+		_stackNumber->draw();
+		_stackNumber->setColor(color);
+		_stackNumber->blit(stackLayer.getSurface());
 	}
 }
 
@@ -506,6 +550,7 @@ std::vector<std::vector<char>>* Inventory::clearOccupiedSlotsCache()
 void Inventory::moveItem(BattleItem *item, const RuleInventory *slot, int x, int y)
 {
 	_game->getSavedGame()->getSavedBattle()->getTileEngine()->itemMoveInventory(_selUnit->getTile(), _selUnit, item, slot, x, y);
+	_stackLevel[slot->getId()][x][y] += 1;
 }
 
 /**
@@ -579,10 +624,7 @@ void Inventory::setSelectedItem(BattleItem *item)
 	_selItem = (item && !item->getRules()->isFixed()) ? item : 0;
 	if (_selItem)
 	{
-		if (_selItem->getSlot()->getType() == INV_GROUND)
-		{
-			_stackLevel[_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
-		}
+		_stackLevel[_selItem->getSlot()->getId()][_selItem->getSlotX()][_selItem->getSlotY()] -= 1;
 	}
 	else
 	{
@@ -709,6 +751,11 @@ void Inventory::mouseClick(Action *action, State *state)
 				BattleItem *item = _selUnit->getItem(slot, x, y);
 				if (item != 0)
 				{
+					if (!item->getRules()->canBeEquippedInBattle() && _tu)
+					{
+						_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_CHANGE_INVENTORY"));
+						return;
+					}
 					if (_game->isShiftPressed())
 					{
 						bool quickUnload = false;
@@ -754,7 +801,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							// B1 - default slot by item
 							if (!placed)
 							{
-								_stackLevel[item->getSlotX()][item->getSlotY()] -= 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] -= 1;
 
 								if (item->getRules()->getDefaultInventorySlot() && item->getRules()->getDefaultInventorySlot()->getType() != INV_GROUND)
 								{
@@ -790,7 +837,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							if (!placed)
 							{
 								// reset
-								_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] += 1;
 								newSlot = _inventorySlotGround;
 
 								switch (item->getRules()->getBattleType())
@@ -820,13 +867,8 @@ void Inventory::mouseClick(Action *action, State *state)
 
 						if (newSlot->getType() != INV_GROUND)
 						{
-							// A1 - vanilla default attempt
-							if (!placed)
-							{
-								_stackLevel[item->getSlotX()][item->getSlotY()] -= 1;
-
-								placed = fitItem(newSlot, item, warning);
-							}
+							_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] -= 1;
+							placed = fitItem(newSlot, item, warning);
 
 							if (!placed)
 							{
@@ -867,7 +909,7 @@ void Inventory::mouseClick(Action *action, State *state)
 							}
 							if (!placed)
 							{
-								_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
+								_stackLevel[item->getSlot()->getId()][item->getSlotX()][item->getSlotY()] += 1;
 							}
 						}
 						else
@@ -914,26 +956,66 @@ void Inventory::mouseClick(Action *action, State *state)
 					x += _groundOffset;
 				}
 				BattleItem *item = _selUnit->getItem(slot, x, y);
-
-				bool canStack = slot->getType() == INV_GROUND && canBeStacked(item, _selItem);
-
-				// Check if this inventory section supports the item
-				if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
+				bool canStack = (slot->getType() == INV_GROUND && canBeStacked(item, _selItem)) || (canBeStacked(item, _selItem, slot, x, y));
+				// If item can be stacked, update slot coordinates to existing item
+				if (item && canStack)
 				{
-					_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION"));
+					x = item->getSlotX();
+					y = item->getSlotY();
 				}
-				// Put item in empty slot, or stack it, if possible.
-				else if (item == 0 || item == _selItem || canStack)
+				// Check if this inventory section and armor supports the item
+				if (slot->getType() != INV_GROUND)
 				{
-					if (!overlapItems(_selUnit, _selItem, slot, x, y) && slot->fitItemInSlot(_selItem->getRules(), x, y))
+					if (!_selItem->getRules()->canBePlacedIntoInventorySection(slot))
+					{
+						_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_PLACE_ITEM_INTO_THIS_SECTION"));
+						return;
+					}
+					// Check if the unit's armor rules allows to use this item category
+					Armor* armor = nullptr;
+					Soldier* soldier = _selUnit->getGeoscapeSoldier();
+					if (soldier)
+					{
+						armor = soldier->getArmor();
+					}
+
+					if (armor)
+					{
+						if (!armor->getAllowedItemCategories().empty())
+						{
+							auto firstMatch = std::find_first_of(_selItem->getRules()->getCategories().begin(), _selItem->getRules()->getCategories().end(),
+																 _selUnit->getArmor()->getAllowedItemCategories().begin(), _selUnit->getArmor()->getAllowedItemCategories().end());
+
+							if (firstMatch == _selItem->getRules()->getCategories().end())
+							{
+								_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_USE_THIS_ITEM"));
+								return;
+							}
+						}
+						else if (!armor->getForbiddenItemCategoiries().empty())
+						{// Now check if the unit's armor rules forbids to use this item category
+							auto firstMatch = std::find_first_of(_selItem->getRules()->getCategories().begin(), _selItem->getRules()->getCategories().end(),
+																 _selUnit->getArmor()->getForbiddenItemCategoiries().begin(), _selUnit->getArmor()->getForbiddenItemCategoiries().end());
+
+							if (firstMatch != _selItem->getRules()->getCategories().end())
+							{
+								_warning->showMessage(_game->getLanguage()->getString("STR_CANNOT_USE_THIS_ITEM"));
+								return;
+							}
+						}
+					}
+				}
+				
+				
+				// Put item in empty slot, or stack it, if possible.
+				if (item == 0 || item == _selItem || canStack)
+				{
+					// If item fits into an empty slot or can be stacked try moving it there
+					if ((!overlapItems(_selUnit, _selItem, slot, x, y) && slot->fitItemInSlot(_selItem->getRules(), x, y)) || canStack)
 					{
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getMoveToCost(slot)))
 						{
 							moveItem(_selItem, slot, x, y);
-							if (slot->getType() == INV_GROUND)
-							{
-								_stackLevel[x][y] += 1;
-							}
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 						}
@@ -942,23 +1024,10 @@ void Inventory::mouseClick(Action *action, State *state)
 							_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
 						}
 					}
-					else if (canStack)
-					{
-						if (!_tu || _selUnit->spendTimeUnits(_selItem->getMoveToCost(slot)))
-						{
-							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
-							setSelectedItem(0);
-							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-						}
-						else
-						{
-							_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
-						}
-					}
+					// else do nothing and exit "if (slot != 0)" section: we can't fit an item in the selected slot or stack it with anything.
 				}
 				// Put item in weapon
-				else if (item->isWeaponWithAmmo())
+				else if (item && item->isWeaponWithAmmo())
 				{
 					int slotAmmo = item->getRules()->getSlotForAmmo(_selItem->getRules());
 					if (slotAmmo == -1)
@@ -969,8 +1038,25 @@ void Inventory::mouseClick(Action *action, State *state)
 					{
 						// 4. the cost of loading the weapon with the new ammo (from the offhand)
 						int tuCost = item->getRules()->getTULoad(slotAmmo);
-
-						if (Mod::EXTENDED_ITEM_RELOAD_COST && _selItem->getSlot()->getType() != INV_HAND)
+						bool extendedItemReloadCost = false;
+						if (item->getRules()->getExtendedItemReloadCostLocal() != 0)
+						{
+							if ((item->getRules()->getExtendedItemReloadCostLocal() == 1))
+							{
+								extendedItemReloadCost = true;
+							}
+							else if ((item->getRules()->getExtendedItemReloadCostLocal() == 2))
+							{
+								extendedItemReloadCost = false;
+							}
+							if (extendedItemReloadCost && _selItem->getSlot()->getType() != INV_HAND)
+							{
+								// 3. the cost of moving the new ammo from the current slot to the offhand
+								// Note: the cost for left/right hand might *NOT* be the same, but using the right hand "by definition"
+								tuCost += _selItem->getSlot()->getCost(_inventorySlotRightHand);
+							}
+						}
+						else if (Mod::EXTENDED_ITEM_RELOAD_COST && _selItem->getSlot()->getType() != INV_HAND)
 						{
 							// 3. the cost of moving the new ammo from the current slot to the offhand
 							// Note: the cost for left/right hand might *NOT* be the same, but using the right hand "by definition"
@@ -1077,12 +1163,11 @@ void Inventory::mouseClick(Action *action, State *state)
 				{
 					x += _groundOffset;
 					BattleItem *item = _selUnit->getItem(slot, x, y);
-					if (canBeStacked(item, _selItem))
+					if (canBeStacked(item, _selItem, slot, x, y))
 					{
 						if (!_tu || _selUnit->spendTimeUnits(_selItem->getMoveToCost(slot)))
 						{
 							moveItem(_selItem, slot, item->getSlotX(), item->getSlotY());
-							_stackLevel[item->getSlotX()][item->getSlotY()] += 1;
 							setSelectedItem(0);
 							_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 						}
@@ -1099,7 +1184,7 @@ void Inventory::mouseClick(Action *action, State *state)
 	{
 		if (_selItem == 0)
 		{
-			if (!_base || Options::includePrimeStateInSavedLayout)
+			if (!_base && Options::includePrimeStateInSavedLayout)
 			{
 				if (!_tu)
 				{
@@ -1120,25 +1205,31 @@ void Inventory::mouseClick(Action *action, State *state)
 							{
 								if (item->getFuseTimer() == -1)
 								{
-									// Prime that grenade!
-									if (fuseType == BFT_SET)
+									if (item->getRules()->getCostPrime().Time > 0)
 									{
-										_game->pushState(new PrimeGrenadeState(0, true, item));
-									}
-									else
-									{
-										_warning->showMessage(_game->getLanguage()->getString(item->getRules()->getPrimeActionMessage()));
-										item->setFuseTimer(item->getRules()->getFuseTimerDefault());
-										arrangeGround();
-										playSound(item->getRules()->getPrimeSound()); // prime sound
+										// Prime that grenade!
+										if (fuseType == BFT_SET)
+										{
+											_game->pushState(new PrimeGrenadeState(0, true, item));
+										}
+										else
+										{
+											_warning->showMessage(_game->getLanguage()->getString(item->getRules()->getPrimeActionMessage()));
+											item->setFuseTimer(item->getRules()->getFuseTimerDefault());
+											arrangeGround();
+											playSound(item->getRules()->getPrimeSound()); // prime sound
+										}
 									}
 								}
 								else
 								{
-									_warning->showMessage(_game->getLanguage()->getString(item->getRules()->getUnprimeActionMessage()));
-									item->setFuseTimer(-1);  // Unprime the grenade
-									arrangeGround();
-									playSound(item->getRules()->getUnprimeSound()); // unprime sound
+									if (item->getRules()->getCostUnprime().Time > 0 /* && !item->getRules()->getUnprimeActionName().empty() */ )
+									{
+										_warning->showMessage(_game->getLanguage()->getString(item->getRules()->getUnprimeActionMessage()));
+										item->setFuseTimer(-1);  // Unprime the grenade
+										arrangeGround();
+										playSound(item->getRules()->getUnprimeSound()); // unprime sound
+									}
 								}
 							}
 						}
@@ -1152,9 +1243,10 @@ void Inventory::mouseClick(Action *action, State *state)
 		}
 		else
 		{
-			if (_selItem->getSlot()->getType() == INV_GROUND)
+			const RuleInventory* slot = _selItem->getSlot();
+			if (slot->getType() == INV_GROUND || canBeStacked(_selItem, _selItem, slot, _selItem->getSlotX(), _selItem->getSlotY()))
 			{
-				_stackLevel[_selItem->getSlotX()][_selItem->getSlotY()] += 1;
+				_stackLevel[slot->getId()][_selItem->getSlotX()][_selItem->getSlotY()] += 1;
 			}
 			// Return item to original position
 			setSelectedItem(0);
@@ -1183,6 +1275,29 @@ void Inventory::mouseClick(Action *action, State *state)
 		}
 	}
 	InteractiveSurface::mouseClick(action, state);
+}
+
+/**
+ * Quickly drops the selected item on the ground.
+ * @return The success of the item being dropped.
+ */
+bool Inventory::quickDrop()
+{
+	if (_selUnit && _selItem)
+	{
+		if (!_tu || _selUnit->spendTimeUnits(_selItem->getMoveToCost(_inventorySlotGround)))
+		{
+			moveItem(_selItem, _inventorySlotGround, 0, 0);
+			setSelectedItem(0);
+			return true;
+		}
+		else
+		{
+			_warning->showMessage(_game->getLanguage()->getString("STR_NOT_ENOUGH_TIME_UNITS"));
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -1216,6 +1331,10 @@ bool Inventory::unload(bool quickUnload)
 			return false;
 		}
 		if (_selItem->getRules()->getFuseTimerType() == BFT_NONE)
+		{
+			return false;
+		}
+		if (_selItem->getRules()->getCostUnprime().Time == 0 /* || _selItem->getRules()->getUnprimeActionName().empty() */ )
 		{
 			return false;
 		}
@@ -1529,6 +1648,8 @@ void Inventory::arrangeGround(int alterOffset)
 			}
 		);
 
+		updateUnitItems();
+
 		// Now for each item type, find the most topleft position that is not occupied and will fit.
 		for (auto& bi2 : itemListOrder)
 		{
@@ -1592,7 +1713,7 @@ void Inventory::arrangeGround(int alterOffset)
 						{
 							bi3->setSlotX(x);
 							bi3->setSlotY(y);
-							_stackLevel[x][y] += 1;
+							_stackLevel[bi3->getSlot()->getId()][bi3->getSlotX()][bi3->getSlotY()] += 1;
 						}
 						donePlacing = true;
 					}
@@ -1619,6 +1740,7 @@ void Inventory::arrangeGround(int alterOffset)
 			} // end stacks for this item type
 		} // end of item types
 	}
+
 	if (alterOffset > 0)
 	{
 		if (_xMax >= _groundOffset + slotsX)
@@ -1664,34 +1786,103 @@ bool Inventory::fitItem(const RuleInventory *newSlot, BattleItem *item, std::str
 		return false;
 	}
 
+	// Check if we can equip this item after battle starts
+	if (!item->getRules()->canBeEquippedInBattle() && !_tu)
+	{
+		warning = "STR_CANNOT_PLACE_ITEM_WHILE_IN_COMBAT";
+		return false;
+	}
+
+	// Check if the unit's armor rules allows to use this item category
+	if (!_selUnit->getArmor()->getAllowedItemCategories().empty())
+	{
+		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
+											_selUnit->getArmor()->getAllowedItemCategories().begin(), _selUnit->getArmor()->getAllowedItemCategories().end());
+
+		if (firstMatch == item->getRules()->getCategories().end())
+		{
+			warning = "STR_CANNOT_USE_THIS_ITEM";
+			return false;
+		}
+	}
+	else if (!_selUnit->getArmor()->getForbiddenItemCategoiries().empty())
+	{// Now check if the unit's armor rules forbids to use this item category
+		auto firstMatch = std::find_first_of(item->getRules()->getCategories().begin(), item->getRules()->getCategories().end(),
+			_selUnit->getArmor()->getForbiddenItemCategoiries().begin(), _selUnit->getArmor()->getForbiddenItemCategoiries().end());
+
+		if (firstMatch != item->getRules()->getCategories().end())
+		{
+			warning = "STR_CANNOT_USE_THIS_ITEM";
+			return false;
+		}
+	}
+
 	bool placed = false;
+	bool canPlace = false;
 	int maxSlotX = 0;
 	int maxSlotY = 0;
-	for (const auto& slotInfo : *newSlot->getSlots())
+	int newSlotX, newSlotY;
+	// Search for existing stack of items of that type and see if we can increase it instead of making a new one.
+	// Remember slot, x and y if we have found suitable stack
+	for (std::vector<BattleItem*>::iterator itemInInventory = _selUnit->getInventory()->begin(); itemInInventory != _selUnit->getInventory()->end(); ++itemInInventory)
 	{
-		if (slotInfo.x > maxSlotX) maxSlotX = slotInfo.x;
-		if (slotInfo.y > maxSlotY) maxSlotY = slotInfo.y;
-	}
-	for (int y2 = 0; y2 <= maxSlotY && !placed; ++y2)
-	{
-		for (int x2 = 0; x2 <= maxSlotX && !placed; ++x2)
+		if ((*itemInInventory)->getRules()->getType() == item->getRules()->getType())
 		{
-			if (!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2))
+			const RuleInventory *itemSlot = (*itemInInventory)->getSlot();
+			int slotX = (*itemInInventory)->getSlotX();
+			int slotY = (*itemInInventory)->getSlotY();
+			if (canBeStacked(item, *itemInInventory, itemSlot, slotX, slotY))
 			{
-				if (!_tu || _selUnit->spendTimeUnits(item->getMoveToCost(newSlot)))
+				newSlot = itemSlot;
+				newSlotX = slotX;
+				newSlotY = slotY;
+				canPlace = true;
+				break;
+			}
+		}
+	}
+
+	if (!canPlace) // If there is no existing stack to fit the item, search for an empty slot
+	{
+		for (auto& j : *newSlot->getSlots())
+		{
+			if (j.x > maxSlotX) maxSlotX = j.x;
+			if (j.y > maxSlotY) maxSlotY = j.y;
+		}
+		for (int y2 = 0; y2 <= maxSlotY && !canPlace; ++y2)
+		{
+			for (int x2 = 0; x2 <= maxSlotX && !canPlace; ++x2)
+			{
+				// check if item fits in the slot and save slotX and slotY if it does
+				if (!overlapItems(_selUnit, item, newSlot, x2, y2) && newSlot->fitItemInSlot(item->getRules(), x2, y2))
 				{
-					placed = true;
-					moveItem(item, newSlot, x2, y2);
-					_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
-					drawItems();
-				}
-				else
-				{
-					warning = "STR_NOT_ENOUGH_TIME_UNITS";
+					newSlotX = x2;
+					newSlotY = y2;
+					canPlace = true;
 				}
 			}
 		}
 	}
+
+	if (!canPlace) // if no available slot is found then inventory is full
+	{
+		warning = "STR_NOT_ENOUGH_SPACE";
+		return false;
+	}
+
+	// finally if we've found a suitable slot and have enough time, try to place the item
+	if (!_tu || _selUnit->spendTimeUnits(item->getSlot()->getCost(newSlot)))
+	{
+		placed = true;
+		moveItem(item, newSlot, newSlotX, newSlotY);
+		_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
+		drawItems();
+	}
+	else
+	{
+		warning = "STR_NOT_ENOUGH_TIME_UNITS";
+	}
+
 	return placed;
 }
 
@@ -1701,7 +1892,7 @@ bool Inventory::fitItem(const RuleInventory *newSlot, BattleItem *item, std::str
  * @param itemB Second item.
  * @return True, if the items can be stacked on one another.
  */
-bool Inventory::canBeStacked(BattleItem *itemA, BattleItem *itemB)
+bool Inventory::canBeStacked(BattleItem* itemA, BattleItem* itemB)
 {
 	//both items actually exist
 	if (!itemA || !itemB) return false;
@@ -1736,6 +1927,24 @@ bool Inventory::canBeStacked(BattleItem *itemA, BattleItem *itemB)
 		itemA->getPainKillerQuantity() == itemB->getPainKillerQuantity() &&
 		itemA->getHealQuantity() == itemB->getHealQuantity() &&
 		itemA->getStimulantQuantity() == itemB->getStimulantQuantity());
+}
+
+/**
+ *Checks if two items can be stacked on one another in a soldier inventory slot.
+ * @param itemA First item.
+ * @param itemB Second item.
+ * @param ruleInventory Inventory slot
+ * @param x X position in slot.
+ * @param y Y position in slot.
+ * @return True, if the items can be stacked on one another.
+ */
+bool Inventory::canBeStacked(BattleItem *selItem, BattleItem *itemInInventory, const RuleInventory *inventorySlot, int x, int y)
+{
+	return (
+		canBeStacked(selItem, itemInInventory) &&
+		(itemInInventory->getRules()->getStackSize() > 1) && inventorySlot->getType() == INV_SLOT && // check if
+		_stackLevel[inventorySlot->getId()][x][y] < itemInInventory->getRules()->getStackSize()
+	);
 }
 
 /**

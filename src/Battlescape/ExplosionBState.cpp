@@ -262,6 +262,23 @@ void ExplosionBState::init()
 			{
 				_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
 			}
+
+			// update noise for enemy units
+			if (_parent->getSave()->isStealthMission())
+			{
+				for (BattleUnit *unit : *_parent->getSave()->getUnits())
+				{
+					if (unit->getFaction() == FACTION_HOSTILE && !unit->getUnitWarned() && !unit->isOut())
+					{
+						int soundRange = _radius + 35;
+						int dist = std::ceil(Position::distance(unit->getPosition(), _center.toTile()));
+						if (dist <= soundRange)
+						{
+							unit->setUnitWarned(true);
+						}
+					}
+				}
+			}
 		}
 		else
 		{
@@ -480,15 +497,20 @@ void ExplosionBState::explode()
 		_parent->statePushFront(new ExplosionBState(_parent, p, BattleActionAttack{ BA_NONE, _attack.attacker, }, t, false, 0, _explosionCounter + 1));
 	}
 
-	// Spawn a unit if the item does that
+	// Spawn a unit or an item if the item does that
 	if (_attack.damage_item)
 	{
-		_parent->spawnNewUnit(_attack, _before.toTile());
-	}
+		//handle unit spawn
+		if (_attack.damage_item->getRules()->getSpawnUnit())
+		{
+			_parent->spawnNewUnit(_attack, _before.toTile());
+		}
+		else if (!_attack.damage_item->getRules()->getSpawnedSoldier().empty())
+		{
+			_parent->spawnNewSoldier(_attack, _before.toTile());
+		}
 
-	// Spawn a item if the weapon does that
-	if (_attack.damage_item)
-	{
+		//handle item spawn
 		_parent->spawnNewItem(_attack, _before.toTile());
 	}
 }

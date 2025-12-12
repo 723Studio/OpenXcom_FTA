@@ -710,7 +710,17 @@ void Globe::center(double lon, double lat)
  */
 bool Globe::insideLand(double lon, double lat) const
 {
-	return (getPolygonFromLonLat(lon,lat))!=NULL;
+	auto* polygon = getPolygonFromLonLat(lon, lat);
+	if (!polygon)
+	{
+		return false;
+	}
+	auto* textureRule = _rules->getTexture(polygon->getTexture());
+	if (textureRule && textureRule->isCosmeticOcean())
+	{
+		return false;
+	}
+	return true;
 }
 
 /**
@@ -721,12 +731,12 @@ bool Globe::insideLand(double lon, double lat) const
  */
 bool Globe::insideFakeUnderwaterTexture(double lon, double lat) const
 {
-	auto polygon = getPolygonFromLonLat(lon, lat);
+	auto* polygon = getPolygonFromLonLat(lon, lat);
 	if (!polygon)
 	{
 		return false;
 	}
-	auto textureRule = _game->getMod()->getGlobe()->getTexture(polygon->getTexture());
+	auto* textureRule = _rules->getTexture(polygon->getTexture());
 	if (textureRule && textureRule->isFakeUnderwater())
 	{
 		return true;
@@ -1499,21 +1509,23 @@ void Globe::drawDetail()
 	{
 		int color;
 		canSwitchDebugType = true;
+		auto mod = _game->getMod();
 		if (debugType == 0)
 		{
 			color = 0;
-			for (auto* country : *_game->getSavedGame()->getCountries())
+			for (auto i : mod->getRegionsList())
 			{
-				if (_game->getSavedGame()->debugCountry && _game->getSavedGame()->debugCountry != country)
+				if (_game->getSavedGame()->debugRegion != i)
 					continue;
 
 				color += 10;
-				for (size_t k = 0; k != country->getRules()->getLatMax().size(); ++k)
+				auto region = mod->getRegion(i);
+				for (size_t k = 0; k != region->getLatMax().size(); ++k)
 				{
-					double lon2 = country->getRules()->getLonMax().at(k);
-					double lon1 = country->getRules()->getLonMin().at(k);
-					double lat2 = country->getRules()->getLatMax().at(k);
-					double lat1 = country->getRules()->getLatMin().at(k);
+					double lon2 = region->getLonMax().at(k);
+					double lon1 = region->getLonMin().at(k);
+					double lat2 = region->getLatMax().at(k);
+					double lat1 = region->getLatMin().at(k);
 
 					drawVHLine(_countries, lon1, lat1, lon2, lat1, color);
 					drawVHLine(_countries, lon1, lat2, lon2, lat2, color);
@@ -1524,37 +1536,15 @@ void Globe::drawDetail()
 		}
 		else if (debugType == 1)
 		{
-			color = 0;
-			for (auto* region : *_game->getSavedGame()->getRegions())
+			for (auto i : mod->getRegionsList())
 			{
-				if (_game->getSavedGame()->debugRegion && _game->getSavedGame()->debugRegion != region)
-					continue;
-
-				color += 10;
-				for (size_t k = 0; k != region->getRules()->getLatMax().size(); ++k)
-				{
-					double lon2 = region->getRules()->getLonMax().at(k);
-					double lon1 = region->getRules()->getLonMin().at(k);
-					double lat2 = region->getRules()->getLatMax().at(k);
-					double lat1 = region->getRules()->getLatMin().at(k);
-
-					drawVHLine(_countries, lon1, lat1, lon2, lat1, color);
-					drawVHLine(_countries, lon1, lat2, lon2, lat2, color);
-					drawVHLine(_countries, lon1, lat1, lon1, lat2, color);
-					drawVHLine(_countries, lon2, lat1, lon2, lat2, color);
-				}
-			}
-		}
-		else if (debugType == 2)
-		{
-			for (auto* region : *_game->getSavedGame()->getRegions())
-			{
-				if (_game->getSavedGame()->debugRegion && _game->getSavedGame()->debugRegion != region)
+				if (_game->getSavedGame()->debugRegion != i)
 					continue;
 
 				color = -1;
 				size_t zoneNumber = 0;
-				for (const auto& missionZone : region->getRules()->getMissionZones())
+				auto region = mod->getRegion(i);
+				for (const auto& missionZone : region->getMissionZones())
 				{
 					++zoneNumber;
 					if (_game->getSavedGame()->debugZone > 0 && _game->getSavedGame()->debugZone != zoneNumber)
@@ -1581,6 +1571,7 @@ void Globe::drawDetail()
 				}
 			}
 		}
+		
 	}
 	else
 	{
@@ -1678,7 +1669,7 @@ void Globe::drawFlights()
 	// Draw the hunting UFO flight paths
 	for (auto* ufo : *_game->getSavedGame()->getUfos())
 	{
-		if ((ufo->isHunting() || _game->getSavedGame()->getDebugMode()) && ufo->getDetected() && ufo->getStatus() != Ufo::IGNORE_ME)
+		if (ufo->getDestination() && (ufo->isHunting() || _game->getSavedGame()->getDebugMode()) && ufo->getDetected() && ufo->getStatus() != Ufo::IGNORE_ME)
 		{
 			double lon1 = ufo->getLongitude();
 			double lon2 = ufo->getDestination()->getLongitude();

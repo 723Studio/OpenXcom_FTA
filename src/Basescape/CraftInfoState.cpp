@@ -70,6 +70,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_craft = _base->getCrafts()->at(_craftId);
 	_weaponNum = _craft->getRules()->getWeapons();
+	_ftaUi = _game->getMod()->isFTAGame();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
 
@@ -172,6 +173,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 		_btnW[i]->setText(num);
 		_btnW[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWClick);
 		_weapon[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWIconClick);
+		_weapon[i]->onMouseClick((ActionHandler)&CraftInfoState::btnWIconMiddleClick, SDL_BUTTON_MIDDLE);
 	}
 
 	_sprite->onMouseClick((ActionHandler)&CraftInfoState::btnCraftIconClick);
@@ -187,7 +189,7 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_btnPilots->setText(tr("STR_PILOTS"));
 	_btnPilots->onMouseClick((ActionHandler)&CraftInfoState::btnPilotsClick);
-	_btnPilots->setVisible(pilots);
+	_btnPilots->setVisible(pilots && !_ftaUi); //#FINNIKTODO Consider for multipurpose crafts
 
 	_edtCraft->setBig();
 	_edtCraft->setAlign(ALIGN_CENTER);
@@ -419,7 +421,18 @@ void CraftInfoState::init()
 			weaponLine << Unicode::TOK_COLOR_FLIP << tr(w1->getRules()->getType());
 			_txtWName[i]->setText(weaponLine.str());
 			weaponLine.str("");
-			if (w1->getRules()->getAmmoMax())
+			if (!w1->getRules()->getTooltip().empty())
+			{
+				weaponLine << (tr(w1->getRules()->getTooltip())
+					.arg(w1->getAmmo())                                    // {0}
+					.arg(w1->getRules()->getAmmoMax())                     // {1}
+					.arg(w1->getRules()->getBonusStats().fuelMax)          // {2}
+					.arg(w1->getRules()->getBonusStats().speedMax)         // {3}
+					.arg(w1->getRules()->getBonusStats().damageMax)        // {4}
+					.arg(w1->getRules()->getBonusStats().armor)            // {5}
+					.arg(w1->getRules()->getBonusStats().shieldCapacity)); // {6}
+			}
+			else if (w1->getRules()->getAmmoMax())
 			{
 				weaponLine << tr("STR_AMMO_").arg(w1->getAmmo()) << "\n" << Unicode::TOK_COLOR_FLIP;
 				weaponLine << tr("STR_MAX").arg(w1->getRules()->getAmmoMax());
@@ -482,7 +495,12 @@ void CraftInfoState::btnOkClick(Action *)
  */
 void CraftInfoState::btnUfopediaClick(Action *)
 {
-	if (_craft)
+	bool ftaUnlocked = true;
+	if (!_game->getMod()->getUfopaediaUnlockResearch().empty())
+	{
+		ftaUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getUfopaediaUnlockResearch());
+	}
+	if (_craft && ftaUnlocked)
 	{
 		std::string articleId = _craft->getRules()->getType();
 		Ufopaedia::openArticle(_game, articleId);
@@ -514,14 +532,14 @@ void CraftInfoState::btnNewBattleClick(Action *)
 	{
 		try
 		{
-			YAML::Node doc = YAML::Load(*CrossPlatform::readFile(s));
-			mission = doc["mission"].as<size_t>(0);
-			//craft = doc["craft"].as<size_t>(0);
-			darkness = doc["darkness"].as<size_t>(0);
-			terrain = doc["terrain"].as<size_t>(0);
-			alienRace = doc["alienRace"].as<size_t>(0);
-			//difficulty = doc["difficulty"].as<size_t>(0);
-			alienTech = doc["alienTech"].as<size_t>(0);
+			YAML::YamlRootNodeReader reader(s);
+			mission = reader["mission"].readVal(0);
+			//craft = reader["craft"].readVal(0);
+			darkness = reader["darkness"].readVal(0);
+			terrain = reader["terrain"].readVal(0);
+			alienRace = reader["alienRace"].readVal(0);
+			//difficulty = reader["difficulty"].readVal(0);
+			alienTech = reader["alienTech"].readVal(0);
 		}
 		catch (YAML::Exception& e)
 		{
@@ -552,19 +570,19 @@ void CraftInfoState::btnNewBattleClick(Action *)
 	// transfer also the difficulty
 	difficulty = _game->getSavedGame()->getDifficulty();
 
-	YAML::Emitter out;
-	YAML::Node node;
-	node["mission"] = mission;
-	node["craft"] = craft;
-	node["darkness"] = darkness;
-	node["terrain"] = terrain;
-	node["alienRace"] = alienRace;
-	node["difficulty"] = difficulty;
-	node["alienTech"] = alienTech;
-	node["base"] = _base->save();
-	out << node;
+	YAML::YamlRootNodeWriter writer;
+	writer.setAsMap();
+	writer.write("mission", mission);
+	writer.write("craft", craft);
+	writer.write("darkness", darkness);
+	writer.write("terrain", terrain);
+	writer.write("alienRace", alienRace);
+	writer.write("difficulty", difficulty);
+	writer.write("alienTech", alienTech);
+	_base->save(writer["base"]);
+	std::string yaml = writer.emit().yaml;
 
-	if (!CrossPlatform::writeFile(s, out.c_str()))
+	if (!CrossPlatform::writeFile(s, yaml))
 	{
 		Log(LOG_WARNING) << "Failed to save " << s;
 	}
@@ -612,6 +630,30 @@ void CraftInfoState::btnWIconClick(Action *action)
 				// Update the onscreen info.
 				// Note: This method is overkill, since we only need to update a few things. But at least this ensures we haven't missed anything.
 				init();
+			}
+		}
+	}
+}
+
+/**
+ * Opens the corresponding Ufopaedia craft weapon article.
+ * @param action Pointer to an action.
+ */
+void CraftInfoState::btnWIconMiddleClick(Action* action)
+{
+	for (int i = 0; i < _weaponNum; ++i)
+	{
+		if (action->getSender() == _weapon[i])
+		{
+			CraftWeapon* w1 = _craft->getWeapons()->at(i);
+			if (w1)
+			{
+				RuleCraftWeapon* rule = w1->getRules();
+				if (rule)
+				{
+					std::string articleId = rule->getType();
+					Ufopaedia::openArticle(_game, articleId);
+				}
 			}
 		}
 	}

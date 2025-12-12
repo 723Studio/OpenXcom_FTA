@@ -147,6 +147,10 @@ void GlobalResearchState::onOpenTechTreeViewer(Action *)
 
 	if (selectedTopic)
 	{
+		if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+		{
+			return;
+		}
 		_game->pushState(new TechTreeViewerState(selectedTopic, 0));
 	}
 }
@@ -209,7 +213,7 @@ void GlobalResearchState::fillProjectList()
 
 		availableScientists += xbase->getAvailableScientists();
 		allocatedScientists += xbase->getAllocatedScientists();
-		freeLaboratories += xbase->getFreeLaboratories();
+		freeLaboratories += xbase->getFreeLaboratories(_game->getMod()->isFTAGame());
 	}
 
 	_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(availableScientists));

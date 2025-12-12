@@ -43,8 +43,8 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param wasLetterBoxed Was the game letterboxed?
  */
-VideoState::VideoState(const std::vector<std::string> *videos, const std::vector<std::string> *tracks, bool useUfoAudioSequence)
-		: _videos(videos), _tracks(tracks), _useUfoAudioSequence(useUfoAudioSequence)
+VideoState::VideoState(const std::vector<std::string> *videos, const std::vector<std::string> *tracks, bool useUfoAudioSequence, bool customCutscene)
+		: _videos(videos), _tracks(tracks), _useUfoAudioSequence(useUfoAudioSequence), _customCutscene(customCutscene)
 {
 }
 
@@ -413,14 +413,13 @@ void VideoState::init()
 		{
 			_useUfoAudioSequence = false;
 		}
-		else
-		{
-			// ensure user can hear both music and sound effects for the
-			// vanilla intro sequence
-			Options::musicVolume = Options::soundVolume = std::max(prevMusicVol, prevSoundVol);
-			_game->setVolume(Options::soundVolume, Options::musicVolume, -1);
-		}
 	}
+
+	// ensure user can hear both music and sound effects for the
+	// vanilla intro sequence
+	Options::musicVolume = Options::soundVolume = std::max(prevMusicVol, prevSoundVol);
+	_game->setVolume(Options::soundVolume, Options::musicVolume, -1);
+
 	_game->getCursor()->setVisible(false);
 
 	int dx = (Options::baseXResolution - Screen::ORIGINAL_WIDTH) / 2;
@@ -459,9 +458,14 @@ void VideoState::init()
 		}
 
 		flcPlayer->init(videoFileName.c_str(),
-			 _useUfoAudioSequence ? &audioHandler : NULL,
-			 _game, useInternalAudio, dx, dy);
-		flcPlayer->play(_useUfoAudioSequence);
+			_useUfoAudioSequence ? &audioHandler : NULL,
+			_customCutscene,
+			_game,
+			useInternalAudio,
+			dx,
+			dy);
+
+		flcPlayer->play(true);
 		if (_useUfoAudioSequence)
 		{
 			flcPlayer->delay(10000);
@@ -530,12 +534,9 @@ void VideoState::init()
 	_game->getScreen()->clear();
 	_game->getScreen()->flip();
 
-	if (_useUfoAudioSequence)
-	{
-		Options::musicVolume = prevMusicVol;
-		Options::soundVolume = prevSoundVol;
-		_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
-	}
+	Options::musicVolume = prevMusicVol;
+	Options::soundVolume = prevSoundVol;
+	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
 
 #ifndef __NO_MUSIC
 	Sound::stop();

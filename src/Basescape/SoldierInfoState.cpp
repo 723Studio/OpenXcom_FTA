@@ -100,7 +100,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 
 	int yPos = 80;
 	int step = 11;
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		yPos = 81;
 		step = 10;
@@ -151,7 +151,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 	_barStrength = new Bar(170, 7, 150, yPos);
 	yPos += step;
 
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		_txtMana = new Text(120, 9, 6, yPos);
 		_numMana = new Text(18, 9, 131, yPos);
@@ -228,7 +228,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 	add(_numStrength, "numbers", "soldierInfo");
 	add(_barStrength, "barStrength", "soldierInfo");
 
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		add(_txtMana, "text2", "soldierInfo");
 		add(_numMana, "numbers", "soldierInfo");
@@ -361,7 +361,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 
 	_barStrength->setScale(1.0);
 
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		_txtMana->setText(tr("STR_MANA_POOL"));
 		_barMana->setScale(1.0);
@@ -512,7 +512,7 @@ void SoldierInfoState::init()
 	{
 		if (days < 0)
 		{
-			return std::string{ "∞" };
+			return std::string{ "?" };
 		}
 		else
 		{
@@ -541,7 +541,7 @@ void SoldierInfoState::init()
 
 	_txtPsionic->setVisible(_soldier->isInPsiTraining());
 
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()))
 	{
 		if (_game->getSavedGame()->isManaUnlocked(_game->getMod()))
 		{

@@ -17,11 +17,13 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "GeoscapeEventState.h"
+#include "GeoscapeState.h"
 #include <map>
 #include "../Basescape/SellState.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/RNG.h"
+#include "../Engine/Action.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Interface/TextButton.h"
@@ -35,6 +37,7 @@
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleRegion.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleVideo.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
@@ -42,7 +45,9 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Transfer.h"
+#include "../Savegame/DiplomacyFaction.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../FTA/MasterMind.h"
 
 namespace OpenXcom
 {
@@ -65,6 +70,13 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_txtQuantity = new Text(94, 9, 182, 58);
 	_lstTransfers = new TextList(216, 80, 42, 69);
 
+	_btnAnswerOne = new TextButton(115, 18, 42, 158);
+	_btnAnswerTwo = new TextButton(115, 18, 163, 158);
+	_btnAnswerThree = new TextButton(236, 16, 42, 162);
+	_btnAnswerFour = new TextButton(115, 16, 163, 162);
+
+	_txtTooltip = new Text(115, 10, 42, 148);
+
 	// Set palette
 	setInterface("geoscapeEvent");
 
@@ -76,6 +88,14 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	add(_txtItem, "text2", "geoscapeEvent");
 	add(_txtQuantity, "text2", "geoscapeEvent");
 	add(_lstTransfers, "list", "geoscapeEvent");
+
+	add(_btnAnswerOne, "button", "geoscapeEvent");
+	add(_btnAnswerTwo, "button", "geoscapeEvent");
+	add(_btnAnswerThree, "button", "geoscapeEvent");
+	add(_btnAnswerFour, "button", "geoscapeEvent");
+
+	add(_txtTooltip, "text1", "geoscapeEvent");
+
 
 	centerAllSurfaces();
 
@@ -97,10 +117,89 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	_txtMessage->setScrollable(true);
 
 	_btnOk->setText(tr("STR_OK"));
-	_btnOk->onMouseClick((ActionHandler)& GeoscapeEventState::btnOkClick);
+	_btnOk->onMouseClick((ActionHandler)&GeoscapeEventState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&GeoscapeEventState::btnOkClick, Options::keyOk);
 	_btnOk->onKeyboardPress((ActionHandler)&GeoscapeEventState::btnOkClick, Options::keyCancel);
 
+	_btnAnswerOne->setVisible(false);
+	_btnAnswerTwo->setVisible(false);
+	_btnAnswerThree->setVisible(false);
+	_btnAnswerFour->setVisible(false);
+
+	_txtTooltip->setText("");
+
+	bool bTooltipIsPresent = false;
+	_customAnswers = _eventRule.getCustomAnswers();
+	_btnOk->setVisible(_customAnswers.empty());
+
+	if (_customAnswers.size() >= 2)
+	{
+		_btnAnswerOne->setText(tr(_customAnswers[0].title));
+		_btnAnswerTwo->setText(tr(_customAnswers[1].title));
+		if (!_customAnswers[0].description.empty())
+		{
+			_btnAnswerOne->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
+		}
+		if (!_customAnswers[1].description.empty())
+		{
+			_btnAnswerTwo->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
+		}
+		_btnAnswerOne->setVisible(true);
+		_btnAnswerTwo->setVisible(true);
+	}
+
+	if (_customAnswers.size() >= 3)
+	{
+		_btnAnswerThree->setText(tr(_customAnswers[2].title));
+		_btnAnswerThree->setVisible(true);
+		if (!_customAnswers[2].description.empty())
+		{
+			_btnAnswerThree->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
+		}
+		_txtMessage->setHeight(78);
+		_btnAnswerOne->setHeight(16);
+		_btnAnswerTwo->setHeight(16);
+		_btnAnswerOne->setY(_btnAnswerOne->getY() - 16);
+		_btnAnswerTwo->setY(_btnAnswerTwo->getY() - 16);
+		_txtTooltip->setY(_txtTooltip->getY() - 16);
+	}
+
+	if (_customAnswers.size() >= 4)
+	{
+		_btnAnswerFour->setText(tr(_customAnswers[3].title));
+		_btnAnswerFour->setVisible(true);
+		if (!_customAnswers[3].description.empty())
+		{
+			_btnAnswerFour->setTooltip("STR_BUTTON_HINT");
+			bTooltipIsPresent = true;
+		}
+		_btnAnswerThree->setWidth(115);
+	}
+
+	if (bTooltipIsPresent)
+	{
+		_txtMessage->setHeight(_txtMessage->getHeight() - _txtTooltip->getHeight());
+	}
+
+	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerOneClick);
+	_btnAnswerOne->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerOneClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerOne->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerOne->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerTwoClick);
+	_btnAnswerTwo->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerTwoClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerTwo->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerTwo->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerThreeClick);
+	_btnAnswerThree->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerThreeClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerThree->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerThree->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
+	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerFourClick);
+	_btnAnswerFour->onMouseClick((ActionHandler)&GeoscapeEventState::btnAnswerFourClickRight, SDL_BUTTON_RIGHT);
+	_btnAnswerFour->onMouseIn((ActionHandler)&GeoscapeEventState::txtTooltipIn);
+	_btnAnswerFour->onMouseOut((ActionHandler)&GeoscapeEventState::txtTooltipOut);
 	_btnItemsArriving->setText(tr("STR_ITEMS_ARRIVING"));
 	_btnItemsArriving->onMouseClick((ActionHandler)&GeoscapeEventState::btnItemsArrivingClick);
 
@@ -122,7 +221,7 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 	{
 		_btnItemsArriving->setText(tr("STR_SUMMARY"));
 	}
-	else if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery)
+	else if (_lstTransfers->getTexts() == 0 || !Options::oxceGeoscapeEventsInstantDelivery || !_customAnswers.empty())
 	{
 		_btnOk->setX((_btnOk->getX() + _btnItemsArriving->getX()) / 2);
 		_btnItemsArriving->setVisible(false);
@@ -130,10 +229,16 @@ GeoscapeEventState::GeoscapeEventState(const RuleEvent& eventRule) : _eventRule(
 }
 
 /**
- * Helper performing event logic.
- */
+* Helper performing event logic.
+*/
 void GeoscapeEventState::eventLogic()
 {
+	if (!_eventRule.getAdhocMissionScriptTags().empty())
+	{
+		auto* geo = _game->getGeoscapeState();
+		geo->determineAlienMissions(false, &_eventRule);
+	}
+
 	SavedGame *save = _game->getSavedGame();
 	Base *hq = save->getBases()->front();
 	const Mod *mod = _game->getMod();
@@ -181,26 +286,44 @@ void GeoscapeEventState::eventLogic()
 	}
 
 	// 1. give/take score points
-	if (regionRule)
+	int points = rule.getPoints();
+	if (points != 0)
 	{
-		for (auto* region : *_game->getSavedGame()->getRegions())
+		if (regionRule)
 		{
-			if (region->getRules() == regionRule)
+			for (auto *region : *_game->getSavedGame()->getRegions())
 			{
-				region->addActivityXcom(rule.getPoints());
-				break;
+				if (region->getRules() == regionRule)
+				{
+					region->addActivityXcom(points);
+					break;
+				}
 			}
 		}
-	}
-	else
-	{
-		save->addResearchScore(rule.getPoints());
+		else
+		{
+			save->addResearchScore(points);
+		}
+		_game->getMasterMind()->updateLoyalty(points, XCOM_GEOSCAPE);
 	}
 
-	// 2. give/take funds
+
+	// 2. give/take funds and loyalty
 	save->setFunds(save->getFunds() + rule.getFunds());
 
-	// 3. spawn/transfer persons (soldiers, engineers, scientists, ...)
+	save->setLoyalty(save->getLoyalty() + rule.getLoyalty());
+
+	// 3. saving removed covered operations list if exist
+	std::vector<std::string>  removedCovertOperationsList = rule.getRemovedCovertOperationsList();
+	if (!removedCovertOperationsList.empty())
+	{
+		for (auto it = removedCovertOperationsList.begin(); it < removedCovertOperationsList.end(); it++)
+		{
+			save->removePerformedCovertOperation((*it));
+		}
+	}
+
+	// 4. spawn/transfer persons (soldiers, engineers, scientists, ...)
 	const std::string& spawnedPersonType = rule.getSpawnedPersonType();
 	if (rule.getSpawnedPersons() > 0 && !spawnedPersonType.empty())
 	{
@@ -218,7 +341,7 @@ void GeoscapeEventState::eventLogic()
 		}
 		else
 		{
-			RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+			const RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
 			if (ruleSoldier)
 			{
 				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
@@ -226,7 +349,8 @@ void GeoscapeEventState::eventLogic()
 					Transfer* t = new Transfer(24);
 					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, city);
 					Soldier* s = mod->genSoldier(save, ruleSoldier, nationality);
-					s->load(rule.getSpawnedSoldierTemplate(), mod, save, mod->getScriptGlobal(), true); // load from soldier template
+					YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
+					s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
 					if (!rule.getSpawnedPersonName().empty())
 					{
 						s->setName(tr(rule.getSpawnedPersonName()));
@@ -242,12 +366,58 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
-	// 3. spawn/transfer item into the HQ
+	// 5. spawn/transfer multiple soldiers into the HQ
+	{
+		std::map<const RuleSoldier*, int> soldiersToTransfer;
+
+		for (auto& pair : rule.getEveryMultiSoldierList())
+		{
+			const RuleSoldier* soldierRule = mod->getSoldier(pair.first, true);
+			if (soldierRule)
+			{
+				soldiersToTransfer[soldierRule] += pair.second;
+			}
+		}
+
+		if (!rule.getRandomMultiSoldierList().empty())
+		{
+			size_t pickSoldier = RNG::generate(0, rule.getRandomMultiSoldierList().size() - 1);
+			auto& sublist = rule.getRandomMultiSoldierList().at(pickSoldier);
+			for (auto& pair : sublist)
+			{
+				const RuleSoldier* soldierRule = mod->getSoldier(pair.first, true);
+				if (soldierRule)
+				{
+					soldiersToTransfer[soldierRule] += pair.second;
+				}
+			}
+		}
+
+		for (auto& ts : soldiersToTransfer)
+		{
+			for (int i = 0; i < ts.second; ++i)
+			{
+				Transfer* t = new Transfer(24);
+				int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ts.first, city);
+				Soldier* s = mod->genSoldier(save, ts.first, nationality);
+				YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
+				s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
+				{
+					// reset what may have been loaded
+					s->genName();
+				}
+				t->setSoldier(s);
+				hq->getTransfers()->push_back(t);
+			}
+		}
+	}
+
+	// 6. spawn/transfer item into the HQ
 	std::map<std::string, int> itemsToTransfer;
 
 	for (auto& pair : rule.getEveryMultiItemList())
 	{
-		const RuleItem *itemRule = mod->getItem(pair.first, true);
+		const RuleItem* itemRule = mod->getItem(pair.first, true);
 		if (itemRule)
 		{
 			itemsToTransfer[itemRule->getType()] += pair.second;
@@ -256,7 +426,7 @@ void GeoscapeEventState::eventLogic()
 
 	for (auto& itemName : rule.getEveryItemList())
 	{
-		const RuleItem *itemRule = mod->getItem(itemName, true);
+		const RuleItem* itemRule = mod->getItem(itemName, true);
 		if (itemRule)
 		{
 			itemsToTransfer[itemRule->getType()] += 1;
@@ -266,7 +436,7 @@ void GeoscapeEventState::eventLogic()
 	if (!rule.getRandomItemList().empty())
 	{
 		size_t pickItem = RNG::generate(0, rule.getRandomItemList().size() - 1);
-		const RuleItem *randomItem = mod->getItem(rule.getRandomItemList().at(pickItem), true);
+		const RuleItem* randomItem = mod->getItem(rule.getRandomItemList().at(pickItem), true);
 		if (randomItem)
 		{
 			itemsToTransfer[randomItem->getType()] += 1;
@@ -289,7 +459,7 @@ void GeoscapeEventState::eventLogic()
 
 	if (!rule.getWeightedItemList().empty())
 	{
-		const RuleItem *randomItem = mod->getItem(rule.getWeightedItemList().choose(), true);
+		const RuleItem* randomItem = mod->getItem(rule.getWeightedItemList().choose(), true);
 		if (randomItem)
 		{
 			itemsToTransfer[randomItem->getType()] += 1;
@@ -354,7 +524,7 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
-	// 3b. spawn craft into the HQ
+	// 6b. spawn craft into the HQ
 	const RuleCraft* craftRule = mod->getCraft(rule.getSpawnedCraftType(), true);
 	if (craftRule)
 	{
@@ -376,62 +546,53 @@ void GeoscapeEventState::eventLogic()
 		}
 	}
 
-	// 4. give bonus research
+	// 7. give bonus research
 	std::vector<const RuleResearch*> possibilities;
 
-	for (auto& rName : rule.getResearchList())
+	for (auto* rRule : rule.getResearchList())
 	{
-		const RuleResearch *rRule = mod->getResearch(rName, true);
-		if (!save->isResearched(rRule, false) || save->hasUndiscoveredGetOneFree(rRule, true))
+		std::vector<const RuleResearch*> researches;
+		for (const auto &rRule : rule.getResearchList())
 		{
-			possibilities.push_back(rRule);
+			researches.push_back(rRule);
 		}
+		_game->getMasterMind()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
 	}
 
-	std::vector<const RuleResearch*> topicsToCheck;
-	if (!possibilities.empty())
+	// 8. handle counters
+	for (auto& inc : rule.getIncreaseCounter())
 	{
-		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
-		const RuleResearch *eventResearch = possibilities.at(pickResearch);
+		_game->getSavedGame()->increaseCustomCounter(inc, rule.getCounterValue());
+	}
+	for (auto& dec : rule.getDecreaseCounter())
+	{
+		_game->getSavedGame()->decreaseCustomCounter(dec, rule.getCounterValue());
+	}
 
-		bool alreadyResearched = false;
-		std::string name = eventResearch->getLookup().empty() ? eventResearch->getName() : eventResearch->getLookup();
-		if (save->isResearched(name, false))
+	// 9. Add reputation
+	auto reputationScore = _eventRule.getReputationScore();
+	if (!reputationScore.empty())
+	{
+		for (std::map<std::string, int>::const_iterator i = reputationScore.begin(); i != reputationScore.end(); ++i)
 		{
-			alreadyResearched = true; // we have seen the pedia article already, don't show it again
-		}
-
-		save->addFinishedResearch(eventResearch, mod, hq, true);
-		topicsToCheck.push_back(eventResearch);
-		_researchName = alreadyResearched ? "" : eventResearch->getName();
-
-		if (!eventResearch->getLookup().empty())
-		{
-			const RuleResearch *lookupResearch = mod->getResearch(eventResearch->getLookup(), true);
-			save->addFinishedResearch(lookupResearch, mod, hq, true);
-			_researchName = alreadyResearched ? "" : lookupResearch->getName();
-		}
-
-		if (auto* bonus = save->selectGetOneFree(eventResearch))
-		{
-			save->addFinishedResearch(bonus, mod, hq, true);
-			topicsToCheck.push_back(bonus);
-			_bonusResearchName = bonus->getName();
-
-			if (!bonus->getLookup().empty())
+			for (std::vector<DiplomacyFaction*>::iterator j = save->getDiplomacyFactions().begin(); j != save->getDiplomacyFactions().end(); ++j)
 			{
-				const RuleResearch *bonusLookup = mod->getResearch(bonus->getLookup(), true);
-				save->addFinishedResearch(bonusLookup, mod, hq, true);
-				_bonusResearchName = bonusLookup->getName();
+				std::string factionName = (*j)->getRules()->getName();
+				std::string lookingName = (*i).first;
+				if (factionName == lookingName)
+				{
+					(*j)->updateReputationScore((*i).second);
+					break;
+				}
 			}
 		}
 	}
 
-	// Side effects:
-	// 1. remove obsolete research projects from all bases
-	// 2. handle items spawned by research
-	// 3. handle events spawned by research
-	save->handlePrimaryResearchSideEffects(topicsToCheck, mod, hq);
+	// // Side effects:
+	// // 1. remove obsolete research projects from all bases
+	// // 2. handle items spawned by research
+	// // 3. handle events spawned by research
+	// save->handlePrimaryResearchSideEffects(topicsToCheck, mod, hq); #FINNIKTODO
 
 	if (Options::oxceGeoscapeDebugLogMaxEntries > 0)
 	{
@@ -441,18 +602,27 @@ void GeoscapeEventState::eventLogic()
 		save->getGeoscapeDebugLog().push_back(ss.str());
 	}
 }
-
 /**
- *
- */
+* Spawns custom events based on the chosen button.
+* After that closes the window and shows a pedia article if needed.
+* @param int playerChoice - an index of the pressed button
+*/
+void GeoscapeEventState::spawnCustomEvents(int playerChoice)
+{
+	for (const auto &eventName : _customAnswers[playerChoice].spawnEvents)
+	{
+		_game->getSavedGame()->spawnEvent(_game->getMod()->getEvent(eventName));
+	}
+}
+
 GeoscapeEventState::~GeoscapeEventState()
 {
 	// Empty by design
 }
 
 /**
- * Initializes the state.
- */
+* Initializes the state.
+*/
 void GeoscapeEventState::init()
 {
 	State::init();
@@ -464,10 +634,10 @@ void GeoscapeEventState::init()
 }
 
 /**
- * Closes the window and shows a pedia article if needed.
- * @param action Pointer to an action.
- */
-void GeoscapeEventState::btnOkClick(Action *)
+* Closes the window and shows a pedia article if needed.
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnOkClick(Action*)
 {
 	_game->popState();
 
@@ -482,7 +652,7 @@ void GeoscapeEventState::btnOkClick(Action *)
 		}
 	}
 
-	if (_game->getSavedGame()->getEnding() == END_NONE)
+	if (_game->getSavedGame()->getEnding() == END_NONE && !_game->getMod()->isFTAGame())
 	{
 		Base* base = _game->getSavedGame()->getBases()->front();
 		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())
@@ -496,10 +666,21 @@ void GeoscapeEventState::btnOkClick(Action *)
 	{
 		Ufopaedia::openArticle(_game, _bonusResearchName);
 	}
+
 	if (!_researchName.empty())
 	{
 		Ufopaedia::openArticle(_game, _researchName);
 	}
+}
+
+/**
+* Calls spawning of events for custom button 1
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerOneClick(Action* action)
+{
+	spawnCustomEvents(0);
+	btnOkClick(action);
 }
 
 /**
@@ -524,6 +705,153 @@ void GeoscapeEventState::btnItemsArrivingClick(Action *)
 
 		_txtMessage->setVisible(true);
 	}
+}
+
+/**
+* Shows description for custom button 1 if present
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerOneClickRight(Action* action)
+{
+	if (!_customAnswers[0].description.empty())
+		{
+			_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[0].description));
+		}
+}
+
+/**
+* Calls spawning of events for custom button 2
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerTwoClick(Action* action)
+{
+	spawnCustomEvents(1);
+	btnOkClick(action);
+}
+
+/**
+* Shows description for custom button 2 if present
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerTwoClickRight(Action* action)
+{
+	if (!_customAnswers[1].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[1].description));
+	}
+}
+
+/**
+* Calls spawning of events for custom button 3
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerThreeClick(Action* action)
+{
+	spawnCustomEvents(2);
+	btnOkClick(action);
+}
+
+/**
+* Shows description for custom button 3 if present
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerThreeClickRight(Action* action)
+{
+	if (!_customAnswers[2].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[2].description));
+	}
+}
+
+/**
+* Calls spawning of events for custom button 4
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerFourClick(Action* action)
+{
+	spawnCustomEvents(3);
+	btnOkClick(action);
+}
+
+/**
+* Shows description for custom button 4 if present
+* @param action Pointer to an action.
+*/
+void GeoscapeEventState::btnAnswerFourClickRight(Action* action)
+{
+	if (!_customAnswers[3].description.empty())
+	{
+		_game->pushState(new GeoscapeEventAnswerInfoState(_eventRule, _customAnswers[3].description));
+	}
+}
+
+/**
+ * Shows a tooltip for the appropriate button.
+ * @param action Pointer to an action.
+ */
+void GeoscapeEventState::txtTooltipIn(Action* action)
+{
+	_currentTooltip = action->getSender()->getTooltip();
+	_txtTooltip->setText(tr(_currentTooltip));
+}
+
+/**
+ * Clears the tooltip text.
+ * @param action Pointer to an action.
+ */
+void GeoscapeEventState::txtTooltipOut(Action* action)
+{
+	if (_currentTooltip == action->getSender()->getTooltip())
+		{
+			_currentTooltip = "";
+			_txtTooltip->setText("");
+		}
+}
+
+/**
+* Initializes all the elements in the GeoscapeEventAnswerInfoState window.
+* @param rule Pointer to the event ruleset.
+* @param descr string for state description.
+*/
+GeoscapeEventAnswerInfoState::GeoscapeEventAnswerInfoState(RuleEvent rule, std::string descr)
+{
+	_screen = false;
+
+	// Create objects
+	_window = new Window(this, 256, 135, 32, 31, POPUP_BOTH);
+	_txtDescription = new Text(236, 94, 42, 42);
+	_btnOk = new TextButton(100, 16, 110, 140);
+
+	// Set palette
+	setInterface("geoscapeEvent");
+
+	add(_window, "window", "geoscapeEvent");
+	add(_txtDescription, "text2", "geoscapeEvent");
+	add(_btnOk, "button", "geoscapeEvent");
+
+	centerAllSurfaces();
+
+	// Set up objects
+	_window->setBackground(_game->getMod()->getSurface(rule.getBackground()));
+
+	_txtDescription->setVerticalAlign(ALIGN_MIDDLE);
+	_txtDescription->setWordWrap(true);
+	_txtDescription->setText(tr(descr));
+
+	_btnOk->setText(tr("STR_OK"));
+	_btnOk->onMouseClick((ActionHandler)&GeoscapeEventAnswerInfoState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&GeoscapeEventAnswerInfoState::btnOkClick, Options::keyOk);
+	_btnOk->onKeyboardPress((ActionHandler)&GeoscapeEventAnswerInfoState::btnOkClick, Options::keyCancel);
+
+}
+
+GeoscapeEventAnswerInfoState::~GeoscapeEventAnswerInfoState()
+{
+}
+
+void GeoscapeEventAnswerInfoState::btnOkClick(Action*)
+{
+	_game->popState();
 }
 
 }

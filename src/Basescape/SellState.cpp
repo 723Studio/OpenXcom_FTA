@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SellState.h"
+#include "ItemLocationsState.h"
 #include "ManufactureDependenciesTreeState.h"
 #include <algorithm>
 #include <locale>
@@ -55,6 +56,7 @@
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Menu/ErrorMessageState.h"
+#include "../Engine/Sound.h"
 
 namespace OpenXcom
 {
@@ -105,6 +107,8 @@ void SellState::delayedInit()
 	_cbxCategory = new ComboBox(this, 120, 16, 10, 36);
 	_lstItems = new TextList(287, 120, 8, 54);
 
+	touchComponentsCreate(_txtTitle);
+
 	// Set palette
 	setInterface("sellMenu");
 
@@ -125,10 +129,14 @@ void SellState::delayedInit()
 	add(_lstItems, "list", "sellMenu");
 	add(_cbxCategory, "text", "sellMenu");
 
+	touchComponentsAdd("button2", "sellMenu", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "sellMenu");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_SELL_SACK"));
 	_btnOk->onMouseClick((ActionHandler)&SellState::btnOkClick);
@@ -178,13 +186,19 @@ void SellState::delayedInit()
 	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
 
 	_cats.push_back("STR_ALL_ITEMS");
+	_cats.push_back("STR_FILTER_HIDDEN");
+	if (Options::oxceBaseFilterResearchable)
+	{
+		_cats.push_back("STR_FILTER_RESEARCHED");
+		_cats.push_back("STR_FILTER_RESEARCHABLE");
+	}
 
 	for (auto* soldier : *_base->getSoldiers())
 	{
 		if (_debriefingState) break;
-		if (soldier->getCraft() == 0)
+		if (soldier->getCraft() == 0 && soldier->getCovertOperation() == 0)
 		{
-			TransferRow row = { TRANSFER_SOLDIER, soldier, soldier->getName(true), 0, 1, 0, 0, -4, 0, 0, 0 };
+			TransferRow row = { TRANSFER_SOLDIER, soldier, soldier->getName(true), 0, 1, 0, 0, 1, -4, 0, 0, 0 };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -198,7 +212,7 @@ void SellState::delayedInit()
 		if (_debriefingState) break;
 		if (craft->getStatus() != "STR_OUT")
 		{
-			TransferRow row = { TRANSFER_CRAFT, craft, craft->getName(_game->getLanguage()), craft->getRules()->getSellCost(), 1, 0, 0, -3, 0, 0, craft->getRules()->getSellCost() };
+			TransferRow row = { TRANSFER_CRAFT, craft, craft->getName(_game->getLanguage()), craft->getRules()->getSellCost(), 1, 0, 0, 1, -3, 0, 0, craft->getRules()->getSellCost() };
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -209,7 +223,7 @@ void SellState::delayedInit()
 	}
 	if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
 	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0, -2, 0, 0, 0 };
+		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0, _base->getAvailableScientists(), -2, 0, 0, 0 };
 		_items.push_back(row);
 		std::string cat = getCategory(_items.size() - 1);
 		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -219,7 +233,7 @@ void SellState::delayedInit()
 	}
 	if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
 	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0, -1, 0, 0, 0 };
+		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0, _base->getAvailableEngineers(), -1, 0, 0, 0 };
 		_items.push_back(row);
 		std::string cat = getCategory(_items.size() - 1);
 		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -259,7 +273,8 @@ void SellState::delayedInit()
 		}
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
-			TransferRow row = { TRANSFER_ITEM, rule, tr(itemType), rule->getSellCostAdjusted(_base, _game->getSavedGame()), qty, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCostAdjusted(_base, _game->getSavedGame()) };
+			TransferRow row = { TRANSFER_ITEM, rule, tr(itemType), rule->getSellCostAdjusted(_base, _game->getSavedGame()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCostAdjusted(_base, _game->getSavedGame()) };
+
 			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
 			{
 				row.amount = qty;
@@ -305,6 +320,12 @@ void SellState::delayedInit()
 		{
 			_cats.clear();
 			_cats.push_back("STR_ALL_ITEMS");
+			_cats.push_back("STR_FILTER_HIDDEN");
+			if (Options::oxceBaseFilterResearchable)
+			{
+				_cats.push_back("STR_FILTER_RESEARCHED");
+				_cats.push_back("STR_FILTER_RESEARCHABLE");
+			}
 			_vanillaCategories = _cats.size();
 		}
 		for (auto& categoryName : _game->getMod()->getItemCategoriesList())
@@ -360,6 +381,8 @@ void SellState::init()
 		_game->popState();
 		_game->pushState(new SellState(_base, _debriefingState, _origin));
 	}
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -435,6 +458,49 @@ bool SellState::belongsToCategory(int sel, const std::string &cat) const
 }
 
 /**
+ * Determines if a row item is supposed to be hidden
+ * @param sel Selected row.
+ * @param cat Category.
+ * @returns True if row item is hidden
+ */
+bool SellState::isHidden(int sel) const
+{
+	std::string itemName;
+
+	switch (_items[sel].type)
+	{
+	case TRANSFER_SOLDIER:
+	case TRANSFER_SCIENTIST:
+	case TRANSFER_ENGINEER:
+		return false;
+	case TRANSFER_CRAFT:
+		return false;
+	case TRANSFER_ITEM:
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
+		if (rule != 0)
+		{
+			itemName = rule->getType();
+		}
+		if (!itemName.empty())
+		{
+			auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
+			auto iter = hiddenMap.find(itemName);
+			if (iter != hiddenMap.end())
+			{
+				return iter->second;
+			}
+			else
+			{
+				// not found = not hidden
+				return false;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
 * Quick search toggle.
 * @param action Pointer to an action.
 */
@@ -477,6 +543,9 @@ void SellState::updateList()
 	const std::string selectedCategory = _cats[selCategory];
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
+	bool categoryHidden = (selectedCategory == "STR_FILTER_HIDDEN");
+	bool categoryResearched = (selectedCategory == "STR_FILTER_RESEARCHED");
+	bool categoryResearchable = (selectedCategory == "STR_FILTER_RESEARCHABLE");
 
 	if (_previousSort != _currentSort)
 	{
@@ -493,7 +562,30 @@ void SellState::updateList()
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		// filter
-		if (selCategory >= _vanillaCategories)
+		if (categoryHidden)
+		{
+			bool hidden = isHidden(i);
+			if (!hidden)
+			{
+				continue;
+			}
+		}
+		else if (categoryResearched || categoryResearchable)
+		{
+			if (_items[i].type == TRANSFER_ITEM)
+			{
+				RuleItem* rule = (RuleItem*)_items[i].rule;
+				bool isResearchable = _game->getSavedGame()->isResearchable(rule, _game->getMod());
+				if (categoryResearched && isResearchable) continue;
+				if (categoryResearchable && !isResearchable) continue;
+			}
+			else
+			{
+				// don't show non-items (e.g. craft, personnel)
+				continue;
+			}
+		}
+		else if (selCategory >= _vanillaCategories)
 		{
 			if (categoryUnassigned && _items[i].type == TRANSFER_ITEM)
 			{
@@ -832,7 +924,7 @@ void SellState::btnSellAllButOneClick(Action *)
 void SellState::lstItemsLeftArrowPress(Action *action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerInc->isRunning()) _timerInc->start();
+	if (_game->isLeftClick(action, true) && !_timerInc->isRunning()) _timerInc->start();
 }
 
 /**
@@ -841,7 +933,7 @@ void SellState::lstItemsLeftArrowPress(Action *action)
  */
 void SellState::lstItemsLeftArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerInc->stop();
 	}
@@ -854,10 +946,10 @@ void SellState::lstItemsLeftArrowRelease(Action *action)
  */
 void SellState::lstItemsLeftArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) changeByValue(INT_MAX, 1);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) changeByValue(INT_MAX, 1);
+	if (_game->isLeftClick(action, true))
 	{
-		changeByValue(1,1);
+		changeByValue(_game->getScrollStep(), 1);
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -870,7 +962,7 @@ void SellState::lstItemsLeftArrowClick(Action *action)
 void SellState::lstItemsRightArrowPress(Action *action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerDec->isRunning()) _timerDec->start();
+	if (_game->isLeftClick(action, true) && !_timerDec->isRunning()) _timerDec->start();
 }
 
 /**
@@ -879,7 +971,7 @@ void SellState::lstItemsRightArrowPress(Action *action)
  */
 void SellState::lstItemsRightArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerDec->stop();
 	}
@@ -892,10 +984,10 @@ void SellState::lstItemsRightArrowRelease(Action *action)
  */
 void SellState::lstItemsRightArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) changeByValue(INT_MAX, -1);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) changeByValue(INT_MAX, -1);
+	if (_game->isLeftClick(action, true))
 	{
-		changeByValue(1,-1);
+		changeByValue(_game->getScrollStep(), -1);
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -928,7 +1020,7 @@ void SellState::lstItemsMousePress(Action *action)
 			changeByValue(Options::changeValueByMouseWheel, -1);
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	else if (_game->isRightClick(action, true))
 	{
 		if (action->getAbsoluteXMouse() >= _lstItems->getArrowsLeftEdge() &&
 			action->getAbsoluteXMouse() <= _lstItems->getArrowsRightEdge())
@@ -940,11 +1032,56 @@ void SellState::lstItemsMousePress(Action *action)
 			RuleItem *rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				_game->pushState(new ManufactureDependenciesTreeState(rule->getType()));
+				if (_game->isCtrlPressed(true))
+				{
+					if (_game->isShiftPressed(true))
+					{
+						if (!rule->getType().empty())
+						{
+							bool categoryHidden = (_cats[_cbxCategory->getSelected()] == "STR_FILTER_HIDDEN");
+
+							auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
+							auto iter = hiddenMap.find(rule->getType());
+							bool hidden = false;
+							if (iter != hiddenMap.end())
+							{
+								// found => unhide it when in "Hidden" view; mark it as hidden otherwise
+								hidden = !categoryHidden;
+							}
+							else
+							{
+								// not found = not hidden yet => mark it as hidden
+								hidden = true;
+							}
+							_game->getSavedGame()->setHiddenPurchaseItemsStatus(rule->getType(), hidden);
+
+							if (categoryHidden)
+							{
+								// update screen
+								size_t scrollPos = _lstItems->getScroll();
+								updateList();
+								_lstItems->scrollTo(scrollPos);
+							}
+							else
+							{
+								// no screen update, at least play a sound
+								_game->getMod()->getSound("GEO.CAT", Mod::UFO_EXPLODE)->play();
+							}
+						}
+					}
+					else
+					{
+						_game->pushState(new ItemLocationsState(rule));
+					}
+				}
+				else
+				{
+					_game->pushState(new ManufactureDependenciesTreeState(rule->getType()));
+				}
 			}
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+	else if (_game->isMiddleClick(action, true))
 	{
 		if (getRow().type == TRANSFER_ITEM)
 		{
@@ -952,7 +1089,7 @@ void SellState::lstItemsMousePress(Action *action)
 			if (rule != 0)
 			{
 				std::string articleId = rule->getUfopediaType();
-				if (_game->isCtrlPressed())
+				if (_game->isCtrlPressed(true))
 				{
 					Ufopaedia::openArticle(_game, articleId);
 				}
@@ -972,7 +1109,7 @@ void SellState::lstItemsMousePress(Action *action)
 			if (rule != 0)
 			{
 				std::string articleId = rule->getRules()->getType();
-				if (_game->isCtrlPressed())
+				if (_game->isCtrlPressed(true))
 				{
 					Ufopaedia::openArticle(_game, articleId);
 				}
@@ -992,7 +1129,7 @@ void SellState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	changeByValue(1,1);
+	changeByValue(_game->getScrollStep(), 1);
 }
 
 /**
@@ -1005,7 +1142,7 @@ void SellState::changeByValue(int change, int dir)
 	if (dir > 0 && getRow().type == TRANSFER_ITEM)
 	{
 		const RuleItem* tmpItem = (const RuleItem*)getRow().rule;;
-		if (!tmpItem->getSellActionMessage().empty() && !_game->isShiftPressed())
+		if (!tmpItem->getSellActionMessage().empty() && !_game->isShiftPressed(true))
 		{
 			_timerInc->stop();
 			_timerDec->stop();
@@ -1073,7 +1210,7 @@ void SellState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	changeByValue(1,-1);
+	changeByValue(_game->getScrollStep(), -1);
 }
 
 /**
@@ -1128,13 +1265,13 @@ void SellState::cbxCategoryChange(Action *)
 {
 	_previousSort = _currentSort;
 
-	if (_game->isCtrlPressed())
+	if (_game->isCtrlPressed(true))
 	{
-		_currentSort = _game->isShiftPressed() ? TransferSortDirection::BY_UNIT_SIZE : TransferSortDirection::BY_TOTAL_SIZE;
+		_currentSort = _game->isShiftPressed(true) ? TransferSortDirection::BY_UNIT_SIZE : TransferSortDirection::BY_TOTAL_SIZE;
 	}
-	else if (_game->isAltPressed())
+	else if (_game->isAltPressed(true))
 	{
-		_currentSort = _game->isShiftPressed() ? TransferSortDirection::BY_UNIT_COST : TransferSortDirection::BY_TOTAL_COST;
+		_currentSort = _game->isShiftPressed(true) ? TransferSortDirection::BY_UNIT_COST : TransferSortDirection::BY_TOTAL_COST;
 	}
 	else
 	{

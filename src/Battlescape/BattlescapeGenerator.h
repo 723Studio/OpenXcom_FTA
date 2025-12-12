@@ -30,11 +30,13 @@ class Craft;
 class RuleCraft;
 class Ufo;
 class BattleItem;
+class BattleObject;
 class MapBlock;
 class Vehicle;
 class Tile;
 class RuleInventory;
 class RuleItem;
+class RuleObject;
 class Unit;
 class AlienRace;
 class RuleEnviroEffects;
@@ -44,6 +46,7 @@ class Game;
 class Base;
 class MissionSite;
 class AlienBase;
+class CovertOperation;
 class BattleUnit;
 class Texture;
 class Position;
@@ -64,6 +67,7 @@ private:
 	Base *_base;
 	MissionSite *_mission;
 	AlienBase *_alienBase;
+	CovertOperation *_covertOperation;
 	RuleTerrain *_terrain, *_baseTerrain, *_globeTerrain, *_alternateTerrain;
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	Texture *_missionTexture, *_globeTexture;
@@ -89,6 +93,7 @@ private:
 	std::vector<VerticalLevel> _verticalLevels;
 	std::map<RuleTerrain*, int> _loadedTerrains;
 	std::vector<std::pair<MapBlock*, Position> > _verticalLevelSegments;
+	std::vector<Tile*> _backupInventoryTiles;
 
 	/// sets the map size and associated vars
 	void init(bool resetTerrain);
@@ -191,6 +196,8 @@ public:
 	void setAlienBase(AlienBase* base);
 	/// Sets the terrain.
 	void setTerrain(RuleTerrain *terrain);
+	/// Sets covert operation
+	void setCovertOperation(CovertOperation* covertOperation) { _covertOperation = covertOperation; }
 	/// Runs the generator.
 	void run();
 	/// Gets craft position.

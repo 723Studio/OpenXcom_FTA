@@ -46,35 +46,6 @@
 #include "SerializationHelper.h"
 #include "../Engine/Logger.h"
 
-namespace YAML
-{
-	template<>
-	struct convert<OpenXcom::VehicleDeploymentData>
-	{
-		static Node encode(const OpenXcom::VehicleDeploymentData& rhs)
-		{
-			Node node;
-			node["type"] = rhs.type;
-			node["pos"] = rhs.pos;
-			node["dir"] = rhs.dir;
-			//node["used"] = rhs.used; // not needed
-			return node;
-		}
-
-		static bool decode(const Node& node, OpenXcom::VehicleDeploymentData& rhs)
-		{
-			if (!node.IsMap())
-				return false;
-
-			rhs.type = node["type"].as<std::string>(rhs.type);
-			rhs.pos = node["pos"].as<OpenXcom::Position>(rhs.pos);
-			rhs.dir = node["dir"].as<int>(rhs.dir);
-			//rhs.used = node["used"].as<bool>(rhs.used); // not needed
-			return true;
-		}
-	};
-}
-
 namespace OpenXcom
 {
 
@@ -91,6 +62,7 @@ Craft::Craft(const RuleCraft *rules, Base *base, int id) : MovingTarget(),
 	_status("STR_READY"), _lowFuel(false), _mission(false),
 	_inBattlescape(false), _inDogfight(false), _stats(),
 	_isAutoPatrolling(false), _lonAuto(0.0), _latAuto(0.0),
+	_scientists(0), _engineers(0),
 	_skinIndex(0)
 {
 	_stats = rules->getStats();
@@ -144,25 +116,27 @@ Craft::~Craft()
  * @param mod Mod for the saved game.
  * @param save Pointer to the saved game.
  */
-void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *mod, SavedGame *save)
+void Craft::load(const YAML::YamlNodeReader& node, const ScriptGlobal *shared, const Mod *mod, SavedGame *save)
 {
-	MovingTarget::load(node);
-	_fuel = node["fuel"].as<int>(_fuel);
-	_excessFuel = node["excessFuel"].as<int>(_excessFuel);
-	_damage = node["damage"].as<int>(_damage);
-	_shield = node["shield"].as<int>(_shield);
+	const auto& reader = node.useIndex();
+	MovingTarget::load(reader);
+
+	reader.tryRead("fuel", _fuel);
+	reader.tryRead("excessFuel", _excessFuel);
+	reader.tryRead("damage", _damage);
+	reader.tryRead("shield", _shield);
 
 	int j = 0;
-	for (YAML::const_iterator i = node["weapons"].begin(); i != node["weapons"].end(); ++i)
+	for (const auto& weaponsReader : reader["weapons"].children())
 	{
 		if (_rules->getWeapons() > j)
 		{
-			std::string type = (*i)["type"].as<std::string>();
+			std::string type = weaponsReader["type"].readVal<std::string>();
 			RuleCraftWeapon* weapon = mod->getCraftWeapon(type);
 			if (type != "0" && weapon)
 			{
 				CraftWeapon *w = new CraftWeapon(weapon, 0);
-				w->load(*i);
+				w->load(weaponsReader);
 				_weapons[j] = w;
 				_stats += weapon->getBonusStats();
 			}
@@ -178,7 +152,7 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 		}
 	}
 
-	_items->load(node["items"], mod);
+	_items->load(reader["items"], mod);
 	// Some old saves have bad items, better get rid of them to avoid further bugs
 	for (auto iter = _items->getContents()->begin(); iter != _items->getContents()->end();)
 	{
@@ -194,9 +168,9 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 			++iter;
 		}
 	}
-	for (YAML::const_iterator i = node["vehicles"].begin(); i != node["vehicles"].end(); ++i)
+	for (const auto& vehiclesReader : reader["vehicles"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = vehiclesReader["type"].readVal<std::string>();
 		auto* ruleItem = mod->getItem(type);
 		if (ruleItem)
 		{
@@ -205,7 +179,7 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 			{
 				int size = ruleUnit->getArmor()->getTotalSize();
 				Vehicle *v = new Vehicle(ruleItem, 0, size);
-				v->load(*i);
+				v->load(vehiclesReader);
 				_vehicles.push_back(v);
 			}
 			else
@@ -218,14 +192,14 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 			Log(LOG_ERROR) << "Failed to load vehicles item " << type;
 		}
 	}
-	_status = node["status"].as<std::string>(_status);
-	_lowFuel = node["lowFuel"].as<bool>(_lowFuel);
-	_mission = node["mission"].as<bool>(_mission);
-	_interceptionOrder = node["interceptionOrder"].as<int>(_interceptionOrder);
-	if (const YAML::Node &dest = node["dest"])
+	reader.tryRead("status", _status);
+	reader.tryRead("lowFuel", _lowFuel);
+	reader.tryRead("mission", _mission);
+	reader.tryRead("interceptionOrder", _interceptionOrder);
+	if (const auto& dest = reader["dest"])
 	{
-		std::string type = dest["type"].as<std::string>();
-		int id = dest["id"].as<int>();
+		std::string type = dest["type"].readVal<std::string>();
+		int id = dest["id"].readVal<int>();
 		if (type == "STR_BASE")
 		{
 			returnToBase();
@@ -278,21 +252,17 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 			}
 		}
 	}
-	_takeoff = node["takeoff"].as<int>(_takeoff);
-	_inBattlescape = node["inBattlescape"].as<bool>(_inBattlescape);
-	_isAutoPatrolling = node["isAutoPatrolling"].as<bool>(_isAutoPatrolling);
-	_lonAuto = node["lonAuto"].as<double>(_lonAuto);
-	_latAuto = node["latAuto"].as<double>(_latAuto);
-	_pilots = node["pilots"].as< std::vector<int> >(_pilots);
-	if (const YAML::Node& customSoldierDeployment = node["customSoldierDeployment"])
-	{
-		_customSoldierDeployment = customSoldierDeployment.as< std::map<int, SoldierDeploymentData> >();
-	}
-	if (const YAML::Node& customVehicleDeployment = node["customVehicleDeployment"])
-	{
-		_customVehicleDeployment = customVehicleDeployment.as< std::vector<VehicleDeploymentData> >();
-	}
-	_skinIndex = node["skinIndex"].as<int>(_skinIndex);
+	reader.tryRead("takeoff", _takeoff);
+	reader.tryRead("inBattlescape", _inBattlescape);
+	reader.tryRead("isAutoPatrolling", _isAutoPatrolling);
+	reader.tryRead("lonAuto", _lonAuto);
+	reader.tryRead("latAuto", _latAuto);
+	reader.tryRead("pilots", _pilots);
+	reader.tryRead("scientists", _scientists); // #FINNIKTODO - check if still needed after soldiers roles overhaul
+	reader.tryRead("engineers", _engineers);
+	reader.tryRead("customSoldierDeployment", _customSoldierDeployment);
+	reader.tryRead("customVehicleDeployment", _customVehicleDeployment);
+	reader.tryRead("skinIndex", _skinIndex);
 	if (_skinIndex > _rules->getMaxSkinIndex())
 	{
 		_skinIndex = 0;
@@ -302,7 +272,7 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
 
 	recalcSpeedMaxRadian();
 
-	_scriptValues.load(node, shared);
+	_scriptValues.load(reader, shared);
 }
 
 /**
@@ -310,12 +280,12 @@ void Craft::load(const YAML::Node &node, const ScriptGlobal *shared, const Mod *
  * @param node YAML node.
  * @param save The game data. Used to find the UFO's target (= xcom craft).
  */
-void Craft::finishLoading(const YAML::Node &node, SavedGame *save)
+void Craft::finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save)
 {
-	if (const YAML::Node &dest = node["dest"])
+	if (const auto& dest = reader["dest"])
 	{
-		std::string type = dest["type"].as<std::string>();
-		int id = dest["id"].as<int>();
+		std::string type = dest["type"].readVal<std::string>();
+		int id = dest["id"].readVal<int>();
 
 		bool found = false;
 		for (auto* xbase : *save->getBases())
@@ -369,66 +339,59 @@ void Craft::initFixedWeapons(const Mod* mod)
  * Saves the craft to a YAML file.
  * @return YAML node.
  */
-YAML::Node Craft::save(const ScriptGlobal *shared) const
+void Craft::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const
 {
-	YAML::Node node = MovingTarget::save();
-	node["type"] = _rules->getType();
-	node["fuel"] = _fuel;
+	writer.setAsMap();
+	MovingTarget::save(writer);
+	writer.write("type", _rules->getType());
+	writer.write("fuel", _fuel);
 	if (_excessFuel != 0)
-		node["excessFuel"] = _excessFuel;
-	node["damage"] = _damage;
-	node["shield"] = _shield;
-	for (const auto* cw : _weapons)
-	{
-		YAML::Node subnode;
-		if (cw != 0)
+		writer.write("excessFuel", _excessFuel);
+	writer.write("damage", _damage);
+	writer.write("shield", _shield);
+	writer.write("weapons", _weapons,
+		[](YAML::YamlNodeWriter& vectorWriter, CraftWeapon* w)
 		{
-			subnode = cw->save();
-		}
-		else
-		{
-			subnode["type"] = "0";
-		}
-		node["weapons"].push_back(subnode);
-	}
-	node["items"] = _items->save();
-	for (const auto* vehicle : _vehicles)
-	{
-		node["vehicles"].push_back(vehicle->save());
-	}
-	node["status"] = _status;
+			auto cwWriter = vectorWriter.write();
+			cwWriter.setAsMap();
+			if (w)
+				w->save(cwWriter);
+			else
+				cwWriter.write("type", "0");
+		});
+	_items->save(writer["items"]);
+	writer.write("vehicles", _vehicles,
+		[](YAML::YamlNodeWriter& vectorWriter, Vehicle* v)
+		{ v->save(vectorWriter.write()); });
+	writer.write("status", _status);
 	if (_lowFuel)
-		node["lowFuel"] = _lowFuel;
+		writer.write("lowFuel", _lowFuel);
 	if (_mission)
-		node["mission"] = _mission;
+		writer.write("mission", _mission);
 	if (_inBattlescape)
-		node["inBattlescape"] = _inBattlescape;
+		writer.write("inBattlescape", _inBattlescape);
 	if (_interceptionOrder != 0)
-		node["interceptionOrder"] = _interceptionOrder;
+		writer.write("interceptionOrder", _interceptionOrder);
 	if (_takeoff != 0)
-		node["takeoff"] = _takeoff;
+		writer.write("takeoff", _takeoff);
 	if (_isAutoPatrolling)
-		node["isAutoPatrolling"] = _isAutoPatrolling;
-	node["lonAuto"] = serializeDouble(_lonAuto);
-	node["latAuto"] = serializeDouble(_latAuto);
-	for (int soldierId : _pilots)
-	{
-		node["pilots"].push_back(soldierId);
-	}
+		writer.write("isAutoPatrolling", _isAutoPatrolling);
+	writer.write("lonAuto", serializeDouble(_lonAuto));
+	writer.write("latAuto", serializeDouble(_latAuto));
+	if (_pilots.size())
+		writer.write("pilots", _pilots);
+	if  (_scientists != 0)
+		writer.write("scientists", _scientists);
+	if  (_engineers != 0)
+		writer.write("engineers", _engineers);
 	if (!_customSoldierDeployment.empty())
-	{
-		node["customSoldierDeployment"] = _customSoldierDeployment;
-	}
+		writer.write("customSoldierDeployment", _customSoldierDeployment);
 	if (!_customVehicleDeployment.empty())
-	{
-		node["customVehicleDeployment"] = _customVehicleDeployment;
-	}
+		writer.write("customVehicleDeployment", _customVehicleDeployment);
 	if (_skinIndex != 0)
-		node["skinIndex"] = _skinIndex;
+		writer.write("skinIndex", _skinIndex);
 
-	_scriptValues.save(node, shared);
-
-	return node;
+	_scriptValues.save(writer, shared);
 }
 
 /**
@@ -436,9 +399,9 @@ YAML::Node Craft::save(const ScriptGlobal *shared) const
  * @param node YAML node.
  * @return Unique craft id.
  */
-CraftId Craft::loadId(const YAML::Node &node)
+CraftId Craft::loadId(const YAML::YamlNodeReader& reader)
 {
-	return std::make_pair(node["type"].as<std::string>(), node["id"].as<int>());
+	return std::make_pair(reader["type"].readVal<std::string>(), reader["id"].readVal<int>());
 }
 
 /**
@@ -727,9 +690,9 @@ void Craft::calculateTotalSoldierEquipment()
 /**
  * Gets the total storage size of all items in the craft. Including vehicles+ammo and craft weapons+ammo.
  */
-double Craft::getTotalItemStorageSize(const Mod* mod) const
+double Craft::getTotalItemStorageSize() const
 {
-	double total = _items->getTotalSize(mod);
+	double total = _items->getTotalSize();
 
 	for (const auto* v : _vehicles)
 	{
@@ -1131,13 +1094,23 @@ void Craft::evacuateCrew(const Mod *mod)
 			++iter; // next
 		}
 	}
+	// care scientists and engineers that might be onboard
+	Transfer *ts = new Transfer(mod->getPersonnelTime());
+	ts->setScientists(_scientists);
+	_base->getTransfers()->push_back(ts);
+	_scientists = 0;
+	Transfer *te = new Transfer(mod->getPersonnelTime());
+	te->setEngineers(_engineers);
+	_base->getTransfers()->push_back(te);
+	_engineers = 0;
+
 	removeAllPilots(); // just in case
 }
 
 /**
  * Moves the craft to its destination.
  */
-bool Craft::think()
+bool Craft::think(std::string &pushState)
 {
 	if (_takeoff == 0)
 	{
@@ -1151,7 +1124,10 @@ bool Craft::think()
 	if (reachedDestination() && _dest == (Target*)_base)
 	{
 		setInterceptionOrder(0); // just to be sure
-		checkup();
+		if (checkup())
+		{
+			pushState = "PromotionsState";
+		}
 		setDestination(0);
 		setSpeed(0);
 		_lowFuel = false;
@@ -1174,7 +1150,7 @@ bool Craft::isTakingOff() const
  * Checks the condition of all the craft's systems
  * to define its new status (eg. when arriving at base).
  */
-void Craft::checkup()
+bool Craft::checkup()
 {
 	int available = 0, full = 0;
 	for (auto* cw : _weapons)
@@ -1208,6 +1184,48 @@ void Craft::checkup()
 	{
 		_status = "STR_READY";
 	}
+
+	if (_scientists > 0)
+	{
+		_base->setScientists(_base->getScientists() + _scientists);
+	}
+	if (_engineers > 0)
+	{
+		_base->setEngineers(_base->getEngineers() + _engineers);
+	}
+
+	// lets perform logic with soldiers checkup
+	bool promote = false;
+	for (std::vector<Soldier *>::iterator i = _base->getSoldiers()->begin(); i != _base->getSoldiers()->end(); ++i)
+	{
+		//remove just saved soldiers from craft
+		if ((*i)->isJustSaved())
+		{
+			(*i)->setCraft(0);
+			(*i)->setJustSaved(false);
+		}
+
+		// remove non-combat "soldiers" from craft
+		if ((*i)->getCraft() == this
+			&& ((*i)->getRoleRank(ROLE_SCIENTIST) > 0 || (*i)->getRoleRank(ROLE_ENGINEER) > 0)
+			&& ((*i)->getRoleRank(ROLE_SOLDIER) == 0 && (*i)->getRoleRank(ROLE_PILOT) == 0 && (*i)->getRoleRank(ROLE_AGENT) == 0))
+		{
+			(*i)->setCraft(0); 
+		}
+
+		//promote returned pilots
+		if ((*i)->getRoleRank(ROLE_PILOT) > 0 && (*i)->getCraft() == this)
+		{
+			auto stats = (*i)->getDogfightExperience();
+			(*i)->improvePrimaryStats(stats, ROLE_PILOT);
+			(*i)->clearDogfightExperience();
+			if ((*i)->rolePromoteSoldier(ROLE_PILOT))
+			{
+				promote = true;
+			}
+		}
+	}
+	return promote;
 }
 
 /**
@@ -1216,7 +1234,7 @@ void Craft::checkup()
  * @param target Pointer to target to compare.
  * @return True if it's detected, False otherwise.
  */
-UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, int &tracking, bool alreadyTracked) const
 {
 	int distance = XcomDistance(getDistance(target));
 
@@ -1241,6 +1259,8 @@ UfoDetection Craft::detect(const Ufo *target, const SavedGame *save, bool alread
 			else
 			{
 				detectionChance = _stats.radarChance * (100 + target->getVisibility()) / 100;
+				detectionChance += tracking;
+				tracking = detectionChance; //for extra output
 			}
 		}
 	}
@@ -1554,16 +1574,56 @@ void Craft::destroyRequiredItems(const std::map<std::string, int>& requiredItems
 }
 
 /**
+ * Checks item limits.
+ * @return True if there are too many items onboard.
+ */
+bool Craft::areTooManyItemsOnboard()
+{
+	if (_items->getTotalQuantity() > getMaxItemsClamped())
+	{
+		return true;
+	}
+	if (_items->getTotalSize() > getMaxStorageSpaceClamped() + 0.05)
+	{
+		return true;
+	}
+	return false;
+}
+
+/**
+ * Checks armor constraints.
+ * @return True if there are soldiers wearing banned armor onboard.
+ */
+bool Craft::areBannedArmorsOnboard()
+{
+	if (!_rules->getAllowedArmorGroups().empty())
+	{
+		auto& allowedArmorGroups = _rules->getAllowedArmorGroups();
+		for (auto* xsoldier : *_base->getSoldiers())
+		{
+			if (xsoldier->getCraft() == this)
+			{
+				if (std::find(allowedArmorGroups.begin(), allowedArmorGroups.end(), xsoldier->getArmor()->getGroup()) == allowedArmorGroups.end())
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+/**
 * Checks if there are enough pilots onboard.
 * @return True if the craft has enough pilots.
 */
-bool Craft::arePilotsOnboard()
+bool Craft::arePilotsOnboard(const Mod* mod)
 {
 	if (_rules->getPilots() == 0)
 		return true;
 
 	// refresh the list of pilots (must be performed here, list may be out-of-date!)
-	const std::vector<Soldier*> pilots = getPilotList(true);
+	const std::vector<Soldier*> pilots = getPilotList(true, mod);
 
 	return (int)(pilots.size()) >= _rules->getPilots();
 }
@@ -1604,7 +1664,7 @@ void Craft::removeAllPilots()
 * Gets the list of craft pilots.
 * @return List of pilots.
 */
-const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
+const std::vector<Soldier*> Craft::getPilotList(bool autoAdd, const Mod* mod)
 {
 	std::vector<Soldier*> result;
 
@@ -1617,10 +1677,14 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 		int total = 0;
 		for (auto* soldier : *_base->getSoldiers())
 		{
-			if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting())
+			if (soldier->getCraft() == this && mod)
 			{
-				result.push_back(soldier);
-				total++;
+				soldier->prepareStatsWithBonuses(mod); // refresh stats for checking pilot requirements
+				if (soldier->hasAllPilotingRequirements() && soldier->getRoleRank(ROLE_PILOT) > 0)
+				{
+					result.push_back(soldier);
+					total++;
+				}
 			}
 		}
 		if (total == _rules->getPilots())
@@ -1637,7 +1701,10 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 			{
 				for (auto* soldier : *_base->getSoldiers())
 				{
-					if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting() && soldier->getId() == soldierId)
+					if (soldier->getCraft() == this && 
+						soldier->getId() == soldierId &&
+						soldier->getRoleRank(ROLE_PILOT) > 0 && 
+						soldier->hasAllPilotingRequirements())
 					{
 						result.push_back(soldier);
 						total2++;
@@ -1655,7 +1722,10 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd)
 				for (std::vector<Soldier*>::reverse_iterator iter = _base->getSoldiers()->rbegin(); iter != _base->getSoldiers()->rend(); ++iter)
 				{
 					Soldier* soldier = (*iter);
-					if (soldier->getCraft() == this && soldier->getRules()->getAllowPiloting() && !isPilot(soldier->getId()))
+					if (soldier->getCraft() == this && 
+						soldier->getRoleRank(ROLE_PILOT) > 0 && 
+						!isPilot(soldier->getId()) && 
+						soldier->hasAllPilotingRequirements())
 					{
 						result.push_back(soldier);
 						total2++;
@@ -1716,38 +1786,38 @@ int Craft::getPilotDodgeBonus(const std::vector<Soldier*> &pilots, const Mod *mo
 	return ((reactions - mod->getPilotReactionsZeroPoint()) * mod->getPilotReactionsRange()) / 100;
 }
 
-/**
-* Calculates the approach speed modifier based on pilot skills.
-* @return Approach speed modifier.
-*/
-int Craft::getPilotApproachSpeedModifier(const std::vector<Soldier*> &pilots, const Mod *mod) const
+int Craft::getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
 {
 	if (pilots.empty())
-		return 2; // vanilla
+		return 0;
 
-	int bravery = 0;
-	for (const auto* soldier : pilots)
+	int tracking = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
 	{
-		bravery += soldier->getStatsWithSoldierBonusesOnly()->bravery;
+		tracking += (*i)->getCurrentStats()->tracking;
 	}
-	bravery = bravery / pilots.size(); // average bravery of all pilots
+	tracking = tracking / pilots.size(); // average tracking of all pilots
 
-	if (bravery >= mod->getPilotBraveryThresholdVeryBold())
+	return ((tracking - mod->getPilotTrackingZeroPoint()) * mod->getPilotTrackingRange()) / 100;
+}
+
+/**
+ * Calculates the dodge bonus based on pilot skills.
+ * @return cooperation bonus.
+ */
+int Craft::getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
+{
+	if (pilots.empty())
+		return 0;
+
+	int cooperation = 0;
+	for (std::vector<Soldier *>::const_iterator i = pilots.begin(); i != pilots.end(); ++i)
 	{
-		return 4; // double the speed
+		cooperation += (*i)->getCurrentStats()->cooperation;
 	}
-	else if (bravery >= mod->getPilotBraveryThresholdBold())
-	{
-		return 3; // 50% speed increase
-	}
-	else if (bravery >= mod->getPilotBraveryThresholdNormal())
-	{
-		return 2; // normal speed
-	}
-	else
-	{
-		return 1; // half the speed
-	}
+	cooperation = cooperation / pilots.size(); // average cooperation of all pilots
+
+	return ((cooperation - mod->getPilotCoordinationZeroPoint()) * mod->getPilotCoordinationRange()) / 100;
 }
 
 /**
@@ -2097,7 +2167,7 @@ int Craft::getNumLargeUnits() const
  * Returns the total amount of soldiers from a list that are currently attached to this craft.
  * @return Number of soldiers.
  */
-int Craft::getNumTotalSoldiers() const
+int Craft::getNumTotalSoldiers(bool respectSize) const
 {
 	if (_rules->getMaxUnitsLimit() == 0)
 		return 0;
@@ -2107,7 +2177,16 @@ int Craft::getNumTotalSoldiers() const
 	for (const auto* s : *_base->getSoldiers())
 	{
 		if (s->getCraft() == this)
-			++total;
+		{
+			if (respectSize)
+			{
+				total += s->getRules()->getLivingSpace();
+			}
+			else
+			{
+				++total;
+			}
+		}
 	}
 
 	return total;
@@ -2190,6 +2269,10 @@ CraftPlacementErrors Craft::validateAddingSoldier(int space, const Soldier* s) c
 	{
 		return CPE_TooManySoldiers;
 	}
+	if (s->hasPendingTransformation())
+	{
+		return CPE_SoldierPendingTransformation;
+	}
 	if (s->getArmor()->getSize() == 1)
 	{
 		if (_rules->getMaxSmallSoldiers() > -1 && getNumSmallSoldiers() >= _rules->getMaxSmallSoldiers())
@@ -2238,6 +2321,14 @@ CraftPlacementErrors Craft::validateAddingSoldier(int space, const Soldier* s) c
 		if (s->getRules()->getGroup() != currentGroup)
 		{
 			return CPE_SoldierGroupNotSame;
+		}
+	}
+	auto& allowedArmorGroups = _rules->getAllowedArmorGroups();
+	if (!allowedArmorGroups.empty())
+	{
+		if (std::find(allowedArmorGroups.begin(), allowedArmorGroups.end(), s->getArmor()->getGroup()) == allowedArmorGroups.end())
+		{
+			return CPE_ArmorGroupNotAllowed;
 		}
 	}
 	return CPE_None;
@@ -2343,5 +2434,28 @@ void Craft::ScriptRegister(ScriptParserBase* parser)
 	b.addDebugDisplay<&debugDisplayScript>();
 }
 
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, VehicleDeploymentData* val)
+{
+	YAML::YamlNodeReader reader(n);
+	if (!reader.isMap())
+		return false;
+	reader.tryRead("type", val->type);
+	reader.tryRead("pos", val->pos);
+	reader.tryRead("dir", val->dir);
+	// reader.tryRead("used", val->used); // not needed
+	return true;
+}
+
+void write(ryml::NodeRef* n, VehicleDeploymentData const& val)
+{
+	YAML::YamlNodeWriter writer(*n);
+	writer.setAsMap();
+	writer.setFlowStyle();
+	writer.write("type", val.type);
+	writer.write("pos", val.pos);
+	writer.write("dir", val.dir);
+	// writer.write("used", val.used); // not needed
+}
 
 }

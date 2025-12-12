@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Engine/Functions.h"
 
 namespace OpenXcom
@@ -129,6 +129,9 @@ struct RuleDamageType
 	///   TileDamageMethod==2: ((damage x RandomTile) * ToTile)
 	int TileDamageMethod;
 
+	/// Maximum final tile damage possible, regardless of Power, ToTile, RandomTile, TileDamageMethod, etc.
+	int TileDamageLimit;
+
 	/// Default constructor.
 	RuleDamageType();
 	/// Calculate random value of damage.
@@ -142,7 +145,7 @@ struct RuleDamageType
 	/// Do this damage type affect only one target
 	bool isDirect() const;
 	/// Loads item data from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 
 	/// Get final damage value to health based on damage.
 	int getHealthFinalDamage(int damage) const;

@@ -24,7 +24,6 @@
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
-#include "../Interface/ArrowButton.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
@@ -38,7 +37,6 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -70,7 +68,6 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	_txtType = new Text(90, 9, 80, 52);
 	_txtQuantity = new Text(70, 9, 190, 52);
 	_lstArmor = new TextList(160, 80, 73, 68);
-	_sortName = new ArrowButton(ARROW_NONE, 11, 8, 80, 52);
 
 	// Set palette
 	if (_origin == SA_BATTLESCAPE)
@@ -89,7 +86,6 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	add(_txtType, "text", "soldierArmor");
 	add(_txtQuantity, "text", "soldierArmor");
 	add(_lstArmor, "list", "soldierArmor");
-	add(_sortName, "text", "soldierArmor");
 
 	centerAllSurfaces();
 
@@ -113,14 +109,19 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 	_lstArmor->setBackground(_window);
 	_lstArmor->setMargin(8);
 
-	_sortName->setX(_sortName->getX() + _txtType->getTextWidth() + 4);
-	_sortName->onMouseClick((ActionHandler)&SoldierArmorState::sortNameClick);
+	//_sortName->setX(_sortName->getX() + _txtType->getTextWidth() + 4);
+	//_sortName->onMouseClick((ActionHandler)&SoldierArmorState::sortNameClick);
+
+	//{
+	//	// refresh soldier's _bonusCache, needed below in Armor::getCanBeUsedBy()
+	//	//s->getBonuses(_game->getMod());
+	//}
 
 	for (auto* a : _game->getMod()->getArmorsForSoldiers())
 	{
 		if (a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
 			continue;
-		if (!a->getCanBeUsedBy(s->getRules()))
+		if (!a->getCanBeUsedBy(s))
 			continue;
 		if (a->hasInfiniteSupply())
 		{
@@ -147,9 +148,6 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 
 	_btnCancel->onKeyboardRelease((ActionHandler)&SoldierArmorState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
-	_armorOrder = ARMOR_SORT_NONE;
-	sortList();
-
 	_lstArmor->onMouseClick((ActionHandler)&SoldierArmorState::lstArmorClick);
 	_lstArmor->onMouseClick((ActionHandler)&SoldierArmorState::lstArmorClickMiddle, SDL_BUTTON_MIDDLE);
 
@@ -166,48 +164,6 @@ SoldierArmorState::SoldierArmorState(Base *base, size_t soldier, SoldierArmorOri
 SoldierArmorState::~SoldierArmorState()
 {
 
-}
-
-/**
-* Updates the sorting arrows based
-* on the current setting.
-*/
-void SoldierArmorState::updateArrows()
-{
-	_sortName->setShape(ARROW_NONE);
-	switch (_armorOrder)
-	{
-	case ARMOR_SORT_NAME_ASC:
-		_sortName->setShape(ARROW_SMALL_UP);
-		break;
-	case ARMOR_SORT_NAME_DESC:
-		_sortName->setShape(ARROW_SMALL_DOWN);
-		break;
-	default:
-		break;
-	}
-}
-
-/**
-* Sorts the armor list.
-*/
-void SoldierArmorState::sortList()
-{
-	updateArrows();
-
-	switch (_armorOrder)
-	{
-	case ARMOR_SORT_NAME_ASC:
-		std::stable_sort(_armors.begin(), _armors.end(), compareArmorName());
-		break;
-	case ARMOR_SORT_NAME_DESC:
-		std::stable_sort(_armors.rbegin(), _armors.rend(), compareArmorName());
-		break;
-	default:
-		break;
-	}
-
-	updateList();
 }
 
 /**
@@ -324,16 +280,6 @@ void SoldierArmorState::lstArmorClickMiddle(Action *action)
 	Armor* armor = _game->getMod()->getArmor(_armors[_indices[_lstArmor->getSelectedRow()]].type, true);
 	std::string articleId = armor->getUfopediaType();
 	Ufopaedia::openArticle(_game, articleId);
-}
-
-/**
-* Sorts the armors by name.
-* @param action Pointer to an action.
-*/
-void SoldierArmorState::sortNameClick(Action *)
-{
-	_armorOrder = _armorOrder == ARMOR_SORT_NAME_ASC ? ARMOR_SORT_NAME_DESC : ARMOR_SORT_NAME_ASC;
-	sortList();
 }
 
 }

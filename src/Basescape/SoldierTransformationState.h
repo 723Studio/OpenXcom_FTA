@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include <map>
 #include <vector>
 
 namespace OpenXcom
@@ -31,6 +32,8 @@ class TextList;
 class Base;
 class Soldier;
 class RuleSoldierTransformation;
+struct UnitStats;
+template<typename T, typename I> class ScriptValues;
 
 /**
  * Screen that allocates a soldier to a transformation project
@@ -44,9 +47,13 @@ private:
 	std::vector<Soldier *> *_filteredListOfSoldiers;
 	Window *_window;
 	TextEdit *_edtSoldier;
-	Text *_txtCost, *_txtTransferTime, *_txtRecoveryTime, *_txtRequiredItems, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
-	TextList *_lstRequiredItems, *_lstStatChanges;
-	TextButton *_btnCancel, *_btnLeftArrow, *_btnRightArrow, *_btnStart;
+	Text *_txtDescription, *_txtCost, *_txtTransferTime, *_txtRecoveryTime, *_txtRequiredItems, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
+	Text *_txtSoldierBonus, *_txtTooltip;
+	TextList *_lstRequiredItems, *_lstStatChanges, *_lstBonuses;
+	TextButton *_btnCancel, *_btnLeftArrow, *_btnRightArrow, *_btnStart, *_btnStats;
+	bool _ftaUI;
+	std::map<int, int> _tagMapping;
+	std::string _toolTipText;
 
 	/// Creates a string for the soldier stats table
 	std::string formatStat(int stat, bool plus, bool hide);
@@ -68,6 +75,16 @@ public:
 	void btnLeftArrowClick(Action *action);
 	/// Handler for pressing the Right arrow button
 	void btnRightArrowClick(Action *action);
+	/// Handler for pressing the Stats button
+	void btnStatsClick(Action* action);
+	/// Handler for showing tooltip.
+	void showToolTip(Action* action);
+
+	template<typename T, typename J>
+	void addScriptTags(const ScriptValues<T, J>& vec);
+
+	template<typename T, typename J>
+	void getScriptTags(const ScriptValues<T, J>& vec, int i);
 
 };
 

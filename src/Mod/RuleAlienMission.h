@@ -20,7 +20,7 @@
 #include <vector>
 #include <map>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
@@ -132,7 +132,7 @@ public:
 	/// Gets a race based on the game time and the racial distribution.
 	std::string generateRace(const size_t monthsPassed) const;
 	/// Loads alien mission data from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the number of waves.
 	size_t getWaveCount() const { return _waves.size(); }
 	/// Gets the full wave information.
@@ -159,6 +159,8 @@ public:
 	bool isMultiUfoRetaliationExtra() const { return _multiUfoRetaliationExtra; }
 	/// Should the retaliation UFO ignore xcom base defenses?
 	bool ignoreBaseDefenses() const { return _ignoreBaseDefenses; }
+	/// Show extra info during base defense even if the UFO was not yet hyper-detected classically?
+	bool isInstaHyper() const { return _instaHyper; }
 	/// Should the mission site despawn even if targeted?
 	bool despawnEvenIfTargeted() const { return _despawnEvenIfTargeted; }
 	/// Should the original UFO be respawned when the mission site despawns?
@@ -210,6 +212,8 @@ private:
 	bool _multiUfoRetaliationExtra;
 	/// Should the retaliation UFO ignore xcom base defenses?
 	bool _ignoreBaseDefenses;
+	/// Should the retaliation UFO display extra info before xcom base defenses?
+	bool _instaHyper;
 	/// Should the mission site despawn even if targeted?
 	bool _despawnEvenIfTargeted;
 	/// Should the original UFO be respawned when the mission site despawns?
@@ -231,5 +235,8 @@ private:
 	/// The region distribution over game time. Works only for "gen missions" spawned by an alien base.
 	std::vector<std::pair<size_t, WeightedOptions*> > _regionWeights;
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, MissionWave* val);
 
 }

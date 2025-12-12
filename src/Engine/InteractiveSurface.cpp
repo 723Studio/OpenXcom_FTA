@@ -31,7 +31,7 @@ const SDLKey InteractiveSurface::SDLK_ANY = (SDLKey)-1; // using an unused keyco
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-InteractiveSurface::InteractiveSurface(int width, int height, int x, int y) : Surface(width, height, x, y), _buttonsPressed(0), _in(0), _over(0), _out(0), _isHovered(false), _isFocused(true), _listButton(false), _tftdMode(false)
+InteractiveSurface::InteractiveSurface(int width, int height, int x, int y) : Surface(width, height, x, y), _buttonsPressed(0), _in(0), _over(0), _out(0), _isHovered(false), _isFocused(true), _listButton(false), _tftdMode(false), _isDisabled(false)
 {
 }
 
@@ -105,7 +105,7 @@ void InteractiveSurface::setVisible(bool visible)
  */
 void InteractiveSurface::handle(Action *action, State *state)
 {
-	if (!_visible || _hidden)
+	if (!_visible || _hidden || _isDisabled)
 		return;
 
 	action->setSender(this);

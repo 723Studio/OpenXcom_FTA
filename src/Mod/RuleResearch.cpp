@@ -25,52 +25,63 @@
 namespace OpenXcom
 {
 
-RuleResearch::RuleResearch(const std::string &name, int listOrder) : _name(name), _spawnedItemCount(1), _cost(0), _points(0), _sequentialGetOneFree(false), _needItem(false), _destroyItem(false), _unlockFinalMission(false), _listOrder(listOrder)
+RuleResearch::RuleResearch(const std::string &name, int listOrder) :
+	_name(name), _spawnedItemCount(1), _cost(0), _points(0), _funds(0), _counterValue(1),
+	_sequentialGetOneFree(false), _needItem(false), _destroyItem(false), _hidden(false), _unlockFinalMission(false), _repeatable(false),
+	_listOrder(listOrder)
 {
 }
 
 /**
  * Loads the research project from a YAML file.
  * @param node YAML node.
+ * @param mod
+ * @param parsers
  * @param listOrder The list weight for this research.
  */
-void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parsers)
+void RuleResearch::load(const YAML::YamlNodeReader& node, Mod* mod, const ModScript& parsers)
 {
-	if (const YAML::Node &parent = node["refNode"])
+	const auto& reader = node.useIndex();
+	if (const auto& parent = reader["refNode"])
 	{
 		load(parent, mod, parsers);
 	}
 
-	_lookup = node["lookup"].as<std::string>(_lookup);
-	_cutscene = node["cutscene"].as<std::string>(_cutscene);
-	_spawnedItem = node["spawnedItem"].as<std::string>(_spawnedItem);
-	_spawnedItemCount = node["spawnedItemCount"].as<int>(_spawnedItemCount);
-	mod->loadUnorderedNames(_name, _spawnedItemList, node["spawnedItemList"]);
-	mod->loadUnorderedNames(_name, _decreaseCounter, node["decreaseCounter"]);
-	mod->loadUnorderedNames(_name, _increaseCounter, node["increaseCounter"]);
-	_spawnedEvent = node["spawnedEvent"].as<std::string>(_spawnedEvent);
-	_cost = node["cost"].as<int>(_cost);
-	_points = node["points"].as<int>(_points);
-	mod->loadUnorderedNames(_name, _dependenciesName, node["dependencies"]);
-	mod->loadUnorderedNames(_name, _unlocksName, node["unlocks"]);
-	mod->loadUnorderedNames(_name, _disablesName, node["disables"]);
-	mod->loadUnorderedNames(_name, _reenablesName, node["reenables"]);
-	mod->loadUnorderedNames(_name, _getOneFreeName, node["getOneFree"]);
-	mod->loadUnorderedNames(_name, _requiresName, node["requires"]);
-	mod->loadBaseFunction(_name, _requiresBaseFunc, node["requiresBaseFunc"]);
-	_sequentialGetOneFree = node["sequentialGetOneFree"].as<bool>(_sequentialGetOneFree);
-	mod->loadNamesToNames(_name, _getOneFreeProtectedName, node["getOneFreeProtected"]);
-	mod->loadNameNull(_name, _neededItemName, node["neededItem"]);
-	_needItem = node["needItem"].as<bool>(_needItem);
-	_destroyItem = node["destroyItem"].as<bool>(_destroyItem);
-	_unlockFinalMission = node["unlockFinalMission"].as<bool>(_unlockFinalMission);
-	_listOrder = node["listOrder"].as<int>(_listOrder);
-	// This is necessary, research code assumes it!
-	if (!_requiresName.empty() && _cost != 0)
+	reader.tryRead("lookup", _lookup);
+	reader.tryRead("cutscene", _cutscene);
+	reader.tryRead("spawnedItem", _spawnedItem);
+	reader.tryRead("spawnedItemCount", _spawnedItemCount);
+	mod->loadUnorderedNames(_name, _spawnedItemList, reader["spawnedItemList"]);
+	mod->loadUnorderedNames(_name, _decreaseCounter, reader["decreaseCounter"]);
+	mod->loadUnorderedNames(_name, _increaseCounter, reader["increaseCounter"]);
+	reader.tryRead("counterValue", _counterValue);
+	reader.tryRead("spawnedEvent", _spawnedEvent);
+	if (reader["randomEvents"])
 	{
-		throw Exception("Research topic " + _name + " has requirements, but the cost is not zero. Sorry, this is not allowed!");
+		_randomEvents.load(reader["randomEvents"]);
 	}
-	_scriptValues.load(node, parsers.getShared());
+	reader.tryRead("cost", _cost);
+	_stats.merge(reader["stats"].readVal(_stats));
+	reader.tryRead("points", _points);
+	reader.tryRead("funds", _funds);
+	mod->loadUnorderedNames(_name, _dependenciesName, reader["dependencies"]);
+	mod->loadUnorderedNames(_name, _unlocksName, reader["unlocks"]);
+	mod->loadUnorderedNames(_name, _disablesName, reader["disables"]);
+	mod->loadUnorderedNames(_name, _reenablesName, reader["reenables"]);
+	mod->loadUnorderedNames(_name, _getOneFreeName, reader["getOneFree"]);
+	mod->loadUnorderedNames(_name, _requiresName, reader["requires"]);
+	mod->loadBaseFunction(_name, _requiresBaseFunc, reader["requiresBaseFunc"]);
+	reader.tryRead("sequentialGetOneFree", _sequentialGetOneFree);
+	mod->loadNamesToNames(_name, _getOneFreeProtectedName, reader["getOneFreeProtected"]);
+	mod->loadNameNull(_name, _neededItemName, reader["neededItem"]);
+	reader.tryRead("needItem", _needItem);
+	reader.tryRead("destroyItem", _destroyItem);
+	reader.tryRead("hidden", _hidden);
+	reader.tryRead("unlockFinalMission", _unlockFinalMission);
+	reader.tryRead("repeatable", _repeatable);
+	reader.tryRead("listOrder", _listOrder);
+
+	_scriptValues.load(reader, parsers.getShared());
 }
 
 /**
@@ -78,6 +89,12 @@ void RuleResearch::load(const YAML::Node &node, Mod* mod, const ModScript& parse
  */
 void RuleResearch::afterLoad(const Mod* mod)
 {
+	// This is necessary, research code assumes it!
+	if (!_requiresName.empty() && _cost != 0)
+	{
+		throw Exception("Research topic " + _name + " has requirements, but the cost is not zero. Sorry, this is not allowed!");
+	}
+
 	if (_lookup == _name)
 	{
 		_lookup = "";
@@ -96,6 +113,11 @@ void RuleResearch::afterLoad(const Mod* mod)
 		{
 			_neededItem = mod->getItem(_neededItemName, true);
 		}
+	}
+
+	if (mod->isFTAGame() && _stats.empty() && !_hidden && _cost > 0)
+	{
+		throw Exception("Stats are not defined for research project with cost > 0, it is required for FTA game");
 	}
 
 	_dependencies = mod->getResearch(_dependenciesName);
@@ -132,7 +154,7 @@ void RuleResearch::afterLoad(const Mod* mod)
 
 /**
  * Gets the cost of this ResearchProject.
- * @return The cost of this ResearchProject (in man/day).
+ * @return The cost of this ResearchProject (in man/day, or man/hours for FtA).
  */
 int RuleResearch::getCost() const
 {

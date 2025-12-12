@@ -163,7 +163,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setHighContrast(true);
-	_txtTitle->setText(tr("STR_OPENXCOM"));
+	_txtTitle->setText(tr("STR_OPENXCOM").arg(Options::getActiveMasterInfo()->getVersionDisplay()));
 
 
 	_txtTurn->setBig();
@@ -535,9 +535,11 @@ void NextTurnState::close()
 		_battleGame->getBattleGame()->resetAllEnemiesNeutralized();
 	}
 
-	// not "escort the VIPs" missions, not the final mission and all aliens dead.
+	// not "escort the VIPs" missions, unprocessed battleScripts, not the final mission and all aliens dead.
 	bool killingAllAliensIsNotEnough = _battleGame->getObjectiveType() == MUST_DESTROY || (_battleGame->getVIPSurvivalPercentage() > 0 && _battleGame->getVIPEscapeType() != ESCAPE_NONE);
-	if ((!killingAllAliensIsNotEnough && tally.liveAliens == 0) || tally.liveSoldiers == 0)
+	bool toDoScripts = _battleGame->getBattleGame()->scriptsToProcess();
+
+	if ((!killingAllAliensIsNotEnough && tally.liveAliens == 0 && !toDoScripts) || tally.liveSoldiers == 0)
 	{
 		_state->finishBattle(false, tally.liveSoldiers);
 	}

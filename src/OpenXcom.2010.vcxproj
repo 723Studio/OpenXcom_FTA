@@ -127,8 +127,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level1</WarningLevel>
@@ -136,11 +136,11 @@
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cppd.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -162,19 +162,19 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;_DEBUG;_CONSOLE%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cppd.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -193,8 +193,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -203,11 +203,11 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cpp.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -228,8 +228,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XP|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;_WIN32_WINNT=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;_WIN32_WINNT=0x0501;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level1</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -238,11 +238,11 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cpp.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -263,8 +263,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -273,11 +273,11 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cpp.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -297,8 +297,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_XP|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\deps\include\yaml-cpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;YAML_CPP_DLL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -307,11 +307,11 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/utf-8</AdditionalOptions>
+      <AdditionalOptions>/utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>yaml-cpp.lib;SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL_image.lib;SDL_mixer.lib;SDL_gfx.lib;SDLmain.lib;SDL.lib;SDL_gfx.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\deps\lib\$(Platform);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -331,10 +331,36 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\libs\miniz\miniz.c" />
+    <ClCompile Include="..\libs\rapidyaml\c4\base64.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\char_traits.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\error.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\format.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\language.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\memory_resource.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\memory_util.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\utf.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\common.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\node.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\node_type.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\parse.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\preprocess.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\reference_resolver.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\tag.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\tree.cpp" />
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\version.cpp" />
+    <ClCompile Include="Basescape\AgentsState.cpp" />
     <ClCompile Include="Basescape\BaseInfoState.cpp" />
+    <ClCompile Include="Basescape\BaseInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\BasescapeState.cpp" />
     <ClCompile Include="Basescape\BaseView.cpp" />
     <ClCompile Include="Basescape\BuildFacilitiesState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationArmorState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationEquipmentState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationInfoState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationsListState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationSoldiersState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationStartState.cpp" />
+    <ClCompile Include="Basescape\CovertOperationState.cpp" />
     <ClCompile Include="Basescape\CraftArmorState.cpp" />
     <ClCompile Include="Basescape\CraftEquipmentLoadState.cpp" />
     <ClCompile Include="Basescape\CraftEquipmentSaveState.cpp" />
@@ -346,24 +372,42 @@
     <ClCompile Include="Basescape\CraftsState.cpp" />
     <ClCompile Include="Basescape\CraftWeaponsState.cpp" />
     <ClCompile Include="Basescape\DismantleFacilityState.cpp" />
+    <ClCompile Include="Basescape\DisposeState.cpp" />
+    <ClCompile Include="Basescape\EngineersState.cpp" />
     <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
+    <ClCompile Include="Basescape\IntelAllocateAgentsState.cpp" />
+    <ClCompile Include="Basescape\IntelligenceProjectDetailsState.cpp" />
+    <ClCompile Include="Basescape\IntelState.cpp" />
+    <ClCompile Include="Basescape\ItemLocationsState.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
+    <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\ManufactureDependenciesTreeState.cpp" />
-    <ClCompile Include="Basescape\ManufactureState.cpp" />
-    <ClCompile Include="Basescape\NewManufactureListState.cpp" />
     <ClCompile Include="Basescape\ManufactureInfoState.cpp" />
+    <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp" />
+    <ClCompile Include="Basescape\ManufactureState.cpp" />
+    <ClCompile Include="Basescape\MontlySoldierExperienceState.cpp" />
+    <ClCompile Include="Basescape\NewManufactureListState.cpp" />
+    <ClCompile Include="Basescape\ManufactureInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\MiniBaseView.cpp" />
     <ClCompile Include="Basescape\MonthlyCostsState.cpp" />
     <ClCompile Include="Basescape\NewResearchListState.cpp" />
+    <ClCompile Include="Basescape\PilotsState.cpp" />
     <ClCompile Include="Basescape\PlaceFacilityState.cpp" />
     <ClCompile Include="Basescape\PlaceLiftState.cpp" />
     <ClCompile Include="Basescape\ManufactureStartState.cpp" />
     <ClCompile Include="Basescape\PlaceStartFacilityState.cpp" />
+    <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp" />
+    <ClCompile Include="Basescape\PrisonerInfoState.cpp" />
+    <ClCompile Include="Basescape\PrisonManagementState.cpp" />
     <ClCompile Include="Basescape\PurchaseState.cpp" />
+    <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp" />
     <ClCompile Include="Basescape\ResearchInfoState.cpp" />
+    <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp" />
+    <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\ResearchState.cpp" />
+    <ClCompile Include="Basescape\ScientistsState.cpp" />
     <ClCompile Include="Basescape\SelectStartFacilityState.cpp" />
     <ClCompile Include="Basescape\SackSoldierState.cpp" />
     <ClCompile Include="Basescape\SellState.cpp" />
@@ -374,13 +418,16 @@
     <ClCompile Include="Basescape\SoldierDiaryOverviewState.cpp" />
     <ClCompile Include="Basescape\SoldierDiaryPerformanceState.cpp" />
     <ClCompile Include="Basescape\SoldierAvatarState.cpp" />
+    <ClCompile Include="Basescape\SoldierExperienceState.cpp" />
     <ClCompile Include="Basescape\SoldierInfoState.cpp" />
+    <ClCompile Include="Basescape\SoldierInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\SoldierMemorialState.cpp" />
     <ClCompile Include="Basescape\SoldierRankState.cpp" />
     <ClCompile Include="Basescape\SoldierSortUtil.cpp" />
     <ClCompile Include="Basescape\SoldiersState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationListState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationState.cpp" />
+    <ClCompile Include="Basescape\SoldierTransformationStatsState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformState.cpp" />
     <ClCompile Include="Basescape\StoresState.cpp" />
     <ClCompile Include="Basescape\TechTreeSelectState.cpp" />
@@ -408,12 +455,15 @@
     <ClCompile Include="Battlescape\CommendationLateState.cpp" />
     <ClCompile Include="Battlescape\CommendationState.cpp" />
     <ClCompile Include="Battlescape\ConfirmEndMissionState.cpp" />
+    <ClCompile Include="Battlescape\CustomBattleMessageState.cpp" />
+    <ClCompile Include="Battlescape\DebriefingExtraStatsState.cpp" />
     <ClCompile Include="Battlescape\DebriefingState.cpp" />
     <ClCompile Include="Battlescape\ExperienceOverviewState.cpp" />
     <ClCompile Include="Battlescape\Explosion.cpp" />
     <ClCompile Include="Battlescape\ExplosionBState.cpp" />
     <ClCompile Include="Battlescape\ExtendedBattlescapeLinksState.cpp" />
     <ClCompile Include="Battlescape\ExtendedInventoryLinksState.cpp" />
+    <ClCompile Include="Battlescape\HackingState.cpp" />
     <ClCompile Include="Battlescape\InfoboxOKState.cpp" />
     <ClCompile Include="Battlescape\InfoboxState.cpp" />
     <ClCompile Include="Battlescape\Inventory.cpp" />
@@ -429,10 +479,10 @@
     <ClCompile Include="Battlescape\MiniMapState.cpp" />
     <ClCompile Include="Battlescape\MiniMapView.cpp" />
     <ClCompile Include="Battlescape\NextTurnState.cpp" />
-    <ClCompile Include="Battlescape\NoExperienceState.cpp" />
     <ClCompile Include="Battlescape\Pathfinding.cpp" />
     <ClCompile Include="Battlescape\PathfindingNode.cpp" />
     <ClCompile Include="Battlescape\PathfindingOpenSet.cpp" />
+    <ClCompile Include="Battlescape\Position.cpp" />
     <ClCompile Include="Battlescape\PrimeGrenadeState.cpp" />
     <ClCompile Include="Battlescape\Projectile.cpp" />
     <ClCompile Include="Battlescape\ProjectileFlyBState.cpp" />
@@ -461,11 +511,16 @@
     <ClCompile Include="Engine\FastLineClip.cpp" />
     <ClCompile Include="Engine\FileMap.cpp" />
     <ClCompile Include="Engine\FlcPlayer.cpp" />
+    <ClCompile Include="Engine\OXCContainer.cpp" />
+    <ClCompile Include="Engine\OXCCrypto.cpp" />
+    <ClCompile Include="Engine\tiny_aes.c" />
     <ClCompile Include="Engine\Font.cpp" />
     <ClCompile Include="Engine\Game.cpp" />
     <ClCompile Include="Engine\GMCat.cpp" />
     <ClCompile Include="Engine\InteractiveSurface.cpp" />
-    <ClCompile Include="Engine\Language.cpp" />
+    <ClCompile Include="Engine\Language.cpp">
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="Engine\LanguagePlurality.cpp" />
     <ClCompile Include="Engine\LocalizedText.cpp" />
     <ClCompile Include="Engine\ModInfo.cpp" />
@@ -491,15 +546,27 @@
     <ClCompile Include="Engine\Surface.cpp" />
     <ClCompile Include="Engine\SurfaceSet.cpp" />
     <ClCompile Include="Engine\Timer.cpp" />
+    <ClCompile Include="Engine\TouchState.cpp" />
     <ClCompile Include="Engine\Unicode.cpp" />
+    <ClCompile Include="Engine\Yaml.cpp" />
     <ClCompile Include="Engine\Zoom.cpp" />
+    <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp" />
+    <ClCompile Include="FTA\DiplomacyPurchaseState.cpp" />
+    <ClCompile Include="FTA\DiplomacySellState.cpp" />
+    <ClCompile Include="FTA\DiplomacyStartState.cpp" />
+    <ClCompile Include="FTA\MasterMind.cpp" />
     <ClCompile Include="Geoscape\AlienBaseState.cpp" />
     <ClCompile Include="Geoscape\AllocateTrainingState.cpp" />
+    <ClCompile Include="Geoscape\AltMonthlyReportState.cpp" />
     <ClCompile Include="Geoscape\CraftNotEnoughPilotsState.cpp" />
     <ClCompile Include="Geoscape\DogfightErrorState.cpp" />
     <ClCompile Include="Geoscape\DogfightExperienceState.cpp" />
+    <ClCompile Include="Geoscape\FinishedCoverOperationDetailsState.cpp" />
+    <ClCompile Include="Geoscape\FinishedCoverOperationState.cpp" />
     <ClCompile Include="Geoscape\ExtendedGeoscapeLinksState.cpp" />
     <ClCompile Include="Geoscape\GeoscapeEventState.cpp" />
+    <ClCompile Include="Geoscape\IntelAvailableState.cpp" />
+    <ClCompile Include="Geoscape\IntelCompleteState.cpp" />
     <ClCompile Include="Geoscape\MissionDetectedState.cpp" />
     <ClCompile Include="Geoscape\AllocatePsiTrainingState.cpp" />
     <ClCompile Include="Geoscape\BaseDefenseState.cpp" />
@@ -516,6 +583,7 @@
     <ClCompile Include="Geoscape\NewPossibleCraftState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleFacilityState.cpp" />
     <ClCompile Include="Geoscape\NewPossiblePurchaseState.cpp" />
+    <ClCompile Include="Geoscape\PrisonReportState.cpp" />
     <ClCompile Include="Geoscape\ResearchRequiredState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleManufactureState.cpp" />
     <ClCompile Include="Geoscape\PsiTrainingState.cpp" />
@@ -537,9 +605,12 @@
     <ClCompile Include="Geoscape\TargetInfoState.cpp" />
     <ClCompile Include="Geoscape\TrainingFinishedState.cpp" />
     <ClCompile Include="Geoscape\TrainingState.cpp" />
+    <ClCompile Include="Geoscape\TransformationFinishedState.cpp" />
     <ClCompile Include="Geoscape\UfoDetectedState.cpp" />
     <ClCompile Include="Geoscape\UfoLostState.cpp" />
     <ClCompile Include="Geoscape\UfoTrackerState.cpp" />
+    <ClCompile Include="Battlescape\HackingView.cpp" />
+    <ClCompile Include="Battlescape\HackingBState.cpp" />
     <ClCompile Include="Interface\ArrowButton.cpp" />
     <ClCompile Include="Interface\Bar.cpp" />
     <ClCompile Include="Interface\BattlescapeButton.cpp" />
@@ -597,14 +668,21 @@
     <ClCompile Include="Menu\TestPaletteState.cpp" />
     <ClCompile Include="Menu\TestState.cpp" />
     <ClCompile Include="Menu\VideoState.cpp" />
+    <ClCompile Include="Mod\BattleScript.cpp" />
     <ClCompile Include="Mod\CustomPalettes.cpp" />
     <ClCompile Include="Mod\RuleArcScript.cpp" />
+    <ClCompile Include="Mod\RuleCovertOperation.cpp" />
     <ClCompile Include="Mod\RuleDamageType.cpp" />
+    <ClCompile Include="Mod\RuleDiplomacyFaction.cpp" />
+    <ClCompile Include="Mod\RuleDiplomacyFactionEvent.cpp" />
     <ClCompile Include="Mod\RuleEnviroEffects.cpp" />
     <ClCompile Include="Mod\RuleEvent.cpp" />
     <ClCompile Include="Mod\RuleEventScript.cpp" />
+    <ClCompile Include="Mod\RuleIntelProject.cpp" />
     <ClCompile Include="Mod\RuleItemCategory.cpp" />
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp" />
+    <ClCompile Include="Mod\RuleObject.cpp" />
+    <ClCompile Include="Mod\RulePrisoner.cpp" />
     <ClCompile Include="Mod\RuleSkill.cpp" />
     <ClCompile Include="Mod\RuleSoldierBonus.cpp" />
     <ClCompile Include="Mod\RuleSoldierTransformation.cpp" />
@@ -659,16 +737,22 @@
     <ClCompile Include="Savegame\AlienMission.cpp" />
     <ClCompile Include="Savegame\Base.cpp" />
     <ClCompile Include="Savegame\BaseFacility.cpp" />
+    <ClCompile Include="Savegame\BasePrisoner.cpp" />
     <ClCompile Include="Savegame\BattleItem.cpp" />
+    <ClCompile Include="Savegame\BattleObject.cpp" />
     <ClCompile Include="Savegame\BattleUnit.cpp" />
     <ClCompile Include="Savegame\Country.cpp" />
+    <ClCompile Include="Savegame\CovertOperation.cpp" />
     <ClCompile Include="Savegame\Craft.cpp" />
     <ClCompile Include="Savegame\CraftWeapon.cpp" />
     <ClCompile Include="Savegame\CraftWeaponProjectile.cpp" />
+    <ClCompile Include="Savegame\DiplomacyFaction.cpp" />
     <ClCompile Include="Savegame\EquipmentLayoutItem.cpp" />
+    <ClCompile Include="Savegame\FactionalResearch.cpp" />
     <ClCompile Include="Savegame\GameTime.cpp" />
     <ClCompile Include="Savegame\GeoscapeEvent.cpp" />
     <ClCompile Include="Savegame\HitLog.cpp" />
+    <ClCompile Include="Savegame\IntelProject.cpp" />
     <ClCompile Include="Savegame\ItemContainer.cpp" />
     <ClCompile Include="Savegame\MovingTarget.cpp" />
     <ClCompile Include="Savegame\Production.cpp" />
@@ -680,10 +764,13 @@
     <ClCompile Include="Savegame\SavedGame.cpp" />
     <ClCompile Include="Savegame\SerializationHelper.cpp" />
     <ClCompile Include="Savegame\Soldier.cpp" />
-    <ClCompile Include="Savegame\Node.cpp" />
+    <ClCompile Include="Savegame\Node.cpp">
+      <ObjectFileName>$(IntDir)%(RelativeDir)</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="Savegame\SoldierAvatar.cpp" />
     <ClCompile Include="Savegame\SoldierDeath.cpp" />
     <ClCompile Include="Savegame\SoldierDiary.cpp" />
+    <ClCompile Include="Savegame\SoldierPool.cpp" />
     <ClCompile Include="Savegame\Target.cpp" />
     <ClCompile Include="Savegame\MissionSite.cpp" />
     <ClCompile Include="Savegame\Tile.cpp" />
@@ -717,10 +804,99 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libs\miniz\miniz.h" />
+    <ClInclude Include="..\libs\rapidyaml\c4\allocator.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\base64.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\bitmask.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\blob.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\c4_pop.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\c4_push.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\charconv.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\char_traits.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\common.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\compiler.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\config.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\cpu.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\ctor_dtor.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\dump.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\enum.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\error.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\export.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\ext\fast_float.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\ext\fast_float_all.h" />
+    <ClInclude Include="..\libs\rapidyaml\c4\ext\rng\rng.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\ext\sg14\inplace_function.h" />
+    <ClInclude Include="..\libs\rapidyaml\c4\format.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\gcc-4.8.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\hash.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\language.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\memory_resource.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\memory_util.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\platform.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\preprocessor.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\restrict.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\span.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\std.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\std_fwd.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\string.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\string_fwd.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\string_view.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\tuple.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\vector.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\std\vector_fwd.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\substr.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\substr_fwd.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\szconv.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\types.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\type_name.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\unrestrict.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\utf.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\windows.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\windows_pop.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\windows_push.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\common.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\checks.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\parser_dbg.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\print.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\detail\stack.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\emit.def.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\emit.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\event_handler_stack.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\event_handler_tree.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\export.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\filter_processor.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\fwd.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\node.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\node_type.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\parser_state.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse_engine.def.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\parse_engine.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\preprocess.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\reference_resolver.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\map.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\std.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\string.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\std\vector.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\tag.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\tree.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\version.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\writer.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\c4\yml\yml.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\ryml.hpp" />
+    <ClInclude Include="..\libs\rapidyaml\ryml_std.hpp" />
+    <ClInclude Include="Basescape\AgentsState.h" />
     <ClInclude Include="Basescape\BaseInfoState.h" />
+    <ClInclude Include="Basescape\BaseInfoStateFtA.h" />
     <ClInclude Include="Basescape\BasescapeState.h" />
     <ClInclude Include="Basescape\BaseView.h" />
     <ClInclude Include="Basescape\BuildFacilitiesState.h" />
+    <ClInclude Include="Basescape\CovertOperationArmorState.h" />
+    <ClInclude Include="Basescape\CovertOperationEquipmentState.h" />
+    <ClInclude Include="Basescape\CovertOperationInfoState.h" />
+    <ClInclude Include="Basescape\CovertOperationsListState.h" />
+    <ClInclude Include="Basescape\CovertOperationSoldiersState.h" />
+    <ClInclude Include="Basescape\CovertOperationStartState.h" />
+    <ClInclude Include="Basescape\CovertOperationState.h" />
     <ClInclude Include="Basescape\CraftArmorState.h" />
     <ClInclude Include="Basescape\CraftEquipmentLoadState.h" />
     <ClInclude Include="Basescape\CraftEquipmentSaveState.h" />
@@ -732,24 +908,42 @@
     <ClInclude Include="Basescape\CraftsState.h" />
     <ClInclude Include="Basescape\CraftWeaponsState.h" />
     <ClInclude Include="Basescape\DismantleFacilityState.h" />
+    <ClInclude Include="Basescape\DisposeState.h" />
+    <ClInclude Include="Basescape\EngineersState.h" />
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h" />
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
+    <ClInclude Include="Basescape\IntelAllocateAgentsState.h" />
+    <ClInclude Include="Basescape\IntelligenceProjectDetailsState.h" />
+    <ClInclude Include="Basescape\IntelState.h" />
+    <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h" />
+    <ClInclude Include="Basescape\ItemLocationsState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
+    <ClInclude Include="Basescape\ManufactureInfoState.h" />
+    <ClInclude Include="Basescape\ManufactureProductDetailsState.h" />
+    <ClInclude Include="Basescape\MontlySoldierExperienceState.h" />
     <ClInclude Include="Basescape\NewManufactureListState.h" />
     <ClInclude Include="Basescape\ManageAlienContainmentState.h" />
-    <ClInclude Include="Basescape\ManufactureInfoState.h" />
+    <ClInclude Include="Basescape\ManufactureInfoStateFtA.h" />
     <ClInclude Include="Basescape\ManufactureState.h" />
     <ClInclude Include="Basescape\MiniBaseView.h" />
     <ClInclude Include="Basescape\MonthlyCostsState.h" />
     <ClInclude Include="Basescape\NewResearchListState.h" />
+    <ClInclude Include="Basescape\PilotsState.h" />
     <ClInclude Include="Basescape\PlaceFacilityState.h" />
     <ClInclude Include="Basescape\PlaceLiftState.h" />
     <ClInclude Include="Basescape\ManufactureStartState.h" />
     <ClInclude Include="Basescape\PlaceStartFacilityState.h" />
+    <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h" />
+    <ClInclude Include="Basescape\PrisonerInfoState.h" />
+    <ClInclude Include="Basescape\PrisonManagementState.h" />
     <ClInclude Include="Basescape\PurchaseState.h" />
+    <ClInclude Include="Basescape\ResearchAllocateScientistsState.h" />
     <ClInclude Include="Basescape\ResearchInfoState.h" />
+    <ClInclude Include="Basescape\ResearchInfoStateFtA.h" />
+    <ClInclude Include="Basescape\ResearchProjectDetailsState.h" />
     <ClInclude Include="Basescape\ResearchState.h" />
+    <ClInclude Include="Basescape\ScientistsState.h" />
     <ClInclude Include="Basescape\SelectStartFacilityState.h" />
     <ClInclude Include="Basescape\SackSoldierState.h" />
     <ClInclude Include="Basescape\SellState.h" />
@@ -760,13 +954,16 @@
     <ClInclude Include="Basescape\SoldierDiaryOverviewState.h" />
     <ClInclude Include="Basescape\SoldierDiaryPerformanceState.h" />
     <ClInclude Include="Basescape\SoldierAvatarState.h" />
+    <ClInclude Include="Basescape\SoldierExperienceState.h" />
     <ClInclude Include="Basescape\SoldierInfoState.h" />
+    <ClInclude Include="Basescape\SoldierInfoStateFtA.h" />
     <ClInclude Include="Basescape\SoldierMemorialState.h" />
     <ClInclude Include="Basescape\SoldierRankState.h" />
     <ClInclude Include="Basescape\SoldierSortUtil.h" />
     <ClInclude Include="Basescape\SoldiersState.h" />
     <ClInclude Include="Basescape\SoldierTransformationListState.h" />
     <ClInclude Include="Basescape\SoldierTransformationState.h" />
+    <ClInclude Include="Basescape\SoldierTransformationStatsState.h" />
     <ClInclude Include="Basescape\SoldierTransformState.h" />
     <ClInclude Include="Basescape\StoresState.h" />
     <ClInclude Include="Basescape\TechTreeSelectState.h" />
@@ -794,12 +991,15 @@
     <ClInclude Include="Battlescape\CommendationLateState.h" />
     <ClInclude Include="Battlescape\CommendationState.h" />
     <ClInclude Include="Battlescape\ConfirmEndMissionState.h" />
+    <ClInclude Include="Battlescape\CustomBattleMessageState.h" />
+    <ClInclude Include="Battlescape\DebriefingExtraStatsState.h" />
     <ClInclude Include="Battlescape\DebriefingState.h" />
     <ClInclude Include="Battlescape\ExperienceOverviewState.h" />
     <ClInclude Include="Battlescape\Explosion.h" />
     <ClInclude Include="Battlescape\ExplosionBState.h" />
     <ClInclude Include="Battlescape\ExtendedBattlescapeLinksState.h" />
     <ClInclude Include="Battlescape\ExtendedInventoryLinksState.h" />
+    <ClInclude Include="Battlescape\HackingState.h" />
     <ClInclude Include="Battlescape\InfoboxOKState.h" />
     <ClInclude Include="Battlescape\InfoboxState.h" />
     <ClInclude Include="Battlescape\Inventory.h" />
@@ -815,7 +1015,6 @@
     <ClInclude Include="Battlescape\MiniMapState.h" />
     <ClInclude Include="Battlescape\MiniMapView.h" />
     <ClInclude Include="Battlescape\NextTurnState.h" />
-    <ClInclude Include="Battlescape\NoExperienceState.h" />
     <ClInclude Include="Battlescape\Pathfinding.h" />
     <ClInclude Include="Battlescape\PathfindingNode.h" />
     <ClInclude Include="Battlescape\PathfindingOpenSet.h" />
@@ -851,6 +1050,8 @@
     <ClInclude Include="Engine\FastLineClip.h" />
     <ClInclude Include="Engine\FileMap.h" />
     <ClInclude Include="Engine\FlcPlayer.h" />
+    <ClInclude Include="Engine\OXCContainer.h" />
+    <ClInclude Include="Engine\OXCCrypto.h" />
     <ClInclude Include="Engine\Font.h" />
     <ClInclude Include="Engine\Functions.h" />
     <ClInclude Include="Engine\Game.h" />
@@ -864,6 +1065,7 @@
     <ClInclude Include="Engine\Logger.h" />
     <ClInclude Include="Engine\ModInfo.h" />
     <ClInclude Include="Engine\Music.h" />
+    <ClInclude Include="Engine\NullableValue.h" />
     <ClInclude Include="Engine\OpenGL.h" />
     <ClInclude Include="Engine\OptionInfo.h" />
     <ClInclude Include="Engine\Options.h" />
@@ -891,18 +1093,30 @@
     <ClInclude Include="Engine\Surface.h" />
     <ClInclude Include="Engine\SurfaceSet.h" />
     <ClInclude Include="Engine\Timer.h" />
+    <ClInclude Include="Engine\TouchState.h" />
     <ClInclude Include="Engine\Unicode.h" />
+    <ClInclude Include="Engine\Yaml.h" />
     <ClInclude Include="Engine\Zoom.h" />
     <ClInclude Include="fallthrough.h" />
     <ClInclude Include="fmath.h" />
+    <ClInclude Include="FTA\DiplomacyHirePersonnelState.h" />
+    <ClInclude Include="FTA\DiplomacyPurchaseState.h" />
+    <ClInclude Include="FTA\DiplomacySellState.h" />
+    <ClInclude Include="FTA\DiplomacyStartState.h" />
+    <ClInclude Include="FTA\MasterMind.h" />
     <ClInclude Include="Geoscape\AlienBaseState.h" />
     <ClInclude Include="Geoscape\AllocateTrainingState.h" />
+    <ClInclude Include="Geoscape\AltMonthlyReportState.h" />
     <ClInclude Include="Geoscape\Cord.h" />
     <ClInclude Include="Geoscape\CraftNotEnoughPilotsState.h" />
     <ClInclude Include="Geoscape\DogfightErrorState.h" />
     <ClInclude Include="Geoscape\DogfightExperienceState.h" />
+    <ClInclude Include="Geoscape\FinishedCoverOperationDetailsState.h" />
+    <ClInclude Include="Geoscape\FinishedCoverOperationState.h" />
     <ClInclude Include="Geoscape\ExtendedGeoscapeLinksState.h" />
     <ClInclude Include="Geoscape\GeoscapeEventState.h" />
+    <ClInclude Include="Geoscape\IntelAvailableState.h" />
+    <ClInclude Include="Geoscape\IntelCompleteState.h" />
     <ClInclude Include="Geoscape\MissionDetectedState.h" />
     <ClInclude Include="Geoscape\AllocatePsiTrainingState.h" />
     <ClInclude Include="Geoscape\BaseDefenseState.h" />
@@ -920,6 +1134,7 @@
     <ClInclude Include="Geoscape\NewPossibleCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleFacilityState.h" />
     <ClInclude Include="Geoscape\NewPossiblePurchaseState.h" />
+    <ClInclude Include="Geoscape\PrisonReportState.h" />
     <ClInclude Include="Geoscape\ResearchRequiredState.h" />
     <ClInclude Include="Geoscape\GeoscapeCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleManufactureState.h" />
@@ -940,9 +1155,12 @@
     <ClInclude Include="Geoscape\TargetInfoState.h" />
     <ClInclude Include="Geoscape\TrainingFinishedState.h" />
     <ClInclude Include="Geoscape\TrainingState.h" />
+    <ClInclude Include="Geoscape\TransformationFinishedState.h" />
     <ClInclude Include="Geoscape\UfoDetectedState.h" />
     <ClInclude Include="Geoscape\UfoLostState.h" />
     <ClInclude Include="Geoscape\UfoTrackerState.h" />
+    <ClInclude Include="Battlescape\HackingView.h" />
+    <ClInclude Include="Battlescape\HackingBState.h" />
     <ClInclude Include="Interface\ArrowButton.h" />
     <ClInclude Include="Interface\Bar.h" />
     <ClInclude Include="Interface\BattlescapeButton.h" />
@@ -999,16 +1217,23 @@
     <ClInclude Include="Menu\TestPaletteState.h" />
     <ClInclude Include="Menu\TestState.h" />
     <ClInclude Include="Menu\VideoState.h" />
+    <ClInclude Include="Mod\BattleScript.h" />
     <ClInclude Include="Mod\CustomPalettes.h" />
     <ClInclude Include="Mod\ModScript.h" />
     <ClInclude Include="Mod\RuleArcScript.h" />
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h" />
+    <ClInclude Include="Mod\RuleCovertOperation.h" />
     <ClInclude Include="Mod\RuleDamageType.h" />
+    <ClInclude Include="Mod\RuleDiplomacyFaction.h" />
+    <ClInclude Include="Mod\RuleDiplomacyFactionEvent.h" />
     <ClInclude Include="Mod\RuleEnviroEffects.h" />
     <ClInclude Include="Mod\RuleEvent.h" />
     <ClInclude Include="Mod\RuleEventScript.h" />
+    <ClInclude Include="Mod\RuleIntelProject.h" />
     <ClInclude Include="Mod\RuleItemCategory.h" />
     <ClInclude Include="Mod\RuleManufactureShortcut.h" />
+    <ClInclude Include="Mod\RuleObject.h" />
+    <ClInclude Include="Mod\RulePrisoner.h" />
     <ClInclude Include="Mod\RuleSkill.h" />
     <ClInclude Include="Mod\RuleSoldierBonus.h" />
     <ClInclude Include="Mod\RuleSoldierTransformation.h" />
@@ -1065,17 +1290,23 @@
     <ClInclude Include="Savegame\AlienMission.h" />
     <ClInclude Include="Savegame\Base.h" />
     <ClInclude Include="Savegame\BaseFacility.h" />
+    <ClInclude Include="Savegame\BasePrisoner.h" />
     <ClInclude Include="Savegame\BattleItem.h" />
+    <ClInclude Include="Savegame\BattleObject.h" />
     <ClInclude Include="Savegame\BattleUnit.h" />
     <ClInclude Include="Savegame\BattleUnitStatistics.h" />
     <ClInclude Include="Savegame\Country.h" />
+    <ClInclude Include="Savegame\CovertOperation.h" />
     <ClInclude Include="Savegame\Craft.h" />
     <ClInclude Include="Savegame\CraftWeapon.h" />
     <ClInclude Include="Savegame\CraftWeaponProjectile.h" />
+    <ClInclude Include="Savegame\DiplomacyFaction.h" />
     <ClInclude Include="Savegame\EquipmentLayoutItem.h" />
+    <ClInclude Include="Savegame\FactionalResearch.h" />
     <ClInclude Include="Savegame\GameTime.h" />
     <ClInclude Include="Savegame\GeoscapeEvent.h" />
     <ClInclude Include="Savegame\HitLog.h" />
+    <ClInclude Include="Savegame\IntelProject.h" />
     <ClInclude Include="Savegame\ItemContainer.h" />
     <ClInclude Include="Savegame\MissionStatistics.h" />
     <ClInclude Include="Savegame\MovingTarget.h" />
@@ -1092,6 +1323,7 @@
     <ClInclude Include="Savegame\SoldierAvatar.h" />
     <ClInclude Include="Savegame\SoldierDeath.h" />
     <ClInclude Include="Savegame\SoldierDiary.h" />
+    <ClInclude Include="Savegame\SoldierPool.h" />
     <ClInclude Include="Savegame\Target.h" />
     <ClInclude Include="Savegame\MissionSite.h" />
     <ClInclude Include="Savegame\Tile.h" />
@@ -1131,7 +1363,8 @@
     <ResourceCompile Include="OpenXcom.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="yaml-cpp.natvis" />
+    <Natvis Include="..\libs\rapidyaml\c4\c4core.natvis" />
+    <Natvis Include="..\libs\rapidyaml\ryml.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

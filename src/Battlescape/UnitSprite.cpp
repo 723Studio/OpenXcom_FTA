@@ -38,16 +38,18 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet) :
+UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
 	_unit(0), _itemR(0), _itemL(0),
 	_unitSurface(0),
 	_itemSurface(const_cast<Mod*>(mod)->getSurfaceSet("HANDOB.PCK")),
 	_fireSurface(const_cast<Mod*>(mod)->getSurfaceSet("SMOKE.PCK")),
 	_breathSurface(const_cast<Mod*>(mod)->getSurfaceSet("BREATH-1.PCK", false)),
 	_facingArrowSurface(const_cast<Mod*>(mod)->getSurfaceSet("DETBLOB.DAT")),
+	_warnIndicator(const_cast<Mod*>(mod)->getSurface("UnitWarnedIndicator", false)),
 	_dest(dest), _save(save), _mod(mod),
 	_part(0), _animationFrame(frame), _drawingRoutine(0),
 	_helmet(helmet),
+	_red(red), _blue(blue),
 	_x(0), _y(0), _shade(0), _burn(0),
 	_mask(0, 0)
 {
@@ -97,7 +99,7 @@ void UnitSprite::selectItem(Part& p, const BattleItem *item, int dir)
 	//enforce compatibility with basic version
 	if (!_itemSurface->getFrame(index + dir))
 	{
-		throw Exception("Frame(s) missing in 'HANDOB.PCK' for item '" + item->getRules()->getName() + "'");
+		throw Exception("Frame(s) missing in 'HANDOB.PCK' for item '" + item->getRules()->getType() + "'");
 	}
 
 	int result = ModScript::scriptFunc2<ModScript::SelectItemSprite>(
@@ -264,7 +266,23 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	{
 		// draw unit facing indicator
 		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
-		tmpSurface->blitNShade(_dest, _x, _y, 0);
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			tmpSurface->blitNShade(_dest, _x, _y, 0);
+		}
+		else
+		{
+			Surface::blitRaw(_dest, tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
+		}
+	}
+	drawUnitIcon();
+}
+
+void UnitSprite::drawUnitIcon()
+{
+	if (_unit->getUnitWarned() && _unit->getFaction() == FACTION_HOSTILE)
+	{
+		_warnIndicator->blitNShade(_dest, _x, _y, 0);
 	}
 }
 
@@ -996,16 +1014,71 @@ void UnitSprite::drawRoutine4()
 		if (itemL)
 			itemL.offX = (itemL.offX + offXAiming);
 	}
+
+	bool hideItemL = false, hideItemR = false;
+	if (_itemL)
+		hideItemL = !_itemL->getRules()->canBeEquippedInBattle();
+	if (_itemR)
+		hideItemR = !_itemR->getRules()->canBeEquippedInBattle();
+
 	switch (unitDir)
 	{
-	case 0: blitItem(itemL); blitItem(itemR); blitBody(s); break;
-	case 1: blitItem(itemL); blitBody(s); blitItem(itemR); break;
-	case 2: blitBody(s); blitItem(itemL); blitItem(itemR); break;
-	case 3: blitBody(s); blitItem(itemR); blitItem(itemL); break;
-	case 4: blitBody(s); blitItem(itemR); blitItem(itemL); break;
-	case 5: blitItem(itemR); blitBody(s); blitItem(itemL); break;
-	case 6: blitItem(itemR); blitBody(s); blitItem(itemL); break;
-	case 7: blitItem(itemR); blitItem(itemL); blitBody(s); break;
+	case 0:
+		if (!hideItemL)
+			blitItem(itemL);
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		break;
+	case 1:
+		if (!hideItemL)
+			blitItem(itemL);
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		break;
+	case 2:
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		if (!hideItemR)
+			blitItem(itemR);
+		break;
+	case 3:
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 4:
+		blitBody(s);
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 5:
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 6:
+		if (!hideItemR)
+			blitItem(itemR);
+		blitBody(s);
+		if (!hideItemL)
+			blitItem(itemL);
+		break;
+	case 7:
+		if (!hideItemR)
+			blitItem(itemR);
+		if (!hideItemL)
+			blitItem(itemL);
+		blitBody(s);
+		break;
 	}
 }
 

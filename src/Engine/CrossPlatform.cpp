@@ -75,7 +75,9 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <pwd.h>
+#ifndef __CYGWIN__
 #include <execinfo.h>
+#endif
 #include <cxxabi.h>
 #include <dlfcn.h>
 #include <dirent.h>
@@ -237,7 +239,7 @@ std::vector<std::string> findDataFolders()
 #ifdef _WIN32
 	std::unordered_set<std::string> seen; // avoid dups in case cwd = dirname(exe)
 	wchar_t pathW[MAX_PATH+1];
-	const std::wstring oxconst = pathToWindows("OpenXcom/");
+	const std::wstring oxconst = pathToWindows("OpenXcomFtA/");
 	// Get Documents folder
 	if (SHGetSpecialFolderPathW(NULL, pathW, CSIDL_PERSONAL, FALSE))
 	{
@@ -272,8 +274,8 @@ std::vector<std::string> findDataFolders()
 	char const *home = getHome();
 #ifdef __HAIKU__
 	char data_path[B_PATH_NAME_LENGTH];
-	find_directory(B_SYSTEM_SETTINGS_DIRECTORY, 0, true, data_path, sizeof(data_path)-strlen("/OpenXcom/"));
-	strcat(data_path,"/OpenXcom/");
+	find_directory(B_SYSTEM_SETTINGS_DIRECTORY, 0, true, data_path, sizeof(data_path)-strlen("/OpenXcomFtA/"));
+	strcat(data_path,"/OpenXcomFtA/");
 	list.push_back(data_path);
 #endif
 	char path[MAXPATHLEN];
@@ -282,19 +284,19 @@ std::vector<std::string> findDataFolders()
 	char const *const xdg_data_home = getenv("XDG_DATA_HOME");
 	if (xdg_data_home && *xdg_data_home)
  	{
-		snprintf(path, MAXPATHLEN, "%s/openxcom/", xdg_data_home);
+		snprintf(path, MAXPATHLEN, "%s/openxcomfta/", xdg_data_home);
  	}
  	else
  	{
 #ifdef __APPLE__
-		snprintf(path, MAXPATHLEN, "%s/Library/Application Support/OpenXcom/", home);
+		snprintf(path, MAXPATHLEN, "%s/Library/Application Support/OpenXcomFtA/", home);
 #else
-		snprintf(path, MAXPATHLEN, "%s/.local/share/openxcom/", home);
+		snprintf(path, MAXPATHLEN, "%s/.local/share/openxcomfta/", home);
 #endif
  	}
  	list.push_back(path);
 #ifdef DATADIR
-	snprintp(path, MAXPATHLEN, "%s/" DATADIR);
+	snprintf(path, MAXPATHLEN, "%s/" DATADIR);
 	list.push_back(path);
 #endif
 	// Get global data folders
@@ -306,7 +308,7 @@ std::vector<std::string> findDataFolders()
 		char *dir = strtok(xdg_data_dirs_copy, ":");
 		while (dir != 0)
 		{
-			snprintf(path, MAXPATHLEN, "%s/openxcom/", dir);
+			snprintf(path, MAXPATHLEN, "%s/openxcomfta/", dir);
 			list.push_back(path);
 			dir = strtok(0, ":");
 		}
@@ -314,10 +316,10 @@ std::vector<std::string> findDataFolders()
 	else
 	{
 #ifdef __APPLE__
-		list.push_back("/Users/Shared/OpenXcom/");
+		list.push_back("/Users/Shared/OpenXcomFta/");
 #else
-		list.push_back("/usr/local/share/openxcom/");
-		list.push_back("/usr/share/openxcom/");
+		list.push_back("/usr/local/share/openxcomfta/");
+		list.push_back("/usr/share/openxcomfta/");
 #endif
 	}
 #ifdef INSTALLDIR
@@ -366,7 +368,7 @@ std::vector<std::string> findUserFolders()
 #ifdef _WIN32
 	std::unordered_set<std::string> seen;
 	wchar_t pathW[MAX_PATH+1];
-	const std::wstring oxconst = pathToWindows("OpenXcom/");
+	const std::wstring oxconst = pathToWindows("OpenXcomFtA/");
 	const std::wstring usconst = pathToWindows("user/");
 
 	// Get Documents folder
@@ -399,8 +401,8 @@ std::vector<std::string> findUserFolders()
 #else
 #ifdef __HAIKU__
 	char user_path[B_PATH_NAME_LENGTH];
-	find_directory(B_USER_SETTINGS_DIRECTORY, 0, true, user_path, sizeof(user_path)-strlen("/OpenXcom/"));
-	strcat(user_path,"/OpenXcom/");
+	find_directory(B_USER_SETTINGS_DIRECTORY, 0, true, user_path, sizeof(user_path)-strlen("/OpenXcomFtA/"));
+	strcat(user_path,"/OpenXcomFtA/");
 	list.push_back(user_path);
 #endif
 	char const *home = getHome();
@@ -409,20 +411,20 @@ std::vector<std::string> findUserFolders()
 	// Get user folders
 	if (char const *const xdg_data_home = getenv("XDG_DATA_HOME"))
  	{
-		snprintf(path, MAXPATHLEN, "%s/openxcom/", xdg_data_home);
+		snprintf(path, MAXPATHLEN, "%s/openxcomfta/", xdg_data_home);
  	}
  	else
  	{
 #ifdef __APPLE__
-		snprintf(path, MAXPATHLEN, "%s/Library/Application Support/OpenXcom/", home);
+		snprintf(path, MAXPATHLEN, "%s/Library/Application Support/OpenXcomFtA/", home);
 #else
-		snprintf(path, MAXPATHLEN, "%s/.local/share/openxcom/", home);
+		snprintf(path, MAXPATHLEN, "%s/.local/share/openxcomfta/", home);
 #endif
  	}
 	list.push_back(path);
 
 	// Get old-style folder
-	snprintf(path, MAXPATHLEN, "%s/.openxcom/", home);
+	snprintf(path, MAXPATHLEN, "%s/.openxcomfta/", home);
 	list.push_back(path);
 
 	// Get working directory
@@ -447,7 +449,7 @@ std::string findConfigFolder()
 #elif defined (__HAIKU__)
 	char settings_path[B_PATH_NAME_LENGTH];
 	find_directory(B_USER_SETTINGS_DIRECTORY, 0, true, settings_path, sizeof(settings_path)-strlen("/OpenXcom/"));
-	strcat(settings_path,"/OpenXcom/");
+	strcat(settings_path,"/OpenXcomFtA/");
 	return settings_path;
 #else
 	char const *home = getHome();
@@ -455,12 +457,12 @@ std::string findConfigFolder()
 	// Get config folders
 	if (char const *const xdg_config_home = getenv("XDG_CONFIG_HOME"))
 	{
-		snprintf(path, MAXPATHLEN, "%s/openxcom/", xdg_config_home);
+		snprintf(path, MAXPATHLEN, "%s/openxcomfta/", xdg_config_home);
 		return path;
 	}
 	else
 	{
-		snprintf(path, MAXPATHLEN, "%s/.config/openxcom/", home);
+		snprintf(path, MAXPATHLEN, "%s/.config/openxcomfta/", home);
 		return path;
 	}
 #endif
@@ -639,12 +641,6 @@ std::vector<std::tuple<std::string, bool, time_t>> getFolderContents(const std::
 	}
 	closedir(dp);
 #endif
-	std::sort(files.begin(), files.end(),
-		[](const std::tuple<std::string,bool,time_t>& a,
-           const std::tuple<std::string,bool,time_t>& b) -> bool
-       {
-         return std::get<0>(a) > std::get<0>(b);
-       });
 	return files;
 }
 
@@ -1113,25 +1109,39 @@ bool writeFile(const std::string& filename, const std::vector<unsigned char>& da
 }
 
 /**
- * Gets an istream to a file
+ * Fully reads a file and returns a stream
  * @param filename - what to readFile
  * @return the istream
  */
-std::unique_ptr<std::istream> readFile(const std::string& filename) {
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "r");
-	if (!rwops) {
+std::unique_ptr<std::istream> readFile(const std::string& filename)
+{
+	return std::unique_ptr<std::istream>(new StreamData(readFileRaw(filename)));
+}
+
+/**
+ * Fully reads a file and returns a pointer to the data
+ * @param filename - what to readFile
+ * @param pSize - returned data size
+ * @return pointer to file data
+ */
+RawData readFileRaw(const std::string& filename)
+{
+	SDL_RWops* rwops = SDL_RWFromFile(filename.c_str(), "r");
+	if (!rwops)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	size_t size;
-	char *data = (char *)SDL_LoadFile_RW(rwops, &size, SDL_TRUE);
-	if (data == NULL) {
+	size_t s;
+	char* data = (char*)SDL_LoadFile_RW(rwops, &s, SDL_TRUE);
+	if (data == NULL)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, SDL_free}));
+	return RawData(data, s, SDL_free);
 }
 
 /**
@@ -1140,9 +1150,23 @@ std::unique_ptr<std::istream> readFile(const std::string& filename) {
  * @param filename - what to read
  * @return the istream
  */
-std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
-	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "r");
-	if (!rwops) {
+std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename)
+{
+	return std::unique_ptr<std::istream>(new StreamData(getYamlSaveHeaderRaw(filename)));
+}
+
+/**
+ * Reads a file up to and including first "\n---" sequence.
+ * To be used only for savegames.
+ * @param filename - what to read
+ * @param pSize - returned data size
+ * @return pointer to file data
+ */
+RawData getYamlSaveHeaderRaw(const std::string& filename)
+{
+	SDL_RWops* rwops = SDL_RWFromFile(filename.c_str(), "r");
+	if (!rwops)
+	{
 		std::string err = "Failed to read " + filename + ": " + SDL_GetError();
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
@@ -1150,25 +1174,30 @@ std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
 	const size_t chunksize = 4096;
 	size_t size = 0;
 	size_t offs = 0;
-	char *data = (char *)SDL_malloc(chunksize + 1);
-	if (data == NULL) {
+	char* data = (char*)SDL_malloc(chunksize + 1);
+	if (data == NULL)
+	{
 		std::string err(SDL_GetError());
 		Log(LOG_ERROR) << err;
 		throw Exception(err);
 	}
-	while(true) {
+	while (true)
+	{
 		auto actually_read = SDL_RWread(rwops, data + offs, 1, chunksize);
-		if (actually_read == 0 || actually_read == -1) {
+		if (actually_read == 0 || actually_read == -1)
+		{
 			break;
 		}
 		size += actually_read;
 		data[size] = 0;
 		size_t search_from = offs > 4 ? offs - 4 : 0;
-		if (NULL != strstr(data+search_from, "\n---")) {
+		if (NULL != strstr(data + search_from, "\n---"))
+		{
 			break;
 		}
-		char *newdata = (char *)SDL_realloc(data, size+chunksize+1);
-		if (newdata == NULL) {
+		char* newdata = (char*)SDL_realloc(data, size + chunksize + 1);
+		if (newdata == NULL)
+		{
 			std::string err(SDL_GetError());
 			Log(LOG_ERROR) << err;
 			throw Exception(err);
@@ -1177,7 +1206,7 @@ std::unique_ptr<std::istream> getYamlSaveHeader(const std::string& filename) {
 		offs = size;
 	}
 	SDL_RWclose(rwops);
-	return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, SDL_free}));
+	return RawData(data, size, SDL_free);
 }
 
 /**
@@ -1234,11 +1263,11 @@ std::string getDosPath()
 	}
 	else
 	{
-		path = "C:\\GAMES\\OPENXCOM";
+		path = "C:\\GAMES\\OPENXCOMFTA";
 	}
 	return path;
 #else
-	return "C:\\GAMES\\OPENXCOM";
+	return "C:\\GAMES\\OPENXCOMFTA";
 #endif
 }
 
@@ -1541,7 +1570,7 @@ void crashDump(void *ex, const std::string &err)
 	std::ostringstream msg;
 	msg << "OpenXcom has crashed: " << error.str() << std::endl;
 	msg << "Log file: " << getLogFileName() << std::endl;
-	msg << "If this error was unexpected, please report it on the OpenXcom forum (OXCE board)." << std::endl;
+	msg << "If this error was unexpected, please report it on the OpenXcom forum (FtA board) or Discord - https://discord.gg/sWtThPMHyd" << std::endl;
 	msg << "The following can help us solve the problem:" << std::endl;
 	msg << "1. a saved game from just before the crash (helps 98%)" << std::endl;
 	msg << "2. a detailed description how to reproduce the crash (helps 80%)" << std::endl;
@@ -1784,7 +1813,7 @@ std::array<int, 4> parseVersion(const std::string& newVersion)
  */
 bool isHigherThanCurrentVersion(const std::string& newVersion)
 {
-	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_VERSION_NUMBER });
+	return isHigherThanCurrentVersion(parseVersion(newVersion), { OPENXCOM_FTA_VERSION_NUMBER });
 }
 
 /**
@@ -1908,7 +1937,7 @@ void startUpdateProcess()
 
 
 
-#ifdef OXCE_AUTO_TEST
+#ifndef NDEBUG
 
 static auto dummy = ([]
 {

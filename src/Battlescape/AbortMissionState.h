@@ -39,7 +39,7 @@ private:
 	TextButton *_btnOk, *_btnCancel;
 	SavedBattleGame *_battleGame;
 	BattlescapeState *_state;
-	int _inEntrance, _inExit, _outside;
+	int _inEntrance, _inExit, _outside, _enemies;
 public:
 	/// Creates the Abort Mission state.
 	AbortMissionState(SavedBattleGame *battleGame, BattlescapeState *state);

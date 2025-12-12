@@ -145,8 +145,15 @@ void SoldierDiaryMissionState::init()
 	_txtUFO->setVisible(ms->isUfoMission());
 	_txtScore->setText(tr("STR_SCORE_VALUE").arg(ms->score));
 	_txtLocation->setText(tr("STR_LOCATION").arg(tr(ms->getLocationString())));
-	_txtRace->setText(tr("STR_RACE_TYPE").arg(tr(ms->alienRace)));
-	_txtRace->setVisible(ms->alienRace != "STR_UNKNOWN");
+	if (_game->getMod()->isFTAGame())
+	{
+		_txtRace->setText(tr("STR_OBJECTIVE_UC").arg(ms->objective));
+	}
+	else
+	{
+		_txtRace->setText(tr("STR_RACE_TYPE").arg(tr(ms->alienRace)));
+		_txtRace->setVisible(ms->alienRace != "STR_UNKNOWN");
+	}
 	_txtDaylight->setText(tr("STR_DAYLIGHT_TYPE").arg(tr(ms->getDaylightString(_game->getMod()))));
 	_txtDaysWounded->setText(tr("STR_DAYS_WOUNDED").arg(daysWounded));
 	_txtDaysWounded->setVisible(daysWounded != 0);

@@ -36,10 +36,12 @@ class ResearchState : public State
 {
 private:
 	Base *_base;
-	TextButton *_btnNew, *_btnOk;
+	TextButton *_btnNew, *_btnOk, *_btnScientists;
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtProject, *_txtScientists, *_txtProgress;
 	TextList *_lstResearch;
+	bool _ftaUi;
+
 public:
 	/// Creates the Research state.
 	ResearchState(Base *base);
@@ -49,6 +51,8 @@ public:
 	void btnOkClick(Action *action);
 	/// Handler for clicking the New Research button.
 	void btnNewClick(Action *action);
+	/// Handler for clicking the Scientists button.
+	void btnScientistsClick(Action *action);
 	/// Handler for clicking the ResearchProject list.
 	void onSelectProject(Action *action);
 	void onOpenTechTreeViewer(Action *action);
@@ -59,6 +63,15 @@ public:
 	void fillProjectList(size_t scrl);
 	/// Updates the research list.
 	void init() override;
+
+	/// Handler for clicking the reordering up button.
+	void lstResearchLeftArrowClick(Action* action);
+	/// Moves a research topic up.
+	void moveTopicUp(Action* action, unsigned int row, bool max = false);
+	/// Handler for clicking the reordering down button.
+	void lstResearchRightArrowClick(Action* action);
+	/// Moves a research topic down.
+	void moveTopicDown(Action* action, unsigned int row, bool max = false);
 };
 
 }

@@ -44,14 +44,17 @@ private:
 	ToggleTextButton *_btnPlus;
 	Window *_window;
 	Text *_txtTitle, *_txtTraining, *_txtName, *_txtRemaining;
-	Text *_txtTu, *_txtStamina, *_txtHealth, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength;
-	ComboBox *_cbxSortBy;
+	Text *_txtTu, *_txtStamina, *_txtHealth, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtReaction;
+	ComboBox *_cbxSortBy, *_cbxScreenActions;
 	TextList *_lstSoldiers;
 	std::vector<Soldier*> _soldiers;
+	std::vector<int> _soldierNumbers;
 	size_t _sel;
 	int _space;
+	bool _ftaUI;
+	std::vector<std::string> _availableOptions;
 	Base *_base;
-	std::vector<Soldier *> _origSoldierOrder;
+	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers;
 	std::vector<SortFunctor *> _sortFunctors;
 	std::vector<SortFunctor *> _sortFunctorsPlus;
 	bool _doNotReset;
@@ -67,26 +70,18 @@ public:
 	void cbxSortByChange(Action *action);
 	/// Updates the soldier info.
 	void init() override;
-	/// Handler for clicking the Soldiers reordering button.
-	void lstItemsLeftArrowClick(Action *action);
-	/// Moves a soldier up.
-	void moveSoldierUp(Action *action, unsigned int row, bool max = false);
-	/// Handler for clicking the Soldiers reordering button.
-	void lstItemsRightArrowClick(Action *action);
-	/// Moves a soldier down.
-	void moveSoldierDown(Action *action, unsigned int row, bool max = false);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the PLUS button.
 	void btnPlusClick(Action *action);
 	/// Handler for clicking the Soldiers list.
 	void lstSoldiersClick(Action *action);
-	/// Handler for pressing-down a mouse-button in the list.
-	void lstSoldiersMousePress(Action *action);
 	/// Handler for clicking the De-assign All Soldiers button.
 	void btnDeassignAllSoldiersClick(Action* action);
 	/// Handler for clicking the Assign All Soldiers button.
 	void btnAssignAllSoldiersClick(Action* action);
+	/// Handler for changing the screen actions combo box.
+	void cbxScreenActionsChange(Action* action);
 };
 
 }

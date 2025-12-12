@@ -41,6 +41,9 @@
 #include "../Menu/SaveGameState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
+#include "../Menu/StatisticsState.h"
+#include "../Savegame/GeoscapeEvent.h"
+#include "../Mod/RuleEvent.h"
 
 namespace OpenXcom
 {
@@ -328,7 +331,7 @@ void MonthlyReportState::btnOkClick(Action *)
 			{
 				// Award medals to eligible soldiers
 				soldier->getDiary()->addMonthlyService();
-				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
+				if (soldier->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame(), soldier))
 				{
 					_soldiersMedalled.push_back(soldier);
 				}

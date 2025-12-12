@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -77,6 +77,7 @@ struct ReinforcementsData
 };
 enum ChronoTrigger { FORCE_LOSE, FORCE_ABORT, FORCE_WIN, FORCE_WIN_SURRENDER };
 enum EscapeType : int { ESCAPE_NONE, ESCAPE_EXIT, ESCAPE_ENTRY, ESCAPE_EITHER };
+enum ObjectiveType { OBJECTIVE_NONE, OBJECTIVE_EVACUATION, OBJECTIVE_ITEM_EXTRACTION, OBJECTIVE_HACKING};
 /**
  * Represents a specific type of Alien Deployment.
  * Contains constant info about a Alien Deployment like
@@ -93,6 +94,7 @@ private:
 	std::string _type;
 	std::string _customUfo;
 	std::string _enviroEffects, _startingCondition;
+	std::string _alternativeDeployment, _alternativeDeploymentResearch;
 	std::string _unlockedResearchOnSuccess, _unlockedResearchOnFailure, _unlockedResearchOnDespawn;
 	std::string _counterSuccess, _counterFailure, _counterDespawn, _counterAll;
 	std::string _decreaseCounterSuccess, _decreaseCounterFailure, _decreaseCounterDespawn, _decreaseCounterAll;
@@ -103,15 +105,17 @@ private:
 	std::vector<DeploymentData> _data;
 	std::vector<ReinforcementsData> _reinforcements;
 	int _width, _length, _height, _civilians;
+	bool _ignoreLivingCivilians;
 	bool _markCiviliansAsVIP;
 	int _civilianSpawnNodeRank;
 	std::map<std::string, int> _civiliansByType;
 	std::vector<std::string> _terrains, _music;
 	int _shade, _minShade, _maxShade;
-	std::string _nextStage, _race, _mapScript;
+	std::string _nextStage, _race, _mapScript, _battleScript;
 	std::vector<std::string> _mapScripts;
 	std::vector<std::string> _randomRaces;
-	bool _finalDestination, _isAlienBase, _isHidden;
+	std::vector<std::string> _undercoverArmors;
+	bool _finalDestination, _isAlienBase, _isHidden, _isHiddenAlienBase, _isHiddentXcomBase;
 	int _fakeUnderwaterSpawnChance;
 	std::string _winCutscene, _loseCutscene, _abortCutscene;
 	std::string _alert, _alertBackground, _alertDescription;
@@ -126,6 +130,7 @@ private:
 	ChronoTrigger _chronoTrigger;
 	bool _keepCraftAfterFailedMission, _allowObjectiveRecovery;
 	EscapeType _escapeType;
+	ObjectiveType _extendedObjectiveType;
 	int _vipSurvivalPercentage;
 	std::string _baseSelfDestructCode;
 	int _baseDetectionRange, _baseDetectionChance, _huntMissionMaxFrequency;
@@ -134,6 +139,7 @@ private:
 	std::vector<std::pair<size_t, WeightedOptions*> > _alienBaseUpgrades;
 	bool _resetAlienBaseAgeAfterUpgrade, _resetAlienBaseAge;
 	std::string _upgradeRace;
+	std::vector<std::tuple<size_t, std::string, std::string> > _alienRaceEvolution;
 	bool _noWeaponPile;
 public:
 	/// Creates a blank Alien Deployment ruleset.
@@ -141,7 +147,7 @@ public:
 	/// Cleans up the Alien Deployment ruleset.
 	~AlienDeployment();
 	/// Loads Alien Deployment data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& node, Mod *mod);
 	/// Gets the Alien Deployment's type.
 	const std::string& getType() const;
 	/// Gets the custom UFO name to use for the dummy/blank 'addUFO' mapscript command.
@@ -174,6 +180,10 @@ public:
 	const std::string& getDecreaseCounterAll() const { return _decreaseCounterAll; }
 	/// Gets the item to be recovered/given after a successful mission.
 	std::string getMissionBountyItem() const;
+	/// Gets the Alien Deployment's alternative deployment to show the player.
+	const std::string& getAlternativeDeploymentName() const { return _alternativeDeployment; };
+	/// Gets the Alien Deployment's research, that would update alien deployment to alternative.
+	const std::string& getAlternativeDeploymentResearchName() const { return _alternativeDeploymentResearch; }
 	/// Gets the number of items to be recovered/given after a successful mission.
 	int getMissionBountyItemCount() const { return _missionBountyItemCount; }
 	/// Gets the bug hunt mode minimum turn requirement (default = 0 = not used).
@@ -190,6 +200,8 @@ public:
 	void getDimensions(int *width, int *length, int *height) const;
 	/// Gets civilians.
 	int getCivilians() const;
+	/// Should living civilians be ignored for scoring, commendations, etc.?
+	bool getIgnoreLivingCivilians() const { return _ignoreLivingCivilians; }
 	/// Gets the civilian spawn node rank.
 	bool getMarkCiviliansAsVIP() const { return _markCiviliansAsVIP; }
 	/// Gets the civilian spawn node rank.
@@ -210,6 +222,11 @@ public:
 	std::string getRace() const;
 	/// Gets the script to use for this deployment.
 	const std::string& getRandomMapScript() const;
+	/// Gets the battle script to use for this deployment.
+	std::string getBattleScript() const { return _battleScript; }
+	/// Gets the extendedObjective for this deployment.
+	ObjectiveType getExtendedObjectiveType() const { return _extendedObjectiveType; }
+	
 	int hasTextureBasedScript(const Mod* mod) const;
 	/// Checks if this is the destination for the final mission (mars stage 1, t'leth stage 1).
 	bool isFinalDestination() const;
@@ -220,11 +237,13 @@ public:
 	/// Gets the cutscene to play when this mission is aborted.
 	std::string getAbortCutscene() const;
 	/// Gets geoscape event rule name to spawn after success mission.
-	std::string chooseSuccessEvent() const { return _successEvents.choose(); };
+	std::string chooseSuccessEvent() const { return _successEvents.choose(); }
 	/// Gets geoscape event rule name to despawn after success mission.
-	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); };
+	std::string chooseDespawnEvent() const { return _despawnEvents.choose(); }
 	/// Gets geoscape event rule name to spawn after failure mission.
-	std::string chooseFailureEvent() const { return _failureEvents.choose(); };
+	std::string chooseFailureEvent() const { return _failureEvents.choose(); }
+	/// Gets the the list of undercover armor types for the mission to make concealed units.
+	std::vector<std::string> getUndercoverArmors() const { return _undercoverArmors; }
 	/// Gets the alert message for this mission type.
 	std::string getAlertMessage() const;
 	/// Gets the alert background for this mission type.
@@ -271,10 +290,14 @@ public:
 	ChronoTrigger getChronoTrigger() const;
 	/// Gets which turn the aliens start cheating on.
 	int getCheatTurn() const;
+	/// Gets whether or not this is a hidden xcom base to spawn in on geoscape
+	bool isHiddentXcomBase() const { return _isHiddentXcomBase; }
 	/// Gets whether or not this is an alien base (purely for new battle mode)
 	bool isAlienBase() const;
 	/// Gets whether or not this mission should be hidden (purely for new battle mode)
 	bool isHidden() const { return _isHidden; }
+	/// Gets whether or not this mission site (alien base) would be hidden from all sources, but special rules.
+	bool isHiddenAlienBase() const { return _isHiddenAlienBase; }
 	/// Gets the chance for deciding to spawn an alien base on fakeUnderwater globe texture.
 	int getFakeUnderwaterSpawnChance() const { return _fakeUnderwaterSpawnChance; }
 
@@ -311,8 +334,17 @@ public:
 	/// Gets the new race for an alien base after an upgrade (into this type).
 	const std::string& getUpgradeRace() const { return _upgradeRace; }
 
+	/// Gets the alien race evolution rules.
+	const auto& getAlienRaceEvolution() const { return _alienRaceEvolution; }
+
 	/// Should items on the "weapon pile" be hidden from the player?
 	bool getNoWeaponPile() const { return _noWeaponPile; }
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, ItemSet* val);
+bool read(ryml::ConstNodeRef const& n, DeploymentData* val);
+bool read(ryml::ConstNodeRef const& n, BriefingData* val);
+bool read(ryml::ConstNodeRef const& n, ReinforcementsData* val);
 
 }

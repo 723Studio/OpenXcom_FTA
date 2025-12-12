@@ -37,8 +37,11 @@ class TileEngine;
 class Pathfinding;
 class Mod;
 class InfoboxOKState;
+class CustomBattleMessageState;
 class SoldierDiary;
 class RuleSkill;
+class BattleScript;
+class RuleTerrain;
 
 enum BattleActionMove : char { BAM_NORMAL = 0, BAM_RUN = 1, BAM_STRAFE = 2, BAM_SNEAK = 3, BAM_MISSILE = 4 };
 
@@ -118,6 +121,9 @@ struct BattlescapeTally
 	int inExit = 0;
 	/// number of live soldiers in the middle of the battlefield.
 	int inField = 0;
+	// number of live enemies on entrance tiles.
+	int liveAliensInEntrance = 0;
+
 
 	/// number of live VIPs on entrance tiles
 	int vipInEntrance = 0;
@@ -158,6 +164,14 @@ private:
 	std::vector<InfoboxOKState*> _infoboxQueue;
 	/// Shows the infoboxes in the queue (if any).
 	void showInfoBoxQueue();
+	/// Process battlescripts.
+	void processBattleScripts(const std::vector<BattleScript*>* script);
+	/// Gets valid blocks to process the battlescript command.
+	std::vector<std::pair<int, int>> getValidBlocks(BattleScript* command);
+	/// Spawn units as part of battlescript commands.
+	bool scriptSpawnUnit(BattleScript* command);
+	/// Display message fro the battlescript
+	void displayScriptMessage(BattleScript* command);
 public:
 	/// is debug mode enabled in the battlescape?
 	static bool _debugPlay;
@@ -199,6 +213,7 @@ public:
 	/// Spawns a new unit in the middle of battle.
 	void spawnNewUnit(BattleItem *item);
 	void spawnNewUnit(BattleActionAttack attack, Position position);
+	void spawnNewSoldier(BattleActionAttack attack, Position position);
 	/// Spawns a new item in the middle of battle.
 	void spawnNewItem(BattleItem *item);
 	void spawnNewItem(BattleActionAttack attack, Position position);
@@ -281,6 +296,10 @@ public:
 	void playSound(int sound);
 	/// Play unit response sound on battlefield.
 	void playUnitResponseSound(BattleUnit *unit, int type);
+	/// Returns if we need to proceed battle and there would be more battle scripts to be processed.
+	bool scriptsToProcess();
+	/// Process weapon firing sound.
+	void processWeaponNoise();
 	/// Sets up a mission complete notification.
 	void missionComplete();
 	std::list<BattleState*> getStates();

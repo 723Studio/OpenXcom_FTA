@@ -19,7 +19,8 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include <list>
+#include "../Engine/Yaml.h"
 #include "Tile.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleCraft.h"
@@ -40,12 +41,16 @@ class TileEngine;
 class RuleStartingCondition;
 class RuleEnviroEffects;
 class BattleItem;
+class BattleObject;
 class BattleUnit;
 class Mod;
 class State;
 class ItemContainer;
 class Craft;
 class RuleItem;
+class RuleObject;
+class AlienDeployment;
+class Ufo;
 class HitLog;
 enum HitLogEntryType : int;
 struct BattlescapeTally;
@@ -77,10 +82,12 @@ private:
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	std::vector<MapDataSet*> _mapDataSets;
 	std::vector<Tile> _tiles;
-	BattleUnit *_selectedUnit, *_lastSelectedUnit;
+	BattleUnit *_selectedUnit, *_undoUnit, *_lastSelectedUnit;
 	std::vector<Node*> _nodes;
 	std::vector<BattleUnit*> _units;
 	std::vector<BattleItem*> _items, _deleted;
+	std::vector<BattleObject*> _battleObjects;
+	int _itemObjectivesNumber;
 	Pathfinding *_pathfinding;
 	TileEngine *_tileEngine;
 	std::string _missionType, _strTarget, _strCraftOrBase, _alienCustomDeploy, _alienCustomMission;
@@ -102,6 +109,8 @@ private:
 	bool _nameDisplay;
 	bool _debugMode, _bughuntMode;
 	bool _aborted;
+	bool _stealthMission;
+	bool _hackingObjective;
 	bool _baseCraftInventory = false;
 	int _itemId;
 	EscapeType _vipEscapeType;
@@ -123,27 +132,31 @@ private:
 	std::string _music;
 	int _turnLimit, _cheatTurn;
 	ChronoTrigger _chronoTrigger;
+	int _alarmLvl;
 	bool _beforeGame;
 	bool _togglePersonalLight, _toggleNightVision;
 	int _toggleBrightness;
 	bool _togglePersonalLightTemp = false, _toggleNightVisionTemp = false;
 	int _toggleBrightnessTemp = 0, _toggleNightVisionColorTemp = 0;
 	std::string _hiddenMovementBackground;
+	std::map<std::string, int> _battleScriptVars;
 	HitLog *_hitLog;
 	ScriptValues<SavedBattleGame> _scriptValues;
 	/// Selects a soldier.
 	BattleUnit *selectPlayerUnit(int dir, bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Run newTurnUnit and newTurnItem scripts
 	void newTurnUpdateScripts();
+	/// Updates alarm level on the battlescape.
+	void updateAlarm();
 public:
 	/// Creates a new battle save, based on the current generic save.
 	SavedBattleGame(Mod *rule, Language *lang, bool isPreview = false);
 	/// Cleans up the saved game.
 	~SavedBattleGame();
 	/// Loads a saved battle game from YAML.
-	void load(const YAML::Node& node, Mod *mod, SavedGame* savedGame);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, SavedGame* savedGame);
 	/// Saves a saved battle game to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Sets the dimensions of the map and initializes it.
 	void initMap(int mapsize_x, int mapsize_y, int mapsize_z, bool resetTerrain = true);
 	/// Initialises the pathfinding and tile engine.
@@ -164,8 +177,16 @@ public:
 	void setMissionCraftOrBase(const std::string& missionCraftOrBase) { _strCraftOrBase = missionCraftOrBase; }
 	/// Gets the mission craft/base.
 	const std::string& getMissionCraftOrBase() const { return _strCraftOrBase; }
+	/// Gets the deployment rules.
+	AlienDeployment* getAlienDeploymet();
 	/// Gets the base's items BEFORE the mission.
 	ItemContainer *getBaseStorageItems();
+	/// Gets the alarm level of the battle game.
+	int getAlarmLevel() const { return _alarmLvl; };
+	/// Find battleScript variable for the battle game.
+	int findBattleScriptVariable(const std::string& varName);
+	/// Increments battleScript variable with value.
+	void updateBattleScriptVariable(const std::string& varName, int val = 0);
 	/// Sets the starting conditions.
 	void setStartingCondition(const RuleStartingCondition* sc) { _startingCondition = sc; }
 	/// Gets the starting conditions.
@@ -222,8 +243,12 @@ public:
 	std::vector<Node*> *getNodes();
 	/// Gets a pointer to the list of items.
 	std::vector<BattleItem*> *getItems();
+	/// Gets a pointer to the list of battle objects.
+	std::vector<BattleObject*>* getBattleObjects() { return &_battleObjects; }
 	/// Gets a pointer to the list of units.
 	std::vector<BattleUnit*> *getUnits();
+	/// Clears state that should not persist between multi-stage missions.
+	void prepareForNextStage();
 	/// Gets terrain size x.
 	int getMapSizeX() const { return _mapsize_x; }
 	/// Gets terrain size y.
@@ -247,6 +272,9 @@ public:
 	void calculateCraftTiles();
 	/// Gets craft tiles.
 	const std::vector<Position>& getCraftTiles() const { return _craftTiles; }
+
+	/// Gets the pointer to Base that is related to this battle.
+	Base *findXcomBase();
 
 	/**
 	 * Converts coordinates into a unique index.
@@ -372,12 +400,17 @@ public:
 	BattleUnit *getSelectedUnit() const;
 	/// Sets the currently selected unit.
 	void setSelectedUnit(BattleUnit *unit);
+	/// Gets the "undo" unit.
+	BattleUnit* getUndoUnit() const { return _undoUnit; }
+	/// Sets the "undo" unit.
+	void setUndoUnit(BattleUnit* unit) { _undoUnit = unit; }
 	/// Clear state that given unit is selected.
 	void clearUnitSelection(BattleUnit *unit);
 	/// Selects the previous soldier.
 	BattleUnit *selectPreviousPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the next soldier.
 	BattleUnit *selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
+	BattleUnit *selectNextPlayerUnitByDistance(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the unit with position on map.
 	BattleUnit *selectUnit(Position pos);
 	/// Gets the pathfinding object.
@@ -444,6 +477,8 @@ public:
 	BattleItem *createItemForTile(const RuleItem *rule, Tile *tile, BattleUnit *corpseFor = nullptr);
 	/// Create new item for tile.
 	BattleItem *createItemForTile(const std::string& type, Tile *tile);
+	/// Create new object for tile.
+	BattleObject *createObjectForTile(const RuleObject *rule, Tile *tile);
 	/// Create new temporary item.
 	BattleItem *createTempItem(const RuleItem *rule);
 	/// Create new temporary unit.
@@ -572,8 +607,16 @@ public:
 	void resetCurrentAmbienceDelay();
 	/// Play a random ambient sound.
 	void playRandomAmbientSound();
-	// gets ruleset.
-	const Mod *getMod() const;
+	/// Gets if this battle is a stealth mission.
+	bool isStealthMission() const { return _stealthMission; }
+	/// Defines this battle as a stealth mission.
+	void defineStealth();
+	/// Gets if the mission objective gained with hacking special BattleObject.
+	bool isHackingObjectiveGained() const { return _hackingObjective; }
+	/// Sets if the mission objective gained with hacking special BattleObject.
+	void setHackingObjectiveGained(bool hackingObjective) { _hackingObjective = hackingObjective; }
+	/// Gets ruleset.
+	const Mod *getMod() const { return _rule; }
 	/// gets the list of items we're guaranteed.
 	std::vector<BattleItem*> *getGuaranteedRecoveredItems();
 	/// gets the list of items we MIGHT get.

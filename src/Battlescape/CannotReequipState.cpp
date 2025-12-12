@@ -27,6 +27,7 @@
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
 #include "../Savegame/Base.h"
+#include "../FTA/DiplomacyStartState.h"
 #include "../Basescape/ManufactureState.h"
 #include "../Basescape/PurchaseState.h"
 
@@ -72,7 +73,14 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	_btnManufacture->setText(tr("STR_MANUFACTURE"));
 	_btnManufacture->onMouseClick((ActionHandler)&CannotReequipState::btnManufactureClick);
 
-	_btnPurchase->setText(tr("STR_PURCHASE_RECRUIT"));
+	if (_game->getMod()->isFTAGame())
+	{
+		_btnPurchase->setText(tr("STR_DIPLOMACY_UC"));
+	}
+	else
+	{
+		_btnPurchase->setText(tr("STR_PURCHASE_RECRUIT"));
+	}
 	_btnPurchase->onMouseClick((ActionHandler)&CannotReequipState::btnPurchaseClick);
 
 	_btnOk->setText(tr("STR_OK"));
@@ -148,7 +156,14 @@ void CannotReequipState::btnManufactureClick(Action *)
  */
 void CannotReequipState::btnPurchaseClick(Action *)
 {
-	_game->pushState(new PurchaseState(_base, this));
+	if (_game->getMod()->isFTAGame())
+	{
+		_game->pushState(new DiplomacyStartState(_base, false));
+	}
+	else
+	{
+		_game->pushState(new PurchaseState(_base, this));
+	}
 }
 
 /**

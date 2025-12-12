@@ -34,6 +34,8 @@
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleResearch.h"
 #include "ResearchInfoState.h"
+#include "ResearchInfoStateFtA.h"
+#include "ResearchProjectDetailsState.h"
 #include "TechTreeViewerState.h"
 
 namespace OpenXcom
@@ -53,13 +55,17 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 
 	_screen = false;
 
-	_window = new Window(this, 230, 140, 45, 30, POPUP_BOTH);
-	_btnQuickSearch = new TextEdit(this, 48, 9, 53, 38);
-	_btnOK = new TextButton(103, 16, 164, 146);
-	_cbxSort = new ComboBox(this, 103, 16, 53, 146, true);
-	_btnShowOnlyNew = new ToggleTextButton(103, 16, 53, 146);
-	_txtTitle = new Text(214, 16, 53, 38);
-	_lstResearch = new TextList(198, 88, 53, 54);
+	_window = new Window(this, 320, 146, 0, 27, POPUP_BOTH);
+	_btnQuickSearch = new TextEdit(this, 138, 9, 10, 51);
+	_btnOK = new TextButton(108, 16, 190, 149);
+	_btnShowOnlyNew = new ToggleTextButton(108, 16, 22, 149);
+	_cbxSort = new ComboBox(this, 108, 16, 22, 149, true);
+	_txtTitle = new Text(300, 16, 10, 35);
+	_txtName = new Text(138, 9, 10, 51);
+	_txtCategory = new Text(89, 9, 182, 51);
+	_lstResearch = new TextList(288, 80, 10, 62);
+
+	touchComponentsCreate(_txtTitle, true, -45, +30);
 
 	// Set palette
 	setInterface("selectNewResearch");
@@ -69,8 +75,12 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 	add(_btnOK, "button", "selectNewResearch");
 	add(_btnShowOnlyNew, "button", "selectNewResearch");
 	add(_txtTitle, "text", "selectNewResearch");
+	add(_txtName, "text", "selectNewResearch");
+	add(_txtCategory, "text", "selectNewResearch");
 	add(_lstResearch, "list", "selectNewResearch");
 	add(_cbxSort, "button", "selectNewResearch");
+
+	touchComponentsAdd("button2", "selectNewResearch", _window);
 
 	_colorNormal = _lstResearch->getColor();
 	_colorNew = Options::oxceHighlightNewTopics ? _lstResearch->getSecondaryColor() : _colorNormal;
@@ -80,6 +90,8 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 
 	// Set up objects
 	setWindowBackground(_window, "selectNewResearch");
+
+	touchComponentsConfigure();
 
 	_btnOK->setText(tr("STR_OK"));
 	_btnOK->onMouseClick((ActionHandler)&NewResearchListState::btnOKClick);
@@ -112,15 +124,21 @@ NewResearchListState::NewResearchListState(Base *base, bool sortByCost) : _base(
 
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_NEW_RESEARCH_PROJECTS"));
+	_txtTitle->setBig();
 
-	_lstResearch->setColumns(1, 190);
+	_txtName->setText(tr("STR_PROJECT_NAME"));
+
+	_txtCategory->setText(tr("STR_PROJECT_CATEGORY"));
+
+	_lstResearch->setColumns(2, 172, 116);
+	_lstResearch->setWordWrap(true);
+	_lstResearch->setMargin(0);
 	_lstResearch->setSelectable(true);
 	_lstResearch->setBackground(_window);
-	_lstResearch->setMargin(8);
-	_lstResearch->setAlign(ALIGN_CENTER);
-	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onSelectProject, SDL_BUTTON_LEFT);
-	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onToggleProjectStatus, SDL_BUTTON_RIGHT);
-	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onOpenTechTreeViewer, SDL_BUTTON_MIDDLE);
+
+	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onClick, SDL_BUTTON_LEFT);
+	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onClick, SDL_BUTTON_RIGHT);
+	_lstResearch->onMouseClick((ActionHandler)&NewResearchListState::onClick, SDL_BUTTON_MIDDLE);
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&NewResearchListState::btnQuickSearchApply);
@@ -136,16 +154,45 @@ void NewResearchListState::init()
 {
 	State::init();
 	fillProjectList(false);
+
+	touchComponentsRefresh();
+}
+
+/**
+ * LRM-click routing.
+ * @param action A pointer to an Action.
+ */
+void NewResearchListState::onClick(Action* action)
+{
+	if (_game->isLeftClick(action, true))
+	{
+		onSelectProject(action);
+	}
+	else if (_game->isRightClick(action, true))
+	{
+		onToggleProjectStatus(action);
+	}
+	else if (_game->isMiddleClick(action, true))
+	{
+		onOpenTechTreeViewer(action);
+	}
 }
 
 /**
  * Selects the RuleResearch to work on.
  * @param action Pointer to an action.
  */
-void NewResearchListState::onSelectProject(Action *)
+void NewResearchListState::onSelectProject(Action * action)
 {
-	_lstScroll = _lstResearch->getScroll();
-	_game->pushState(new ResearchInfoState(_base, _projects[_lstResearch->getSelectedRow()]));
+	if (_game->isCtrlPressed())
+	{
+		onToggleProjectStatus(action);
+	}
+	else
+	{
+		_lstScroll = _lstResearch->getScroll();
+		_game->pushState(new ResearchInfoStateFtA(_base, _projects[_lstResearch->getSelectedRow()]));
+	}
 }
 
 /**
@@ -196,9 +243,20 @@ void NewResearchListState::onToggleProjectStatus(Action *)
 */
 void NewResearchListState::onOpenTechTreeViewer(Action *)
 {
+	if (_game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
+	{
+		return;
+	}
 	_lstScroll = _lstResearch->getScroll();
 	const RuleResearch *selectedTopic = _projects[_lstResearch->getSelectedRow()];
 	_game->pushState(new TechTreeViewerState(selectedTopic, 0));
+}
+
+void NewResearchListState::onOpenProjectDetailsInfo(Action* action)
+{
+	_lstScroll = _lstResearch->getScroll();
+	const RuleResearch* selectedTopic = _projects[_lstResearch->getSelectedRow()];
+	_game->pushState(new ResearchProjectDetailsState(selectedTopic));
 }
 
 /**
@@ -220,10 +278,12 @@ void NewResearchListState::btnQuickSearchToggle(Action *action)
 	{
 		_btnQuickSearch->setText("");
 		_btnQuickSearch->setVisible(false);
+		_txtName->setVisible(true);
 		btnQuickSearchApply(action);
 	}
 	else
 	{
+		_txtName->setVisible(false);
 		_btnQuickSearch->setVisible(true);
 		_btnQuickSearch->setFocus(true);
 	}
@@ -354,7 +414,8 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		//  - for now, handling "requires" via zero-cost helpers (e.g. STR_LEADER_PLUS)... is enough
 		if (rule->getRequirements().empty())
 		{
-			_lstResearch->addRow(1, tr(rule->getName()).c_str());
+			_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule).c_str());
+			
 			if (markAllAsSeen)
 			{
 				// mark all (filtered) research items as normal
@@ -388,6 +449,58 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		_lstResearch->scrollTo(_lstScroll);
 		_lstScroll = 0;
 	}
+}
+
+std::string NewResearchListState::getProjectCategory(RuleResearch *project)
+{
+	std::string cat;
+	auto stats = project->getStats();
+	std::map<int, std::string> statMap;
+
+	if (stats.physics > 0)
+		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
+	if (stats.chemistry > 0)
+		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
+	if (stats.biology > 0)
+		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
+	if (stats.data > 0)
+		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
+	if (stats.computers > 0)
+		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
+	if (stats.tactics > 0)
+		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
+	if (stats.materials > 0)
+		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_LC))));
+	if (stats.designing > 0)
+		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
+	if (stats.psionics > 0)
+		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
+	if (stats.xenolinguistics > 0)
+		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
+
+	// sort by stat value (ascending)
+	std::vector<std::pair<int, std::string>> sortedStats(statMap.begin(), statMap.end());
+    std::sort(sortedStats.begin(), sortedStats.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+
+	// concatenate all categories
+	size_t i = 0;
+	std::ostringstream ss;
+	for (auto it = statMap.begin(); it != statMap.end(); ++it)
+	{
+		if (i > 0)
+		{
+			ss << ", ";
+		}
+		ss << (*it).second;
+		i++;
+	}
+
+	if (!ss.str().empty())
+		cat = ss.str();
+
+	return cat;
 }
 
 }

@@ -80,25 +80,25 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 	_txtWorkshops = new Text(114, 9, 8, 113);
 	_numWorkshops = new Text(40, 9, 126, 113);
 	_barWorkshops = new Bar(150, 5, 166, 115);
-	if (Options::storageLimitsEnforced)
+	if (Options::containmentLimitsEnforced)
 	{
 		_txtContainment = new Text(114, 9, 8, 123);
 		_numContainment = new Text(40, 9, 126, 123);
 		_barContainment = new Bar(150, 5, 166, 125);
 	}
-	_txtHangars = new Text(114, 9, 8, Options::storageLimitsEnforced ? 133 : 123);
-	_numHangars = new Text(40, 9, 126, Options::storageLimitsEnforced ? 133 : 123);
-	_barHangars = new Bar(150, 5, 166, Options::storageLimitsEnforced ? 135 : 125);
+	_txtHangars = new Text(114, 9, 8, Options::containmentLimitsEnforced ? 133 : 123);
+	_numHangars = new Text(40, 9, 126, Options::containmentLimitsEnforced ? 133 : 123);
+	_barHangars = new Bar(150, 5, 166, Options::containmentLimitsEnforced ? 135 : 125);
 
-	_txtDefense = new Text(114, 9, 8, Options::storageLimitsEnforced ? 147 : 138);
-	_numDefense = new Text(40, 9, 126, Options::storageLimitsEnforced ? 147 : 138);
-	_barDefense = new Bar(150, 5, 166, Options::storageLimitsEnforced ? 149 : 140);
-	_txtShortRange = new Text(114, 9, 8, Options::storageLimitsEnforced ? 157 : 153);
-	_numShortRange = new Text(40, 9, 126, Options::storageLimitsEnforced ? 157 : 153);
-	_barShortRange = new Bar(150, 5, 166, Options::storageLimitsEnforced ? 159 : 155);
-	_txtLongRange = new Text(114, 9, 8, Options::storageLimitsEnforced ? 167 : 163);
-	_numLongRange = new Text(40, 9, 126, Options::storageLimitsEnforced ? 167 : 163);
-	_barLongRange = new Bar(150, 5, 166, Options::storageLimitsEnforced ? 169 : 165);
+	_txtDefense = new Text(114, 9, 8, Options::containmentLimitsEnforced ? 147 : 138);
+	_numDefense = new Text(40, 9, 126, Options::containmentLimitsEnforced ? 147 : 138);
+	_barDefense = new Bar(150, 5, 166, Options::containmentLimitsEnforced ? 149 : 140);
+	_txtShortRange = new Text(114, 9, 8, Options::containmentLimitsEnforced ? 157 : 153);
+	_numShortRange = new Text(40, 9, 126, Options::containmentLimitsEnforced ? 157 : 153);
+	_barShortRange = new Bar(150, 5, 166, Options::containmentLimitsEnforced ? 159 : 155);
+	_txtLongRange = new Text(114, 9, 8, Options::containmentLimitsEnforced ? 167 : 163);
+	_numLongRange = new Text(40, 9, 126, Options::containmentLimitsEnforced ? 167 : 163);
+	_barLongRange = new Bar(150, 5, 166, Options::containmentLimitsEnforced ? 169 : 165);
 
 	// Set palette
 	setInterface("baseInfo");
@@ -135,7 +135,7 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 	add(_txtWorkshops, "text2", "baseInfo");
 	add(_numWorkshops, "numbers", "baseInfo");
 	add(_barWorkshops, "facilityBars", "baseInfo");
-	if (Options::storageLimitsEnforced)
+	if (Options::containmentLimitsEnforced)
 	{
 		add(_txtContainment, "text2", "baseInfo");
 		add(_numContainment, "numbers", "baseInfo");
@@ -159,7 +159,7 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 
 	// Set up objects
 	std::ostringstream ss;
-	if (Options::storageLimitsEnforced)
+	if (Options::containmentLimitsEnforced)
 	{
 		ss << "ALT";
 	}
@@ -181,10 +181,12 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&BaseInfoState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&BaseInfoState::btnOkClick, Options::keyOk);
 	_btnOk->onKeyboardPress((ActionHandler)&BaseInfoState::btnOkClick, Options::keyCancel);
 
 	_btnTransfers->setText(tr("STR_TRANSFERS_UC"));
 	_btnTransfers->onMouseClick((ActionHandler)&BaseInfoState::btnTransfersClick);
+
 
 	_btnStores->setText(tr("STR_STORES_UC"));
 	_btnStores->onMouseClick((ActionHandler)&BaseInfoState::btnStoresClick);
@@ -228,7 +230,7 @@ BaseInfoState::BaseInfoState(Base *base, BasescapeState *state) : _base(base), _
 
 	_barWorkshops->setScale(0.5);
 
-	if (Options::storageLimitsEnforced)
+	if (Options::containmentLimitsEnforced)
 	{
 		_txtContainment->setText(tr("STR_ALIEN_CONTAINMENT"));
 
@@ -379,7 +381,7 @@ void BaseInfoState::init()
 		_barWorkshops->setScale(1.0);
 	}
 
-	if (Options::storageLimitsEnforced)
+	if (Options::containmentLimitsEnforced)
 	{
 		std::ostringstream ss72;
 		ss72 << _base->getUsedContainment(0) << ":" << _base->getAvailableContainment(0);

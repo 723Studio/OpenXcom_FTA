@@ -59,7 +59,7 @@ private:
 	void setDropdown(int options);
 public:
 	/// Creates a combo box with the specified size and position.
-	ComboBox(State *state, int width, int height, int x = 0, int y = 0, bool popupAboveButton = false);
+	ComboBox(State *state, int width, int height, int x = 0, int y = 0, bool popupAboveButton = false, bool hasScroll = true);
 	/// Cleans up the combo box.
 	~ComboBox();
 	/// Sets the X position of the surface.

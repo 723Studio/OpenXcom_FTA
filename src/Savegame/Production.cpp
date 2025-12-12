@@ -33,68 +33,13 @@
 #include "../Engine/Language.h"
 #include "../Engine/RNG.h"
 #include <climits>
-#include "BaseFacility.h"
 
 namespace OpenXcom
 {
-Production::Production(const RuleManufacture * rules, int amount) : _rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false)
+Production::Production(const RuleManufacture * rules, int amount) :
+	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false)
 {
-}
-
-int Production::getAmountTotal() const
-{
-	return _amount;
-}
-
-void Production::setAmountTotal (int amount)
-{
-	_amount = amount;
-}
-
-bool Production::getInfiniteAmount() const
-{
-	return _infinite;
-}
-
-void Production::setInfiniteAmount (bool inf)
-{
-	_infinite = inf;
-}
-
-int Production::getTimeSpent() const
-{
-	return _timeSpent;
-}
-
-void Production::setTimeSpent (int done)
-{
-	_timeSpent = done;
-}
-
-bool Production::isQueuedOnly() const
-{
-	// no progress made yet and nobody assigned
-	return (getTimeSpent() == 0 && getAssignedEngineers() == 0);
-}
-
-int Production::getAssignedEngineers() const
-{
-	return _engineers;
-}
-
-void Production::setAssignedEngineers (int engineers)
-{
-	_engineers = engineers;
-}
-
-bool Production::getSellItems() const
-{
-	return _sell;
-}
-
-void Production::setSellItems (bool sell)
-{
-	_sell = sell;
+	_efficiency = 100;
 }
 
 bool Production::haveEnoughMoneyForOneMoreUnit(SavedGame * g) const
@@ -130,10 +75,153 @@ bool Production::haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const
 	return true;
 }
 
-productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang)
+std::vector<Soldier*> Production::getAssignedSoldiers(Base* b)
+{
+	std::vector<Soldier*> assignedEngineers;
+	for (auto s : *b->getSoldiers())
+	{
+		if (s->getProductionProject() == this)
+		{
+			assignedEngineers.push_back(s);
+		}
+	}
+	return assignedEngineers;
+}
+
+int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRating, bool prediction)
+{
+	if (!m->isFTAGame())
+	{
+		return _engineers;
+	}
+	else
+	{
+		int progress = 0;
+		std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
+		if (!assignedEngineers.empty())
+		{
+			double effort = 0;
+			auto projStats = _rules->getStats();
+			int trainingFactor = m->getEngineerTrainingFactor();
+			double speedFactor = (double)m->getEngineeringSpeedFactor() / 100;
+			int summEfficiency = 0;
+			for (auto s : assignedEngineers)
+			{
+				if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
+				{
+					continue;
+				}
+
+				auto stats = s->getCurrentStats();
+				auto caps = s->getRules()->getStatCaps();
+				unsigned int statsN = 0;
+				double soldierEffort = 0, statEffort = 0;
+				if (projStats.weaponry > 0)
+				{
+					statEffort = stats->weaponry;
+					soldierEffort += statEffort / projStats.weaponry;
+					if (!prediction && stats->weaponry < caps.weaponry && RNG::generate(0, caps.weaponry) > stats->weaponry && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->weaponry++;
+					statsN++;
+				}
+				if (projStats.explosives > 0)
+				{
+					statEffort = stats->explosives;
+					soldierEffort += statEffort / projStats.explosives;
+					if (!prediction && stats->explosives < caps.explosives && RNG::generate(0, caps.explosives) > stats->explosives && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->explosives++;
+					statsN++;
+				}
+				if (projStats.microelectronics > 0)
+				{
+					statEffort = stats->microelectronics;
+					soldierEffort += statEffort / projStats.microelectronics;
+					if (!prediction && stats->microelectronics < caps.microelectronics && RNG::generate(0, caps.microelectronics) > stats->microelectronics && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->microelectronics++;
+					statsN++;
+				}
+				if (projStats.metallurgy > 0)
+				{
+					statEffort = stats->metallurgy;
+					soldierEffort += statEffort / projStats.metallurgy;
+					if (!prediction && stats->metallurgy < caps.metallurgy && RNG::generate(0, caps.metallurgy) > stats->metallurgy && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->metallurgy++;
+					statsN++;
+				}
+				if (projStats.processing > 0)
+				{
+					statEffort = stats->processing;
+					soldierEffort += statEffort / projStats.processing;
+					if (!prediction && stats->processing < caps.processing && RNG::generate(0, caps.processing) > stats->processing && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->processing++;
+					statsN++;
+				}
+				if (projStats.hacking > 0)
+				{
+					statEffort = stats->hacking;
+					soldierEffort += statEffort / projStats.hacking;
+					if (!prediction && stats->hacking < caps.hacking && RNG::generate(0, caps.hacking) > stats->hacking && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->hacking++;
+					statsN++;
+				}
+
+				if (projStats.robotics > 0)
+				{
+					statEffort = stats->robotics;
+					soldierEffort += statEffort / projStats.robotics;
+					if (!prediction && stats->robotics < caps.robotics && RNG::generate(0, caps.robotics) > stats->robotics && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->robotics++;
+					statsN++;
+				}
+
+				if (projStats.alienTech > 0)
+				{
+					statEffort = stats->alienTech;
+					soldierEffort += statEffort / projStats.alienTech;
+					if (!prediction && stats->alienTech < caps.alienTech && RNG::generate(0, caps.alienTech) > stats->alienTech && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->alienTech++;
+					statsN++;
+				}
+
+				if (projStats.reverseEngineering > 0)
+				{
+					statEffort = stats->reverseEngineering;
+					soldierEffort += statEffort / projStats.reverseEngineering;
+					if (!prediction && stats->reverseEngineering < caps.reverseEngineering && RNG::generate(0, caps.reverseEngineering) > stats->reverseEngineering && RNG::percent(trainingFactor))
+						s->getEngineerExperience()->reverseEngineering++;
+					statsN++;
+				}
+
+				int diligence = stats->diligence;
+				double diligenceFactor = 0.5;
+				if (diligence > 10)
+					diligenceFactor = -0.5 + 0.434 * std::log(std::fabs(diligence));
+
+				soldierEffort *= diligenceFactor;
+				if (statsN > 0)
+					soldierEffort /= statsN;
+				effort += soldierEffort;
+				summEfficiency += stats->efficiency;
+			}
+			_efficiency = summEfficiency / assignedEngineers.size();
+
+			effort *= loyaltyRating; //not normalizing by 100 to fit small hourly values into integer later
+			effort *= speedFactor;
+			progress = static_cast<int>(effort);
+		}
+		else
+		{
+			_efficiency = 100;
+		}
+		return progress;
+	}
+}
+
+productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating)
 {
 	int done = getAmountProduced();
-	_timeSpent += _engineers;
+	int progress = getProgress(b, g, m, rating);
+	_timeSpent += progress;
 
 	if (done < getAmountProduced())
 	{
@@ -266,13 +354,14 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 				}
 				else
 				{
-					RuleSoldier *rule = m->getSoldier(spawnedPersonType);
+					const RuleSoldier *rule = m->getSoldier(spawnedPersonType);
 					if (rule != 0)
 					{
 						Transfer *t = new Transfer(transferTimePersonnel);
 						int nationality = g->selectSoldierNationalityByLocation(m, rule, b);
 						Soldier *s = m->genSoldier(g, rule, nationality);
-						s->load(_rules->getSpawnedSoldierTemplate(), m, g, m->getScriptGlobal(), true); // load from soldier template
+						YAML::YamlRootNodeReader reader(_rules->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+						s->load(reader, m, g, m->getScriptGlobal(), true); // load from soldier template
 						if (_rules->getSpawnedPersonName() != "")
 						{
 							s->setName(lang->getString(_rules->getSpawnedPersonName()));
@@ -281,8 +370,17 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 						{
 							s->genName();
 						}
-						t->setSoldier(s);
-						b->getTransfers()->push_back(t);
+
+						if (g->isFtAGame())
+						{
+							b->getSoldiers()->push_back(s);
+						}
+						else
+						{
+							Transfer* t = new Transfer(24);
+							t->setSoldier(s);
+							b->getTransfers()->push_back(t);
+						}
 					}
 				}
 			}
@@ -329,7 +427,7 @@ const RuleManufacture * Production::getRules() const
 
 void Production::startItem(Base * b, SavedGame * g, const Mod *m) const
 {
-	g->setFunds(g->getFunds() - _rules->getManufactureCost());
+	g->setFunds(g->getFunds() - ((_rules->getManufactureCost() * 100) / _efficiency));
 	for (const auto& i : _rules->getRequiredItems())
 	{
 		b->getStorageItems()->removeItem(i.first, i.second);
@@ -363,33 +461,32 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 	//}
 }
 
-YAML::Node Production::save() const
+void Production::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node;
-	node["item"] = getRules()->getName();
-	node["assigned"] = getAssignedEngineers();
-	node["spent"] = getTimeSpent();
-	node["amount"] = getAmountTotal();
-	node["infinite"] = getInfiniteAmount();
+	writer.setAsMap();
+	writer.write("item", getRules()->getName());
+	writer.write("assigned", getAssignedEngineers());
+	writer.write("spent", getTimeSpent());
+	writer.write("amount", getAmountTotal());
+	writer.write("infinite", getInfiniteAmount());
+	writer.write("efficiency", _efficiency);
 	if (getSellItems())
-		node["sell"] = getSellItems();
+		writer.write("sell", getSellItems());
 	if (!_rules->getRandomProducedItems().empty())
-	{
-		node["randomProductionInfo"] = _randomProductionInfo;
-	}
-	return node;
+		writer.write("randomProductionInfo", _randomProductionInfo);
 }
 
-void Production::load(const YAML::Node &node)
+void Production::load(const YAML::YamlNodeReader& reader)
 {
-	setAssignedEngineers(node["assigned"].as<int>(getAssignedEngineers()));
-	setTimeSpent(node["spent"].as<int>(getTimeSpent()));
-	setAmountTotal(node["amount"].as<int>(getAmountTotal()));
-	setInfiniteAmount(node["infinite"].as<bool>(getInfiniteAmount()));
-	setSellItems(node["sell"].as<bool>(getSellItems()));
+	setAssignedEngineers(reader["assigned"].readVal(getAssignedEngineers()));
+	setTimeSpent(reader["spent"].readVal(getTimeSpent()));
+	setAmountTotal(reader["amount"].readVal(getAmountTotal()));
+	setInfiniteAmount(reader["infinite"].readVal(getInfiniteAmount()));
+	setSellItems(reader["sell"].readVal(getSellItems()));
+	setEfficiency(reader["efficiency"].readVal(getEfficiency()));
 	if (!_rules->getRandomProducedItems().empty())
 	{
-		_randomProductionInfo = node["randomProductionInfo"].as< std::map<std::string, int> >(_randomProductionInfo);
+		_randomProductionInfo = reader["randomProductionInfo"].readVal(_randomProductionInfo);
 	}
 	// backwards compatibility
 	if (getAmountTotal() == INT_MAX)

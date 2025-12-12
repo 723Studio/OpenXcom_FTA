@@ -20,8 +20,9 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
+#include <set>
 
 namespace OpenXcom
 {
@@ -34,24 +35,33 @@ private:
 	std::string _type, _varName;
 	int _firstMonth, _lastMonth, _label, _executionOdds, _targetBaseOdds, _minDifficulty, _maxDifficulty, _maxRuns, _avoidRepeats, _delay, _randomDelay;
 	int _minScore, _maxScore;
+	int _minLoyalty, _maxLoyalty;
+	int _allowedProcessor;
+	int _spawnGap, _randomSpawnGap;
 	int64_t _minFunds, _maxFunds;
 	std::string _missionVarName, _missionMarkerName;
 	int _counterMin, _counterMax;
 	std::vector<int> _conditionals;
+	std::vector<std::string> _adhocMissionScriptTags;
 	std::vector<std::pair<size_t, WeightedOptions*> > _regionWeights, _missionWeights, _raceWeights;
+	
+	std::map<std::string, int> _requiredReputation;
 	std::map<std::string, bool> _researchTriggers;
 	std::map<std::string, bool> _itemTriggers;
 	std::map<std::string, bool> _facilityTriggers;
+	std::map<std::string, bool> _soldierTypeTriggers;
 	std::map<std::string, bool> _xcomBaseInRegionTriggers;
 	std::map<std::string, bool> _xcomBaseInCountryTriggers;
+
 	bool _useTable, _siteType;
+
 public:
 	/// Creates a new mission script.
 	RuleMissionScript(const std::string &type);
 	/// Deletes a mission script.
 	~RuleMissionScript();
 	/// Loads a mission script from yaml.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the name of the script command.
 	const std::string& getType() const;
 	/// Gets the name of the variable to use for keeping track of... things.
@@ -82,14 +92,26 @@ public:
 	int getRepeatAvoidance() const;
 	/// Gets the number of minutes to delay spawning of the first wave of this mission, overrides the spawn delay defined in the mission waves.
 	int getDelay() const;
+	/// Gets interval in what the mission script command should not be processed.
+	int getSpawnGap() const { return _spawnGap; }
+	/// Gets random ammount of gap for mission script command.
+	int getRandomSpawnGap() const { return _randomSpawnGap; }
 	/// Gets the minimum score (from last month) for this command to run.
 	int getMinScore() const { return _minScore; }
 	/// Gets the maximum score (from last month) for this command to run.
 	int getMaxScore() const { return _maxScore; }
+	/// Gets the minimum loyalty for this command to run.
+	int getMinLoyalty() const { return _minLoyalty; }
+	/// Gets the maximum loyalty for this command to run.
+	int getMaxLoyalty() const { return _maxLoyalty; }
+	/// Gets the diplomacy faction requirments that may apply to this command.
+	const std::map<std::string, int>& getReputationRequirments() const { return _requiredReputation; }
 	/// Gets the minimum funds (from current month) for this command to run.
 	int64_t getMinFunds() const { return _minFunds; }
 	/// Gets the maximum funds (from current month) for this command to run.
 	int64_t getMaxFunds() const { return _maxFunds; }
+	/// Get allowed procesor (monthly/factional) that is allowed to process this command.
+	int getAllowedProcessor() const { return _allowedProcessor; }
 	/// Gets the name of the mission script tracking variable.
 	const std::string& getMissionVarName() const { return _missionVarName; }
 	/// Gets the name of the mission marker tracking variable.
@@ -100,22 +122,28 @@ public:
 	int getCounterMax() const { return _counterMax; }
 	/// Gets the list of conditions this command requires in order to run.
 	const std::vector<int> &getConditionals() const;
+	/// Gets the list of tags for this command.
+	const std::vector<std::string> &getAdhocMissionScriptTags() const { return _adhocMissionScriptTags; }
 	/// Does this command have raceWeights?
 	bool hasRaceWeights() const;
 	/// Does this command have mission weights?
 	bool hasMissionWeights() const;
 	/// Does this command have region weights?
 	bool hasRegionWeights() const;
+
 	/// Gets the research triggers that may apply to this command.
 	const std::map<std::string, bool> &getResearchTriggers() const;
 	/// Gets the item triggers that may apply to this command.
 	const std::map<std::string, bool> &getItemTriggers() const;
 	/// Gets the facility triggers that may apply to this command.
 	const std::map<std::string, bool> &getFacilityTriggers() const;
+	/// Gets the soldier type triggers that may apply to this command.
+	const std::map<std::string, bool> &getSoldierTypeTriggers() const { return _soldierTypeTriggers; }
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInRegionTriggers() const;
 	/// Gets the xcom base triggers that may apply to this command.
 	const std::map<std::string, bool> &getXcomBaseInCountryTriggers() const;
+
 	/// Delete this mission from the table? stops it coming up again in random selection, but NOT if a missionScript calls it by name.
 	bool getUseTable() const;
 	/// Sets this script to a terror mission type command or not.

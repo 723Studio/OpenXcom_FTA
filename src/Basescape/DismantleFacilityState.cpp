@@ -28,6 +28,8 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
+#include "../Savegame/Soldier.h"
 #include "BaseView.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
@@ -96,7 +98,19 @@ DismantleFacilityState::DismantleFacilityState(Base *base, BaseView *view, BaseF
 	}
 
 	_txtRefundValue->setAlign(ALIGN_CENTER);
-	_txtRefundValue->setText(tr("STR_REFUND_VALUE").arg(Unicode::formatFunding(refundValue)));
+	if (refundValue < 0)
+	{
+		_txtRefundValue->setText(tr("STR_REFUND_VALUE_NEGATIVE").arg(Unicode::formatFunding(-refundValue)));
+		if (_game->getSavedGame()->getFunds() < -refundValue)
+		{
+			// cannot afford dismantle, expenses too high
+			_btnOk->setVisible(false);
+		}
+	}
+	else
+	{
+		_txtRefundValue->setText(tr("STR_REFUND_VALUE").arg(Unicode::formatFunding(refundValue)));
+	}
 	_txtRefundValue->setVisible(refundValue != 0);
 }
 

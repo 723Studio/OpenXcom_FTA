@@ -17,7 +17,11 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <sstream>
+#include "BattlescapeGame.h"
+#include "BattlescapeState.h"
+#include "Camera.h"
 #include "ExperienceOverviewState.h"
+#include "Map.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
@@ -37,24 +41,28 @@ namespace OpenXcom
 /**
  * Initializes all the elements in the Experience Overview screen.
  */
-ExperienceOverviewState::ExperienceOverviewState()
+ExperienceOverviewState::ExperienceOverviewState(BattlescapeState* parent) : _parent(parent)
 {
 	_screen = false;
+	_showPsi = true; //_game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	_showMana = true; //_game->getSavedGame()->isManaUnlocked(_game->getMod())
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_txtTitle = new Text(300, 17, 10, 13);
 	_txtName = new Text(100, 10, 10, 40);
 	_btnOk = new TextButton(160, 16, 80, 174);
-	_lstSoldiers = new TextList(286, 112, 8, 52);
-	_txtBravery = new Text(18, 10, 120 - 3, 40);
-	_txtReactions = new Text(18, 10, 141 - 3, 40);
-	_txtFiring = new Text(18, 10, 162 - 3, 40);
-	_txtThrowing = new Text(18, 10, 183 - 3, 40);
-	_txtPsiSkill = new Text(18, 10, 204 - 3, 40);
-	_txtPsiStrength = new Text(18, 10, 225 - 3, 40);
-	_txtMelee = new Text(18, 10, 246 - 3, 40);
-	_txtMana = new Text(18, 10, 267 - 3, 40);
+	_lstSoldiers = new TextList(297, 112, 8, 52);
+	_txtBravery = new Text(18, 10, 108, 40);
+	_txtReactions = new Text(18, 10, 128, 40);
+	_txtFiring = new Text(18, 10, 148, 40);
+	_txtThrowing = new Text(18, 10, 168, 40);
+	_txtMelee = new Text(18, 10, 188, 40);
+	_txtHacking = new Text(18, 10, 208, 40);
+	_txtBiology = new Text(18, 10, 228, 40);
+	_txtPhysics = new Text(18, 10, 248, 40);
+	_txtMana = new Text(18, 10, 268, 40);
+	_txtPsiSkill = new Text(18, 10, 288, 40);
 
 	// Set palette
 	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
@@ -68,10 +76,12 @@ ExperienceOverviewState::ExperienceOverviewState()
 	add(_txtReactions, "messageWindows", "battlescape");
 	add(_txtFiring, "messageWindows", "battlescape");
 	add(_txtThrowing, "messageWindows", "battlescape");
-	add(_txtPsiSkill, "messageWindows", "battlescape");
-	add(_txtPsiStrength, "messageWindows", "battlescape");
 	add(_txtMelee, "messageWindows", "battlescape");
+	add(_txtHacking, "messageWindows", "battlescape");
+	add(_txtBiology, "messageWindows", "battlescape");
+	add(_txtPhysics, "messageWindows", "battlescape");
 	add(_txtMana, "messageWindows", "battlescape");
+	add(_txtPsiSkill, "messageWindows", "battlescape");
 
 	centerAllSurfaces();
 
@@ -94,29 +104,34 @@ ExperienceOverviewState::ExperienceOverviewState()
 	_txtReactions->setHighContrast(true);
 	_txtFiring->setHighContrast(true);
 	_txtThrowing->setHighContrast(true);
-	_txtPsiSkill->setHighContrast(true);
-	_txtPsiStrength->setHighContrast(true);
 	_txtMelee->setHighContrast(true);
+	_txtHacking->setHighContrast(true);
+	_txtBiology->setHighContrast(true);
+	_txtPhysics->setHighContrast(true);
 	_txtMana->setHighContrast(true);
+	_txtPsiSkill->setHighContrast(true);
 
 	_txtName->setText(tr("STR_NAME"));
-	_txtBravery->setText(tr("STR_BRAVERY_ABBREVIATION"));
-	_txtReactions->setText(tr("STR_REACTIONS_ABBREVIATION"));
-	_txtFiring->setText(tr("STR_FIRING_ACCURACY_ABBREVIATION"));
-	_txtThrowing->setText(tr("STR_THROWING_ACCURACY_ABBREVIATION"));
-	_txtPsiSkill->setText(tr("STR_PSIONIC_SKILL_ABBREVIATION"));
-	_txtPsiStrength->setText(tr("STR_PSIONIC_STRENGTH_ABBREVIATION"));
-	_txtMelee->setText(tr("STR_MELEE_ACCURACY_ABBREVIATION"));
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getMod()->isManaTrainingPrimary())
-	{
-		_txtMana->setText(tr("STR_MANA_ABBREVIATION"));
-	}
+	_txtBravery->setText(tr(UnitStats::getStatString(&UnitStats::bravery, UnitStats::STATSTR_ABBREV)));
+	_txtReactions->setText(tr(UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_ABBREV)));
+	_txtFiring->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_ABBREV)));
+	_txtThrowing->setText(tr(UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_ABBREV)));
+	_txtMelee->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_ABBREV)));
+	_txtHacking->setText(tr(UnitStats::getStatString(&UnitStats::hacking, UnitStats::STATSTR_ABBREV)));
+	_txtBiology->setText(tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_ABBREV)));
+	_txtPhysics->setText(tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_ABBREV)));
 
-	_lstSoldiers->setColumns(10, 110, 21, 21, 21, 21, 21, 21, 21, 21, 18);
+	if (_showMana)
+		_txtMana->setText(tr(UnitStats::getStatString(&UnitStats::mana, UnitStats::STATSTR_ABBREV)));
+	if (_showPsi)
+		_txtPsiSkill->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_ABBREV)));
+
+	_lstSoldiers->setColumns(11, 100, 20, 20, 20, 20, 20, 20, 20, 20, 20, 17);
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setHighContrast(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(2);
+	_lstSoldiers->onMouseClick((ActionHandler)&ExperienceOverviewState::lstSoldiersClick);
 
 	_lstSoldiers->clearList();
 	int row = 0;
@@ -141,28 +156,34 @@ ExperienceOverviewState::ExperienceOverviewState()
 		firing << stats->firing;
 		std::ostringstream throwing;
 		throwing << stats->throwing;
-		std::ostringstream psiSkill;
-		psiSkill << stats->psiSkill;
-		std::ostringstream psiStrength;
-		psiStrength << stats->psiStrength;
 		std::ostringstream melee;
 		melee << stats->melee;
+		std::ostringstream hacking;
+		hacking << stats->hacking;
+		std::ostringstream biology;
+		biology << stats->biology;
+		std::ostringstream physics;
+		physics << stats->physics;
 		std::ostringstream mana;
-		if (_game->getMod()->isManaFeatureEnabled() && _game->getMod()->isManaTrainingPrimary())
-		{
+		std::ostringstream psiSkill;
+		if (_showMana)
 			mana << stats->mana;
-		}
+		if (_showPsi)
+			psiSkill << stats->psiSkill;
 
-		_lstSoldiers->addRow(10,
+		_soldiers.push_back(soldier);
+		_lstSoldiers->addRow(11,
 			soldier->getName(_game->getLanguage()).c_str(),
 			bravery.str().c_str(),
 			reactions.str().c_str(),
 			firing.str().c_str(),
 			throwing.str().c_str(),
-			psiSkill.str().c_str(),
-			psiStrength.str().c_str(),
 			melee.str().c_str(),
+			hacking.str().c_str(),
+			biology.str().c_str(),
+			physics.str().c_str(),
 			mana.str().c_str(),
+			psiSkill.str().c_str(),
 			"");
 		for (int col = 1; col < 9; ++col)
 		{
@@ -182,6 +203,31 @@ ExperienceOverviewState::ExperienceOverviewState()
 void ExperienceOverviewState::btnOkClick(Action*)
 {
 	_game->popState();
+}
+
+/**
+ * Selects the soldier if possible and returns to the previous screen.
+ * @param action Pointer to an action.
+ */
+void ExperienceOverviewState::lstSoldiersClick(Action*)
+{
+	if (_parent->allowButtons())
+	{
+		auto index = _lstSoldiers->getSelectedRow();
+		auto* bu = _soldiers.at(index);
+
+		if (bu->isSelectable(_game->getSavedGame()->getSavedBattle()->getSide(), false, false))
+		{
+			// select
+			_parent->getBattleGame()->cancelAllActions();
+			_parent->getBattleGame()->primaryAction(bu->getPosition());
+		}
+
+		// center on position
+		_parent->getMap()->getCamera()->centerOnPosition(bu->getPosition());
+
+		_game->popState();
+	}
 }
 
 }

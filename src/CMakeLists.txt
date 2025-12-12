@@ -5,10 +5,19 @@ set ( root_src
   md5.cpp
 )
 set ( basescape_src
+  Basescape/AgentsState.cpp
   Basescape/BaseInfoState.cpp
+  Basescape/BaseInfoStateFtA.cpp
   Basescape/BasescapeState.cpp
   Basescape/BaseView.cpp
   Basescape/BuildFacilitiesState.cpp
+  Basescape/CovertOperationArmorState.cpp
+  Basescape/CovertOperationEquipmentState.cpp
+  Basescape/CovertOperationInfoState.cpp
+  Basescape/CovertOperationsListState.cpp
+  Basescape/CovertOperationSoldiersState.cpp
+  Basescape/CovertOperationStartState.cpp
+  Basescape/CovertOperationState.cpp
   Basescape/CraftArmorState.cpp
   Basescape/CraftEquipmentLoadState.cpp
   Basescape/CraftEquipmentSaveState.cpp
@@ -20,41 +29,62 @@ set ( basescape_src
   Basescape/CraftsState.cpp
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
+  Basescape/DisposeState.cpp
+  Basescape/EngineersState.cpp
   Basescape/GlobalAlienContainmentState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchState.cpp
+  Basescape/IntelAllocateAgentsState.cpp
+  Basescape/IntelState.cpp
+  Basescape/IntelligenceProjectDetailsState.cpp
+  Basescape/ItemLocationsState.cpp
   Basescape/ManageAlienContainmentState.cpp
+  Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
   Basescape/ManufactureInfoState.cpp
+  Basescape/ManufactureInfoStateFtA.cpp
+  Basescape/ManufactureProductDetailsState.cpp
   Basescape/ManufactureStartState.cpp
   Basescape/ManufactureState.cpp
   Basescape/MiniBaseView.cpp
   Basescape/MonthlyCostsState.cpp
+  Basescape/MontlySoldierExperienceState.cpp
   Basescape/NewManufactureListState.cpp
   Basescape/NewResearchListState.cpp
+  Basescape/PilotsState.cpp
   Basescape/PlaceFacilityState.cpp
   Basescape/PlaceLiftState.cpp
   Basescape/PlaceStartFacilityState.cpp
+  Basescape/PrisonerAllocateAgentsState.cpp
+  Basescape/PrisonerInfoState.cpp
+  Basescape/PrisonManagementState.cpp
   Basescape/PurchaseState.cpp
+  Basescape/ResearchAllocateScientistsState.cpp
   Basescape/ResearchInfoState.cpp
+  Basescape/ResearchInfoStateFtA.cpp
+  Basescape/ResearchProjectDetailsState.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
+  Basescape/ScientistsState.cpp
   Basescape/SelectStartFacilityState.cpp
   Basescape/SellState.cpp
   Basescape/SoldierArmorState.cpp
   Basescape/SoldierAvatarState.cpp
+  Basescape/SoldierExperienceState.cpp
   Basescape/SoldierBonusState.cpp
   Basescape/SoldierDiaryLightState.cpp
   Basescape/SoldierDiaryMissionState.cpp
   Basescape/SoldierDiaryOverviewState.cpp
   Basescape/SoldierDiaryPerformanceState.cpp
   Basescape/SoldierInfoState.cpp
+  Basescape/SoldierInfoStateFtA.cpp
   Basescape/SoldierMemorialState.cpp
   Basescape/SoldierRankState.cpp
   Basescape/SoldierSortUtil.cpp
   Basescape/SoldiersState.cpp
   Basescape/SoldierTransformationState.cpp
   Basescape/SoldierTransformationListState.cpp
+  Basescape/SoldierTransformationStatsState.cpp
   Basescape/SoldierTransformState.cpp
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
@@ -85,12 +115,17 @@ set ( battlescape_src
   Battlescape/CommendationLateState.cpp
   Battlescape/CommendationState.cpp
   Battlescape/ConfirmEndMissionState.cpp
+  Battlescape/CustomBattleMessageState.cpp
+  Battlescape/DebriefingExtraStatsState.cpp
   Battlescape/DebriefingState.cpp
   Battlescape/ExperienceOverviewState.cpp
   Battlescape/Explosion.cpp
   Battlescape/ExplosionBState.cpp
   Battlescape/ExtendedBattlescapeLinksState.cpp
   Battlescape/ExtendedInventoryLinksState.cpp
+  Battlescape/HackingBState.cpp
+  Battlescape/HackingState.cpp
+  Battlescape/HackingView.cpp
   Battlescape/InfoboxOKState.cpp
   Battlescape/InfoboxState.cpp
   Battlescape/Inventory.cpp
@@ -108,11 +143,11 @@ set ( battlescape_src
   Battlescape/MiniMapState.cpp
   Battlescape/MiniMapView.cpp
   Battlescape/NextTurnState.cpp
-  Battlescape/NoExperienceState.cpp
   Battlescape/Particle.cpp
   Battlescape/Pathfinding.cpp
   Battlescape/PathfindingNode.cpp
   Battlescape/PathfindingOpenSet.cpp
+  Battlescape/Position.cpp
   Battlescape/PrimeGrenadeState.cpp
   Battlescape/Projectile.cpp
   Battlescape/ProjectileFlyBState.cpp
@@ -155,6 +190,8 @@ set ( engine_src
   Engine/OpenGL.cpp
   Engine/OptionInfo.cpp
   Engine/Options.cpp
+  Engine/OXCContainer.cpp
+  Engine/OXCCrypto.cpp
   Engine/Palette.cpp
   Engine/RNG.cpp
   Engine/Scalers/hq2x.cpp
@@ -173,14 +210,25 @@ set ( engine_src
   Engine/Surface.cpp
   Engine/SurfaceSet.cpp
   Engine/Timer.cpp
+  Engine/TouchState.cpp
   Engine/Unicode.cpp
+  Engine/Yaml.cpp
   Engine/Zoom.cpp
+)
+
+set ( fta_src
+  FTA/DiplomacyHirePersonnelState.cpp
+  FTA/DiplomacyPurchaseState.cpp
+  FTA/DiplomacySellState.cpp
+  FTA/DiplomacyStartState.cpp
+  FTA/MasterMind.cpp
 )
 
 set ( geoscape_src
   Geoscape/AlienBaseState.cpp
   Geoscape/AllocatePsiTrainingState.cpp
   Geoscape/AllocateTrainingState.cpp
+  Geoscape/AltMonthlyReportState.cpp
   Geoscape/BaseDefenseState.cpp
   Geoscape/BaseDestroyedState.cpp
   Geoscape/BaseNameState.cpp
@@ -195,6 +243,8 @@ set ( geoscape_src
   Geoscape/DogfightErrorState.cpp
   Geoscape/DogfightExperienceState.cpp
   Geoscape/DogfightState.cpp
+  Geoscape/FinishedCoverOperationDetailsState.cpp
+  Geoscape/FinishedCoverOperationState.cpp
   Geoscape/ExtendedGeoscapeLinksState.cpp
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
@@ -202,6 +252,8 @@ set ( geoscape_src
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
+  Geoscape/IntelAvailableState.cpp
+  Geoscape/IntelCompleteState.cpp
   Geoscape/InterceptState.cpp
   Geoscape/ItemsArrivingState.cpp
   Geoscape/LowFuelState.cpp
@@ -213,6 +265,7 @@ set ( geoscape_src
   Geoscape/NewPossibleManufactureState.cpp
   Geoscape/NewPossiblePurchaseState.cpp
   Geoscape/NewPossibleResearchState.cpp
+  Geoscape/PrisonReportState.cpp
   Geoscape/ProductionCompleteState.cpp
   Geoscape/PsiTrainingState.cpp
   Geoscape/ResearchCompleteState.cpp
@@ -221,6 +274,7 @@ set ( geoscape_src
   Geoscape/SelectMusicTrackState.cpp
   Geoscape/TargetInfoState.cpp
   Geoscape/TrainingFinishedState.cpp
+  Geoscape/TransformationFinishedState.cpp
   Geoscape/TrainingState.cpp
   Geoscape/UfoDetectedState.cpp
   Geoscape/UfoLostState.cpp
@@ -304,6 +358,7 @@ set ( mod_src
   Mod/ExtraSounds.cpp
   Mod/ExtraSprites.cpp
   Mod/ExtraStrings.cpp
+  Mod/BattleScript.cpp
   Mod/MapBlock.cpp
   Mod/MapData.cpp
   Mod/MapDataSet.cpp
@@ -318,13 +373,17 @@ set ( mod_src
   Mod/RuleCommendations.cpp
   Mod/RuleConverter.cpp
   Mod/RuleCountry.cpp
+  Mod/RuleCovertOperation.cpp
   Mod/RuleCraft.cpp
   Mod/RuleCraftWeapon.cpp
   Mod/RuleDamageType.cpp
+  Mod/RuleDiplomacyFaction.cpp
+  Mod/RuleDiplomacyFactionEvent.cpp
   Mod/RuleEnviroEffects.cpp
   Mod/RuleEvent.cpp
   Mod/RuleEventScript.cpp
   Mod/RuleGlobe.cpp
+  Mod/RuleIntelProject.cpp
   Mod/RuleInterface.cpp
   Mod/RuleInventory.cpp
   Mod/RuleItem.cpp
@@ -333,6 +392,8 @@ set ( mod_src
   Mod/RuleManufactureShortcut.cpp
   Mod/RuleMissionScript.cpp
   Mod/RuleMusic.cpp
+  Mod/RuleObject.cpp
+  Mod/RulePrisoner.cpp
   Mod/RuleRegion.cpp
   Mod/RuleResearch.cpp
   Mod/RuleSkill.cpp
@@ -360,16 +421,22 @@ set ( savegame_src
   Savegame/AlienStrategy.cpp
   Savegame/Base.cpp
   Savegame/BaseFacility.cpp
+  Savegame/BasePrisoner.cpp
   Savegame/BattleItem.cpp
+  Savegame/BattleObject.cpp
   Savegame/BattleUnit.cpp
   Savegame/Country.cpp
+  Savegame/CovertOperation.cpp
   Savegame/Craft.cpp
   Savegame/CraftWeapon.cpp
   Savegame/CraftWeaponProjectile.cpp
+  Savegame/DiplomacyFaction.cpp
   Savegame/EquipmentLayoutItem.cpp
+  Savegame/FactionalResearch.cpp
   Savegame/GameTime.cpp
   Savegame/GeoscapeEvent.cpp
   Savegame/HitLog.cpp
+  Savegame/IntelProject.cpp
   Savegame/ItemContainer.cpp
   Savegame/MapEditorSave.cpp
   Savegame/MissionSite.cpp
@@ -387,6 +454,7 @@ set ( savegame_src
   Savegame/SoldierAvatar.cpp
   Savegame/SoldierDeath.cpp
   Savegame/SoldierDiary.cpp
+  Savegame/SoldierPool.cpp
   Savegame/Target.cpp
   Savegame/Tile.cpp
   Savegame/Transfer.cpp
@@ -421,24 +489,50 @@ set ( ufopedia_src
   Ufopaedia/UfopaediaStartState.cpp
 )
 
+set ( rapidyaml_src
+  ../libs/rapidyaml/c4/base64.cpp
+  ../libs/rapidyaml/c4/char_traits.cpp
+  ../libs/rapidyaml/c4/error.cpp
+  ../libs/rapidyaml/c4/format.cpp
+  ../libs/rapidyaml/c4/language.cpp
+  ../libs/rapidyaml/c4/memory_resource.cpp
+  ../libs/rapidyaml/c4/memory_util.cpp
+  ../libs/rapidyaml/c4/utf.cpp
+  ../libs/rapidyaml/c4/yml/common.cpp
+  ../libs/rapidyaml/c4/yml/node.cpp
+  ../libs/rapidyaml/c4/yml/node_type.cpp
+  ../libs/rapidyaml/c4/yml/parse.cpp
+  ../libs/rapidyaml/c4/yml/preprocess.cpp
+  ../libs/rapidyaml/c4/yml/reference_resolver.cpp
+  ../libs/rapidyaml/c4/yml/tag.cpp
+  ../libs/rapidyaml/c4/yml/tree.cpp
+  ../libs/rapidyaml/c4/yml/version.cpp
+
+)
+
 set ( cxx_src
     ${root_src}
     ${basescape_src}
     ${battlescape_src}
     ${engine_src}
+    ${fta_src}
     ${geoscape_src}
     ${interface_src}
     ${menu_src}
     ${mod_src}
     ${savegame_src}
     ${ufopedia_src}
+    ${rapidyaml_src}
 )
 
 set ( c_src
   ../libs/miniz/miniz.c
+  Engine/tiny_aes.c
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
-set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
+if ( NOT MSVC )
+  set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
+endif ()
 
 set ( data_install_dir bin )
 if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
@@ -580,6 +674,9 @@ endif ()
 
 add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
 
+# Ensure MSVC uses /bigobj to avoid "number of sections exceeded" (C1128)
+target_compile_options(openxcom PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+
 if ( EMBED_ASSETS )
   add_dependencies(openxcom zips)
 endif ()
@@ -587,11 +684,23 @@ endif ()
 install ( TARGETS openxcom ${install_dest} DESTINATION ${CMAKE_INSTALL_BINDIR} )
 # Extra link flags for Windows. They need to be set before the SDL/YAML link flags, otherwise you will get strange link errors ('Undefined reference to WinMain@16')
 if ( WIN32 )
-  set ( basic_windows_libs advapi32.lib shell32.lib shlwapi.lib wininet.lib urlmon.lib )
   if ( MINGW )
-    set ( basic_windows_libs ${basic_windows_libs} mingw32 -mwindows )
+    # MinGW expects -l style libs; include multimedia/DirectX and bcrypt for OXCCrypto.
+    set ( basic_windows_libs
+      -ladvapi32 -lshell32 -lshlwapi -lwininet -lurlmon
+      -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -luuid -ldxguid -ldinput8
+      -lversion -lsetupapi -lmpr -lcomdlg32 -lbcrypt
+      mingw32 -mwindows
+    )
     set ( static_flags  -static )
     set ( SDLMIXER_LIBRARY "${SDLMIXER_LIBRARY} -lwinmm" )
+  else ()
+    # MSVC keeps .lib suffixes
+    set ( basic_windows_libs
+      advapi32.lib shell32.lib shlwapi.lib wininet.lib urlmon.lib
+      user32.lib gdi32.lib winmm.lib imm32.lib ole32.lib oleaut32.lib uuid.lib dxguid.lib dinput8.lib
+      version.lib setupapi.lib mpr.lib comdlg32.lib bcrypt.lib
+    )
   endif ()
   set ( system_libs ${basic_windows_libs} SDLmain ${static_flags} )
 endif ()
@@ -602,11 +711,23 @@ if (${CMAKE_SYSTEM_NAME} MATCHES FreeBSD OR ${CMAKE_SYSTEM_NAME} MATCHES NetBSD 
 endif ()
 
 if (WIN32)
-  set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  if ( NOT MSVC )
+    set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  endif ()
   set(WIN32_LIBS imagehlp dbghelp)
+  if (MINGW)
+    list(APPEND WIN32_LIBS
+      -Wl,--start-group
+      -lvorbisfile -lvorbis -logg -lsmpeg -lmodplug
+      -ljpeg -lpng -lz -lwebp
+      -lwinmm -ldinput -ldxguid -lddraw -ldsound
+      -lole32 -loleaut32 -limm32 -lversion -lsetupapi -luuid -lgdi32 -luser32
+      -Wl,--end-group
+    )
+  endif()
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${WIN32_LIBS} )
+target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )
@@ -632,8 +753,8 @@ if ( NOT EMBED_ASSETS )
   endforeach ()
 endif ()
 
-# Copy Windows DLLs to bin folder
-if ( WIN32 )
+# Copy Windows DLLs to bin folder only for native Windows builds
+if ( WIN32 AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" )
   if ( CMAKE_CL_64 )
     file ( GLOB Windows_dll "${DEPS_DIR}/lib/x64/*.dll" )
   else ( )
@@ -653,6 +774,7 @@ if ( MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode" )
   source_group ( "Basescape" FILES ${basescape_src} )
   source_group ( "Battlescape" FILES ${battlescape_src} )
   source_group ( "Engine" FILES ${engine_src} )
+  source_group ( "FTA" FILES ${fta_src} )
   source_group ( "Geoscape" FILES ${geoscape_src} )
   source_group ( "Interface" FILES ${interface_src} )
   source_group ( "Menu" FILES ${menu_src} )

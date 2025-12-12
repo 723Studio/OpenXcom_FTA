@@ -32,6 +32,7 @@ class Text;
 class TextList;
 class Base;
 class GeoscapeState;
+class Soldier;
 
 /**
  * Window used to notify the player when
@@ -46,14 +47,15 @@ private:
 	std::map<std::string, int> _randomProductionInfo;
 	std::vector<std::string> _index;
 
-	TextButton *_btnOk, *_btnGotoBase, *_btnSummary;
+	TextButton *_btnOk, *_btnGotoBase, *_btnSummary, *_btnPromotions;
+	std::vector<Soldier*> _promotedSoldiers;
 	Window *_window;
 	Text *_txtMessage, *_txtItem, *_txtQuantity;
 	TextList *_lstSummary;
 	productionProgress_e _endType;
 public:
 	/// Creates the Production Complete state.
-	ProductionCompleteState(Base *base, const std::string &item, GeoscapeState *state, productionProgress_e endType = PROGRESS_COMPLETE, Production *production = nullptr);
+	ProductionCompleteState(Base *base, const std::string &item, GeoscapeState *state, std::vector<Soldier*> _promotedSoldiers, productionProgress_e endType = PROGRESS_COMPLETE, Production *production = nullptr);
 	/// Cleans up the Production Complete state.
 	~ProductionCompleteState();
 	/// Handler for clicking the OK button.
@@ -64,6 +66,8 @@ public:
 	void btnSummaryClick(Action *action);
 	/// Handler for clicking the Summary list.
 	void lstSummaryClick(Action *action);
+	/// Handler for clicking the Promotions button.
+	void btnPromotionsClick(Action* action);
 };
 
 }

@@ -41,7 +41,7 @@ class Text;
 class Tile;
 class UnitSprite;
 
-enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
+enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW, CT_HACK };
 enum TilePart : int;
 
 /**
@@ -74,7 +74,7 @@ private:
 	Game *_game;
 	SavedBattleGame *_save;
 	bool _isTFTD;
-	Surface *_arrow;
+	Surface *_arrow, *_hackingObjectPointer, *_samplingObjectPointer, *_missionPointer;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;
@@ -113,6 +113,7 @@ private:
 	int _hostileBarColor, _neutralBarColor, _borderBarColor;
 	const std::vector<Uint8> *_transparencies;
 	bool _showObstacles;
+	bool _showInfoOnCursor;
 public:
 	/// Creates a new map at the specified position and size.
 	Map(Game* game, int width, int height, int x, int y, int visibleMapHeight, bool keepObstacleTimerRunning = false);

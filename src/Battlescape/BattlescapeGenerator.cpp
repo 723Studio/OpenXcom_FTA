@@ -41,6 +41,7 @@
 #include "../Savegame/AlienBase.h"
 #include "../Savegame/EquipmentLayoutItem.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Savegame/CovertOperation.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Options.h"
@@ -56,6 +57,7 @@
 #include "../Mod/MapData.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
+#include "../Mod/RuleObject.h"
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "../Mod/RuleSoldier.h"
@@ -74,7 +76,7 @@ namespace OpenXcom
  */
 BattlescapeGenerator::BattlescapeGenerator(Game *game) :
 	_game(game), _save(game->getSavedGame()->getSavedBattle()), _mod(_game->getMod()),
-	_craft(0), _craftRules(0), _ufo(0), _base(0), _mission(0), _alienBase(0), _terrain(0), _baseTerrain(0), _globeTerrain(0), _alternateTerrain(0),
+	_craft(0), _craftRules(0), _ufo(0), _base(0), _mission(0), _alienBase(0), _covertOperation(0), _terrain(0), _baseTerrain(0), _globeTerrain(0), _alternateTerrain(0),
 	_mapsize_x(0), _mapsize_y(0), _mapsize_z(0), _missionTexture(0), _globeTexture(0), _worldShade(0),
 	_unitSequence(0), _craftInventoryTile(0), _alienCustomDeploy(0), _alienCustomMission(0), _alienItemLevel(0), _ufoDamagePercentage(0),
 	_baseInventory(false), _generateFuel(true), _craftDeployed(false), _ufoDeployed(false), _craftZ(0), _craftPos(), _markAsReinforcementsBlock(0), _blocksToDo(0), _dummy(0)
@@ -126,6 +128,7 @@ void BattlescapeGenerator::init(bool resetTerrain)
 	// creates the tile objects
 	_save->initMap(_mapsize_x, _mapsize_y, _mapsize_z, resetTerrain);
 	_save->initUtilities(_mod);
+	_save->defineStealth();
 }
 
 /**
@@ -249,6 +252,11 @@ void BattlescapeGenerator::nextStage()
 		Tile *tmpTile = s->getTile(u->getPosition());
 		return u->isInExitArea(END_POINT) || u->liesInExitArea(tmpTile, END_POINT);
 	};
+	// check if the unit is stunned hostile
+	auto isStunnedHostile = [](const BattleUnit* u)
+	{
+		return u->getOriginalFaction() == FACTION_HOSTILE && u->getStatus() == STATUS_UNCONSCIOUS;
+	};
 
 	// preventively drop all units from soldier's inventory (makes handling easier)
 	// 1. no alien/civilian living, dead or unconscious is allowed to transition
@@ -296,6 +304,11 @@ void BattlescapeGenerator::nextStage()
 	{
 		bu->clearVisibleUnits();
 		bu->clearVisibleTiles();
+
+		 if (_save->isAborted() && isInExit(bu) && isStunnedHostile(bu))	//don't kill stunned aliens laying in the exit area
+		{
+			 continue;
+		}
 
 		if (bu->getStatus() != STATUS_DEAD                              // if they're not dead
 			&& ((bu->getOriginalFaction() == FACTION_PLAYER               // and they're a soldier
@@ -399,7 +412,8 @@ void BattlescapeGenerator::nextStage()
 		{
 			std::vector<BattleItem*> *toContainer = &removeFromGame;
 			// if it's recoverable, and it's not owned by someone
-			if (((bi->getUnit() && bi->getUnit()->getGeoscapeSoldier()) || bi->getRules()->isRecoverable()) && !bi->getOwner())
+			BattleUnit *tmpUnit = bi->getUnit();
+			if (((tmpUnit && tmpUnit->getGeoscapeSoldier()) || bi->getRules()->isRecoverable()) && !bi->getOwner())
 			{
 				// first off: don't count primed grenades on the floor
 				if (bi->getFuseTimer() == -1)
@@ -407,10 +421,10 @@ void BattlescapeGenerator::nextStage()
 					// protocol 1: all defenders dead, recover all items.
 					if (aliensAlive == 0 || autowin)
 					{
-						// any corpses or unconscious units get put in the skyranger, as well as any unresearched items
-						if ((bi->getUnit() &&
-							(bi->getUnit()->getOriginalFaction() != FACTION_PLAYER ||
-							bi->getUnit()->getStatus() == STATUS_DEAD))
+						// any corpses or unconscious units get put in the skyranger, as well as any unresearched items (UPD: except stunned aliens in exit area)
+						if ((tmpUnit &&
+							((tmpUnit->getOriginalFaction() != FACTION_PLAYER && !(isStunnedHostile(tmpUnit) && isInExit(tmpUnit) && _save->isAborted())) ||
+							tmpUnit->getStatus() == STATUS_DEAD))
 							|| !_game->getSavedGame()->isResearched(bi->getRules()->getRequirements()))
 						{
 							toContainer = takeHomeGuaranteed;
@@ -441,9 +455,9 @@ void BattlescapeGenerator::nextStage()
 								else if (tile->getFloorSpecialTileType() == END_POINT)
 								{
 									// apply similar logic (for units) as in protocol 1
-									if (bi->getUnit() &&
-										(bi->getUnit()->getOriginalFaction() != FACTION_PLAYER ||
-										bi->getUnit()->getStatus() == STATUS_DEAD))
+									if (tmpUnit &&
+										((tmpUnit->getOriginalFaction() != FACTION_PLAYER && !(isStunnedHostile(tmpUnit) && isInExit(tmpUnit) && _save->isAborted())) ||
+										tmpUnit->getStatus() == STATUS_DEAD))
 									{
 										toContainer = takeHomeConditional;
 									}
@@ -528,6 +542,9 @@ void BattlescapeGenerator::nextStage()
 	// inventory tile after we've generated our map. everything else will either be in one of the
 	// recovery arrays, or deleted from existence at this point.
 	std::swap(*_save->getItems(), carryToNextStage);
+
+	// reset stage-specific state that must not leak into the next deployment
+	_save->prepareForNextStage();
 
 	_alienCustomDeploy = _game->getMod()->getDeployment(_save->getAlienCustomDeploy());
 	_alienCustomMission = _game->getMod()->getDeployment(_save->getAlienCustomMission());
@@ -635,8 +652,7 @@ void BattlescapeGenerator::nextStage()
 			{
 				++soldiersTotal;
 				bu->resetTurnsSinceStunned();
-				bu->setTurnsSinceSpotted(255);
-				bu->setTurnsLeftSpottedForSnipers(0);
+				bu->resetTurnsSince();
 				if (!selectedFirstSoldier && bu->getGeoscapeSoldier())
 				{
 					_save->setSelectedUnit(bu);
@@ -665,6 +681,24 @@ void BattlescapeGenerator::nextStage()
 					//reset TUs, regain energy, etc. but don't take damage or go berserk
 					bu->prepareNewTurn(false);
 				}
+			}
+		}
+		else if (bu->getStatus() == STATUS_UNCONSCIOUS) // transit stunned enemies
+		{
+			Node *node = _save->getSpawnNode(NR_XCOM, bu);
+			if (node || placeUnitNearFriend(bu))
+			{
+				if (node)
+				{
+					_save->setUnitPosition(bu, node->getPosition());
+				}
+
+				if (!_craftInventoryTile)
+				{
+					_craftInventoryTile = bu->getTile();
+				}
+
+				bu->setInventoryTile(_craftInventoryTile);
 			}
 		}
 	}
@@ -776,6 +810,28 @@ void BattlescapeGenerator::run()
 
 	// Note: this considers also fake underwater UFO deployment (via _alienCustomMission)
 	const AlienDeployment *ruleDeploy = _alienCustomMission ? _alienCustomMission : _game->getMod()->getDeployment(_ufo?_ufo->getRules()->getType():_save->getMissionType(), true);
+
+	bool noAlter = false;
+	int tries = 0; //prevent recursion in deployment links
+	while (!noAlter && tries < 100)
+	{
+		if (!ruleDeploy->getAlternativeDeploymentName().empty())
+		{
+			if (_game->getSavedGame()->isResearched(ruleDeploy->getAlternativeDeploymentResearchName()))
+			{
+				ruleDeploy = _game->getMod()->getDeployment(ruleDeploy->getAlternativeDeploymentName());
+				if (ruleDeploy == 0)
+				{
+					throw Exception("Alien deployment " + ruleDeploy->getType() +  " is not defined in rulesets!");
+				}
+			}
+			++tries;
+		}
+		else
+		{
+			noAlter = true;
+		}
+	}
 
 	_save->setTurnLimit(ruleDeploy->getTurnLimit());
 	_save->setChronoTrigger(ruleDeploy->getChronoTrigger());
@@ -980,7 +1036,10 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		_base = _craft->getBase();
 		_craft->resetTemporaryCustomVehicleDeploymentFlags();
 	}
-
+	if (_covertOperation != 0)
+	{
+		_base = _covertOperation->getBase();
+	}
 	// we will need this during debriefing to show a list of recovered items
 	// Note: saved info is required only because of base defense missions, other missions could work without a save too
 	// IMPORTANT: the number of vehicles and their ammo has been messed up by Base::setupDefenses() already :( and will need to be handled separately later
@@ -1070,7 +1129,11 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		for (auto* soldier : *_base->getSoldiers())
 		{
 			if ((_craft != 0 && soldier->getCraft() == _craft) ||
-				(_craft == 0 && (soldier->hasFullHealth() || soldier->canDefendBase()) && (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")))
+				(_covertOperation != 0 && soldier->getCovertOperation() == _covertOperation) ||
+				((_craft == 0 && _covertOperation == 0)
+					&& (soldier->hasFullHealth() || soldier->canDefendBase())
+					&& (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")
+					&& soldier->getCovertOperation() == 0))
 			{
 				Armor* transformedArmor = nullptr;
 				if (enviro)
@@ -1112,14 +1175,18 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 				continue;
 			}
 			if ((_craft != 0 && soldier->getCraft() == _craft) ||
-				(_craft == 0 && (soldier->hasFullHealth() || soldier->canDefendBase()) && (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")))
+				(_covertOperation != 0 && soldier->getCovertOperation() == _covertOperation) ||
+				((_craft == 0 && _covertOperation == 0)
+					&& (soldier->hasFullHealth() || soldier->canDefendBase())
+					&& (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")
+					&& soldier->getCovertOperation() == 0))
 			{
 				// clear the soldier's equipment layout, we want to start fresh
 				if (_game->getSavedGame()->getDisableSoldierEquipment())
 				{
 					soldier->clearEquipmentLayout();
 				}
-				BattleUnit *unit = addXCOMUnit(new BattleUnit(_game->getMod() , soldier, _save->getDepth(), _save->getStartingCondition()));
+				BattleUnit *unit = addXCOMUnit(new BattleUnit(_game->getMod(), soldier, _save->getDepth(), _save->getStartingCondition()));
 				if (unit && !_save->getSelectedUnit())
 					_save->setSelectedUnit(unit);
 			}
@@ -1173,7 +1240,11 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 				continue;
 			}
 			if ((_craft != 0 && soldier->getCraft() == _craft) ||
-				(_craft == 0 && (soldier->hasFullHealth() || soldier->canDefendBase()) && (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")))
+				(_covertOperation != 0 && soldier->getCovertOperation() == _covertOperation) ||
+				((_craft == 0 && _covertOperation == 0)
+					&& (soldier->hasFullHealth() || soldier->canDefendBase())
+					&& (soldier->getCraft() == 0 || soldier->getCraft()->getStatus() != "STR_OUT")
+					&& soldier->getCovertOperation() == 0))
 			{
 				// clear the soldier's equipment layout, we want to start fresh
 				if (_game->getSavedGame()->getDisableSoldierEquipment())
@@ -1181,6 +1252,10 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 					soldier->clearEquipmentLayout();
 				}
 				BattleUnit *unit = addXCOMUnit(new BattleUnit(_game->getMod(), soldier, _save->getDepth(), _save->getStartingCondition()));
+				if (soldier->isJustSaved()) //case we've just added this soldier via covert operation's results
+				{
+					unit->setSpecialObjective(SPECOBJ_FRIENDLY_VIP);
+				}
 				if (unit && !_save->getSelectedUnit())
 					_save->setSelectedUnit(unit);
 			}
@@ -1210,7 +1285,14 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 
 	if (_save->getUnits()->empty())
 	{
-		throw Exception("Map generator encountered an error: no xcom units could be placed on the map.");
+		if (!Options::debug)
+		{
+			throw Exception("Map generator encountered an error: no xcom units could be placed on the map.");
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Map generator encountered an error: no xcom units could be placed on the map.";
+		}
 	}
 
 	// maybe we should assign all units to the first tile of the skyranger before the inventory pre-equip and then reassign them to their correct tile afterwards?
@@ -1246,6 +1328,16 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 				{
 					_save->createItemForTile(pair.first, _craftInventoryTile);
 				}
+			}
+		}
+	}
+	else if (_covertOperation != 0)
+	{
+		for (auto& item : *_covertOperation->getItems()->getContents())
+		{
+			for (int i = 0; i < item.second; i++)
+			{
+				_save->createItemForTile(item.first, _craftInventoryTile);
 			}
 		}
 	}
@@ -1309,7 +1401,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		// set all the items on this tile as belonging to the XCOM faction.
 		bi->setXCOMProperty(true);
 		// don't let the soldiers take extra ammo yet
-		if (bi->getRules()->getBattleType() == BT_AMMO)
+		if (bi->getRules()->getBattleType() == BT_AMMO && !Options::oxceAlternateCraftEquipmentManagement)
 			continue;
 		placeItemByLayout(bi, tempItemList);
 	}
@@ -1320,10 +1412,19 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 	// refresh list
 	tempItemList = *_craftInventoryTile->getInventory();
 
+	// sort it, so that ammo is loaded in a predictable and moddable manner
+	std::sort(tempItemList.begin(), tempItemList.end(),
+		[](const BattleItem* a, const BattleItem* b)
+		{
+			return a->getRules()->getLoadOrder() < b->getRules()->getLoadOrder();
+		}
+	);
+
 	// load weapons before loadouts take extra clips.
 	loadWeapons(tempItemList);
 
 	// refresh list
+	// (unsorts it again, which is not a problem)
 	tempItemList = *_craftInventoryTile->getInventory();
 
 	for (BattleItem* bi : tempItemList)
@@ -1344,6 +1445,11 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, std::vector<BattleItem*> *craftInv,
 		RuleInventory *groundRuleInv, int worldShade, bool allowAutoLoadout, bool overrideEquipmentLayout)
 {
+	if (mod->isFTAGame())
+	{
+		return;
+	}
+
 	for (int pass = 0; pass < 4; ++pass)
 	{
 		BattleItem* bi = nullptr;
@@ -1395,9 +1501,28 @@ void BattlescapeGenerator::autoEquip(std::vector<BattleUnit*> units, Mod *mod, s
 						// let's not be greedy, we'll only take a second extra clip
 						// if everyone else has had a chance to take a first.
 						bool allowSecondClip = (pass == 3);
-						if (bu->addItem(bi, mod, allowSecondClip, allowAutoLoadout))
+						bool placed = false;
+						int stackSize = bi->getRules()->getStackSize();
+						auto itemType = bi->getRules()->getType(); // remember current item type so we can stop filling the stack if we run out of items of this type.
+						for (int s = 0; s < stackSize; ++s) //we want to fill all stack
 						{
-							iter = craftInv->erase(iter);
+							if (bu->addItem(bi, mod, allowSecondClip, allowAutoLoadout))
+							{
+								iter = craftInv->erase(iter);
+								placed = true;
+							}
+							else
+							{
+								break; // if we can't fit even one no point in trying to equip more
+							}
+							// if there are no more items of this type or we reached the end of the craft inventory then break
+							if (iter == craftInv->end() || itemType != bi->getRules()->getType()) // Using shortcut evaluation trick here. Wonder if it's better to separate these two conditions
+							{
+								break;
+							}
+						}
+						if (placed)
+						{
 							add = false;
 							break;
 						}
@@ -1472,13 +1597,26 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 	}
 	else
 	{
-		if (_craft == 0 || !_craftDeployed)
+		for (auto a : _save->getAlienDeploymet()->getUndercoverArmors())
 		{
+			if (a == unit->getArmor()->getType())
+			{
+				unit->setUndercover(true);
+				break;
+			}
+		}
+		if ((_craft == 0 || !_craftDeployed) && _covertOperation == 0)
+		{
+			setCustomCraftInventoryTile();
+
 			Node* node = _save->getSpawnNode(NR_XCOM, unit);
 			if (node)
 			{
 				_save->setUnitPosition(unit, node->getPosition());
-				_craftInventoryTile = _save->getTile(node->getPosition());
+				if (!_craftInventoryTile)
+				{
+					_craftInventoryTile = _save->getTile(node->getPosition());
+				}
 				unit->setDirection(RNG::generate(0, 7));
 				_save->getUnits()->push_back(unit);
 				_save->initUnit(unit);
@@ -1488,7 +1626,10 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 			{
 				if (placeUnitNearFriend(unit))
 				{
-					_craftInventoryTile = _save->getTile(unit->getPosition());
+					if (!_craftInventoryTile)
+					{
+						_craftInventoryTile = _save->getTile(unit->getPosition());
+					}
 					unit->setDirection(RNG::generate(0, 7));
 					_save->getUnits()->push_back(unit);
 					_save->initUnit(unit);
@@ -1579,12 +1720,67 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 				}
 			}
 		}
+		else if (_covertOperation)
+		{
+			Node* node = _save->getSpawnNode(NR_XCOM, unit); //case deployment have special block with fixed spawn points
+			if (node)
+			{
+				if (_save->setUnitPosition(unit, node->getPosition()))
+				{
+					_craftInventoryTile = _save->getTile(node->getPosition());
+					unit->setDirection(RNG::generate(0, 7));
+					_save->getUnits()->push_back(unit);
+					_save->initUnit(unit);
+					return unit;
+				}
+			}
+			bool spawnClose = RNG::percent(20);
+			if (spawnClose && placeUnitNearFriend(unit))
+			{
+				_craftInventoryTile = _save->getTile(unit->getPosition());
+				unit->setDirection(RNG::generate(0, 7));
+				_save->getUnits()->push_back(unit);
+				_save->initUnit(unit);
+				return unit;
+			}
+			else
+			{
+				int tries = 100;
+				while (tries)
+				{
+					int blockX = RNG::generate(1, (_mapsize_x / 10) - 1);
+					int blockY = RNG::generate(1, (_mapsize_y / 10) - 1);
+					MapBlock* block = _blocks[blockX][blockY];
+					bool checkBlock = block->getSizeX() > 0; //avoid memory-blanck positions caused by 2x2 blocks
+					if (checkBlock && (!block->isInGroup(1) && !block->isInGroup(2) && !block->isInGroup(3) && !block->isInGroup(4)))
+					{
+						int iter = 100;
+						while (iter) // now we look for fine place inside mapblock
+						{
+							int localX = RNG::generate(0, block->getSizeX());
+							int localY = RNG::generate(0, block->getSizeY());
+							int localZ = 0;
+							//if (block->getSizeZ() > 0) localZ = RNG::generate(0, block->getSizeZ() - 1);
+							Position pos = Position(localX + (blockX * 10), localY + (blockY * 10), localZ);
+							Tile* tile = _save->getTile(pos);
+							if (_save->setUnitPosition(unit, pos))
+							{
+								if (_craftInventoryTile == 0) _craftInventoryTile = tile;
+								unit->setDirection(RNG::generate(0, 7));
+								_save->getUnits()->push_back(unit);
+								_save->initUnit(unit);
+								return unit;
+							}
+							--iter;
+						}
+					}
+					--tries;
+				}
+			}
+		}
 		else
 		{
-			if (_craft)
-			{
-				setCustomCraftInventoryTile();
-			}
+			setCustomCraftInventoryTile();
 
 			for (int i = 0; i < _mapsize_x * _mapsize_y * _mapsize_z; ++i)
 			{
@@ -1601,7 +1797,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
 		}
 	}
 	delete unit;
-	return 0;
+	return nullptr;
 }
 
 /**
@@ -1609,7 +1805,7 @@ BattleUnit *BattlescapeGenerator::addXCOMUnit(BattleUnit *unit)
  */
 void BattlescapeGenerator::setCustomCraftInventoryTile()
 {
-	if (_craftInventoryTile == 0)
+	if (_craftInventoryTile == 0 && _craft && _craftDeployed && _craftRules)
 	{
 		// Craft inventory tile position defined in the ruleset
 		const std::vector<int> coords = _craftRules->getCraftInventoryTile();
@@ -1617,6 +1813,16 @@ void BattlescapeGenerator::setCustomCraftInventoryTile()
 		{
 			Position craftInventoryTilePosition = Position(coords[0] + (_craftPos.x * 10), coords[1] + (_craftPos.y * 10), coords[2] + _craftZ);
 			canPlaceXCOMUnit(_save->getTile(craftInventoryTilePosition));
+		}
+	}
+	if (_craftInventoryTile == 0)
+	{
+		// Mapblock inventory tile position defined in the ruleset
+		if (!_backupInventoryTiles.empty())
+		{
+			int pilePick = RNG::generate(0, _backupInventoryTiles.size() - 1);
+			Tile* pileTile = _backupInventoryTiles[pilePick];
+			_craftInventoryTile = pileTile; // no checks
 		}
 	}
 }
@@ -1714,7 +1920,7 @@ void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 
 			std::string alienName = dd.customUnitType.empty() ? race->getMember(dd.alienRank) : dd.customUnitType;
 
-			bool outside = RNG::generate(0,99) < dd.percentageOutsideUfo;
+			bool outside = RNG::percent(dd.percentageOutsideUfo);
 			if (_ufo == 0 && !deployment->getForcePercentageOutsideUfo())
 			{
 				outside = false;
@@ -1818,7 +2024,7 @@ BattleUnit *BattlescapeGenerator::addAlien(Unit *rules, int alienRank, bool outs
 	else
 	{
 		// DEMIGOD DIFFICULTY: screw the player: spawn as many aliens as possible.
-		if (_game->getMod()->isDemigod() && placeUnitNearFriend(unit))
+		if ((_game->getMod()->isDemigod() || Mod::EXTENDED_FORCE_SPAWN) && placeUnitNearFriend(unit))
 		{
 			unit->setRankInt(alienRank);
 			int dir = _save->getTileEngine()->faceWindow(unit->getPosition());
@@ -1913,7 +2119,10 @@ bool BattlescapeGenerator::placeItemByLayout(BattleItem *item, const std::vector
 						}
 					}
 				}
-				if (overlaps) continue;
+				if (overlaps || layoutItem->stackSize() > layoutItem->getItemType()->getStackSize())
+				{
+					continue;
+				}
 
 				int toLoad = 0;
 				for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
@@ -2218,6 +2427,7 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 		}
 	}
 	// randomized items
+	const auto* mapblockFuseTimers = mapblock->getItemsFuseTimers();
 	for (auto& rngItems : *mapblock->getRandomizedItems())
 	{
 		if (rngItems.itemList.size() < 1)
@@ -2250,7 +2460,22 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
 					throw Exception(ss.str());
 				}
-				_save->createItemForTile(rule, _save->getTile(rngItems.position + Position(xoff, yoff, zoff)));
+				BattleItem* newRandItem = _save->createItemForTile(rule, _save->getTile(rngItems.position + Position(xoff, yoff, zoff)));
+				if (rule->getFuseTimerType() != BFT_NONE)
+				{
+					if (rngItems.fuseTimerMin > -1 && rngItems.fuseTimerMax > -1 && rngItems.fuseTimerMin <= rngItems.fuseTimerMax)
+					{
+						newRandItem->setFuseTimer(RNG::generate(rngItems.fuseTimerMin, rngItems.fuseTimerMax));
+					}
+					else
+					{
+						auto prime = mapblockFuseTimers->find(rule->getType());
+						if (prime != mapblockFuseTimers->end() && prime->second.first <= prime->second.second)
+						{
+							newRandItem->setFuseTimer(RNG::generate(prime->second.first, prime->second.second));
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2316,6 +2541,31 @@ int BattlescapeGenerator::loadMAP(MapBlock *mapblock, int xoff, int yoff, int zo
 					}
 				}
 			}
+		}
+	}
+
+	if (mapblock->getCraftInventoryTile().size() >= 3)
+	{
+		auto& coords = mapblock->getCraftInventoryTile();
+		Position pilePos = Position(coords[0] + xoff, coords[1] + yoff, coords[2] + zoff);
+		Tile* pileTile = _save->getTile(pilePos);
+		_backupInventoryTiles.push_back(pileTile);
+	}
+
+	for (std::map<std::string, std::vector<Position> >::const_iterator i = mapblock->getObjects()->begin(); i != mapblock->getObjects()->end(); ++i)
+	{
+
+		RuleObject* rule = _game->getMod()->getObject((*i).first, true);
+		for (std::vector<Position>::const_iterator j = (*i).second.begin(); j != (*i).second.end(); ++j)
+		{
+			if ((*j).x >= mapblock->getSizeX() || (*j).y >= mapblock->getSizeY() || (*j).z >= mapblock->getSizeZ())
+			{
+				ss << "Object " << rule->getName() << " is outside of map block " << mapblock->getName() << ", position: [";
+				ss << (*j).x << "," << (*j).y << "," << (*j).z << "], block size: [";
+				ss << mapblock->getSizeX() << "," << mapblock->getSizeY() << "," << mapblock->getSizeZ() << "]";
+				throw Exception(ss.str());
+			}
+			_save->getBattleObjects()->push_back(_save->createObjectForTile(rule, _save->getTile((*j) + Position(xoff, yoff, zoff))));
 		}
 	}
 
@@ -2718,7 +2968,7 @@ bool BattlescapeGenerator::placeUnitNearFriend(BattleUnit *unit)
  * Kids, don't try this at home!
  * @param craft Pointer to craft to manage.
  */
-void BattlescapeGenerator::runInventory(Craft *craft)
+void BattlescapeGenerator::runInventory(Craft* craft)
 {
 	// we need to fake a map for soldier placement
 	_baseInventory = true;
@@ -2771,6 +3021,8 @@ void BattlescapeGenerator::loadWeapons(const std::vector<BattleItem*> &itemList)
  */
 void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, const std::string &customUfoName, const RuleStartingCondition* startingCondition)
 {
+	_backupInventoryTiles.clear(); // just in case
+
 	// reset ambient sound
 	_save->setAmbientSound(Mod::NO_SOUND);
 	_save->setAmbienceRandom({});

@@ -29,6 +29,7 @@ namespace OpenXcom
 class SavedBattleGame;
 class BattleUnit;
 class BattleItem;
+class BattleObject;
 class Tile;
 class RuleSkill;
 struct BattleAction;
@@ -112,7 +113,7 @@ private:
 	/// Cache for marking tiles that need light updated.
 	std::vector<Uint32> _lightPropagationTempNeedUpdate;
 
-	const RuleInventory *_inventorySlotGround;
+	RuleInventory *_inventorySlotGround;
 	constexpr static int heightFromCenter[11] = {0,-2,+2,-4,+4,-6,+6,-8,+8,-12,+12};
 	bool _personalLighting;
 	Tile *_cacheTile;
@@ -125,12 +126,13 @@ private:
 	const int _maxStaticLightDistance;
 	const int _maxDynamicLightDistance;
 	const int _enhancedLighting;
+	const int _visibilityStatsMod;
 	Position _eventVisibilitySectorL, _eventVisibilitySectorR, _eventVisibilityObserverPos;
 	std::vector<BattleUnit*> _movingUnitPrev;
 	BattleUnit* _movingUnit = nullptr;
 
 	/// Add light source.
-	void addLight(MapSubset gs, Position center, int power, LightLayers layer);
+	void addLight(MapSubset gs, Position center, int power, LightLayers layer, int coneSize = 0, int direction = 0);
 	/// Calculate blockage amount.
 	int blockage(Tile *tile, const TilePart part, ItemDamageType type, int direction = -1, bool checkingFromOrigin = false);
 
@@ -179,14 +181,19 @@ public:
 	void calculateTilesInFOV(BattleUnit *unit, const Position eventPos = invalid, const int eventRadius = 0);
 	/// Calculates visible units within the field of view. Supply an eventPosition to do an update limited to a small slice of the view sector.
 	bool calculateUnitsInFOV(BattleUnit* unit, const Position eventPos = invalid, const int eventRadius = 0);
+	/// Calculates visible units within a 360 field of view around the originPos. Used for LoS Previews.
+	void calculateUnitsForLoSPreview(std::vector<BattleUnit *> *visibleUnits, BattleUnit *unit, const Position originPos);
 	/// Calculates the field of view from a units view point.
 	bool calculateFOV(BattleUnit *unit, bool doTileRecalc = true, bool doUnitRecalc = true);
 	/// Calculates the field of view within range of a certain position.
 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
+	void checkForSuspiciousItems(BattleUnit* unit);
 	/// Checks reaction fire.
 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
 	/// Recalculate all lighting in some area.
 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
+	/// Adds unit directional lighting
+	void calculateUnitDirectionalLighting(MapSubset gs, BattleUnit *unit, const BattleItem *w);
 	/// Handles tile hit.
 	int hitTile(Tile *tile, int damage, const RuleDamageType* type);
 	/// Handles experience training.
@@ -211,8 +218,10 @@ public:
 	int calculateParabolaVoxel(Position origin, Position target, bool storeTrajectory, std::vector<Position> *trajectory, BattleUnit *excludeUnit, double curvature, const Position delta);
 	/// Gets the origin voxel of a unit's eyesight.
 	Position getSightOriginVoxel(BattleUnit *currentUnit);
+	Position getSightOriginVoxel(BattleUnit *currentUnit, Position originPos);
 	/// Checks visibility of a unit on this tile.
 	bool visible(BattleUnit *currentUnit, Tile *tile);
+	bool visible(BattleUnit *currentUnit, Position originPosition, Tile *tile);
 	/// Checks visibility of a tile.
 	bool isTileInLOS(BattleAction *action, Tile *tile, bool drawing);
 	/// Turn XCom soldier's personal lighting on or off.
@@ -230,6 +239,10 @@ public:
 	int meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const BattleUnit *victim);
 	/// Attempts a melee attack action.
 	bool meleeAttack(BattleActionAttack attack, BattleUnit *victim, int terrainMeleeTilePart = 0);
+	/// Attempts a hacking attack.
+	bool hackAttack(BattleAction& action, BattleUnit* target);
+	/// Attempts hacking a battle object
+	bool hackObject(BattleAction& action, BattleObject* object);
 
 	/// Remove the medikit from the game if consumable and empty.
 	void medikitRemoveIfEmpty(BattleAction *action);

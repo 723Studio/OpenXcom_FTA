@@ -19,9 +19,10 @@
  */
 #include <string>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include <stdint.h>
 #include "RuleBaseFacilityFunctions.h"
+#include "../Mod/Unit.h"
 
 namespace OpenXcom
 {
@@ -40,6 +41,7 @@ class RuleResearch;
 class RuleItem;
 class RuleCraft;
 class Mod;
+class RuleBaseFacility;
 
 /**
  * Represents the information needed to manufacture an object.
@@ -49,11 +51,12 @@ class RuleManufacture
 private:
 	std::string _name, _category;
 	std::string _spawnedPersonType, _spawnedPersonName;
-	YAML::Node _spawnedSoldier;
+	YAML::YamlString _spawnedSoldier;
 	std::vector<std::string> _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	std::vector<const RuleResearch*> _requires;
 	int _space, _time, _cost;
+	UnitStats _stats;
 	int _points;
 	bool _refund;
 	std::map<std::string, int> _requiredItemsNames, _producedItemsNames;
@@ -73,7 +76,7 @@ public:
 	RuleManufacture(const std::string &name, int listOrder);
 
 	/// Loads the manufacture from YAML.
-	void load(const YAML::Node& node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Change the name and break down the sub-projects into simpler components.
@@ -93,6 +96,8 @@ public:
 	int getManufactureTime() const;
 	/// Gets the cost of manufacturing one object.
 	int getManufactureCost() const;
+	/// Get pointer to this manufacture's stats.
+	UnitStats getStats() const { return _stats; };
 	/// Checks if there's enough funds to manufacture one object.
 	bool haveEnoughMoneyForOneMoreUnit(int64_t funds) const;
 	/// Gets the points earned for manufacturing one production object.
@@ -115,7 +120,7 @@ public:
 	/// Gets the custom name of the "manufactured person".
 	const std::string &getSpawnedPersonName() const;
 	/// Gets the spawned soldier template.
-	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 	/// Is it possible to use auto-sell feature for this manufacturing project?
 	bool canAutoSell() const;
 	/// Gets the transfer time info.

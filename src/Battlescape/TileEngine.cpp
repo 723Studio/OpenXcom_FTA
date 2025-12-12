@@ -42,6 +42,7 @@
 #include "../Engine/Options.h"
 #include "ProjectileFlyBState.h"
 #include "MeleeAttackBState.h"
+#include "../Savegame/BattleObject.h"
 #include "../fmath.h"
 
 namespace OpenXcom
@@ -893,12 +894,12 @@ constexpr Position TileEngine::voxelTileCenter;
  * @param maxViewDistance Max view distance in tiles.
  * @param maxDarknessToSeeUnits Threshold of darkness for LoS calculation.
  */
-TileEngine::TileEngine(SavedBattleGame *save, Mod *mod) :
-	_save(save), _voxelData(mod->getVoxelData()), _inventorySlotGround(mod->getInventoryGround()), _personalLighting(true), _cacheTile(0), _cacheTileBelow(0),
-	_maxViewDistance(mod->getMaxViewDistance()), _maxViewDistanceSq(_maxViewDistance * _maxViewDistance),
-	_maxVoxelViewDistance(_maxViewDistance * 16), _maxDarknessToSeeUnits(mod->getMaxDarknessToSeeUnits()),
-	_maxStaticLightDistance(mod->getMaxStaticLightDistance()), _maxDynamicLightDistance(mod->getMaxDynamicLightDistance()),
-	_enhancedLighting(mod->getEnhancedLighting())
+TileEngine::TileEngine(SavedBattleGame *save, Mod *mod)
+	: _save(save), _voxelData(mod->getVoxelData()), _inventorySlotGround(mod->getInventoryGround()), _personalLighting(true), _cacheTile(0), _cacheTileBelow(0),
+	  _maxViewDistance(mod->getMaxViewDistance()), _maxViewDistanceSq(_maxViewDistance * _maxViewDistance),
+	  _maxVoxelViewDistance(_maxViewDistance * 16), _maxDarknessToSeeUnits(mod->getMaxDarknessToSeeUnits()),
+	  _maxStaticLightDistance(mod->getMaxStaticLightDistance()), _maxDynamicLightDistance(mod->getMaxDynamicLightDistance()),
+	  _enhancedLighting(mod->getEnhancedLighting()), _visibilityStatsMod(mod->getVisibilityStatsMod())
 {
 	_blockVisibility.resize(save->getMapSizeXYZ());
 	_lightPropagationTerrainBlocking.resize(save->getMapSizeXYZ());
@@ -908,7 +909,7 @@ TileEngine::TileEngine(SavedBattleGame *save, Mod *mod) :
 	if (Options::oxceTogglePersonalLightType == 2)
 	{
 		// persisted per campaign
-		SavedGame* geosave = _save->getGeoscapeSave();
+		SavedGame *geosave = _save->getGeoscapeSave();
 		if (geosave)
 		{
 			_personalLighting = geosave->getTogglePersonalLight();
@@ -1038,6 +1039,10 @@ void TileEngine::calculateTerrainItems(MapSubset gs)
 				if (bi->getGlow())
 				{
 					currLight = std::max(currLight, bi->getGlowRange());
+					if (bi->getItemConeSize() > 0)
+					{
+						return;
+					}
 				}
 
 				auto* bu = bi->getUnit();
@@ -1088,7 +1093,11 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 		{
 			if (!w) continue;
 
-			if (w->getGlow())
+			if (w->getItemConeSize() && w->getGlow() && w->getGlowRange() > currLight)
+			{
+				calculateUnitDirectionalLighting(gs, unit, w);
+			}
+			else if (w->getGlow())
 			{
 				currLight = std::max(currLight, w->getGlowRange());
 			}
@@ -1117,6 +1126,20 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 			{
 				addLight(gs, pos + Position(x, y, 0), currLight, LL_UNITS);
 			}
+		}
+	}
+}
+
+void TileEngine::calculateUnitDirectionalLighting(MapSubset gs, BattleUnit *unit, const BattleItem *w)
+{
+	const auto size = unit->getArmor()->getSize();
+	const auto pos = unit->getPosition();
+
+	for (int x = 0; x < size; ++x)
+	{
+		for (int y = 0; y < size; ++y)
+		{
+			addLight(gs, pos + Position(x, y, 0), w->getGlowRange(), LL_UNITS, w->getItemConeSize(), unit->getDirection());
 		}
 	}
 }
@@ -1236,8 +1259,10 @@ void TileEngine::calculateLighting(LightLayers layer, Position position, int eve
  * @param center Center.
  * @param power Power.
  * @param layer Light is separated in 4 layers: Ambient, Tiles, Items, Units.
+ * @param cone coneSize of cone of light, 1 means 45 degrees, 4 means 360 degrees
+ * @param direction - cone direction.
  */
-void TileEngine::addLight(MapSubset gs, Position center, int power, LightLayers layer)
+void TileEngine::addLight(MapSubset gs, Position center, int power, LightLayers layer, int coneSize, int direction)
 {
 	if (power <= 0)
 	{
@@ -1274,6 +1299,29 @@ void TileEngine::addLight(MapSubset gs, Position center, int power, LightLayers 
 			{
 				return;
 			}
+
+			if (coneSize > 0)
+			{
+				auto o = { Position(6, 6, 0), Position(-6,-6, 0), Position(-6, 6, 0), Position(6, -6, 0) };
+				const int hitsMax = 2 * std::size(o);
+				int hits = hitsMax;
+				for (const auto& offset : o)
+				{
+					auto centerTemp = center.toVoxel() + offset;
+					int tileDir = getDirectionTo(centerTemp, target.toVoxel());
+					int arc = getArcDirection(direction, tileDir);
+					if (distance == 0)
+					{
+						hits -= 1;
+					}
+					else if (arc >= coneSize)
+					{
+						hits -= 2;
+					}
+				}
+				currLight = currLight * hits / hitsMax;
+			}
+
 			if (clasicLighting)
 			{
 				tile->addLight(currLight, layer);
@@ -1492,19 +1540,41 @@ bool TileEngine::calculateUnitsInFOV(BattleUnit* unit, const Position eventPos, 
 							{
 								bu->setVisible(true);
 							}
+
+							if (unit->getFaction() == FACTION_HOSTILE
+								&& bu->getOriginalFaction() == FACTION_PLAYER
+								&& _save->isStealthMission()
+								&& !unit->getUnitWarned()
+								&& !unit->isOut())
+							{
+								if (bu->getUndercover())
+								{
+									if (bu->tryUncover())
+									{
+										unit->setUnitWarned(true);
+									}
+								}
+								else
+								{
+									unit->setUnitWarned(true);
+								}
+							}
+
 							if ((( bu->getFaction() == FACTION_HOSTILE && unit->getFaction() == FACTION_PLAYER )
 								|| ( bu->getFaction() != FACTION_HOSTILE && unit->getFaction() == FACTION_HOSTILE ))
 								&& !unit->hasVisibleUnit(bu))
 							{
 								unit->addToVisibleUnits(bu);
 								unit->addToVisibleTiles(bu->getTile());
+							}
 
-								if (unit->getFaction() == FACTION_HOSTILE && bu->getFaction() != FACTION_HOSTILE)
-								{
-									bu->setTurnsSinceSpotted(0);
-
-									bu->setTurnsLeftSpottedForSnipers(std::max(unit->getSpotterDuration(), bu->getTurnsLeftSpottedForSnipers())); // defaults to 0 = no information given to snipers
-								}
+							if (unit->getFaction() != bu->getFaction())
+							{
+								bu->setTurnsSinceSpottedByFaction(unit->getFaction(), 0);
+								bu->setTurnsLeftSpottedForSnipersByFaction(
+									unit->getFaction(),
+									std::max(unit->getSpotterDuration(), bu->getTurnsLeftSpottedForSnipersByFaction(unit->getFaction()))
+								); // defaults to 0 = no information given to snipers
 							}
 
 							x = y = sizeOther; //If a unit's tile is visible there's no need to check the others: break the loops.
@@ -1530,6 +1600,43 @@ bool TileEngine::calculateUnitsInFOV(BattleUnit* unit, const Position eventPos, 
 }
 
 /**
+ * Beginning with the units which are currently visible to the player,
+ * this fills visibleUnits with all units of the hostile faction which
+ * could be visible from originPos by unit.
+ */
+void TileEngine::calculateUnitsForLoSPreview(std::vector<BattleUnit *> *visibleUnits, BattleUnit *unit, const Position originPos)
+{
+	// Loop through all units specified and figure out which ones we could potentially see.
+	for (std::vector<BattleUnit *>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+	{
+		if (!(*i)->getVisible() || (*i)->getFaction() != FACTION_HOSTILE)
+			continue;
+
+		Position posOther = (*i)->getPosition();
+		int sizeOther = (*i)->getArmor()->getSize();
+		for (int x = 0; x < sizeOther; ++x)
+		{
+			for (int y = 0; y < sizeOther; ++y)
+			{
+				Position posToCheck = posOther + Position(x, y, 0);
+				for (int directionView = 0; directionView < 8; directionView++)
+				{
+					if (unit->checkViewSector(originPos, posToCheck, directionView))
+					{
+						if (visible(unit, originPos, _save->getTile(posToCheck)))
+						{
+							visibleUnits->push_back((*i));
+							x = y = sizeOther; // If a unit's tile is visible there's no need to check the others: break the loops.
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
 * Calculates line of sight of tiles for a player controlled soldier.
 * If supplied with an event position differing from the soldier's position, it will only
 * calculate tiles within a narrow arc.
@@ -1550,7 +1657,8 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 	{
 		direction = unit->getDirection();
 	}
-	if (unit->getFaction() != FACTION_PLAYER || (eventRadius == 1 && !unit->checkViewSector(eventPos, useTurretDirection)))
+	if ((unit->getFaction() != FACTION_PLAYER && (!_save->isStealthMission()))
+		|| (eventRadius == 1 && !unit->checkViewSector(eventPos, useTurretDirection)))
 	{
 		//The event wasn't meant for us and/or visible for us.
 		return;
@@ -1558,6 +1666,7 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 	else if (unit->isOut())
 	{
 		unit->clearVisibleTiles();
+		unit->clearVisibleBattleObjects();
 		return;
 	}
 	Position posSelf = unit->getPosition();
@@ -1565,6 +1674,7 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 	{
 		//Asked to do a full check. Or unit within event. Should update all.
 		unit->clearVisibleTiles();
+		unit->clearVisibleBattleObjects();
 		skipNarrowArcTest = true;
 	}
 
@@ -1642,6 +1752,12 @@ void TileEngine::calculateTilesInFOV(BattleUnit *unit, const Position eventPos, 
 											_save->getTile(posVisited)->setVisible(+1);
 											_save->getTile(posVisited)->setDiscovered(true, O_FLOOR);
 
+											// TODO: Check if the tile contains a Smart Object and add it to visible objects if so.
+											if (_save->getTile(posVisited)->getBattleObject())
+											{
+												unit->addToVisibleBattleObjects(_save->getTile(posVisited)->getBattleObject());
+											}
+
 											// walls to the east or south of a visible tile, we see that too
 											Tile* t = _save->getTile(Position(posVisited.x + 1, posVisited.y, posVisited.z));
 											if (t) t->setDiscovered(true, O_WESTWALL);
@@ -1676,28 +1792,25 @@ bool TileEngine::calculateFOV(BattleUnit *unit, bool doTileRecalc, bool doUnitRe
 /**
  * Gets the origin voxel of a unit's eyesight
  * @param currentUnit The watcher.
+ * @param originPosition
  * @return Approximately an eyeball voxel.
  */
-Position TileEngine::getSightOriginVoxel(BattleUnit *currentUnit)
+Position TileEngine::getSightOriginVoxel(BattleUnit *currentUnit, Position originPosition)
 {
-	const Position pos = currentUnit->getPosition();
-	auto* tile = currentUnit->getTile();
-
-	// determine the origin and target voxels for the raytrace
 	Position originVoxel;
-	originVoxel = pos.toVoxel() + Position(8, 8, 0);
-	originVoxel.z += -tile->getTerrainLevel();
+	originVoxel = Position((originPosition.x * 16) + 7, (originPosition.y * 16) + 8, originPosition.z * 24);
+	originVoxel.z += -_save->getTile(originPosition)->getTerrainLevel();
 	originVoxel.z += currentUnit->getHeight() + currentUnit->getFloatHeight() - 1; //one voxel lower (eye level)
-	Tile *tileAbove = _save->getAboveTile(tile);
-	if (currentUnit->isBigUnit())
+	Tile *tileAbove = _save->getTile(originPosition + Position(0, 0, 1));
+	if (currentUnit->getArmor()->getSize() > 1)
 	{
 		originVoxel.x += 8;
 		originVoxel.y += 8;
 		originVoxel.z += 1; //topmost voxel
 	}
-	if (originVoxel.z >= (pos.z + 1)*Position::TileZ && (!tileAbove || !tileAbove->hasNoFloor(0)))
+	if (originVoxel.z >= (originPosition.z + 1) * 24 && (!tileAbove || !tileAbove->hasNoFloor(0)))
 	{
-		while (originVoxel.z >= (pos.z + 1)*Position::TileZ)
+		while (originVoxel.z >= (originPosition.z + 1) * 24)
 		{
 			originVoxel.z--;
 		}
@@ -1837,12 +1950,30 @@ std::tuple<int, int, int, int, int> getTrajectoryDataHelper(TileEngine* te, cons
 
 
 /**
+ * Gets the origin voxel of a unit's eyesight (from just one eye or something? Why is it x+7??
+ * @param currentUnit The watcher.
+ * @return Approximately an eyeball voxel.
+ */
+Position TileEngine::getSightOriginVoxel(BattleUnit *currentUnit)
+{
+	// determine the origin and target voxels for the raytrace
+	OpenXcom::Position originPosition = currentUnit->getPosition();
+	return getSightOriginVoxel(currentUnit, originPosition);
+}
+
+/**
  * Checks for an opposing unit on this tile.
  * @param currentUnit The watcher.
  * @param tile The tile to check for
  * @return True if visible.
  */
 bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
+{
+	Position originPosition = currentUnit->getPosition();
+	return visible(currentUnit, originPosition, tile);
+}
+
+bool TileEngine::visible(BattleUnit *currentUnit, Position originPosition, Tile *tile)
 {
 	// if there is no tile or no unit, we can't see it
 	if (!tile || !tile->getUnit())
@@ -1854,7 +1985,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 	if (currentUnit->getFaction() == tile->getUnit()->getFaction()) return true;
 
 	// if beyond global max. range, nobody can see anyone
-	int currentDistanceSq = Position::distance2dSq(currentUnit->getPosition(), tile->getPosition());
+	int currentDistanceSq = Position::distance2dSq(originPosition, tile->getPosition());
 	if (currentDistanceSq > getMaxViewDistanceSq())
 	{
 		return false;
@@ -1882,25 +2013,26 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 
 	const auto [visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile] = getVisibleDistanceMaxHelper(this, tile, currentUnit, tile->getUnit());
 
-	Position originVoxel = getSightOriginVoxel(currentUnit);
+	Position originVoxel = getSightOriginVoxel(currentUnit, originPosition);
 
 	Position scanVoxel;
 	bool unitSeen = canTargetUnit(&originVoxel, tile, &scanVoxel, currentUnit, false);
 
-	// heat vision should be blind by looking directly through fire
-	int fireDensityFactor = Clamp(currentUnit->getHeatVision(), 0, 100);
 	// heat vision 100% = smoke effectiveness 0%
-	int smokeDensityFactor = 100 - fireDensityFactor;
+	int smokeDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughSmoke(), 0, 100);
+	int fireDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughFire(), 0, 100);
 
 	if (unitSeen)
 	{
 		const auto [visibleDistanceVoxels, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit] = getTrajectoryDataHelper(this, _save, currentUnit, originVoxel, scanVoxel);
 
+		int statsDiff = (currentUnit->getBaseStats()->perception - tile->getUnit()->getBaseStats()->stealth) * _visibilityStatsMod / 100; // FtA modifer based on units stats
 		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
 		// 20 - maximum view distance in vanilla Xcom.
 		// 100 - % for smokeDensityFactor.
+		// 16 - for voxel scale calculation.
 		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
-		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - statsDiff - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceMaxVoxel/(3 * 20 * 100 * 16);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
@@ -2066,9 +2198,8 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 	originVoxel = getSightOriginVoxel(currentUnit);
 
 	// heat vision 100% = smoke effectiveness 0%
-	int smokeDensityFactor = 100 - currentUnit->getArmor()->getHeatVision();
-	// heat vision should be blind by looking directly through fire
-	int fireDensityFactor = currentUnit->getArmor()->getHeatVision();
+	int smokeDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughSmoke(), 0, 100);
+	int fireDensityFactor = 100 - Clamp(currentUnit->getVisibilityThroughFire(), 0, 100);
 
 	if (seen)
 	{
@@ -2077,8 +2208,9 @@ bool TileEngine::isTileInLOS(BattleAction *action, Tile *tile, bool drawing)
 		// 3  - coefficient of calculation (see getTrajectoryDataHelper).
 		// 20 - maximum view distance in vanilla Xcom.
 		// 100 - % for smokeDensityFactor.
+		// 16 - for voxel scale calculation.
 		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
-		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceUnitMaxTile/(3 * 20 * 100);
+		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceMaxVoxel/(3 * 20 * 100 * 16);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
 		ModScript::VisibilityUnit::Worker worker{ currentUnit, /*targetUnit*/ nullptr, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
@@ -2472,12 +2604,43 @@ void TileEngine::calculateFOV(Position position, int eventRadius, const bool upd
 				if (!appendToTileVisibility)
 				{
 					bu->clearVisibleTiles();
+					bu->clearVisibleBattleObjects();
 				}
 				calculateTilesInFOV(bu, position, eventRadius);
 			}
 
 			calculateUnitsInFOV(bu, position, eventRadius);
+			if (_save->isStealthMission() && bu->getFaction() == FACTION_HOSTILE
+				&& !bu->getUnitWarned() && !bu->isOut())
+			{
+				checkForSuspiciousItems(bu);
+			}
 		}
+	}
+}
+
+void TileEngine::checkForSuspiciousItems(BattleUnit* unit)
+{
+	auto tiles = unit->getVisibleTiles();
+	for (auto* tile : *tiles)
+	{
+		for (auto* bi : *unit->getInventory())
+		{
+			if (bi->getXCOMProperty()
+				|| bi->getRules()->getBattleType() == BT_CORPSE
+				|| (bi->getFuseTimer() > -1 && bi->getRules()->getSpawnUnit()))
+			{
+				unit->setUnitWarned(true);
+			}
+			if (bi->getPreviousOwner() != nullptr)
+			{
+				if (bi->getPreviousOwner()->getOriginalFaction() == FACTION_PLAYER)
+				{
+					unit->setUnitWarned(true);
+				}
+			}
+		}
+		
 	}
 }
 
@@ -2549,7 +2712,7 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 	Tile *tile = unit->getTile();
 	int threshold = unit->getReactionScore();
 	// no reaction on civilian turn.
-	if (_save->getSide() != FACTION_NEUTRAL)
+	if (_save->getSide() != FACTION_NEUTRAL || _save->getGeoscapeSave()->isFtAGame())
 	{
 		for (auto* bu : *_save->getUnits())
 		{
@@ -2604,6 +2767,10 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 					// can actually see the unit
 					visible(bu, tile))
 				{
+					if (bu->getFaction() == FACTION_HOSTILE && !unit->tryUncover() && !bu->getUnitWarned())
+					{
+						continue;
+					}
 					if (bu->getFaction() == FACTION_PLAYER)
 					{
 						unit->setVisible(true);
@@ -2612,27 +2779,31 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 					ReactionScore rs = determineReactionType(bu, unit);
 					if (rs.attackType != BA_NONE)
 					{
-						if (rs.attackType == BA_SNAPSHOT && Options::battleUFOExtenderAccuracy)
+						int reactionFireThreshold = _save->getBattleGame()->getMod()->getReactionFireThreshold(bu->getFaction());
+						if (reactionFireThreshold > 0)
 						{
 							BattleItem *weapon = rs.weapon;
 							int accuracy = BattleUnit::getFiringAccuracy(BattleActionAttack::GetBeforeShoot(rs.attackType, rs.unit, weapon), _save->getBattleGame()->getMod());
 							int distanceSq = unit->distance3dToUnitSq(bu);
 							int distance = (int)std::ceil(sqrt(float(distanceSq)));
 
-							int upperLimit = weapon->getRules()->getSnapRange();
-							int lowerLimit = weapon->getRules()->getMinRange();
-							if (distance > upperLimit)
 							{
-								accuracy -= (distance - upperLimit) * weapon->getRules()->getDropoff();
-							}
-							else if (distance < lowerLimit)
-							{
-								accuracy -= (lowerLimit - distance) * weapon->getRules()->getDropoff();
+								int upperLimit, lowerLimit;
+								int dropoff = weapon->getRules()->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), rs.attackType);
+
+								if (distance > upperLimit)
+								{
+									accuracy -= (distance - upperLimit) * dropoff;
+								}
+								else if (distance < lowerLimit)
+								{
+									accuracy -= (lowerLimit - distance) * dropoff;
+								}
 							}
 
 							bool outOfRange = weapon->getRules()->isOutOfRange(distanceSq);
 
-							if (accuracy > _save->getBattleGame()->getMod()->getMinReactionAccuracy() && !outOfRange)
+							if (accuracy >= reactionFireThreshold && !outOfRange)
 							{
 								spotters.push_back(rs);
 							}
@@ -3306,6 +3477,26 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 	}
 	//Note: If bu was knocked out this will have no effect on unit visibility quite yet, as it is not marked as out
 	//and will continue to block visibility at this point in time.
+
+	if (_save->isStealthMission())
+	{
+		for (std::vector<BattleUnit*>::iterator i = _save->getUnits()->begin(); i != _save->getUnits()->end(); ++i)
+		{
+			if ((*i)->getFaction() == FACTION_HOSTILE && !(*i)->getUnitWarned() && !(*i)->isOut())
+			{
+				if ((*i)->getPosition() == tilePos || (*i)->checkViewSector(tilePos))
+				{
+					for (std::vector<Tile*>::const_iterator j = (*i)->getVisibleTiles()->begin(); j != (*i)->getVisibleTiles()->end(); ++j)
+					{
+						if ((*j) == tile)
+						{
+							(*i)->setUnitWarned(true);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -3396,7 +3587,12 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 						toRemove.clear();
 						if (bu)
 						{
-							if (
+							if (dest->getPosition() == centetTile)
+							{
+								// direct hit, similar to ground zero but AI will remember attacker, done for compatibility
+								hitUnit(attack, bu, Position(0, 0, 0), damage, type, rangeAtack);
+							}
+							else if (
 									(
 										Position::distance2dSq(dest->getPosition(), centetTile) < 4
 										&& dest->getPosition().z == centetTile.z
@@ -3405,7 +3601,7 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 								)
 							{
 								// ground zero effect is in effect, or unit is above explosion
-								hitUnit(attack, bu, Position(0, 0, 0), damage, type, rangeAtack);
+								hitUnit(attack, bu, Position(0, 0, -1), damage, type, rangeAtack);
 							}
 							else
 							{
@@ -4887,6 +5083,107 @@ bool TileEngine::meleeAttack(BattleActionAttack attack, BattleUnit *victim, int 
 }
 
 /**
+ *  Attempts a hacking attack action.
+ * @param action Pointer to an action.
+ * @param target Pointer to a target unit
+ * @return Whether it failed or succeeded.
+ */
+bool TileEngine::hackAttack(BattleAction& action, BattleUnit* target)
+{
+	if (!target)
+		return false;
+
+	// Award MC battle unit kill
+	BattleUnitKills killStat;
+	killStat.setUnitStats(target);
+	killStat.setTurn(_save->getTurn(), _save->getSide());
+	killStat.weapon = action.weapon->getRules()->getName();
+	killStat.weaponAmmo = action.weapon->getRules()->getName(); //Hacking weapons got no ammo, just filling up the field
+	killStat.faction = target->getOriginalFaction();
+	killStat.mission = _save->getGeoscapeSave()->getMissionStatistics()->size();
+	killStat.id = target->getId();
+	if (!action.actor->getStatistics()->duplicateEntry(STATUS_TURNING, target->getId()))
+	{
+		killStat.status = STATUS_TURNING;
+		action.actor->getStatistics()->kills.push_back(new BattleUnitKills(killStat));
+	}
+	target->setMindControllerId(action.actor->getId());
+	target->convertToFaction(action.actor->getFaction());
+	calculateLighting(LL_UNITS, target->getPosition());
+	calculateFOV(target->getPosition()); //happens fairly rarely, so do a full recalc for units in range to handle the potential unit visible cache issues.
+	target->recoverTimeUnits();
+	target->allowReselect();
+	target->abortTurn(); // resets unit status to STANDING
+
+	// if all units from either faction are mind controlled - auto-end the mission.
+	if (_save->getSide() == FACTION_PLAYER && Options::allowPsionicCapture)
+	{
+		_save->getBattleGame()->autoEndBattle();
+	}
+	return true;
+}
+
+/**
+ * Attempts hacking a battle object.
+ * @param action Pointer to an action.
+ * @return Whether it failed or succeeded.
+ */
+bool TileEngine::hackObject(BattleAction& action, BattleObject* object)
+{
+	if (!object)
+	{
+		return false;
+	}
+
+	Tile* tile = object->getTile();
+	if (!tile)
+	{
+		return false;
+	}
+
+	const int radius = object->getRules()->getAlterationMCDRadius();
+	if (radius > 0)
+	{
+		const int doorMCD = object->getRules()->getAlterationMCDNumber();
+		static const TilePart parts[8] = { O_WESTWALL,O_NORTHWALL,O_FLOOR,O_WESTWALL,O_NORTHWALL,O_OBJECT,O_OBJECT,O_OBJECT };
+		Position pos = tile->getPosition();
+		MapSubset gs = { std::make_pair(pos.x - radius, pos.x + radius + 1), std::make_pair(pos.y - radius, pos.y + radius + 1) };
+
+		Tile* tiles[9];
+		iterateTiles(
+			_save,
+			gs,
+			[&](Tile* itile)
+			{
+				tiles[0] = _save->getTile(Position(pos.x + 1, pos.y, pos.z)); //east wall
+				tiles[1] = _save->getTile(Position(pos.x, pos.y + 1, pos.z)); //south wall
+				tiles[2] = tiles[3] = tiles[4] = tiles[5] = itile;
+				tiles[6] = _save->getTile(Position(pos.x, pos.y - 1, pos.z)); //north bigwall
+				tiles[7] = _save->getTile(Position(pos.x - 1, pos.y, pos.z)); //west bigwall
+
+				for (int i = 7; i >= 0; --i)
+				{
+					if (!tiles[i] || !tiles[i]->getMapData(parts[i]))
+					{
+						continue; //skip out of map and emptiness
+					}
+
+					TilePart currentPart = parts[i];
+					int altMCD = tiles[i]->getMapData(currentPart)->getAltMCD();
+					if (altMCD == doorMCD)
+					{
+						itile->switchToAltMCD(currentPart);
+					}
+				}
+			}
+		);
+	}
+	
+	object->setWasUsed(true);
+	return true;
+}
+
+/**
  * Remove the medikit from the game if consumable and empty.
  * @param action
  */
@@ -5183,12 +5480,15 @@ void TileEngine::itemDropInventory(Tile *t, BattleUnit *unit, bool unprimeItems,
 	Collections::removeIf(*unit->getInventory(),
 		[&](BattleItem* i)
 		{
-			if (!i->getRules()->isFixed())
+			if (!i->getRules()->isFixed() && i->getRules()->canBeEquippedInBattle())
 			{
 				i->setOwner(nullptr);
 				if (unprimeItems && i->getRules()->getFuseTimerType() != BFT_NONE)
 				{
-					i->setFuseTimer(-1); // unprime explosives before dropping them
+					if (i->getRules()->getCostUnprime().Time > 0 /* && !i->getRules()->getUnprimeActionName().empty() */ )
+					{
+						i->setFuseTimer(-1); // unprime explosives before dropping them
+					}
 				}
 				t->addItem(i, _inventorySlotGround);
 				if (i->getUnit() && i->getUnit()->getStatus() == STATUS_UNCONSCIOUS)
@@ -5339,6 +5639,7 @@ bool TileEngine::validMeleeRange(Position pos, int direction, BattleUnit *attack
 	BattleUnit *chosenTarget = 0;
 	Position p;
 	int size = attacker->getArmor()->getSize() - 1;
+	int meleeOriginVoxelVerticalOffset = attacker->getArmor()->getMeleeOriginVoxelVerticalOffset(); // add some sanity checks or trust the modders?
 	Pathfinding::directionToVector(direction, &p);
 	for (int x = 0; x <= size; ++x)
 	{
@@ -5365,7 +5666,7 @@ bool TileEngine::validMeleeRange(Position pos, int direction, BattleUnit *attack
 					if (target == 0 || targetTile->getUnit() == target)
 					{
 						Position originVoxel = Position(origin->getPosition().toVoxel())
-							+ Position(8,8,attacker->getHeight() + attacker->getFloatHeight() - 4 -origin->getTerrainLevel());
+							+ Position(8,8,attacker->getHeight() + attacker->getFloatHeight() - 4 -origin->getTerrainLevel() + meleeOriginVoxelVerticalOffset);
 						Position targetVoxel;
 						if (canTargetUnit(&originVoxel, targetTile, &targetVoxel, attacker, false))
 						{
@@ -6033,5 +6334,4 @@ void TileEngine::updateGameStateAfterScript(BattleActionAttack battleActionAttac
 		calculateFOV(pos, 1, false);
 	}
 }
-
 }

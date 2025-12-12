@@ -1,0 +1,216 @@
+name: ci
+permissions:
+  packages: write
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.name }} (${{ matrix.os }}; ${{ matrix.compiler }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-22.04
+            compiler: gcc
+            cpp-compiler: g++
+
+          - name: Linux
+            os: ubuntu-22.04
+            compiler: clang
+            cpp-compiler: clang++
+
+          - name: Windows
+            os: ubuntu-22.04
+            compiler: mingw
+            cpp-compiler: mingw
+
+          - name: macOS
+            os: macos-latest
+            packages: ccache sdl12-compat sdl2_gfx sdl2_image sdl2_mixer pkg-config
+            compiler: clang
+            cpp-compiler: clang++
+            app-bundle: openxcom.app  # all other builds default to bin/
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      OXC_CONTENT_KEY: ${{ secrets.OXC_CONTENT_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install packages (mingw)
+        if: matrix.compiler == 'mingw'
+        run: |
+          sudo apt-get update
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install ccache ${{ matrix.packages }}
+
+      - name: Install packages (Ubuntu)
+        if: runner.os == 'Linux' && matrix.compiler != 'mingw'
+        run: |
+          sudo apt-get update
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install ccache ${{ matrix.packages }}
+          sudo apt-get -yq --no-install-suggests --no-install-recommends install libsdl1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev libsdl-gfx1.2-dev
+      - name: Install packages (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_INSTALL_CLEANUP=1
+          export HOMEBREW_NO_ENV_HINTS=1
+
+          brew install --display-times ${{ matrix.packages }}
+          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          # Download SDL1.2 headers to avoid conflicts
+          curl -L -o SDL.tar.gz https://github.com/libsdl-org/SDL-1.2/archive/refs/tags/release-1.2.15.tar.gz
+          tar xzf SDL.tar.gz
+          sudo cp -r SDL-1.2-release-1.2.15/include/* /opt/homebrew/include/SDL/
+          curl -L -o SDL_mixer.tar.gz https://github.com/libsdl-org/SDL_mixer/archive/refs/tags/release-1.2.12.tar.gz
+          tar xzf SDL_mixer.tar.gz
+          sudo cp -r SDL_mixer-release-1.2.12/* /opt/homebrew/include/SDL/
+          curl -L -o SDL_image.tar.gz https://github.com/libsdl-org/SDL_image/archive/refs/tags/release-1.2.12.tar.gz
+          tar xzf SDL_image.tar.gz
+          sudo cp -r SDL_image-release-1.2.12/* /opt/homebrew/include/SDL/
+          curl -L -o SDL_gfx.tar.gz https://www.ferzkopp.net/Software/SDL_gfx-2.0/SDL_gfx-2.0.26.tar.gz
+          tar xzf SDL_gfx.tar.gz
+          sudo cp -r SDL_gfx-2.0.26/* /opt/homebrew/include/SDL/
+
+          # Provide pkg-config compatibility wrappers so CMake can find SDL 1.2 image/mixer/gfx
+          sudo mkdir -p /opt/homebrew/lib/pkgconfig
+
+          printf '%s\n' \
+            'prefix=/opt/homebrew' \
+            'exec_prefix=${prefix}' \
+            'libdir=${exec_prefix}/lib' \
+            'includedir=${prefix}/include/SDL' \
+            '' \
+            'Name: SDL_image' \
+            'Description: SDL_image wrapper using SDL2_image (compat for OpenXcom)' \
+            'Version: 2.0.0' \
+            'Libs: -L${libdir} -lSDL2_image' \
+            'Cflags: -I${includedir}' \
+            | sudo tee /opt/homebrew/lib/pkgconfig/SDL_image.pc >/dev/null
+
+          printf '%s\n' \
+            'prefix=/opt/homebrew' \
+            'exec_prefix=${prefix}' \
+            'libdir=${exec_prefix}/lib' \
+            'includedir=${prefix}/include/SDL' \
+            '' \
+            'Name: SDL_mixer' \
+            'Description: SDL_mixer wrapper using SDL2_mixer (compat for OpenXcom)' \
+            'Version: 2.0.0' \
+            'Libs: -L${libdir} -lSDL2_mixer' \
+            'Cflags: -I${includedir}' \
+            | sudo tee /opt/homebrew/lib/pkgconfig/SDL_mixer.pc >/dev/null
+
+          printf '%s\n' \
+            'prefix=/opt/homebrew' \
+            'exec_prefix=${prefix}' \
+            'libdir=${exec_prefix}/lib' \
+            'includedir=${prefix}/include/SDL' \
+            '' \
+            'Name: SDL_gfx' \
+            'Description: SDL_gfx wrapper using SDL2_gfx (compat for OpenXcom)' \
+            'Version: 2.0.0' \
+            'Libs: -L${libdir} -lSDL2_gfx' \
+            'Cflags: -I${includedir}' \
+            | sudo tee /opt/homebrew/lib/pkgconfig/SDL_gfx.pc >/dev/null
+
+      - name: Setup Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ github.ref }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ github.ref }}-
+            ccache-${{ runner.os }}-${{ matrix.compiler }}-
+
+      - name: Prepare mxe container
+        id: prepare-mxe-container
+        if: matrix.compiler == 'mingw'
+        uses: ./.github/actions/prepare-mxe-docker
+        with:
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup environment
+        shell: bash
+        run: |
+          FTA_VERSION=$(grep '#define OPENXCOM_FTA_VERSION_LONG' src/version.h | cut -d'"' -f2)
+          echo "describe=$FTA_VERSION-$(git describe)" >> $GITHUB_ENV
+          if [ "${{ matrix.name }}" = "Linux" ] || [ "${{ runner.os }}" = "macOS" ]; then
+            echo "MAYBE_SUDO=sudo" >> $GITHUB_ENV
+          fi
+          echo "CMAKE_BUILD_PARALLEL_LEVEL=$(getconf _NPROCESSORS_ONLN 2>/dev/null || getconf NPROCESSORS_ONLN 2>/dev/null || echo 2)" >> $GITHUB_ENV
+
+          if [ -d ".github/workflows/patches/${{ runner.os }}" ] && [ "${{ runner.os }}" != "macOS" ]; then
+            # apply patches in dir
+            for patch in .github/workflows/patches/${{ runner.os }}/*.patch; do
+              echo "Applying patch $patch"
+              git apply $patch
+            done
+          fi
+
+      - name: Generate project files
+        if: matrix.compiler != 'mingw'
+        run: |
+          cmake -B ${{ matrix.build-dir || 'build' }} ${{ matrix.build-src-dir || '.' }} -DCMAKE_BUILD_TYPE=Release -DENABLE_WARNING=1 -DCHECK_CCACHE=1 ${{ matrix.cmake-args }}
+        env:
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.cpp-compiler }}
+
+      - name: Compile source code
+        if: matrix.compiler != 'mingw'
+        run: |
+          cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} -- ${{ matrix.build-args }}
+
+      - name: Compile source code (mingw)
+        if: matrix.compiler == 'mingw'
+        # continue-on-error: true
+        run: |
+          mkdir build
+          ${{ steps.prepare-mxe-container.outputs.docker-cmd }} sh -c "\
+            export PATH=/opt/mxe/usr/bin:\$PATH \
+            export PKG_CONFIG_PATH=/opt/mxe/usr/x86_64-w64-mingw32.static/lib/pkgconfig \
+            && cd build \
+            && /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake -DCMAKE_BUILD_TYPE=Release -DDEV_BUILD=OFF -DBUILD_PACKAGE=OFF -DCHECK_CCACHE=1 .. \
+            && make -j4 \
+          "
+          sudo chown -R runner ~/.ccache
+
+        # Note, this is bogus on MacOS, as it installs shaders et al twice.
+        # Windows installs under C:/Program Files (x86)/OpenXcom/bin (where the
+        # 'bin' is pretty redundant) and Linux installs under various dirs under
+        # /usr/local
+      - name: Make install
+        if: (runner.os == 'Linux' && matrix.compiler != 'mingw') || runner.os == 'macOS' || runner.os == 'Windows'
+        shell: bash
+        run: |
+          $MAYBE_SUDO cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} --target install
+
+      - name: Make install (mingw)
+        if: matrix.compiler == 'mingw'
+        shell: bash
+        run: |
+          ${{ steps.prepare-mxe-container.outputs.docker-cmd }} sh -c "\
+            export PATH=/opt/mxe/usr/bin:\$PATH \
+            && /opt/mxe/usr/bin/x86_64-w64-mingw32.static-cmake --build ${{ matrix.build-dir || 'build' }} -v --config ${{ matrix.build-config || 'Release' }} --target install
+          "
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+            name: openxcom_fta_${{ matrix.name }}_${{ matrix.compiler }}-${{ env.describe }}
+            path: |
+                ${{ matrix.build-dir || 'build' }}/${{ matrix.app-bundle || 'bin' }}/**/*
+                !${{ matrix.build-dir || 'build' }}/${{ matrix.app-bundle || 'bin' }}/libopenxcom.dll.a
+
+      - name: ccache stats
+        if: runner.os == 'Linux' || runner.os == 'macOS' || runner.os == 'Windows'
+        run: ccache -s --max-size=390MB

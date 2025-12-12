@@ -39,6 +39,9 @@
 #include <string>
 #include <sstream>
 #include <istream>
+#include <exception>
+#include <cstring>
+#include <cstdlib>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -48,6 +51,7 @@
 #include "CrossPlatform.h"
 #include "Options.h"
 #include "Exception.h"
+#include "OXCContainer.h"
 
 #define MINIZ_NO_STDIO
 #include "../../libs/miniz/miniz.h"
@@ -205,12 +209,14 @@ static inline std::string concatOptionalPaths(const std::string& basePath, const
 	}
 }
 
-FileRecord::FileRecord() : fullpath(""), zip(NULL), findex(0) { }
+FileRecord::FileRecord() : fullpath(""), zip(NULL), findex(0), oxc(NULL), oxcRelpath("") { }
 
 SDL_RWops *FileRecord::getRWops() const
 {
 	SDL_RWops *rv;
-	if (zip != NULL) {
+	if (oxc != NULL) {
+		rv = oxc->extractFileToRWops(oxcRelpath);
+	} else if (zip != NULL) {
 		rv = SDL_RWFromMZ((mz_zip_archive *)zip, findex);
 	} else {
 		rv = SDL_RWFromFile(fullpath.c_str(), "rb");
@@ -222,7 +228,11 @@ SDL_RWops *FileRecord::getRWops() const
 SDL_RWops *FileRecord::getRWopsReadAll() const
 {
 	SDL_RWops *rv;
-	if (zip != NULL)
+	if (oxc != NULL)
+	{
+		rv = oxc->extractFileToRWops(oxcRelpath);
+	}
+	else if (zip != NULL)
 	{
 		rv = SDL_RWFromMZ((mz_zip_archive *)zip, findex);
 	}
@@ -264,26 +274,53 @@ SDL_RWops *FileRecord::getRWopsReadAll() const
 
 std::unique_ptr<std::istream> FileRecord::getIStream() const
 {
-	if (zip != NULL) {
-		size_t size;
-		void *data = mz_zip_reader_extract_to_heap((mz_zip_archive *)zip, findex, &size, 0);
-		if (data == NULL) {
-			auto err = "FileRecord::getIStream(): failed to decompress " + fullpath + ": ";
-			err += mz_zip_get_error_string(mz_zip_get_last_error((mz_zip_archive *)zip));
-			Log(LOG_FATAL) << err;
-			throw Exception(err);
-		}
-		return std::unique_ptr<std::istream>(new StreamData(RawData{data, size, mz_free}));
+	if (oxc != NULL) {
+		return std::unique_ptr<std::istream>(new StreamData(getUnzippedData()));
+	} else if (zip != NULL) {
+		return std::unique_ptr<std::istream>(new StreamData(getUnzippedData()));
 	} else {
 		return CrossPlatform::readFile(fullpath);
 	}
 }
 
-YAML::Node FileRecord::getYAML() const
+RawData FileRecord::getUnzippedData() const
+{
+	if (oxc != NULL)
+	{
+		std::vector<uint8_t> extracted = oxc->extractFile(oxcRelpath);
+		void *copy = nullptr;
+		size_t size = extracted.size();
+		if (size > 0)
+		{
+			copy = SDL_malloc(size);
+			if (!copy)
+			{
+				Log(LOG_FATAL) << "FileRecord::getUnzippedData(): out of memory for " << fullpath;
+				throw Exception("Out of memory");
+			}
+			std::memcpy(copy, extracted.data(), size);
+		}
+		return RawData(copy, size, SDL_free);
+	}
+
+	size_t size;
+	void* data = mz_zip_reader_extract_to_heap((mz_zip_archive*)zip, findex, &size, 0);
+	if (data == NULL)
+	{
+		auto err = "FileRecord::getIStream(): failed to decompress " + fullpath + ": ";
+		err += mz_zip_get_error_string(mz_zip_get_last_error((mz_zip_archive*)zip));
+		Log(LOG_FATAL) << err;
+		throw Exception(err);
+	}
+	return RawData(data, size, mz_free);
+}
+
+YAML::YamlRootNodeReader FileRecord::getYAML() const
 {
 	try
 	{
-		return YAML::Load(*getIStream());
+		RawData data = (zip != NULL || oxc != NULL) ? getUnzippedData() : CrossPlatform::readFileRaw(fullpath);
+		return YAML::YamlRootNodeReader(data, fullpath);
 	}
 	catch(...)
 	{
@@ -292,17 +329,14 @@ YAML::Node FileRecord::getYAML() const
 	}
 }
 
-std::vector<YAML::Node> FileRecord::getAllYAML() const
+std::vector<YAML::YamlNodeReader> FileRecord::getAllYAML() const
 {
-	try
-	{
-		return YAML::LoadAll(*getIStream());
-	}
-	catch(...)
-	{
-		Log(LOG_FATAL) << "Error loading file '" << fullpath << "'";
-		throw;
-	}
+	Log(LOG_FATAL) << "Error loading file '" << fullpath << "'";
+	throw Exception("getAllYAML(): Not implemented");
+	/*
+	The function would have to load a file, parse it, then emit each document child separately, and parse each child again.
+	This obviously doesn't make sense. Just use a normal getYAML() and handle multiple yaml documents accordingly
+	*/
 }
 
 
@@ -344,16 +378,22 @@ static bool ls_r(const std::string &basePath, const std::string &relPath, dirlis
 	}
 	return true;
 }
-static bool isRuleset(const std::string& fname) {
+static bool isRuleset(const std::string& fname)
+{
 	if (fname.size() < 4) { return false; }
-	auto last4 = fname.substr(fname.size() - 4);
-	auto canext = canonicalize(last4);
-	return last4 == ".rul";
+	constexpr Uint32 dotRul =           '.' << 0 |  'r' << 8 |  'u' << 16 |  'l' << 24;
+	constexpr Uint32 toLowerCaseMask = 0x00 << 0 | 0x20 << 8 | 0x20 << 16 | 0x20 << 24;
+	Uint32 last4; // Pack last 4 chars into Uint32
+	std::memcpy(&last4, fname.data() + fname.size() - 4, 4); // Need memcpy because unaligned ptr
+	return (last4 | toLowerCaseMask) == dotRul;
 }
 
 typedef std::unordered_map<std::string, FileRecord> FileSet;
 static const NameSet emptySet;
 static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwops);
+static OXCContainer *newOxcContext(const std::string& log_ctx, SDL_RWops *rwops, const std::string& fullpath, bool takeOwnership);
+static OXCContainer *newOxcContext(const std::string& log_ctx, const std::string& fullpath);
+static std::string getOxcPassphrase();
 
 struct VFSLayer {
 	std::string fullpath;				// the origin
@@ -488,6 +528,75 @@ struct VFSLayer {
 			insert(relfname, frec);
 			mapped_count ++;
 		}
+		Log(LOG_VERBOSE) << log_ctx << "mapped_count=" << mapped_count;
+		return mapped_count > 1;
+	}
+
+	bool mapOxcFile(const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxcFile(" + oxcpath + ", '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		auto ctx = newOxcContext(log_ctx, oxcpath);
+		if (!ctx) {
+			return false;
+		}
+		return mapOxc(ctx, oxcpath, prefix, ignore_ruls);
+	}
+
+	bool mapOxcFileRW(SDL_RWops *rwops, const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxcFileRW(rwops, '" + oxcpath + "', '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		auto ctx = newOxcContext(log_ctx, rwops, oxcpath, true);
+		if (!ctx) {
+			return false;
+		}
+		return mapOxc(ctx, oxcpath, prefix, ignore_ruls);
+	}
+
+	bool mapOxc(OXCContainer *ctx, const std::string& oxcpath, const std::string& prefix, bool ignore_ruls = false) {
+		std::string log_ctx = "mapOxc('" + oxcpath + "', '" + prefix + "', '" + (ignore_ruls ? "true" : "false") + "'): ";
+		if (mapped) {
+			auto err = log_ctx + "Fatal: already mapped.";
+			Log(LOG_FATAL) << err;
+			throw Exception(err);
+		}
+
+		auto prefixlen = prefix.size();
+		if ((prefixlen) > 0 && (prefix[prefixlen - 1] != '/')) {
+			auto err = log_ctx + "Bogus prefix of '" + prefix;
+			Log(LOG_FATAL) << err;
+			throw Exception(err);
+		}
+
+		mapped = true;
+		fullpath = oxcpath;
+
+		FileRecord frec;
+		frec.zip = NULL;
+		frec.oxc = ctx;
+		frec.findex = 0;
+
+		size_t mapped_count = 0;
+		for (const auto& fnameOriginal : ctx->getFileList()) {
+			std::string fname = fnameOriginal;
+			if (!sanitizeZipEntryName(fname)) {
+				Log(LOG_WARNING) << "Bogus filename " << hexDumpBogusData(fname) << " in " << oxcpath << ", ignoring.";
+				continue;
+			}
+
+			std::string relfname = fname;
+			if (fname.size() <= prefixlen) { continue; }
+			if (prefixlen > 0) {
+				auto tprefix = fname.substr(0, prefixlen);
+				if (tprefix != prefix) { continue; }
+				relfname = fname.substr(prefixlen, fname.npos);
+			}
+
+			if (relfname.empty()) { continue; }
+			frec.oxcRelpath = fname;
+			frec.fullpath = concatPaths(fullpath, fname);
+			if (isRuleset(relfname) && ignore_ruls) { continue; }
+			insert(relfname, frec);
+			mapped_count++;
+		}
+
 		Log(LOG_VERBOSE) << log_ctx << "mapped_count=" << mapped_count;
 		return mapped_count > 1;
 	}
@@ -677,9 +786,10 @@ struct VFS {
 
 static std::unordered_map<std::string, ModRecord *> ModsAvailable;
 static std::unordered_set<VFSLayer *> MappedVFSLayers; // owned here so we can have some sense of their lifetime
-												       // only the layers that get dropped on FileMap::clear()
+													   // only the layers that get dropped on FileMap::clear()
 static std::vector<mz_zip_archive *> ZipContexts;	   // zip decompression contexts shared between layers that came from
 													   // the same .zip. this makes the whole thing very thread-unsafe
+static std::vector<OXCContainer *> OXCContexts;        // oxc contexts shared between layers
 static VFS TheVFS;
 
 static VFSLayer* MappedVFSLayersAdd(std::unique_ptr<VFSLayer>&& layer)
@@ -721,6 +831,48 @@ static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwop
 	return zip;
 }
 
+static std::string getOxcPassphrase() {
+	const char *env = std::getenv("OXC_CONTENT_KEY");
+	if (env && *env) {
+		return std::string(env);
+	}
+	return "public_oxc_content_key";
+}
+
+static OXCContainer *newOxcContext(const std::string& log_ctx, SDL_RWops *rwops, const std::string& fullpath, bool takeOwnership) {
+	try {
+		auto ctx = new OXCContainer(rwops, fullpath, getOxcPassphrase(), takeOwnership);
+		OXCContexts.push_back(ctx);
+		return ctx;
+	} catch (const Exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (const std::exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (...) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: unknown error.";
+	}
+
+	if (takeOwnership && rwops) {
+		SDL_RWclose(rwops);
+	}
+	return NULL;
+}
+
+static OXCContainer *newOxcContext(const std::string& log_ctx, const std::string& fullpath) {
+	try {
+		auto ctx = new OXCContainer(fullpath, getOxcPassphrase());
+		OXCContexts.push_back(ctx);
+		return ctx;
+	} catch (const Exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (const std::exception& e) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: " << e.what();
+	} catch (...) {
+		Log(LOG_WARNING) << log_ctx << "Ignoring oxc: unknown error.";
+	}
+	return NULL;
+}
+
 void clear(bool clearOnly, bool embeddedOnly) {
 	TheVFS.clear();
 	for (auto i : ModsAvailable ) { delete i.second; }
@@ -729,6 +881,8 @@ void clear(bool clearOnly, bool embeddedOnly) {
 	MappedVFSLayers.clear();
 	for (auto i : ZipContexts) { mz_zip_reader_end_rwops(i); SDL_free(i); }
 	ZipContexts.clear();
+	for (auto ctx : OXCContexts) { delete ctx; }
+	OXCContexts.clear();
 	if (!clearOnly)
 	{
 		Log(LOG_VERBOSE) << "FileMap::clear(): mapping 'common'";
@@ -804,9 +958,14 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 	std::string log_ctx = "FileMap::mapExtResources(" + modId + ", " + basename + "): ";
 	bool mapped_anything = false;
 	std::string zipname = basename + ".zip";
+	std::string oxcname = basename + ".oxc";
 	SDL_RWops *embedded_rwops = NULL;
+	SDL_RWops *embedded_oxc = NULL;
 	if (zipname == "common.zip" || zipname == "standard.zip") {
 		embedded_rwops = CrossPlatform::getEmbeddedAsset(zipname);
+	}
+	if (oxcname == "common.oxc" || oxcname == "standard.oxc" || oxcname == "content.oxc") {
+		embedded_oxc = CrossPlatform::getEmbeddedAsset(oxcname);
 	}
 	// first try finding a directory (ass-backwards since we got to push this into front re layers.
 	if (!embedded_rwops || ! embeddedOnly) {
@@ -848,6 +1007,28 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 			Log(LOG_VERBOSE) << log_ctx << "zip not found ("<<fullname<<")";
 		}
 	}
+	// then try finding an oxc file
+	if (!embedded_oxc || !embeddedOnly) {
+		std::string fullname = Options::getUserFolder() + oxcname;
+		if (!CrossPlatform::fileExists(fullname)) {
+			fullname = CrossPlatform::searchDataFile(oxcname);
+		}
+		if (CrossPlatform::fileExists(fullname)) {
+			Log(LOG_VERBOSE) << log_ctx << "found oxc (" << fullname << ")";
+			auto layer = std::make_unique<VFSLayer>(fullname);
+			auto mapped = layer->mapOxcFile(fullname, basename + "/", true);
+			if (!mapped) {
+				layer = std::make_unique<VFSLayer>(fullname);
+				mapped = layer->mapOxcFile(fullname, "", true);
+			}
+			if (mapped) {
+				mrec->push_front(MappedVFSLayersAdd(std::move(layer)));
+				mapped_anything = true;
+			}
+		} else {
+			Log(LOG_VERBOSE) << log_ctx << "oxc not found (" << fullname << ")";
+		}
+	}
 	// now try the embedded zip
 	{
 		if (embedded_rwops) {
@@ -860,6 +1041,20 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
 			}
 		} else {
 			Log(LOG_VERBOSE) << log_ctx << "embedded asset not found ("<<zipname<<")";
+		}
+	}
+	// and finally try an embedded oxc
+	{
+		if (embedded_oxc) {
+			Log(LOG_VERBOSE) << log_ctx << "found embedded asset (" << oxcname << ")";
+			std::string eoxcname = "exe:" + oxcname;
+			auto layer = std::make_unique<VFSLayer>(eoxcname);
+			if (layer->mapOxcFileRW(embedded_oxc, eoxcname, "", true)) {
+				mrec->push_front(MappedVFSLayersAdd(std::move(layer)));
+				mapped_anything = true;
+			}
+		} else {
+			Log(LOG_VERBOSE) << log_ctx << "embedded asset not found (" << oxcname << ")";
 		}
 	}
 	if (!mapped_anything) { // well, nothing found. say so.
@@ -884,13 +1079,44 @@ static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const
 		return;
 	}
 	auto modpath = concatOptionalPaths(zipfname, prefix);
-	auto doc = frec->getYAML();
-	if (!doc.IsMap()) {
+	const auto& reader = frec->getYAML();
+	if (!reader.isMap()) {
 		Log(LOG_WARNING) << log_ctx << "Bad metadata.yml found, skipping.";
 		return;
 	}
 	auto mrec = std::make_unique<ModRecord>(modpath);
-	mrec->modInfo.load(doc);
+	mrec->modInfo.load(reader);
+	auto mri = ModsAvailable.find(mrec->modInfo.getId());
+	if (mri != ModsAvailable.end()) {
+		Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
+		return;
+	}
+	Log(LOG_VERBOSE) << log_ctx << "mapped mod '" << mrec->modInfo.getId() << "' from " << modpath
+					 << " master=" << mrec->modInfo.getMaster() << " version=" << mrec->modInfo.getVersion();
+	mrec->push_back(MappedVFSLayersAdd(std::move(layer)));
+	ModsAvailableAdd(std::move(mrec));
+}
+
+static void mapOxcMod(OXCContainer *oxc, const std::string& oxcname, const std::string& prefix) {
+	std::string log_ctx = "mapOxcMod(" + oxcname + ", '" + prefix + "'): ";
+	auto layer = std::make_unique<VFSLayer>(concatPaths(oxcname, prefix));
+	if (!layer->mapOxc(oxc, oxcname, prefix)) {
+		Log(LOG_WARNING) << log_ctx << "Failed to map, skipping.";
+		return;
+	}
+	auto frec = layer->at("metadata.yml");
+	if (frec == NULL) {
+		Log(LOG_WARNING) << log_ctx << "No metadata.yml found, skipping.";
+		return;
+	}
+	auto modpath = concatOptionalPaths(oxcname, prefix);
+	const auto& reader = frec->getYAML();
+	if (!reader.isMap()) {
+		Log(LOG_WARNING) << log_ctx << "Bad metadata.yml found, skipping.";
+		return;
+	}
+	auto mrec = std::make_unique<ModRecord>(modpath);
+	mrec->modInfo.load(reader);
 	auto mri = ModsAvailable.find(mrec->modInfo.getId());
 	if (mri != ModsAvailable.end()) {
 		Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
@@ -935,6 +1161,46 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 		// Do we want to handle this somehow or do we just call it unsupported?
 		mapZippedMod(mzip, fullpath, prefix);
 	}
+}
+
+static void scanModOxcContext(OXCContainer *ctx, const std::string& fullpath, const std::string& log_ctx) {
+	if (!ctx) { return; }
+
+	if (ctx->hasFile("metadata.yml")) {
+		Log(LOG_VERBOSE) << log_ctx << "retrying as a single-mod .oxc";
+		mapOxcMod(ctx, fullpath, "");
+		return;
+	}
+
+	std::unordered_set<std::string> prefixes;
+	for (const auto& fnameOrig : ctx->getFileList()) {
+		std::string fname = fnameOrig;
+		if (!sanitizeZipEntryName(fname)) {
+			Log(LOG_WARNING) << "Bogus dirname " << hexDumpBogusData(fname) << " in " << fullpath << ", ignoring.";
+			continue;
+		}
+		auto slashpos = fname.find_first_of("/");
+		if (slashpos == std::string::npos) { continue; }
+		prefixes.insert(fname.substr(0, slashpos));
+	}
+
+	for (const auto& prefix : prefixes) {
+		std::string withSlash = prefix + "/";
+		if (!ctx->hasFile(withSlash + "metadata.yml")) { continue; }
+		mapOxcMod(ctx, fullpath, withSlash);
+	}
+}
+
+void scanModOxcRW(SDL_RWops *rwops, const std::string& fullpath) {
+	std::string log_ctx = "scanModOxcRW(rwops, " + fullpath + "): ";
+	auto ctx = newOxcContext(log_ctx, rwops, fullpath, true);
+	scanModOxcContext(ctx, fullpath, log_ctx);
+}
+
+void scanModOxc(const std::string& fullpath) {
+	std::string log_ctx = "scanModOxc(" + fullpath + "): ";
+	auto ctx = newOxcContext(log_ctx, fullpath);
+	scanModOxcContext(ctx, fullpath, log_ctx);
 }
 /** Filesystem wrapper for scanModZipRW()
  * @param fullpath - full path to the .zip.
@@ -1079,13 +1345,21 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 	};
 
 	std::string log_ctx = "scanModDir('" + dirname + "', '" + basename + "'): ";
- 	// first check for a .zip
+	// first check for a .zip
 	std::string fullname = dirname + basename + ".zip";
 	if (CrossPlatform::fileExists(fullname)) {
 		Log(LOG_VERBOSE) << log_ctx << "scanning zip " << fullname;
 		scanModZip(fullname);
 	} else {
 		Log(LOG_VERBOSE) << log_ctx << "no zip " << fullname;
+	}
+	// now check for a .oxc
+	fullname = dirname + basename + ".oxc";
+	if (CrossPlatform::fileExists(fullname)) {
+		Log(LOG_VERBOSE) << log_ctx << "scanning oxc " << fullname;
+		scanModOxc(fullname);
+	} else {
+		Log(LOG_VERBOSE) << log_ctx << "no oxc " << fullname;
 	}
 	// then check for a dir
 	fullname = dirname  + basename;
@@ -1119,7 +1393,13 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 			continue;
 		}
 		auto subpath = concatPaths(fullname, std::get<0>(*zi));
-		scanModZip(subpath);
+		std::string lowerName = std::get<0>(*zi);
+		Unicode::lowerCase(lowerName);
+		if (lowerName.size() >= 4 && lowerName.substr(lowerName.size() - 4) == ".zip") {
+			scanModZip(subpath);
+		} else if (lowerName.size() >= 4 && lowerName.substr(lowerName.size() - 4) == ".oxc") {
+			scanModOxc(subpath);
+		}
 	}
 	for (auto di = dirlist.begin(); di != dirlist.end(); ++di) {
 		auto mp_basename = *di;
@@ -1135,13 +1415,13 @@ void scanModDir(const std::string& dirname, const std::string& basename, bool pr
 			Log(LOG_WARNING) << log_ctx << "No metadata.yml in " << mp_basename << ", skipping.";
 			continue;
 		}
-		auto doc = frec->getYAML();
-		if (!doc.IsMap()) {
+		const auto& reader = frec->getYAML();
+		if (!reader.isMap()) {
 			Log(LOG_WARNING) << log_ctx << "Bad metadata.yml " << mp_basename << ", skipping.";
 			return;
 		}
 		auto mrec = std::make_unique<ModRecord>(modpath);
-		mrec->modInfo.load(doc);
+		mrec->modInfo.load(reader);
 		auto mri = ModsAvailable.find(mrec->modInfo.getId());
 		if (mri != ModsAvailable.end()) {
 			Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << mp_basename;
@@ -1289,10 +1569,11 @@ SDL_RWops *getRWopsReadAll(const std::string &relativeFilePath)
 std::unique_ptr<std::istream> getIStream(const std::string &relativeFilePath) {
 	return at(relativeFilePath)->getIStream();
 }
-YAML::Node getYAML(const std::string &relativeFilePath) {
+YAML::YamlRootNodeReader getYAML(const std::string &relativeFilePath) {
 	return at(relativeFilePath)->getYAML();
 }
-std::vector<YAML::Node> getAllYAML(const std::string &relativeFilePath) {
+std::vector<YAML::YamlNodeReader> getAllYAML(const std::string& relativeFilePath)
+{
 	return at(relativeFilePath)->getAllYAML();
 }
 const std::vector<const FileRecord *> getSlice(const std::string &relativeFilePath) {

@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
 
 class RuleResearch;
 class Mod;
+class Soldier;
 
 /**
    Represent a ResearchProject
@@ -31,14 +32,15 @@ class Mod;
  */
 class ResearchProject
 {
-	RuleResearch * _project;
+	const RuleResearch * _project;
 	int _assigned;
 	int _spent;
 	int _cost;
 public:
-	ResearchProject(RuleResearch * p, int c = 0);
-	/// Game logic. Called every new day to compute time spent.
-	bool step();
+	ResearchProject(const RuleResearch * p, int c = 0);
+	/// Game logic. Called every new day (every hour for FtA) to compute time spent.
+	bool step(int progress);
+	int getStepProgress(std::map<Soldier*, int> &assignedScientists, Mod *mod, int rating);
 	/// gets state of project.
 	bool isFinished();
 	/// set the number of scientist assigned to this ResearchProject
@@ -56,9 +58,9 @@ public:
 	/// get the ResearchProject Mod
 	const RuleResearch * getRules() const;
 	/// load the ResearchProject from YAML
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// save the ResearchProject to YAML
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Get a string describing current progress.
 	std::string getResearchProgress() const;
 };

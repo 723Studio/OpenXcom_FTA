@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7a0ae9517..f2e6f6f55 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -182,6 +182,7 @@ if ( BUILD_PACKAGE )
+     set ( CPACK_DMG_VOLUME_NAME "OpenXcom FTA" )
+     set ( CPACK_DMG_BACKGROUND_IMAGE "${CMAKE_SOURCE_DIR}/res/openxcom_block.png" )
+     set ( CPACK_GENERATOR "DragNDrop")
++    set ( OVERRIDE_INSTALL_BINDIR "bin")
+   else()
+     set ( CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt" )
+   endif()
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 11c74c487..489609eea 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -583,6 +583,9 @@ endif ()
+ if (( APPLE AND CREATE_BUNDLE ) OR CPACK_GENERATOR STREQUAL "7Z" )
+   set ( CMAKE_INSTALL_BINDIR "." )
+ endif ()
++if (( APPLE AND CREATE_BUNDLE AND OVERRIDE_INSTALL_BINDIR ))
++  set ( CMAKE_INSTALL_BINDIR "${OVERRIDE_INSTALL_BINDIR}" )
++endif()
+ 
+ add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
+ 

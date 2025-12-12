@@ -30,6 +30,7 @@
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
+#include "../FTA/MasterMind.h"
 
 namespace OpenXcom
 {
@@ -126,6 +127,21 @@ NewGameState::NewGameState()
 	_txtIronman->setWordWrap(true);
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
+
+	if (_game->getMod()->isFTAGame())
+	{
+		_btnGenius->setVisible(false);
+		_btnSuperhuman->setY(_btnGenius->getY());
+		if (!_game->getMod()->getIsIronManEnabled())
+		{
+			_btnIronman->setVisible(false);
+			_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
+		}
+		else
+		{
+			_btnSuperhuman->setVisible(false);
+		}
+	}
 }
 
 /**
@@ -171,35 +187,42 @@ void NewGameState::btnOkClick(Action *)
 	save->setDifficulty(diff);
 	save->setIronman(_btnIronman->getPressed());
 	_game->setSavedGame(save);
+	save->setGamePtr(_game);
 
-	GeoscapeState *gs = new GeoscapeState;
+	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
-	gs->init();
-
-	auto* base = _game->getSavedGame()->getBases()->back();
-	if (base->getMarker() != -1)
+  
+	//choose the game scenario
+	if (_game->getMod()->isFTAGame())
 	{
-		// location known already
-		base->calculateServices(save);
-
-		// center and rotate 35 degrees down (to see the base location while typoing its name)
-		gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
-
-		if (base->getName().empty())
+		_game->getMasterMind()->newGameHelper(diff, gs);
+		save->setFtAGame(true);
+	}
+	else //vanilla
+	{
+		gs->init();
+		auto* base = _game->getSavedGame()->getBases()->back();
+		if (base->getMarker() != -1)
 		{
+		  // center and rotate 35 degrees down (to see the base location while typoing its name)
+			  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
+      
+		  if (base->getName().empty())
+		  {
 			// fixed location, custom name
 			_game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
-		}
-		else if (Options::customInitialBase)
-		{
+		  }
+		  else if (Options::customInitialBase)
+		  {
 			// fixed location, fixed name
 			_game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
+		  }
 		}
-	}
-	else
-	{
-		// custom location, custom name
-		_game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
+		else
+		{
+		  // custom location, custom name
+		  _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
+		}
 	}
 }
 

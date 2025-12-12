@@ -37,6 +37,7 @@ class BattlescapeState;
 class BattleUnit;
 class BattlescapeButton;
 class Base;
+class Soldier;
 
 /**
  * Screen which displays soldier's inventory.
@@ -46,6 +47,7 @@ class InventoryState : public State
 private:
 	Surface *_bg, *_soldier;
 	Text *_txtItem, *_txtAmmo, *_txtWeight, *_txtTus, *_txtStatLine1, *_txtStatLine2, *_txtStatLine3, *_txtStatLine4, *_txtPosition;
+	Text *_txtNameStatic;
 	TextEdit *_txtName;
 	TextEdit *_btnQuickSearch;
 	BattlescapeButton *_btnOk, *_btnPrev, *_btnNext, *_btnUnload, *_btnGround, *_btnRank, *_btnArmor;
@@ -65,7 +67,7 @@ private:
 	int _mouseHoverItemFrame = 0;
 	BattleItem *_mouseHoverItem = nullptr;
 	BattleItem *_currentDamageTooltipItem = nullptr;
-	bool _reloadUnit;
+	bool _reloadUnit, _ftaUI;
 	int _globalLayoutIndex;
 	int _prev_key = 0, _key_repeats = 0;
 	/// Helper method for Create Template button
@@ -121,6 +123,7 @@ public:
 	void btnGroundClickBackward(Action *action);
 	/// Handler for clicking the Rank button.
 	void btnRankClick(Action *action);
+	void btnRankClickRight(Action* action);
 	/// Handler for clicking the Links button.
 	void btnLinksClick(Action *action);
 	/// Handler for clicking on the Create Template button.

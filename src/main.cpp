@@ -45,7 +45,13 @@ using namespace OpenXcom;
 
 // Crash handling routines
 #ifdef _MSC_VER
+
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <windows.h>
+
 LONG WINAPI crashLogger(PEXCEPTION_POINTERS exception)
 {
 	CrossPlatform::crashDump(exception, "");
@@ -108,13 +114,13 @@ int main(int argc, char *argv[])
 	std::set_terminate(exceptionLogger);
 #endif
 #endif
-
+	YAML::setGlobalErrorHandler();
 	CrossPlatform::getErrorDialog();
 	CrossPlatform::processArgs(argc, argv);
 	if (!Options::init())
 		return EXIT_SUCCESS;
 	std::ostringstream title;
-	title << "OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	title << "OpenXcom " << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT;
 	Options::baseXResolution = Options::displayWidth;
 	Options::baseYResolution = Options::displayHeight;
 
@@ -147,12 +153,12 @@ namespace OpenXcom
 }
 
 #ifdef __MORPHOS__
-const char Version[] = "$VER: OpenXCom " OPENXCOM_VERSION_SHORT " (" __AMIGADATE__  ")";
+const char Version[] = "$VER: OpenXCom " OPENXCOM_FTA_VERSION_SHORT " (" __AMIGADATE__  ")";
 #endif
 
 
 
-#ifdef OXCE_AUTO_TEST
+#ifndef NDEBUG
 
 #include "Engine/Collections.h"
 #include "fmath.h"

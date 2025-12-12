@@ -32,6 +32,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Mod/RuleInterface.h"
+#include "../Savegame/SavedGame.h"
 #include "../Savegame/Soldier.h"
 
 namespace OpenXcom
@@ -79,9 +80,13 @@ namespace OpenXcom
 		_txtTitle->setText(tr(defs->getTitleForPage(_state->current_page)));
 
 		// optional background image
-		if (!defs->customPalette && !itf->getBackgroundImage().empty())
+		if (!defs->customPalette)
 		{
-			_game->getMod()->getSurface(itf->getBackgroundImage())->blitNShade(_bg, 0, 0);
+			auto& bgImageName = itf->getBackgroundImage(_game->getMod(), _game->getSavedGame());
+			if (!bgImageName.empty())
+			{
+				_game->getMod()->getSurface(bgImageName)->blitNShade(_bg, 0, 0);
+			}
 		}
 
 		if (customArmorSprite)
@@ -153,7 +158,15 @@ namespace OpenXcom
 			ItemDamageType dt = (ItemDamageType)i;
 			int percentage = (int)Round(armor->getDamageModifier(dt) * 100.0f);
 			std::string damage = getDamageTypeText(dt);
-			if (percentage != 100 && damage != "STR_UNKNOWN")
+			bool unlocked = true;
+			if (_game->getMod()->isFTAGame())
+			{
+				if (!_game->getSavedGame()->isResearched(damage))
+				{
+					unlocked = false; //hide unresearched damage types 
+				}
+			}
+			if (percentage != 100 && damage != "STR_UNKNOWN" && unlocked)
 			{
 				addStat(damage, Unicode::formatPercentage(percentage));
 			}

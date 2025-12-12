@@ -90,11 +90,11 @@ namespace OpenXcom
 		_listColor1 = ruleInterface->getElement("list")->color;
 		_listColor2 = ruleInterface->getElement("list")->color2;
 		_arrowColor = _listColor2;
-		if (ruleInterface->getElement("arrow"))
+		if (ruleInterface->getElementOptional("arrow"))
 		{
 			_arrowColor = ruleInterface->getElement("arrow")->color;
 		}
-		if (ruleInterface->getElement("ammoColor"))
+		if (ruleInterface->getElementOptional("ammoColor"))
 		{
 			_ammoColor = ruleInterface->getElement("ammoColor")->color;
 		}
@@ -123,9 +123,10 @@ namespace OpenXcom
 		ArticleState::initLayout();
 
 		// Step 1: background image
+		auto& bgImageName = ruleInterface->getBackgroundImage(_game->getMod(), _game->getSavedGame());
 		if (!defs->customPalette)
 		{
-			_game->getMod()->getSurface(ruleInterface->getBackgroundImage())->blitNShade(_bg, 0, 0);
+			_game->getMod()->getSurface(bgImageName)->blitNShade(_bg, 0, 0);
 		}
 
 		// Step 2: article image (optional)
@@ -136,7 +137,7 @@ namespace OpenXcom
 		}
 
 		// Step 3: info button image
-		Surface *button = _game->getMod()->getSurface(ruleInterface->getBackgroundImage() + "-InfoButton", false);
+		Surface *button = _game->getMod()->getSurface(bgImageName + "-InfoButton", false);
 		if (!defs->customPalette && button && _game->getMod()->getShowPediaInfoButton())
 		{
 			switch (defs->getType())

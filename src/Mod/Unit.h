@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include <SDL_types.h>
 #include "../Engine/RNG.h"
 #include "../Savegame/WeightedOptions.h"
@@ -31,20 +31,39 @@ class Mod;
 class Armor;
 class RuleItem;
 class RuleSoldier;
+class RulePrisoner;
 class ModScript;
 class ScriptParserBase;
 
 enum SpecialAbility { SPECAB_NONE, SPECAB_EXPLODEONDEATH, SPECAB_BURNFLOOR, SPECAB_BURN_AND_EXPLODE };
+enum SpecialObjective { SPECOBJ_NONE, SPECOBJ_FRIENDLY_VIP, SPECOBJ_ENEMY_VIP };
 enum SpecialTileType : int;
 enum MovementType : int;
-
+enum SoldierRole : int;
 
 enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEMALE };
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
 enum UnitStatus {STATUS_STANDING, STATUS_WALKING, STATUS_FLYING, STATUS_TURNING, STATUS_AIMING, STATUS_COLLAPSING, STATUS_DEAD, STATUS_UNCONSCIOUS, STATUS_PANICKING, STATUS_BERSERK, STATUS_IGNORE_ME};
-enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2};
+
+/**
+ * Faction naming "absolute":
+ *
+ * Xcom for FACTION_PLAYER.
+ * Aliens for FACTION_HOSTILE.
+ * Civilians for FACTION_NEUTRAL.
+ *
+ *
+ * Faction naming "relative":
+ *
+ * Hostile: between Aliens and Xcom, between Aliens and Civilians.
+ * Friendly: Xcom to Xcom, Aliens to Aliens, Civilians to Civilians.
+ * Neutral: between Xcom and Civilians.
+ * HostileCivilians: Special case for relation of Aliens to Civilians as it should be handled sometimes different than to Xcom.
+ */
+enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2, FACTION_MAX };
 enum UnitBodyPart : int {BODYPART_HEAD, BODYPART_TORSO, BODYPART_RIGHTARM, BODYPART_LEFTARM, BODYPART_RIGHTLEG, BODYPART_LEFTLEG, BODYPART_MAX};
 enum UnitBodyPartEx {BODYPART_LEGS = BODYPART_MAX, BODYPART_COLLAPSING, BODYPART_ITEM_RIGHTHAND, BODYPART_ITEM_LEFTHAND, BODYPART_ITEM_FLOOR, BODYPART_ITEM_INVENTORY, BODYPART_LARGE_TORSO, BODYPART_LARGE_PROPULSION = BODYPART_LARGE_TORSO + 4, BODYPART_LARGE_TURRET = BODYPART_LARGE_PROPULSION + 4};
+
 
 /**
  * This struct holds some plain unit attribute data together.
@@ -53,6 +72,8 @@ struct UnitStats
 {
 	using Type = Sint16;
 	using Ptr = Type UnitStats::*;
+
+	enum StatStringType {STATSTR_UC, STATSTR_LC, STATSTR_ABBREV, STATSTR_SHORT};
 
 	/// Max value that is allowed to set to stat, less that max value allowed by type.
 	constexpr static int BaseStatLimit = 8000;
@@ -65,34 +86,401 @@ struct UnitStats
 	/// How much more over kill can go to negative than health.
 	constexpr static int OverkillMultipler = 4;
 
-	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana;
+	Type tu, stamina, health, bravery, reactions, firing, throwing, strength, psiStrength, psiSkill, melee, mana, //soldiers
+		maneuvering, missiles, dogfight, tracking, cooperation, beams, synaptic, gravity, //pilot
+		physics, chemistry, biology, insight, data, computers, tactics, materials, designing, psionics, xenolinguistics, //scientist
+		weaponry, explosives, efficiency, microelectronics, metallurgy, processing, hacking, robotics, diligence, alienTech, reverseEngineering, //engineers
+		stealth, perception, charisma, investigation, deception, interrogation; //agents
 
-	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0), strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0) {};
-	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_, int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_) : tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_), strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_) {};
-	UnitStats& operator+=(const UnitStats& stats) { tu += stats.tu; stamina += stats.stamina; health += stats.health; bravery += stats.bravery; reactions += stats.reactions; firing += stats.firing; throwing += stats.throwing; strength += stats.strength; psiStrength += stats.psiStrength; psiSkill += stats.psiSkill; melee += stats.melee; mana += stats.mana; return *this; }
-	UnitStats operator+(const UnitStats& stats) const { return UnitStats(tu + stats.tu, stamina + stats.stamina, health + stats.health, bravery + stats.bravery, reactions + stats.reactions, firing + stats.firing, throwing + stats.throwing, strength + stats.strength, psiStrength + stats.psiStrength, psiSkill + stats.psiSkill, melee + stats.melee, mana + stats.mana); }
-	UnitStats& operator-=(const UnitStats& stats) { tu -= stats.tu; stamina -= stats.stamina; health -= stats.health; bravery -= stats.bravery; reactions -= stats.reactions; firing -= stats.firing; throwing -= stats.throwing; strength -= stats.strength; psiStrength -= stats.psiStrength; psiSkill -= stats.psiSkill; melee -= stats.melee; mana -= stats.mana; return *this; }
-	UnitStats operator-(const UnitStats& stats) const { return UnitStats(tu - stats.tu, stamina - stats.stamina, health - stats.health, bravery - stats.bravery, reactions - stats.reactions, firing - stats.firing, throwing - stats.throwing, strength - stats.strength, psiStrength - stats.psiStrength, psiSkill - stats.psiSkill, melee - stats.melee, mana - stats.mana); }
-	UnitStats operator-() const { return UnitStats(-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana); }
-	void merge(const UnitStats& stats) { tu = (stats.tu ? stats.tu : tu); stamina = (stats.stamina ? stats.stamina : stamina); health = (stats.health ? stats.health : health); bravery = (stats.bravery ? stats.bravery : bravery); reactions = (stats.reactions ? stats.reactions : reactions); firing = (stats.firing ? stats.firing : firing); throwing = (stats.throwing ? stats.throwing : throwing); strength = (stats.strength ? stats.strength : strength); psiStrength = (stats.psiStrength ? stats.psiStrength : psiStrength); psiSkill = (stats.psiSkill ? stats.psiSkill : psiSkill); melee = (stats.melee ? stats.melee : melee); mana = (stats.mana ? stats.mana : mana); };
+	UnitStats() : tu(0), stamina(0), health(0), bravery(0), reactions(0), firing(0), throwing(0),
+		strength(0), psiStrength(0), psiSkill(0), melee(0), mana(0),
+		maneuvering(0), missiles(0), dogfight(0), tracking(0), cooperation(0), beams(0), synaptic(0), gravity(0),
+		physics(0), chemistry(0), biology(0), insight(0), data(0), computers(0), tactics(0), materials(0),
+		designing(0), psionics(0), xenolinguistics(0),
+		weaponry(0), explosives(0), efficiency(0), microelectronics(0), metallurgy(0), processing(0), hacking(0), robotics(0),
+		diligence(0), alienTech(0), reverseEngineering(0),
+		stealth(0), perception(0), charisma(0), investigation(0), deception(0), interrogation(0){}
+	UnitStats(int tu_, int stamina_, int health_, int bravery_, int reactions_, int firing_, int throwing_,
+		int strength_, int psiStrength_, int psiSkill_, int melee_, int mana_,
+		int maneuvering_, int missiles_, int dogfight_, int tracking_, int cooperation_, int beams_, int synaptic_, int gravity_,
+		int physics_, int chemistry_, int biology_, int insight_, int data_, int computers_, int tactics_, int materials_,
+		int designing_, int psionics_, int xenolinguistics_,
+		int weaponry_, int explosives_, int efficiency_, int microelectronics_, int metallurgy_, int processing_, int hacking_,
+		int robotics_, int diligence_, int alienTech_, int reverseEngineering_,
+		int stealth_, int perception_, int charisma_, int investigation_, int deception_, int interrogation_) :
+		tu(tu_), stamina(stamina_), health(health_), bravery(bravery_), reactions(reactions_), firing(firing_), throwing(throwing_),
+		strength(strength_), psiStrength(psiStrength_), psiSkill(psiSkill_), melee(melee_), mana(mana_),
+		maneuvering(maneuvering_), missiles(missiles_), dogfight(dogfight_), tracking(tracking_), cooperation(cooperation_), beams(beams_), synaptic(synaptic_), gravity(gravity_),
+		physics(physics_), chemistry(chemistry_), biology(biology_), insight(insight_), data(data_), computers(computers_), tactics(tactics_), materials(materials_),
+		designing(designing_), psionics(psionics_), xenolinguistics(xenolinguistics_),
+		weaponry(weaponry_), explosives(explosives_), efficiency(efficiency_), microelectronics(microelectronics_), metallurgy(metallurgy_), processing(processing_),
+		hacking(hacking_), robotics(robotics_), diligence(diligence_), alienTech(alienTech_), reverseEngineering(reverseEngineering_),
+		stealth(stealth_), perception(perception_), charisma(charisma_), investigation(investigation_), deception(deception_), interrogation(interrogation_) {}
+	UnitStats& operator+=(const UnitStats& stats) {
+		tu += stats.tu;
+		stamina += stats.stamina;
+		health += stats.health;
+		bravery += stats.bravery;
+		reactions += stats.reactions;
+		firing += stats.firing;
+		throwing += stats.throwing;
+		strength += stats.strength;
+		psiStrength += stats.psiStrength;
+		psiSkill += stats.psiSkill;
+		melee += stats.melee;
+		mana += stats.mana;
+		maneuvering += stats.maneuvering;
+		missiles += stats.missiles;
+		dogfight += stats.dogfight;
+		tracking += stats.tracking;
+		cooperation += stats.cooperation;
+		beams += stats.beams;
+		synaptic += stats.synaptic;
+		gravity += stats.gravity;
+		physics += stats.physics;
+		chemistry += stats.chemistry;
+		biology += stats.biology;
+		insight += stats.insight;
+		data += stats.data;
+		computers += stats.computers;
+		tactics += stats.tactics;
+		materials += stats.materials;
+		designing += stats.designing;
+		psionics += stats.psionics;
+		xenolinguistics += stats.xenolinguistics;
+		weaponry += stats.weaponry;
+		explosives += stats.explosives;
+		efficiency += stats.efficiency;
+		microelectronics += stats.microelectronics;
+		metallurgy += stats.metallurgy;
+		processing += stats.processing;
+		hacking += stats.hacking;
+		robotics += stats.robotics;
+		diligence += stats.diligence;
+		alienTech += stats.alienTech;
+		reverseEngineering += stats.reverseEngineering;
+		stealth += stats.stealth;
+		perception += stats.perception;
+		charisma += stats.charisma;
+		investigation += stats.investigation;
+		deception += stats.deception;
+		interrogation += stats.interrogation;
+		return *this; }
+	UnitStats operator+(const UnitStats& stats) const { return UnitStats(
+		tu + stats.tu,
+		stamina + stats.stamina,
+		health + stats.health,
+		bravery + stats.bravery,
+		reactions + stats.reactions,
+		firing + stats.firing,
+		throwing + stats.throwing,
+		strength + stats.strength,
+		psiStrength + stats.psiStrength,
+		psiSkill + stats.psiSkill,
+		melee + stats.melee,
+		mana + stats.mana,
+		maneuvering + stats.maneuvering,
+		missiles + stats.missiles,
+		dogfight + stats.dogfight,
+		tracking + stats.tracking,
+		cooperation + stats.cooperation,
+		beams + stats.beams,
+		synaptic + stats.synaptic,
+		gravity + stats.gravity,
+		physics + stats.physics,
+		chemistry + stats.chemistry,
+		biology + stats.biology,
+		insight + stats.insight,
+		data + stats.data,
+		computers + stats.computers,
+		tactics + stats.tactics,
+		materials + stats.materials,
+		designing + stats.designing,
+		psionics + stats.psionics,
+		xenolinguistics + stats.xenolinguistics,
+		weaponry + stats.weaponry,
+		explosives + stats.explosives,
+		efficiency + stats.efficiency,
+		microelectronics + stats.microelectronics,
+		metallurgy + stats.metallurgy,
+		processing + stats.processing,
+		hacking + stats.hacking,
+		robotics + stats.robotics,
+		diligence + stats.diligence,
+		alienTech + stats.alienTech,
+		reverseEngineering + stats.reverseEngineering,
+		stealth + stats.stealth,
+		perception + stats.perception,
+		charisma + stats.charisma,
+		investigation + stats.investigation,
+		deception + stats.deception,
+		interrogation + stats.interrogation); }
+	UnitStats& operator-=(const UnitStats& stats) {
+		tu -= stats.tu;
+		stamina -= stats.stamina;
+		health -= stats.health;
+		bravery -= stats.bravery;
+		reactions -= stats.reactions;
+		firing -= stats.firing;
+		throwing -= stats.throwing;
+		strength -= stats.strength;
+		psiStrength -= stats.psiStrength;
+		psiSkill -= stats.psiSkill;
+		melee -= stats.melee;
+		mana -= stats.mana;
+		maneuvering -= stats.maneuvering;
+		missiles -= stats.missiles;
+		dogfight -= stats.dogfight;
+		tracking -= stats.tracking;
+		cooperation -= stats.cooperation;
+		beams -= stats.beams;
+		synaptic -= stats.synaptic;
+		gravity -= stats.gravity;
+		physics -= stats.physics;
+		chemistry -= stats.chemistry;
+		biology -= stats.biology;
+		insight -= stats.insight;
+		data -= stats.data;
+		materials -= stats.materials;
+		designing -= stats.designing;
+		psionics -= stats.psionics;
+		xenolinguistics -= stats.xenolinguistics;
+		weaponry -= stats.weaponry;
+		explosives -= stats.explosives;
+		efficiency -= stats.efficiency;
+		microelectronics -= stats.microelectronics;
+		metallurgy -= stats.metallurgy;
+		processing -= stats.processing;
+		hacking -= stats.hacking;
+		robotics -= stats.robotics;
+		diligence -= stats.diligence;
+		alienTech -= stats.alienTech;
+		reverseEngineering -= stats.reverseEngineering;
+		stealth -= stats.stealth;
+		perception -= stats.perception;
+		charisma -= stats.charisma;
+		investigation -= stats.investigation;
+		deception -= stats.deception;
+		interrogation -= stats.interrogation;
+		return *this;}
+	UnitStats operator-(const UnitStats& stats) const { return UnitStats(
+		tu - stats.tu,
+		stamina - stats.stamina,
+		health - stats.health,
+		bravery - stats.bravery,
+		reactions - stats.reactions,
+		firing - stats.firing,
+		throwing - stats.throwing,
+		strength - stats.strength,
+		psiStrength - stats.psiStrength,
+		psiSkill - stats.psiSkill,
+		melee - stats.melee,
+		mana - stats.mana,
+		maneuvering - stats.maneuvering,
+		missiles - stats.missiles,
+		dogfight - stats.dogfight,
+		tracking - stats.tracking,
+		cooperation - stats.cooperation,
+		beams - stats.beams,
+		synaptic - stats.synaptic,
+		gravity - stats.gravity,
+		physics - stats.physics,
+		chemistry - stats.chemistry,
+		biology - stats.biology,
+		insight - stats.insight,
+		data - stats.data,
+		computers - stats.computers,
+		tactics - stats.tactics,
+		materials - stats.materials,
+		designing - stats.designing,
+		psionics - stats.psionics,
+		xenolinguistics - stats.xenolinguistics,
+		weaponry - stats.weaponry,
+		explosives - stats.explosives,
+		efficiency - stats.efficiency,
+		microelectronics - stats.microelectronics,
+		metallurgy - stats.metallurgy,
+		processing - stats.processing,
+		hacking - stats.hacking,
+		robotics - stats.robotics,
+		diligence - stats.diligence,
+		alienTech - stats.alienTech,
+		reverseEngineering - stats.reverseEngineering,
+		stealth - stats.stealth,
+		perception - stats.perception,
+		charisma - stats.charisma,
+		investigation - stats.investigation,
+		deception - stats.deception,
+		interrogation - stats.interrogation); }
+	UnitStats operator-() const { return UnitStats(
+		-tu, -stamina, -health, -bravery, -reactions, -firing, -throwing, -strength, -psiStrength, -psiSkill, -melee, -mana,
+		-maneuvering, -missiles, -dogfight, -tracking, -cooperation, -beams, -synaptic, -gravity,
+		-physics, -chemistry, -biology, -insight, -data, -computers, -tactics, -materials, -designing, -psionics, -xenolinguistics,
+		-weaponry, -explosives, -efficiency, -microelectronics, -metallurgy, -processing, -hacking, -robotics, -diligence, -alienTech, -reverseEngineering,
+		-stealth, -perception, -charisma, -investigation, -deception, -interrogation); }
+	void merge(const UnitStats& stats) {
+		tu = (stats.tu ? stats.tu : tu);
+		stamina = (stats.stamina ? stats.stamina : stamina);
+		health = (stats.health ? stats.health : health);
+		bravery = (stats.bravery ? stats.bravery : bravery);
+		reactions = (stats.reactions ? stats.reactions : reactions);
+		firing = (stats.firing ? stats.firing : firing);
+		throwing = (stats.throwing ? stats.throwing : throwing);
+		strength = (stats.strength ? stats.strength : strength);
+		psiStrength = (stats.psiStrength ? stats.psiStrength : psiStrength);
+		psiSkill = (stats.psiSkill ? stats.psiSkill : psiSkill);
+		melee = (stats.melee ? stats.melee : melee);
+		mana = (stats.mana ? stats.mana : mana);
+		maneuvering = (stats.maneuvering ? stats.maneuvering : maneuvering);
+		missiles = (stats.missiles ? stats.missiles : missiles);
+		dogfight = (stats.dogfight ? stats.dogfight : dogfight);
+		tracking = (stats.tracking ? stats.tracking : tracking);
+		cooperation = (stats.cooperation ? stats.cooperation : cooperation);
+		beams = (stats.beams ? stats.beams : beams);
+		synaptic = (stats.synaptic ? stats.synaptic : synaptic);
+		gravity = (stats.gravity ? stats.gravity : gravity);
+		physics = (stats.physics ? stats.physics : physics);
+		chemistry = (stats.chemistry ? stats.chemistry : chemistry);
+		biology = (stats.biology ? stats.biology : biology);
+		insight = (stats.insight ? stats.insight : insight);
+		data = (stats.data ? stats.data : data);
+		computers = (stats.computers ? stats.computers : computers);
+		tactics = (stats.tactics ? stats.tactics : tactics);
+		materials = (stats.materials ? stats.materials : materials);
+		designing = (stats.designing ? stats.designing : designing);
+		psionics = (stats.psionics ? stats.psionics : psionics);
+		xenolinguistics = (stats.xenolinguistics ? stats.xenolinguistics : xenolinguistics);
+		weaponry = (stats.weaponry ? stats.weaponry : weaponry);
+		explosives = (stats.explosives ? stats.explosives : explosives);
+		efficiency = (stats.efficiency ? stats.efficiency : efficiency);
+		microelectronics = (stats.microelectronics ? stats.microelectronics : microelectronics);
+		metallurgy = (stats.metallurgy ? stats.metallurgy : metallurgy);
+		processing = (stats.processing ? stats.processing : processing);
+		hacking = (stats.hacking ? stats.hacking : hacking);
+		robotics = (stats.robotics ? stats.robotics : robotics);
+		diligence = (stats.diligence ? stats.diligence : diligence);
+		alienTech = (stats.alienTech ? stats.alienTech : alienTech);
+		reverseEngineering = (stats.reverseEngineering ? stats.reverseEngineering : reverseEngineering);
+		stealth = (stats.stealth ? stats.stealth : stealth);
+		perception = (stats.perception ? stats.perception : perception);
+		charisma = (stats.charisma ? stats.charisma : charisma);
+		investigation = (stats.investigation ? stats.investigation : investigation);
+		deception = (stats.deception ? stats.deception : deception);
+		interrogation = (stats.interrogation ? stats.interrogation : interrogation);
+	}
 
+	bool empty() const
+	{
+		return !(bravery || reactions || firing || psiSkill || psiStrength || melee || throwing || mana ||
+			maneuvering || missiles || dogfight || cooperation || tracking || beams ||
+			synaptic || gravity || physics || chemistry || biology || insight || data || computers || tactics ||
+			materials || designing || psionics || xenolinguistics ||
+			weaponry || explosives || efficiency || microelectronics || metallurgy || processing ||
+			hacking || robotics || diligence || alienTech || reverseEngineering ||
+			stealth || perception || charisma || investigation || deception || interrogation);
+	}
 	template<typename Func>
 	static void fieldLoop(Func f)
 	{
 		constexpr static Ptr allFields[] =
 		{
-			&UnitStats::tu, &UnitStats::stamina,
-			&UnitStats::health, &UnitStats::bravery,
-			&UnitStats::reactions, &UnitStats::firing,
-			&UnitStats::throwing, &UnitStats::strength,
-			&UnitStats::psiStrength, &UnitStats::psiSkill,
-			&UnitStats::melee, &UnitStats::mana,
+			&UnitStats::tu, &UnitStats::stamina, &UnitStats::health, &UnitStats::bravery,
+			&UnitStats::reactions, &UnitStats::firing, &UnitStats::throwing, &UnitStats::strength,
+			&UnitStats::psiStrength, &UnitStats::psiSkill, &UnitStats::melee, &UnitStats::mana,
+			&UnitStats::maneuvering, &UnitStats::missiles, &UnitStats::dogfight, &UnitStats::tracking,
+			&UnitStats::cooperation, &UnitStats::beams, &UnitStats::synaptic, &UnitStats::gravity,
+			&UnitStats::physics, &UnitStats::chemistry, &UnitStats::biology, &UnitStats::insight, &UnitStats::data, &UnitStats::computers,& UnitStats::tactics,
+			&UnitStats::materials, &UnitStats::designing, &UnitStats::psionics, &UnitStats::xenolinguistics,
+			&UnitStats::weaponry, &UnitStats::explosives, &UnitStats::efficiency, &UnitStats::microelectronics, &UnitStats::metallurgy, &UnitStats::processing,
+			&UnitStats::hacking, &UnitStats::robotics, &UnitStats::diligence, &UnitStats::alienTech, &UnitStats::reverseEngineering,
+			&UnitStats::stealth, &UnitStats::perception, &UnitStats::charisma, &UnitStats::investigation, &UnitStats::deception, &UnitStats::interrogation
 		};
 
 		for (Ptr p : allFields)
 		{
 			f(p);
 		}
+	}
+
+	static std::string getStatString(Type UnitStats::* t, StatStringType type = STATSTR_UC)
+	{
+		constexpr static std::pair<Ptr, const char*> statStings[] =
+		{
+			{&UnitStats::tu, "STR_TIME_UNITS"},
+			{&UnitStats::stamina, "STR_STAMINA"},
+			{&UnitStats::health, "STR_HEALTH"},
+			{&UnitStats::bravery, "STR_BRAVERY"},
+			{&UnitStats::reactions, "STR_REACTIONS"},
+			{&UnitStats::firing, "STR_FIRING_ACCURACY"},
+			{&UnitStats::throwing, "STR_THROWING_ACCURACY"},
+			{&UnitStats::strength, "STR_STRENGTH"},
+			{&UnitStats::psiStrength, "STR_PSIONIC_STRENGTH"},
+			{&UnitStats::psiSkill, "STR_PSIONIC_SKILL"},
+			{&UnitStats::melee, "STR_MELEE_ACCURACY"},
+			{&UnitStats::mana, "STR_MANA_POOL"},
+			{&UnitStats::maneuvering, "STR_MANEUVERING"},
+			{&UnitStats::missiles, "STR_MISSILE_OPERATION"},
+			{&UnitStats::dogfight, "STR_DOGFIGHT"},
+			{&UnitStats::tracking, "STR_TRACKING"},
+			{&UnitStats::cooperation, "STR_COOPERATION"},
+			{&UnitStats::beams, "STR_BEAMS_OPERATION"},
+			{&UnitStats::synaptic, "STR_SYNAPTIC_CONNECTIVITY"},
+			{&UnitStats::gravity, "STR_GRAVITY_MANIPULATION"},
+			{&UnitStats::physics, "STR_PHYSICS"},
+			{&UnitStats::chemistry, "STR_CHEMISTRY"},
+			{&UnitStats::biology, "STR_BIOLOGY"},
+			{&UnitStats::insight, "STR_INSIGHT"},
+			{&UnitStats::data, "STR_DATA_ANALYSIS"},
+			{&UnitStats::computers, "STR_COMPUTER_SCIENCE"},
+			{&UnitStats::tactics, "STR_TACTICS"},
+			{&UnitStats::materials, "STR_MATERIAL_SCIENCE"},
+			{&UnitStats::designing, "STR_DESIGNING"},
+			{&UnitStats::psionics, "STR_PSIONICS"},
+			{&UnitStats::xenolinguistics, "STR_XENOLINGUISTICS"},
+			{&UnitStats::weaponry, "STR_WEAPONRY"},
+			{&UnitStats::explosives, "STR_EXPLOSIVES"},
+			{&UnitStats::efficiency, "STR_EFFICIENCY"},
+			{&UnitStats::microelectronics, "STR_MICROELECTRONICS"},
+			{&UnitStats::metallurgy, "STR_METALLURGY"},
+			{&UnitStats::processing, "STR_PROCESSING"},
+			{&UnitStats::hacking, "STR_HACKING"},
+			{&UnitStats::robotics, "STR_ROBOTICS"},
+			{&UnitStats::diligence, "STR_DILIGENCE"},
+			{&UnitStats::alienTech, "STR_ALIEN_TECH"},
+			{&UnitStats::reverseEngineering, "STR_REVERSE_ENGINEERING"},
+			{&UnitStats::stealth, "STR_STEALTH"},
+			{&UnitStats::perception, "STR_PERCEPTION"},
+			{&UnitStats::charisma, "STR_CHARISMA"},
+			{&UnitStats::investigation, "STR_INVESTIGATION"},
+			{&UnitStats::deception, "STR_DECEPTION"},
+			{&UnitStats::interrogation, "STR_INTERROGATION"}
+		};
+
+		for (auto& p : statStings)
+		{
+			if (t == p.first)
+			{
+				std::string suffix;
+				switch (type)
+				{
+				case STATSTR_UC:
+					suffix = "_UC";
+					break;
+				case STATSTR_LC:
+					suffix = "_LC";
+					break;
+				case STATSTR_SHORT:
+					suffix = "_SHORT";
+					break;
+				case STATSTR_ABBREV:
+					suffix = "_ABBREV";
+					break;
+				}
+
+				return p.second + suffix;
+			}
+		}
+		return "NONE";
 	}
 
 	static UnitStats templateMerge(const UnitStats& origStats, const UnitStats& fixedStats)
@@ -241,7 +629,7 @@ struct UnitStats
 	static UnitStats obeyFixedMinimum(const UnitStats &a)
 	{
 		// minimum 1 for health, minimum 0 for other stats (note to self: it might be worth considering minimum 10 for bravery in the future)
-		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		static const UnitStats fixedMinimum = UnitStats(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		return max(a, fixedMinimum);
 	}
 
@@ -430,24 +818,29 @@ private:
 	std::string _civilianRecoveryTypeName, _spawnedPersonName, _liveAlienName;
 	const RuleSoldier* _civilianRecoverySoldierType = nullptr;
 	const RuleItem* _civilianRecoveryItemType = nullptr;
-	YAML::Node _spawnedSoldier;
+	YAML::YamlString _spawnedSoldier;
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
-	UnitStats _stats;
+	UnitStats _stats, _statsRandom;
+	std::vector<SoldierRole> _roles;
+	std::string _prisonerName;
+	const RulePrisoner* _prisoner = nullptr;
 	std::string _armorName;
 	const Armor* _armor;
 	int _standHeight, _kneelHeight, _floatHeight;
 	std::vector<int> _deathSound, _panicSound, _berserkSound, _aggroSound;
-	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound;
+	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound, _spawnedUnitSound;
 	int _value, _moraleLossWhenKilled, _moveSound;
 	int _intelligence, _aggression, _spotter, _sniper, _energyRecovery;
 	SpecialAbility _specab;
+	SpecialObjective _specialObjective;
 	const RuleItem* _liveAlien = nullptr;
 	const Unit *_spawnUnit = nullptr;
+	const Unit* _altUnit = nullptr;
 	std::string _spawnUnitName;
 	bool _livingWeapon;
-	std::string _meleeWeapon, _psiWeapon;
+	std::string _meleeWeapon, _psiWeapon, _altRecoveredUnit;
 	std::vector<std::vector<std::string> > _builtInWeaponsNames;
 	std::vector<std::vector<const RuleItem*> > _builtInWeapons;
 	std::vector<WeightedOptions*> _weightedBuiltInWeapons;
@@ -463,13 +856,15 @@ private:
 	bool _canBeMindControlled;
 	int _berserkChance;
 
+	void loadRoles(const std::vector<int>& r);
+
 public:
 	/// Creates a blank unit ruleset.
 	Unit(const std::string &type);
 	/// Cleans up the unit ruleset.
 	~Unit();
 	/// Loads the unit data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
@@ -489,10 +884,12 @@ public:
 	/// Gets the custom name of the "spawned person".
 	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
-	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 
 	/// Gets the unit's stats.
 	UnitStats *getStats();
+	/// Gets the unit's random part of stats.
+	UnitStats* getRandomStats();
 	/// Gets the unit's height when standing.
 	int getStandHeight() const;
 	/// Gets the unit's height when kneeling.
@@ -505,10 +902,14 @@ public:
 	std::string getRace() const;
 	/// Gets the alien rank.
 	std::string getRank() const;
+	/// Gets the unit's role.
+	std::vector<SoldierRole> getRoles() const { return _roles; }
+	/// Gets the prisoner type.
+	const RulePrisoner* getPrisoner() const { return _prisoner; }
 	/// Gets the value - for score calculation.
 	int getValue() const;
 	/// Percentage modifier for morale loss when this unit is killed.
-	int getMoraleLossWhenKilled() { return _moraleLossWhenKilled; };
+	int getMoraleLossWhenKilled() { return _moraleLossWhenKilled; }
 	/// Gets the death sound id.
 	const std::vector<int> &getDeathSounds() const;
 	/// Gets the unit's panic sounds.
@@ -523,6 +924,8 @@ public:
 	const std::vector<int> &getSelectWeaponSounds() const { return _selectWeaponSound; }
 	/// Gets the unit's "annoyed" sounds.
 	const std::vector<int> &getAnnoyedSounds() const { return _annoyedSound; }
+	/// Gets the unit's "spawned unit" sounds.
+	const std::vector<int>& getSpawnedUnitSounds() const { return _spawnedUnitSound; }
 	/// Gets the move sound id.
 	int getMoveSound() const;
 	/// Gets the intelligence. This is the number of turns AI remembers your troop positions.
@@ -557,6 +960,10 @@ public:
 	bool getCapturable() const;
 	/// Checks if this unit can surrender.
 	bool canSurrender() const;
+	/// Gets special objective of a unit.
+	SpecialObjective getSpecialObjective() const { return _specialObjective; }
+	/// Gets alternative unit for recovery.
+	const Unit* getAltUnit() const { return _altUnit; };
 	/// Checks if this unit surrenders automatically, if all other units surrendered too.
 	bool autoSurrender() const;
 	bool isLeeroyJenkins() const { return _isLeeroyJenkins; };
@@ -587,49 +994,8 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 };
 
-}
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, UnitStats* val);
+void write(ryml::NodeRef* n, UnitStats const& val);
 
-namespace YAML
-{
-	template<>
-	struct convert<OpenXcom::UnitStats>
-	{
-		static Node encode(const OpenXcom::UnitStats& rhs)
-		{
-			Node node;
-			node["tu"] = rhs.tu;
-			node["stamina"] = rhs.stamina;
-			node["health"] = rhs.health;
-			node["bravery"] = rhs.bravery;
-			node["reactions"] = rhs.reactions;
-			node["firing"] = rhs.firing;
-			node["throwing"] = rhs.throwing;
-			node["strength"] = rhs.strength;
-			node["psiStrength"] = rhs.psiStrength;
-			node["psiSkill"] = rhs.psiSkill;
-			node["melee"] = rhs.melee;
-			node["mana"] = rhs.mana;
-			return node;
-		}
-
-		static bool decode(const Node& node, OpenXcom::UnitStats& rhs)
-		{
-			if (!node.IsMap())
-				return false;
-
-			rhs.tu = node["tu"].as<int>(rhs.tu);
-			rhs.stamina = node["stamina"].as<int>(rhs.stamina);
-			rhs.health = node["health"].as<int>(rhs.health);
-			rhs.bravery = node["bravery"].as<int>(rhs.bravery);
-			rhs.reactions = node["reactions"].as<int>(rhs.reactions);
-			rhs.firing = node["firing"].as<int>(rhs.firing);
-			rhs.throwing = node["throwing"].as<int>(rhs.throwing);
-			rhs.strength = node["strength"].as<int>(rhs.strength);
-			rhs.psiStrength = node["psiStrength"].as<int>(rhs.psiStrength);
-			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
-			rhs.melee = node["melee"].as<int>(rhs.melee);
-			rhs.mana = node["mana"].as<int>(rhs.mana);
-			return true;
-		}
-	};
 }

@@ -21,12 +21,12 @@ OPT SDLKey keyOk, keyCancel, keyScreenshot, keyFps, keyQuickLoad, keyQuickSave;
 
 // Geoscape options
 OPT int geoClockSpeed, dogfightSpeed, geoScrollSpeed, geoDragScrollButton, geoscapeScale;
-OPT bool includePrimeStateInSavedLayout, anytimePsiTraining, weaponSelfDestruction, retainCorpses, craftLaunchAlways,
+OPT bool includePrimeStateInSavedLayout, anytimePsiTraining, weaponSelfDestruction, retainCorpses, craftLaunchAlways, 
 	globeSurfaceCache, globeSeasons, globeDetail, globeRadarLines, globeFlightPaths, globeAllRadarsOnBaseBuild,
-	storageLimitsEnforced, canSellLiveAliens, canTransferCraftsWhileAirborne, customInitialBase, aggressiveRetaliation, geoDragScrollInvert,
+	storageLimitsEnforced, containmentLimitsEnforced, canSellLiveAliens, canTransferCraftsWhileAirborne, customInitialBase, aggressiveRetaliation, geoDragScrollInvert,
 	allowBuildingQueue, showFundsOnGeoscape, psiStrengthEval, allowPsiStrengthImprovement, fieldPromotions, meetingPoint;
 OPT SDLKey keyGeoLeft, keyGeoRight, keyGeoUp, keyGeoDown, keyGeoZoomIn, keyGeoZoomOut, keyGeoSpeed1, keyGeoSpeed2, keyGeoSpeed3, keyGeoSpeed4, keyGeoSpeed5, keyGeoSpeed6,
-	keyGeoIntercept, keyGeoBases, keyGeoGraphs, keyGeoUfopedia, keyGeoOptions, keyGeoFunding, keyGeoToggleDetail, keyGeoToggleRadar,
+	keyGeoIntercept, keyGeoBases, keyGeoGraphs, keyDiplomacy, keyGeoUfopedia, keyGeoOptions, keyGeoFunding, keyGeoToggleDetail, keyGeoToggleRadar,
 	keyBaseSelect1, keyBaseSelect2, keyBaseSelect3, keyBaseSelect4, keyBaseSelect5, keyBaseSelect6, keyBaseSelect7, keyBaseSelect8;
 
 // Battlescape options
@@ -45,7 +45,7 @@ keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZero
 // Extra hotkeys (OXCE)
 OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment,
 	keyGraphsZoomIn, keyGraphsZoomOut,
-	keyToggleQuickSearch,
+	keyToggleQuickSearch, keyInstaSave,
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
 	keyMarkAllAsSeen,
 	keySellAll, keySellAllButOne,
@@ -63,7 +63,7 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack;
 OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers, keyBasescapeCrafts,
 	keyBasescapeFacilities, keyBasescapeResearch, keyBasescapeManufacture, keyBasescapeTransfer,
-	keyBasescapePurchase, keyBasescapeSell;
+	keyBasescapePurchase, keyBasescapeSell, keyBasescapeCovertOperations, keyBasescapeDiplomacy, keyBasescapeIntel;
 
 // OXCE, accessible via GUI
 OPT bool oxceUpdateCheck;
@@ -71,7 +71,9 @@ OPT int autosaveSlots;
 OPT int oxceGeoAutosaveFrequency;
 OPT int oxceGeoAutosaveSlots;
 OPT bool oxceLinks;
+OPT bool oxceLinksDisableTextEdit;
 OPT bool oxceFatFingerLinks;
+OPT bool oxceBattleTouchButtonsEnabled;
 OPT bool oxceQuickSearchButton;
 OPT bool oxceHighlightNewTopics;
 OPT bool oxcePediaShowClipSize;
@@ -100,9 +102,11 @@ OPT bool oxcePlayBriefingMusicDuringEquipment;
 OPT int oxceNightVisionColor;
 OPT int oxceAutoNightVisionThreshold;
 OPT int oxceShowAccuracyOnCrosshair;
+OPT int oxceReactionFireThreshold;
 OPT bool oxceAutoSell;
 OPT bool oxceAutomaticPromotions;
 OPT bool oxceEnableOffCentreShooting;
+OPT bool oxceUniformShootingSpread;
 OPT int oxceCrashedOrLanded;
 
 // OXCE hidden, accessible only via options.cfg
@@ -116,7 +120,6 @@ OPT bool oxceFirstPersonViewFisheyeProjection;
 OPT bool oxceThumbButtons;
 OPT int oxceThrottleMouseMoveEvent;
 OPT bool oxceDisableThinkingProgressBar;
-OPT bool oxceSortDiscoveredVectorByName;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
@@ -130,9 +133,18 @@ OPT int oxceStartUpTextMode;
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
 OPT bool oxceGeoShowScoreInsteadOfFunds;
+OPT bool oxceGeoEnableTrainingIndicator;
+OPT bool oxceGeoSuppressRedundantHKAlert;
+OPT bool oxceGeoSuppressLandingWithoutEquipment;
+OPT bool oxceGeoGoToNearestBase;
+OPT bool oxceGeoSortCraftByDistanceToTarget;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
-OPT int oxceBaseManufactureInfinityButton;
+OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
+OPT bool oxceBaseFilterResearchable;
+OPT bool oxceBaseManufactureFallbackButton;
+OPT bool oxceBaseManufactureInfinityButton;
+OPT bool oxceBaseTouchButtons;
 
 OPT bool oxceDisableAlienInventory;
 OPT bool oxceDisableHitLog;
@@ -146,9 +158,16 @@ OPT int oxceTogglePersonalLightType;
 OPT int oxceToggleNightVisionType;
 OPT int oxceToggleBrightnessType;
 
+OPT bool oxceShowBurningAsWounded;
+OPT bool oxceDisableInfoOnThrowCursor;
+OPT bool oxceSwapDontReselectActions;
 OPT bool oxceEnableUnitResponseSounds;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
 OPT bool oxceInventoryShowUnitSlot;
+OPT bool oxceReplaceNotesLink;
+
+OPT bool oxceInventorySplitScrollButton;
+OPT bool oxceInventoryDropItemOverPaperdoll;
 
 OPT int oxceMaxEquipmentLayoutTemplates;
 

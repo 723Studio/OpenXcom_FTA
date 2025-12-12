@@ -36,7 +36,8 @@ class ManufactureState : public State
 {
 private:
 	Base *_base;
-	TextButton *_btnNew, *_btnOk;
+	bool _ftaUi;
+	TextButton *_btnNew, *_btnOk, *_btnEngineers;
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtFunds, *_txtItem, *_txtEngineers, *_txtProduced, *_txtCost, *_txtTimeLeft;
 	TextList *_lstManufacture;
@@ -50,6 +51,8 @@ public:
 	~ManufactureState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Handler for clicking the Scientists button.
+	void btnEngineersClick(Action* action);
 	/// Handler for opening the Global Production UI.
 	void onCurrentGlobalProductionClick(Action *action);
 	/// Updates the production list.

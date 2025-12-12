@@ -38,6 +38,7 @@ class GeoscapeState;
 class Craft;
 class Ufo;
 class CraftWeaponProjectile;
+class Soldier;
 
 /**
  * Shows a dogfight (interception) between a
@@ -54,27 +55,32 @@ private:
 	ImageButton *_mode;
 	InteractiveSurface *_btnMinimizedIcon;
 	Text *_txtAmmo[RuleCraft::WeaponMax], *_txtDistance, *_txtStatus, *_txtInterceptionNumber;
+	Text *_txtOceanIndicator;
 	Craft *_craft;
 	Ufo *_ufo;
-	bool _ufoIsAttacking, _disableDisengage, _disableCautious, _craftIsDefenseless, _selfDestructPressed;
-	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax];
+	std::vector<Soldier*> _pilots;
+	bool _ufoIsAttacking, _missileCraft, _missileImpact;
+	bool _disableDisengage, _disableStandoff, _disableCautious,  _disableStandard, _disableAggressive;
+	bool _craftIsDefenseless, _selfDestructPressed, _panicing;
+	int _timeout, _currentDist, _targetDist, _weaponFireInterval[RuleCraft::WeaponMax], _weaponFireCountdown[RuleCraft::WeaponMax], _panicTimeout;
 	bool _end, _endUfoHandled, _endCraftHandled, _ufoBreakingOff, _destroyUfo, _destroyCraft, _weaponEnabled[RuleCraft::WeaponMax];
 	bool _minimized, _endDogfight, _animatingHit, _waitForPoly, _waitForAltitude;
 	std::vector<CraftWeaponProjectile*> _projectiles;
 	static const int _ufoBlobs[8][13][13];
 	static const int _projectileBlobs[4][6][3];
-	int _ufoSize, _craftHeight, _currentCraftDamageColor, _interceptionNumber;
+	int _ufoSize, _ufoBlobSize, _craftHeight, _currentCraftDamageColor, _interceptionNumber;
 	size_t _interceptionsCount;
 	int _x, _y, _minimizedIconX, _minimizedIconY;
 	int _weaponNum;
-	int _pilotAccuracyBonus, _pilotDodgeBonus, _pilotApproachSpeedModifier, _craftAccelerationBonus;
+	int _pilotDodgeBonus, _craftAccelerationBonus, _pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery, _squadTacticBonus;
 	bool _firedAtLeastOnce, _experienceAwarded;
-	bool _delayedRecolorDone;
+	bool _delayedRecolorDone, _fta;
 	// craft min/max, radar min/max, damage min/max, shield min/max
 	int _colors[13];
 	// Ends the dogfight.
 	void endDogfight();
 	bool _tractorLockedOn[RuleCraft::WeaponMax];
+	void updateOceanIndicator();
 
 public:
 	/// Creates the Dogfight state.
@@ -93,6 +99,8 @@ public:
 	void fireWeapon(int i);
 	// Fires UFO weapon.
 	void ufoFireWeapon();
+	// Handles pilot panic.
+	void handlePanic(bool damaged = false);
 	// Sets the craft to minimum distance.
 	void minimumDistance();
 	// Sets the craft to maximum distance.
@@ -172,7 +180,7 @@ public:
 	/// Waits until the UFO reaches the right altitude.
 	bool getWaitForAltitude() const;
 	/// Award experience to the pilots.
-	void awardExperienceToPilots();
+	//void awardExperienceToPilots();
 };
 
 }

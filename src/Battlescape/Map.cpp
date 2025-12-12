@@ -44,6 +44,7 @@
 #include "../Savegame/Node.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
+#include "../Savegame/BattleObject.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleInterface.h"
@@ -109,10 +110,10 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight, bool keepObstacleTimerRunning) : InteractiveSurface(width, height, x, y),
-	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _isAltPressed(false), _isCtrlPressed(false),
+	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _hackingObjectPointer(0), _samplingObjectPointer(0), _missionPointer(0), _isAltPressed(false), _isCtrlPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
-	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
+	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
 {
 	// TODO: extract to a better place later
 	for (const auto& pair : Options::mods)
@@ -181,6 +182,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight, 
 		_obstacleTimer->onTimer((SurfaceHandler)&Map::disableObstacles);
 	}
 
+	_showInfoOnCursor = (Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2;
 	_txtAccuracy = new Text(44, 18, 0, 0);
 	_txtAccuracy->setSmall();
 	_txtAccuracy->setPalette(_game->getScreen()->getPalette());
@@ -259,6 +261,8 @@ Map::~Map()
 	delete _fadeTimer;
 	delete _obstacleTimer;
 	delete _arrow;
+	delete _hackingObjectPointer;
+	delete _samplingObjectPointer;
 	delete _message;
 	delete _camera;
 	delete _txtAccuracy;
@@ -270,25 +274,93 @@ Map::~Map()
 void Map::init()
 {
 	// load the tiny arrow into a surface
-	int f = Palette::blockOffset(1); // yellow
-	int b = 15; // black
-	int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   b, b, b, f, f, f, b, b, b,
-					   b, f, f, f, f, f, f, f, b,
-					   0, b, f, f, f, f, f, b, 0,
-					   0, 0, b, f, f, f, b, 0, 0,
-					   0, 0, 0, b, f, b, 0, 0, 0,
-					   0, 0, 0, 0, b, 0, 0, 0, 0 };
+	{
+		int f = Palette::blockOffset(1); // yellow
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
 
-	_arrow = new Surface(9, 9);
-	_arrow->setPalette(this->getPalette());
-	_arrow->lock();
-	for (int y = 0; y < 9;++y)
-		for (int x = 0; x < 9; ++x)
-			_arrow->setPixel(x, y, pixels[x+(y*9)]);
-	_arrow->unlock();
+		_arrow = new Surface(9, 9);
+		_arrow->setPalette(this->getPalette());
+		_arrow->lock();
+		for (int y = 0; y < 9;++y)
+			for (int x = 0; x < 9; ++x)
+				_arrow->setPixel(x, y, pixels[x+(y*9)]);
+		_arrow->unlock();
+	}
+	// load mission objective pointer into a surface
+	{
+		int f = Palette::blockOffset(3); // green
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+					       0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_missionPointer = new Surface(9, 9);
+		_missionPointer->setPalette(this->getPalette());
+		_missionPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_missionPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_missionPointer->unlock();
+	}
+	// load hacking battle object pointer into a surface
+	{
+		int f = Palette::blockOffset(14); // gray
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_hackingObjectPointer = new Surface(9, 9);
+		_hackingObjectPointer->setPalette(this->getPalette());
+		_hackingObjectPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_hackingObjectPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_hackingObjectPointer->unlock();
+	}
+	// load sampling battle object pointer into a surface
+	{
+		int f = Palette::blockOffset(13); // blue
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   b, b, b, f, f, f, b, b, b,
+						   b, f, f, f, f, f, f, f, b,
+						   0, b, f, f, f, f, f, b, 0,
+						   0, 0, b, f, f, f, b, 0, 0,
+						   0, 0, 0, b, f, b, 0, 0, 0,
+						   0, 0, 0, 0, b, 0, 0, 0, 0 };
+
+		_samplingObjectPointer = new Surface(9, 9);
+		_samplingObjectPointer->setPalette(this->getPalette());
+		_samplingObjectPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_samplingObjectPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_samplingObjectPointer->unlock();
+	}
 
 	_projectile = 0;
 	if (_save->getDepth() == 0)
@@ -352,8 +424,13 @@ void Map::draw()
 	{
 		for (auto* explosion : _explosions)
 		{
+			if (explosion->isBig())
+			{
+				_explosionInFOV = true;
+				break;
+			}
 			t = _save->getTile(explosion->getPosition().toTile());
-			if (t && (explosion->isBig() || t->getVisible()))
+			if (t && t->getVisible())
 			{
 				_explosionInFOV = true;
 				break;
@@ -762,7 +839,8 @@ void Map::drawTerrain(Surface *surface)
 	int dummy;
 	BattleUnit *movingUnit = _save->getTileEngine()->getMovingUnit();
 	int tileShade, tileColor, obstacleShade;
-	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0);
+	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0,
+		_isTFTD ? ArrowColorsTFTD[1] : ArrowColorsUFO[1], _isTFTD ? ArrowColorsTFTD[2] : ArrowColorsUFO[2]);
 	ItemSprite itemSprite(surface, _game->getMod(), _save, _animFrame);
 
 	const int halfAnimFrame = (_animFrame / 2) % 4;
@@ -839,7 +917,7 @@ void Map::drawTerrain(Surface *surface)
 			}
 			else
 			{
-				bool enough;
+				bool enough = true;
 				do
 				{
 					enough = true;
@@ -885,6 +963,11 @@ void Map::drawTerrain(Surface *surface)
 	if (!_camera->getShowAllLayers())
 	{
 		endZ = std::min(endZ, _camera->getViewLevel());
+	}
+	if (_camera->getShowSingleLayer())
+	{
+		beginZ = _camera->getViewLevel();
+		endZ = _camera->getViewLevel();
 	}
 
 
@@ -953,10 +1036,11 @@ void Map::drawTerrain(Surface *surface)
 					}
 
 					auto* unit = tile->getUnit();
+					auto battleObject = tile->getBattleObject();
 
 					// Draw cursor back
 					if (_cursorType != CT_NONE && _selectorX > itX - _cursorSize && _selectorY > itY - _cursorSize && _selectorX < itX+1 && _selectorY < itY+1 &&
-						((_save->getMapEditorState() && !_save->getMapEditorState()->getMouseOverIcons()) || 
+						((_save->getMapEditorState() && !_save->getMapEditorState()->getMouseOverIcons()) ||
 						(_save->getBattleState() && !_save->getBattleState()->getMouseOverIcons())))
 					{
 						if (_camera->getViewLevel() == itZ)
@@ -967,6 +1051,19 @@ void Map::drawTerrain(Surface *surface)
 									frameNumber = halfAnimFrameRest; // yellow box
 								else
 									frameNumber = 0; // red box
+								// FTA Hacking Cursor
+								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
+								{
+									if ((battleObject && battleObject->canBeHacked()) ||
+										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))
+									{
+										frameNumber = halfAnimFrameRest; // yellow box
+									}
+									else
+									{
+										frameNumber = 0;
+									}
+								}
 							}
 							else
 							{
@@ -1316,7 +1413,7 @@ void Map::drawTerrain(Surface *surface)
 					}
 					// Draw cursor front
 					if (_cursorType != CT_NONE && _selectorX > itX - _cursorSize && _selectorY > itY - _cursorSize && _selectorX < itX+1 && _selectorY < itY+1 &&
-						((_save->getMapEditorState() && !_save->getMapEditorState()->getMouseOverIcons()) || 
+						((_save->getMapEditorState() && !_save->getMapEditorState()->getMouseOverIcons()) ||
 						(_save->getBattleState() && !_save->getBattleState()->getMouseOverIcons())))
 					{
 						if (_camera->getViewLevel() == itZ)
@@ -1327,6 +1424,19 @@ void Map::drawTerrain(Surface *surface)
 									frameNumber = 3 + halfAnimFrameRest; // yellow box
 								else
 									frameNumber = 3; // red box
+								// FTA Hacking cursor
+								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
+								{
+									if((battleObject && battleObject->canBeHacked()) ||
+										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))
+									{
+										frameNumber = 3 + halfAnimFrameRest; // yellow box
+									}
+									else
+									{
+										frameNumber = 3; // red box
+									}
+								}
 							}
 							else
 							{
@@ -1339,8 +1449,7 @@ void Map::drawTerrain(Surface *surface)
 							Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, 0);
 
 							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
-							if ((_cursorType == CT_AIM || _cursorType == CT_PSI || _cursorType == CT_WAYPOINT) &&
-								((Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2))
+							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
 							{
 								BattleAction *action = _save->getBattleGame()->getCurrentAction();
 								const RuleItem *weapon = action->weapon->getRules();
@@ -1349,47 +1458,30 @@ void Map::drawTerrain(Surface *surface)
 								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
 								int distance = (int)std::ceil(sqrt(float(distanceSq)));
 
-								if (_cursorType == CT_AIM)
+								if (_cursorType == CT_AIM || _cursorType == CT_THROW)
 								{
 									int accuracy = BattleUnit::getFiringAccuracy(attack, _game->getMod());
-									if (Options::battleUFOExtenderAccuracy)
+
 									{
-										int upperLimit = 200;
-										int lowerLimit = weapon->getMinRange();
-										switch (action->type)
-										{
-										case BA_AIMEDSHOT:
-											upperLimit = weapon->getAimRange();
-											break;
-										case BA_SNAPSHOT:
-											upperLimit = weapon->getSnapRange();
-											break;
-										case BA_AUTOSHOT:
-											upperLimit = weapon->getAutoRange();
-											break;
-										default:
-											break;
-										}
+										int upperLimit, lowerLimit;
+										int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
+
 										// at this point, let's assume the shot is adjusted and set the text amber.
 										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
 
 										if (distance > upperLimit)
 										{
-											accuracy -= (distance - upperLimit) * weapon->getDropoff();
+											accuracy -= (distance - upperLimit) * dropoff;
 										}
 										else if (distance < lowerLimit)
 										{
-											accuracy -= (lowerLimit - distance) * weapon->getDropoff();
+											accuracy -= (lowerLimit - distance) * dropoff;
 										}
 										else
 										{
 											// no adjustment made? set it to green.
 											_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
 										}
-									}
-									else
-									{
-										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
 									}
 
 									// Include LOS penalty for tiles in the unit's current view range
@@ -1427,7 +1519,10 @@ void Map::drawTerrain(Surface *surface)
 										}
 									}
 
-									bool outOfRange = weapon->isOutOfRange(distanceSq);
+									bool outOfRange = action->type == BA_THROW
+										? weapon->isOutOfThrowRange(distanceSq, _save->getDepth())
+										: weapon->isOutOfRange(distanceSq);
+
 									// zero accuracy or out of range: set it red.
 									if (accuracy <= 0 || outOfRange)
 									{
@@ -1435,7 +1530,7 @@ void Map::drawTerrain(Surface *surface)
 										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
 									}
 									ss << accuracy;
-									ss << "%";
+									//ss << "%"; //it is no percentage
 								}
 
 								//TODO: merge this code with `InventoryState::calculateCurrentDamageTooltip` as 90% is same or should be same
@@ -1571,7 +1666,8 @@ void Map::drawTerrain(Surface *surface)
 							}
 							if (!ignore)
 							{
-								int frame[6] = { 0, 0, 0, 11, 13, 15 };
+								int frame[7] = {0, 0, 0, 11, 13, 15, 17};
+								assert(_cursorType < std::size(frame) && "_cursorType value too large"); // array scope check
 								tmpSurface = _game->getMod()->getSurfaceSet("CURSOR.PCK")->getFrame(frame[_cursorType] + (_animFrame / 4) % 2);
 								Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, 0);
 							}
@@ -1789,6 +1885,62 @@ void Map::drawTerrain(Surface *surface)
 		}
 	}
 
+	//Draw arrows on items that are mission objective
+	for (BattleItem* item : *_save->getItems())
+	{
+		if (item->getRules()->isMissionObjective() && item->getOwner() == 0)
+		{
+			Tile* objTile = item->getTile();
+			if (!objTile)
+			{
+				continue; //for good
+			}
+			Position pos = objTile->getPosition();
+			if (pos.z <= _camera->getViewLevel() && objTile->getUnit() == 0 && objTile->isDiscovered(O_FLOOR))
+			{
+				_camera->convertMapToScreen(pos, &screenPosition);
+				screenPosition += _camera->getMapOffset();
+				Position offset;
+				offset.y += 5;//(getTerrainLevel(pos, 10) - 4);
+				if (this->getCursorType() != CT_NONE)
+				{
+					_missionPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_missionPointer->getWidth() / 2), screenPosition.y + offset.y - _missionPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+				}
+			}
+
+		}
+	}
+	//Draw arrows on hacking and sampling battle objects
+	for (BattleObject* ba : *_save->getBattleObjects())
+	{
+		if (!ba->wasUsed() && (ba->getRules()->getSamplingDefence() != 0 || ba->getRules()->getHackingDefence() != 0))
+		{
+			Position pos = ba->getPosition();
+			Tile* objTile = ba->getTile();
+			if (!objTile)
+			{
+				continue; //for good
+			}
+			if (pos.z <= _camera->getViewLevel() && !objTile->getUnit() && (objTile->isDiscovered(O_FLOOR) || objTile->isDiscovered(O_OBJECT)))
+			{
+				_camera->convertMapToScreen(pos, &screenPosition);
+				screenPosition += _camera->getMapOffset();
+				Position offset;
+				offset.y += 5;//(getTerrainLevel(pos, 10) - 4);
+				if (this->getCursorType() != CT_NONE)
+				{
+					if (_isAltPressed && ba->getRules()->getHackingDefence() != 0)
+					{
+						_hackingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_hackingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _hackingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					}
+					if (ba->getRules()->getSamplingDefence() != 0)
+					{
+						_samplingObjectPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_samplingObjectPointer->getWidth() / 2), screenPosition.y + offset.y - _samplingObjectPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+					}
+				}
+			}
+		}
+	}
 	delete _numWaypid;
 
 	// Draw craft deployment preview arrows
@@ -1815,8 +1967,6 @@ void Map::drawTerrain(Surface *surface)
 	{
 		// big explosions cause the screen to flash as bright as possible before any explosions are actually drawn.
 		// this causes everything to look like EGA for a single frame.
-		// Meridian: no frikin flashing!!
-		_flashScreen = false;
 		if (_flashScreen)
 		{
 			for (int x = 0, y = 0; x < surface->getWidth() && y < surface->getHeight();)
@@ -1888,7 +2038,7 @@ void Map::drawForMapEditor(Surface *surface, bool beforeTerrain)
 		Sint16 x[4] = {topLeft.x, topRight.x, bottomRight.x, bottomLeft.x};
 		Sint16 y[4] = {topLeft.y, topRight.y, bottomRight.y, bottomLeft.y};
 		surface->drawPolygon(x, y, 4, color);
-		
+
 		return;
 	}
 
@@ -1995,7 +2145,7 @@ void Map::drawForMapEditor(Surface *surface, bool beforeTerrain)
 			{
 				continue;
 			}
-			
+
 			// Draw lines and arrows for connections between nodes
 			Position startLinePos = screenPosition;
 			startLinePos.x += _spriteWidth / 2;
@@ -3090,6 +3240,9 @@ void Map::resetCameraSmoothing()
 void Map::setBlastFlash(bool flash)
 {
 	_flashScreen = flash;
+
+	// Meridian: no frikin flashing!!
+	_flashScreen = false;
 }
 
 /**

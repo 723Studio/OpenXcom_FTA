@@ -25,6 +25,7 @@ namespace OpenXcom
 class Base;
 class BaseFacility;
 class RuleBaseFacility;
+class Production;
 class BaseView;
 class TextButton;
 class Window;

@@ -18,7 +18,6 @@
  */
 #include "SoldierTransformationListState.h"
 #include <algorithm>
-#include <climits>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
@@ -88,6 +87,7 @@ SoldierTransformationListState::SoldierTransformationListState(Base *base, Combo
 	setWindowBackground(_window, "transformationList");
 
 	_btnOnlyEligible->setText(tr("STR_SHOW_ONLY_ELIGIBLE"));
+	_btnOnlyEligible->setPressed(Options::oxceBaseSoldierTransformationShowOnlyEligible);
 	_btnOnlyEligible->onMouseClick((ActionHandler)&SoldierTransformationListState::btnOnlyEligibleClick);
 
 	_btnOK->setText(tr("STR_OK"));
@@ -241,9 +241,37 @@ void SoldierTransformationListState::initList()
 		}
 
 		int eligibleSoldiers = 0;
-		for (const auto* soldier : *_base->getSoldiers())
+		for (auto* soldier : *_base->getSoldiers())
 		{
-			if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+			bool roleRankPassed = true;
+			if (!transformationRule->getRoleRankRequirments().empty())
+			{
+				for (auto req : transformationRule->getRoleRankRequirments())
+				{
+					if (soldier->getRoleRank(req.first) < req.second)
+					{
+						roleRankPassed = false;
+						break;
+					}
+				}
+			}
+
+			if (transformationRule->getForbiddenRole() != ROLE_NONE)
+			{
+				if (soldier->getRoleRank(transformationRule->getForbiddenRole()) > 0)
+				{
+					roleRankPassed = false;
+				}
+			}
+
+			if (!roleRankPassed)
+			{
+				continue;
+			}
+
+			if ((soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+				|| soldier->getCovertOperation() != 0
+				|| !soldier->getPendingTransformation().empty())
 			{
 				// soldiers outside of the base are not eligible
 				continue;
@@ -336,6 +364,8 @@ void SoldierTransformationListState::cbxSoldierStatusChange(Action *)
  */
 void SoldierTransformationListState::btnOnlyEligibleClick(Action *)
 {
+	Options::oxceBaseSoldierTransformationShowOnlyEligible = _btnOnlyEligible->getPressed();
+
 	initList();
 }
 

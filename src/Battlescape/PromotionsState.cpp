@@ -24,6 +24,7 @@
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
@@ -37,7 +38,7 @@ namespace OpenXcom
  * Initializes all the elements in the Promotions screen.
  * @param game Pointer to the core game.
  */
-PromotionsState::PromotionsState()
+PromotionsState::PromotionsState(bool clearPromotions)
 {
 	// Create object
 	_window = new Window(this, 320, 200, 0, 0);
@@ -47,6 +48,8 @@ PromotionsState::PromotionsState()
 	_txtRank = new Text(90, 9, 130, 32);
 	_txtBase = new Text(80, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
+
+	_fta = _game->getMod()->isFTAGame();
 
 	// Set palette
 	setInterface("promotions");
@@ -83,26 +86,46 @@ PromotionsState::PromotionsState()
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
+	_lstSoldiers->onMouseClick((ActionHandler)&PromotionsState::lstSoldiersClick);
 
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		for (auto* soldier : *xbase->getSoldiers())
+		if (_fta)
 		{
-			if (soldier->isPromoted())
+			for (auto* soldier : *xbase->getSoldiers())
 			{
-				_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
-			}
-		}
-		for (auto* transfer : *xbase->getTransfers())
-		{
-			if (transfer->getType() == TRANSFER_SOLDIER)
-			{
-				if (transfer->getSoldier()->isPromoted())
+				if (soldier->isPromoted())
 				{
-					_lstSoldiers->addRow(3, transfer->getSoldier()->getName().c_str(), tr(transfer->getSoldier()->getRankString()).c_str(), xbase->getName().c_str());
+					_filteredListOfSoldiers.push_back(std::make_pair(xbase, soldier));
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(_fta)).c_str(), xbase->getName().c_str());
 				}
 			}
 		}
+		else
+		{ //in FtA we don't have this case basically =)
+			for (auto* soldier : *xbase->getSoldiers())
+			{
+				if (soldier->isPromoted())
+				{
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
+				}
+			}
+			for (auto* transfer : *xbase->getTransfers())
+			{
+				if (transfer->getType() == TRANSFER_SOLDIER)
+				{
+					if (transfer->getSoldier()->isPromoted())
+					{
+						_lstSoldiers->addRow(3, transfer->getSoldier()->getName().c_str(), tr(transfer->getSoldier()->getRankString()).c_str(), xbase->getName().c_str());
+					}
+				}
+			}
+		}
+	}
+
+	if (clearPromotions)
+	{
+		_game->getSavedGame()->handlePromotionsPostprocessing();
 	}
 }
 
@@ -120,6 +143,15 @@ PromotionsState::~PromotionsState()
 void PromotionsState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+void PromotionsState::lstSoldiersClick(Action *action)
+{
+	if (_fta)
+	{
+		auto& [base, soldier] = _filteredListOfSoldiers.at(_lstSoldiers->getSelectedRow());
+		_game->pushState(new SoldierInfoStateFtA(base, soldier));
+	}
 }
 
 }

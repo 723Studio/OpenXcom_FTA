@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sstream>
 #include <iomanip>
 #include <tuple>
 #include <algorithm>
@@ -694,16 +693,12 @@ public:
 	{
 		if (getType() == TokenNumber)
 		{
-			auto str = toString();
-			int value = 0;
-			size_t offset = 0;
-			std::stringstream ss(str);
-			if (str[0] == '-' || str[0] == '+')
-				offset = 1;
-			if (str.size() > 2 + offset && str[offset] == '0' && (str[offset + 1] == 'x' || str[offset + 1] == 'X'))
-				ss >> std::hex;
-			if ((ss >> value))
-				return ScriptRefData{ *this, ArgInt, value };
+			c4::csubstr str(this->begin(), this->end());
+			if (str.begins_with('+'))
+				str = str.sub(1);
+			int val = 0;
+			if (c4::from_chars(str, &val))
+				return ScriptRefData{*this, ArgInt, val};
 		}
 		else if (getType() == TokenSymbol)
 		{
@@ -1022,7 +1017,7 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 	static constexpr CharClasses CC_digitHex = 0x8;
 	static constexpr CharClasses CC_charRest = 0x10;
 	static constexpr CharClasses CC_digitSign = 0x20;
-	static constexpr CharClasses CC_digitHexX = 0x40;
+	static constexpr CharClasses CC_digitPrefix = 0x40;
 	static constexpr CharClasses CC_quote = 0x80;
 
 	static constexpr Array charDecoder = (
@@ -1038,7 +1033,10 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 				if (i >= '0' && i <= '9')	r[i] |= CC_digit;
 				if (i >= 'A' && i <= 'F')	r[i] |= CC_digitHex;
 				if (i >= 'a' && i <= 'f')	r[i] |= CC_digitHex;
-				if (i == 'x' || i == 'X')	r[i] |= CC_digitHexX;
+
+				if (i == 'x' || i == 'X')	r[i] |= CC_digitPrefix;
+				if (i == 'b' || i == 'B')	r[i] |= CC_digitPrefix;
+				if (i == 'o' || i == 'O')	r[i] |= CC_digitPrefix;
 
 				if (i >= 'A' && i <= 'Z')	r[i] |= CC_charRest;
 				if (i >= 'a' && i <= 'z')	r[i] |= CC_charRest;
@@ -1056,7 +1054,7 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 		CharClasses decode;
 
 		/// Is valid symbol
-		operator bool() const { return c; }
+		explicit operator bool() const { return c; }
 
 		/// Check type of symbol
 		bool is(CharClasses t) const { return decode & t; }
@@ -1222,10 +1220,13 @@ SelectedToken ScriptRefTokens::getNextToken(TokenEnum excepted)
 		}
 		if (firstDigit.is(CC_digit))
 		{
-			const auto hex = firstDigit.c == '0' && peekCharacter().is(CC_digitHexX);
-			if (hex)
+			const auto prefix = peekCharacter();
+			const auto havePrefix = firstDigit.c == '0' && prefix.is(CC_digitPrefix);
+			const auto hex = havePrefix && (prefix.c == 'x' || prefix.c == 'X');
+
+			if (havePrefix)
 			{
-				//eat `x`
+				//eat `x` or `o` or `b`
 				readCharacter();
 			}
 			else
@@ -2649,8 +2650,10 @@ bool parseDummy(const ScriptProcData& spd, ParserWriter& ph, const ScriptRefData
 template<typename R>
 void addSortHelper(std::vector<R>& vec, R value)
 {
-	vec.push_back(value);
-	std::sort(vec.begin(), vec.end(), [](const R& a, const R& b) { return ScriptRef::compare(a.name, b.name) < 0; });
+	// skip some early allocations that will be overridden right after
+	if (vec.capacity() == 0)
+		vec.reserve(100);
+	vec.insert(std::partition_point(vec.begin(), vec.end(), [&](const R& a) { return ScriptRef::compare(a.name, value.name) <= 0; }), value);
 }
 
 template<bool upper, typename R>
@@ -3830,15 +3833,15 @@ bool ScriptParserBase::parseBase(ScriptContainerBase& destScript, const std::str
 /**
  * Parse node and return new script.
  */
-void ScriptParserBase::parseNode(ScriptContainerBase& container, const std::string& parentName, const YAML::Node& node) const
+void ScriptParserBase::parseNode(ScriptContainerBase& container, const std::string& parentName, const YAML::YamlNodeReader& reader) const
 {
-	if(const YAML::Node& scripts = node["scripts"])
+	if(const YAML::YamlNodeReader& scripts = reader["scripts"])
 	{
-		if (const YAML::Node& curr = scripts[getName()])
+		if (const YAML::YamlNodeReader& curr = scripts[ryml::to_csubstr(getName())])
 		{
-			if (false == parseBase(container, parentName, curr.as<std::string>()))
+			if (false == parseBase(container, parentName, curr.readVal<std::string>()))
 			{
-				Log(LOG_ERROR) << "    for node with code at line " << node.Mark().line << " in " << getGlobal()->getCurrentFile();
+				Log(LOG_ERROR) << "    for node with code at line " << reader.getLocationInFile().line << " in " << getGlobal()->getCurrentFile();
 				Log(LOG_ERROR) << ""; // dummy line to separate similar errors
 			}
 		}
@@ -3877,7 +3880,7 @@ void ScriptParserBase::parseCode(ScriptContainerBase& container, const std::stri
 /**
  * Load global data from YAML.
  */
-void ScriptParserBase::load(const YAML::Node& node)
+void ScriptParserBase::load(const YAML::YamlNodeReader& reader)
 {
 
 }
@@ -4038,9 +4041,9 @@ ScriptParserEventsBase::ScriptParserEventsBase(ScriptGlobal* shared, const std::
 /**
  * Parse node and return new script.
  */
-void ScriptParserEventsBase::parseNode(ScriptContainerEventsBase& container, const std::string& type, const YAML::Node& node) const
+void ScriptParserEventsBase::parseNode(ScriptContainerEventsBase& container, const std::string& type, const YAML::YamlNodeReader& reader) const
 {
-	ScriptParserBase::parseNode(container._current, type, node);
+	ScriptParserBase::parseNode(container._current, type, reader);
 	container._events = getEvents();
 }
 
@@ -4056,7 +4059,7 @@ void ScriptParserEventsBase::parseCode(ScriptContainerEventsBase& container, con
 /**
  * Load global data from YAML.
  */
-void ScriptParserEventsBase::load(const YAML::Node& scripts)
+void ScriptParserEventsBase::load(const YAML::YamlNodeReader& scripts)
 {
 	ScriptParserBase::load(scripts);
 
@@ -4074,26 +4077,26 @@ void ScriptParserEventsBase::load(const YAML::Node& scripts)
 		_eventsData.erase(it);
 	};
 
-	auto getNode = [&](const YAML::Node& i, const std::string& nodeName)
+	auto getNode = [&](const YAML::YamlNodeReader& i, const std::string& nodeName)
 	{
-		const auto& n = i[nodeName];
-		return std::make_tuple(nodeName, n, !!n);
+		auto n = i[ryml::to_csubstr(nodeName)];
+		return std::make_tuple(nodeName, std::move(n), !!n);
 	};
-	auto haveNode = [&](const std::tuple<std::string, YAML::Node, bool>& nn)
+	auto haveNode = [&](const std::tuple<std::string, YAML::YamlNodeReader, bool>& nn)
 	{
 		return std::get<bool>(nn);
 	};
-	auto getLineFromNode = [&](const YAML::Node& n)
+	auto getLineFromNode = [&](const YAML::YamlNodeReader& n)
 	{
-		return std::to_string(n.Mark().line);
+		return std::to_string(n.getLocationInFile().line);
 	};
-	auto getDescriptionNode = [&](const std::tuple<std::string, YAML::Node, bool>& nn)
+	auto getDescriptionNode = [&](const std::tuple<std::string, YAML::YamlNodeReader, bool>& nn)
 	{
-		return std::string("'") + std::get<std::string>(nn) + "' at line " + getLineFromNode(std::get<YAML::Node>(nn));
+		return std::string("'") + std::get<std::string>(nn) + "' at line " + getLineFromNode(std::get<YAML::YamlNodeReader>(nn));
 	};
-	auto getNameFromNode = [&](const std::tuple<std::string, YAML::Node, bool>& nn)
+	auto getNameFromNode = [&](const std::tuple<std::string, YAML::YamlNodeReader, bool>& nn)
 	{
-		auto name = std::get<YAML::Node>(nn).as<std::string>();
+		auto name = std::get<YAML::YamlNodeReader>(nn).readVal<std::string>();
 		if (name.empty())
 		{
 			throw Exception("Invalid name for " + getDescriptionNode(nn));
@@ -4101,9 +4104,9 @@ void ScriptParserEventsBase::load(const YAML::Node& scripts)
 		return name;
 	};
 
-	if (const YAML::Node& curr = scripts[getName()])
+	if (const YAML::YamlNodeReader& curr = scripts[ryml::to_csubstr(getName())])
 	{
-		for (const YAML::Node& i : curr)
+		for (const YAML::YamlNodeReader& i : curr.children())
 		{
 			const auto deleteNode = getNode(i, "delete");
 			const auto newNode = getNode(i, "new");
@@ -4116,7 +4119,7 @@ void ScriptParserEventsBase::load(const YAML::Node& scripts)
 
 			{
 				// check for duplicates
-				const std::tuple<std::string, YAML::Node, bool>* last = nullptr;
+				const std::tuple<std::string, YAML::YamlNodeReader, bool>* last = nullptr;
 				for (auto* p : { &deleteNode, &newNode, &updateNode, &overrideNode, &ignoreNode })
 				{
 					if (haveNode(*p))
@@ -4154,19 +4157,19 @@ void ScriptParserEventsBase::load(const YAML::Node& scripts)
 				ScriptContainerBase scp;
 
 
-				offset = i["offset"].as<double>(0) * OffsetScale;
+				offset = i["offset"].readVal<double>(0) * OffsetScale;
 				if (offset == 0 || offset >= (int)OffsetMax || offset <= -(int)OffsetMax)
 				{
 					//TODO: make it a exception
-					Log(LOG_ERROR) << "Invalid offset for '" << getName() << "' equal: '" << i["offset"].as<std::string>() << "'";
+					Log(LOG_ERROR) << "Invalid offset for '" << getName() << "' equal: '" << i["offset"].readVal<std::string>() << "'";
 					Log(LOG_ERROR) << "    for node at line " << getLineFromNode(i["offset"]) << " in " << getGlobal()->getCurrentFile();
 					Log(LOG_ERROR) << ""; // dummy line to separate similar errors
 					continue;
 				}
 
 				{
-					auto nameWithPrefix = name.size() ? "Global:" + name : "Global off: " + i["offset"].as<std::string>();
-					if (false == parseBase(scp, nameWithPrefix, i["code"].as<std::string>("")))
+					auto nameWithPrefix = name.size() ? "Global:" + name : "Global off: " + i["offset"].readVal<std::string>();
+					if (false == parseBase(scp, nameWithPrefix, i["code"].readVal<std::string>("")))
 					{
 						Log(LOG_ERROR) << "    for node with code at line " << getLineFromNode(i["code"]) << " in " << getGlobal()->getCurrentFile();
 						Log(LOG_ERROR) << ""; // dummy line to separate similar errors
@@ -4297,25 +4300,25 @@ int ScriptValuesBase::getBase(size_t t) const
 /**
  * Load values from yaml file.
  */
-void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName)
+void ScriptValuesBase::loadBase(const YAML::YamlNodeReader& reader, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName)
 {
-	if (const YAML::Node& tags = node[nodeName])
+	if (const YAML::YamlNodeReader& tags = reader[ryml::to_csubstr(nodeName)])
 	{
-		if (tags.IsMap())
+		if (tags.isMap())
 		{
-			for (const std::pair<YAML::Node, YAML::Node>& pair : tags)
+			for (const YAML::YamlNodeReader& tag : tags.children())
 			{
-				size_t i = shared->getTag(type, ScriptRef::tempFrom("Tag." + pair.first.as<std::string>()));
+				size_t i = shared->getTag(type, ScriptRef::tempFrom("Tag." + tag.readKey<std::string>()));
 				if (i)
 				{
 					auto temp = 0;
 					auto data = shared->getTagValueData(type, i);
-					shared->getTagValueTypeData(data.valueType).load(shared, temp, pair.second);
+					shared->getTagValueTypeData(data.valueType).load(shared, temp, tag);
 					setBase(i, temp);
 				}
 				else
 				{
-					Log(LOG_ERROR) << "Error in tags: '" << pair.first << "' unknown tag name not defined in current file";
+					Log(LOG_ERROR) << "Error in tags: '" << tag.readKey<std::string>() << "' unknown tag name not defined in current file";
 				}
 			}
 		}
@@ -4325,24 +4328,25 @@ void ScriptValuesBase::loadBase(const YAML::Node &node, const ScriptGlobal* shar
 /**
  * Save values to yaml file.
  */
-void ScriptValuesBase::saveBase(YAML::Node &node, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName) const
+void ScriptValuesBase::saveBase(YAML::YamlNodeWriter& writer, const ScriptGlobal* shared, ArgEnum type, const std::string& nodeName) const
 {
-	bool haveData = false;
-	YAML::Node tags;
+	bool hasTags = false; // We have to know whether the object has any tags before creating a "tags" child node in the yaml
+	for (size_t i = values.size(); i > 0 &&!hasTags; --i) // It's usually the last one
+		if (getBase(i))
+			hasTags = true;
+	if (!hasTags)
+		return;
+	YAML::YamlNodeWriter tags = writer[writer.saveString(nodeName)];
+	tags.setAsMap();
 	for (size_t i = 1; i <= values.size(); ++i)
 	{
 		if (int v = getBase(i))
 		{
-			haveData = true;
-			auto temp = YAML::Node{};
-			auto data = shared->getTagValueData(type, i);
+			ScriptGlobal::TagValueData data = shared->getTagValueData(type, i);
+			std::string tagName = data.name.substr(data.name.find('.') + 1u).toString();
+			YAML::YamlNodeWriter temp = tags[tags.saveString(tagName)];
 			shared->getTagValueTypeData(data.valueType).save(shared, v, temp);
-			tags[data.name.substr(data.name.find('.') + 1u).toString()] = temp;
 		}
-	}
-	if (haveData)
-	{
-		node[nodeName] = tags;
 	}
 }
 
@@ -4357,16 +4361,16 @@ ScriptGlobal::ScriptGlobal()
 {
 	addTagValueTypeBase(
 		"int",
-		[](const ScriptGlobal* s, int& value, const YAML::Node& node)
+		[](const ScriptGlobal* s, int& value, const YAML::YamlNodeReader& reader)
 		{
-			if (node)
+			if (reader)
 			{
-				value = node.as<int>();
+				value = reader.readVal<int>();
 			}
 		},
-		[](const ScriptGlobal* s, const int& value, YAML::Node& node)
+		[](const ScriptGlobal* s, const int& value, YAML::YamlNodeWriter& writer)
 		{
-			node = value;
+			writer.setValue(value);
 		}
 	);
 }
@@ -4564,25 +4568,26 @@ void ScriptGlobal::endLoad()
 	}
 	_parserNames.clear();
 	_parserEvents.clear();
+	_currFile = "After-load validation";
 }
 
 /**
  * Load global data from YAML.
  */
-void ScriptGlobal::load(const YAML::Node& node)
+void ScriptGlobal::load(const YAML::YamlNodeReader& reader)
 {
-	if (const YAML::Node& t = node["tags"])
+	if (const YAML::YamlNodeReader& t = reader["tags"])
 	{
 		for (auto& p : _tagNames)
 		{
 			const auto nodeName = p.second.name.toString();
-			const YAML::Node &tags = t[nodeName];
-			if (tags && tags.IsMap())
+			const YAML::YamlNodeReader& tags = t[ryml::to_csubstr(nodeName)];
+			if (tags && tags.isMap())
 			{
-				for (const std::pair<YAML::Node, YAML::Node>& i : tags)
+				for (const YAML::YamlNodeReader& tag : tags.children())
 				{
-					auto type = i.second.as<std::string>();
-					auto name = i.first.as<std::string>();
+					auto type = tag.readVal<std::string>();
+					auto name = tag.readKey<std::string>();
 					auto invalidType = _tagValueTypes.size();
 					auto valueType = invalidType;
 					for (size_t typei = 0; typei < invalidType; ++typei)
@@ -4602,18 +4607,18 @@ void ScriptGlobal::load(const YAML::Node& node)
 							Log(LOG_ERROR) << "Script variable '" + name + "' already used in '" + _tagNames[ref->type].name.toString() + "'.";
 							continue;
 						}
-						auto tag = getTag(p.first, ScriptRef::tempFrom(namePrefix));
-						if (tag)
+						auto tagOffset = getTag(p.first, ScriptRef::tempFrom(namePrefix));
+						if (tagOffset)
 						{
-							auto data = getTagValueData(p.first, tag);
+							auto data = getTagValueData(p.first, tagOffset);
 							if (valueType != data.valueType)
 							{
 								Log(LOG_ERROR) << "Script variable '" + name + "' have wrong type '" << _tagValueTypes[valueType].name.toString() << "' instead of '" << _tagValueTypes[data.valueType].name.toString() << "' in '" + nodeName + "'.";
 							}
 							continue;
 						}
-						tag = addTag(p.first, addNameRef(namePrefix), valueType);
-						if (!tag)
+						tagOffset = addTag(p.first, addNameRef(namePrefix), valueType);
+						if (!tagOffset)
 						{
 							Log(LOG_ERROR) << "Script variable '" + name + "' exceeds limit of " << (int)p.second.limit << " available variables in '" + nodeName + "'.";
 							continue;
@@ -4627,7 +4632,7 @@ void ScriptGlobal::load(const YAML::Node& node)
 			}
 		}
 	}
-	if (const YAML::Node& s = node["scripts"])
+	if (const YAML::YamlNodeReader& s = reader["scripts"])
 	{
 		for (auto& p : _parserNames)
 		{
@@ -4639,7 +4644,7 @@ void ScriptGlobal::load(const YAML::Node& node)
 
 
 
-#ifdef OXCE_AUTO_TEST
+#ifndef NDEBUG
 
 namespace
 {
@@ -4783,11 +4788,20 @@ void dummyFunctionClass(const DummyClass* c)
 
 }
 
+struct TestEnv
+{
+	ScriptGlobal g = { };
+	ScriptParserTest f = { &g };
+	ScriptContainerBase tempScript = { };
+	ParserWriter help = { 0, tempScript, f };
+};
+
+
 [[maybe_unused]]
 static auto dummyTestScriptFunctionParser = ([]
 {
-	ScriptGlobal g;
-	ScriptParserTest f(&g);
+	TestEnv env;
+	ScriptParserTest& f = env.f;
 
 	f.addType<DummyClass*>("DummyClass");
 
@@ -4797,12 +4811,7 @@ static auto dummyTestScriptFunctionParser = ([]
 	bind.add<&dummyFunctionClass>("test3");
 
 
-	ScriptContainerBase tempScript;
-	ParserWriter help(
-		0,
-		tempScript,
-		f
-	);
+	ParserWriter& help = env.help;
 	help.addReg<DummyClass*&>(ScriptRef{"foo"});
 	help.addReg<DummyClass*&>(ScriptRef{"bar.a"});
 	help.addReg<DummyClass*&>(ScriptRef{"bar.b"});
@@ -4950,8 +4959,8 @@ void dummyFunctionSeperator3(int& i, int& j, int& k, ScriptArgSeparator)
 [[maybe_unused]]
 static auto dummyTestScriptOverloadSeperator = ([]
 {
-	ScriptGlobal g;
-	ScriptParserTest f(&g);
+	TestEnv env;
+	ScriptParserTest& f = env.f;
 
 	Bind<DummyClass> bind{ &f };
 	bind.addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(&dummyFunctionSeperator0)>>("funcSep");
@@ -4960,12 +4969,7 @@ static auto dummyTestScriptOverloadSeperator = ([]
 	bind.addCustomFunc<helper::BindFunc<MACRO_CLANG_AUTO_HACK(&dummyFunctionSeperator3)>>("funcSep");
 
 
-	ScriptContainerBase tempScript;
-	ParserWriter help(
-		0,
-		tempScript,
-		f
-	);
+	ParserWriter& help = env.help;
 	auto arg_x = help.addReg<int&>(ScriptRef{"x"});
 	auto arg_y = help.addReg<int&>(ScriptRef{"y"});
 	auto arg_z = help.addReg<int&>(ScriptRef{"z"});
@@ -5053,14 +5057,55 @@ static auto dummyTestScriptRefTokens = ([]
 	}
 
 	{
-		ScriptRefTokens srt{"0x10 1234"};
+		TestEnv env;
+		ScriptRefTokens srt{"0x10 1234 0b100 0o10 0x0f 0xAb"};
 		{
 			SelectedToken next = srt.getNextToken();
 			assert(next == ScriptRef{"0x10"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 0x10);
 		}
 		{
 			SelectedToken next = srt.getNextToken();
 			assert(next == ScriptRef{"1234"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 1234);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0b100"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 4);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0o10"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 8);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0x0f"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 15);
+		}
+		{
+			SelectedToken next = srt.getNextToken();
+			assert(next == ScriptRef{"0xAb"} && next.getType() == TokenNumber);
+
+			auto r = next.parse(env.help);
+			assert(r.type == ArgInt);
+			assert(r.getValue<int>() == 0xAB);
 		}
 		{
 			SelectedToken next = srt.getNextToken();

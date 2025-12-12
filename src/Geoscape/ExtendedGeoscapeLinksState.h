@@ -39,6 +39,7 @@ private:
 	Window *_window;
 	Text *_txtTitle;
 	GeoscapeState *_parent;
+	bool _ftaUi;
 public:
 	/// Creates the ExtendedGeoscapeLinks state.
 	ExtendedGeoscapeLinksState(GeoscapeState* parent);

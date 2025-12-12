@@ -174,7 +174,7 @@ void StartState::think()
 	case LOADING_SUCCESSFUL:
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
-		_game->setState(new GoToMainMenuState(true));
+		_game->setState(new GoToMainMenuState(false));
 		if (_oldMaster != Options::getActiveMaster() && Options::playIntro)
 		{
 			_game->pushState(new CutsceneState("intro"));
@@ -219,7 +219,7 @@ void StartState::animate()
 	if (loading == LOADING_STARTED)
 	{
 		std::ostringstream ss;
-		ss << "Loading OpenXcom " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << "...";
+		ss << "Loading OpenXcom " << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT << "...";
 		if (Options::reload)
 		{
 			if (Options::oxceStartUpTextMode < 2)

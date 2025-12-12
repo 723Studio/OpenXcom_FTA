@@ -30,11 +30,13 @@ class Cursor;
 class Language;
 class SavedGame;
 class Mod;
+class MasterMind;
 class ModInfo;
 class FpsCounter;
 class Action;
 class MapEditor;
 class MapEditorSave;
+class GeoscapeState;
 
 /**
  * The core of the game engine, manages the game's entire contents and structure.
@@ -52,12 +54,14 @@ private:
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
 	Mod *_mod;
+	MasterMind *_mind;
 	bool _quit, _init, _update;
 	FpsCounter *_fpsCounter;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
 	int _timeUntilNextFrame;
 	bool _ctrl, _alt, _shift, _rmb, _mmb;
+	int _scrollStep;
 	static const double VOLUME_GRADIENT;
 	MapEditor *_mapEditor;
 
@@ -92,6 +96,8 @@ public:
 	SavedGame *getSavedGame() const { return _save; }
 	/// Sets a new saved game for the game.
 	void setSavedGame(SavedGame *save);
+	/// Gets MasterMind for this game.
+	MasterMind* getMasterMind() const { return _mind; }
 	/// Gets the currently loaded mod.
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.
@@ -104,6 +110,8 @@ public:
 	bool containsUfopaediaStartState() const;
 	/// Returns whether a NotesState is in the background.
 	bool containsNotesState() const;
+	/// Returns the GeoscapeState from the background (if available).
+	GeoscapeState* getGeoscapeState() const;
 	/// Returns whether the game is shutting down.
 	bool isQuitting() const;
 	/// Loads the default and current language.
@@ -165,6 +173,11 @@ public:
 	void setMapEditor(MapEditor *mapEditor);
 	/// Gets the map editor for the game
 	MapEditor *getMapEditor();
+	/// Sets the scroll step value.
+	void setScrollStep(int newValue) { _scrollStep = newValue; }
+
+	/// Gets the scroll step value.
+	int getScrollStep() const { return _scrollStep; }
 };
 
 }

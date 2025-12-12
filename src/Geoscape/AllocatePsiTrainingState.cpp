@@ -117,6 +117,8 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	_txtTraining->setText(tr("STR_IN_TRAINING"));
 
 	// populate sort options
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod());
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
@@ -135,7 +137,7 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -156,13 +158,15 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	PUSH_IN("STR_THROWING_ACCURACY", throwingStatBase, throwingStatPlus);
 	PUSH_IN("STR_MELEE_ACCURACY", meleeStatBase, meleeStatPlus);
 	PUSH_IN("STR_STRENGTH", strengthStatBase, strengthStatPlus);
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (showMana)
 	{
-		// "unlock" is checked later
 		PUSH_IN("STR_MANA_POOL", manaStatBase, manaStatPlus);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStatBase, psiStrengthStatPlus);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStatBase, psiSkillStatPlus);
+	if (showPsiStats)
+	{
+		PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStatBase, psiStrengthStatPlus);
+		PUSH_IN("STR_PSIONIC_SKILL", psiSkillStatBase, psiSkillStatPlus);
+	}
 
 #undef PUSH_IN
 
@@ -354,6 +358,11 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_YES").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		}
+		else if (soldier->getCovertOperation() != 0 || soldier->hasPendingTransformation())
+		{
+			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_UNAVAILABLE_TRAINING").c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+		}
 		else
 		{
 			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_NO").c_str());
@@ -496,6 +505,10 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 		else if (s->isFullyPsiTrained())
 		{
 			// can't put fully psi-trained soldiers back into psi training
+		}
+		else if (s->getCovertOperation() != 0)
+		{
+			// soldier is out for covert operation
 		}
 		else if (!s->isInPsiTraining())
 		{

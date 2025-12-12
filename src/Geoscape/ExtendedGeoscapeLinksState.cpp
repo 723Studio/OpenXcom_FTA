@@ -30,6 +30,8 @@
 #include "../Interface/TextButton.h"
 #include "../Menu/NotesState.h"
 #include "../Menu/TestState.h"
+#include "../Mod/Mod.h"
+#include "../Savegame/SavedGame.h"
 
 namespace OpenXcom
 {
@@ -40,11 +42,18 @@ namespace OpenXcom
 ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : _parent(parent)
 {
 	_screen = false;
+	int dY = 0;
+	_ftaUi = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 256, 180, 32, 10, POPUP_BOTH);
 	_txtTitle = new Text(220, 17, 50, 33);
-	if (Options::oxceFatFingerLinks)
+	_btnOk = new TextButton(220, 12, 50, 167);
+	if (_ftaUi)
+	{
+		dY = 13 * 4;
+	}
+	if (Options::oxceFatFingerLinks) // #FINNIKTODO check UI for that option
 	{
 		_btnFunding = new TextButton(116, 25, 44, 50);
 		_btnTechTree = new TextButton(116, 25, 161, 50);
@@ -61,14 +70,14 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	{
 		_btnFunding = new TextButton(220, 12, 50, 50);
 		_btnTechTree = new TextButton(220, 12, 50, 63);
-		_btnGlobalResearch = new TextButton(220, 12, 50, 76);
-		_btnGlobalProduction = new TextButton(220, 12, 50, 89);
-		_btnUfoTracker = new TextButton(220, 12, 50, 102);
-		_btnPilotExp = new TextButton(220, 12, 50, 115);
-		_btnNotes = new TextButton(220, 12, 50, 128);
-		_btnMusic = new TextButton(220, 12, 50, 141);
-		_btnTest = new TextButton(220, 12, 50, 154);
-		_btnOk = new TextButton(220, 12, 50, 167);
+		_btnGlobalResearch = new TextButton(220, 12, 50, 76 - dY);
+		_btnGlobalProduction = new TextButton(220, 12, 50, 89 - dY);
+		_btnUfoTracker = new TextButton(220, 12, 50, 102 - dY);
+		_btnPilotExp = new TextButton(220, 12, 50, 115 - dY);
+		_btnNotes = new TextButton(220, 12, 50, 128 - dY);
+		_btnMusic = new TextButton(220, 12, 50, 141 - dY);
+		_btnTest = new TextButton(220, 12, 50, 154 - dY);
+		_btnOk = new TextButton(220, 12, 50, 167 - dY);
 	}
 
 	// Set palette
@@ -101,13 +110,21 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_btnOk->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick, Options::keyCancel);
 
-	_btnFunding->setText(tr("STR_FUNDING_UC"));
+	_btnFunding->setText(_game->getMod()->isFTAGame() ? tr("STR_GRAPHS") : tr("STR_FUNDING_UC"));
 	_btnFunding->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnFundingClick);
 
 	std::string tmp = tr("STR_TECH_TREE_VIEWER");
 	Unicode::upperCase(tmp);
 	_btnTechTree->setText(tmp);
 	_btnTechTree->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnTechTreeClick);
+
+	if (_game->getMod()->isFTAGame()) // #FINNIKTODO: temporal solution, before graphs and global covert operations states would be done
+	{
+		_btnFunding->setVisible(false);
+		_btnTechTree->setVisible(false);
+		_btnGlobalProduction->setVisible(false);
+		_btnGlobalResearch->setVisible(false);
+	}
 
 	_btnGlobalResearch->setText(tr("STR_RESEARCH_OVERVIEW"));
 	_btnGlobalResearch->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnGlobalResearchClick);

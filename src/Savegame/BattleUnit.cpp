@@ -18,6 +18,7 @@
  */
 #include "BattleUnit.h"
 #include "BattleItem.h"
+#include "BattleObject.h"
 #include <sstream>
 #include <algorithm>
 #include "../Engine/Collections.h"
@@ -37,11 +38,11 @@
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Unit.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItemCategory.h"
 #include "../Mod/RuleSkill.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleStartingCondition.h"
 #include "Soldier.h"
@@ -64,22 +65,22 @@ namespace OpenXcom
 BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleStartingCondition* sc) :
 	_faction(FACTION_PLAYER), _originalFaction(FACTION_PLAYER), _killedBy(FACTION_PLAYER), _id(0), _tile(0),
 	_lastPos(Position()), _direction(0), _toDirection(0), _directionTurret(0), _toDirectionTurret(0),
-	_verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0), _fallPhase(0), _kneeled(false), _floating(false),
-	_dontReselect(false), _fire(0), _currentAIState(0), _visible(false),
+	_verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _wasFriendlyFired(false), _walkPhase(0), _fallPhase(0), _kneeled(false), _floating(false),
+	_dontReselect(false), _aiMedikitUsed(false), _fire(0), _currentAIState(0), _visible(false),
 	_exp{ }, _expTmp{ },
+	_warned(false), _alarmed(false), _freshReinforcement(false), _undercover(false), _revealed(false), _specialObjective(SPECOBJ_NONE),
 	_motionPoints(0), _scannedTurn(-1), _customMarker(0), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
-	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
+	_moraleRestored(0), _notificationShown(0), _charging(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT), _fatalShotBodyPart(BODYPART_HEAD), _armor(0),
-	_geoscapeSoldier(soldier), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
+	_geoscapeSoldier(soldier), _roles(0), _unitRules(0), _rankInt(0), _turretType(-1), _hidingForTurn(false), _floorAbove(false), _respawn(false), _alreadyRespawned(false),
 	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false),
-	_capturable(true), _vip(false), _bannedInNextStage(false)
+	_capturable(true), _vip(false), _bannedInNextStage(false), _skillMenuCheck(false)
 {
 	_name = soldier->getName(true);
 	_id = soldier->getId();
 
 	_type = "SOLDIER";
-	_rank = soldier->getRankString();
-	_gender = soldier->getGender();
+	_rank = soldier->getRankString(mod->isFTAGame());
 	_intelligence = 2;
 	_aggression = 1;
 	_faceDirection = -1;
@@ -97,6 +98,21 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	default:             rankbonus =  0; break;
 	}
 
+	int roleRank = soldier->getBestRoleRank().second;
+	if (roleRank > 0)
+	{
+		if (roleRank >= 5)
+			rankbonus = 10;
+		else if (roleRank == 4)
+			rankbonus = 6;
+		else if (roleRank == 3)
+			rankbonus = 3;
+		else if (roleRank == 2)
+			rankbonus = 1;
+		else
+			rankbonus = 0;
+	}
+
 	_value = soldier->getRules()->getValue() + soldier->getMissions() + rankbonus;
 
 
@@ -112,9 +128,24 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 
 	_statistics = new BattleUnitStatistics();
 
-	deriveRank();
+	deriveSoldierRank();
 
 	updateArmorFromSoldier(mod, soldier, soldier->getArmor(), depth, false, sc);
+
+	// soldier bonus cache was built above in updateArmorFromSoldier(), so we can also calculate this now
+	if (_geoscapeSoldier)
+	{
+		for (auto* skill : _geoscapeSoldier->getRules()->getSkills())
+		{
+			if (_geoscapeSoldier->hasAllRequiredBonusesForSkill(skill)
+				&& (skill->getCost().Time > 0 || skill->getCost().Mana > 0)
+				&& (!skill->isPsiRequired() || getBaseStats()->psiSkill > 0))
+			{
+				_skillMenuCheck = true;
+				break;
+			}
+		}
+	}
 }
 
 /**
@@ -151,13 +182,15 @@ void BattleUnit::updateArmorFromSoldier(const Mod *mod, Soldier *soldier, Armor 
 	int visibilityDarkBonus = 0;
 	int visibilityDayBonus = 0;
 	int psiVision = 0;
-	int heatVision =  0;
+	int bonusVisibilityThroughSmoke =  0;
+	int bonusVisibilityThroughFire = 0;
 	for (const auto* bonusRule : *soldier->getBonuses(nullptr))
 	{
 		visibilityDarkBonus += bonusRule->getVisibilityAtDark();
 		visibilityDayBonus += bonusRule->getVisibilityAtDay();
 		psiVision += bonusRule->getPsiVision();
-		heatVision += bonusRule->getHeatVision();
+		bonusVisibilityThroughSmoke += bonusRule->getVisibilityThroughSmoke();
+		bonusVisibilityThroughFire += bonusRule->getVisibilityThroughFire();
 	}
 	_maxViewDistanceAtDark = _armor->getVisibilityAtDark() ? _armor->getVisibilityAtDark() : 9;
 	_maxViewDistanceAtDark = Clamp(_maxViewDistanceAtDark + visibilityDarkBonus, 1, mod->getMaxViewDistance());
@@ -165,7 +198,8 @@ void BattleUnit::updateArmorFromSoldier(const Mod *mod, Soldier *soldier, Armor 
 	_maxViewDistanceAtDay = _armor->getVisibilityAtDay() ? _armor->getVisibilityAtDay() : mod->getMaxViewDistance();
 	_maxViewDistanceAtDay = Clamp(_maxViewDistanceAtDay + visibilityDayBonus, 1, mod->getMaxViewDistance());
 	_psiVision = _armor->getPsiVision() + psiVision;
-	_heatVision = _armor->getHeatVision() + heatVision;
+	_visibilityThroughSmoke = _armor->getVisibilityThroughSmoke() + bonusVisibilityThroughSmoke;
+	_visibilityThroughFire = _armor->getVisibilityThroughFire() + bonusVisibilityThroughFire;
 
 
 	_maxArmor[SIDE_FRONT] = _armor->getFrontArmor();
@@ -229,7 +263,7 @@ void BattleUnit::updateArmorFromSoldier(const Mod *mod, Soldier *soldier, Armor 
 	}
 
 	int look = soldier->getGender() + 2 * soldier->getLook() + 8 * soldier->getLookVariant();
-	setRecolor(look, look, _rankInt);
+	setRecolor(look, look, _rankIntUnified);
 
 	prepareUnitSounds();
 	prepareUnitResponseSounds(mod);
@@ -396,16 +430,17 @@ void BattleUnit::prepareBannedFlag(const RuleStartingCondition* sc)
 BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, const RuleEnviroEffects* enviro, Armor *armor, StatAdjustment *adjustment, int depth, const RuleStartingCondition* sc) :
 	_faction(faction), _originalFaction(faction), _killedBy(faction), _id(id),
 	_tile(0), _lastPos(Position()), _direction(0), _toDirection(0), _directionTurret(0),
-	_toDirectionTurret(0), _verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _walkPhase(0),
-	_fallPhase(0), _kneeled(false), _floating(false), _dontReselect(false), _fire(0), _currentAIState(0),
+	_toDirectionTurret(0), _verticalDirection(0), _status(STATUS_STANDING), _wantsToSurrender(false), _isSurrendering(false), _wasFriendlyFired(false), 
+	_walkPhase(0), _fallPhase(0), _kneeled(false), _floating(false), _dontReselect(false), _aiMedikitUsed(false), _fire(0), _currentAIState(0),
+	_warned(false), _alarmed(false), _freshReinforcement(false), _undercover(false), _revealed(false), _specialObjective(SPECOBJ_NONE),
 	_visible(false), _exp{ }, _expTmp{ },
 	_motionPoints(0), _scannedTurn(-1), _customMarker(0), _kills(0), _hitByFire(false), _hitByAnything(false), _alreadyExploded(false), _fireMaxHit(0), _smokeMaxHit(0),
-	_moraleRestored(0), _charging(0), _turnsSinceSpotted(255), _turnsLeftSpottedForSnipers(0),
+	_moraleRestored(0), _notificationShown(0), _charging(0),
 	_statistics(), _murdererId(0), _mindControllerID(0), _fatalShotSide(SIDE_FRONT),
-	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0),  _unitRules(unit),
+	_fatalShotBodyPart(BODYPART_HEAD), _armor(armor), _geoscapeSoldier(0), _roles(0), _unitRules(unit),
 	_rankInt(0), _turretType(-1), _hidingForTurn(false), _respawn(false), _alreadyRespawned(false),
 	_isLeeroyJenkins(false), _summonedPlayerUnit(false), _resummonedFakeCivilian(false), _pickUpWeaponsMoreActively(false), _disableIndicators(false),
-	_vip(false), _bannedInNextStage(false)
+	_vip(false), _bannedInNextStage(false), _skillMenuCheck(false)
 {
 	if (enviro)
 	{
@@ -418,12 +453,14 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	_type = unit->getType();
 	_rank = unit->getRank();
 	_race = unit->getRace();
+	_roles = unit->getRoles();
 	_gender = GENDER_MALE;
 	_intelligence = unit->getIntelligence();
 	_aggression = unit->getAggression();
 	_faceDirection = -1;
 	_floorAbove = false;
 	_breathing = false;
+	_specialObjective = unit->getSpecialObjective();
 
 	_spawnUnit = unit->getSpawnUnit();
 	_capturable = unit->getCapturable();
@@ -458,6 +495,15 @@ BattleUnit::BattleUnit(const Mod *mod, Unit *unit, UnitFaction faction, int id, 
 	lastCover = TileEngine::invalid;
 
 	_statistics = new BattleUnitStatistics();
+
+	if (_originalFaction == FACTION_HOSTILE)
+	{
+		deriveHostileRank();
+	}
+	else if (_originalFaction == FACTION_NEUTRAL)
+	{
+		deriveNeutralRank();
+	}
 
 	updateArmorFromNonSoldier(mod, _armor, depth, false, sc);
 
@@ -502,7 +548,8 @@ void BattleUnit::updateArmorFromNonSoldier(const Mod* mod, Armor* newArmor, int 
 	_maxViewDistanceAtDarkSquared = _maxViewDistanceAtDark * _maxViewDistanceAtDark;
 	_maxViewDistanceAtDay = _armor->getVisibilityAtDay() ? _armor->getVisibilityAtDay() : mod->getMaxViewDistance();
 	_psiVision = _armor->getPsiVision();
-	_heatVision =  _armor->getHeatVision();
+	_visibilityThroughSmoke =  _armor->getVisibilityThroughSmoke();
+	_visibilityThroughFire = _armor->getVisibilityThroughFire();
 
 
 	_maxArmor[SIDE_FRONT] = _armor->getFrontArmor();
@@ -542,35 +589,7 @@ void BattleUnit::updateArmorFromNonSoldier(const Mod* mod, Armor* newArmor, int 
 		_stunlevel = 0;
 	}
 
-	int generalRank = 0;
-	if (_originalFaction == FACTION_HOSTILE)
-	{
-		const int max = 7;
-		const char* rankList[max] =
-		{
-			"STR_LIVE_SOLDIER",
-			"STR_LIVE_ENGINEER",
-			"STR_LIVE_MEDIC",
-			"STR_LIVE_NAVIGATOR",
-			"STR_LIVE_LEADER",
-			"STR_LIVE_COMMANDER",
-			"STR_LIVE_TERRORIST",
-		};
-		for (int i = 0; i < max; ++i)
-		{
-			if (_rank.compare(rankList[i]) == 0)
-			{
-				generalRank = i;
-				break;
-			}
-		}
-	}
-	else if (_originalFaction == FACTION_NEUTRAL)
-	{
-		generalRank = RNG::seedless(0, 7);
-	}
-
-	setRecolor(RNG::seedless(0, 127), RNG::seedless(0, 127), generalRank);
+	setRecolor(RNG::seedless(0, 127), RNG::seedless(0, 127), _rankIntUnified);
 
 	prepareUnitSounds();
 	prepareUnitResponseSounds(mod);
@@ -595,260 +614,286 @@ BattleUnit::~BattleUnit()
  * Loads the unit from a YAML file.
  * @param node YAML node.
  */
-void BattleUnit::load(const YAML::Node &node, const Mod *mod, const ScriptGlobal *shared)
+void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const ScriptGlobal *shared)
 {
-	_id = node["id"].as<int>(_id);
-	_faction = (UnitFaction)node["faction"].as<int>(_faction);
-	_status = (UnitStatus)node["status"].as<int>(_status);
-	_wantsToSurrender = node["wantsToSurrender"].as<bool>(_wantsToSurrender);
-	_isSurrendering = node["isSurrendering"].as<bool>(_isSurrendering);
-	_pos = node["position"].as<Position>(_pos);
-	_direction = _toDirection = node["direction"].as<int>(_direction);
-	_directionTurret = _toDirectionTurret = node["directionTurret"].as<int>(_directionTurret);
-	_tu = node["tu"].as<int>(_tu);
-	_health = node["health"].as<int>(_health);
-	_mana = node["mana"].as<int>(_mana);
-	_stunlevel = node["stunlevel"].as<int>(_stunlevel);
-	_energy = node["energy"].as<int>(_energy);
-	_morale = node["morale"].as<int>(_morale);
-	_kneeled = node["kneeled"].as<bool>(_kneeled);
-	_floating = node["floating"].as<bool>(_floating);
-	for (int i=0; i < SIDE_MAX; i++)
-		_currentArmor[i] = node["armor"][i].as<int>(_currentArmor[i]);
-	for (int i=0; i < BODYPART_MAX; i++)
-		_fatalWounds[i] = node["fatalWounds"][i].as<int>(_fatalWounds[i]);
-	_fire = node["fire"].as<int>(_fire);
-	_exp.bravery = node["expBravery"].as<int>(_exp.bravery);
-	_exp.reactions = node["expReactions"].as<int>(_exp.reactions);
-	_exp.firing = node["expFiring"].as<int>(_exp.firing);
-	_exp.throwing = node["expThrowing"].as<int>(_exp.throwing);
-	_exp.psiSkill = node["expPsiSkill"].as<int>(_exp.psiSkill);
-	_exp.psiStrength = node["expPsiStrength"].as<int>(_exp.psiStrength);
-	_exp.mana = node["expMana"].as<int>(_exp.mana);
-	_exp.melee = node["expMelee"].as<int>(_exp.melee);
-	_stats = node["currStats"].as<UnitStats>(_stats);
-	_turretType = node["turretType"].as<int>(_turretType);
-	_visible = node["visible"].as<bool>(_visible);
-	_turnsSinceSpotted = node["turnsSinceSpotted"].as<int>(_turnsSinceSpotted);
-	_turnsLeftSpottedForSnipers = node["turnsLeftSpottedForSnipers"].as<int>(_turnsLeftSpottedForSnipers);
-	_turnsSinceStunned = node["turnsSinceStunned"].as<int>(_turnsSinceStunned);
-	_killedBy = (UnitFaction)node["killedBy"].as<int>(_killedBy);
-	_moraleRestored = node["moraleRestored"].as<int>(_moraleRestored);
-	_rankInt = node["rankInt"].as<int>(_rankInt);
-	_kills = node["kills"].as<int>(_kills);
-	_dontReselect = node["dontReselect"].as<bool>(_dontReselect);
+	const auto& reader = node.useIndex();
+	reader.tryRead("id", _id);
+	reader.tryRead("faction", _faction);
+	reader.tryRead("status", _status);
+	reader.tryRead("wantsToSurrender", _wantsToSurrender);
+	reader.tryRead("isSurrendering", _isSurrendering);
+	reader.tryRead("position", _pos);
+	reader.tryRead("direction", _direction);
+	_toDirection = _direction;
+	reader.tryRead("directionTurret", _directionTurret);
+	_toDirectionTurret = _directionTurret;
+	reader.tryRead("tu", _tu);
+	reader.tryRead("health", _health);
+	reader.tryRead("mana", _mana);
+	reader.tryRead("stunlevel", _stunlevel);
+	reader.tryRead("energy", _energy);
+	reader.tryRead("morale", _morale);
+	reader.tryRead("kneeled", _kneeled);
+	reader.tryRead("floating", _floating);
+	for (int i = 0; i < SIDE_MAX; i++)
+		reader["armor"][i].tryReadVal(_currentArmor[i]);
+	for (int i = 0; i < BODYPART_MAX; i++)
+		reader["fatalWounds"][i].tryReadVal(_fatalWounds[i]);
+	reader.tryRead("fire", _fire);
+	reader.tryRead("expBravery", _exp.bravery);
+	reader.tryRead("expReactions", _exp.reactions);
+	reader.tryRead("expFiring", _exp.firing);
+	reader.tryRead("expThrowing", _exp.throwing);
+	reader.tryRead("expPsiSkill", _exp.psiSkill);
+	reader.tryRead("expPsiStrength", _exp.psiStrength); // #FINNIKTODO save hacking and sampling exp too!!!
+	reader.tryRead("expMana", _exp.mana);
+	reader.tryRead("expMelee", _exp.melee);
+	reader.tryRead("currStats", _stats);
+	reader.tryRead("turretType", _turretType);
+	reader.tryRead("visible", _visible);
+	reader.tryRead("wasFriendlyFired", _wasFriendlyFired);
+	reader.tryRead("undercover", _undercover);
+
+	reader.tryReadAs<int>("turnsSinceSpotted", _turnsSinceSpotted[FACTION_HOSTILE]);
+	reader.tryReadAs<int>("turnsLeftSpottedForSnipers", _turnsLeftSpottedForSnipers[FACTION_HOSTILE]);
+	reader.tryReadAs<int>("turnsSinceSpottedByXcom", _turnsSinceSpotted[FACTION_PLAYER]);
+	reader.tryReadAs<int>("turnsLeftSpottedForSnipersByXcom", _turnsLeftSpottedForSnipers[FACTION_PLAYER]);
+	reader.tryReadAs<int>("turnsSinceSpottedByCivilian", _turnsSinceSpotted[FACTION_NEUTRAL]);
+	reader.tryReadAs<int>("turnsLeftSpottedForSnipersByCivilian", _turnsLeftSpottedForSnipers[FACTION_NEUTRAL]);
+	reader.tryReadAs<int>("turnsSinceStunned", _turnsSinceStunned);
+
+	reader.tryRead("rankInt", _rankInt);
+	reader.tryRead("rankIntUnified", _rankIntUnified);
+	reader.tryRead("moraleRestored", _moraleRestored);
+	reader.tryRead("notificationShown", _notificationShown);
+	reader.tryRead("killedBy", _killedBy);
+	reader.tryRead("kills", _kills);
+	reader.tryRead("warned", _warned);
+	reader.tryRead("alarmed", _alarmed);
+	reader.tryRead("dontReselect", _dontReselect);
+	reader.tryRead("aiMedikitUsed", _aiMedikitUsed);
 	_charging = 0;
-
-	if (const YAML::Node& spawn = node["spawnUnit"])
+	if ((_spawnUnit = mod->getUnit(reader["spawnUnit"].readVal<std::string>(""), false))) // ignore bugged types
 	{
-		_spawnUnit = mod->getUnit(spawn.as<std::string>(), false); //ignored bugged types
-		if (_spawnUnit)
-		{
-			_respawn = node["respawn"].as<bool>(_respawn);
-			_spawnUnitFaction = (UnitFaction)node["spawnUnitFaction"].as<int>(_spawnUnitFaction);
-		}
+		reader.tryRead("respawn", _respawn);
+		reader.tryRead("spawnUnitFaction", _spawnUnitFaction);
 	}
+	reader.tryRead("motionPoints", _motionPoints);
+	reader.tryRead("customMarker", _customMarker);
+	reader.tryRead("alreadyRespawned", _alreadyRespawned);
+	reader.tryRead("activeHand", _activeHand);
+	reader.tryRead("preferredHandForReactions", _preferredHandForReactions);
+	reader.tryRead("reactionsDisabledForLeftHand", _reactionsDisabledForLeftHand);
+	reader.tryRead("reactionsDisabledForRightHand", _reactionsDisabledForRightHand);
+	if (reader["tempUnitStatistics"])
+		_statistics->load(reader["tempUnitStatistics"]);
+	reader.tryRead("murdererId", _murdererId);
+	reader.tryRead("fatalShotSide", _fatalShotSide);
+	reader.tryRead("fatalShotBodyPart", _fatalShotBodyPart);
+	reader.tryRead("murdererWeapon", _murdererWeapon);
+	reader.tryRead("murdererWeaponAmmo", _murdererWeaponAmmo);
 
-	_motionPoints = node["motionPoints"].as<int>(0);
-	_customMarker = node["customMarker"].as<int>(0);
-	_alreadyRespawned = node["alreadyRespawned"].as<bool>(_alreadyRespawned);
-	_activeHand = node["activeHand"].as<std::string>(_activeHand);
-	_preferredHandForReactions = node["preferredHandForReactions"].as<std::string>(_preferredHandForReactions);
-	_reactionsDisabledForLeftHand = node["reactionsDisabledForLeftHand"].as<bool>(_reactionsDisabledForLeftHand);
-	_reactionsDisabledForRightHand = node["reactionsDisabledForRightHand"].as<bool>(_reactionsDisabledForRightHand);
-	if (node["tempUnitStatistics"])
-	{
-		_statistics->load(node["tempUnitStatistics"]);
-	}
-	_murdererId = node["murdererId"].as<int>(_murdererId);
-	_fatalShotSide = (UnitSide)node["fatalShotSide"].as<int>(_fatalShotSide);
-	_fatalShotBodyPart = (UnitBodyPart)node["fatalShotBodyPart"].as<int>(_fatalShotBodyPart);
-	_murdererWeapon = node["murdererWeapon"].as<std::string>(_murdererWeapon);
-	_murdererWeaponAmmo = node["murdererWeaponAmmo"].as<std::string>(_murdererWeaponAmmo);
-
-	if (const YAML::Node& p = node["recolor"])
+	if (const auto& recolor = reader["recolor"])
 	{
 		_recolor.clear();
-		for (size_t i = 0; i < p.size(); ++i)
-		{
-			_recolor.push_back(std::make_pair(p[i][0].as<int>(), p[i][1].as<int>()));
-		}
+		for (size_t i = 0; i < recolor.childrenCount(); ++i)
+			_recolor.push_back(std::make_pair(recolor[i][0].readVal<Uint8>(), recolor[i][1].readVal<Uint8>()));
 	}
-	_mindControllerID = node["mindControllerID"].as<int>(_mindControllerID);
-	_summonedPlayerUnit = node["summonedPlayerUnit"].as<bool>(_summonedPlayerUnit);
-	_resummonedFakeCivilian = node["resummonedFakeCivilian"].as<bool>(_resummonedFakeCivilian);
-	_pickUpWeaponsMoreActively = node["pickUpWeaponsMoreActively"].as<bool>(_pickUpWeaponsMoreActively);
-	_disableIndicators = node["disableIndicators"].as<bool>(_disableIndicators);
-	_movementType = (MovementType)node["movementType"].as<int>(_movementType);
-	if (const YAML::Node& p = node["moveCost"])
+	reader.tryRead("mindControllerID", _mindControllerID);
+	reader.tryRead("summonedPlayerUnit", _summonedPlayerUnit);
+	reader.tryRead("resummonedFakeCivilian", _resummonedFakeCivilian);
+	reader.tryRead("pickUpWeaponsMoreActively", _pickUpWeaponsMoreActively);
+	reader.tryRead("disableIndicators", _disableIndicators);
+	reader.tryRead("movementType", _movementType);
+	if (const auto& moveCost = reader["moveCost"])
 	{
-		_moveCostBase.load(p["basePercent"]);
-		_moveCostBaseFly.load(p["baseFlyPercent"]);
-		_moveCostBaseClimb.load(p["baseClimbPercent"]);
-		_moveCostBaseNormal.load(p["baseNormalPercent"]);
+		_moveCostBase.load(moveCost["basePercent"]);
+		_moveCostBaseFly.load(moveCost["baseFlyPercent"]);
+		_moveCostBaseClimb.load(moveCost["baseClimbPercent"]);
+		_moveCostBaseNormal.load(moveCost["baseNormalPercent"]);
 	}
-	_vip = node["vip"].as<bool>(_vip);
-	_bannedInNextStage = node["bannedInNextStage"].as<bool>(_bannedInNextStage);
-	_meleeAttackedBy = node["meleeAttackedBy"].as<std::vector<int> >(_meleeAttackedBy);
-
-	_scriptValues.load(node, shared);
+	reader.tryRead("vip", _vip);
+	reader.tryRead("bannedInNextStage", _bannedInNextStage);
+	reader.tryRead("meleeAttackedBy", _meleeAttackedBy);
+	_scriptValues.load(reader, shared);
 }
 
 /**
  * Saves the soldier to a YAML file.
  * @return YAML node.
  */
-YAML::Node BattleUnit::save(const ScriptGlobal *shared) const
+void BattleUnit::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const
 {
-	YAML::Node node;
-
-	node["id"] = _id;
-	node["genUnitType"] = _type;
-	node["genUnitArmor"] = _armor->getType();
-	node["faction"] = (int)_faction;
-	node["status"] = (int)_status;
-	if (_wantsToSurrender)
-		node["wantsToSurrender"] = _wantsToSurrender;
-	if (_isSurrendering)
-		node["isSurrendering"] = _isSurrendering;
-	node["position"] = _pos;
-	node["direction"] = _direction;
-	node["directionTurret"] = _directionTurret;
-	node["tu"] = _tu;
-	node["health"] = _health;
-	node["mana"] = _mana;
-	node["stunlevel"] = _stunlevel;
-	node["energy"] = _energy;
-	node["morale"] = _morale;
-	if (_kneeled)
-		node["kneeled"] = _kneeled;
-	if (_floating)
-		node["floating"] = _floating;
-	node["armor"].SetStyle(YAML::EmitterStyle::Flow); for (int i=0; i < SIDE_MAX; i++) node["armor"].push_back(_currentArmor[i]);
-	node["fatalWounds"].SetStyle(YAML::EmitterStyle::Flow); for (int i=0; i < BODYPART_MAX; i++) node["fatalWounds"].push_back(_fatalWounds[i]);
-	node["fire"] = _fire;
-	node["expBravery"] = _exp.bravery;
-	node["expReactions"] = _exp.reactions;
-	node["expFiring"] = _exp.firing;
-	node["expThrowing"] = _exp.throwing;
-	node["expPsiSkill"] = _exp.psiSkill;
-	node["expPsiStrength"] = _exp.psiStrength;
-	node["expMana"] = _exp.mana;
-	node["expMelee"] = _exp.melee;
-	node["currStats"] = _stats;
-	if (_turretType > -1)
-		node["turretType"] = _turretType;
-	if (_visible)
-		node["visible"] = _visible;
-	node["turnsSinceSpotted"] = _turnsSinceSpotted;
-	node["turnsLeftSpottedForSnipers"] = _turnsLeftSpottedForSnipers;
-	node["turnsSinceStunned"] = _turnsSinceStunned;
-	node["rankInt"] = _rankInt;
-	node["moraleRestored"] = _moraleRestored;
-	if (getAIModule())
+	writer.setAsMap();
+	writer.write("id", _id);
+	writer.write("genUnitType", _type);
+	writer.write("genUnitArmor", _armor->getType());
+	writer.write("faction", _faction);
+	writer.write("status", _status);
+	if (!_roles.empty())
 	{
-		node["AI"] = getAIModule()->save();
+		auto rolesWriter = writer["roles"];
+		rolesWriter.setAsSeq();
+		rolesWriter.setFlowStyle();
+		for (auto r : _roles)
+		{
+			rolesWriter.write(r);
+		}
 	}
-	node["killedBy"] = (int)_killedBy; // does not have a default value, must always be saved
+	if (_wantsToSurrender)
+		writer.write("wantsToSurrender", _wantsToSurrender);
+	if (_isSurrendering)
+		writer.write("isSurrendering", _isSurrendering);
+	writer.write("position", _pos);
+	writer.write("direction", _direction);
+	writer.write("directionTurret", _directionTurret);
+	writer.write("tu", _tu);
+	writer.write("health", _health);
+	writer.write("mana", _mana);
+	writer.write("stunlevel", _stunlevel);
+	writer.write("energy", _energy);
+	writer.write("morale", _morale);
+	if (_kneeled)
+		writer.write("kneeled", _kneeled);
+	if (_floating)
+		writer.write("floating", _floating);
+	auto armorWriter = writer["armor"];
+	armorWriter.setAsSeq();
+	armorWriter.setFlowStyle();
+	for (int i = 0; i < SIDE_MAX; i++)
+		armorWriter.write(_currentArmor[i]);
+	auto fwWriter = writer["fatalWounds"];
+	fwWriter.setAsSeq();
+	fwWriter.setFlowStyle();
+	for (int i=0; i < BODYPART_MAX; i++)
+		fwWriter.write(_fatalWounds[i]);
+	writer.write("fire", _fire);
+	writer.write("expBravery", _exp.bravery);
+	writer.write("expReactions", _exp.reactions);
+	writer.write("expFiring", _exp.firing);
+	writer.write("expThrowing", _exp.throwing);
+	writer.write("expPsiSkill", _exp.psiSkill);
+	writer.write("expPsiStrength", _exp.psiStrength);
+	writer.write("expMana", _exp.mana);
+	writer.write("expMelee", _exp.melee);
+	writer.write("currStats", _stats);
+	if (_turretType > -1)
+		writer.write("turretType", _turretType);
+	if (_visible)
+		writer.write("visible", _visible);
+	if (_wasFriendlyFired)
+		writer.write("wasFriendlyFired", _wasFriendlyFired);
+	if (_undercover)
+		writer.write("undercover", _undercover);
+	writer.writeAs<int>("turnsSinceSpotted", _turnsSinceSpotted[FACTION_HOSTILE]);
+	writer.writeAs<int>("turnsLeftSpottedForSnipers", _turnsLeftSpottedForSnipers[FACTION_HOSTILE]);
+	writer.tryWriteAs<int>("turnsSinceSpottedByXcom", _turnsSinceSpotted[FACTION_PLAYER], 255);
+	writer.tryWriteAs<int>("turnsLeftSpottedForSnipersByXcom", _turnsLeftSpottedForSnipers[FACTION_PLAYER], 0);
+	writer.tryWriteAs<int>("turnsSinceSpottedByCivilian", _turnsSinceSpotted[FACTION_NEUTRAL], 255);
+	writer.tryWriteAs<int>("turnsLeftSpottedForSnipersByCivilian", _turnsLeftSpottedForSnipers[FACTION_NEUTRAL], 0);
+	writer.writeAs<int>("turnsSinceStunned", _turnsSinceStunned);
+
+	writer.write("rankInt", _rankInt);
+	writer.write("rankIntUnified", _rankIntUnified);
+	writer.write("moraleRestored", _moraleRestored);
+	if (_notificationShown > 0)
+		writer.write("notificationShown", _notificationShown);
+	if (getAIModule())
+		getAIModule()->save(writer["AI"]);
+	writer.write("killedBy", _killedBy); // does not have a default value, must always be saved
 	if (_originalFaction != _faction)
-		node["originalFaction"] = (int)_originalFaction;
+		writer.write("originalFaction", _originalFaction);
 	if (_kills)
-		node["kills"] = _kills;
+		writer.write("kills", _kills);
+	if (_alarmed)
+		writer.write("alarmed", _alarmed);
+	if (_warned)
+		writer.write("warned", _warned);
+	if (_freshReinforcement)
+		writer.write("freshReinforcement", _freshReinforcement);
 	if (_faction == FACTION_PLAYER && _dontReselect)
-		node["dontReselect"] = _dontReselect;
-
+		writer.write("dontReselect", _dontReselect);
+	if (_aiMedikitUsed)
+		writer.write("aiMedikitUsed", _aiMedikitUsed);
 	if (_previousOwner)
-		node["previousOwner"] = _previousOwner->getId();
-
+		writer.write("previousOwner", _previousOwner->getId());
 	if (_spawnUnit)
 	{
-		node["spawnUnit"] = _spawnUnit->getType();
-		node["respawn"] = _respawn;
-		node["spawnUnitFaction"] = (int)_spawnUnitFaction;
+		writer.write("spawnUnit", _spawnUnit->getType());
+		writer.write("respawn", _respawn);
+		writer.write("spawnUnitFaction", _spawnUnitFaction);
 	}
-
-	node["motionPoints"] = _motionPoints;
+	writer.write("motionPoints", _motionPoints);
+	writer.write("specialObjective", (int)_specialObjective);
 	if (_customMarker > 0)
-		node["customMarker"] = _customMarker;
+		writer.write("customMarker", _customMarker);
 	if (_alreadyRespawned)
-		node["alreadyRespawned"] = _alreadyRespawned;
-	node["activeHand"] = _activeHand;
+		writer.write("alreadyRespawned", _alreadyRespawned);
+	writer.write("activeHand", _activeHand);
 	if (!_preferredHandForReactions.empty())
-		node["preferredHandForReactions"] = _preferredHandForReactions;
+		writer.write("preferredHandForReactions", _preferredHandForReactions);
 	if (_reactionsDisabledForLeftHand)
-		node["reactionsDisabledForLeftHand"] = _reactionsDisabledForLeftHand;
+		writer.write("reactionsDisabledForLeftHand", _reactionsDisabledForLeftHand);
 	if (_reactionsDisabledForRightHand)
-		node["reactionsDisabledForRightHand"] = _reactionsDisabledForRightHand;
-	node["tempUnitStatistics"] = _statistics->save();
+		writer.write("reactionsDisabledForRightHand", _reactionsDisabledForRightHand);
+	_statistics->save(writer["tempUnitStatistics"]);
 	if (_murdererId)
-		node["murdererId"] = _murdererId;
+		writer.write("murdererId", _murdererId);
 	if (_fatalShotSide)
-		node["fatalShotSide"] = (int)_fatalShotSide;
+		writer.write("fatalShotSide", _fatalShotSide);
 	if (_fatalShotBodyPart)
-		node["fatalShotBodyPart"] = (int)_fatalShotBodyPart;
+		writer.write("fatalShotBodyPart", _fatalShotBodyPart);
 	if (!_murdererWeapon.empty())
-		node["murdererWeapon"] = _murdererWeapon;
+		writer.write("murdererWeapon", _murdererWeapon);
 	if (!_murdererWeaponAmmo.empty())
-		node["murdererWeaponAmmo"] = _murdererWeaponAmmo;
-
-	for (size_t i = 0; i < _recolor.size(); ++i)
-	{
-		YAML::Node p;
-		p.SetStyle(YAML::EmitterStyle::Flow);
-		p.push_back((int)_recolor[i].first);
-		p.push_back((int)_recolor[i].second);
-		node["recolor"].push_back(p);
-	}
+		writer.write("murdererWeaponAmmo", _murdererWeaponAmmo);
+	writer.write("recolor", _recolor,
+		[](YAML::YamlNodeWriter& vectorWriter, std::pair<Uint8, Uint8> pair)
+		{
+			auto pairWriter = vectorWriter.write();
+			pairWriter.setAsSeq();
+			pairWriter.setFlowStyle();
+			pairWriter.write(pair.first);
+			pairWriter.write(pair.second);
+		});
 	if (_mindControllerID)
-		node["mindControllerID"] = _mindControllerID;
+		writer.write("mindControllerID", _mindControllerID);
 	if (_summonedPlayerUnit)
-		node["summonedPlayerUnit"] = _summonedPlayerUnit;
+		writer.write("summonedPlayerUnit", _summonedPlayerUnit);
 	if (_resummonedFakeCivilian)
-		node["resummonedFakeCivilian"] = _resummonedFakeCivilian;
+		writer.write("resummonedFakeCivilian", _resummonedFakeCivilian);
 	if (_pickUpWeaponsMoreActively)
-		node["pickUpWeaponsMoreActively"] = _pickUpWeaponsMoreActively;
+		writer.write("pickUpWeaponsMoreActively", _pickUpWeaponsMoreActively);
 	if (_disableIndicators)
-		node["disableIndicators"] = _disableIndicators;
+		writer.write("disableIndicators", _disableIndicators);
 
 	if (_originalMovementType != _movementType)
-		node["movementType"] = (int)_movementType;
-
+		writer.write("movementType", (int)_movementType);
+	if (_moveCostBase != _armor->getMoveCostBase() ||
+		_moveCostBaseFly != _armor->getMoveCostBaseFly() ||
+		_moveCostBaseClimb != _armor->getMoveCostBaseClimb() ||
+		_moveCostBaseNormal != _armor->getMoveCostBaseNormal())
 	{
-		YAML::Node p;
+		auto moveCostWriter = writer["moveCost"];
+		moveCostWriter.setAsMap();
+		moveCostWriter.setFlowStyle();
 		if (_moveCostBase != _armor->getMoveCostBase())
-		{
-			_moveCostBase.save(p, "basePercent");
-		}
+			_moveCostBase.save(moveCostWriter, "basePercent");
 		if (_moveCostBaseFly != _armor->getMoveCostBaseFly())
-		{
-			_moveCostBaseFly.save(p, "baseFlyPercent");
-		}
+			_moveCostBaseFly.save(moveCostWriter, "baseFlyPercent");
 		if (_moveCostBaseClimb != _armor->getMoveCostBaseClimb())
-		{
-			_moveCostBaseClimb.save(p, "baseClimbPercent");
-		}
+			_moveCostBaseClimb.save(moveCostWriter, "baseClimbPercent");
 		if (_moveCostBaseNormal != _armor->getMoveCostBaseNormal())
-		{
-			_moveCostBaseNormal.save(p, "baseNormalPercent");
-		}
-		if (!p.IsNull())
-		{
-			p.SetStyle(YAML::EmitterStyle::Flow);
-			node["moveCost"] = p;
-		}
+			_moveCostBaseNormal.save(moveCostWriter, "baseNormalPercent");
 	}
 	if (_vip)
-		node["vip"] = _vip;
+		writer.write("vip", _vip);
 	if (_bannedInNextStage)
-		node["bannedInNextStage"] = _bannedInNextStage;
+		writer.write("bannedInNextStage", _bannedInNextStage);
 	if (!_meleeAttackedBy.empty())
-	{
-		node["meleeAttackedBy"] = _meleeAttackedBy;
-	}
+		writer.write("meleeAttackedBy", _meleeAttackedBy);
 
-	_scriptValues.save(node, shared);
-
-	return node;
+	_scriptValues.save(writer, shared);
 }
 
 /**
@@ -1223,6 +1268,29 @@ int BattleUnit::getDiagonalWalkingPhase() const
 }
 
 /**
+ * Gets if the unit can be uncovered.
+ * @return if unit is not undercovered anymore for checking unit.
+ */
+bool BattleUnit::tryUncover()
+{
+	if (!_undercover)
+	{
+		return true;
+	}
+	else
+	{
+		if (getRightHandWeapon() == nullptr && getLeftHandWeapon() == nullptr)
+		{
+			return _revealed;
+		}
+		else
+		{
+			return true;
+		}
+	}
+}
+
+/**
  * Look at a point.
  * @param point Position to look at.
  * @param turret True to turn the turret, false to turn the unit.
@@ -1377,6 +1445,21 @@ UnitFaction BattleUnit::getFaction() const
 {
 	return _faction;
 }
+
+/**
+ * Sets geoscape soldier in case we create one for this unit in debreafing.
+ * @param soldier Soldier.
+ */
+void BattleUnit::setGeoscapeSoldier(Soldier* soldier)
+{
+	_geoscapeSoldier = soldier;
+	// Set basic parameters as we would not need much of it stats.
+	_name = soldier->getName(true);
+	_id = soldier->getId();
+	_type = "SOLDIER";
+
+}
+
 
 /**
  * Gets values used for recoloring sprites.
@@ -1565,12 +1648,26 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		return 0;
 	}
 
+	if (attack.attacker != nullptr)
+	{
+		if ((attack.attacker->getFaction() == FACTION_PLAYER && this->getFaction() == FACTION_PLAYER)
+			&& (attack.type == BA_AUTOSHOT || attack.type == BA_SNAPSHOT || attack.type == BA_AIMEDSHOT || attack.type == BA_HIT) 
+			&& save->getGeoscapeSave()->isFtAGame())
+		{
+			int baseChange = -5;
+			this->moraleChange(baseChange - (2 * save->getGeoscapeSave()->getDifficultyCoefficient()) - RNG::generate(0, 5));
+			attack.attacker->moraleChange(baseChange + (2 * save->getGeoscapeSave()->getDifficultyCoefficient()) + RNG::generate(0, 5));
+
+			this->setFrienlyFired(true);
+		}
+	}
+
 	RNG::RandomState rand = RNG::globalRandomState().subSequence();
 	damage = reduceByResistance(damage, type->ResistType);
 
 	if (!type->IgnoreDirection)
 	{
-		if (relative == Position(0, 0, 0))
+		if (relative.x == 0 && relative.y == 0 && relative.z <= 0)
 		{
 			side = SIDE_UNDER;
 		}
@@ -1684,21 +1781,20 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		&& !specialDamageTransform->getZombieUnit(this).empty()
 		&& getArmor()->getZombiImmune() == false)
 	{
-		if (attack.attacker)
+		specialDamageTransformChance = specialDamageTransform->getZombieUnitChance();
+
+		if (auto conf = attack.weapon_item ? attack.weapon_item->getActionConf(attack.type) : nullptr)
 		{
-			if (getOriginalFaction() == FACTION_HOSTILE && attack.attacker->getOriginalFaction() == FACTION_HOSTILE)
+			specialDamageTransformChance = useIntNullable(conf->ammoZombieUnitChanceOverride, specialDamageTransformChance);
+		}
+
+		if (getOriginalFaction() == FACTION_HOSTILE)
+		{
+			if (attack.attacker == nullptr || attack.attacker->getOriginalFaction() == FACTION_HOSTILE)
 			{
 				// (mind-controlled) chryssalid on snakeman action still not allowed
 				specialDamageTransformChance = 0;
 			}
-			else
-			{
-				specialDamageTransformChance = specialDamageTransform->getZombieUnitChance();
-			}
-		}
-		else
-		{
-			specialDamageTransformChance = getOriginalFaction() != FACTION_HOSTILE ? specialDamageTransform->getZombieUnitChance() : 0;
 		}
 	}
 	else
@@ -1806,6 +1902,8 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		constexpr int arg_selfDestructChance = 3;
 		constexpr int arg_moraleLoss = 4;
 		constexpr int arg_fire = 5;
+		constexpr int arg_attackerTurnsSinceSpotted = 6;
+		constexpr int arg_attackerTurnsLeftSpottedForSnipers = 7;
 
 		ModScript::DamageSpecialUnit::Output args { };
 
@@ -1858,6 +1956,39 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 			{
 				// bullet/ammo
 				std::get<arg_fire>(args.data) = 0;
+			}
+		}
+
+		// AI direct hit tracking
+		std::get<arg_attackerTurnsSinceSpotted>(args.data) = 255;
+		std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data) = 0;
+		if (attack.attacker)
+		{
+			std::get<arg_attackerTurnsSinceSpotted>(args.data) = attack.attacker->getTurnsSinceSpottedByFaction(getFaction());
+			std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data) = attack.attacker->getTurnsLeftSpottedForSnipersByFaction(getFaction());
+
+			if (getFaction() != attack.attacker->getFaction() &&
+				(attack.type == BA_AIMEDSHOT || attack.type == BA_SNAPSHOT || attack.type == BA_AUTOSHOT) &&
+				attack.damage_item != nullptr &&
+				(relative == Position(0,0,0) || (attack.damage_item->getRules()->getExplosionRadius(attack) == 0)))
+			{
+				AIModule *ai = getAIModule();
+				if (ai != 0)
+				{
+					ai->setWasHitBy(attack.attacker);
+				}
+
+				std::get<arg_attackerTurnsSinceSpotted>(args.data) = 0;
+				if (Mod::EXTENDED_SPOT_ON_HIT_FOR_SNIPING > 0)
+				{
+					// 0 = don't spot
+					// 1 = spot only if the victim doesn't die or pass out
+					// 2 = always spot
+					if (Mod::EXTENDED_SPOT_ON_HIT_FOR_SNIPING > 1 || !this->isOutThresholdExceed())
+					{
+						std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data) = std::max(std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data), getSpotterDuration());
+					}
+				}
 			}
 		}
 
@@ -1917,6 +2048,12 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 			setAlreadyExploded(true);
 			Position p = getPosition().toVoxel();
 			save->getBattleGame()->statePushNext(new ExplosionBState(save->getBattleGame(), p, BattleActionAttack{ BA_SELF_DESTRUCT, this, selfDestructItem, selfDestructItem }, 0));
+		}
+
+		if (attack.attacker)
+		{
+			attack.attacker->setTurnsSinceSpottedByFaction(getFaction(), std::get<arg_attackerTurnsSinceSpotted>(args.data));
+			attack.attacker->setTurnsLeftSpottedForSnipersByFaction(getFaction(), std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data));
 		}
 	}
 
@@ -2071,6 +2208,12 @@ bool BattleUnit::isIgnored() const
 	return _status == STATUS_IGNORE_ME;
 }
 
+void BattleUnit::prepareFreshReinforcement()
+{
+	_freshReinforcement = true;
+	_motionPoints = RNG::generate(1, 4);
+}
+
 /**
  * Get the number of time units a certain action takes.
  * @param actionType
@@ -2115,7 +2258,7 @@ RuleItemUseCost BattleUnit::getActionTUs(BattleActionType actionType, const Rule
 	RuleItemUseCost cost;
 	if (item != 0)
 	{
-		RuleItemUseCost flat = item->getFlatUse();
+		RuleItemUseFlat flat = item->getFlatUse();
 		switch (actionType)
 		{
 			case BA_PRIME:
@@ -2148,6 +2291,10 @@ RuleItemUseCost BattleUnit::getActionTUs(BattleActionType actionType, const Rule
 				cost = item->getCostAimed();
 				break;
 			case BA_USE:
+			case BA_HACK:
+				cost = item->getCostUse();
+				break;
+			case BA_SAMPLE:
 				cost = item->getCostUse();
 				break;
 			case BA_MINDCONTROL:
@@ -2165,7 +2312,7 @@ RuleItemUseCost BattleUnit::getActionTUs(BattleActionType actionType, const Rule
 	return cost;
 }
 
-void BattleUnit::applyPercentages(RuleItemUseCost &cost, const RuleItemUseCost &flat) const
+void BattleUnit::applyPercentages(RuleItemUseCost &cost, const RuleItemUseFlat &flat) const
 {
 	{
 		// if it's a percentage, apply it to unit TUs
@@ -2678,11 +2825,19 @@ void BattleUnit::prepareMorale(int morale)
 	{
 		moraleChange(morale);
 		int chance = 100 - (2 * getMorale());
-		if (RNG::generate(1,100) <= chance)
+		if (RNG::percent(chance))
 		{
-			int type = RNG::generate(0,100);
-			int berserkChance = _unitRules ? _unitRules->getBerserkChance() : 33;
-			_status = (type <= berserkChance ? STATUS_BERSERK : STATUS_PANICKING); // 33% chance of berserk, panic can mean freeze or flee, but that is determined later
+			int berserkChance = _unitRules ? _unitRules->getBerserkChance() : -1; // -1 represents true 1/3 (33.33333...%)
+			bool berserk = false;
+			if (berserkChance == -1)
+			{
+				berserk = (RNG::generate(0, 2) == 0); // vanilla OG
+			}
+			else
+			{
+				berserk = RNG::percent(berserkChance);
+			}
+			_status = (berserk ? STATUS_BERSERK : STATUS_PANICKING); // 33% chance of berserk, panic can mean freeze or flee, but that is determined later
 			_wantsToSurrender = true;
 		}
 		else
@@ -2716,6 +2871,7 @@ void BattleUnit::prepareNewTurn(bool fullProcess)
 
 	_hitByFire = false;
 	_dontReselect = false;
+	_aiMedikitUsed = false;
 	_motionPoints = 0;
 
 	if (!isOut())
@@ -2809,6 +2965,16 @@ void BattleUnit::updateUnitStats(bool tuAndEnergy, bool rest)
 
 	if (tuAndEnergy)
 	{
+		// lower recovery for just arrived reinforcement
+		if (_freshReinforcement)
+		{
+			double lowerTU = RNG::generate(-0.7, -0.4);
+			double lowerSta = RNG::generate(-0.6, -0.4);
+			TURecovery = _stats.tu * lowerTU;
+			ENRecovery = _stats.stamina * lowerSta;
+			_freshReinforcement = false;
+		}
+
 		// update stats
 		prepareTimeUnits(_armor->getTimeRecovery(this, TURecovery));
 		prepareEnergy(_armor->getEnergyRecovery(this, ENRecovery));
@@ -2901,6 +3067,63 @@ std::vector<BattleItem*> *BattleUnit::getInventory()
 }
 
 /**
+ * Check if item can stack with one that currently occupies the slot
+ * @param item Item to fit.
+ * @param slot Slot to fit.
+ * @param x X position in the slot.
+ * @param y Y position in the slot.
+ * @return True if item can be stacked to a slot.
+ */
+bool BattleUnit::canStackToSlot(BattleItem* item, const RuleInventory* slot, int x, int y) const
+{
+	// If target slot is empty stacking is not applicable
+	if (!getItem(slot, x, y)) { return false; }
+	// See if item is stackable at all. If not we can quit straight away
+	if (item->getRules()->getStackSize() < 2) {	return false; }
+	// Check if our item is of the same type as the one in the slot
+	if (item->getRules()->getType() != getItem(slot, x, y)->getRules()->getType()) { return false; }
+
+	// Count the amount of items that occupy that slot
+	int stackSize = 0;
+	for (std::vector<BattleItem*>::const_iterator i = _inventory.begin(); i != _inventory.end(); ++i)
+	{
+		if ((*i)->getSlot() == slot && (*i)->occupiesSlot(x, y))
+		{
+			++stackSize;
+		}
+	}
+
+	if (stackSize < item->getRules()->getStackSize())
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+void BattleUnit::loadRoles(const std::vector<int>& r)
+{
+	_roles.clear();
+	for (auto i : r)
+	{
+		SoldierRole role = static_cast<SoldierRole>(i);
+		if (_roles.empty() || std::find(_roles.begin(), _roles.end(), role) == _roles.end())
+		{
+			_roles.push_back(role);
+		}
+	}
+}
+
+ /** Get the pointer to the vector of inventory items.
+ * @return pointer to vector.
+ */
+const std::vector<BattleItem*> *BattleUnit::getInventory() const
+{
+	return &_inventory;
+}
+
+/**
  * Fit item into inventory slot.
  * @param slot Slot to fit.
  * @param item Item to fit.
@@ -2926,7 +3149,8 @@ bool BattleUnit::fitItemToInventory(const RuleInventory *slot, BattleItem *item)
 	{
 		for (const RuleSlot &rs : *slot->getSlots())
 		{
-			if (!Inventory::overlapItems(this, item, slot, rs.x, rs.y) && slot->fitItemInSlot(rule, rs.x, rs.y))
+			if (slot->fitItemInSlot(rule, rs.x, rs.y) &&
+				(!Inventory::overlapItems(this, item, slot, rs.x, rs.y) || canStackToSlot(item, slot, rs.x, rs.y)))
 			{
 				item->moveToOwner(this);
 				item->setSlot(slot);
@@ -2943,7 +3167,6 @@ bool BattleUnit::fitItemToInventory(const RuleInventory *slot, BattleItem *item)
  * Adds an item to an XCom soldier (auto-equip).
  * @param item Pointer to the Item.
  * @param mod Pointer to the Mod.
- * @param save Pointer to the saved battle game for storing items.
  * @param allowSecondClip allow the unit to take a second clip or not. (only applies to xcom soldiers, aliens are allowed regardless of this flag)
  * @param allowAutoLoadout allow auto equip of weapons for solders.
  * @param allowUnloadedWeapons allow equip of weapons without ammo.
@@ -2967,13 +3190,29 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 		weight = getCarriedWeight() + item->getTotalWeight();
 		// allow all weapons to be loaded by avoiding this check,
 		// they'll return false later anyway if the unit has something in his hand.
-		if (rule->getBattleType() != BT_FIREARM && rule->getBattleType() != BT_MELEE)
+		if ((rule->getBattleType() != BT_FIREARM && rule->getBattleType() != BT_MELEE) || rule->getStackSize() > 1)
 		{
 			int tally = 0;
 			for (auto* bi : *getInventory())
 			{
 				if (rule->getType() == bi->getRules()->getType())
 				{
+					if (mod->isFTAGame() && rule->getStackSize() > 1) // FtA logic
+					{
+						++tally;
+						if (allowSecondClip && rule->getBattleType() == BT_AMMO)
+						{
+							if (tally == 2 * rule->getStackSize())
+							{
+								return false;
+							}
+						}
+						else if(tally == rule->getStackSize())
+						{
+							return false;
+						}
+					}
+					else // standard logic
 					if (allowSecondClip && rule->getBattleType() == BT_AMMO)
 					{
 						tally++;
@@ -3062,6 +3301,26 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 				if (!placed && allowTwoMainWeapons && fitItemToInventory(leftHand, item))
 				{
 					placed = true;
+				}
+				// if we have a stackable weapon i.e. throwing knife in one of the hands, put spare items in the inventory
+				if (!placed && mod->isFTAGame()
+					&& item->getRules()->getStackSize() > 1
+					&&((getRightHandWeapon() && getRightHandWeapon()->getRules()->getType() == item->getRules()->getType())
+						||(getLeftHandWeapon() && getLeftHandWeapon()->getRules()->getType() == item->getRules()->getType())
+					))
+				{
+					for (const std::string& s : mod->getInvsList())
+					{
+						RuleInventory* slot = mod->getInventory(s);
+						if (slot->getType() == INV_SLOT)
+						{
+							placed = fitItemToInventory(slot, item);
+							if (placed)
+							{
+								break;
+							}
+						}
+					}
 				}
 			}
 		}
@@ -3189,6 +3448,13 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 void BattleUnit::think(BattleAction *action)
 {
 	reloadAmmo();
+	if (!_aiMedikitUsed)
+	{
+		// only perform once per turn
+		_aiMedikitUsed = true;
+		while (_currentAIState->medikit_think(BMT_HEAL)) {}
+		while (_currentAIState->medikit_think(BMT_STIMULANT)) {}
+	}
 	_currentAIState->think(action);
 }
 
@@ -3213,6 +3479,39 @@ AIModule *BattleUnit::getAIModule() const
 {
 	return _currentAIState;
 }
+
+/**
+ * Gets weight value as hostile unit.
+ */
+AIAttackWeight BattleUnit::getAITargetWeightAsHostile(const Mod *mod) const
+{
+	return _armor->getAITargetWeightAsHostile().getValueOr(mod->getAITargetWeightAsHostile());
+}
+
+/**
+ * Gets weight value as civilian unit when consider by aliens.
+ */
+AIAttackWeight BattleUnit::getAITargetWeightAsHostileCivilians(const Mod *mod) const
+{
+	return _armor->getAITargetWeightAsHostileCivilians().getValueOr(mod->getAITargetWeightAsHostileCivilians());
+}
+
+/**
+ * Gets weight value as same faction unit.
+ */
+AIAttackWeight BattleUnit::getAITargetWeightAsFriendly(const Mod *mod) const
+{
+	return _armor->getAITargetWeightAsFriendly().getValueOr(mod->getAITargetWeightAsFriendly());
+}
+
+/**
+ * Gets weight value as neutral unit (xcom to civ or vice versa).
+ */
+AIAttackWeight BattleUnit::getAITargetWeightAsNeutral(const Mod *mod) const
+{
+	return _armor->getAITargetWeightAsNeutral().getValueOr(mod->getAITargetWeightAsNeutral());
+}
+
 
 /**
  * Set whether this unit is visible.
@@ -3642,14 +3941,38 @@ bool BattleUnit::reloadAmmo()
 			int slot = ruleWeapon->getSlotForAmmo(bi->getRules());
 			if (slot != -1 && !weapon->getAmmoForSlot(slot))
 			{
-				int tuTemp = (Mod::EXTENDED_ITEM_RELOAD_COST && bi->getSlot()->getType() != INV_HAND) ? bi->getMoveToCost(weapon->getSlot()) : 0;
-				tuTemp += ruleWeapon->getTULoad(slot);
-				if (tuTemp < tuCost)
+				bool extendedItemReloadCostLocal = false;
+				if (weapon->getRules()->getExtendedItemReloadCostLocal() != 0)
 				{
-					tuCost = tuTemp;
-					ammo = bi;
-					slotAmmo = slot;
+					if (weapon->getRules()->getExtendedItemReloadCostLocal() == 1)
+					{
+						extendedItemReloadCostLocal = true;
+					}
+					else if (weapon->getRules()->getExtendedItemReloadCostLocal() == 2)
+					{
+						extendedItemReloadCostLocal = false;
+					}
+					int tuTemp = (extendedItemReloadCostLocal && bi->getSlot()->getType() != INV_HAND) ? bi->getSlot()->getCost(weapon->getSlot()) : 0;
+					tuTemp += ruleWeapon->getTULoad(slot);
+					if (tuTemp < tuCost)
+					{
+						tuCost = tuTemp;
+						ammo = bi;
+						slotAmmo = slot;
+					}
 				}
+				else
+				{
+					int tuTemp = (Mod::EXTENDED_ITEM_RELOAD_COST && bi->getSlot()->getType() != INV_HAND) ? bi->getSlot()->getCost(weapon->getSlot()) : 0;
+					tuTemp += ruleWeapon->getTULoad(slot);
+					if (tuTemp < tuCost)
+					{
+						tuCost = tuTemp;
+						ammo = bi;
+						slotAmmo = slot;
+					}
+				}
+
 			}
 		}
 
@@ -3902,16 +4225,35 @@ void BattleUnit::addMeleeExp()
 }
 
 /**
+ * Adds one the hacking exp counter.
+ */
+void BattleUnit::addHackingExp()
+{
+	_exp.hacking++;
+}
+
+/**
+ * Adds one the biology exp counter.
+ */
+void BattleUnit::addBiologyExp()
+{
+	_exp.biology++;
+}
+
+/**
+ * Adds one the anomaly (phisics, chemistry or alienTech) exp counter.
+ */
+void BattleUnit::addPhysicsExp()
+{
+	_exp.physics++;
+}
+
+/**
  * Did the unit gain any experience yet?
  */
 bool BattleUnit::hasGainedAnyExperience()
 {
-	if (!Mod::EXTENDED_EXPERIENCE_AWARD_SYSTEM)
-	{
-		// vanilla compatibility (throwing doesn't count)
-		return _exp.bravery || _exp.reactions || _exp.firing || _exp.psiSkill || _exp.psiStrength || _exp.melee || _exp.mana;
-	}
-	return _exp.bravery || _exp.reactions || _exp.firing || _exp.psiSkill || _exp.psiStrength || _exp.melee || _exp.throwing || _exp.mana;
+	return !_exp.empty();
 }
 
 void BattleUnit::updateGeoscapeStats(Soldier *soldier) const
@@ -3930,6 +4272,13 @@ void BattleUnit::updateGeoscapeStats(Soldier *soldier) const
 bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, SavedBattleGame *battle, StatAdjustment &statsDiff)
 {
 	Soldier *s = geoscape->getSoldier(_id);
+	if (this->getUnitRules() != 0)
+	{
+		if (this->getSpecialObjective() == SPECOBJ_FRIENDLY_VIP)
+		{
+			s = this->getGeoscapeSoldier();
+		}
+	}
 	if (s == 0)
 	{
 		return false;
@@ -3949,48 +4298,19 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 
 	auto recovery = (int)RNG::generate((healthLossOriginal*0.5),(healthLossOriginal*1.5));
 
-	if (_exp.bravery && stats->bravery < caps.bravery)
-	{
-		if (_exp.bravery > RNG::generate(0,10)) stats->bravery += 10;
-	}
-	if (_exp.reactions && stats->reactions < caps.reactions)
-	{
-		stats->reactions += improveStat(_exp.reactions);
-	}
-	if (_exp.firing && stats->firing < caps.firing)
-	{
-		stats->firing += improveStat(_exp.firing);
-	}
-	if (_exp.melee && stats->melee < caps.melee)
-	{
-		stats->melee += improveStat(_exp.melee);
-	}
-	if (_exp.throwing && stats->throwing < caps.throwing)
-	{
-		stats->throwing += improveStat(_exp.throwing);
-	}
-	if (_exp.psiSkill && stats->psiSkill < caps.psiSkill)
-	{
-		stats->psiSkill += improveStat(_exp.psiSkill);
-	}
-	if (_exp.psiStrength && stats->psiStrength < caps.psiStrength)
-	{
-		stats->psiStrength += improveStat(_exp.psiStrength);
-	}
-	if (mod->isManaTrainingPrimary())
-	{
-		if (_exp.mana && stats->mana < caps.mana)
-		{
-			stats->mana += improveStat(_exp.mana);
-		}
-	}
-
 	bool hasImproved = false;
 	if (hasGainedAnyExperience())
 	{
 		hasImproved = true;
-		if (s->getRank() == RANK_ROOKIE)
+		if (s->getRank() == RANK_ROOKIE && !mod->isFTAGame())
+		{
 			s->promoteRank();
+		}
+		else if (s->isRookieSoldier())
+		{
+			s->addExperience(ROLE_SOLDIER, RNG::generate(5, 10), "experience for completing first mission");
+			s->setRookieSoldier(false);
+		}
 		int v;
 		v = caps.tu - stats->tu;
 		if (v > 0) stats->tu += RNG::generate(0, v/10 + 2);
@@ -4004,10 +4324,43 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 		v = caps.strength - stats->strength;
 		if (v > 0) stats->strength += RNG::generate(0, v/10 + 2);
 		v = caps.stamina - stats->stamina;
-		if (v > 0) stats->stamina += RNG::generate(0, v/10 + 2);
+		if (v > 0) stats->stamina += RNG::generate(0, v/15 + 2);
+
+		if (!mod->isManaTrainingPrimary())
+			_exp.mana = 0;
+		s->improvePrimaryStats(&_exp, ROLE_SOLDIER);
+
+		// add experince for kills
+		if (_kills > 0)
+		{
+			int killExpMod = 100;
+			switch (geoscape->getDifficulty())
+			{
+				case DIFF_BEGINNER:
+					killExpMod = 110;
+					break;
+				case DIFF_EXPERIENCED:
+					killExpMod = 100;
+					break;
+				case DIFF_VETERAN:
+					killExpMod = 90;
+					break;
+				case DIFF_GENIUS:
+					killExpMod = 80;
+					break;
+				case DIFF_SUPERHUMAN:
+					killExpMod = 70;
+					break;
+				default: ;
+			}
+
+			int maxExp = (int)std::ceil(_kills * killExpMod / 100);
+			s->addExperience(ROLE_SOLDIER, RNG::generate(0, maxExp), "experience from enemy kills");
+		}
 	}
 
-	statsDiff.statGrowth += *stats; // add new stat
+	const UnitStats* newStats = s->getCurrentStats();
+	statsDiff.statGrowth += *newStats; // add new stat
 
 	if (_armor->getInstantWoundRecovery())
 	{
@@ -4028,7 +4381,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	}
 
 	//after mod execution this value could change
-	statsDiff.statGrowth = *stats - statsOld.statGrowth;
+	statsDiff.statGrowth = *newStats - statsOld.statGrowth;
 
 	s->setWoundRecovery(recovery);
 	s->setManaMissing(manaLoss);
@@ -4057,14 +4410,14 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
  * @param Experience counter.
  * @return Stat increase.
  */
-int BattleUnit::improveStat(int exp) const
-{
-	if      (exp > 10) return RNG::generate(2, 6);
-	else if (exp > 5)  return RNG::generate(1, 4);
-	else if (exp > 2)  return RNG::generate(1, 3);
-	else if (exp > 0)  return RNG::generate(0, 1);
-	else               return 0;
-}
+//int BattleUnit::improveStat(int exp) const
+//{
+//	if      (exp > 10) return RNG::generate(2, 6);
+//	else if (exp > 5)  return RNG::generate(1, 4);
+//	else if (exp > 2)  return RNG::generate(1, 3);
+//	else if (exp > 0)  return RNG::generate(0, 1);
+//	else               return 0;
+//}
 
 /**
  * Get the unit's minimap sprite index. Used to display the unit on the minimap
@@ -4674,13 +5027,86 @@ int BattleUnit::getCarriedWeight(BattleItem *draggingItem) const
 	return std::max(0,weight);
 }
 
+
+
+/**
+ * Set default state on unit.
+ */
+void BattleUnit::resetTurnsSince()
+{
+	for (auto& since : _turnsSinceSpotted)
+	{
+		since = 255;
+	}
+	for (auto& left : _turnsLeftSpottedForSnipers)
+	{
+		left = 0;
+	}
+	//_turnsSinceStunned is reset elsewhere
+}
+
+
+/**
+ * Update counters on unit.
+ */
+void BattleUnit::updateTurnsSince()
+{
+	for (auto& since : _turnsSinceSpotted)
+	{
+		since = Clamp(since + 1, 0, 255);
+	}
+	for (auto& left : _turnsLeftSpottedForSnipers)
+	{
+		left = Clamp(left - 1, 0, 255);
+	}
+	//_turnsSinceStunned is updated elsewhere
+}
+
+
+
+namespace
+{
+
+/// safe setter of value in array
+template<int I>
+void setUint8Array(Uint8 (&arr)[I], int offset, int value)
+{
+	if (0 <= offset && offset < I)
+	{
+		arr[offset] = Clamp(value, 0, 255);
+	}
+}
+
+/// safe getter of value in array
+template<int I>
+int getUint8Array(const Uint8 (&arr)[I], int offset)
+{
+	if (0 <= offset && offset < I)
+	{
+		return arr[offset];
+	}
+
+	return 0;
+}
+
+} // namespace
+
+
 /**
  * Set how long since this unit was last exposed.
  * @param turns number of turns
  */
 void BattleUnit::setTurnsSinceSpotted (int turns)
 {
-	_turnsSinceSpotted = turns;
+	_turnsSinceSpotted[FACTION_HOSTILE] = turns;
+}
+
+/**
+ * Set how many turns this unit will be exposed for. For specific faction.
+ */
+void BattleUnit::setTurnsSinceSpottedByFaction(UnitFaction faction, int turns)
+{
+	setUint8Array(_turnsSinceSpotted, faction, turns);
 }
 
 /**
@@ -4689,7 +5115,15 @@ void BattleUnit::setTurnsSinceSpotted (int turns)
  */
 int BattleUnit::getTurnsSinceSpotted() const
 {
-	return _turnsSinceSpotted;
+	return _turnsSinceSpotted[FACTION_HOSTILE];
+}
+
+/**
+ * Set how many turns this unit will be exposed for. For specific faction.
+ */
+int BattleUnit::getTurnsSinceSpottedByFaction(UnitFaction faction) const
+{
+	return getUint8Array(_turnsSinceSpotted, faction);
 }
 
 /**
@@ -4698,7 +5132,15 @@ int BattleUnit::getTurnsSinceSpotted() const
  */
 void BattleUnit::setTurnsLeftSpottedForSnipers (int turns)
 {
-	_turnsLeftSpottedForSnipers = turns;
+	_turnsLeftSpottedForSnipers[FACTION_HOSTILE] = turns;
+}
+
+/**
+ * Set how many turns left snipers know about this target. For specific faction.
+ */
+void BattleUnit::setTurnsLeftSpottedForSnipersByFaction (UnitFaction faction, int turns)
+{
+	setUint8Array(_turnsLeftSpottedForSnipers, faction, turns);
 }
 
 /**
@@ -4707,7 +5149,15 @@ void BattleUnit::setTurnsLeftSpottedForSnipers (int turns)
  */
 int BattleUnit::getTurnsLeftSpottedForSnipers() const
 {
-	return _turnsLeftSpottedForSnipers;
+	return _turnsLeftSpottedForSnipers[FACTION_HOSTILE];
+}
+
+/**
+ * Get how many turns left snipers know about this target. For specific faction.
+ */
+int BattleUnit::getTurnsLeftSpottedForSnipersByFaction(UnitFaction faction) const
+{
+	return getUint8Array(_turnsLeftSpottedForSnipers, faction);
 }
 
 /**
@@ -4759,7 +5209,7 @@ int BattleUnit::getRankInt() const
  * Derive the numeric unit rank from the string rank
  * (for soldier units).
  */
-void BattleUnit::deriveRank()
+void BattleUnit::deriveSoldierRank()
 {
 	if (_geoscapeSoldier)
 	{
@@ -4774,15 +5224,44 @@ void BattleUnit::deriveRank()
 		default:             _rankInt = 0; break;
 		}
 	}
+	_rankIntUnified = _rankInt;
 }
 
 /**
-* this function checks if a tile is visible from either of the unit's tiles, using maths.
-* @param pos the position to check against
-* @param useTurretDirection use turret facing (true) or body facing (false) for sector calculation
-* @return what the maths decide
-*/
-bool BattleUnit::checkViewSector (Position pos, bool useTurretDirection /* = false */) const
+ * derive a rank integer based on rank string (for Alien)
+ */
+void BattleUnit::deriveHostileRank()
+{
+	const int max = 7;
+	const char* rankList[max] =
+	{
+		"STR_LIVE_SOLDIER",
+		"STR_LIVE_ENGINEER",
+		"STR_LIVE_MEDIC",
+		"STR_LIVE_NAVIGATOR",
+		"STR_LIVE_LEADER",
+		"STR_LIVE_COMMANDER",
+		"STR_LIVE_TERRORIST",
+	};
+	for (int i = 0; i < max; ++i)
+	{
+		if (_rank.compare(rankList[i]) == 0)
+		{
+			_rankIntUnified = i;
+			break;
+		}
+	}
+}
+
+/**
+ * derive a rank integer based on rank string (for Civilians)
+ */
+void BattleUnit::deriveNeutralRank()
+{
+	_rankIntUnified = RNG::seedless(0, 7);
+}
+
+bool BattleUnit::checkViewSector(Position originPos, Position targetPos, int direction) const
 {
 	int unitSize = getArmor()->getSize();
 	//Check view cone from each of the unit's tiles
@@ -4790,9 +5269,9 @@ bool BattleUnit::checkViewSector (Position pos, bool useTurretDirection /* = fal
 	{
 		for (int y = 0; y < unitSize; ++y)
 		{
-			int deltaX = pos.x - (_pos.x + x);
-			int deltaY = (_pos.y + y) - pos.y;
-			switch (useTurretDirection ? _directionTurret : _direction)
+			int deltaX = targetPos.x - (originPos.x + x);
+			int deltaY = (originPos.y + y) - targetPos.y;
+			switch (direction)
 			{
 			case 0:
 				if ((deltaX + deltaY >= 0) && (deltaY - deltaX >= 0))
@@ -4832,6 +5311,19 @@ bool BattleUnit::checkViewSector (Position pos, bool useTurretDirection /* = fal
 		}
 	}
 	return false;
+}
+
+/**
+ * this function checks if a tile is visible from either of the unit's tiles, using maths.
+ * @param pos the position to check against
+ * @param useTurretDirection use turret facing (true) or body facing (false) for sector calculation
+ * @return what the maths decide
+ */
+bool BattleUnit::checkViewSector(Position targetPos, bool useTurretDirection /* = false */) const
+{
+	auto originPos = _pos;
+	int direction = useTurretDirection ? _directionTurret : _direction;
+	return checkViewSector(originPos, targetPos, direction);
 }
 
 /**
@@ -5513,6 +6005,70 @@ void BattleUnit::disableIndicators()
 	_disableIndicators = true;
 }
 
+/**
+ * Checks if this unit can be hacked using hacking device
+ * @return True if hacking is allowed
+ */
+bool BattleUnit::canBeHacked() const
+{
+	return (_armor->getHackingDefense() != 0 &&
+			getFaction() != FACTION_PLAYER &&
+			getOriginalFaction() != FACTION_PLAYER);
+}
+
+/**
+ * Process battleobject value updates on hacking
+ * @param result - result of hacking, true if success
+ */
+void BattleUnit::hackingPostProcess(bool result)
+{
+	if (getOriginalFaction() != FACTION_PLAYER || getOriginalFaction() != FACTION_NEUTRAL) // just in case
+	{
+		_stats.hacking += ceil(_stats.hacking * RNG::generate(0.3, 0.7));
+		if (!result)
+		{
+			//we buff the unit on failed hacking
+			_stats.firing += ceil(_stats.firing * RNG::generate(0.1, 0.4));
+			_stats.reactions += ceil(_stats.reactions * RNG::generate(0.1, 0.3));
+			_stats.melee += ceil(_stats.melee * RNG::generate(0.05, 0.45));
+		}
+	}
+}
+
+/**
+ * Add this unit to the list of visible battle objects. Returns true if this is a new one.
+ * @param unit
+ * @return
+ */
+bool BattleUnit::addToVisibleBattleObjects(BattleObject* battleObject)
+{
+	for (std::vector<BattleObject*>::iterator i = _visibleBattleObjects.begin(); i != _visibleBattleObjects.end(); ++i)
+	{
+		if ((BattleObject*)(*i) == battleObject)
+		{
+			return false;
+		}
+	}
+	_visibleBattleObjects.push_back(battleObject);
+	return true;
+}
+
+/**
+ * Get the pointer to the vector of visible battle objects.
+ * @return pointer to vector.
+ */
+std::vector<BattleObject*>* BattleUnit::getVisibleBattleObjects()
+{
+	return &_visibleBattleObjects;
+}
+
+/**
+ * Clear visible battle objects.
+ */
+void BattleUnit::clearVisibleBattleObjects()
+{
+	_visibleBattleObjects.clear();
+}
 
 ////////////////////////////////////////////////////////////
 //					Script binding
@@ -5659,6 +6215,21 @@ void getLookVariantScript(const BattleUnit *bu, int &ret)
 	ret = 0;
 }
 
+struct getRuleUnitScript
+{
+	static RetEnum func(const BattleUnit* bu, const Unit*& ret)
+	{
+		if (bu)
+		{
+			ret = bu->getUnitRules(); // Note: can be nullptr
+		}
+		else
+		{
+			ret = nullptr;
+		}
+		return RetContinue;
+	}
+};
 struct getRuleSoldierScript
 {
 	static RetEnum func(const BattleUnit *bu, const RuleSoldier* &ret)
@@ -5975,7 +6546,7 @@ void addStunScript(BattleUnit *bu, int val)
 	}
 }
 
-template<int BattleUnit::*StatCurr, int Min, int Max>
+template<auto StatCurr, int Min, int Max>
 void setBaseStatRangeScript(BattleUnit *bu, int val)
 {
 	if (bu)
@@ -5983,6 +6554,16 @@ void setBaseStatRangeScript(BattleUnit *bu, int val)
 		(bu->*StatCurr) = Clamp(val, Min, Max);
 	}
 }
+
+template<auto StatCurr, int Offset, int Min, int Max>
+void setBaseStatRangeArrayScript(BattleUnit *bu, int val)
+{
+	if (bu)
+	{
+		(bu->*StatCurr)[Offset] = Clamp(val, Min, Max);
+	}
+}
+
 
 template<int BattleUnit::*StatCurr, int Min, int Max>
 void addBaseStatRangeScript(BattleUnit *bu, int val)
@@ -6142,6 +6723,22 @@ void getInventoryItemScript(BattleUnit* bu, BattleItem *&foundItem, const RuleIt
 	}
 }
 
+void getInventoryItemConstScript(const BattleUnit* bu, const BattleItem *&foundItem, const RuleItem *itemRules)
+{
+	foundItem = nullptr;
+	if (bu)
+	{
+		for (auto* i : *bu->getInventory())
+		{
+			if (i->getRules() == itemRules)
+			{
+				foundItem = i;
+				break;
+			}
+		}
+	}
+}
+
 void getInventoryItemScript1(BattleUnit* bu, BattleItem *&foundItem, const RuleInventory *inv, const RuleItem *itemRules)
 {
 	foundItem = nullptr;
@@ -6158,7 +6755,39 @@ void getInventoryItemScript1(BattleUnit* bu, BattleItem *&foundItem, const RuleI
 	}
 }
 
+void getInventoryItemConstScript1(const BattleUnit* bu, const BattleItem *&foundItem, const RuleInventory *inv, const RuleItem *itemRules)
+{
+	foundItem = nullptr;
+	if (bu)
+	{
+		for (auto* i : *bu->getInventory())
+		{
+			if (i->getSlot() == inv && i->getRules() == itemRules)
+			{
+				foundItem = i;
+				break;
+			}
+		}
+	}
+}
+
 void getInventoryItemScript2(BattleUnit* bu, BattleItem *&foundItem, const RuleInventory *inv)
+{
+	foundItem = nullptr;
+	if (bu)
+	{
+		for (auto* i : *bu->getInventory())
+		{
+			if (i->getSlot() == inv)
+			{
+				foundItem = i;
+				break;
+			}
+		}
+	}
+}
+
+void getInventoryItemConstScript2(const BattleUnit* bu, const BattleItem *&foundItem, const RuleInventory *inv)
 {
 	foundItem = nullptr;
 	if (bu)
@@ -6191,7 +6820,22 @@ void getListScript(BattleUnit* bu, BattleItem *&foundItem, int i)
 
 //TODO: move it to script bindings
 template<auto Member>
-void getListSizeScript(BattleUnit* bu, int& i)
+void getListConstScript(const BattleUnit* bu, const BattleItem *&foundItem, int i)
+{
+	foundItem = nullptr;
+	if (bu)
+	{
+		auto& ptr = (bu->*Member);
+		if ((size_t)i < std::size(ptr))
+		{
+			foundItem = ptr[i];
+		}
+	}
+}
+
+//TODO: move it to script bindings
+template<auto Member>
+void getListSizeScript(const BattleUnit* bu, int& i)
 {
 	i = 0;
 	if (bu)
@@ -6202,7 +6846,7 @@ void getListSizeScript(BattleUnit* bu, int& i)
 }
 
 template<auto Member>
-void getListSizeHackScript(BattleUnit* bu, int& i)
+void getListSizeHackScript(const BattleUnit* bu, int& i)
 {
 	i = 0;
 	if (bu)
@@ -6217,6 +6861,11 @@ void getListSizeHackScript(BattleUnit* bu, int& i)
 }
 
 bool filterItemScript(BattleUnit* unit, BattleItem* item)
+{
+	return item;
+}
+
+bool filterItemConstScript(const BattleUnit* unit, const BattleItem* item)
 {
 	return item;
 }
@@ -6285,6 +6934,7 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.addField<&BattleUnit::_id>("getId");
 	bu.addField<&BattleUnit::_rankInt>("getRank");
+	bu.addField<&BattleUnit::_rankIntUnified>("getRankUnified");
 	bu.add<&getGenderScript>("getGender");
 	bu.add<&getLookScript>("getLook");
 	bu.add<&getLookVariantScript>("getLookVariant");
@@ -6315,7 +6965,8 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.add<&BattleUnit::getMaxViewDistanceAtDay>("getMaxViewDistanceAtDay", "get maximum visibility distance in tiles to another unit at day");
 	bu.add<&BattleUnit::getMaxViewDistance>("getMaxViewDistance", "calculate maximum visibility distance consider camouflage, first arg is base visibility, second arg is cammo reduction, third arg is anti-cammo boost");
 	bu.add<&BattleUnit::getPsiVision>("getPsiVision");
-	bu.add<&BattleUnit::getHeatVision>("getHeatVision");
+	bu.add<&BattleUnit::getVisibilityThroughSmoke>("getHeatVision", "getVisibilityThroughSmoke");
+	bu.add<&BattleUnit::getVisibilityThroughFire>("getVisibilityThroughFire", "getVisibilityThroughFire");
 
 	bu.add<&setSpawnUnitScript>("setSpawnUnit", "set type of zombie will be spawn from current unit, it will reset everything to default (hostile & instant)");
 	bu.add<&getSpawnUnitScript>("getSpawnUnit", "get type of zombie will be spawn from current unit");
@@ -6402,6 +7053,7 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getOverKillDamage>("getOverKillDamage");
 	bu.addRules<Armor, &BattleUnit::getArmor>("getRuleArmor");
+	bu.addFunc<getRuleUnitScript>("getRuleUnit");
 	bu.addFunc<getRuleSoldierScript>("getRuleSoldier");
 	bu.addFunc<getGeoscapeSoldierScript>("getGeoscapeSoldier");
 	bu.addFunc<getGeoscapeSoldierConstScript>("getGeoscapeSoldier");
@@ -6415,21 +7067,41 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 	bu.add<&getInventoryItemScript>("getInventoryItem");
 	bu.add<&getInventoryItemScript1>("getInventoryItem");
 	bu.add<&getInventoryItemScript2>("getInventoryItem");
+	bu.add<&getInventoryItemConstScript>("getInventoryItem");
+	bu.add<&getInventoryItemConstScript1>("getInventoryItem");
+	bu.add<&getInventoryItemConstScript2>("getInventoryItem");
 	bu.add<&getListSizeScript<&BattleUnit::_inventory>>("getInventoryItem.size");
 	bu.add<&getListScript<&BattleUnit::_inventory>>("getInventoryItem");
+	bu.add<&getListConstScript<&BattleUnit::_inventory>>("getInventoryItem");
 	bu.addList<&filterItemScript, &BattleUnit::_inventory>("getInventoryItem");
+	bu.addList<&filterItemConstScript, &BattleUnit::_inventory>("getInventoryItem");
 	bu.add<&getListSizeHackScript<&BattleUnit::_specWeapon>>("getSpecialItem.size");
 	bu.add<&getListScript<&BattleUnit::_specWeapon>>("getSpecialItem");
+	bu.add<&getListConstScript<&BattleUnit::_specWeapon>>("getSpecialItem");
 	bu.addList<&filterItemScript, &BattleUnit::_specWeapon>("getSpecialItem");
+	bu.addList<&filterItemConstScript, &BattleUnit::_specWeapon>("getSpecialItem");
 
 	bu.add<&getPositionXScript>("getPosition.getX");
 	bu.add<&getPositionYScript>("getPosition.getY");
 	bu.add<&getPositionZScript>("getPosition.getZ");
 	bu.add<&BattleUnit::getPosition>("getPosition");
+
+
 	bu.add<&BattleUnit::getTurnsSinceSpotted>("getTurnsSinceSpotted");
-	bu.add<&setBaseStatRangeScript<&BattleUnit::_turnsSinceSpotted, 0, 255>>("setTurnsSinceSpotted");
+	bu.add<&setBaseStatRangeArrayScript<&BattleUnit::_turnsSinceSpotted, FACTION_HOSTILE, 0, 255>>("setTurnsSinceSpotted");
+
+	bu.add<&BattleUnit::getTurnsSinceSpottedByFaction>("getTurnsSinceSpottedByFaction");
+	bu.add<&BattleUnit::setTurnsSinceSpottedByFaction>("setTurnsSinceSpottedByFaction");
+
+	bu.add<&BattleUnit::getTurnsLeftSpottedForSnipers>("getTurnsLeftSpottedForSnipers");
+	bu.add<&setBaseStatRangeArrayScript<&BattleUnit::_turnsLeftSpottedForSnipers, FACTION_HOSTILE, 0, 255>>("setTurnsLeftSpottedForSnipers");
+
+	bu.add<&BattleUnit::getTurnsLeftSpottedForSnipersByFaction>("getTurnsLeftSpottedForSnipersByFaction");
+	bu.add<&BattleUnit::setTurnsLeftSpottedForSnipersByFaction>("setTTurnsLeftSpottedForSnipersByFaction");
+
 	bu.addField<&BattleUnit::_turnsSinceStunned>("getTurnsSinceStunned");
 	bu.add<&setBaseStatRangeScript<&BattleUnit::_turnsSinceStunned, 0, 255>>("setTurnsSinceStunned");
+
 
 	bu.addScriptValue<BindBase::OnlyGet, &BattleUnit::_armor, &Armor::getScriptValuesRaw>();
 	bu.addScriptValue<&BattleUnit::_scriptValues>();
@@ -6535,6 +7207,8 @@ void battleActionImpl(BindBase& b)
 	b.addCustomConst("battle_action_mindcontrol", BA_MINDCONTROL);
 	b.addCustomConst("battle_action_panic", BA_PANIC);
 	b.addCustomConst("battle_action_cqb", BA_CQB);
+	b.addCustomConst("battle_action_hack", BA_HACK);
+	b.addCustomConst("battle_action_sample", BA_SAMPLE);
 }
 
 void moveTypesImpl(BindBase& b)
@@ -6664,6 +7338,20 @@ ModScript::VisibilityUnitParser::VisibilityUnitParser(ScriptGlobal* shared, cons
 }
 
 /**
+ * Constructor of visibility script parser.
+ */
+ModScript::AiCalculateTargetWeightParser::AiCalculateTargetWeightParser(ScriptGlobal* shared, const std::string& name, Mod* mod) : ScriptParserEvents{ shared, name,
+	"current_target_weight",
+	"default_target_weight",
+
+	"ai_unit", "target_unit", "battle_game" }
+{
+	BindBase b { this };
+
+	b.addCustomPtr<const Mod>("rules", mod);
+}
+
+/**
  * Init all required data in script using object data.
  */
 void BattleUnit::ScriptFill(ScriptWorkerBlit* w, const BattleUnit* unit, const SavedBattleGame* save, int body_part, int anim_frame, int shade, int burn)
@@ -6705,6 +7393,8 @@ ModScript::DamageSpecialUnitParser::DamageSpecialUnitParser(ScriptGlobal* shared
 	"self_destruct_chance",
 	"morale_loss",
 	"fire",
+	"attacker_turns_since_spotted",
+	"attacker_turns_left_spotted_for_snipers",
 
 	"unit", "damaging_item", "weapon_item", "attacker",
 	"battle_game", "skill", "health_damage", "orig_power", "part", "side", "damaging_type", "battle_action", }

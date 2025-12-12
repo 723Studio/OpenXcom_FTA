@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Script.h"
 
@@ -59,7 +59,7 @@ private:
 	bool _ammoVisibility[RuleItem::AmmoSlotMax] = { };
 	int _fuseTimer, _ammoQuantity;
 	int _painKiller, _heal, _stimulant;
-	bool _XCOMProperty, _droppedOnAlienTurn, _isAmmo, _isWeaponWithAmmo, _fuseEnabled;
+	bool _XCOMProperty, _droppedOnAlienTurn, _isAmmo, _isWeaponWithAmmo, _fuseEnabled, _isCraftTurretAmmo;
 	const RuleItemAction *_confAimedOrLaunch = nullptr;
 	const RuleItemAction *_confSnap = nullptr;
 	const RuleItemAction *_confAuto = nullptr;
@@ -80,9 +80,9 @@ public:
 	/// Cleans up the item.
 	~BattleItem();
 	/// Loads the item from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ScriptGlobal *shared);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ScriptGlobal *shared);
 	/// Saves the item to YAML.
-	YAML::Node save(const ScriptGlobal *shared) const;
+	void save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const;
 	/// Gets the item's ruleset.
 	const RuleItem *getRules() const;
 	/// Gets the item's ammo quantity
@@ -152,7 +152,7 @@ public:
 
 	/// Check if item can use any ammo.
 	bool isWeaponWithAmmo() const;
-	/// Check if weapon is armed.
+	/// Check if the weapon is loaded with any ammo item(s). IMPORTANT: ammo quantity can also be zero!
 	bool haveAnyAmmo() const;
 	/// Check if weapon have all ammo slot filled.
 	bool haveAllAmmo() const;
@@ -217,6 +217,10 @@ public:
 	void setXCOMProperty (bool flag);
 	/// Get xcom property flag
 	bool getXCOMProperty() const;
+	/// Set if the BattleItem represents a craft turret ammo
+	void setCraftTurretAmmo(bool flag) { _isCraftTurretAmmo = flag; }
+	/// Get if the BattleItem represents a craft turret ammo
+	bool isCraftTurretAmmo() const { return _isCraftTurretAmmo; }
 	/// get the flag representing "not dropped on player turn"
 	bool getTurnFlag() const;
 	/// set the flag representing "not dropped on player turn"
@@ -227,6 +231,8 @@ public:
 	bool getGlow() const;
 	/// Gets range of glow in tiles.
 	int getGlowRange() const;
+	/// Gets cone for item (from 1 to 4).
+	int getItemConeSize() const { return _rules->getConeSize(); };
 	/// Calculate range need to be updated by changing this weapon.
 	int getVisibilityUpdateRange() const;
 	/// Sets a flag on the item indicating if this is a clip in a weapon or not.

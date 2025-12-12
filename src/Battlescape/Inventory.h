@@ -49,7 +49,7 @@ private:
 	bool _tu, _base;
 	BattleItem *_mouseOverItem;
 	int _groundOffset, _animFrame;
-	std::map<int, std::map<int, int> > _stackLevel;
+	std::map<std::string, std::map<int, std::map<int, int> > > _stackLevel;
 	std::vector<std::vector<char>> _occupiedSlotsCache;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	NumberText *_stackNumber;
@@ -69,6 +69,9 @@ private:
 	void moveItem(BattleItem *item, const RuleInventory *slot, int x, int y);
 	/// Gets the slot in the specified position.
 	RuleInventory *getSlotInPosition(int *x, int *y) const;
+	/// Draws the number in item stack.
+	void drawStackNumber(BattleItem* battleItem, Uint8 color, Surface& stackLayer);
+	void updateUnitItems();
 	/// Play a sound.
 	void playSound(int sound);
 public:
@@ -112,6 +115,8 @@ public:
 	void mouseOver(Action *action, State *state) override;
 	/// Special handling for mouse clicks.
 	void mouseClick(Action *action, State *state) override;
+	/// Quickly drops the selected item on the ground.
+	bool quickDrop();
 	/// Unloads the selected weapon.
 	bool unload(bool quickUnload = false);
 	/// Checks whether the given item is visible with the current search string.
@@ -122,6 +127,8 @@ public:
 	bool fitItem(const RuleInventory *newSlot, BattleItem *item, std::string &warning);
 	/// Checks if two items can be stacked on one another.
 	bool canBeStacked(BattleItem *itemA, BattleItem *itemB);
+	/// Checks if two items can be stacked on one another in soldier inventory.
+	bool canBeStacked(BattleItem* selItem, BattleItem* itemInInventory, const RuleInventory* inventorySlot, int x, int y);
 	/// Checks for item overlap.
 	static bool overlapItems(BattleUnit *unit, BattleItem *item, const RuleInventory *slot, int x = 0, int y = 0);
 	/// Shows a warning message.

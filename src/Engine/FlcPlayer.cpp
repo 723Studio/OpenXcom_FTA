@@ -81,7 +81,7 @@ enum PlayingState
 
 FlcPlayer::FlcPlayer() : _fileBuf(0), _mainScreen(0), _realScreen(0), _game(0)
 {
-	_volume = Game::volumeExponent(Options::musicVolume);
+	_volume = Game::volumeExponent(std::max(Options::musicVolume, Options::soundVolume));
 }
 
 FlcPlayer::~FlcPlayer()
@@ -97,7 +97,7 @@ FlcPlayer::~FlcPlayer()
  * @param dx An offset on the x axis for the video to be rendered
  * @param dy An offset on the y axis for the video to be rendered
  */
-bool FlcPlayer::init(const char *filename, void(*frameCallBack)(), Game *game, bool useInternalAudio, int dx, int dy)
+bool FlcPlayer::init(const char *filename, void(*frameCallBack)(), bool customCutscene, Game *game, bool useInternalAudio, int dx, int dy)
 {
 	if (_fileBuf != 0)
 	{
@@ -110,6 +110,7 @@ bool FlcPlayer::init(const char *filename, void(*frameCallBack)(), Game *game, b
 	_realScreen->clear();
 	_game = game;
 	_useInternalAudio = useInternalAudio;
+	_customCutscene = customCutscene;
 	_dx = dx;
 	_dy = dy;
 
@@ -208,7 +209,7 @@ void FlcPlayer::play(bool skipLastFrame)
 	{
 		if (_frameCallBack)
 			(*_frameCallBack)();
-		else // TODO: support both, in the case the callback is not some audio?
+		else if (!_customCutscene)
 			decodeAudio(2);
 
 		if (!shouldQuit())
@@ -877,7 +878,7 @@ void FlcPlayer::stop()
 
 bool FlcPlayer::isEndOfFile(Uint8 *pos)
 {
-	return (pos - _fileBuf) == (int)(_fileSize); // should be Sint64, but let's assume the videos won't be 2gb
+	return (pos - _fileBuf) >= (int)(_fileSize); // should be Sint64, but let's assume the videos won't be 2gb
 }
 
 int FlcPlayer::getFrameCount()

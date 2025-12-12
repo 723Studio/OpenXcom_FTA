@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 
 namespace OpenXcom
 {
 
 class Mod;
 class RuleSoldierBonus;
+class RuleResearch;
+class RuleSoldier;
 
 /**
  * Represents a specific type of commendation.
@@ -44,15 +46,23 @@ private:
 	std::vector<std::string> _missionMarkerNames; // these are not alien deployment type names!
 	std::vector<std::string> _missionTypeNames;   // these are not alien deployment type names!
 
+	std::vector<std::string> _requiresNames;
+	std::vector<const RuleResearch*> _requires;
+	std::vector<std::string> _unitsNames;
+	std::vector<const RuleSoldier*> _units;
+
 public:
 	/// Creates a blank commendation ruleset.
 	RuleCommendations(const std::string& type);
 	/// Cleans up the commendation ruleset.
 	~RuleCommendations();
 	/// Loads commendation data from YAML.
-	void load(const YAML::Node& node, const Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, const Mod* mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
+
+	/// Gets the commendation's type.
+	const std::string& getType() const { return _type; }
 	/// Get the commendation's description.
 	const std::string& getDescription() const;
 	/// Get the commendation's award criteria.
@@ -67,6 +77,11 @@ public:
 	const std::vector<std::string>& getMissionMarkerNames() const;
 	/// Gets the commendation's mission type filter.
 	const std::vector<std::string>& getMissionTypeNames() const;
+
+	/// Gets the commendation's research requirements.
+	const std::vector<const RuleResearch*>& getRequires() const { return _requires; }
+	/// Check if a given soldier type can be awarded this commendation.
+	bool isSupportedBy(const RuleSoldier* soldier) const;
 
 };
 

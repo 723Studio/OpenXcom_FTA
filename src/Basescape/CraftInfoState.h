@@ -43,6 +43,7 @@ private:
 	size_t _craftId;
 	Craft *_craft;
 	int _weaponNum;
+	bool _ftaUi;
 
 	TextButton *_btnOk, *_btnW[RuleCraft::WeaponMax], *_btnCrew, *_btnEquip, *_btnArmor, *_btnPilots, *_btnNewBattle;
 	Window *_window;
@@ -70,6 +71,7 @@ public:
 	void btnWClick(Action *action);
 	/// Handler for clicking one of the weapon icons.
 	void btnWIconClick(Action *action);
+	void btnWIconMiddleClick(Action* action);
 	/// Handler for clicking one of the craft icon.
 	void btnCraftIconClick(Action *action);
 	/// Handler for clicking the Crew button.

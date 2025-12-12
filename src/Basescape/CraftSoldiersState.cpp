@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <functional>
 #include <climits>
-#include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -37,8 +36,11 @@
 #include "../Savegame/Craft.h"
 #include "../Savegame/SavedGame.h"
 #include "SoldierInfoState.h"
+#include "SoldierInfoStateFtA.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleInterface.h"
+#include "../Mod/RuleCraft.h"
+#include "../Mod/RuleSoldier.h"
 #include "../Engine/Unicode.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
@@ -63,19 +65,34 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 		// no battlescape map available
 		hidePreview = true;
 	}
+	int pilots = c->getRules()->getPilots();
+	_isInterceptor = pilots > 0 && !c->getRules()->getAllowLanding();
+	_isMultipurpose = pilots > 0 && c->getRules()->getAllowLanding();
+	_ftaUI = _game->getMod()->isFTAGame();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(hidePreview ? 148 : 30, 16, hidePreview ? 164 : 274, 176);
+	_btnOk = new TextButton(hidePreview ? 148 : 38, 16, hidePreview ? 164 : 274, 176);
 	_btnPreview = new TextButton(102, 16, 164, 176);
-	_txtTitle = new Text(300, 17, 16, 7);
+	_txtTitle = new Text(_ftaUI ? 168 : 300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
 	_txtRank = new Text(102, 9, 122, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
-	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+	if (_ftaUI)
+	{
+		_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
+		_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
+	}
+	else
+	{
+		_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+		_cbxScreenActions = new ComboBox(this, 17, 16, -16, -16, true); //would be hidden anyway
+	}
 	_lstSoldiers = new TextList(288, 128, 8, 40);
+
+	touchComponentsCreate(_txtTitle, true);
 
 	// Set palette
 	setInterface("craftSoldiers");
@@ -91,6 +108,9 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_txtUsed, "text", "craftSoldiers");
 	add(_lstSoldiers, "list", "craftSoldiers");
 	add(_cbxSortBy, "button", "craftSoldiers");
+	add(_cbxScreenActions, "button", "craftSoldiers");
+
+	touchComponentsAdd("button2", "craftSoldiers", _window);
 
 	_otherCraftColor = _game->getMod()->getInterface("craftSoldiers")->getElement("otherCraft")->color;
 
@@ -98,6 +118,8 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 
 	// Set up objects
 	setWindowBackground(_window, "craftSoldiers");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftSoldiersState::btnOkClick);
@@ -110,18 +132,36 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview->onMouseClick((ActionHandler)&CraftSoldiersState::btnPreviewClick);
 
 	_txtTitle->setBig();
-	_txtTitle->setText(tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	if (Options::oxceBaseTouchButtons)
+	{
+		_txtTitle->setAlign(ALIGN_CENTER);
+		_txtTitle->setText(c->getName(_game->getLanguage()));
+	}
+	else
+	{
+		_txtTitle->setAlign(ALIGN_LEFT);
+		_txtTitle->setText(_ftaUI ? tr("STR_SELECT_SQUAD_UC") : tr("STR_SELECT_SQUAD_FOR_CRAFT").arg(c->getName(_game->getLanguage())));
+	}
 
 	_txtName->setText(tr("STR_NAME_UC"));
 
 	_txtRank->setText(tr("STR_RANK"));
 
-	_txtCraft->setText(tr("STR_CRAFT"));
-
+	if (_game->getMod()->isFTAGame())
+	{
+		_txtCraft->setText(tr("STR_ASSIGNMENT")); 
+	}
+	else
+	{
+		_txtCraft->setText(tr("STR_CRAFT"));
+	}
+	
 	// populate sort options
 	std::vector<std::string> sortOptions;
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getSavedGame()->isManaUnlocked(_game->getMod()) && _game->getMod()->isManaFeatureEnabled();
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -131,31 +171,104 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	PUSH_IN("STR_NAME_UC", nameStat);
 	PUSH_IN("STR_CRAFT", craftIdStat);
 	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
+	if (_ftaUI)
+	{
+		PUSH_IN("STR_ROLE_UC", roleStat);
+		PUSH_IN("STR_RANK", roleRankStat);
+	}
+	else
+	{
+		PUSH_IN("STR_RANK", rankStat);
+	}
+	// #FINNIKTODO add rank per roles
 	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tu), tuStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stamina), staminaStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::health), healthStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::bravery), braveryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reactions), reactionsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::firing), firingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStat);
+	if (showMana)
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStat);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
+	if (showPsiStats)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStat);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiSkill), psiSkillStat);
+	}
+	//pilot section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::maneuvering), maneuveringStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::missiles), missilesStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::dogfight), dogfightStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tracking), trackingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::cooperation), cooperationStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getBeamOperationsUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::beams), beamsStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getCraftSynapseUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::synaptic), synapticStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::gravity), gravityStat);
+	}
+
+	// scientist section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::physics), physicsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::chemistry), chemistryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::biology), biologyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::insight), insightStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::data), dataStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::computers), computersStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tactics), tacticsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::materials), materialsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::designing), designingStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::alienTech), alienTechStat);
+	}
+	if (showPsiStats)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psionics), psionicsStat);
+	}
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getXenolinguisticsUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::xenolinguistics), xenolinguisticsStat);
+	}
+	// engineer section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::weaponry), weaponryStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::explosives), explosivesStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::microelectronics), microelectronicsStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::metallurgy), metallurgyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::processing), processingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::efficiency), efficiencyStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::diligence), diligenceStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::hacking), hackingStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::robotics), roboticsStat);
+	if (_game->getSavedGame()->isResearched(_game->getMod()->getAlienTechUnlockResearch()))
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reverseEngineering), reverseEngineeringStat);
+	}
+	// agent section
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stealth), stealthStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::perception), perceptionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::charisma), charismaStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::investigation), investigationStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::deception), deceptionStat);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::interrogation), interrogationStat);
 
 #undef PUSH_IN
 
@@ -164,16 +277,26 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_cbxSortBy->onChange((ActionHandler)&CraftSoldiersState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
+	_availableOptions.clear();
+	if (_ftaUI)
+	{
+		_availableOptions.push_back("STR_ALL_ROLES");
+		_availableOptions.push_back("STR_RECOMMENDED_ROLES");
+	}
+	else
+	{
+		_cbxScreenActions->setVisible(false);
+	}
+	_cbxScreenActions->setOptions(_availableOptions, true);
+	_cbxScreenActions->setSelected(1);
+	_cbxScreenActions->onChange((ActionHandler)&CraftSoldiersState::cbxScreenActionsChange);
+
 	_lstSoldiers->setColumns(3, 106, 98, 76);
 	_lstSoldiers->setAlign(ALIGN_RIGHT, 3);
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onLeftArrowClick((ActionHandler)&CraftSoldiersState::lstItemsLeftArrowClick);
-	_lstSoldiers->onRightArrowClick((ActionHandler)&CraftSoldiersState::lstItemsRightArrowClick);
 	_lstSoldiers->onMouseClick((ActionHandler)&CraftSoldiersState::lstSoldiersClick, 0);
-	_lstSoldiers->onMousePress((ActionHandler)&CraftSoldiersState::lstSoldiersMousePress);
 }
 
 /**
@@ -193,7 +316,7 @@ CraftSoldiersState::~CraftSoldiersState()
  */
 void CraftSoldiersState::cbxSortByChange(Action *)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
+	bool ctrlPressed = _game->isCtrlPressed(true);
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
@@ -252,7 +375,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
 			}
-			if (_game->isShiftPressed())
+			if (_game->isShiftPressed(true))
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
@@ -322,7 +445,31 @@ void CraftSoldiersState::btnPreviewClick(Action *)
 void CraftSoldiersState::initList(size_t scrl)
 {
 	int row = 0;
+	_soldierNumbers.clear();
 	_lstSoldiers->clearList();
+	_filteredListOfSoldiers.clear();
+	_soldierNumbers.clear();
+	int i = 0;
+
+	std::string selAction = "STR_RECOMMENDED_ROLES";
+	if (!_availableOptions.empty())
+	{
+		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
+	}
+
+	for (auto& soldier : *_base->getSoldiers())
+	{
+		if ((soldier->getRoleRank(ROLE_SOLDIER) > 0 && !_isInterceptor) //case for dropship
+			|| (_isInterceptor && soldier->getRoleRank(ROLE_PILOT) > 0) //case for interceptor
+			|| (_isMultipurpose && (soldier->getRoleRank(ROLE_PILOT) > 0 || soldier->getRoleRank(ROLE_SOLDIER) > 0)) //case for multipurpose craft
+			|| selAction == "STR_ALL_ROLES" //case we want to see everyone
+			|| !_ftaUI)
+		{
+			_filteredListOfSoldiers.push_back(soldier);
+			_soldierNumbers.push_back(i);
+		}
+		i++;
+	}
 
 	if (_dynGetter != NULL)
 	{
@@ -334,20 +481,22 @@ void CraftSoldiersState::initList(size_t scrl)
 	}
 
 	Craft *c = _base->getCrafts()->at(_craft);
-	BaseSumDailyRecovery recovery = _base->getSumRecoveryPerDay();
-	for (const auto* soldier : *_base->getSoldiers())
+	auto recovery = _base->getSumRecoveryPerDay();
+	bool isBusy = false, isFree = false;
+	for (auto* soldier : _filteredListOfSoldiers)
 	{
+		std::string duty = soldier->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree);
 		if (_dynGetter != NULL)
 		{
 			// call corresponding getter
 			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, soldier->getName(true, 19).c_str(), tr(soldier->getRankString()).c_str(), soldier->getCraftString(_game->getLanguage(), recovery).c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true, 19).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, soldier->getName(true, 19).c_str(), tr(soldier->getRankString()).c_str(), soldier->getCraftString(_game->getLanguage(), recovery).c_str());
+			_lstSoldiers->addRow(3, soldier->getName(true, 19).c_str(), tr(soldier->getRankString(_ftaUI)).c_str(), duty.c_str());
 		}
 
 		Uint8 color;
@@ -355,7 +504,7 @@ void CraftSoldiersState::initList(size_t scrl)
 		{
 			color = _lstSoldiers->getSecondaryColor();
 		}
-		else if (soldier->getCraft() != 0)
+		else if (isBusy || !isFree)
 		{
 			color = _otherCraftColor;
 		}
@@ -381,7 +530,7 @@ void CraftSoldiersState::init()
 {
 	State::init();
 	_base->prepareSoldierStatsWithBonuses(); // refresh stats for sorting
-	initList(0);
+	initList(_lstSoldiers->getScroll());
 
 	// update the label to indicate presence of a saved craft deployment
 	Craft* c = _base->getCrafts()->at(_craft);
@@ -389,111 +538,8 @@ void CraftSoldiersState::init()
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW_SAVED"));
 	else
 		_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
-}
 
-/**
- * Reorders a soldier up.
- * @param action Pointer to an action.
- */
-void CraftSoldiersState::lstItemsLeftArrowClick(Action *action)
-{
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	if (row > 0)
-	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		{
-			moveSoldierUp(action, row);
-		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-		{
-			moveSoldierUp(action, row, true);
-		}
-	}
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
-	_cbxSortBy->setSelected(-1);
-}
-
-/**
- * Moves a soldier up on the list.
- * @param action Pointer to an action.
- * @param row Selected soldier row.
- * @param max Move the soldier to the top?
- */
-void CraftSoldiersState::moveSoldierUp(Action *action, unsigned int row, bool max)
-{
-	Soldier *s = _base->getSoldiers()->at(row);
-	if (max)
-	{
-		_base->getSoldiers()->erase(_base->getSoldiers()->begin() + row);
-		_base->getSoldiers()->insert(_base->getSoldiers()->begin(), s);
-	}
-	else
-	{
-		_base->getSoldiers()->at(row) = _base->getSoldiers()->at(row - 1);
-		_base->getSoldiers()->at(row - 1) = s;
-		if (row != _lstSoldiers->getScroll())
-		{
-			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() - static_cast<Uint16>(8 * action->getYScale()));
-		}
-		else
-		{
-			_lstSoldiers->scrollUp(false);
-		}
-	}
-	initList(_lstSoldiers->getScroll());
-}
-
-/**
- * Reorders a soldier down.
- * @param action Pointer to an action.
- */
-void CraftSoldiersState::lstItemsRightArrowClick(Action *action)
-{
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	size_t numSoldiers = _base->getSoldiers()->size();
-	if (0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
-	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		{
-			moveSoldierDown(action, row);
-		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-		{
-			moveSoldierDown(action, row, true);
-		}
-	}
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
-	_cbxSortBy->setSelected(-1);
-}
-
-/**
- * Moves a soldier down on the list.
- * @param action Pointer to an action.
- * @param row Selected soldier row.
- * @param max Move the soldier to the bottom?
- */
-void CraftSoldiersState::moveSoldierDown(Action *action, unsigned int row, bool max)
-{
-	Soldier *s = _base->getSoldiers()->at(row);
-	if (max)
-	{
-		_base->getSoldiers()->erase(_base->getSoldiers()->begin() + row);
-		_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
-	}
-	else
-	{
-		_base->getSoldiers()->at(row) = _base->getSoldiers()->at(row + 1);
-		_base->getSoldiers()->at(row + 1) = s;
-		if (row != _lstSoldiers->getVisibleRows() - 1 + _lstSoldiers->getScroll())
-		{
-			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() + static_cast<Uint16>(8 * action->getYScale()));
-		}
-		else
-		{
-			_lstSoldiers->scrollDown(false);
-		}
-	}
-	initList(_lstSoldiers->getScroll());
+	touchComponentsRefresh();
 }
 
 /**
@@ -508,25 +554,62 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		return;
 	}
 	int row = _lstSoldiers->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
-		Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
+
+		Soldier* s = _filteredListOfSoldiers.at(row);
+
+		bool isBusy = false, isFree = false;
+		std::string duty = s->getCurrentDuty(_game->getLanguage(), _base->getSumRecoveryPerDay(), isBusy, isFree);
+
 		if (s->getCraft() == c)
 		{
 			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
-		else if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
+		else if ((s->getCraft() && s->getCraft()->getStatus() == "STR_OUT") || s->getCovertOperation() != 0 || s->hasPendingTransformation())
 		{
-			// nothing
+			return;
 		}
 		else if (s->hasFullHealth())
 		{
+			if (_isInterceptor && _ftaUI && s->getRoleRank(ROLE_PILOT) < 1)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_IS_NOT_ALLOWED_PILOTING"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				return;
+			}
+
 			int space = c->getSpaceAvailable();
 			CraftPlacementErrors err = c->validateAddingSoldier(space, s);
-			if (err == CPE_None)
+			int relay = c->getCraftStats().relay;
+			if (s->getRoleRank(ROLE_ROBOT) > 0) //#FINNIKTODO: refactor relay logic into "c->validateAddingSoldier(space, s)"
+			{
+				for (const auto* i : *_base->getSoldiers())
+				{
+					if (i->getCraft() == c)
+					{
+						if (s->hasOnlyOneRole(ROLE_ROBOT))// only robot role - not a sapient AI.
+						{
+							relay--;
+						}
+					}
+				}
+			}
+			if (relay < 0)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_RELAY_POWER"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_None)
 			{
 				s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 				_lstSoldiers->setCellText(row, 2, c->getName(_game->getLanguage()));
@@ -543,49 +626,44 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_GROUP_NOT_SAME"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
-			else if (space > 0)
+			else if (err == CPE_ArmorGroupNotAllowed)
 			{
-				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+				_game->pushState(new ErrorMessageState(tr("STR_ARMOR_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_SoldierPendingTransformation)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_SOLDIER_HAS_PENDING_TRANSFORMATION"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
+			}
+			else if (err == CPE_NotEnoughSpace)
+			{
+				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"),
+					_palette,
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color,
+					"BACK01.SCR",
+					_game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 		}
 
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	else if (_game->isRightClick(action, true))
 	{
-		_game->pushState(new SoldierInfoState(_base, row, false));
+		if (_ftaUI)
+		{
+			_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(row)));
+		}
+		else
+		{
+			_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(row), false));
+		}
 	}
 }
 
-/**
- * Handles the mouse-wheels on the arrow-buttons.
- * @param action Pointer to an action.
- */
-void CraftSoldiersState::lstSoldiersMousePress(Action *action)
+void CraftSoldiersState::cbxScreenActionsChange(Action *action)
 {
-	if (Options::changeValueByMouseWheel == 0)
-		return;
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	size_t numSoldiers = _base->getSoldiers()->size();
-	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP &&
-		row > 0)
-	{
-		if (action->getAbsoluteXMouse() >= _lstSoldiers->getArrowsLeftEdge() &&
-			action->getAbsoluteXMouse() <= _lstSoldiers->getArrowsRightEdge())
-		{
-			moveSoldierUp(action, row);
-		}
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN &&
-			 0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
-	{
-		if (action->getAbsoluteXMouse() >= _lstSoldiers->getArrowsLeftEdge() &&
-			action->getAbsoluteXMouse() <= _lstSoldiers->getArrowsRightEdge())
-		{
-			moveSoldierDown(action, row);
-		}
-	}
+	_cbxSortBy->setSelected(0);
+	initList(0);
 }
 
 /**
@@ -594,10 +672,12 @@ void CraftSoldiersState::lstSoldiersMousePress(Action *action)
  */
 void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 {
+	Craft *c = _base->getCrafts()->at(_craft);
 	int row = 0;
-	for (auto* soldier : *_base->getSoldiers())
+	for (auto soldier : _filteredListOfSoldiers)
 	{
-		if (soldier->getCraft() && soldier->getCraft()->getStatus() != "STR_OUT")
+		if ((soldier->getCraft() && (soldier->getCraft()->getStatus() != "STR_OUT" && soldier->getCraft() == c)) 
+		&& soldier->getCovertOperation() == 0) //just in case
 		{
 			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
@@ -606,7 +686,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 		row++;
 	}
 
-	Craft *c = _base->getCrafts()->at(_craft);
+	
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 }

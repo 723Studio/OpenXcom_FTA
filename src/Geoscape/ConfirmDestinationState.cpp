@@ -66,7 +66,7 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 
 	if (_crafts.size() == 1)
 	{
-		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase() && _crafts.front()->arePilotsOnboard());
+		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase() && _crafts.front()->arePilotsOnboard(_game->getMod()));
 	}
 
 	int btnOkX = transferAvailable ? 29 : 68;
@@ -181,6 +181,15 @@ ConfirmDestinationState::~ConfirmDestinationState()
 */
 std::string ConfirmDestinationState::checkStartingCondition()
 {
+	// Check all selected craft
+	for (auto* xcraft : _crafts)
+	{
+		if (xcraft->areBannedArmorsOnboard())
+		{
+			return tr("STR_ARMOR_NOT_ALLOWED_ONBOARD");
+		}
+	}
+
 	Ufo* u = dynamic_cast<Ufo*>(_target);
 	MissionSite* m = dynamic_cast<MissionSite*>(_target);
 	AlienBase* b = dynamic_cast<AlienBase*>(_target);
@@ -204,6 +213,12 @@ std::string ConfirmDestinationState::checkStartingCondition()
 	{
 		// for example just a waypoint
 		return "";
+	}
+
+	if ((m != 0 || b != 0) &&
+		!_crafts.front()->getRules()->getAllowLanding())
+	{
+		return "STR_NOT_ABLE_TO_LAND_HERE";
 	}
 
 	if (ruleDeploy == 0)
@@ -258,7 +273,7 @@ std::string ConfirmDestinationState::checkStartingCondition()
 		int i = 0;
 		for (auto& soldierType : list)
 		{
-			RuleSoldier* soldierTypeRule = _game->getMod()->getSoldier(soldierType, false);
+			auto soldierTypeRule = _game->getMod()->getSoldier(soldierType, false);
 			if (soldierTypeRule && _game->getSavedGame()->isResearched(soldierTypeRule->getRequirements()))
 			{
 				if (i > 0)
@@ -325,7 +340,19 @@ void ConfirmDestinationState::btnOkClick(Action *)
 
 	for (auto* craft : _crafts)
 	{
-		if (!craft->arePilotsOnboard())
+		if (craft->areTooManyItemsOnboard())
+		{
+			_game->popState();
+			_game->popState();
+			std::string message2 = tr("STR_TOO_MANY_ITEMS_ONBOARD");
+			_game->pushState(new CraftErrorState(0, message2));
+			return;
+		}
+	}
+
+	for (auto* craft : _crafts)
+	{
+		if (!craft->arePilotsOnboard(_game->getMod()))
 		{
 			_game->popState();
 			_game->popState();
@@ -404,7 +431,7 @@ void ConfirmDestinationState::btnTransferClick(Action *)
 	{
 		errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
 	}
-	else if (Options::storageLimitsEnforced && targetBase->storesOverfull(_crafts.front()->getTotalItemStorageSize(_game->getMod())))
+	else if (Options::storageLimitsEnforced && targetBase->storesOverfull(_crafts.front()->getTotalItemStorageSize()))
 	{
 		errorMessage = tr("STR_NOT_ENOUGH_STORE_SPACE_FOR_CRAFT");
 	}

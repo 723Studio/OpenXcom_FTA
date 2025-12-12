@@ -19,9 +19,11 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "ModScript.h"
+#include "../Mod/Unit.h"
+#include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
@@ -46,17 +48,20 @@ class RuleResearch
 	std::string _name, _lookup, _cutscene, _spawnedItem, _spawnedEvent;
 	int _spawnedItemCount;
 	std::vector<std::string> _spawnedItemList;
+	WeightedOptions _randomEvents;
 	std::vector<std::string> _decreaseCounter, _increaseCounter;
-	int _cost, _points;
+	int _cost, _points, _funds, _counterValue;
 	std::vector<std::string> _dependenciesName, _unlocksName, _disablesName, _reenablesName, _getOneFreeName, _requiresName;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
+	UnitStats _stats;
 	std::vector<const RuleResearch*> _dependencies, _unlocks, _disables, _reenables, _getOneFree, _requires;
 	bool _sequentialGetOneFree;
 	std::vector<std::pair<std::string, std::vector<std::string> > > _getOneFreeProtectedName;
 	std::vector<std::pair<const RuleResearch*, std::vector<const RuleResearch*> > > _getOneFreeProtected;
 	std::string _neededItemName;
 	const RuleItem* _neededItem = nullptr;
-	bool _needItem, _destroyItem, _unlockFinalMission;
+	bool _needItem, _destroyItem, _hidden, _unlockFinalMission;
+	bool _repeatable;
 	int _listOrder;
 
 	ScriptValues<RuleResearch> _scriptValues;
@@ -73,7 +78,7 @@ public:
 	RuleResearch(const std::string &name, int listOrder);
 
 	/// Loads the research from YAML.
-	void load(const YAML::Node& node, Mod* mod, const ModScript& parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod, const ModScript& parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
@@ -91,8 +96,12 @@ public:
 	bool needItem() const;
 	/// Checks if this ResearchProject consumes the corresponding Item when research completes.
 	bool destroyItem() const;
+	/// Checks if this ResearchProject is unavailable for manual research and would be discovered with a special condition (event, mission reward, research bonus or with YS).
+	bool isHidden() const { return _hidden; }
 	/// Check if this ResearchProject is unlocking final mission, it can be only one!
 	bool unlockFinalMission() const { return _unlockFinalMission; }
+	/// Check if this ResearchProject is repeatable, i.e. is never marked as discovered.
+	bool isRepeatable() const { return _repeatable; }
 	/// Gets the list of ResearchProjects unlocked by this research.
 	const std::vector<const RuleResearch*> &getUnlocked() const;
 	/// Gets the list of ResearchProjects disabled by this research.
@@ -101,6 +110,8 @@ public:
 	const std::vector<const RuleResearch*> &getReenabled() const;
 	/// Gets the points earned for discovering this ResearchProject.
 	int getPoints() const;
+	/// Gets funds required to discover this ResearchProject.
+	int getFunds() const { return _funds; }
 	/// Gets the list of ResearchProjects granted at random for free by this research.
 	const std::vector<const RuleResearch*> &getGetOneFree() const;
 	/// Gets the list(s) of ResearchProjects granted at random for free by this research (if a defined prerequisite is met).
@@ -111,6 +122,8 @@ public:
 	const std::vector<const RuleResearch*> &getRequirements() const;
 	/// Gets the base requirements for this ResearchProject.
 	RuleBaseFacilityFunctions getRequireBaseFunc() const { return _requiresBaseFunc; }
+	/// Get pointer to this ResearchProject's stats.
+	UnitStats getStats() const { return _stats; }
 	/// Gets the list weight for this research item.
 	int getListOrder() const;
 	/// Gets the cutscene to play when this item is researched
@@ -127,6 +140,10 @@ public:
 	const std::vector<std::string>& getDecreaseCounter() const { return _decreaseCounter; }
 	/// Gets the name of custom counter variables to increase when this topic is researched.
 	const std::vector<std::string>& getIncreaseCounter() const { return _increaseCounter; }
+	/// Gets the value for counter to be applied (for all of them).
+	int getCounterValue() const { return _counterValue; }
+	/// Gets the list of one time random events (with weights).
+	const WeightedOptions& getRandomEvents() const { return _randomEvents; }
 };
 
 }

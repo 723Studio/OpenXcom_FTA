@@ -40,6 +40,7 @@ class BattleItem;
 class Timer;
 class WarningMessage;
 class BattlescapeGame;
+class BattleObject;
 
 /**
  * Battlescape screen which shows the tactical battle.
@@ -54,7 +55,7 @@ private:
 	BattlescapeButton *_btnInventory, *_btnCenter, *_btnNextSoldier, *_btnNextStop, *_btnShowLayers, *_btnHelp;
 	BattlescapeButton *_btnEndTurn, *_btnAbort, *_btnLaunch, *_btnPsi, *_btnSpecial, *_btnSkills, *_reserve;
 	BattlescapeButton *_btnCtrl, *_btnAlt, *_btnShift, *_btnRMB, *_btnMMB;
-	bool _touchButtonsEnabled, _touchButtonsEnabledLastTurn;
+	bool _touchButtonsEnabled;
 	InteractiveSurface *_btnStats;
 	BattlescapeButton *_btnReserveNone, *_btnReserveSnap, *_btnReserveAimed, *_btnReserveAuto, *_btnReserveKneel, *_btnZeroTUs;
 	InteractiveSurface *_btnLeftHandItem, *_btnRightHandItem;
@@ -62,12 +63,12 @@ private:
 	static const int SPECIAL_BUTTONS_MAX = 3;
 	int _posSpecialActions[SPECIAL_BUTTONS_MAX];
 
-	static const int VISIBLE_MAX = 10;
-	std::string _txtVisibleUnitTooltip[VISIBLE_MAX+2];
+	static const int VISIBLE_MAX = 20;
+	std::string _txtVisibleUnitTooltip[VISIBLE_MAX+3];
 	InteractiveSurface *_btnVisibleUnit[VISIBLE_MAX];
 	NumberText *_numVisibleUnit[VISIBLE_MAX];
 	BattleUnit *_visibleUnit[VISIBLE_MAX];
-
+	BattleObject *_visibleBattleObject[VISIBLE_MAX]{ 0 };
 	WarningMessage *_warning;
 	Text *_txtName;
 	NumberText *_numTimeUnits, *_numEnergy, *_numHealth, *_numMorale, *_numLayers;
@@ -76,7 +77,7 @@ private:
 	NumberText *_numTwoHandedIndicatorLeft, *_numTwoHandedIndicatorRight;
 	Uint8 _twoHandedRed, _twoHandedGreen;
 	Bar *_barTimeUnits, *_barEnergy, *_barHealth, *_barMorale, *_barMana;
-	bool _manaBarVisible;
+	bool _manaBarVisible, _ftaUI;
 	Timer *_animTimer, *_gameTimer;
 	SavedBattleGame *_save;
 	Text *_txtDebug, *_txtTooltip;
@@ -96,8 +97,8 @@ private:
 	Position _cursorPosition;
 	Uint8 _barHealthColor;
 	int _autosave;
-	int _numberOfDirectlyVisibleUnits, _numberOfEnemiesTotal, _numberOfEnemiesTotalPlusWounded;
-	Uint8 _indicatorTextColor, _indicatorGreen, _indicatorBlue, _indicatorPurple;
+	int _numberOfDirectlyVisibleUnits, _numberOfEnemiesTotal, _numberOfEnemiesTotalPlusWounded, _numberOfUnitsTotal;
+	Uint8 _indicatorTextColor, _indicatorGreen, _indicatorBlue, _indicatorPurple, _indicatorGray;
 	/// Popups a context sensitive list of actions the user can choose from.
 	void handleItemClick(BattleItem *item, bool rightClick);
 	/// Shifts the red colors of the visible unit buttons backgrounds.
@@ -112,7 +113,7 @@ private:
 	void toggleKneelButton(BattleUnit* unit);
 public:
 	/// Selects the next soldier.
-	void selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false, bool checkFOV = true);
+	void selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false, bool checkFOV = true, bool byDistance = false);
 	/// Selects the previous soldier.
 	void selectPreviousPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	static const int DEFAULT_ANIM_SPEED = 100;
@@ -152,7 +153,9 @@ public:
 	/// Handler for clicking the Next Soldier button.
 	void btnNextSoldierClick(Action *action);
 	/// Handler for clicking the Next Stop button.
-	void btnNextStopClick(Action *action);
+	void btnNextStopLClick(Action *action);
+	void btnNextStopMClick(Action *action);
+	void btnNextStopRClick(Action *action);
 	/// Handler for clicking the Previous Soldier button.
 	void btnPrevSoldierClick(Action *action);
 	/// Handler for clicking the Show Layers button.
@@ -214,6 +217,8 @@ public:
 	void updateSoldierInfo(bool checkFOV = true);
 	/// Updates the special/psi/skill button display based on the battle unit
 	void updateUiButton(const BattleUnit* battleUnit);
+	/// Updates the visible unit indicators. Used for LoS Preview.
+	void updateVisibleUnits(std::vector<BattleUnit *> *units);
 	/// Animates map objects on the map, also smoke,fire, ...
 	void animate();
 	/// Handles the battle game state.

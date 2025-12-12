@@ -24,6 +24,9 @@
 #include "BaseFacility.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "Craft.h"
+#include "CovertOperation.h"
+#include "IntelProject.h"
+#include "BasePrisoner.h"
 #include "SavedGame.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/Mod.h"
@@ -59,8 +62,8 @@ namespace OpenXcom
  * Initializes an empty base.
  * @param mod Pointer to mod.
  */
-Base::Base(const Mod *mod) : Target(), _mod(mod), _scientists(0), _engineers(0), _inBattlescape(false),
-	_retaliationTarget(false), _retaliationMission(nullptr), _fakeUnderwater(false)
+Base::Base(const Mod *mod): Target(), _mod(mod), _scientists(0), _engineers(0), _trackingBonus(0), _operationsBonus(0), _deploymentHintsBonus(0), _inBattlescape(false),
+	  _retaliationTarget(false), _retaliationMission(nullptr), _fakeUnderwater(false)
 {
 	_items = new ItemContainer();
 }
@@ -81,6 +84,18 @@ Base::~Base()
 	for (auto* xcraft : _crafts)
 	{
 		delete xcraft;
+	}
+	for (auto* operation : _covertOperations)
+	{
+		delete operation;
+	}
+	for (auto* intel : _intelProjects)
+	{
+		delete intel;
+	}
+	for (auto* prisoner :  _prisoners)
+	{
+		delete prisoner;
 	}
 	for (auto* transfer : _transfers)
 	{
@@ -105,19 +120,18 @@ Base::~Base()
  * @param newGame Is this the first base of a new game?
  * @param newBattleGame Is this the base of a skirmish game?
  */
-void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newBattleGame)
+void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGame, bool newBattleGame)
 {
-	Target::load(node);
-
+	Target::load(reader);
 	if (!newGame || !Options::customInitialBase || newBattleGame)
 	{
-		for (YAML::const_iterator i = node["facilities"].begin(); i != node["facilities"].end(); ++i)
+		for (const auto& facilityReader : reader["facilities"].children())
 		{
-			std::string type = (*i)["type"].as<std::string>();
+			std::string type = facilityReader["type"].readVal<std::string>();
 			if (_mod->getBaseFacility(type))
 			{
-				BaseFacility *f = new BaseFacility(_mod->getBaseFacility(type), this);
-				f->load(*i);
+				BaseFacility* f = new BaseFacility(_mod->getBaseFacility(type), this);
+				f->load(facilityReader);
 				_facilities.push_back(f);
 			}
 			else
@@ -126,14 +140,13 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			}
 		}
 	}
-
-	for (YAML::const_iterator i = node["crafts"].begin(); i != node["crafts"].end(); ++i)
+	for (const auto& craftReader : reader["crafts"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>();
+		std::string type = craftReader["type"].readVal<std::string>();
 		if (_mod->getCraft(type))
 		{
-			Craft *c = new Craft(_mod->getCraft(type), this);
-			c->load(*i, _mod->getScriptGlobal(), _mod, save);
+			Craft* c = new Craft(_mod->getCraft(type), this);
+			c->load(craftReader, _mod->getScriptGlobal(), _mod, save);
 			_crafts.push_back(c);
 		}
 		else
@@ -142,17 +155,108 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	for (YAML::const_iterator i = node["soldiers"].begin(); i != node["soldiers"].end(); ++i)
+	for (const auto& covertOperationReader : reader["covertOperations"].children())
 	{
-		std::string type = (*i)["type"].as<std::string>(_mod->getSoldiersList().front());
+		std::string name = covertOperationReader["name"].readVal<std::string>();
+		if (_mod->getCovertOperation(name))
+		{
+			CovertOperation* c = new CovertOperation(_mod->getCovertOperation(name), _mod, this, 0);
+			c->load(covertOperationReader);
+			_covertOperations.push_back(c);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load covertOperation " << name;
+		}
+	}
+
+	_items->load(reader["items"], _mod);
+
+	reader.tryRead("scientists", _scientists);
+	reader.tryRead("engineers", _engineers);
+	reader.tryRead("inBattlescape", _inBattlescape);
+
+	for (const auto& transfersReader : reader["transfers"].children())
+	{
+		int hours = transfersReader["hours"].readVal<int>();
+		Transfer *t = new Transfer(hours);
+		if (t->load(transfersReader, this, _mod, save))
+		{
+			_transfers.push_back(t);
+		}
+	}
+	for (const auto& researchReader : reader["research"].children())
+	{
+		std::string research = researchReader["project"].readVal<std::string>();
+		if (_mod->getResearch(research))
+		{
+			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
+			r->load(researchReader);
+			_research.push_back(r);
+		}
+		else
+		{
+			_scientists += researchReader["assigned"].readVal(0);
+			Log(LOG_ERROR) << "Failed to load research " << research;
+		}
+	}
+	for (const auto& productionReader : reader["productions"].children())
+	{
+		std::string item = productionReader["item"].readVal<std::string>();
+		if (_mod->getManufacture(item))
+		{
+			Production *p = new Production(_mod->getManufacture(item), 0);
+			p->load(productionReader);
+			_productions.push_back(p);
+		}
+		else
+		{
+			_engineers += productionReader["assigned"].readVal(0);
+			Log(LOG_ERROR) << "Failed to load manufacture " << item;
+		}
+	}
+
+	for (const auto& intelProjectReader : reader["intelProjects"].children())
+	{
+		std::string name = intelProjectReader["name"].readVal<std::string>();
+		if (_mod->getIntelProject(name))
+		{
+			IntelProject* p = new IntelProject(_mod->getIntelProject(name), this, 0);
+			p->load(intelProjectReader);
+			_intelProjects.push_back(p);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load intelProjects " << name;
+		}
+	}
+
+	for (const auto& prisonerReader : reader["prisoners"].children())
+	{
+		std::string id;
+		prisonerReader["id"].tryReadVal(id);
+		std::string type;
+		prisonerReader["type"].tryReadVal(type);
+		BasePrisoner* prisoner = new BasePrisoner(_mod->getPrisonerRules(type), this, type, id);
+		prisoner->load(prisonerReader, _mod);
+		addPrisoner(prisoner);
+	}
+
+	for (const auto& soldierReader : reader["soldiers"].children())
+	{
+		std::string type = soldierReader["type"].readVal(_mod->getSoldiersList().front());
 		if (_mod->getSoldier(type))
 		{
-			Soldier *s = new Soldier(_mod->getSoldier(type), nullptr, 0 /*nationality*/);
-			s->load(*i, _mod, save, _mod->getScriptGlobal());
+			Soldier* s = new Soldier(_mod->getSoldier(type), nullptr, 0 /*nationality*/);
+			s->load(soldierReader, _mod, save, _mod->getScriptGlobal());
 			s->setCraft(0);
-			if (const YAML::Node &craft = (*i)["craft"])
+			s->setCovertOperation(0);
+			s->setResearchProject(0);
+			s->setProductionProject(0);
+			s->setActivePrisoner(0);
+			if (const auto& craftIdReader = soldierReader["craft"])
 			{
-				CraftId craftId = Craft::loadId(craft);
+				CraftId craftId = Craft::loadId(craftIdReader);
 				for (auto* xcraft : _crafts)
 				{
 					if (xcraft->getUniqueId() == craftId)
@@ -162,6 +266,74 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 					}
 				}
 			}
+			if (const auto& op = soldierReader["covertOperation"])
+			{
+				std::string covertOperation;
+				op.tryReadVal(covertOperation);
+				for (auto* covertOperationPtr : _covertOperations)
+				{
+					if (covertOperationPtr->getOperationName() == covertOperation)
+					{
+						s->setCovertOperation(covertOperationPtr);
+						break;
+					}
+				}
+			}
+			if (const auto& rp = soldierReader["researchProject"])
+			{
+				std::string researchProject;
+				rp.tryReadVal(researchProject);
+				for (auto* researchProjectPtr : _research)
+				{
+					if (researchProjectPtr->getRules()->getName() == researchProject)
+					{
+						s->setResearchProject(researchProjectPtr);
+						break;
+					}
+				}
+			}
+			if (const auto& pr = soldierReader["production"])
+			{
+				std::string production;
+				pr.tryReadVal(production);
+				for (auto* productionPtr : _productions)
+				{
+					if (productionPtr->getRules()->getName() == production)
+					{
+						s->setProductionProject(productionPtr);
+						break;
+					}
+				}
+			}
+
+			if (const auto& ip = soldierReader["intelProject"])
+			{
+				std::string intelProject;
+				ip.tryReadVal(intelProject);
+				for (auto* intelProjectPtr : _intelProjects)
+				{
+					if (intelProjectPtr->getName() == intelProject)
+					{
+						s->setIntelProject(intelProjectPtr);
+						break;
+					}
+				}
+			}
+
+			if (const auto& p = soldierReader["activePrisoner"])
+			{
+				std::string prisoner;
+				p.tryReadVal(prisoner);
+				for (auto* _prisoner : _prisoners)
+				{
+					if (_prisoner->getId() == prisoner)
+					{
+						s->setActivePrisoner(_prisoner);
+						break;
+					}
+				}
+			}
+
 			_soldiers.push_back(s);
 		}
 		else
@@ -170,58 +342,10 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 		}
 	}
 
-	_items->load(node["items"], _mod);
-
-	_scientists = node["scientists"].as<int>(_scientists);
-	_engineers = node["engineers"].as<int>(_engineers);
-	_inBattlescape = node["inBattlescape"].as<bool>(_inBattlescape);
-
-	for (YAML::const_iterator i = node["transfers"].begin(); i != node["transfers"].end(); ++i)
+	reader.tryRead("retaliationTarget", _retaliationTarget);
+	if (const auto& missionIdReader = reader["retaliationMissionUniqueId"])
 	{
-		int hours = (*i)["hours"].as<int>();
-		Transfer *t = new Transfer(hours);
-		if (t->load(*i, this, _mod, save))
-		{
-			_transfers.push_back(t);
-		}
-	}
-
-	for (YAML::const_iterator i = node["research"].begin(); i != node["research"].end(); ++i)
-	{
-		std::string research = (*i)["project"].as<std::string>();
-		if (_mod->getResearch(research))
-		{
-			ResearchProject *r = new ResearchProject(_mod->getResearch(research));
-			r->load(*i);
-			_research.push_back(r);
-		}
-		else
-		{
-			_scientists += (*i)["assigned"].as<int>(0);
-			Log(LOG_ERROR) << "Failed to load research " << research;
-		}
-	}
-
-	for (YAML::const_iterator i = node["productions"].begin(); i != node["productions"].end(); ++i)
-	{
-		std::string item = (*i)["item"].as<std::string>();
-		if (_mod->getManufacture(item))
-		{
-			Production *p = new Production(_mod->getManufacture(item), 0);
-			p->load(*i);
-			_productions.push_back(p);
-		}
-		else
-		{
-			_engineers += (*i)["assigned"].as<int>(0);
-			Log(LOG_ERROR) << "Failed to load manufacture " << item;
-		}
-	}
-
-	_retaliationTarget = node["retaliationTarget"].as<bool>(_retaliationTarget);
-	if (const YAML::Node& mission = node["retaliationMissionUniqueId"])
-	{
-		int missionId = mission.as<int>();
+		int missionId = missionIdReader.readVal<int>();
 		for (auto* am : save->getAlienMissions())
 		{
 			if (am->getId() == missionId)
@@ -231,7 +355,10 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
 			}
 		}
 	}
-	_fakeUnderwater = node["fakeUnderwater"].as<bool>(_fakeUnderwater);
+	reader.tryRead("fakeUnderwater", _fakeUnderwater);
+	reader.tryRead("trackingBonus", _trackingBonus);
+	reader.tryRead("operationsBonus", _operationsBonus);
+	reader.tryRead("deploymentHintsBonus", _deploymentHintsBonus);
 
 	isOverlappingOrOverflowing(); // don't crash, just report in the log file...
 }
@@ -241,12 +368,12 @@ void Base::load(const YAML::Node &node, SavedGame *save, bool newGame, bool newB
  * @param node YAML node.
  * @param save Pointer to saved game.
  */
-void Base::finishLoading(const YAML::Node &node, SavedGame *save)
+void Base::finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save)
 {
-	for (YAML::const_iterator i = node["crafts"].begin(); i != node["crafts"].end(); ++i)
+	for (const auto& craftsReader : reader["crafts"].children())
 	{
-		int id = (*i)["id"].as<int>();
-		std::string type = (*i)["type"].as<std::string>();
+		int id = craftsReader["id"].readVal<int>();
+		std::string type = craftsReader["type"].readVal<std::string>();
 		if (_mod->getCraft(type))
 		{
 			Craft *craft = 0;
@@ -260,7 +387,7 @@ void Base::finishLoading(const YAML::Node &node, SavedGame *save)
 			}
 			if (craft)
 			{
-				craft->finishLoading(*i, save);
+				craft->finishLoading(craftsReader, save);
 			}
 		}
 		else
@@ -359,45 +486,51 @@ bool Base::isOverlappingOrOverflowing()
  * Saves the base to a YAML file.
  * @return YAML node.
  */
-YAML::Node Base::save() const
+void Base::save(YAML::YamlNodeWriter writer) const
 {
-	YAML::Node node = Target::save();
-	for (const auto* fac : _facilities)
-	{
-		node["facilities"].push_back(fac->save());
-	}
-	for (const auto* soldier : _soldiers)
-	{
-		node["soldiers"].push_back(soldier->save(_mod->getScriptGlobal()));
-	}
-	for (const auto* xcraft : _crafts)
-	{
-		node["crafts"].push_back(xcraft->save(_mod->getScriptGlobal()));
-	}
-	node["items"] = _items->save();
-	node["scientists"] = _scientists;
-	node["engineers"] = _engineers;
+	writer.setAsMap();
+	Target::save(writer);
+	writer.write("facilities", _facilities,
+		[](YAML::YamlNodeWriter& vectorWriter, BaseFacility* f)
+		{ f->save(vectorWriter.write()); });
+	writer.write("soldiers", _soldiers,
+		[&](YAML::YamlNodeWriter& vectorWriter, Soldier* s)
+		{ s->save(vectorWriter.write(), _mod->getScriptGlobal()); });
+	writer.write("crafts", _crafts,
+		[&](YAML::YamlNodeWriter& vectorWriter, Craft* c)
+		{ c->save(vectorWriter.write(), _mod->getScriptGlobal()); });
+	writer.write("covertOperations", _covertOperations,
+		[](YAML::YamlNodeWriter& vectorWriter, CovertOperation* c)
+		{ c->save(vectorWriter.write()); });
+	writer.write("intelProjects", _intelProjects,
+		[](YAML::YamlNodeWriter& vectorWriter, IntelProject* p)
+		{ p->save(vectorWriter.write()); });
+	writer.write("prisoners", _prisoners,
+		[](YAML::YamlNodeWriter& vectorWriter, BasePrisoner* p)
+		{ p->save(vectorWriter.write()); });
+	_items->save(writer["items"]);
+	writer.write("scientists", _scientists);
+	writer.write("engineers", _engineers);
 	if (_inBattlescape)
-		node["inBattlescape"] = _inBattlescape;
-	for (const auto* transfer : _transfers)
-	{
-		node["transfers"].push_back(transfer->save(this, _mod));
-	}
-	for (const auto* proj : _research)
-	{
-		node["research"].push_back(proj->save());
-	}
-	for (const auto* prod : _productions)
-	{
-		node["productions"].push_back(prod->save());
-	}
+		writer.write("inBattlescape", _inBattlescape);
+	writer.write("transfers", _transfers,
+		[&](YAML::YamlNodeWriter& vectorWriter, Transfer* t)
+		{ t->save(vectorWriter.write(), this, _mod); });
+	writer.write("research", _research,
+		[](YAML::YamlNodeWriter& vectorWriter, ResearchProject* r)
+		{ r->save(vectorWriter.write()); });
+	writer.write("productions", _productions,
+		[](YAML::YamlNodeWriter& vectorWriter, Production* p)
+		{ p->save(vectorWriter.write()); });
 	if (_retaliationTarget)
-		node["retaliationTarget"] = _retaliationTarget;
+		writer.write("retaliationTarget", _retaliationTarget);
 	if (_retaliationMission)
-		node["retaliationMissionUniqueId"] = _retaliationMission->getId();
+		writer.write("retaliationMissionUniqueId", _retaliationMission->getId());
 	if (_fakeUnderwater)
-		node["fakeUnderwater"] = _fakeUnderwater;
-	return node;
+		writer.write("fakeUnderwater", _fakeUnderwater);
+	writer.write("trackingBonus", _trackingBonus);
+	writer.write("operationsBonus", _operationsBonus);
+	writer.write("deploymentHintsBonus", _deploymentHintsBonus);
 }
 
 /**
@@ -450,6 +583,19 @@ std::vector<Soldier*> *Base::getSoldiers()
 	return &_soldiers;
 }
 
+std::vector<Soldier*> Base::getPersonnel(SoldierRole role) const
+{
+	std::vector<Soldier *> result;
+	for (auto s : _soldiers)
+	{
+		if (s->getRoleRank(role) > 0)
+		{
+			result.push_back(s);
+		}
+	}
+	return result;
+}
+
 /**
  * Pre-calculates soldier stats with various bonuses.
  */
@@ -459,6 +605,83 @@ void Base::prepareSoldierStatsWithBonuses()
 	{
 		soldier->prepareStatsWithBonuses(_mod);
 	}
+}
+
+/**
+ * Finds and erase operation from base's covert operations list.
+ * @param operation pointer to the CovertOperation.
+ */
+void Base::removeCovertOperation(CovertOperation* operation)
+{
+	bool erased = false;
+	for (size_t k = 0; k < _covertOperations.size(); k++) {
+		if (_covertOperations[k] == operation)
+		{
+			_covertOperations.erase(_covertOperations.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { 	Log(LOG_ERROR) << "Covert Operation named " << operation->getOperationName() << " was not deleted from base " << this->getName() << " !"; }
+}
+
+/**
+ * Finds and erase intel project from base's intel projects list.
+ * @param operation pointer to the IntelProject.
+ */
+void Base::removeIntelProject(IntelProject* project)
+{
+	bool erased = false;
+	for (size_t k = 0; k < _intelProjects.size(); k++) {
+		if (_intelProjects[k] == project)
+		{
+			_intelProjects.erase(_intelProjects.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { 	Log(LOG_ERROR) << "Intelligence Project named " << project->getName() << " was not deleted from base " << this->getName() << " !"; }
+}
+
+void Base::removePrisoner(BasePrisoner* prisoner)
+{
+	bool erased = false;
+	for (size_t k = 0; k < _prisoners.size(); k++) {
+		if (_prisoners[k] == prisoner)
+		{
+			_prisoners.erase(_prisoners.begin() + k);
+			erased = true;
+		}
+	}
+	if (!erased) { Log(LOG_ERROR) << "Base prisoner with ID " << prisoner->getId() << " was not deleted from base " << this->getName() << " !"; }
+}
+
+int Base::getAvailableInterrogationSpace()
+{
+	int total = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() == 0)
+		{
+			total += (*i)->getRules()->getInterrogationSpace();
+		}
+	}
+	return total;
+}
+
+int Base::getUsedInterrogationSpace()
+{
+	int used = 0;
+
+	for (auto p : _prisoners)
+	{
+		if (p->getPrisonerState() == PRISONER_STATE_INTERROGATION
+			|| p->getPrisonerState() == PRISONER_STATE_TORTURE
+			|| p->getPrisonerState() == PRISONER_STATE_REQRUITING)
+		{
+			used++;
+		}
+	}
+
+	return used;
 }
 
 /**
@@ -501,10 +724,11 @@ void Base::setEngineers(int engineers)
  * Returns if a certain target is covered by the base's
  * radar range, taking in account the range and chance.
  * @param target Pointer to target to compare.
+ * @param globalSearch if there should be global search logic added
  * @param alreadyDedected Was ufo already detected, `true` mean we track it without probability.
  * @return 0 - not detected, 1 - detected by conventional radar, 2 - detected by hyper-wave decoder.
  */
-UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked) const
+UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, bool globalSearch) const
 {
 	int distance = XcomDistance(getDistance(target));
 	bool hyperwave = false;
@@ -512,6 +736,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 	int hyperwave_chance = 0;
 	int radar_max_range = 0;
 	int radar_chance = 0;
+	bool fta = save->isFtAGame();
 
 	for (const auto* fac : _facilities)
 	{
@@ -519,12 +744,13 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		{
 			continue;
 		}
-		if (fac->getRules()->getRadarRange() >= distance)
+		auto rule = fac->getRules();
+		if (rule->getRadarRange() >= distance || (rule->isGlobalRadar() && globalSearch))
 		{
 			int radarChance = fac->getRules()->getRadarChance();
 			if (fac->getRules()->isHyperwave())
 			{
-				if (radarChance == 100 || RNG::percent(radarChance))
+				if (radarChance == 100 || RNG::percent(radarChance) || fta)
 				{
 					hyperwave = true;
 				}
@@ -545,6 +771,11 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		}
 	}
 
+	if (radar_chance > 0 && globalSearch)
+	{
+		radar_chance += getTrackingBonusReal();
+	}
+
 	int detectionChance = 0;
 	UfoDetection detectionType = DETECTION_NONE;
 
@@ -558,7 +789,14 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		else if (radar_chance > 0)
 		{
 			detectionType = DETECTION_RADAR;
-			detectionChance = 100;
+			if (fta && RNG::percent(10)) //UFO will attempt to drop tracking
+			{
+				detectionChance = RNG::generate(radar_chance, 100);
+			}
+			else
+			{
+				detectionChance = 100;
+			}
 		}
 	}
 	else
@@ -566,7 +804,14 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		if (hyperwave)
 		{
 			detectionType = DETECTION_HYPERWAVE;
-			detectionChance = 100;
+			if (fta)
+			{
+				detectionChance = hyperwave_chance;
+			}
+			else
+			{
+				detectionChance = 100;
+			}
 		}
 		else if (radar_chance > 0)
 		{
@@ -580,7 +825,10 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 
 	work.execute(target->getRules()->getScript<ModScript::DetectUfoFromBase>(), args);
 
-	return RNG::percent(args.getSecond()) ? (UfoDetection)args.getFirst() : DETECTION_NONE;
+	if (RNG::percent(args.getSecond()))
+		return (UfoDetection)args.getFirst();
+	else
+		return DETECTION_NONE;
 }
 
 /**
@@ -593,16 +841,23 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) const
 {
 	int total = 0;
-	for (const auto* soldier : _soldiers)
+	for (auto* soldier : _soldiers)
 	{
-		if (!checkCombatReadiness && soldier->getCraft() == 0)
+		if (soldier->getCovertOperation() != 0 || soldier->getRoleRank(ROLE_SOLDIER) == 0)
 		{
-			total++;
+			//we do not want to count not real soldiers or that are on covert operation
 		}
-		else if (checkCombatReadiness && ((soldier->getCraft() != 0 && soldier->getCraft()->getStatus() != "STR_OUT") ||
-			(soldier->getCraft() == 0 && (soldier->hasFullHealth() || (includeWounded && soldier->canDefendBase())))))
+		else
 		{
-			total++;
+			if (!checkCombatReadiness && soldier->getCraft() == 0)
+			{
+				total++;
+			}
+			else if (checkCombatReadiness && ((soldier->getCraft() != 0 && soldier->getCraft()->getStatus() != "STR_OUT") ||
+				(soldier->getCraft() == 0 && (soldier->hasFullHealth() || (includeWounded && soldier->canDefendBase())))))
+			{
+				total++;
+			}
 		}
 	}
 	return total;
@@ -615,12 +870,17 @@ int Base::getAvailableSoldiers(bool checkCombatReadiness, bool includeWounded) c
  */
 int Base::getTotalSoldiers() const
 {
-	size_t total = _soldiers.size();
-	for (const auto* transfer : _transfers)
+	//size_t total = _soldiers.size();
+	int total = 0;
+	for (Soldier* s : _soldiers)
+	{
+		total += s->getRules()->getLivingSpace();
+	}
+	for (const Transfer* transfer : _transfers)
 	{
 		if (transfer->getType() == TRANSFER_SOLDIER)
 		{
-			total += transfer->getQuantity();
+			total += transfer->getSoldier()->getRules()->getLivingSpace();
 		}
 	}
 	return total;
@@ -804,10 +1064,19 @@ int Base::getUsedQuarters() const
 	int total = getTotalSoldiers() + getTotalScientists() + getTotalEngineers();
 	for (const auto* prod : _productions)
 	{
-		if (prod->getRules()->getSpawnedPersonType() != "")
+		// reserve one living space for each production project (even if it's on hold)
+		auto spawnType = prod->getRules()->getSpawnedPersonType();
+		if (spawnType != "")
 		{
-			// reserve one living space for each production project (even if it's on hold)
-			total += 1;
+			const RuleSoldier* rule = _mod->getSoldier(spawnType);
+			if (rule != 0)
+			{
+				total += rule->getLivingSpace();
+			}
+			else
+			{
+				total++;
+			}
 		}
 	}
 	return total;
@@ -838,10 +1107,10 @@ int Base::getAvailableQuarters() const
  */
 double Base::getUsedStores(bool excludeNormalItems) const
 {
-	double total = excludeNormalItems ? 0.0 : _items->getTotalSize(_mod);
+	double total = excludeNormalItems ? 0.0 : _items->getTotalSize();
 	for (const auto* xcraft : _crafts)
 	{
-		total += xcraft->getTotalItemStorageSize(_mod);
+		total += xcraft->getTotalItemStorageSize();
 	}
 	for (auto* transfer : _transfers)
 	{
@@ -851,7 +1120,7 @@ double Base::getUsedStores(bool excludeNormalItems) const
 		}
 		else if (transfer->getType() == TRANSFER_CRAFT)
 		{
-			total += transfer->getCraft()->getTotalItemStorageSize(_mod);
+			total += transfer->getCraft()->getTotalItemStorageSize();
 		}
 	}
 	return total;
@@ -907,13 +1176,32 @@ int Base::getAvailableStores() const
  * by research projects in the base.
  * @return Laboratory space.
  */
-int Base::getUsedLaboratories() const
+int Base::getUsedLaboratories(bool fta, ResearchProject *exclude) const
 {
 	int usedLabSpace = 0;
 	for (const auto* proj : _research)
 	{
-		usedLabSpace += proj->getAssigned();
+		if (exclude != nullptr && proj == exclude)
+		{
+			continue;
+		}
+
+		if (fta)
+		{
+			for (const auto* s : _soldiers)
+			{
+				if (proj == s->getResearchProject())
+				{
+					usedLabSpace++;
+				}
+			}
+		}
+		else
+		{
+			usedLabSpace += proj->getAssigned();
+		}
 	}
+
 	return usedLabSpace;
 }
 
@@ -940,19 +1228,34 @@ int Base::getAvailableLaboratories() const
  * by manufacturing projects in the base.
  * @return Storage space.
  */
-int Base::getUsedWorkshops() const
+int Base::getUsedWorkshops(bool fta, Production* exclude) const
 {
 	int usedWorkShop = 0;
 	for (const auto* prod : _productions)
 	{
-		usedWorkShop += prod->getAssignedEngineers();
-
-		// don't count the workshop space yet if the production is only queued (for future)
-		if (!prod->isQueuedOnly())
+		if (exclude != nullptr && prod == exclude)
 		{
-			usedWorkShop += prod->getRules()->getRequiredSpace();
+			continue;
 		}
+
+		int assigned = 0;
+		if (fta)
+		{
+			for (auto* s : _soldiers)
+			{
+				if (prod == s->getProductionProject())
+				{
+					assigned++;
+				}
+			}
+		}
+		else
+		{
+			assigned = prod->getAssignedEngineers();
+		}
+		usedWorkShop += (assigned + prod->getRules()->getRequiredSpace());
 	}
+
 	return usedWorkShop;
 }
 
@@ -1022,18 +1325,18 @@ int Base::getAvailableHangars() const
  * Return laboratories space not used by a ResearchProject
  * @return laboratories space not used by a ResearchProject
  */
-int Base::getFreeLaboratories() const
+int Base::getFreeLaboratories(bool fta, ResearchProject* exclude) const
 {
-	return getAvailableLaboratories() - getUsedLaboratories();
+	return getAvailableLaboratories() - getUsedLaboratories(fta, exclude);
 }
 
 /**
  * Return workshop space not used by a Production
  * @return workshop space not used by a Production
  */
-int Base::getFreeWorkshops() const
+int Base::getFreeWorkshops(bool fta, Production* exclude) const
 {
-	return getAvailableWorkshops() - getUsedWorkshops();
+	return getAvailableWorkshops() - getUsedWorkshops(fta, exclude);
 }
 
 /**
@@ -1052,6 +1355,15 @@ int Base::getFreePsiLabs() const
 int Base::getFreeContainment(int prisonType) const
 {
 	return getAvailableContainment(prisonType) - getUsedContainment(prisonType);
+}
+
+/**
+ * Return prison (for FtA type Base Prisoner).
+ * @return containment space not in use
+ */
+int Base::getFreePrisonSpace() const
+{
+	return getAvailablePrisonSpace() - getUsedPrisonSpace();
 }
 
 /**
@@ -1215,12 +1527,18 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 {
 	int total = 0;
 	int totalSalary = 0;
+	int rank = 0;
 	for (auto* transfer : _transfers)
 	{
 		if (transfer->getType() == TRANSFER_SOLDIER && transfer->getSoldier()->getRules()->getType() == soldier)
 		{
 			total++;
-			totalSalary += transfer->getSoldier()->getRules()->getSalaryCost(transfer->getSoldier()->getRank());
+			rank = transfer->getSoldier()->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)transfer->getSoldier()->getRank();
+			}
+			totalSalary += transfer->getSoldier()->getRules()->getSalaryCost(rank);
 		}
 	}
 	for (const auto* xsoldier : _soldiers)
@@ -1228,7 +1546,12 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 		if (xsoldier->getRules()->getType() == soldier)
 		{
 			total++;
-			totalSalary += xsoldier->getRules()->getSalaryCost(xsoldier->getRank());
+			rank = xsoldier->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)xsoldier->getRank();
+			}
+			totalSalary += xsoldier->getRules()->getSalaryCost(rank);
 		}
 	}
 	return std::make_pair(total, totalSalary);
@@ -1242,16 +1565,27 @@ std::pair<int, int> Base::getSoldierCountAndSalary(const std::string &soldier) c
 int Base::getPersonnelMaintenance() const
 {
 	int total = 0;
+	int rank = 0;
 	for (auto* transfer : _transfers)
 	{
 		if (transfer->getType() == TRANSFER_SOLDIER)
 		{
-			total += transfer->getSoldier()->getRules()->getSalaryCost(transfer->getSoldier()->getRank());
+			rank = transfer->getSoldier()->getBestRoleRank().second;
+			if (!rank)
+			{
+				rank = (int)transfer->getSoldier()->getRank();
+			}
+			total += transfer->getSoldier()->getRules()->getSalaryCost(rank);
 		}
 	}
 	for (const auto* soldier : _soldiers)
 	{
-		total += soldier->getRules()->getSalaryCost(soldier->getRank());
+		rank = soldier->getBestRoleRank().second;
+		if (!rank)
+		{
+			rank = (int)soldier->getRank();
+		}
+		total += soldier->getRules()->getSalaryCost(rank);
 	}
 	total += getTotalEngineers() * _mod->getEngineerCost();
 	total += getTotalScientists() * _mod->getScientistCost();
@@ -1517,6 +1851,33 @@ int Base::getAvailableContainment(int prisonType) const
 		if (fac->getBuildTime() == 0 && fac->getRules()->getPrisonType() == prisonType)
 		{
 			total += fac->getRules()->getAliens();
+		}
+	}
+	return total;
+}
+
+int Base::getUsedPrisonSpace() const
+{
+	int total = (int)_prisoners.size();
+	for (auto* transfer : _transfers)
+	{
+		if (transfer->getType() == TRANSFER_PRISONER)
+		{
+			total++;
+		}
+	}
+
+	return total;
+}
+
+int Base::getAvailablePrisonSpace() const
+{
+	int total = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() == 0)
+		{
+			total += (*i)->getRules()->getFtAPrisoneSpace();
 		}
 	}
 	return total;
@@ -1978,7 +2339,7 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 	{
 		// lab destruction: enforce lab space limits. take scientists off projects until
 		// it all evens out. research is not cancelled.
-		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories();
+		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories(_mod->isFTAGame());
 		for (auto iter = _research.begin(); iter != _research.end() && toRemove > 0;)
 		{
 			ResearchProject* proj = (*iter);
@@ -2001,7 +2362,7 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 	{
 		// workshop destruction: similar to lab destruction, but we'll lay off engineers instead
 		// in this case, however, production IS cancelled, as it takes up space in the workshop.
-		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops();
+		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops(_mod->isFTAGame());
 		Collections::deleteIf(_productions, _productions.size(),
 			[&](Production* p)
 			{
@@ -2155,6 +2516,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 		int hangars = 0;
 		int psiLaboratories = 0;
 		int training = 0;
+		int prison = 0;
 
 		void add(const RuleBaseFacility* rule)
 		{
@@ -2169,6 +2531,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 			hangars += rule->getCrafts();
 			psiLaboratories += rule->getPsiLaboratories();
 			training += rule->getTrainingFacilities();
+			prison += rule->getFtAPrisoneSpace();
 		}
 	};
 
@@ -2323,7 +2686,7 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 		if (replacement)
 		{
 			// same as like with storage, only when limits are not enforced you can upgrade full prison
-			if (!Options::storageLimitsEnforced)
+			if (!Options::containmentLimitsEnforced)
 			{
 				sumAvailablePrisons(replacement);
 			}
@@ -2348,11 +2711,11 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 	{
 		return BPE_Used_Quarters;
 	}
-	else if (removed.laboratories > 0 && available.laboratories < getUsedLaboratories())
+	else if (removed.laboratories > 0 && available.laboratories < getUsedLaboratories(_mod->isFTAGame()))
 	{
 		return BPE_Used_Laboratories;
 	}
-	else if (removed.workshops > 0 && available.workshops < getUsedWorkshops())
+	else if (removed.workshops > 0 && available.workshops < getUsedWorkshops(_mod->isFTAGame()))
 	{
 		return BPE_Used_Workshops;
 	}
@@ -2567,6 +2930,49 @@ std::vector<Craft*>::iterator Base::removeCraft(Craft *craft, bool unload)
 		}
 	}
 	return c;
+}
+
+int Base::getTrackingBonusReal() const
+{
+	int bonus = getTrackingBonus();
+	double realBonus = 0;
+	if (bonus > 0)
+	{
+		realBonus = -0.6 + 2.1 * std::log10(bonus);
+	}
+
+	return ceil(realBonus);
+}
+
+int Base::getRadarStrength() const
+{
+	int power = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() != 0)
+		{
+			continue;
+		}
+		power += (*i)->getRules()->getRadarRange() * (*i)->getRules()->getRadarChance();
+	}
+	return power;
+}
+
+int Base::getGlobalRadarStrength() const
+{
+	int power = 0;
+	for (std::vector<BaseFacility*>::const_iterator i = _facilities.begin(); i != _facilities.end(); ++i)
+	{
+		if ((*i)->getBuildTime() != 0 || !(*i)->getRules()->isGlobalRadar())
+		{
+			continue;
+		}
+		power += (*i)->getRules()->getRadarChance();
+	}
+
+	power += getTrackingBonusReal();
+
+	return power;
 }
 
 }

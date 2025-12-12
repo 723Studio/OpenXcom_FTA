@@ -28,11 +28,13 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/ItemContainer.h"
+#include "../Savegame/Production.h"
 #include "../Mod/RuleBaseFacility.h"
 #include "../Savegame/SavedGame.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
+#include "../FTA/MasterMind.h"
 #include "../Mod/RuleInterface.h"
 #include <algorithm>
 #include <climits>
@@ -85,7 +87,7 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 	// Set up objects
 	setWindowBackground(_window, "placeFacility");
 
-	auto* itf = _game->getMod()->getInterface("basescape")->getElement("trafficLights");
+	auto* itf = _game->getMod()->getInterface("basescape")->getElementOptional("trafficLights");
 	if (itf)
 	{
 		_view->setOtherColors(itf->color, itf->color2, itf->border, !itf->TFTDMode);
@@ -131,9 +133,11 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 
 	_txtTime->setText(tr("STR_CONSTRUCTION_TIME_UC"));
 
+	int time = _rule->getBuildTime();
+	std::string units = "STR_DAY";
+	
 	_numTime->setBig();
-	_numTime->setText(tr("STR_DAY", _origFac != 0 ? 0 : _rule->getBuildTime()));
-
+	_numTime->setText(tr(units, _origFac != 0 ? 0 : time));
 	_txtMaintenance->setText(tr("STR_MAINTENANCE_UC"));
 
 	_numMaintenance->setBig();
@@ -192,6 +196,33 @@ void PlaceFacilityState::viewClick(Action *)
 	}
 	else
 	{
+		// Pre-calculate refunds
+		const BaseAreaSubset areaToBuildOverTemp = BaseAreaSubset(_rule->getSizeX(), _rule->getSizeY()).offset(_view->getGridX(), _view->getGridY());
+		int refundValueTemp = 0;
+		std::map<const std::string, int> refundItemsTemp;
+		for (int i = _base->getFacilities()->size() - 1; i >= 0; --i)
+		{
+			BaseFacility* checkFacilityTemp = _base->getFacilities()->at(i);
+			if (BaseAreaSubset::intersection(areaToBuildOverTemp, checkFacilityTemp->getPlacement()))
+			{
+				const std::map<std::string, std::pair<int, int> >& itemCostTemp = checkFacilityTemp->getRules()->getBuildCostItems();
+				if (checkFacilityTemp->getBuildTime() > checkFacilityTemp->getRules()->getBuildTime())
+				{
+					refundValueTemp = checkFacilityTemp->getRules()->getBuildCost();
+					for (auto& itemTemp : itemCostTemp)
+						refundItemsTemp[itemTemp.first] += itemTemp.second.first;
+				}
+				else
+				{
+					refundValueTemp = checkFacilityTemp->getRules()->getRefundValue();
+					for (auto& itemTemp : itemCostTemp)
+						refundItemsTemp[itemTemp.first] += itemTemp.second.second;
+				}
+				if (checkFacilityTemp->getAmmo() > 0)
+					refundItemsTemp[checkFacilityTemp->getRules()->getAmmoItem()->getType()] += checkFacilityTemp->getAmmo();
+			}
+		}
+
 		// placing a brand new facility
 		BasePlacementErrors placementErrorCode = _view->getPlacementError(_rule);
 		if (placementErrorCode)
@@ -251,12 +282,15 @@ void PlaceFacilityState::viewClick(Action *)
 				case BPE_ForbiddenByThis:
 					_game->pushState(new ErrorMessageState(tr("STR_FACILITY_OTHER_FORBIDDEN_BY_THIS"), _palette, errorColor1, "BACK01.SCR", errorColor2));
 					break;
+				case BPE_UpgradeOnly:
+					_game->pushState(new ErrorMessageState(tr("STR_CANNOT_BUILD_UPGRADE_ONLY"), _palette, errorColor1, "BACK13.SCR", errorColor2));
+					break;
 				default:
 					_game->pushState(new ErrorMessageState(tr("STR_CANNOT_BUILD_HERE"), _palette, errorColor1, "BACK01.SCR", errorColor2));
 					break;
 			}
 		}
-		else if (_game->getSavedGame()->getFunds() < _rule->getBuildCost())
+		else if (_game->getSavedGame()->getFunds() < (_rule->getBuildCost() - refundValueTemp))
 		{
 			_game->popState();
 			_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_MONEY"), _palette, _game->getMod()->getInterface("placeFacility")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("placeFacility")->getElement("errorPalette")->color));
@@ -265,7 +299,7 @@ void PlaceFacilityState::viewClick(Action *)
 		{
 			for (const auto& item: _rule->getBuildCostItems())
 			{
-				int needed = item.second.first - _base->getStorageItems()->getItem(item.first);
+				int needed = (item.second.first - refundItemsTemp[item.first]) - _base->getStorageItems()->getItem(item.first);
 				if (needed > 0)
 				{
 					_game->popState();
@@ -326,6 +360,7 @@ void PlaceFacilityState::viewClick(Action *)
 
 			}
 
+			//Creating facility
 			BaseFacility *fac = new BaseFacility(_rule, _base);
 			fac->setX(_view->getGridX());
 			fac->setY(_view->getGridY());
@@ -338,10 +373,12 @@ void PlaceFacilityState::viewClick(Action *)
 				fac->setBuildTime(std::max(1, fac->getBuildTime() - reducedBuildTimeRounded));
 			}
 			_base->getFacilities()->push_back(fac);
+			
 			if (fac->getRules()->getPlaceSound() != Mod::NO_SOUND)
 			{
 				_game->getMod()->getSound("GEO.CAT", fac->getRules()->getPlaceSound())->play();
 			}
+
 			if (Options::allowBuildingQueue)
 			{
 				if (_view->isQueuedBuilding(_rule)) fac->setBuildTime(INT_MAX);

@@ -20,11 +20,33 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
 {
+
+class Mod;
+class RuleResearch;
+/**
+* Definition of one custom player answer to Geoscape Event.
+*/
+struct CustomAnswer
+{
+	std::string title;
+	std::vector<std::string> spawnEvents;
+	WeightedOptions weightedEvents;
+	std::string description;
+
+	/// Loads stats from YAML.
+	void load(const YAML::YamlNodeReader& reader)
+	{
+		reader.tryRead("title", title);
+		reader.tryRead("spawnEvents", spawnEvents);
+		weightedEvents.load(reader["weightedEvents"]);
+		reader.tryRead("description", description);
+	}
+};
 
 /**
  * Represents a custom Geoscape event.
@@ -37,26 +59,37 @@ private:
 	std::vector<std::string> _regionList;
 	bool _alignBottom;
 	bool _city;
-	int _points, _funds;
+	int _points, _funds, _loyalty;
 	std::string _spawnedCraftType;
-	int _spawnedPersons;
+	int _spawnedPersons, _counterValue;
 	std::string _spawnedPersonType, _spawnedPersonName;
-	YAML::Node _spawnedSoldier;
+	YAML::YamlString _spawnedSoldier;
 	std::map<std::string, int> _everyMultiItemList;
 	std::vector<std::string> _everyItemList, _randomItemList;
 	std::vector<std::map<std::string, int> > _randomMultiItemList;
 	WeightedOptions _weightedItemList;
-	std::vector<std::string> _researchList;
+	std::vector<std::string> _researchNames;
+	std::vector<const RuleResearch*> _research;
+	std::vector<std::string> _decreaseCounter, _increaseCounter;
+	std::vector<std::string> _adhocMissionScriptTags;
 	std::string _interruptResearch;
+	std::vector<std::string> _removedCovertOperationsList;
 	int _timer, _timerRandom;
 	bool _invert;
+	std::map<std::string, int> _everyMultiSoldierList;
+	std::vector<std::map<std::string, int> > _randomMultiSoldierList;
+	std::map<std::string, int> _reputationScore;
+	std::map<int, CustomAnswer> _answers;
 public:
 	/// Creates a blank RuleEvent.
 	RuleEvent(const std::string &name);
 	/// Cleans up the event ruleset.
 	~RuleEvent() = default;
 	/// Loads the event definition from YAML.
-	void load(const YAML::Node &node);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
+	/// Cross link with other rules.
+	void afterLoad(const Mod* mod);
+
 	/// Gets the event's name.
 	const std::string &getName() const { return _name; }
 	/// Gets the event's description.
@@ -77,6 +110,13 @@ public:
 	int getPoints() const { return _points; }
 	/// Gets the amount of funds awarded when this event pops up.
 	int getFunds() const { return _funds; }
+	/// Gets the value of loyalty that would be added to the player's loyalty score when this event pops up.
+	int getLoyalty() const { return _loyalty; }
+	/// Gets the name of custom counter variables to decrease when this event is appeared.
+	const std::vector<std::string>& getDecreaseCounter() const { return _decreaseCounter; }
+	/// Gets the name of custom counter variables to increase when this event is appeared.
+	const std::vector<std::string>& getIncreaseCounter() const { return _increaseCounter; }
+	int getCounterValue() const { return _counterValue; }
 
 	/// Gets the spawned craft type.
 	const std::string& getSpawnedCraftType() const { return _spawnedCraftType; }
@@ -88,8 +128,10 @@ public:
 	/// Gets the custom name of the spawned person.
 	const std::string& getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
-	const YAML::Node& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 
+	/// Gets a list reputation score to update.
+	const std::map<std::string, int>& getReputationScore() const { return _reputationScore; }
 	/// Gets a list of items; they are all transferred to HQ stores when this event pops up.
 	const std::map<std::string, int> &getEveryMultiItemList() const { return _everyMultiItemList; }
 	/// Gets a list of items; they are all transferred to HQ stores when this event pops up.
@@ -101,15 +143,26 @@ public:
 	/// Gets a list of items; one of them is randomly selected (considering weights) and transferred to HQ stores when this event pops up.
 	const WeightedOptions &getWeightedItemList() const { return _weightedItemList; }
 	/// Gets a list of research projects; one of them will be randomly discovered when this event pops up.
-	const std::vector<std::string> &getResearchList() const { return _researchList; }
+	const std::vector<const RuleResearch*> &getResearchList() const { return _research; }
+	/// Gets a list of adhoc script tags; used for adhoc alien mission generation.
+	const std::vector<std::string> &getAdhocMissionScriptTags() const { return _adhocMissionScriptTags; }
+	/// Gets a covered otions that should be removed
+	const std::vector<std::string>& getRemovedCovertOperationsList() const { return _removedCovertOperationsList; }
 	/// Gets the research project that will interrupt/terminate an already generated (but not yet popped up) event.
 	const std::string &getInterruptResearch() const { return _interruptResearch; }
 	/// Gets the timer of delay for this event, for it occurring after being spawned with eventScripts ruleset.
 	int getTimer() const { return _timer; }
 	/// Gets value for calculation of random part of delay for this event.
 	int getTimerRandom() const { return _timerRandom; }
+	/// Gets custom player answers for this event.
+	const std::map<int, CustomAnswer>&getCustomAnswers() const { return _answers; }
 	/// Should the event remove items instead of adding them?
 	bool getInvert() const { return _invert; }
+
+	/// Gets a list of soldiers; they are all transferred to HQ when this event pops up.
+	const std::map<std::string, int> &getEveryMultiSoldierList() const { return _everyMultiSoldierList; }
+	/// Gets a list of lists of soldiers; one of them is randomly selected and transferred to HQ when this event pops up.
+	const std::vector<std::map<std::string, int> > &getRandomMultiSoldierList() const { return _randomMultiSoldierList; }
 };
 
 }

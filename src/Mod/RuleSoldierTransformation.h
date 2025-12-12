@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
 
@@ -27,6 +27,7 @@ namespace OpenXcom
 {
 
 class Mod;
+enum SoldierRole : int;
 
 /**
  * Ruleset data structure for the information to transform a soldier.
@@ -34,7 +35,7 @@ class Mod;
 class RuleSoldierTransformation
 {
 private:
-	std::string _name;
+	std::string _name, _description;
 	std::vector<std::string > _requires, _requiredPreviousTransformations, _forbiddenPreviousTransformations;
 	RuleBaseFacilityFunctions _requiresBaseFunc;
 	std::string _producedItem;
@@ -44,6 +45,7 @@ private:
 	std::map<std::string, int> _requiredItems;
 	std::map<std::string, int> _requiredCommendations;
 	int _listOrder, _cost, _transferTime, _recoveryTime;
+	int _transformationTime;
 	int _minRank;
 	bool _includeBonusesForMinStats, _includeBonusesForMaxStats;
 	UnitStats _requiredMinStats, _requiredMaxStats, _flatOverallStatChange, _percentOverallStatChange, _percentGainedStatChange;
@@ -52,17 +54,24 @@ private:
 	UnitStats _rerollStats;
 	bool _lowerBoundAtMinStats, _upperBoundAtMaxStats, _upperBoundAtStatCaps;
 	int _upperBoundType;
+	SoldierRole _addRole;
+	std::map<SoldierRole, int> _roleRankRequirements;
+	SoldierRole _forbiddenRole;
+	std::vector<std::string> _removeTransformations;
 	bool _reset;
 	bool _resetRank;
 	std::string _soldierBonusType;
 
+	void loadRoleRequirements(const std::map<int, int> &r);
 public:
 	/// Default constructor
 	RuleSoldierTransformation(const std::string &name, int listOrder);
 	/// Loads the project data from YAML
-	void load(const YAML::Node& node, Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Gets the unique name id of the project
 	const std::string &getName() const;
+	/// Gets the description of the project
+	const std::string &getDescription() const { return _description; }
 	/// Gets the list weight of the project
 	int getListOrder() const;
 	/// Gets the list of research this project requires
@@ -111,6 +120,8 @@ public:
 	int getTransferTime() const;
 	/// Gets how long the transformed soldier should take to recover after completion
 	int getRecoveryTime() const;
+	/// Gets how long the transformating would be in process before applyes
+	int getTransformationTime() const { return _transformationTime; }
 	/// Gets the minimum rank a soldier needs to be eligible for this project
 	int getMinRank() const;
 	/// Gets the flat change to a soldier's overall stats when undergoing this project
@@ -147,6 +158,15 @@ public:
 	/// Gets whether to use soft upper bound limit or not.
 	bool isSoftLimit(bool isSameSoldierType) const;
 
+	/// Gets the role to add to the soldier when undergoing this project
+	SoldierRole getRoleToAdd() const { return _addRole; }
+	/// Gets the map of role rank requirements for this project
+	std::map<SoldierRole, int> getRoleRankRequirments() const { return _roleRankRequirements; }
+	/// Gets the role that forbids a soldier from undergoing this project
+	SoldierRole getForbiddenRole() const { return _forbiddenRole; }
+
+	/// Gets the list of (potential) previous soldier transformations to remove when undergoing this project
+	const std::vector<std::string>& getRemoveTransformations() const { return _removeTransformations; }
 	/// Gets whether or not this project should reset info about all previous transformations and all previously assigned soldier bonuses
 	bool getReset() const;
 	/// Gets whether or not this project should reset the rank of the destination soldier to rookie

@@ -19,10 +19,12 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 enum AlienRank{AR_HUMAN = -1, AR_COMMANDER, AR_LEADER, AR_ENGINEER, AR_MEDIC, AR_NAVIGATOR, AR_SOLDIER, AR_TERRORIST, AR_TERRORIST2};
+
+enum RaceType { RACE_TYPE_MIXED = -1, RACE_TYPE_ALIEN = 0, RACE_TYPE_HUMAN = 1, RACE_TYPE_MONSTER = 2 };
 
 namespace OpenXcom
 {
@@ -43,6 +45,7 @@ private:
 	std::vector<std::string> _members;
 	std::vector< std::vector<std::string> > _membersRandom;
 	int _retaliationAggression;
+	RaceType _raceType;
 	int _listOrder;
 public:
 	/// Creates a blank alien race ruleset.
@@ -50,7 +53,7 @@ public:
 	/// Cleans up the alien race ruleset.
 	~AlienRace();
 	/// Loads alien race data from YAML.
-	void load(const YAML::Node& node, const Mod* mod);
+	void load(const YAML::YamlNodeReader& reader, const Mod* mod);
 	/// Gets the alien race's id.
 	const std::string &getId() const;
 	/// Gets the alien base weapon deploy.
@@ -65,6 +68,8 @@ public:
 	int getRetaliationAggression() const;
 	/// Returns a list of retaliation missions based on the given month.
 	WeightedOptions* retaliationMissionWeights(const size_t monthsPassed) const;
+	/// Get the type of this race (ALIEN, HUMAN, MONSTER, MIXED).
+	RaceType getRaceType() const { return _raceType; }
 	/// Get the list weight for this alien race.
 	int getListOrder() const { return _listOrder; }
 };

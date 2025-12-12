@@ -69,7 +69,7 @@ PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView,
 		_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);
 	}
 
-	Element *grenadeBackground = _game->getMod()->getInterface("battlescape")->getElement("grenadeBackground");
+	const Element *grenadeBackground = _game->getMod()->getInterface("battlescape")->getElement("grenadeBackground");
 
 	// Set up objects
 	add(_bg);
@@ -111,7 +111,7 @@ PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView,
 		_number[i]->setVerticalAlign(ALIGN_MIDDLE);
 	}
 
-	_button[0]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_q);
+	_button[0]->onKeyboardRelease((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_q); // FIXME: this is just a workaround, fix it better!
 	_button[0]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_0);
 	_button[1]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_1);
 	_button[2]->onKeyboardPress((ActionHandler)&PrimeGrenadeState::btnClick, SDLK_2);

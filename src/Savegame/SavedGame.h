@@ -35,7 +35,9 @@
 namespace OpenXcom
 {
 
+class Game;
 class Mod;
+class MasterMind;
 class GameTime;
 class Country;
 class Base;
@@ -56,6 +58,8 @@ class AlienBase;
 class AlienStrategy;
 class AlienMission;
 class GeoscapeEvent;
+class DiplomacyFaction;
+class CovertOperation;
 class Target;
 class Soldier;
 class Craft;
@@ -74,7 +78,7 @@ enum GameDifficulty : int { DIFF_BEGINNER = 0, DIFF_EXPERIENCED, DIFF_VETERAN, D
 /**
  * Enumerator for the various save types.
  */
-enum SaveType { SAVE_DEFAULT, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
+enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
 
 /**
  * Enumerator for the current game ending.
@@ -102,9 +106,11 @@ struct SaveInfo
  */
 class SavedGame
 {
-public:
-	Country *debugCountry = nullptr;
-	Region *debugRegion = nullptr;
+  protected:
+	static Game *_game;
+
+  public:
+	std::string debugRegion = "";
 	int debugType = 0;
 	size_t debugZone = 0;
 	size_t debugArea = 0;
@@ -141,6 +147,8 @@ private:
 	AlienStrategy *_alienStrategy;
 	SavedBattleGame *_battleGame;
 	std::vector<const RuleResearch*> _discovered;
+	std::vector<std::string> _performedOperations;
+	std::map<std::string, int> _missionScriptsTimers, _eventScriptsTimers;
 	std::map<std::string, int> _generatedEvents;
 	std::map<std::string, int> _ufopediaRuleStatus;
 	std::map<std::string, int> _manufactureRuleStatus;
@@ -151,10 +159,13 @@ private:
 	Base* _previewBase;
 	std::vector<AlienMission*> _activeMissions;
 	std::vector<GeoscapeEvent*> _geoscapeEvents;
-	bool _debug, _warned;
+	std::vector<CovertOperation*> _covertOperations;
+	std::vector<DiplomacyFaction*> _diplomacyFactions;
+	bool _debug, _warned, _ftaGame;
 	bool _togglePersonalLight, _toggleNightVision;
 	int _toggleBrightness;
 	int _monthsPassed;
+	int _loyalty, _lastMonthsLoyalty;
 	int _daysPassed;
 	int _vehiclesLost;
 	std::string _graphRegionToggles;
@@ -189,8 +200,8 @@ public:
 	static std::vector<SaveInfo> getList(Language *lang, bool autoquick);
 	/// Loads a saved game from YAML.
 	void load(const std::string &filename, Mod *mod, Language *lang);
-	void loadTemplates(const YAML::Node& doc, const Mod* mod);
-	void loadUfopediaRuleStatus(const YAML::Node& node);
+	void loadTemplates(const YAML::YamlNodeReader& reader, const Mod* mod);
+	void loadUfopediaRuleStatus(const YAML::YamlNodeReader& reader);
 	/// Saves a saved game to YAML.
 	void save(const std::string &filename, Mod *mod) const;
 	/// Gets the game name.
@@ -215,12 +226,28 @@ public:
 	bool isIronman() const;
 	/// Sets if the game is in ironman mode.
 	void setIronman(bool ironman);
+	/// Gets if the game is FtA game.
+	bool isFtAGame() const { return _ftaGame; }
+	/// Sets if the game is FtA game.
+	void setFtAGame(bool ftaGame) { _ftaGame = ftaGame; }
+	/// Sets game object pointer
+	static void setGamePtr(Game *game) { _game = game; }
+	/// Gets our game.
+	Game *getGame() { return _game; }
 	/// Gets the current funds.
 	int64_t getFunds() const;
 	/// Gets the list of funds from previous months.
 	std::vector<int64_t> &getFundsList();
 	/// Sets new funds.
 	void setFunds(int64_t funds);
+	/// Gets the current loyalty score.
+	int getLoyalty() const { return _loyalty; }
+	/// Sets the new loyalty score.
+	void setLoyalty(int loyalty) { _loyalty = loyalty; }
+	/// Gets the last month loyalty score.
+	int getLastMonthsLoyalty() const { return _lastMonthsLoyalty; }
+	/// Sets the new last month loyalty score.
+	void setLastMonthsLoyalty(int loyalty) { _lastMonthsLoyalty = loyalty; }
 	/// Gets the current globe longitude.
 	double getGlobeLongitude() const;
 	/// Sets the new globe longitude.
@@ -235,6 +262,10 @@ public:
 	void setGlobeZoom(int zoom);
 	/// Handles monthly funding.
 	void monthlyFunding();
+	/// Handles monthly scoring (reduced method for FtA).
+	void monthlyScoring();
+	/// Handles soldier promotion postprocessing.
+	void handlePromotionsPostprocessing();
 	/// Gets the current game time.
 	GameTime *getTime() const;
 	/// Sets the current game time.
@@ -244,9 +275,9 @@ public:
 	/// Gets the last ID for an object.
 	int getLastId(const std::string& name);
 	/// Increase a custom counter.
-	void increaseCustomCounter(const std::string& name);
+	void increaseCustomCounter(const std::string& name, int value = 1);
 	/// Decrease a custom counter.
-	void decreaseCustomCounter(const std::string& name);
+	void decreaseCustomCounter(const std::string& name, int value = 1);
 	/// Resets the list of object IDs.
 	const std::map<std::string, int> &getAllIds() const;
 	/// Resets the list of object IDs.
@@ -283,16 +314,24 @@ public:
 	void setResearchRuleStatus(const std::string &researchRule, int newStatus);
 	/// Sets the item as hidden or unhidden
 	void setHiddenPurchaseItemsStatus(const std::string &itemName, bool hidden);
+	/// Add covert operation to the "performed operation" list
+	void addPerformedCovertOperation(const std::string& operation) { _performedOperations.push_back(operation); }
+	/// Remove covert operation from the "performed operation" list
+	void removePerformedCovertOperation(const std::string& operation);
+	/// Get list of performed operations
+	const std::vector<std::string>& getPerformedCovertOperations() { return _performedOperations; }
 	/// Selects a "getOneFree" topic for the given research rule.
 	const RuleResearch* selectGetOneFree(const RuleResearch* research);
 	/// Remove a research from the "already discovered" list
 	void removeDiscoveredResearch(const RuleResearch *research);
-	/// Add a finished ResearchProject
-	void addFinishedResearchSimple(const RuleResearch *research);
+	/// Make all research discovered (used in New Battle)
+	void makeAllResearchDiscovered(const Mod* mod);
 	/// Add a finished ResearchProject
 	void addFinishedResearch(const RuleResearch *research, const Mod *mod, Base *base, bool score = true);
 	/// Get the list of already discovered research projects
 	const std::vector<const RuleResearch*> & getDiscoveredResearch() const;
+	/// Does this item correspond to at least one research topic that can be researched now or in the future?
+	bool isResearchable(const RuleItem* item, const Mod* mod) const;
 	/// Get the list of ResearchProject which can be researched in a Base
 	void getAvailableResearchProjects(std::vector<RuleResearch*> & projects, const Mod *mod, Base *base, bool considerDebugMode = false) const;
 	/// Get the list of newly available research projects once a research has been completed.
@@ -403,6 +442,10 @@ public:
 	std::vector<GeoscapeEvent*> &getGeoscapeEvents() { return _geoscapeEvents; }
 	/// Read-only access to the current geoscape events.
 	const std::vector<GeoscapeEvent*> &getGeoscapeEvents() const { return _geoscapeEvents; }
+	/// Full access to the current diplomacy factions.
+	std::vector<DiplomacyFaction*>& getDiplomacyFactions() { return _diplomacyFactions; }
+	/// Read-only access to the current diplomacy factions.
+	const std::vector<DiplomacyFaction*>& getDiplomacyFactions() const { return _diplomacyFactions; }
 	/// Locate a region containing a position.
 	Region *locateRegion(double lon, double lat) const;
 	/// Locate a region containing a Target.
@@ -445,6 +488,20 @@ public:
 	void addGeneratedEvent(const RuleEvent* event);
 	/// checks if an event has been generated previously
 	bool wasEventGenerated(const std::string& eventName);
+	/// Calculates and remembers gap timer for mission script command.
+	void setMissionScriptGapTimer(const std::string& name, int timer);
+	/// Checks if mission script command is in list of commands that should not be processed yet.
+	bool getMissionScriptGapped(const std::string& name);
+	/// Reducing gap timers of mission script commands and cleaning list if needed.
+	void handleMissionScriptTimers();
+
+	/// Calculates and remembers gap timer for event script command.
+	void setEventScriptGapTimer(const std::string& name, int timer);
+	/// Checks if event script command is in list of commands that should not be processed yet.
+	bool getEventScriptGapped(const std::string& name);
+	/// Reducing gap timers of event script commands and cleaning list if needed.
+	void handleEventScriptTimers();
+
 	/// Gets the list of dead soldiers.
 	std::vector<Soldier*> *getDeadSoldiers();
 	/// Gets a list of all active soldiers.
@@ -511,6 +568,7 @@ public:
 	void deleteRetaliationMission(AlienMission* am, Base* base);
 	/// Spawn a Geoscape event from the event rules.
 	bool spawnEvent(const RuleEvent* eventRules);
+	bool spawnEvent(std::vector<std::string> eventNames, const Mod* mod);
 	/// Checks if an instant Geoscape event can be spawned.
 	bool canSpawnInstantEvent(const RuleEvent* eventRules);
 	/// Handles research unlocked by successful/failed missions and despawned mission sites.

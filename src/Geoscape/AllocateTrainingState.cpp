@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <sstream>
-#include <climits>
 #include "TrainingState.h"
 #include "AllocateTrainingState.h"
 #include "../Engine/Game.h"
@@ -37,6 +36,7 @@
 #include "../Mod/Mod.h"
 #include "../Basescape/SoldierInfoState.h"
 #include "../Basescape/SoldierSortUtil.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include <algorithm>
 #include "../Engine/Unicode.h"
 
@@ -50,9 +50,12 @@ namespace OpenXcom
  */
 AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base), _origSoldierOrder(*_base->getSoldiers()), _doNotReset(false)
 {
+
+	_ftaUI = _game->getMod()->isFTAGame();
+
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_txtTitle = new Text(300, 17, 10, 8);
+	_txtTitle = new Text(_ftaUI ? 168 : 300, 17, 16, 7);
 	_txtRemaining = new Text(300, 10, 10, 24);
 	_txtName = new Text(64, 10, 10, 40);
 	_txtTraining = new Text(48, 20, 270, 32);
@@ -61,12 +64,22 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_txtTu = new Text(18, 10, 120, 40);
 	_txtStamina = new Text(18, 10, 138, 40);
 	_txtHealth = new Text(18, 10, 156, 40);
-	_txtFiring = new Text(18, 10, 174, 40);
-	_txtThrowing = new Text(18, 10, 192, 40);
-	_txtMelee = new Text(18, 10, 210, 40);
-	_txtStrength = new Text(18, 10, 228, 40);
-	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+	_txtReaction = new Text(18, 10, 174, 40);
+	_txtFiring = new Text(18, 10, 192, 40);
+	_txtThrowing = new Text(18, 10, 210, 40);
+	_txtMelee = new Text(18, 10, 228, 40);
+	_txtStrength = new Text(18, 10, 246, 40);
 	_btnPlus = new ToggleTextButton(18, 16, 294, 8);
+	if (_ftaUI)
+	{
+		_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
+		_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
+	}
+	else
+	{
+		_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+		_cbxScreenActions = new ComboBox(this, 17, 16, -16, -16, true); //would be hidden anyway
+	}
 
 	// Set palette
 	setInterface("allocateMartial");
@@ -85,7 +98,9 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	add(_txtThrowing, "text", "allocateMartial");
 	add(_txtMelee, "text", "allocateMartial");
 	add(_txtStrength, "text", "allocateMartial");
+	add(_txtReaction, "text", "allocateMartial");
 	add(_cbxSortBy, "button", "allocateMartial");
+	add(_cbxScreenActions, "button", "allocateMartial");
 	add(_btnPlus, "button", "allocateMartial");
 
 	centerAllSurfaces();
@@ -101,9 +116,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 
 	_btnPlus->setText("+");
 	_btnPlus->setPressed(false);
-	if (_game->getMod()->getSoldierBonusList().empty())
+	if (_game->getMod()->getSoldierBonusList().empty() || _ftaUI)
 	{
-		// no soldier bonuses in the mod = button not needed
 		_btnPlus->setVisible(false);
 	}
 	else
@@ -112,20 +126,21 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	}
 
 	_txtTitle->setBig();
-	_txtTitle->setAlign(ALIGN_CENTER);
+	_txtTitle->setAlign(_ftaUI ? ALIGN_LEFT : ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_PHYSICAL_TRAINING"));
 
 	_space = base->getAvailableTraining() - base->getUsedTraining();
 	_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
 
-	_txtName->setText(tr("STR_NAME"));
-	_txtTu->setText(tr("STR_TIME_UNITS_ABBREVIATION"));
-	_txtStamina->setText(tr("STR_STAMINA_ABBREVIATION"));
-	_txtHealth->setText(tr("STR_HEALTH_ABBREVIATION"));
-	_txtFiring->setText(tr("STR_FIRING_ACCURACY_ABBREVIATION"));
-	_txtThrowing->setText(tr("STR_THROWING_ACCURACY_ABBREVIATION"));
-	_txtMelee->setText(tr("STR_MELEE_ACCURACY_ABBREVIATION"));
-	_txtStrength->setText(tr("STR_STRENGTH_ABBREVIATION"));
+	_txtName->setText(tr("STR_NAME")); 
+	_txtTu->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::tu, UnitStats::STATSTR_ABBREV)));
+	_txtStamina->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::stamina, UnitStats::STATSTR_ABBREV)));
+	_txtHealth->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::health, UnitStats::STATSTR_ABBREV)));
+	_txtReaction->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_ABBREV)));
+	_txtFiring->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_ABBREV)));
+	_txtThrowing->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::throwing, UnitStats::STATSTR_ABBREV)));
+	_txtMelee->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_ABBREV)));
+	_txtStrength->setText(tr(OpenXcom::UnitStats::getStatString(&UnitStats::strength, UnitStats::STATSTR_ABBREV)));
 	_txtTraining->setText(tr("STR_IN_TRAINING"));
 
 	// populate sort options
@@ -133,6 +148,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
 	_sortFunctors.push_back(NULL);
 	_sortFunctorsPlus.push_back(NULL);
+	bool showPsiStats = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements());
+	bool showMana = _game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod());
 
 #define PUSH_IN(strId, functor) \
 	sortOptions.push_back(tr(strId)); \
@@ -147,7 +164,7 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	PUSH_IN("STR_MISSIONS2", missionsStat);
 	PUSH_IN("STR_KILLS2", killsStat);
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	if (showMana && !_game->getMod()->getReplenishManaAfterMission())
 	{
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
@@ -159,22 +176,24 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_sortFunctors.push_back(new SortFunctor(_game, functor)); \
 	_sortFunctorsPlus.push_back(new SortFunctor(_game, functorPlus));
 
-	PUSH_IN("STR_TIME_UNITS", tuStatBase, tuStatPlus);
-	PUSH_IN("STR_STAMINA", staminaStatBase, staminaStatPlus);
-	PUSH_IN("STR_HEALTH", healthStatBase, healthStatPlus);
-	PUSH_IN("STR_BRAVERY", braveryStatBase, braveryStatPlus);
-	PUSH_IN("STR_REACTIONS", reactionsStatBase, reactionsStatPlus);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStatBase, firingStatPlus);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStatBase, throwingStatPlus);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStatBase, meleeStatPlus);
-	PUSH_IN("STR_STRENGTH", strengthStatBase, strengthStatPlus);
-	if (_game->getMod()->isManaFeatureEnabled())
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::tu), tuStatBase, tuStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::stamina), staminaStatBase, staminaStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::health), healthStatBase, healthStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::bravery), braveryStatBase, braveryStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::reactions), reactionsStatBase, reactionsStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::firing), firingStatBase, firingStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::throwing), throwingStatBase, throwingStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::melee), meleeStatBase, meleeStatPlus);
+	PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), strengthStatBase, strengthStatPlus);
+	if (showMana)
 	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStatBase, manaStatPlus);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::mana), manaStatBase, manaStatPlus);
 	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStatBase, psiStrengthStatPlus);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStatBase, psiSkillStatPlus);
+	if (showPsiStats)
+	{
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::psiStrength), psiStrengthStatBase, psiStrengthStatPlus);
+		PUSH_IN(OpenXcom::UnitStats::getStatString(&UnitStats::strength), psiSkillStatBase, psiSkillStatPlus);
+	}
 
 #undef PUSH_IN
 
@@ -183,16 +202,27 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_cbxSortBy->onChange((ActionHandler)&AllocateTrainingState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	_lstSoldiers->setArrowColumn(238, ARROW_VERTICAL);
-	_lstSoldiers->setColumns(9, 110, 18, 18, 18, 18, 18, 18, 42, 40);
+	if (_ftaUI)
+	{
+		_availableOptions.push_back("STR_ALL_ROLES");
+		_availableOptions.push_back("STR_RECOMMENDED_ROLES");
+	}
+	else
+	{
+		_cbxScreenActions->setVisible(false);
+	}
+
+	_cbxScreenActions->setOptions(_availableOptions, true);
+	_cbxScreenActions->setSelected(1);
+	_cbxScreenActions->onChange((ActionHandler)&AllocateTrainingState::cbxScreenActionsChange);
+
+	//_lstSoldiers->setArrowColumn(238, ARROW_VERTICAL);
+	_lstSoldiers->setColumns(10, 110, 18, 18, 18, 18, 18, 18, 18, 24, 40);
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(2);
-	_lstSoldiers->onLeftArrowClick((ActionHandler)&AllocateTrainingState::lstItemsLeftArrowClick);
-	_lstSoldiers->onRightArrowClick((ActionHandler)&AllocateTrainingState::lstItemsRightArrowClick);
 	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick);
 	_lstSoldiers->onMouseClick((ActionHandler)&AllocateTrainingState::lstSoldiersClick, SDL_BUTTON_RIGHT);
-	_lstSoldiers->onMousePress((ActionHandler)&AllocateTrainingState::lstSoldiersMousePress);
 }
 
 /**
@@ -312,9 +342,39 @@ void AllocateTrainingState::init()
 void AllocateTrainingState::initList(size_t scrl)
 {
 	int row = 0;
+	_soldierNumbers.clear();
 	_lstSoldiers->clearList();
+	_filteredListOfSoldiers.clear();
+	_soldierNumbers.clear();
+	int i = 0;
+
+	std::string selAction = "STR_RECOMMENDED_ROLES";
+	if (!_availableOptions.empty())
+	{
+		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
+	}
+
 	for (auto* soldier : *_base->getSoldiers())
 	{
+		if ((soldier->getRoleRank(ROLE_SOLDIER) > 0)
+			|| (selAction == "STR_ALL_ROLES"
+				&& !soldier->hasOnlyOneRole(ROLE_ROBOT)) //case we want to see everyone, except robots
+			|| !_ftaUI)
+		{
+			_filteredListOfSoldiers.push_back(soldier);
+			_soldierNumbers.push_back(i);
+		}
+		i++;
+	}
+	for (auto* soldier : _filteredListOfSoldiers)
+	{
+		std::ostringstream soldierName;
+		if (soldier->getRoleRank(ROLE_SOLDIER) < 1)
+		{
+			soldierName << "*";
+		}
+		soldierName << soldier->getName(true);
+
 		const UnitStats* stats = _btnPlus->getPressed() ? soldier->getStatsWithSoldierBonusesOnly() : soldier->getCurrentStats();
 
 		std::ostringstream tu;
@@ -323,6 +383,8 @@ void AllocateTrainingState::initList(size_t scrl)
 		stamina << stats->stamina;
 		std::ostringstream health;
 		health << stats->health;
+		std::ostringstream reactions;
+		reactions << stats->reactions;
 		std::ostringstream firing;
 		firing << stats->firing;
 		std::ostringstream throwing;
@@ -335,6 +397,9 @@ void AllocateTrainingState::initList(size_t scrl)
 		bool isDone = soldier->isFullyTrained();
 		bool isWounded = soldier->isWounded();
 		bool isTraining = soldier->isInTraining();
+		bool isOut = soldier->getCovertOperation() != 0;
+		bool isBusy = soldier->getResearchProject() != 0 || soldier->getProductionProject() != 0 || soldier->getIntelProject() != 0 || soldier->getActivePrisoner() != 0;
+		bool isTransforming = soldier->hasPendingTransformation();
 		bool isQueued = !isTraining && soldier->getReturnToTrainingWhenHealed();
 
 		std::string status;
@@ -344,16 +409,23 @@ void AllocateTrainingState::initList(size_t scrl)
 			status = tr("STR_NO_QUEUED");
 		else if (isWounded)
 			status = tr("STR_NO_WOUNDED");
+		else if (isTransforming)
+			status = tr("STR_NO_TRANSFORMATION");
+		else if (isOut)
+			status = tr("STR_NO_OUT");
+		else if (isBusy)
+			status = tr("STR_BUSY");
 		else if (isTraining)
 			status = tr("STR_YES");
 		else
 			status = tr("STR_NO");
 
-		_lstSoldiers->addRow(9,
-			soldier->getName(true).c_str(),
+		_lstSoldiers->addRow(10,
+			soldierName.str().c_str(),
 			tu.str().c_str(),
 			stamina.str().c_str(),
 			health.str().c_str(),
+			reactions.str().c_str(),
 			firing.str().c_str(),
 			throwing.str().c_str(),
 			melee.str().c_str(),
@@ -367,110 +439,6 @@ void AllocateTrainingState::initList(size_t scrl)
 	_lstSoldiers->draw();
 }
 
-/**
- * Reorders a soldier up.
- * @param action Pointer to an action.
- */
-void AllocateTrainingState::lstItemsLeftArrowClick(Action *action)
-{
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	if (row > 0)
-	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		{
-			moveSoldierUp(action, row);
-		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-		{
-			moveSoldierUp(action, row, true);
-		}
-	}
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
-	_cbxSortBy->setSelected(-1);
-}
-
-/**
- * Moves a soldier up on the list.
- * @param action Pointer to an action.
- * @param row Selected soldier row.
- * @param max Move the soldier to the top?
- */
-void AllocateTrainingState::moveSoldierUp(Action *action, unsigned int row, bool max)
-{
-	Soldier *s = _base->getSoldiers()->at(row);
-	if (max)
-	{
-		_base->getSoldiers()->erase(_base->getSoldiers()->begin() + row);
-		_base->getSoldiers()->insert(_base->getSoldiers()->begin(), s);
-	}
-	else
-	{
-		_base->getSoldiers()->at(row) = _base->getSoldiers()->at(row - 1);
-		_base->getSoldiers()->at(row - 1) = s;
-		if (row != _lstSoldiers->getScroll())
-		{
-			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() - static_cast<Uint16>(8 * action->getYScale()));
-		}
-		else
-		{
-			_lstSoldiers->scrollUp(false);
-		}
-	}
-	initList(_lstSoldiers->getScroll());
-}
-
-/**
- * Reorders a soldier down.
- * @param action Pointer to an action.
- */
-void AllocateTrainingState::lstItemsRightArrowClick(Action *action)
-{
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	size_t numSoldiers = _base->getSoldiers()->size();
-	if (0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
-	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
-		{
-			moveSoldierDown(action, row);
-		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
-		{
-			moveSoldierDown(action, row, true);
-		}
-	}
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
-	_cbxSortBy->setSelected(-1);
-}
-
-/**
- * Moves a soldier down on the list.
- * @param action Pointer to an action.
- * @param row Selected soldier row.
- * @param max Move the soldier to the bottom?
- */
-void AllocateTrainingState::moveSoldierDown(Action *action, unsigned int row, bool max)
-{
-	Soldier *s = _base->getSoldiers()->at(row);
-	if (max)
-	{
-		_base->getSoldiers()->erase(_base->getSoldiers()->begin() + row);
-		_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
-	}
-	else
-	{
-		_base->getSoldiers()->at(row) = _base->getSoldiers()->at(row + 1);
-		_base->getSoldiers()->at(row + 1) = s;
-		if (row != _lstSoldiers->getVisibleRows() - 1 + _lstSoldiers->getScroll())
-		{
-			SDL_WarpMouse(action->getLeftBlackBand() + action->getXMouse(), action->getTopBlackBand() + action->getYMouse() + static_cast<Uint16>(8 * action->getYScale()));
-		}
-		else
-		{
-			_lstSoldiers->scrollDown(false);
-		}
-	}
-	initList(_lstSoldiers->getScroll());
-}
 
 /**
  * Assigns / removes a soldier from Psi Training.
@@ -483,26 +451,31 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 	{
 		return;
 	}
-
 	_sel = _lstSoldiers->getSelectedRow();
+	Soldier* soldier = _filteredListOfSoldiers.at(_sel);
+
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		auto* soldier = _base->getSoldiers()->at(_sel);
-
 		// can't put fully trained soldiers back into training
 		if (soldier->isFullyTrained()) return;
+
+		// can't put soldier that is on covert operation
+		if (soldier->getCovertOperation() != 0) return;
+
+		// can't put soldier that has pending transformation
+		if (soldier->hasPendingTransformation()) return;
 
 		// wounded soldiers can be queued/dequeued
 		if (soldier->isWounded())
 		{
 			if (soldier->getReturnToTrainingWhenHealed())
 			{
-				_lstSoldiers->setCellText(_sel, 8, tr("STR_NO_WOUNDED").c_str());
+				_lstSoldiers->setCellText(_sel, 9, tr("STR_NO_WOUNDED").c_str());
 				soldier->setReturnToTrainingWhenHealed(false);
 			}
 			else
 			{
-				_lstSoldiers->setCellText(_sel, 8, tr("STR_NO_QUEUED").c_str());
+				_lstSoldiers->setCellText(_sel, 9, tr("STR_NO_QUEUED").c_str());
 				soldier->setReturnToTrainingWhenHealed(true);
 			}
 			return;
@@ -513,17 +486,20 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 		{
 			if (_base->getUsedTraining() < _base->getAvailableTraining())
 			{
-				_lstSoldiers->setCellText(_sel, 8, tr("STR_YES").c_str());
+				_lstSoldiers->setCellText(_sel, 9, tr("STR_YES").c_str());
 				_lstSoldiers->setRowColor(_sel, _lstSoldiers->getSecondaryColor());
 				_space--;
 				_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
 				soldier->setTraining(true);
+				soldier->setActivePrisoner(0);
+				soldier->setProductionProject(0);
+				soldier->setResearchProject(0);
 				soldier->setReturnToTrainingWhenHealed(false);
 			}
 		}
 		else
 		{
-			_lstSoldiers->setCellText(_sel, 8, tr("STR_NO").c_str());
+			_lstSoldiers->setCellText(_sel, 9, tr("STR_NO").c_str());
 			_lstSoldiers->setRowColor(_sel, _lstSoldiers->getColor());
 			_space++;
 			_txtRemaining->setText(tr("STR_REMAINING_TRAINING_FACILITY_CAPACITY").arg(_space));
@@ -534,38 +510,14 @@ void AllocateTrainingState::lstSoldiersClick(Action *action)
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		_doNotReset = true;
-		_game->pushState(new SoldierInfoState(_base, _sel, true, true));
+		_game->pushState(new SoldierInfoStateFtA(_base, soldier));
 	}
 }
 
-/**
- * Handles the mouse-wheels on the arrow-buttons.
- * @param action Pointer to an action.
- */
-void AllocateTrainingState::lstSoldiersMousePress(Action *action)
+void AllocateTrainingState::cbxScreenActionsChange(Action* action)
 {
-	if (Options::changeValueByMouseWheel == 0)
-		return;
-	unsigned int row = _lstSoldiers->getSelectedRow();
-	size_t numSoldiers = _base->getSoldiers()->size();
-	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP &&
-		row > 0)
-	{
-		if (action->getAbsoluteXMouse() >= _lstSoldiers->getArrowsLeftEdge() &&
-			action->getAbsoluteXMouse() <= _lstSoldiers->getArrowsRightEdge())
-		{
-			moveSoldierUp(action, row);
-		}
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN &&
-		0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
-	{
-		if (action->getAbsoluteXMouse() >= _lstSoldiers->getArrowsLeftEdge() &&
-			action->getAbsoluteXMouse() <= _lstSoldiers->getArrowsRightEdge())
-		{
-			moveSoldierDown(action, row);
-		}
-	}
+	_cbxSortBy->setSelected(0);
+	initList(0);
 }
 
 /**
@@ -577,19 +529,23 @@ void AllocateTrainingState::btnDeassignAllSoldiersClick(Action* action)
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{
-		soldier->setTraining(false);
-		soldier->setReturnToTrainingWhenHealed(false);
+		if (soldier->isInTraining())
+		{
+			soldier->setTraining(false);
+			soldier->setReturnToTrainingWhenHealed(false);
 
-		std::string status;
-		if (soldier->isFullyTrained())
-			status = tr("STR_NO_DONE");
-		else if (soldier->isWounded())
-			status = tr("STR_NO_WOUNDED");
-		else
-			status = tr("STR_NO");
+			std::string status;
+			if (soldier->isFullyTrained())
+				status = tr("STR_NO_DONE");
+			else if (soldier->isWounded())
+				status = tr("STR_NO_WOUNDED");
+			else
+				status = tr("STR_NO");
 
-		_lstSoldiers->setCellText(row, 8, tr(status).c_str());
-		_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+			_lstSoldiers->setCellText(row, 9, tr(status).c_str());
+			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+		}
+
 		row++;
 	}
 	_space = _base->getAvailableTraining() - _base->getUsedTraining();
@@ -605,26 +561,33 @@ void AllocateTrainingState::btnAssignAllSoldiersClick(Action* action)
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{
-		if (soldier->isFullyTrained())
+		if (soldier->isFullyTrained() || soldier->getCovertOperation() != 0 || soldier->hasPendingTransformation())
 		{
-			// can't put fully trained soldiers back into training
+			// can't put fully trained soldiers back into training or busy
+		}
+		if (soldier->getResearchProject() != 0 || soldier->getProductionProject() != 0 || soldier->getIntelProject() != 0 || soldier->getActivePrisoner() != 0)
+		{
+			// don't assign busy soldier
 		}
 		else if (soldier->isWounded())
 		{
 			// wounded soldiers can be queued
 			if (!soldier->getReturnToTrainingWhenHealed())
 			{
-				_lstSoldiers->setCellText(row, 8, tr("STR_NO_QUEUED").c_str());
+				_lstSoldiers->setCellText(row, 9, tr("STR_NO_QUEUED").c_str());
 				soldier->setReturnToTrainingWhenHealed(true);
 			}
 		}
 		else if (_space > 0 && !soldier->isInTraining())
 		{
 			// healthy soldiers can be assigned
-			_lstSoldiers->setCellText(row, 8, tr("STR_YES").c_str());
+			_lstSoldiers->setCellText(row, 9, tr("STR_YES").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 			_space--;
 			soldier->setTraining(true);
+			soldier->setActivePrisoner(0);
+			soldier->setProductionProject(0);
+			soldier->setResearchProject(0);
 			soldier->setReturnToTrainingWhenHealed(false);
 		}
 		row++;

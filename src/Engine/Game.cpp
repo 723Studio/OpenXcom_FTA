@@ -33,6 +33,7 @@
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../FTA/MasterMind.h"
 #include "Action.h"
 #include "Exception.h"
 #include "Options.h"
@@ -41,6 +42,7 @@
 #include "Unicode.h"
 #include "../Ufopaedia/UfopaediaStartState.h"
 #include "../Menu/NotesState.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Menu/TestState.h"
 #include <algorithm>
 #include "../fallthrough.h"
@@ -56,8 +58,8 @@ const double Game::VOLUME_GRADIENT = 10.0;
  * creates the display screen and sets up the cursor.
  * @param title Title of the game window.
  */
-Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0), _mod(0), _quit(false), _init(false), _update(false),  _mouseActive(true), _timeUntilNextFrame(0),
-	_ctrl(false), _alt(false), _shift(false), _rmb(false), _mmb(false),
+Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0), _mod(0), _mind(0), _quit(false), _init(false), _update(false),  _mouseActive(true), _timeUntilNextFrame(0),
+	_ctrl(false), _alt(false), _shift(false), _rmb(false), _mmb(false), _scrollStep(1),
 	_mapEditor(0)
 {
 	Options::reload = false;
@@ -106,6 +108,8 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 	_lang = new Language();
 
 	_timeOfLastFrame = 0;
+
+	_mind = new MasterMind(this);
 }
 
 /**
@@ -126,6 +130,7 @@ Game::~Game()
 	delete _cursor;
 	delete _lang;
 	delete _save;
+	delete _mind;
 	delete _mod;
 	delete _screen;
 	delete _fpsCounter;
@@ -566,6 +571,23 @@ bool Game::containsNotesState() const
 }
 
 /**
+ * Returns the GeoscapeState from the background (if available).
+ * @return Pointer to GeoscapeState, or nullptr if not available.
+ */
+GeoscapeState* Game::getGeoscapeState() const
+{
+	for (auto* state : _states)
+	{
+		auto* geoscape = dynamic_cast<GeoscapeState*>(state);
+		if (geoscape)
+		{
+			return geoscape;
+		}
+	}
+	return nullptr;
+}
+
+/**
  * Checks if the game is currently quitting.
  * @return whether the game is shutting down or not.
  */
@@ -791,6 +813,7 @@ void Game::resetTouchButtonFlags()
 	_shift = false;
 	_rmb = false;
 	_mmb = false;
+	_scrollStep = 1;
 }
 
 /**

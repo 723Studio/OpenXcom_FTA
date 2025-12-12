@@ -27,7 +27,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Exception.h"
 #include "Logger.h"
 #include "CrossPlatform.h"
@@ -367,7 +367,6 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableThinkingProgressBar", &oxceDisableThinkingProgressBar, false));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSortDiscoveredVectorByName", &oxceSortDiscoveredVectorByName, false));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceListVFSContents", &oxceListVFSContents, false));
@@ -380,13 +379,23 @@ void createOptionsOXCE()
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSlowdownFactor", &oxceGeoSlowdownFactor, 1, "", "HIDDEN"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoShowScoreInsteadOfFunds", &oxceGeoShowScoreInsteadOfFunds, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoShowScoreInsteadOfFunds", &oxceGeoShowScoreInsteadOfFunds, false)); // debug only
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoEnableTrainingIndicator", &oxceGeoEnableTrainingIndicator, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressRedundantHKAlert", &oxceGeoSuppressRedundantHKAlert, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressLandingWithoutEquipment", &oxceGeoSuppressLandingWithoutEquipment, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoGoToNearestBase", &oxceGeoGoToNearestBase, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSortCraftByDistanceToTarget", &oxceGeoSortCraftByDistanceToTarget, false, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseInfoDefenseScaleMultiplier", &oxceBaseInfoDefenseScaleMultiplier, 100, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierTransformationShowOnlyEligible", &oxceBaseSoldierTransformationShowOnlyEligible, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseFilterResearchable", &oxceBaseFilterResearchable, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureFallbackButton", &oxceBaseManufactureFallbackButton, false, "", "HIDDEN"));
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureInfinityButton", &oxceBaseManufactureInfinityButton, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseTouchButtons", &oxceBaseTouchButtons, true, "", "HIDDEN"));
 #else
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureInfinityButton", &oxceBaseManufactureInfinityButton, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseTouchButtons", &oxceBaseTouchButtons, false, "", "HIDDEN"));
 #endif
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableAlienInventory", &oxceDisableAlienInventory, false, "", "HIDDEN"));
@@ -400,9 +409,21 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceToggleNightVisionType", &oxceToggleNightVisionType, 1, "", "HIDDEN"));     // per battle
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceToggleBrightnessType", &oxceToggleBrightnessType, 0, "", "HIDDEN"));       // not persisted
 
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowBurningAsWounded", &oxceShowBurningAsWounded, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableInfoOnThrowCursor", &oxceDisableInfoOnThrowCursor, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSwapDontReselectActions", &oxceSwapDontReselectActions, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReplaceNotesLink", &oxceReplaceNotesLink, false, "", "HIDDEN"));
+
+#ifdef __MOBILE__
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventorySplitScrollButton", &oxceInventorySplitScrollButton, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryDropItemOverPaperdoll", &oxceInventoryDropItemOverPaperdoll, true, "", "HIDDEN"));
+#else
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventorySplitScrollButton", &oxceInventorySplitScrollButton, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryDropItemOverPaperdoll", &oxceInventoryDropItemOverPaperdoll, false, "", "HIDDEN"));
+#endif
 
 	// TODO: needs restart (or code change) to work properly
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMaxEquipmentLayoutTemplates", &oxceMaxEquipmentLayoutTemplates, 20, "", "HIDDEN"));
@@ -439,11 +460,15 @@ void createAdvancedOptionsOXCE()
 
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, true, "STR_OXCE_LINKS", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinksDisableTextEdit", &oxceLinksDisableTextEdit, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBattleTouchButtonsEnabled", &oxceBattleTouchButtonsEnabled, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, true, "", "HIDDEN"));
 #else
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinks", &oxceLinks, false, "STR_OXCE_LINKS", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLinksDisableTextEdit", &oxceLinksDisableTextEdit, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFatFingerLinks", &oxceFatFingerLinks, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBattleTouchButtonsEnabled", &oxceBattleTouchButtonsEnabled, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceQuickSearchButton", &oxceQuickSearchButton, false, "", "HIDDEN"));
 #endif
 
@@ -477,16 +502,19 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReactionFireThreshold", &oxceReactionFireThreshold, 0, "STR_REACTION_FIRE_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoSell", &oxceAutoSell, false, "STR_AUTO_SELL", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutomaticPromotions", &oxceAutomaticPromotions, true, "STR_AUTOMATICPROMOTIONS", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableOffCentreShooting", &oxceEnableOffCentreShooting, false, "STR_OFF_CENTRE_SHOOTING", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUniformShootingSpread", &oxceUniformShootingSpread, false, "STR_UNIFORM_SHOOTING_SPREAD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCrashedOrLanded", &oxceCrashedOrLanded, 0, "STR_CRASHED_OR_LANDED", "STR_BATTLESCAPE"));
 }
 
 void createControlsOXCE()
 {
 	// OXCE controls general
-	_info.push_back(OptionInfo(OPTION_OXCE, "keyToggleQuickSearch", &keyToggleQuickSearch, SDLK_q, "STR_TOGGLE_QUICK_SEARCH", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyToggleQuickSearch", &keyToggleQuickSearch, SDLK_q, "STR_TOGGLE_QUICK_SEARCH", "STR_GENERAL")); //
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyInstaSave", &keyInstaSave, SDLK_F6, "STR_INSTA_SAVE", "STR_GENERAL"));
 
 	// OXCE controls geoscape
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoUfoTracker", &keyGeoUfoTracker, SDLK_t, "STR_UFO_TRACKER", "STR_GEOSCAPE"));
@@ -553,7 +581,7 @@ void createControlsOXCE()
 
 void createOptionsOTHER()
 {
-	// your fork's hidden options here
+	_info.push_back(OptionInfo(OPTION_OTHER, "containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_GEOSCAPE"));
 }
 
 void createAdvancedOptionsOTHER()
@@ -563,7 +591,8 @@ void createAdvancedOptionsOTHER()
 
 void createControlsOTHER()
 {
-	// your fork's controls here
+	_info.push_back(OptionInfo(OPTION_OTHER, "keyGeoDiplomacy", &keyDiplomacy, SDLK_d, "STR_DIPLOMACY_UC", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "keyBasescapeCovertOperations", &keyBasescapeCovertOperations, SDLK_c, "STR_COVERT_OPERATIONS_UC", "STR_BASESCAPE"));
 }
 
 
@@ -715,7 +744,7 @@ static void loadArgs()
 static bool showHelp()
 {
 	std::ostringstream help;
-	help << "OpenXcom " << OPENXCOM_VERSION_SHORT << std::endl;
+	help << "OpenXcom " << OPENXCOM_FTA_VERSION_SHORT << std::endl;
 	help << "Usage: openxcom [OPTION]..." << std::endl << std::endl;
 	help << "-data PATH" << std::endl;
 	help << "        use PATH as the default Data Folder instead of auto-detecting" << std::endl << std::endl;
@@ -760,7 +789,7 @@ static bool showHelp()
 			}
 			if (argname == "version")
 			{
-				std::cout << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT << std::endl;
+				std::cout << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT << std::endl;
 				return true;
 			}
 			if (argname == "cont" || argname == "continue")
@@ -831,7 +860,7 @@ bool init()
 	// this enables writes to the log file and filters already emitted messages
 	CrossPlatform::setLogFileName(getUserFolder() + "openxcom.log");
 
-	Log(LOG_INFO) << "OpenXcom Version: " << OPENXCOM_VERSION_SHORT << OPENXCOM_VERSION_GIT;
+	Log(LOG_INFO) << "OpenXcom Version: " << OPENXCOM_FTA_VERSION_SHORT << OPENXCOM_FTA_VERSION_GIT;
 #ifdef _WIN64
 	Log(LOG_INFO) << "Platform: Windows 64 bit";
 #elif _WIN32
@@ -940,87 +969,48 @@ void refreshMods()
 		mods.insert(mods.begin(), newMod);
 	}
 
-	// add in any new mods picked up from the scan and ensure there is but a single
-	// master active
-	std::string activeMaster;
-	std::string inactiveMaster;
-	for (auto i = _modInfos.cbegin(); i != _modInfos.cend(); ++i)
+	const std::string target = "From the Ashes";
+	auto it = std::find_if(mods.begin(), mods.end(),
+		[&target](const std::pair<std::string, bool>& pair) {
+			return pair.first == target;
+		});
+
+	if (it != mods.end())
 	{
-		bool found = false;
-		for (auto j = mods.begin(); j != mods.end(); ++j)
+		Log(LOG_DEBUG) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
+	}
+	else
+	{
+		Log(LOG_INFO) << target << " is only allowed mastermod, pushed to options.cfg";
+		mods.push_back(std::pair<std::string, bool>("From the Ashes", false)); // should be set to 'true' later on mapping with modInfo
+	}
+
+	std::string activeMaster;
+	for (const auto& _modInfo : _modInfos)
+	{
+		for (auto& mod : mods)
 		{
-			if (i->first == j->first)
+			if (_modInfo.first == mod.first)
 			{
-				found = true;
-				if (i->second.isMaster())
+				if (_modInfo.second.isMaster())
 				{
-					if (!_masterMod.empty())
+					if (_modInfo.first == "From the Ashes")
 					{
-						j->second = (_masterMod == j->first);
-					}
-					if (j->second)
-					{
-						if (!activeMaster.empty())
-						{
-							Log(LOG_WARNING) << "Too many active masters detected; turning off " << j->first;
-							j->second = false;
-						}
-						else
-						{
-							activeMaster = j->first;
-						}
+						mod.second = true;
+						activeMaster = mod.first;
 					}
 					else
 					{
-						// prefer activating standard masters over a possibly broken
-						// third party master
-						if (inactiveMaster.empty() || j->first == "xcom1" || j->first == "xcom2")
-						{
-							inactiveMaster = j->first;
-						}
+						mod.second = false;
 					}
 				}
-
-				break;
 			}
-		}
-		if (found)
-		{
-			continue;
-		}
-
-		// not active by default
-		std::pair<std::string, bool> newMod(i->first, false);
-		if (i->second.isMaster())
-		{
-			// it doesn't matter what order the masters are in since
-			// only one can be active at a time anyway
-			mods.insert(mods.begin(), newMod);
-
-			if (inactiveMaster.empty())
-			{
-				inactiveMaster = i->first;
-			}
-		}
-		else
-		{
-			mods.push_back(newMod);
 		}
 	}
 
 	if (activeMaster.empty())
 	{
-		if (inactiveMaster.empty())
-		{
-			Log(LOG_ERROR) << "no mod masters available";
-			throw Exception("No X-COM installations found");
-		}
-		else
-		{
-			Log(LOG_INFO) << "no master already active; activating " << inactiveMaster;
-			std::find(mods.begin(), mods.end(), std::pair<std::string, bool>(inactiveMaster, false))->second = true;
-			_masterMod = inactiveMaster;
-		}
+		throw Exception("No 'From the Ashes' content found! please, check your installation.");
 	}
 	else
 	{
@@ -1050,13 +1040,13 @@ void updateMods()
 			if (!modInf->isEngineOk())
 			{
 				forceQuit = true;
-				if (modInf->getRequiredExtendedEngine() != OPENXCOM_VERSION_ENGINE)
+				if (modInf->getRequiredExtendedEngine() != OPENXCOM_FTA_VERSION_ENGINE)
 				{
 					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' require OXC " << modInf->getRequiredExtendedEngine() << " engine to run";
 				}
 				else
 				{
-					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
+					Log(LOG_ERROR) << "Mod '" << modInf->getName() << "' enforces at least OXC " << OPENXCOM_FTA_VERSION_ENGINE << " v" << modInf->getRequiredExtendedVersion();
 				}
 			}
 			if (!modInf->isParentMasterOk(masterInf))
@@ -1246,22 +1236,22 @@ bool load(const std::string &filename)
 	std::string s = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc = YAML::Load(*CrossPlatform::readFile(s));
+		YAML::YamlRootNodeReader reader(s);
 		// Ignore old options files
-		if (doc["options"]["NewBattleMission"])
+		if (reader["options"]["NewBattleMission"])
 		{
 			return false;
 		}
 		for (auto& optionInfo : _info)
 		{
-			optionInfo.load(doc["options"]);
+			optionInfo.load(reader["options"]);
 		}
 
 		mods.clear();
-		for (YAML::const_iterator i = doc["mods"].begin(); i != doc["mods"].end(); ++i)
+		for (const auto& mod : reader["mods"].children())
 		{
-			std::string id = (*i)["id"].as<std::string>();
-			bool active = (*i)["active"].as<bool>(false);
+			std::string id = mod["id"].readVal<std::string>();
+			bool active = mod["active"].readVal(false);
 			mods.push_back(std::pair<std::string, bool>(id, active));
 		}
 		if (mods.empty())
@@ -1277,88 +1267,54 @@ bool load(const std::string &filename)
 	return true;
 }
 
-void writeNode(const YAML::Node& node, YAML::Emitter& emitter)
-{
-	switch (node.Type())
-	{
-		case YAML::NodeType::Sequence:
-		{
-			emitter << YAML::BeginSeq;
-			for (size_t i = 0; i < node.size(); i++)
-			{
-				writeNode(node[i], emitter);
-			}
-			emitter << YAML::EndSeq;
-			break;
-		}
-		case YAML::NodeType::Map:
-		{
-			emitter << YAML::BeginMap;
-
-			// First collect all the keys
-			std::vector<std::string> keys(node.size());
-			int key_it = 0;
-			for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-			{
-				keys[key_it++] = it->first.as<std::string>();
-			}
-
-			// Then sort them
-			std::sort(keys.begin(), keys.end());
-
-			// Then emit all the entries in sorted order.
-			for (size_t i = 0; i < keys.size(); i++)
-			{
-				emitter << YAML::Key;
-				emitter << keys[i];
-				emitter << YAML::Value;
-				writeNode(node[keys[i]], emitter);
-			}
-			emitter << YAML::EndMap;
-			break;
-		}
-		default:
-			emitter << node;
-			break;
-	}
-}
-
 /**
  * Saves options to a YAML file.
  * @param filename YAML filename.
  * @return Was the saving successful?
  */
-bool save(const std::string &filename)
+bool save(bool reset, const std::string& filename)
 {
-	YAML::Emitter out;
+	std::string yaml;
+	std::string filepath = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc, node;
-		for (const auto& optionInfo : _info)
-		{
-			optionInfo.save(node);
-		}
-		doc["options"] = node;
-
+		YAML::YamlRootNodeWriter writer;
+		writer.setAsMap();
+		auto modsWriter = writer["mods"];
+		modsWriter.setAsSeq();
 		for (const auto& pair : mods)
 		{
-			YAML::Node mod;
-			mod["id"] = pair.first;
-			mod["active"] = pair.second;
-			doc["mods"].push_back(mod);
+			auto modWriter = modsWriter.write();
+			modWriter.setAsMap();
+			modWriter.write("active", pair.second);
+			modWriter.write("id", pair.first);
 		}
-
-		writeNode(doc, out);
+		auto optionsWriter = writer["options"];
+		optionsWriter.setAsMap();
+		auto sortedInfo = _info;
+		std::sort(sortedInfo.begin(), sortedInfo.end(), [](const OptionInfo& a, const OptionInfo& b) { return a.id() < b.id(); });
+		for (const auto& optionInfo : sortedInfo)
+		{
+			optionInfo.save(optionsWriter);
+		}
+		if (!reset && CrossPlatform::fileExists(filepath))
+		{
+			// Preserve any undefined options, because they could be from a different fork
+			YAML::YamlRootNodeReader old(filepath);
+			const YAML::YamlNodeReader& currentOptions = optionsWriter.toReader();
+			std::string oldKey, oldVal;
+			for (const auto& oldOption : old["options"].children())
+				if (!currentOptions[oldOption.readKey<ryml::csubstr>()])
+					optionsWriter.write(optionsWriter.saveString(oldKey.assign(oldOption.key())), oldVal.assign(oldOption.val()));
+		}
+		yaml = writer.emit().yaml;
 	}
 	catch (YAML::Exception &e)
 	{
 		Log(LOG_WARNING) << e.what();
 		return false;
 	}
-	std::string filepath = _configFolder + filename + ".cfg";
-	std::string data(out.c_str());
-
-	if (!CrossPlatform::writeFile(filepath, data + "\n" ))
+	if (!CrossPlatform::writeFile(filepath, yaml + "\n"))
 	{
 		Log(LOG_WARNING) << "Failed to save " << filepath;
 		return false;

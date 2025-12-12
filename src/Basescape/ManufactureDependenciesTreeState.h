@@ -38,9 +38,10 @@ private:
 	TextList *_lstTopics;
 	TextButton *_btnOk, *_btnShowAll;
 	std::string _selectedItem;
-	bool _showAll;
+	bool _showAll, _ftaGame;
 	void initList();
-public:
+	void initFtAList();
+  public:
 	/// Creates the ManufactureDependenciesTree state.
 	ManufactureDependenciesTreeState(const std::string &selectedItem);
 	/// Cleans up the ManufactureDependenciesTree state

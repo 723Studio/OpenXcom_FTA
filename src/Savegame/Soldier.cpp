@@ -18,6 +18,7 @@
  */
 #include <cmath>
 #include <algorithm>
+#include <climits>
 #include "Soldier.h"
 #include "../Engine/Collections.h"
 #include "../Engine/RNG.h"
@@ -25,6 +26,11 @@
 #include "../Engine/Options.h"
 #include "../Engine/ScriptBind.h"
 #include "Craft.h"
+#include "../Savegame/CovertOperation.h"
+#include "../Savegame/ResearchProject.h"
+#include "../Savegame/Production.h"
+#include "../Savegame/IntelProject.h"
+#include "../Savegame/BattleUnit.h"
 #include "EquipmentLayoutItem.h"
 #include "SoldierDeath.h"
 #include "SoldierDiary.h"
@@ -38,30 +44,88 @@
 #include "../Mod/RuleSoldierTransformation.h"
 #include "../Mod/RuleCommendations.h"
 #include "Base.h"
+#include "BasePrisoner.h"
 #include "ItemContainer.h"
+#include "../Mod/RuleSkill.h"
 
 namespace OpenXcom
 {
+int Soldier::generateScienceStat(int min, int max)
+{
+	if (RNG::percent(max))
+	{
+		return RNG::generate(min, max);
+	}
+	else
+	{
+		return 0;
+	}
+
+}
+
+/**
+ * Gets possible stat improvement
+ * @param exp - stats experience points
+ * @param rate - pointer for role rank experience calculations
+ * @param bravery - if this is a special calculation for bravery increase
+ * @return - value of stat improvement
+ */
+int Soldier::improveStat(int exp, int &rate, bool bravery)
+{
+	rate = 0;
+	if (bravery && exp > RNG::generate(0, 10))
+	{
+		rate = 10;
+		return 10;
+	}
+
+	if (exp > 10)
+	{
+		rate = 3;
+		return RNG::generate(2, 6);
+	}
+	else if (exp > 5)
+	{
+		rate = 2;
+		return RNG::generate(1, 4);
+	}
+	else if (exp > 2)
+	{
+		rate = 1;
+		return RNG::generate(1, 3);
+	}
+	else if (exp > 0)
+	{
+		int improve = RNG::generate(0, 1);
+		if (improve > 0)
+			rate = 1;
+		return improve;
+	}
+	else
+		return 0;
+}
 
 /**
  * Initializes a new soldier, either blank or randomly generated.
  * @param rules Soldier ruleset.
  * @param armor Soldier armor.
+ * @param nationality
  * @param id Unique soldier id for soldier generation.
  */
-Soldier::Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id) :
+Soldier::Soldier(const RuleSoldier *rules, Armor *armor, int nationality, int id) :
 	_id(id), _nationality(0),
-	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0),
-	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0),
-	_recentlyPromoted(false), _psiTraining(false), _training(false), _returnToTrainingWhenHealed(false),
+	_improvement(0), _psiStrImprovement(0), _rules(rules), _rank(RANK_ROOKIE), _craft(0), _covertOperation(0), _researchProject(0), _production(0), _intelProject(0), _prisoner(0),
+	_gender(GENDER_MALE), _look(LOOK_BLONDE), _lookVariant(0), _missions(0), _kills(0), _stuns(0), _recentlyPromoted(false),
+	_psiTraining(false), _training(false), _returnToTrainingWhenHealed(false), _justSaved(false), _returnToTrainingsWhenOperationOver(NONE),
 	_armor(armor), _replacedArmor(0), _transformedArmor(0), _personalEquipmentArmor(nullptr), _death(0), _diary(new SoldierDiary()),
-	_corpseRecovered(false)
+	_corpseRecovered(false), _isRookieSoldier(true), _isRookieScientist(true), _isRookieEngineer(true), _isRookieAgent(true), _isRookiePilot(true)
 {
 	if (id != 0)
 	{
 		UnitStats minStats = rules->getMinStats();
 		UnitStats maxStats = rules->getMaxStats();
 
+		//soldier
 		_initialStats.tu = RNG::generate(minStats.tu, maxStats.tu);
 		_initialStats.stamina = RNG::generate(minStats.stamina, maxStats.stamina);
 		_initialStats.health = RNG::generate(minStats.health, maxStats.health);
@@ -73,7 +137,56 @@ Soldier::Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id) :
 		_initialStats.strength = RNG::generate(minStats.strength, maxStats.strength);
 		_initialStats.psiStrength = RNG::generate(minStats.psiStrength, maxStats.psiStrength);
 		_initialStats.melee = RNG::generate(minStats.melee, maxStats.melee);
-		_initialStats.psiSkill = minStats.psiSkill;
+		_initialStats.psiSkill = RNG::generate(minStats.psiSkill, maxStats.psiSkill);
+		//pilot
+		_initialStats.maneuvering = RNG::generate(minStats.maneuvering, maxStats.maneuvering);
+		_initialStats.missiles = RNG::generate(minStats.missiles, maxStats.missiles);
+		_initialStats.dogfight = RNG::generate(minStats.dogfight, maxStats.dogfight);
+		_initialStats.tracking = RNG::generate(minStats.tracking, maxStats.tracking);
+		_initialStats.cooperation = RNG::generate(minStats.cooperation, maxStats.cooperation);
+		_initialStats.beams = RNG::generate(minStats.beams, maxStats.beams);
+		_initialStats.synaptic = RNG::generate(minStats.synaptic, maxStats.synaptic);
+		_initialStats.gravity = RNG::generate(minStats.gravity, maxStats.gravity);
+		//agent
+		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
+		_initialStats.perception = RNG::generate(minStats.perception, maxStats.perception);
+		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
+		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
+		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
+		_initialStats.interrogation = RNG::generate(minStats.interrogation, maxStats.interrogation);
+		//scientist
+		_initialStats.physics = generateScienceStat(minStats.physics, maxStats.physics);
+		_initialStats.chemistry = generateScienceStat(minStats.chemistry, maxStats.chemistry);
+		_initialStats.biology = generateScienceStat(minStats.biology, maxStats.biology);
+		_initialStats.insight = RNG::generate(minStats.insight, maxStats.insight);
+		_initialStats.data = generateScienceStat(minStats.data, maxStats.data);
+		_initialStats.computers = generateScienceStat(minStats.computers, maxStats.computers);
+		_initialStats.tactics = generateScienceStat(minStats.tactics, maxStats.tactics);
+		_initialStats.materials = generateScienceStat(minStats.materials, maxStats.materials);
+		_initialStats.designing = generateScienceStat(minStats.designing, maxStats.designing);
+		_initialStats.alienTech = generateScienceStat(minStats.alienTech, maxStats.alienTech);
+		_initialStats.psionics = generateScienceStat(minStats.psionics, maxStats.psionics);
+		_initialStats.xenolinguistics = generateScienceStat(minStats.xenolinguistics, maxStats.xenolinguistics);
+
+		//engineer
+		_initialStats.weaponry = RNG::generate(minStats.weaponry, maxStats.weaponry);
+		_initialStats.explosives = RNG::generate(minStats.explosives, maxStats.explosives);
+		_initialStats.efficiency = RNG::generate(minStats.efficiency, maxStats.efficiency);
+		_initialStats.microelectronics = RNG::generate(minStats.microelectronics, maxStats.microelectronics);
+		_initialStats.metallurgy = RNG::generate(minStats.metallurgy, maxStats.metallurgy);
+		_initialStats.processing = RNG::generate(minStats.processing, maxStats.processing);
+		_initialStats.hacking = RNG::generate(minStats.hacking, maxStats.hacking);
+		_initialStats.robotics = RNG::generate(minStats.robotics, maxStats.robotics);
+		_initialStats.diligence = RNG::generate(minStats.diligence, maxStats.diligence);
+		_initialStats.reverseEngineering = RNG::generate(minStats.reverseEngineering, maxStats.reverseEngineering);
+
+		//agent
+		_initialStats.stealth = RNG::generate(minStats.stealth, maxStats.stealth);
+		_initialStats.perception = RNG::generate(minStats.perception, maxStats.perception);
+		_initialStats.charisma = RNG::generate(minStats.charisma, maxStats.charisma);
+		_initialStats.investigation = RNG::generate(minStats.investigation, maxStats.investigation);
+		_initialStats.deception = RNG::generate(minStats.deception, maxStats.deception);
+		_initialStats.interrogation = RNG::generate(minStats.interrogation, maxStats.interrogation);
 
 		_currentStats = _initialStats;
 
@@ -88,7 +201,7 @@ Soldier::Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id) :
 			else
 			{
 				// nationality by name pool weights
-				int tmp = RNG::generate(0, rules->getTotalSoldierNamePoolWeight());
+				int tmp = RNG::generate(1, rules->getTotalSoldierNamePoolWeight());
 				int nat = 0;
 				for (auto* namepool : names)
 				{
@@ -119,7 +232,20 @@ Soldier::Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id) :
 			_name += " Doe";
 			_callsign = "";
 		}
+		auto role = rules->getRoles();
+		if (!role.empty())
+		{
+			for (auto r : role)
+			{
+				addRole(r);
+			}
+		}
+		else
+		{
+			addRole(ROLE_NONE);
+		}
 	}
+
 	_lookVariant = RNG::seedless(0, RuleSoldier::LookVariantMax - 1);
 }
 
@@ -132,6 +258,10 @@ Soldier::~Soldier()
 	{
 		delete entry;
 	}
+	for (std::vector<SoldierRoleRanks *>::iterator i = _roles.begin(); i != _roles.end(); ++i)
+	{
+		delete *i;
+	}
 	Collections::deleteAll(_personalEquipmentLayout);
 	delete _death;
 	delete _diary;
@@ -143,34 +273,37 @@ Soldier::~Soldier()
  * @param mod Game mod.
  * @param save Pointer to savegame.
  */
-void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
+void Soldier::load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
 {
 	if (!soldierTemplate)
-	{
-		_id = node["id"].as<int>(_id);
-	}
-	_name = node["name"].as<std::string>(_name);
-	if (node["callsign"])
-	{
-		_callsign = node["callsign"].as<std::string>();
-	}
-	_nationality = node["nationality"].as<int>(_nationality);
+		reader.tryRead("id", _id);
+	reader.tryRead("name", _name);
+	reader.tryRead("callsign", _callsign);
+	reader.tryRead("nationality", _nationality);
 	if (soldierTemplate)
 	{
 		UnitStats ii, cc;
-		if (node["initialStats"])
-			ii = node["initialStats"].as<UnitStats>(ii);
-		if (node["currentStats"])
-			cc = node["currentStats"].as<UnitStats>(cc);
+		reader.tryRead("initialStats", ii);
+		reader.tryRead("currentStats", cc);
 		_initialStats = UnitStats::templateMerge(_initialStats, ii);
 		_currentStats = UnitStats::templateMerge(_currentStats, cc);
 	}
 	else
 	{
-		_initialStats = node["initialStats"].as<UnitStats>(_initialStats);
-		_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
+		reader.tryRead("initialStats", _initialStats);
+		reader.tryRead("currentStats", _currentStats);
 	}
-	_dailyDogfightExperienceCache = node["dailyDogfightExperienceCache"].as<UnitStats>(_dailyDogfightExperienceCache);
+	reader.tryRead("dailyDogfightExperienceCache", _dailyDogfightExperienceCache);
+	reader.tryRead("monthlyExperienceCache", _monthlyExperienceCache);
+	reader.tryRead("dogfightExperience", _dogfightExperience);
+	reader.tryRead("researchExperience", _researchExperience);
+	reader.tryRead("engineerExperience", _engineerExperience);
+	reader.tryRead("intelExperience", _intelExperience);
+	reader.tryRead("isRookieSoldier", _isRookieSoldier);
+	reader.tryRead("isRookieScientist", _isRookieScientist);
+	reader.tryRead("isRookieEngineer", _isRookieEngineer);
+	reader.tryRead("isRookieAgent", _isRookieAgent);
+	reader.tryRead("isRookiePilot", _isRookiePilot);
 
 	// re-roll mana stats when upgrading saves
 	if (_currentStats.mana == 0 && _rules->getMaxStats().mana > 0)
@@ -180,88 +313,94 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		_initialStats.mana = reroll;
 	}
 
-	_rank = (SoldierRank)node["rank"].as<int>(_rank);
-	_gender = (SoldierGender)node["gender"].as<int>(_gender);
-	_look = (SoldierLook)node["look"].as<int>(_look);
-	_lookVariant = node["lookVariant"].as<int>(_lookVariant);
-	_missions = node["missions"].as<int>(_missions);
-	_kills = node["kills"].as<int>(_kills);
-	_stuns = node["stuns"].as<int>(_stuns);
-	_manaMissing = node["manaMissing"].as<int>(_manaMissing);
-	_healthMissing = node["healthMissing"].as<int>(_healthMissing);
-	_recovery = node["recovery"].as<float>(_recovery);
+	reader.tryRead("rank", _rank);
+	if (reader["roles"])
+	{
+		for (const auto& roleNode : reader["roles"].children())
+		{
+			SoldierRoleRanks *r = new SoldierRoleRanks;
+			r->load(roleNode);
+			_roles.push_back(r);
+		}
+	}
+	else
+	{
+		addRole(ROLE_SOLDIER, 1);
+		Log(LOG_ERROR) << "Soldier: " << _name << " was forced to have ROLE_SOLDIER with rank 1! Check your installation, you might be using outdated game files!";
+	}
+	reader.tryRead("gender", _gender);
+	reader.tryRead("look", _look);
+	reader.tryRead("lookVariant", _lookVariant);
+	reader.tryRead("missions", _missions);
+	reader.tryRead("kills", _kills);
+	reader.tryRead("stuns", _stuns);
+	reader.tryRead("manaMissing", _manaMissing);
+	reader.tryRead("healthMissing", _healthMissing);
+	reader.tryRead("recovery", _recovery);
 	Armor *armor = _armor;
-	if (node["armor"])
-	{
-		armor = mod->getArmor(node["armor"].as<std::string>());
-	}
+	if (reader["armor"])
+		armor = mod->getArmor(reader["armor"].readVal<std::string>());
 	if (armor == 0)
-	{
 		armor = mod->getSoldier(mod->getSoldiersList().front())->getDefaultArmor();
-	}
 	_armor = armor;
-	if (node["replacedArmor"])
-		_replacedArmor = mod->getArmor(node["replacedArmor"].as<std::string>());
-	if (node["transformedArmor"])
-		_transformedArmor = mod->getArmor(node["transformedArmor"].as<std::string>());
-	_psiTraining = node["psiTraining"].as<bool>(_psiTraining);
-	_training = node["training"].as<bool>(_training);
-	_returnToTrainingWhenHealed = node["returnToTrainingWhenHealed"].as<bool>(_returnToTrainingWhenHealed);
-
-	_improvement = node["improvement"].as<int>(_improvement);
-	_psiStrImprovement = node["psiStrImprovement"].as<int>(_psiStrImprovement);
-	if (const YAML::Node &layout = node["equipmentLayout"])
+	if (reader["replacedArmor"])
+		_replacedArmor = mod->getArmor(reader["replacedArmor"].readVal<std::string>());
+	if (reader["transformedArmor"])
+		_transformedArmor = mod->getArmor(reader["transformedArmor"].readVal<std::string>());
+	reader.tryRead("psiTraining", _psiTraining);
+	reader.tryRead("training", _training);
+	reader.tryRead("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
+	reader.tryRead("returnToTrainingsWhenOperationOver", _returnToTrainingsWhenOperationOver);
+	reader.tryRead("justSaved", _justSaved);
+	reader.tryRead("improvement", _improvement);
+	reader.tryRead("psiStrImprovement", _psiStrImprovement);
+	for (const auto& layoutItem : reader["equipmentLayout"].children())
 	{
-		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+		try
 		{
-			try
-			{
-				_equipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
-			}
-			catch (Exception& ex)
-			{
-				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
-			}
+			_equipmentLayout.push_back(new EquipmentLayoutItem(layoutItem, mod));
+		}
+		catch (Exception& ex)
+		{
+			Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 		}
 	}
-	if (const YAML::Node &layout = node["personalEquipmentLayout"])
+	for (const auto& personalLayoutItem : reader["personalEquipmentLayout"].children())
 	{
-		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+		try
 		{
-			try
-			{
-				_personalEquipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
-			}
-			catch (Exception& ex)
-			{
-				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
-			}
+			_personalEquipmentLayout.push_back(new EquipmentLayoutItem(personalLayoutItem, mod));
+		}
+		catch (Exception& ex)
+		{
+			Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 		}
 	}
-	if (node["personalEquipmentArmor"])
+	if (reader["personalEquipmentArmor"])
 	{
-		_personalEquipmentArmor = mod->getArmor(node["personalEquipmentArmor"].as<std::string>());
+		_personalEquipmentArmor = mod->getArmor(reader["personalEquipmentArmor"].readVal<std::string>());
 	}
-	if (node["death"])
+	if (reader["death"])
 	{
 		_death = new SoldierDeath();
-		_death->load(node["death"]);
+		_death->load(reader["death"]);
 	}
-	if (node["diary"])
+	if (reader["diary"])
 	{
 		_diary = new SoldierDiary();
-		_diary->load(node["diary"], mod);
+		_diary->load(reader["diary"], mod);
 	}
 	calcStatString(mod->getStatStrings(), (Options::psiStrengthEval && save->isResearched(mod->getPsiRequirements())));
-	_corpseRecovered = node["corpseRecovered"].as<bool>(_corpseRecovered);
-	_previousTransformations = node["previousTransformations"].as<std::map<std::string, int > >(_previousTransformations);
-	_transformationBonuses = node["transformationBonuses"].as<std::map<std::string, int > >(_transformationBonuses);
+	reader.tryRead("corpseRecovered", _corpseRecovered);
+	reader.tryRead("previousTransformations", _previousTransformations);
+	reader.tryRead("transformationBonuses", _transformationBonuses);
+	reader.tryRead("pendingTransformations", _pendingTransformations);
 
-	if (const YAML::Node& spawnInfo = node["randomTransformationBonuses"])
+	if (const auto& spawnInfo = reader["randomTransformationBonuses"])
 	{
 		WeightedOptions randomTransformationBonuses;
 		randomTransformationBonuses.load(spawnInfo);
-		int transformationBonusesCount = node["transformationBonusesCount"].as<int>(1); // if not provided, default is 1
+		int transformationBonusesCount = reader["transformationBonusesCount"].readVal(1); // if not provided, default is 1
 		while (transformationBonusesCount > 0 && !randomTransformationBonuses.empty())
 		{
 			transformationBonusesCount--;
@@ -284,92 +423,117 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		}
 	}
 
-	_scriptValues.load(node, shared);
+	_scriptValues.load(reader, shared);
 }
 
 /**
  * Saves the soldier to a YAML file.
  * @return YAML node.
  */
-YAML::Node Soldier::save(const ScriptGlobal *shared) const
+void Soldier::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const
 {
-	YAML::Node node;
-	node["type"] = _rules->getType();
-	node["id"] = _id;
-	node["name"] = _name;
+	writer.setAsMap();
+
+	writer.write("type", _rules->getType());
+	writer.write("id", _id);
+	writer.write("name", _name);
 	if (!_callsign.empty())
-	{
-		node["callsign"] = _callsign;
-	}
-	node["nationality"] = _nationality;
-	node["initialStats"] = _initialStats;
-	node["currentStats"] = _currentStats;
+		writer.write("callsign", _callsign);
+	writer.write("nationality", _nationality);
+	writer.write("initialStats", _initialStats);
+	writer.write("currentStats", _currentStats);
 	if (_dailyDogfightExperienceCache.firing > 0 || _dailyDogfightExperienceCache.reactions > 0 || _dailyDogfightExperienceCache.bravery > 0)
-	{
-		node["dailyDogfightExperienceCache"] = _dailyDogfightExperienceCache;
-	}
-	node["rank"] = (int)_rank;
-	if (_craft != 0)
-	{
-		node["craft"] = _craft->saveId();
-	}
-	node["gender"] = (int)_gender;
-	node["look"] = (int)_look;
-	node["lookVariant"] = _lookVariant;
-	node["missions"] = _missions;
-	node["kills"] = _kills;
-	node["stuns"] = _stuns;
+		writer.write("dailyDogfightExperienceCache", _dailyDogfightExperienceCache);
+	if (!_monthlyExperienceCache.empty())
+		writer.write("monthlyExperienceCache", _monthlyExperienceCache);
+	if (!_dogfightExperience.empty())
+		writer.write("dogfightExperience", _dogfightExperience);
+	if (!_researchExperience.empty())
+		writer.write("researchExperience", _researchExperience);
+	if (!_engineerExperience.empty())
+		writer.write("engineerExperience", _engineerExperience);
+	if (!_intelExperience.empty())
+		writer.write("intelExperience", _intelExperience);
+	writer.write("rank", _rank);
+	if (_craft)
+		_craft->saveId(writer["craft"]);
+	if (_covertOperation)
+		writer.write("covertOperation", _covertOperation->getOperationName());
+	if (_researchProject)
+		writer.write("researchProject", _researchProject->getRules()->getName());
+	if (_production)
+		writer.write("production", _production->getRules()->getName());
+	if (_intelProject)
+		writer.write("intelProject", _intelProject->getName());
+	if (_prisoner)
+		writer.write("activePrisoner", _prisoner->getId());
+	writer.write("gender", _gender);
+	writer.write("look", _look);
+	writer.write("lookVariant", _lookVariant);
+	writer.write("missions", _missions);
+	writer.write("kills", _kills);
+	writer.write("stuns", _stuns);
 	if (_manaMissing > 0)
-		node["manaMissing"] = _manaMissing;
+		writer.write("manaMissing", _manaMissing);
 	if (_healthMissing > 0)
-		node["healthMissing"] = _healthMissing;
+		writer.write("healthMissing", _healthMissing);
 	if (_recovery > 0.0f)
-		node["recovery"] = _recovery;
-	node["armor"] = _armor->getType();
+		writer.write("recovery", _recovery);
+	writer.write("armor", _armor->getType());
 	if (_replacedArmor != 0)
-		node["replacedArmor"] = _replacedArmor->getType();
+		writer.write("replacedArmor", _replacedArmor->getType());
 	if (_transformedArmor != 0)
-		node["transformedArmor"] = _transformedArmor->getType();
+		writer.write("transformedArmor", _transformedArmor->getType());
 	if (_psiTraining)
-		node["psiTraining"] = _psiTraining;
+		writer.write("psiTraining", _psiTraining);
 	if (_training)
-		node["training"] = _training;
+		writer.write("training", _training);
 	if (_returnToTrainingWhenHealed)
-		node["returnToTrainingWhenHealed"] = _returnToTrainingWhenHealed;
-	node["improvement"] = _improvement;
-	node["psiStrImprovement"] = _psiStrImprovement;
-	if (!_equipmentLayout.empty())
+		writer.write("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
+	if (_returnToTrainingsWhenOperationOver != NONE)
+		writer.write("returnToTrainingsWhenOperationOver", _returnToTrainingsWhenOperationOver);
+	if (_justSaved)
+		writer.write("justSaved", _justSaved);
+	writer.write("isRookieSoldier", _isRookieSoldier);
+	writer.write("isRookieScientist", _isRookieScientist);
+	writer.write("isRookieEngineer", _isRookieEngineer);
+	writer.write("isRookieAgent", _isRookieAgent);
+	writer.write("isRookiePilot", _isRookiePilot);
+	writer.write("improvement", _improvement);
+	writer.write("psiStrImprovement", _psiStrImprovement);
+	if (!_roles.empty())
 	{
-		for (const auto* entry : _equipmentLayout)
-			node["equipmentLayout"].push_back(entry->save());
+		auto rolesWriter = writer["roles"];
+		rolesWriter.setAsSeq();
+		for (auto* r : _roles)
+		{
+			if (r->rank == 0 && r->experience == 0)
+				continue; // skip empty role entries
+			r->save(rolesWriter.write());
+		}
 	}
-	if (!_personalEquipmentLayout.empty())
-	{
-		for (const auto* entry : _personalEquipmentLayout)
-			node["personalEquipmentLayout"].push_back(entry->save());
-	}
+	writer.write("equipmentLayout", _equipmentLayout,
+		[](YAML::YamlNodeWriter& w, EquipmentLayoutItem* i)
+		{ i->save(w.write()); });
+	writer.write("personalEquipmentLayout", _personalEquipmentLayout,
+		[](YAML::YamlNodeWriter& w, EquipmentLayoutItem* i)
+		{ i->save(w.write()); });
 	if (_personalEquipmentArmor)
-	{
-		node["personalEquipmentArmor"] = _personalEquipmentArmor->getType();
-	}
+		writer.write("personalEquipmentArmor", _personalEquipmentArmor->getType());
 	if (_death != 0)
-	{
-		node["death"] = _death->save();
-	}
+		 _death->save(writer["death"]);
 	if (Options::soldierDiaries && (!_diary->getMissionIdList().empty() || !_diary->getSoldierCommendations()->empty() || _diary->getMonthsService() > 0))
-	{
-		node["diary"] = _diary->save();
-	}
+		_diary->save(writer["diary"]);
 	if (_corpseRecovered)
-		node["corpseRecovered"] = _corpseRecovered;
+		writer.write("corpseRecovered", _corpseRecovered);
 	if (!_previousTransformations.empty())
-		node["previousTransformations"] = _previousTransformations;
+		writer.write("previousTransformations", _previousTransformations);
 	if (!_transformationBonuses.empty())
-		node["transformationBonuses"] = _transformationBonuses;
+		writer.write("transformationBonuses", _transformationBonuses);
+	if (!_pendingTransformations.empty())
+		writer.write("pendingTransformations", _pendingTransformations);
 
-	_scriptValues.save(node, shared);
-
-	return node;
+	_scriptValues.save(writer, shared);
 }
 
 /**
@@ -617,21 +781,25 @@ void Soldier::setCraftAndMoveEquipment(Craft* craft, Base* base, bool isNewBattl
  * @param lang Language to get strings from.
  * @return Full name.
  */
-std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& recovery) const
+std::string Soldier::getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode) const
 {
-	std::string s;
+	isBusy = false;
+	isFree = false;
+	bool facility = (mode == LAB || mode == ASSIGN || mode == WORK || mode == INTEL);
 	if (_death)
 	{
+		isBusy = true;
 		if (_death->getCause())
 		{
-			s = lang->getString("STR_KILLED_IN_ACTION", _gender);
+			return lang->getString("STR_KILLED_IN_ACTION", _gender); //#FINNIKTODO: case we torture it to death?
 		}
 		else
 		{
-			s = lang->getString("STR_MISSING_IN_ACTION", _gender);
+			return lang->getString("STR_MISSING_IN_ACTION", _gender);
 		}
 	}
-	else if (isWounded())
+
+	if (isWounded())
 	{
 		std::ostringstream ss;
 		ss << lang->getString("STR_WOUNDED");
@@ -645,17 +813,140 @@ std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& 
 		{
 			ss << days;
 		}
-		s = ss.str();
+		isBusy = true;
+		return ss.str();
 	}
-	else if (_craft == 0)
+
+	if (_covertOperation)
 	{
-		s = lang->getString("STR_NONE_UC");
+		isBusy = true;
+		return lang->getString("STR_COVERT_OPERATION_UC");
 	}
-	else
+
+	if (_researchProject)
 	{
-		s = _craft->getName(lang);
+		if (mode == LAB)
+		{
+			return lang->getString(_researchProject->getRules()->getName());
+		}
+		else
+		{
+			return lang->getString("STR_IN_LAB");
+		}
 	}
-	return s;
+
+
+	if (_production)
+	{
+		if (mode == WORK)
+		{
+			return lang->getString(_production->getRules()->getName());
+		}
+		else
+		{
+			return lang->getString("STR_IN_WORKSHOP");
+		}
+	}
+
+	if (_intelProject)
+	{
+		if (mode == INTEL)
+		{
+			return lang->getString(_intelProject->getName());
+		}
+		else
+		{
+			return lang->getString("STR_INTEL");
+		}
+	}
+
+	if (_prisoner)
+	{
+		if (mode == INTEL)
+		{
+			std::ostringstream ss;
+			ss << lang->getString(_prisoner->getName());
+			ss << " / ";
+			ss << _prisoner->getId();
+			return lang->getString(_prisoner->getName());
+		}
+		else
+		{
+			return lang->getString("STR_INTEL"); //#FINNIKTODO a better string
+		}
+	}
+
+	if (hasPendingTransformation())
+	{
+		isBusy = true;
+		std::ostringstream ss;
+		ss << lang->getString("STR_IN_TRANSFORMATION_UC");
+		ss << ">";
+		int days = 0;
+		isBusy = true;
+		for (auto it = _pendingTransformations.cbegin(); it != _pendingTransformations.cend();)
+		{
+			if ((*it).second > 0)
+			{
+				days += (*it).second;
+				++it;
+			}
+		}
+		days = (int)ceil(days / 24);
+		ss << days;
+		return ss.str();
+	}
+	if (_psiTraining)
+	{
+		if (!Options::anytimePsiTraining)
+		{
+			isBusy = true;
+			return lang->getString("STR_IN_PSI_TRAINING_UC");
+		}
+	}
+	if (facility)
+	{
+		if (_psiTraining)
+		{
+			return lang->getString("STR_IN_PSI_TRAINING_UC");
+		}
+		if (_training)
+		{
+			return lang->getString("STR_COMBAT_TRAINING");
+		}
+	}
+
+
+	if (_craft)
+	{
+		if (_craft->getStatus() == "STR_OUT")
+		{
+			isBusy = true;
+			if (mode != INFO)
+			{
+				return lang->getString("STR_OUT");
+			}
+		}
+		return _craft->getName(lang);
+	}
+
+	isFree = true;
+	return lang->getString("STR_NONE_UC");
+}
+
+/**
+ * Clear all soldier tasks to prepare for some base duty (research project, manufacture, etc)
+ */
+void Soldier::clearBaseDuty()
+{
+	setResearchProject(nullptr);
+	setProductionProject(nullptr);
+	setIntelProject(nullptr);
+	setActivePrisoner(nullptr);
+	setPsiTraining(false);
+	setTraining(false);
+	setCraft(0);
+	setReturnToTrainingWhenHealed(false);
 }
 
 /**
@@ -663,46 +954,69 @@ std::string Soldier::getCraftString(Language *lang, const BaseSumDailyRecovery& 
  * the soldier's military rank.
  * @return String ID for rank.
  */
-std::string Soldier::getRankString() const
+const std::string Soldier::getRankString(bool isFtA) const
 {
-	const std::vector<std::string> &rankStrings = _rules->getRankStrings();
-	if (!_rules->getAllowPromotion())
+	if (isFtA)
 	{
-		// even if promotion is not allowed, we allow to use a different "Rookie" translation per soldier type
-		if (rankStrings.empty())
+		std::string rankString = "UNDEFINED";
+		for (auto ruleRole : _rules->getRoleRankStrings())
 		{
-			return "STR_RANK_NONE";
+			if (ruleRole->role == getBestRole())
+			{
+				for (auto rank : ruleRole->strings)
+				{
+					if (rank.first == getBestRoleRank().second)
+					{
+						rankString = rank.second;
+						break;
+					}
+				}
+				break;
+			}
 		}
+		return rankString;
 	}
-
-	switch (_rank)
+	else
 	{
-	case RANK_ROOKIE:
-		if (rankStrings.size() > 0)
-			return rankStrings.at(0);
-		return "STR_ROOKIE";
-	case RANK_SQUADDIE:
-		if (rankStrings.size() > 1)
-			return rankStrings.at(1);
-		return "STR_SQUADDIE";
-	case RANK_SERGEANT:
-		if (rankStrings.size() > 2)
-			return rankStrings.at(2);
-		return "STR_SERGEANT";
-	case RANK_CAPTAIN:
-		if (rankStrings.size() > 3)
-			return rankStrings.at(3);
-		return "STR_CAPTAIN";
-	case RANK_COLONEL:
-		if (rankStrings.size() > 4)
-			return rankStrings.at(4);
-		return "STR_COLONEL";
-	case RANK_COMMANDER:
-		if (rankStrings.size() > 5)
-			return rankStrings.at(5);
-		return "STR_COMMANDER";
-	default:
-		return "";
+		const std::vector<std::string> &rankStrings = _rules->getRankStrings();
+		if (!_rules->getAllowPromotion())
+		{
+			// even if promotion is not allowed, we allow to use a different "Rookie" translation per soldier type
+			if (rankStrings.empty())
+			{
+				return "STR_RANK_NONE";
+			}
+		}
+
+		switch (_rank)
+		{
+		case RANK_ROOKIE:
+			if (rankStrings.size() > 0)
+				return rankStrings.at(0);
+			return "STR_ROOKIE";
+		case RANK_SQUADDIE:
+			if (rankStrings.size() > 1)
+				return rankStrings.at(1);
+			return "STR_SQUADDIE";
+		case RANK_SERGEANT:
+			if (rankStrings.size() > 2)
+				return rankStrings.at(2);
+			return "STR_SERGEANT";
+		case RANK_CAPTAIN:
+			if (rankStrings.size() > 3)
+				return rankStrings.at(3);
+			return "STR_CAPTAIN";
+		case RANK_COLONEL:
+			if (rankStrings.size() > 4)
+				return rankStrings.at(4);
+			return "STR_COLONEL";
+		case RANK_COMMANDER:
+			if (rankStrings.size() > 5)
+				return rankStrings.at(5);
+			return "STR_COMMANDER";
+		default:
+			return "";
+		}
 	}
 }
 
@@ -880,7 +1194,7 @@ void Soldier::setLookVariant(int lookVariant)
  * Returns the soldier's rules.
  * @return rule soldier
  */
-RuleSoldier *Soldier::getRules() const
+const RuleSoldier *Soldier::getRules() const
 {
 	return _rules;
 }
@@ -919,6 +1233,18 @@ void Soldier::addStunCount(int count)
 	_stuns += count;
 }
 
+int Soldier::getHireValue() const
+{
+	int value = _rules->getBuyCost();
+
+	value *= getBestRoleRank().second;
+
+	value /= 100;
+	value *= 100;
+
+	return value;
+}
+
 /**
  * Get pointer to initial stats.
  */
@@ -943,17 +1269,6 @@ void Soldier::setBothStats(UnitStats *stats)
 {
 	_currentStats = *stats;
 	_initialStats = *stats;
-}
-
-/**
- * Returns the unit's promotion status and resets it.
- * @return True if recently promoted, False otherwise.
- */
-bool Soldier::isPromoted()
-{
-	bool promoted = _recentlyPromoted;
-	_recentlyPromoted = false;
-	return promoted;
 }
 
 /**
@@ -1513,6 +1828,10 @@ void Soldier::die(SoldierDeath *death)
 
 	// Clean up associations
 	_craft = 0;
+	_covertOperation = 0;
+	_researchProject = 0;
+	_production = 0;
+	_intelProject = 0;
 	_psiTraining = false;
 	_training = false;
 	_returnToTrainingWhenHealed = false;
@@ -1583,23 +1902,57 @@ void Soldier::trainPhys(int customTrainingFactor)
 {
 	UnitStats caps1 = _rules->getStatCaps();
 	UnitStats caps2 = _rules->getTrainingStatCaps();
+
 	// no P.T. for the wounded
+	int roleFactor = 1;
+
+	if (getRoleRank(ROLE_SOLDIER) < 2)
+	{
+		roleFactor = 2;
+	}
+	else if (getRoleRank(ROLE_SOLDIER) < 1)
+	{
+		roleFactor = 4;
+	}
+	// no P.T. for the wounded
+
 	if (hasFullHealth())
 	{
-		if(_currentStats.firing < caps1.firing && RNG::generate(0, caps2.firing) > _currentStats.firing && RNG::percent(customTrainingFactor))
+		if (_currentStats.firing < caps1.firing && RNG::generate(0, caps2.firing) > _currentStats.firing && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.firing++;
-		if(_currentStats.health < caps1.health && RNG::generate(0, caps2.health) > _currentStats.health && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.health < caps1.health && RNG::generate(0, caps2.health) > _currentStats.health && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.health++;
-		if(_currentStats.melee < caps1.melee && RNG::generate(0, caps2.melee) > _currentStats.melee && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.melee < caps1.melee && RNG::generate(0, caps2.melee) > _currentStats.melee && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.melee++;
-		if(_currentStats.throwing < caps1.throwing && RNG::generate(0, caps2.throwing) > _currentStats.throwing && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.throwing < caps1.throwing && RNG::generate(0, caps2.throwing) > _currentStats.throwing && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.throwing++;
-		if(_currentStats.strength < caps1.strength && RNG::generate(0, caps2.strength) > _currentStats.strength && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.strength < caps1.strength && RNG::generate(0, caps2.strength) > _currentStats.strength && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.strength++;
-		if(_currentStats.tu < caps1.tu && RNG::generate(0, caps2.tu) > _currentStats.tu && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.tu < caps1.tu && RNG::generate(0, caps2.tu) > _currentStats.tu && RNG::percent(customTrainingFactor / roleFactor))
+
+		{
 			_currentStats.tu++;
-		if(_currentStats.stamina < caps1.stamina && RNG::generate(0, caps2.stamina) > _currentStats.stamina && RNG::percent(customTrainingFactor))
+		}
+
+		if (_currentStats.stamina < caps1.stamina && RNG::generate(0, caps2.stamina) > _currentStats.stamina && RNG::percent(customTrainingFactor / roleFactor))
+		{
 			_currentStats.stamina++;
+		}
 	}
 }
 
@@ -1717,23 +2070,41 @@ bool Soldier::isEligibleForTransformation(const RuleSoldierTransformation *trans
 			return false;
 	}
 
+	if(!_pendingTransformations.empty())
+		return false;
+
 	// Does this soldier meet the minimum stat requirements for the project?
 	UnitStats currentStats = transformationRule->getIncludeBonusesForMinStats() ? _tmpStatsWithSoldierBonuses: _currentStats;
 	UnitStats minStats = transformationRule->getRequiredMinStats();
-	if (currentStats.tu < minStats.tu ||
-		currentStats.stamina < minStats.stamina ||
-		currentStats.health < minStats.health ||
-		currentStats.bravery < minStats.bravery ||
-		currentStats.reactions < minStats.reactions ||
-		currentStats.firing < minStats.firing ||
-		currentStats.throwing < minStats.throwing ||
-		currentStats.melee < minStats.melee ||
-		currentStats.mana < minStats.mana ||
-		currentStats.strength < minStats.strength ||
-		currentStats.psiStrength < minStats.psiStrength ||
-		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0)) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+	bool minStatReq = true;
+	currentStats.fieldLoop(
+		[&](UnitStats::Ptr p)
+		{
+			if (currentStats.*p < minStats.*p)
+				minStatReq = false;
+		}
+	);
+
+	if (!minStatReq)
 		return false;
 
+	// Does the soldier met role rank requirements?
+	if (!transformationRule->getRoleRankRequirments().empty())
+	{
+		for (auto req : transformationRule->getRoleRankRequirments())
+		{
+			if (getRoleRank(req.first) < req.second)
+				return false;
+		}
+	}
+
+	if (transformationRule->getForbiddenRole() != ROLE_NONE)
+	{
+		if (getRoleRank(transformationRule->getForbiddenRole()) > 0)
+		{
+			return false;
+		}
+	}
 	// Does this soldier meet the maximum stat requirements for the project?
 	currentStats = transformationRule->getIncludeBonusesForMaxStats() ? _tmpStatsWithSoldierBonuses : _currentStats;
 	UnitStats maxStats = transformationRule->getRequiredMaxStats();
@@ -1748,7 +2119,43 @@ bool Soldier::isEligibleForTransformation(const RuleSoldierTransformation *trans
 		currentStats.mana > maxStats.mana ||
 		currentStats.strength > maxStats.strength ||
 		currentStats.psiStrength > maxStats.psiStrength ||
-		currentStats.psiSkill > maxStats.psiSkill)
+		currentStats.psiSkill > maxStats.psiSkill ||
+		currentStats.maneuvering > maxStats.maneuvering ||
+		currentStats.missiles > maxStats.missiles ||
+		currentStats.dogfight > maxStats.dogfight ||
+		currentStats.tracking > maxStats.tracking ||
+		currentStats.cooperation > maxStats.cooperation ||
+		currentStats.beams > maxStats.beams ||
+		currentStats.synaptic > maxStats.synaptic ||
+		currentStats.gravity > maxStats.gravity ||
+		currentStats.physics > maxStats.physics ||
+		currentStats.chemistry > maxStats.chemistry ||
+		currentStats.biology > maxStats.biology ||
+		currentStats.insight > maxStats.insight ||
+		currentStats.data > maxStats.data ||
+		currentStats.computers > maxStats.computers ||
+		currentStats.tactics > maxStats.tactics ||
+		currentStats.materials > maxStats.materials ||
+		currentStats.designing > maxStats.designing ||
+		currentStats.psionics > maxStats.psionics ||
+		currentStats.xenolinguistics > maxStats.xenolinguistics ||
+		currentStats.weaponry > maxStats.weaponry ||
+		currentStats.explosives > maxStats.explosives ||
+		currentStats.efficiency > maxStats.efficiency ||
+		currentStats.microelectronics > maxStats.microelectronics ||
+		currentStats.metallurgy > maxStats.metallurgy ||
+		currentStats.processing > maxStats.processing ||
+		currentStats.hacking > maxStats.hacking ||
+		currentStats.robotics > maxStats.robotics ||
+		currentStats.diligence > maxStats.diligence ||
+		currentStats.alienTech > maxStats.alienTech ||
+		currentStats.reverseEngineering > maxStats.reverseEngineering ||
+		currentStats.stealth > maxStats.stealth ||
+		currentStats.perception > maxStats.perception ||
+		currentStats.charisma > maxStats.charisma ||
+		currentStats.investigation > maxStats.investigation ||
+		currentStats.deception > maxStats.deception ||
+		currentStats.interrogation > maxStats.interrogation)
 		return false;
 
 	// Does the soldier have the required commendations?
@@ -1801,7 +2208,7 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	else
 	{
 		// backup original soldier type, it will still be needed later for stat change calculations
-		RuleSoldier* sourceSoldierType = _rules;
+		const RuleSoldier* sourceSoldierType = _rules;
 
 		// change soldier type if needed
 		if (!Mod::isEmptyRuleName(transformationRule->getProducedSoldierType()) && _rules->getType() != transformationRule->getProducedSoldierType())
@@ -1877,6 +2284,9 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 		// change stats
 		_currentStats += calculateStatChanges(mod, transformationRule, sourceSoldier, 0, sourceSoldierType);
 
+		// assign new role with rank 1
+		addRole(transformationRule->getRoleToAdd());
+
 		// and randomize stats where needed
 		{
 			Soldier *tmpSoldier = new Soldier(_rules, nullptr, 0 /*nationality*/, _id);
@@ -1913,6 +2323,42 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	{
 		_previousTransformations.clear();
 	}
+	else if (!transformationRule->getRemoveTransformations().empty())
+	{
+		// Remove specific transformations and their related bonuses
+		for (const auto& remove_transf : transformationRule->getRemoveTransformations())
+		{
+			int count = 0;
+			auto it1 = _previousTransformations.find(remove_transf);
+			if (it1 != _previousTransformations.end())
+			{
+				count = it1->second;
+				_previousTransformations.erase(remove_transf);
+			}
+			if (count > 0)
+			{
+				const auto* rtRule = mod->getSoldierTransformation(remove_transf, false);
+				if (rtRule)
+				{
+					if (!Mod::isEmptyRuleName(rtRule->getSoldierBonusType()))
+					{
+						auto it2 = _transformationBonuses.find(rtRule->getSoldierBonusType());
+						if (it2 != _transformationBonuses.end())
+						{
+							if (it2->second > count)
+							{
+								it2->second -= count;
+							}
+							else
+							{
+								_transformationBonuses.erase(rtRule->getSoldierBonusType());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Remember the performed transformation (on the source soldier)
 	auto& history = sourceSoldier->getPreviousTransformations();
@@ -1945,6 +2391,248 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 			_transformationBonuses[transformationRule->getSoldierBonusType()] = 1;
 		}
 	}
+}
+
+/**
+ * Saves info about pending transformation for this soldier.
+ * @param transformationRule RuleSoldierTransformation pointer.
+ */
+void Soldier::postponeTransformation(RuleSoldierTransformation* transformationRule)
+{
+	clearBaseDuty();
+	_training = false;
+	_returnToTrainingWhenHealed = false;
+	_psiTraining = false;
+	_craft = 0;
+
+	int time = transformationRule->getTransformationTime();
+	time += RNG::generate((int)(time * -0.2), int(time * 0.2));
+	_pendingTransformations[transformationRule->getName()] = time;
+}
+
+/**
+ * Handles pending transformation - reducing timer, performing transformation once finished.
+ * @param transformationRule RuleSoldierTransformation pointer
+ */
+bool Soldier::handlePendingTransformation()
+{
+	bool finished = false;
+	for (auto it = _pendingTransformations.cbegin(); it != _pendingTransformations.cend();)
+	{
+		_pendingTransformations.at((*it).first) -= 1;
+		if ((*it).second < 1)
+		{
+			it = _pendingTransformations.erase(it);
+			finished = true;
+		}
+		else
+		{
+			++it;
+		}
+	}
+	return finished;
+}
+
+void Soldier::addRole(SoldierRole newRole, int rank)
+{
+	bool added = false;
+	for (auto *r : _roles)
+	{
+		if (r->role == newRole)
+		{
+			r->rank += rank;
+			added = true;
+		}
+	}
+	if (!added)
+	{
+		SoldierRoleRanks *nr = new SoldierRoleRanks;
+		nr->role = newRole;
+		nr->rank = rank;
+		nr->experience = 0;
+		_roles.push_back(nr);
+	}
+}
+
+void Soldier::addExperience(SoldierRole role, int exp, std::string name)
+{
+	if (exp <= 0)
+	{
+		return;
+	}
+
+	bool added = false;
+	Log(LOG_INFO) << "Gaining " << exp << " from source: " << name << " as role: " << role; //#FINNIKTODO #CLEARLOGS
+	for (auto *r : _roles)
+	{
+		if (r->role == role)
+		{
+			r->experience += exp;
+			added = true;
+		}
+	}
+	if (!added)
+	{
+		SoldierRoleRanks *nr = new SoldierRoleRanks;
+		nr->role = role;
+		nr->rank = 0;
+		nr->experience = exp;
+		_roles.push_back(nr);
+	}
+}
+
+int Soldier::getRoleRank(SoldierRole role) const
+{
+	int rank = 0;
+	for (auto i : _roles)
+	{
+		if (i->role == role)
+		{
+			rank = i->rank;
+		}
+	}
+	return rank;
+}
+
+int Soldier::getRoleRank(std::vector<int> roles) const
+{
+	int rank = 0;
+	for (SoldierRoleRanks* i : _roles)
+	{
+		for (int j : roles)
+		{
+			if (i->role == SoldierRole(j))
+			{
+				if (i->rank > rank)
+				{
+					rank = i->rank;
+				}
+			}
+		}
+	}
+	return rank;
+}
+
+std::pair<SoldierRole, int> Soldier::getBestRoleRank() const
+{
+	int max = INT_MIN;
+	SoldierRole role = ROLE_SOLDIER;
+	for (auto i : _roles)
+	{
+		if (i->rank > max)
+		{
+			max = i->rank;
+			role = i->role;
+		}
+	}
+	return std::make_pair(role, max);
+}
+
+bool Soldier::hasOnlyOneRole(SoldierRole role) const
+{
+	bool foundGivenRoleWithRank = false;
+	for (const auto* r : _roles)
+	{
+		if (r == nullptr) continue;
+		if (r->rank > 0)
+		{
+			if (r->role == role)
+			{
+				foundGivenRoleWithRank = true;
+			}
+			else
+			{
+				// Another role has rank > 0 -> not the only role
+				return false;
+			}
+		}
+	}
+	// True only if the passed role had rank > 0 and no other role did
+	return foundGivenRoleWithRank;
+}
+
+int Soldier::getRoleRankSprite(SoldierRole role) const
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistRankSprite() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSprite() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSprite() + roleRank - 1;
+		break;
+	}
+	return id;
+}
+
+int Soldier::getRoleRankSpriteBattlescape(SoldierRole role)
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistSpriteBattlescape() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSpriteBattlescape() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSpriteBattlescape() + roleRank - 1;
+		break;
+	}
+	return id;
+}
+
+int Soldier::getRoleRankSpriteTiny(SoldierRole role)
+{
+	int roleRank = getRoleRank(role);
+	int id = 0;
+	switch (role)
+	{
+	case OpenXcom::ROLE_SOLDIER:
+		id = this->getRules()->getRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_PILOT:
+		id = this->getRules()->getPilotRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_AGENT:
+		id = this->getRules()->getAgentRankSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_SCIENTIST:
+		id = this->getRules()->getScientistSpriteTiny() + roleRank - 1;
+		break;
+	case OpenXcom::ROLE_ENGINEER:
+		id = this->getRules()->getEngineerRankSpriteTiny() + roleRank - 1;
+		break;
+	default:
+		id = this->getRules()->getRankSpriteTiny() + roleRank - 1;
+		break;
+	}
+	return id;
 }
 
 /**
@@ -1998,7 +2686,7 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 	int sign = statChange.bravery < 0 ? -1 : 1;
 	statChange.bravery = ((statChange.bravery + (sign * 5)) / 10) * 10;
 
-	RuleSoldier *transformationSoldierType = _rules;
+	const RuleSoldier *transformationSoldierType = _rules;
 	if (!Mod::isEmptyRuleName(transformationRule->getProducedSoldierType()))
 	{
 		transformationSoldierType = mod->getSoldier(transformationRule->getProducedSoldierType());
@@ -2034,6 +2722,22 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 	}
 
 	return statChange;
+}
+
+/**
+ * Checks whether the soldier has a given bonus.
+ * Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+ */
+bool Soldier::hasBonus(const RuleSoldierBonus* bonus) const
+{
+	for (auto* sb : _bonusCache)
+	{
+		if (sb == bonus)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -2153,6 +2857,444 @@ UnitStats* Soldier::getDailyDogfightExperienceCache()
 void Soldier::resetDailyDogfightExperienceCache()
 {
 	_dailyDogfightExperienceCache = UnitStats::scalar(0);
+}
+
+UnitStats* Soldier::getMonthlyExperienceCache()
+{
+	return &_monthlyExperienceCache;
+}
+
+void Soldier::resetMonthlyExperienceCache()
+{
+	_monthlyExperienceCache = UnitStats::scalar(0);
+}
+
+void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
+{
+	UnitStats *stats = getCurrentStatsEditable();
+	const UnitStats caps = getRules()->getStatCaps();
+	UnitStats origStats = *getCurrentStats();
+	int rate = 0;
+	Log(LOG_INFO) << "Soldier: " << this->getName() << " is improving primary stats."; //#FINNIKTODO #CLEARLOGS
+	// soldier primary stats
+	{
+		if (exp->bravery && stats->bravery < caps.bravery)
+		{
+			stats->bravery += improveStat(exp->bravery, rate, true);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT || role == ROLE_PILOT)
+				addExperience(role, rate, "bravery stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "bravery stat improvement");
+		}
+		if (exp->reactions && stats->reactions < caps.reactions)
+		{
+			stats->reactions += improveStat(exp->reactions, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "reactions stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "reactions stat improvement");
+		}
+		if (exp->firing && stats->firing < caps.firing)
+		{
+			stats->firing += improveStat(exp->firing, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "firing stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "firing stat improvement");
+		}
+		if (exp->melee && stats->melee < caps.melee)
+		{
+			stats->melee += improveStat(exp->melee, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "melee stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "melee stat improvement");
+		}
+		if (exp->throwing && stats->throwing < caps.throwing)
+		{
+			stats->throwing += improveStat(exp->throwing, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "throwing stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "throwing stat improvement");
+		}
+		if (exp->psiSkill && stats->psiSkill < caps.psiSkill)
+		{
+			stats->psiSkill += improveStat(exp->psiSkill, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "psiSkill stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "psiSkill stat improvement");
+		}
+		if (exp->psiStrength && stats->psiStrength < caps.psiStrength)
+		{
+			stats->psiStrength += improveStat(exp->psiStrength, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "psiStrength stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "psiStrength stat improvement");
+		}
+		if (exp->mana && stats->mana < caps.mana)
+		{
+			stats->mana += improveStat(exp->mana, rate);
+			if (role == ROLE_SOLDIER || role == ROLE_AGENT)
+				addExperience(role, rate, "mana stat improvement");
+			else
+				addExperience(ROLE_SOLDIER, rate, "mana stat improvement");
+		}
+	}
+
+	//pilot stats
+	{
+		if (exp->maneuvering && stats->maneuvering < caps.maneuvering)
+		{
+			stats->maneuvering += improveStat(exp->maneuvering, rate);
+			addExperience(ROLE_PILOT, rate, "maneuvering stat improvement");
+		}
+		if (exp->missiles && stats->missiles < caps.missiles)
+		{
+			stats->missiles += improveStat(exp->missiles, rate);
+			addExperience(ROLE_PILOT, rate, "missiles stat improvement");
+		}
+		if (exp->dogfight && stats->dogfight < caps.dogfight)
+		{
+			stats->dogfight += improveStat(exp->dogfight, rate);
+			addExperience(ROLE_PILOT, rate, "dogfight stat improvement");
+		}
+		if (exp->tracking && stats->tracking < caps.tracking)
+		{
+			stats->tracking += improveStat(exp->tracking, rate);
+			int reducedRate = RNG::generate(0, rate); // non-combat skill
+			addExperience(ROLE_PILOT, reducedRate, "tracking stat improvement");
+		}
+		if (exp->cooperation && stats->cooperation < caps.cooperation)
+		{
+			stats->cooperation += improveStat(exp->cooperation, rate);
+			addExperience(ROLE_PILOT, rate, "cooperation stat improvement");
+		}
+		if (exp->beams && stats->beams < caps.beams)
+		{
+			stats->beams += improveStat(exp->beams, rate);
+			addExperience(ROLE_PILOT, rate, "beams stat improvement");
+		}
+		if (exp->synaptic && stats->synaptic < caps.synaptic)
+		{
+			stats->synaptic += improveStat(exp->synaptic, rate);
+			addExperience(ROLE_PILOT, rate, "synaptic stat improvement");
+		}
+		if (exp->gravity && stats->gravity < caps.gravity)
+		{
+			stats->gravity += improveStat(exp->gravity, rate);
+			addExperience(ROLE_PILOT, rate, "gravity stat improvement");
+		}
+	}
+
+	//science stats
+	{
+		if (exp->physics && stats->physics < caps.physics)
+		{
+			stats->physics += improveStat(exp->physics, rate);
+			addExperience(ROLE_SCIENTIST, rate, "physics stat improvement");
+		}
+		if (exp->chemistry && stats->chemistry < caps.chemistry)
+		{
+			stats->chemistry += improveStat(exp->chemistry, rate);
+			addExperience(ROLE_SCIENTIST, rate, "chemistry stat improvement");
+		}
+		if (exp->biology && stats->biology < caps.biology)
+		{
+			stats->biology += improveStat(exp->biology, rate);
+			addExperience(ROLE_SCIENTIST, rate, "biology stat improvement");
+		}
+		if (exp->insight && stats->insight < caps.insight)
+		{
+			stats->insight += improveStat(exp->insight, rate);
+			addExperience(ROLE_SCIENTIST, rate, "insight stat improvement");
+		}
+		if (exp->data && stats->data < caps.data)
+		{
+			stats->data += improveStat(exp->data, rate);
+			if (role == ROLE_SCIENTIST || role == ROLE_AGENT)
+				addExperience(role, rate, "data stat improvement");
+			else
+				addExperience(ROLE_SCIENTIST, rate, "bravery stat improvement");
+		}
+		if (exp->computers && stats->computers < caps.computers)
+		{
+			stats->computers += improveStat(exp->computers, rate);
+			addExperience(ROLE_SCIENTIST, rate, "computers stat improvement");
+		}
+		if (exp->tactics && stats->tactics < caps.tactics)
+		{
+			stats->tactics += improveStat(exp->tactics, rate);
+			addExperience(ROLE_SCIENTIST, rate, "tactics stat improvement");
+		}
+		if (exp->materials && stats->materials < caps.materials)
+		{
+			stats->materials += improveStat(exp->materials, rate);
+			addExperience(ROLE_SCIENTIST, rate, "materials stat improvement");
+		}
+		if (exp->designing && stats->designing < caps.designing)
+		{
+			stats->designing += improveStat(exp->designing, rate);
+			addExperience(ROLE_SCIENTIST, rate, "designing stat improvement");
+		}
+		if (exp->psionics && stats->psionics < caps.psionics)
+		{
+			stats->psionics += improveStat(exp->psionics, rate);
+			addExperience(ROLE_SCIENTIST, rate, "psionics stat improvement");
+		}
+		if (exp->xenolinguistics && stats->xenolinguistics < caps.xenolinguistics)
+		{
+			stats->xenolinguistics += improveStat(exp->xenolinguistics, rate);
+			addExperience(ROLE_SCIENTIST, rate, "xenolinguistics stat improvement");
+		}
+	}
+
+	//engineer stats
+	{
+		if (exp->weaponry && stats->weaponry < caps.weaponry)
+		{
+			stats->weaponry += improveStat(exp->weaponry, rate);
+			addExperience(ROLE_ENGINEER, rate, "weaponry stat improvement");
+		}
+		if (exp->explosives && stats->explosives < caps.explosives)
+		{
+			stats->explosives += improveStat(exp->explosives, rate);
+			addExperience(ROLE_ENGINEER, rate, "explosives stat improvement");
+		}
+		if (exp->efficiency && stats->efficiency < caps.efficiency)
+		{
+			stats->efficiency += improveStat(exp->efficiency, rate);
+			addExperience(ROLE_ENGINEER, rate, "efficiency stat improvement");
+		}
+		if (exp->microelectronics && stats->microelectronics < caps.microelectronics)
+		{
+			stats->microelectronics += improveStat(exp->microelectronics, rate);
+			addExperience(ROLE_ENGINEER, rate, "microelectronics stat improvement");
+		}
+		if (exp->metallurgy && stats->metallurgy < caps.metallurgy)
+		{
+			stats->metallurgy += improveStat(exp->metallurgy, rate);
+			addExperience(ROLE_ENGINEER, rate, "metallurgy stat improvement");
+		}
+		if (exp->processing && stats->processing < caps.processing)
+		{
+			stats->processing += improveStat(exp->processing, rate);
+			addExperience(ROLE_ENGINEER, rate, "processing stat improvement");
+		}
+		if (exp->hacking && stats->hacking < caps.hacking)
+		{
+			stats->hacking += improveStat(exp->hacking, rate);
+			if (role == ROLE_ENGINEER || role == ROLE_AGENT)
+				addExperience(role, rate, "hacking stat improvement");
+			else
+				addExperience(ROLE_ENGINEER, rate, "hacking stat improvement");
+		}
+		if (exp->robotics && stats->robotics < caps.robotics)
+		{
+			stats->robotics += improveStat(exp->robotics, rate);
+			addExperience(ROLE_ENGINEER, rate, "robotics stat improvement");
+		}
+		if (exp->diligence && stats->diligence < caps.diligence)
+		{
+			stats->diligence += improveStat(exp->diligence, rate);
+			addExperience(ROLE_ENGINEER, rate, "diligence stat improvement");
+		}
+		if (exp->alienTech && stats->alienTech < caps.alienTech)
+		{
+			stats->alienTech += improveStat(exp->alienTech, rate);
+			addExperience(ROLE_ENGINEER, rate, "alienTech stat improvement");
+		}
+		if (exp->reverseEngineering && stats->reverseEngineering < caps.reverseEngineering)
+		{
+			stats->reverseEngineering += improveStat(exp->reverseEngineering, rate);
+			addExperience(ROLE_ENGINEER, rate, "reverseEngineering stat improvement");
+		}
+	}
+
+	//agent stats
+	{
+		if (exp->stealth && stats->stealth < caps.stealth)
+		{
+			stats->stealth += improveStat(exp->stealth, rate);
+			addExperience(ROLE_AGENT, rate, "stealth stat improvement");
+		}
+		if (exp->perception && stats->perception < caps.perception)
+		{
+			stats->perception += improveStat(exp->perception, rate);
+			addExperience(ROLE_AGENT, rate, "perception stat improvement");
+		}
+		if (exp->charisma && stats->charisma < caps.charisma)
+		{
+			stats->charisma += improveStat(exp->charisma, rate);
+			addExperience(ROLE_AGENT, rate, "charisma stat improvement");
+		}
+		if (exp->investigation && stats->investigation < caps.investigation)
+		{
+			stats->investigation += improveStat(exp->investigation, rate);
+			addExperience(ROLE_AGENT, rate, "investigation stat improvement");
+		}
+		if (exp->deception && stats->deception < caps.deception)
+		{
+			stats->deception += improveStat(exp->deception, rate);
+			addExperience(ROLE_AGENT, rate, "deception stat improvement");
+		}
+		if (exp->interrogation && stats->interrogation < caps.interrogation)
+		{
+			stats->interrogation += improveStat(exp->interrogation, rate);
+			addExperience(ROLE_AGENT, rate, "interrogation stat improvement");
+		}
+	}
+
+	_monthlyExperienceCache += *getCurrentStats() - origStats;
+}
+
+bool Soldier::rolePromoteSoldier(SoldierRole promotionRole)
+{
+	auto req = getRules()->getRoleExpRequirments();
+	bool promoted = false;
+	for (auto role : _roles)
+	{
+		for (auto roleReq : req)
+		{
+			if (role->role == roleReq->role && role->role == promotionRole)
+			{
+				std::map<int, int> expMap = roleReq->requirments;
+				if (role->role >= expMap.rbegin()->first + 1)
+					break; //we dont want to promote more, than we define in rules
+				for (auto exp : expMap)
+				{
+					if (role->rank == exp.first && role->experience >= exp.second)
+					{
+						addRole(role->role, 1);
+						role->experience -= exp.second;
+						promoted = true;
+						_recentlyPromoted = true; //for promotion screen
+						break;
+					}
+				}
+			}
+		}
+	}
+	return promoted;
+}
+
+/**
+ * Check if the soldier has all the required soldier bonuses for the given soldier skill.
+ * @param skillRules Skill rules.
+ */
+bool Soldier::hasAllRequiredBonusesForSkill(const RuleSkill* skillRules)
+{
+	for (auto* requiredBonusRule : skillRules->getRequiredBonuses())
+	{
+		bool found = false;
+		for (auto* bonusRule : *getBonuses(nullptr))
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+ */
+bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
+{
+	if (!_rules->getAllowPiloting())
+		return false;
+
+	const Craft* craft = newCraft ? newCraft : _craft;
+
+	if (!craft)
+		return false;
+
+	// Does this soldier meet the minimum stat requirements for piloting the current craft?
+	const UnitStats& currentStats = _tmpStatsWithAllBonuses; // all bonuses count
+	const UnitStats& minStats = craft->getRules()->getPilotMinStatsRequired();
+	if (currentStats.tu < minStats.tu ||
+		currentStats.stamina < minStats.stamina ||
+		currentStats.health < minStats.health ||
+		currentStats.bravery < minStats.bravery ||
+		currentStats.reactions < minStats.reactions ||
+		currentStats.firing < minStats.firing ||
+		currentStats.throwing < minStats.throwing ||
+		currentStats.melee < minStats.melee ||
+		currentStats.mana < minStats.mana ||
+		currentStats.strength < minStats.strength ||
+		currentStats.psiStrength < minStats.psiStrength ||
+		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0) || // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+		currentStats.maneuvering < minStats.maneuvering ||
+		currentStats.missiles < minStats.missiles ||
+		currentStats.dogfight < minStats.dogfight ||
+		currentStats.tracking < minStats.tracking ||
+		currentStats.cooperation < minStats.cooperation ||
+		currentStats.beams < minStats.beams ||
+		currentStats.synaptic < minStats.synaptic ||
+		currentStats.gravity < minStats.gravity ||
+		currentStats.physics < minStats.physics ||
+		currentStats.chemistry < minStats.chemistry ||
+		currentStats.biology < minStats.biology ||
+		currentStats.insight < minStats.insight ||
+		currentStats.data < minStats.data ||
+		currentStats.computers < minStats.computers ||
+		currentStats.tactics < minStats.tactics ||
+		currentStats.materials < minStats.materials ||
+		currentStats.designing < minStats.designing ||
+		currentStats.psionics < minStats.psionics ||
+		currentStats.xenolinguistics < minStats.xenolinguistics ||
+		currentStats.weaponry < minStats.weaponry ||
+		currentStats.explosives < minStats.explosives ||
+		currentStats.efficiency < minStats.efficiency ||
+		currentStats.microelectronics < minStats.microelectronics ||
+		currentStats.metallurgy < minStats.metallurgy ||
+		currentStats.processing < minStats.processing ||
+		currentStats.hacking < minStats.hacking ||
+		currentStats.robotics < minStats.robotics ||
+		currentStats.diligence < minStats.diligence ||
+		currentStats.alienTech < minStats.alienTech ||
+		currentStats.reverseEngineering < minStats.reverseEngineering ||
+		currentStats.stealth < minStats.stealth ||
+		currentStats.perception < minStats.perception ||
+		currentStats.charisma < minStats.charisma ||
+		currentStats.investigation < minStats.investigation ||
+		currentStats.deception < minStats.deception ||
+		currentStats.interrogation < minStats.interrogation)
+	{
+		return false;
+	}
+
+	// Does this soldier have all required soldier bonuses for piloting the current craft?
+	for (auto* requiredBonusRule : craft->getRules()->getPilotSoldierBonusesRequired())
+	{
+		bool found = false;
+		for (auto* bonusRule : _bonusCache) // *getBonuses(nullptr)
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+
+	// Does this soldier have all required soldier roles for piloting the current craft?
+	for (auto requiredRole : craft->getRules()->getPilotSoldierRolesRequired())
+	{
+		if (getRoleRank(requiredRole) <= 0)
+			return false;
+	}
+
+	return true;
 }
 
 

@@ -25,6 +25,7 @@
 
 namespace OpenXcom
 {
+class AlienDeployment;
 
 class TextButton;
 class Window;
@@ -33,6 +34,7 @@ class TextList;
 class BattleItem;
 class Craft;
 class Base;
+class CovertOperation;
 class Region;
 class Country;
 class RuleItem;
@@ -60,17 +62,18 @@ struct RecoveryItem { std::string name; int value; };
 class DebriefingState : public State
 {
 private:
-	typedef std::pair<std::string, UnitStats> SoldierStatsEntry;
+	typedef std::pair<Soldier *, UnitStats> SoldierStatsEntry;
 
 	RuleEvent *_eventToSpawn;
 	Region *_region;
 	Country *_country;
-	Base *_base;
+	Base *_base{};
+	AlienDeployment *_ruleDeploy;
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
-	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer;
+	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer, *_btnNonCombatStats;
 	Window *_window;
-	Text *_txtTitle, *_txtItem, *_txtQuantity, *_txtScore, *_txtRecovery, *_txtRating;
+	Text *_txtTitle, *_txtItem, *_txtQuantity, *_txtScore, *_txtRecovery, *_txtRating, *_txtLoyalty;
 	Text *_txtSoldier, *_txtTU, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions;
 	Text *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill;
 	TextList *_lstStats, *_lstRecovery, *_lstTotal, *_lstSoldierStats, *_lstRecoveredItems;
@@ -79,12 +82,16 @@ private:
 	std::vector<ReequipStat> _missingItems;
 	std::map<const RuleItem*, int> _rounds, _roundsPainKiller, _roundsStimulant, _roundsHeal, _recoveredItems;
 	Uint8 _ammoColor;
+	/// 0 = score, 1 = stat improvement, 2 = recovered items
+	int _pageNumber;
 	std::map<int, RecoveryItem*> _recoveryStats;
-	bool _positiveScore, _destroyBase, _promotions, _showSellButton, _initDone;
+	bool _positiveScore, _destroyBase, _promotions{}, _showSellButton, _initDone, _fta;
 	std::map<int, int>  _containmentStateInfo;
+	int _totalEvacObjs{}, _savedEvacObjs{}, _recoveredItemObjs;
 	int _limitsEnforced;
 	MissionStatistics *_missionStatistics;
 	std::vector<Soldier*> _soldiersCommended, _deadSoldiersCommended;
+	std::map<Soldier*, UnitStats> _nonComatStatIncreaseList;
 	/// Adds to the debriefing stats.
 	void addStat(const std::string &name, int quantity, int score);
 	/// Prepares debriefing.
@@ -98,10 +105,10 @@ private:
 	void recoverCivilian(BattleUnit *from, Base *base, Craft* craft);
 	/// Recovers an alien from the battlescape.
 	void recoverAlien(BattleUnit *from, Base *base, Craft* craft);
+	/// FTA method to recover prisners instead of items.
+	void recoverPrisoner(BattleUnit* from, Base* base);
 	/// Reequips a craft after a mission.
 	void reequipCraft(Base *base, Craft *craft, bool vehicleItemsCanBeDestroyed);
-	/// 0 = score, 1 = stat improvement, 2 = recovered items
-	int _pageNumber;
 	/// Sets the visibility according to the _pageNumber
 	void applyVisibility();
 	/// Creates a string for the soldier stats table from a stat difference value
@@ -121,6 +128,8 @@ public:
 	void btnSellClick(Action *action);
 	/// Handler for clicking the TRANSFER button.
 	void btnTransferClick(Action *action);
+	/// Handler for clicking the Non-combat stats button.
+	void btnNonCombatStatsClick(Action* action);
 	/// Handler for showing tooltip.
 	void txtTooltipIn(Action *action);
 	/// Handler for hiding tooltip.
@@ -133,6 +142,8 @@ public:
 	void decreaseRecoveredItemCount(const RuleItem *rule, int amount);
 	// Hides the SELL and TRANSFER buttons.
 	void hideSellTransferButtons();
+	// Gets the list of soldiers with increased non combat stats.
+	std::map<Soldier*, UnitStats> getNonCombatStatIncreaseList() { return _nonComatStatIncreaseList; }
 };
 
 }
