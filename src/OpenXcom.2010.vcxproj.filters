@@ -143,6 +143,24 @@
     <ClCompile Include="Menu\MainMenuState.cpp">
       <Filter>Menu</Filter>
     </ClCompile>
+    <ClCompile Include="Menu\MapEditorMenuState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\MapEditorFindNodeState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\MapEditorFindTileState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\MapEditorInfoState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\MapEditorOptionsState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
+    <ClCompile Include="Menu\MapEditorSetSizeState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
     <ClCompile Include="Menu\NewGameState.cpp">
       <Filter>Menu</Filter>
     </ClCompile>
@@ -260,6 +278,12 @@
     <ClCompile Include="Battlescape\Map.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
+    <ClCompile Include="Battlescape\MapEditor.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Battlescape\MapEditorState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
     <ClCompile Include="Savegame\SavedBattleGame.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
@@ -300,6 +324,9 @@
       <Filter>Battlescape</Filter>
     </ClCompile>
     <ClCompile Include="Savegame\ItemContainer.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
+    <ClCompile Include="Savegame\MapEditorSave.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
     <ClCompile Include="Battlescape\Projectile.cpp">
@@ -1409,6 +1436,9 @@
     <ClCompile Include="Basescape\ItemLocationsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
+    <ClCompile Include="Menu\FileBrowserState.cpp">
+      <Filter>Menu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -1565,6 +1595,24 @@
     <ClInclude Include="Menu\MainMenuState.h">
       <Filter>Menu</Filter>
     </ClInclude>
+    <ClInclude Include="Menu\MapEditorMenuState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\MapEditorFindNodeState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\MapEditorFindTileState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\MapEditorInfoState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\MapEditorOptionsState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\MapEditorSetSizeState.h">
+      <Filter>Menu</Filter>
+    </ClInclude>
     <ClInclude Include="Savegame\SavedGame.h">
       <Filter>Savegame</Filter>
     </ClInclude>
@@ -1679,6 +1727,12 @@
     <ClInclude Include="Battlescape\Map.h">
       <Filter>Battlescape</Filter>
     </ClInclude>
+    <ClInclude Include="Battlescape\MapEditor.h">
+      <Filter>Battlescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Battlescape\MapEditorState.h">
+      <Filter>Battlescape</Filter>
+    </ClInclude>
     <ClInclude Include="Savegame\SavedBattleGame.h">
       <Filter>Savegame</Filter>
     </ClInclude>
@@ -1725,6 +1779,9 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Savegame\ItemContainer.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\MapEditorSave.h">
       <Filter>Savegame</Filter>
     </ClInclude>
     <ClInclude Include="Battlescape\Projectile.h">
@@ -1818,9 +1875,6 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine\OXCCrypto.h">
-      <Filter>Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\tiny_aes.h">
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Battlescape\ActionMenuState.h">
@@ -3073,6 +3127,9 @@
     </ClInclude>
     <ClInclude Include="Engine\NullableValue.h">
       <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Menu\FileBrowserState.h">
+      <Filter>Menu</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

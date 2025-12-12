@@ -18,8 +18,7 @@
  */
 #include "MapEditorSave.h"
 #include <algorithm>
-#include <sstream>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Options.h"
@@ -58,19 +57,25 @@ void MapEditorSave::load()
     std::string filename = MAINSAVE_MAPEDITOR;
 	std::string filepath = Options::getMasterUserFolder() + filename;
 
-    if(CrossPlatform::fileExists(filepath))
-    {
-        std::vector<YAML::Node> file = YAML::LoadAll(*CrossPlatform::readFile(filepath));
-        YAML::Node doc = file[0];
+    _savedMapFiles.clear();
+    _matchedFiles.clear();
 
-        for (YAML::const_iterator it = doc["savedMapFiles"].begin(); it != doc["savedMapFiles"].end(); ++it)
+    if (!CrossPlatform::fileExists(filepath))
+    {
+        return;
+    }
+
+    YAML::YamlRootNodeReader reader(filepath);
+    if (const auto& savedFiles = reader["savedMapFiles"])
+    {
+        for (const auto& node : savedFiles.children())
         {
             MapFileInfo mapFile;
-            mapFile.name = (*it)["name"].as<std::string>();
-            mapFile.baseDirectory = (*it)["baseDirectory"].as<std::string>();
-            mapFile.mods = (*it)["mods"].as< std::vector<std::string> >();
-            mapFile.terrain = (*it)["terrain"].as<std::string>();
-            mapFile.mcds = (*it)["mcds"].as< std::vector<std::string> >();
+            node.readNode("name", mapFile.name, std::string());
+            node.readNode("baseDirectory", mapFile.baseDirectory, std::string());
+            node.readNode("mods", mapFile.mods, std::vector<std::string>());
+            node.readNode("terrain", mapFile.terrain, std::string());
+            node.readNode("mcds", mapFile.mcds, std::vector<std::string>());
 
             _savedMapFiles.push_back(mapFile);
         }
@@ -83,33 +88,23 @@ void MapEditorSave::load()
  */
 void MapEditorSave::save()
 {
-	YAML::Emitter out;
+    YAML::YamlRootNodeWriter writer;
+    writer.setAsMap();
 
-    // Saves the data on the edited maps
-    YAML::Node node;
-    for (auto mapFile : _savedMapFiles)
+    writer.write("savedMapFiles", _savedMapFiles, [](YAML::YamlNodeWriter& savedFiles, const MapFileInfo& mapFile)
     {
-        YAML::Node fileData;
-        fileData["name"] = mapFile.name;
-        fileData["baseDirectory"] = mapFile.baseDirectory;
-        for (auto mod : mapFile.mods)
-        {
-            fileData["mods"].push_back(mod);
-        }
-        fileData["terrain"] = mapFile.terrain;
-        for (auto mcd : mapFile.mcds)
-        {
-            fileData["mcds"].push_back(mcd);
-        }
-
-        node["savedMapFiles"].push_back(fileData);
-    }
-
-    out << node;
+        auto fileData = savedFiles.write();
+        fileData.setAsMap();
+        fileData.write("name", mapFile.name);
+        fileData.write("baseDirectory", mapFile.baseDirectory);
+        fileData.write("mods", mapFile.mods);
+        fileData.write("terrain", mapFile.terrain);
+        fileData.write("mcds", mapFile.mcds);
+    });
 
     std::string filename = MAINSAVE_MAPEDITOR;
 	std::string filepath = Options::getMasterUserFolder() + filename;
-	if (!CrossPlatform::writeFile(filepath, out.c_str()))
+	if (!CrossPlatform::writeFile(filepath, writer.emit().yaml))
 	{
 		throw Exception("Failed to save " + filepath);
 	}

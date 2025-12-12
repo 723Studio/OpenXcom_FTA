@@ -473,6 +473,8 @@
     <ClCompile Include="Battlescape\InventoryState.cpp" />
     <ClCompile Include="Battlescape\ItemSprite.cpp" />
     <ClCompile Include="Battlescape\Map.cpp" />
+    <ClCompile Include="Battlescape\MapEditor.cpp" />
+    <ClCompile Include="Battlescape\MapEditorState.cpp" />
     <ClCompile Include="Battlescape\MedikitState.cpp" />
     <ClCompile Include="Battlescape\MedikitView.cpp" />
     <ClCompile Include="Battlescape\MeleeAttackBState.cpp" />
@@ -635,6 +637,7 @@
     <ClCompile Include="Menu\AbandonGameState.cpp" />
     <ClCompile Include="Menu\ConfirmLoadState.cpp" />
     <ClCompile Include="Menu\CutsceneState.cpp" />
+    <ClCompile Include="Menu\FileBrowserState.cpp" />
     <ClCompile Include="Menu\ListGamesState.cpp" />
     <ClCompile Include="Menu\ListLoadOriginalState.cpp" />
     <ClCompile Include="Menu\ListLoadState.cpp" />
@@ -651,6 +654,12 @@
     <ClCompile Include="Menu\OptionsFoldersState.cpp" />
     <ClCompile Include="Menu\OptionsGeoscapeState.cpp" />
     <ClCompile Include="Menu\MainMenuState.cpp" />
+    <ClCompile Include="Menu\MapEditorMenuState.cpp" />
+    <ClCompile Include="Menu\MapEditorFindNodeState.cpp" />
+    <ClCompile Include="Menu\MapEditorFindTileState.cpp" />
+    <ClCompile Include="Menu\MapEditorInfoState.cpp" />
+    <ClCompile Include="Menu\MapEditorOptionsState.cpp" />
+    <ClCompile Include="Menu\MapEditorSetSizeState.cpp" />
     <ClCompile Include="Menu\NewBattleState.cpp" />
     <ClCompile Include="Menu\NewGameState.cpp" />
     <ClCompile Include="Menu\OptionsBaseState.cpp" />
@@ -754,6 +763,7 @@
     <ClCompile Include="Savegame\HitLog.cpp" />
     <ClCompile Include="Savegame\IntelProject.cpp" />
     <ClCompile Include="Savegame\ItemContainer.cpp" />
+    <ClCompile Include="Savegame\MapEditorSave.cpp" />
     <ClCompile Include="Savegame\MovingTarget.cpp" />
     <ClCompile Include="Savegame\Production.cpp" />
     <ClCompile Include="Savegame\RankCount.cpp" />
@@ -1009,6 +1019,8 @@
     <ClInclude Include="Battlescape\InventoryState.h" />
     <ClInclude Include="Battlescape\ItemSprite.h" />
     <ClInclude Include="Battlescape\Map.h" />
+    <ClInclude Include="Battlescape\MapEditor.h" />
+    <ClInclude Include="Battlescape\MapEditorState.h" />
     <ClInclude Include="Battlescape\MedikitState.h" />
     <ClInclude Include="Battlescape\MedikitView.h" />
     <ClInclude Include="Battlescape\MeleeAttackBState.h" />
@@ -1184,6 +1196,7 @@
     <ClInclude Include="Menu\AbandonGameState.h" />
     <ClInclude Include="Menu\ConfirmLoadState.h" />
     <ClInclude Include="Menu\CutsceneState.h" />
+    <ClInclude Include="Menu\FileBrowserState.h" />
     <ClInclude Include="Menu\ListGamesState.h" />
     <ClInclude Include="Menu\ListLoadOriginalState.h" />
     <ClInclude Include="Menu\ListLoadState.h" />
@@ -1200,6 +1213,12 @@
     <ClInclude Include="Menu\OptionsFoldersState.h" />
     <ClInclude Include="Menu\OptionsGeoscapeState.h" />
     <ClInclude Include="Menu\MainMenuState.h" />
+    <ClInclude Include="Menu\MapEditorMenuState.h" />
+    <ClInclude Include="Menu\MapEditorFindNodeState.h" />
+    <ClInclude Include="Menu\MapEditorFindTileState.h" />
+    <ClInclude Include="Menu\MapEditorInfoState.h" />
+    <ClInclude Include="Menu\MapEditorOptionsState.h" />
+    <ClInclude Include="Menu\MapEditorSetSizeState.h" />
     <ClInclude Include="Menu\NewBattleState.h" />
     <ClInclude Include="Menu\NewGameState.h" />
     <ClInclude Include="Menu\OptionsBaseState.h" />
@@ -1308,6 +1327,7 @@
     <ClInclude Include="Savegame\HitLog.h" />
     <ClInclude Include="Savegame\IntelProject.h" />
     <ClInclude Include="Savegame\ItemContainer.h" />
+    <ClInclude Include="Savegame\MapEditorSave.h" />
     <ClInclude Include="Savegame\MissionStatistics.h" />
     <ClInclude Include="Savegame\MovingTarget.h" />
     <ClInclude Include="Savegame\Production.h" />
