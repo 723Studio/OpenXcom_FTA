@@ -106,7 +106,9 @@ namespace OpenXcom
  * @param visibleMapHeight Current visible map height.
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
-	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _hackingObjectPointer(0), _samplingObjectPointer(0), _missionPointer(0), _isAltPressed(false), _isCtrlPressed(false),
+	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false),
+	_hackingObjectPointer(0), _samplingObjectPointer(0), _missionPointer(0), _missionKillPointer(0),
+	_isAltPressed(false), _isCtrlPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
@@ -351,6 +353,29 @@ void Map::init()
 		_samplingObjectPointer->unlock();
 	}
 
+	// load tile mission pointer into a surface
+	{
+		int f = Palette::blockOffset(2); // red
+		int b = 15;                       // black
+		int pixels[81] = {0, 0, b, b, b, b, b, 0, 0,
+						  0, 0, b, f, f, f, b, 0, 0,
+						  0, 0, b, f, f, f, b, 0, 0,
+						  b, b, b, f, f, f, b, b, b,
+						  b, f, f, f, f, f, f, f, b,
+						  0, b, f, f, f, f, f, b, 0,
+						  0, 0, b, f, f, f, b, 0, 0,
+						  0, 0, 0, b, f, b, 0, 0, 0,
+						  0, 0, 0, 0, b, 0, 0, 0, 0};
+
+		_missionKillPointer = new Surface(9, 9);
+		_missionKillPointer->setPalette(this->getPalette());
+		_missionKillPointer->lock();
+		for (int y = 0; y < 9; ++y)
+			for (int x = 0; x < 9; ++x)
+				_missionKillPointer->setPixel(x, y, pixels[x + (y * 9)]);
+		_missionKillPointer->unlock();
+	}
+	
 	_projectile = 0;
 	if (_save->getDepth() == 0)
 	{
@@ -1111,6 +1136,23 @@ void Map::drawTerrain(Surface *surface)
 								else
 									Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT), tileShade, false, _nvColor);
 							}
+							//draw arrow indicator if the tile object is a mission objective
+							if (tile->getObjectSpecialTileType() == MUST_DESTROY || tile->getObjectSpecialTileType() == _save->getAlienDeploymet()->getObjectiveType())
+							{
+								Position pos = tile->getPosition();
+								if (pos.z <= _camera->getViewLevel() && tile->getUnit() == 0 && tile->isDiscovered(O_FLOOR))
+								{
+									_camera->convertMapToScreen(pos, &screenPosition);
+									screenPosition += _camera->getMapOffset();
+									Position offset;
+									offset.y += 5; //(getTerrainLevel(pos, 10) - 4);
+									if (this->getCursorType() != CT_NONE)
+									{
+										_missionKillPointer->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_missionKillPointer->getWidth() / 2), screenPosition.y + offset.y - _missionKillPointer->getHeight() + getArrowBobForFrame(_animFrame), 0);
+									}
+								}
+							}
+							
 						}
 						// draw an item on top of the floor (if any)
 						BattleItem* item = tile->getTopItem();
