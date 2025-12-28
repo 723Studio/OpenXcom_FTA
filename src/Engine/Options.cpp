@@ -85,9 +85,9 @@ void create()
 	//					OTHER - your fork name here
 	////////////////////////////////////////////////////////////
 
-	createOptionsOTHER();
-	createAdvancedOptionsOTHER();
-	createControlsOTHER();
+	createOptionsFTA();
+	createAdvancedOptionsFTA();
+	createControlsFTA();
 }
 
 void createOptionsOXC()
@@ -510,7 +510,7 @@ void createControlsOXCE()
 
 	// OXCE controls basescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeBuildNewBase", &keyBasescapeBuildNewBase, SDLK_n, "STR_BUILD_NEW_BASE_UC", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeBaseInformation", &keyBasescapeBaseInfo, SDLK_i, "STR_BASE_INFORMATION", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeBaseInformation", &keyBasescapeBaseInfo, SDLK_b, "STR_BASE_INFORMATION", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeSoldiers", &keyBasescapeSoldiers, SDLK_s, "STR_SOLDIERS_UC", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeEquipCraft", &keyBasescapeCrafts, SDLK_e, "STR_EQUIP_CRAFT", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBasescapeBuildFacilities", &keyBasescapeFacilities, SDLK_f, "STR_BUILD_FACILITIES", "STR_BASESCAPE"));
@@ -561,20 +561,23 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keySelectMusicTrack", &keySelectMusicTrack, SDLK_END, "STR_SELECT_MUSIC_TRACK", "STR_BATTLESCAPE"));
 }
 
-void createOptionsOTHER()
+void createOptionsFTA()
 {
-	_info.push_back(OptionInfo(OPTION_OTHER, "containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "containmentLimitsEnforced", &containmentLimitsEnforced, false, "STR_CONTAINMENTLIMITSENFORCED", "STR_GEOSCAPE"));
 }
 
-void createAdvancedOptionsOTHER()
+void createAdvancedOptionsFTA()
 {
 	// your fork's advanced options here
 }
 
-void createControlsOTHER()
+void createControlsFTA()
 {
-	_info.push_back(OptionInfo(OPTION_OTHER, "keyGeoDiplomacy", &keyDiplomacy, SDLK_d, "STR_DIPLOMACY_UC", "STR_GEOSCAPE"));
-	_info.push_back(OptionInfo(OPTION_OTHER, "keyBasescapeCovertOperations", &keyBasescapeCovertOperations, SDLK_c, "STR_COVERT_OPERATIONS_UC", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "keyGeoDiplomacy", &keyDiplomacy, SDLK_d, "STR_DIPLOMACY_UC", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "keyGeoIntelligence", &keyBasescapeIntel, SDLK_i, "STR_INTELLIGENCE_UC", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "keyBasescapeCovertOperations", &keyBasescapeCovertOperations, SDLK_c, "STR_COVERT_OPERATIONS_UC", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "keyBasescapePrison", &keyBasescapePrison, SDLK_p, "STR_PRISON_UC", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_FTA, "keyBasescapeAlienContainment", &keyBasescapeAlienContainment, SDLK_a, "STR_ALIEN_CONTAINMENT_UC", "STR_BASESCAPE"));
 }
 
 

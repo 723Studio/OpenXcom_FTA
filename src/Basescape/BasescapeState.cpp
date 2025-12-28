@@ -172,6 +172,8 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	_view->onMouseClick((ActionHandler)&BasescapeState::viewMiddleClick, SDL_BUTTON_MIDDLE);
 	_view->onMouseOver((ActionHandler)&BasescapeState::viewMouseOver);
 	_view->onMouseOut((ActionHandler)&BasescapeState::viewMouseOut);
+	_view->onKeyboardPress((ActionHandler)&BasescapeState::btnPrisonClick, Options::keyBasescapePrison);
+	_view->onKeyboardPress((ActionHandler)&BasescapeState::btnAlienContainmentClick, Options::keyBasescapeAlienContainment);
 
 	_mini->setTexture(_game->getMod()->getSurfaceSet("BASEBITS.PCK"));
 	_mini->setBases(_game->getSavedGame()->getBases());
@@ -604,7 +606,7 @@ void BasescapeState::viewRightClick(Action *)
 	{
 		switch (f->getRules()->getRightClickActionType())
 		{
-			case 1:_game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE));break;
+			case 1: _game->pushState(new ManageAlienContainmentState(_base, f->getRules()->getPrisonType(), OPT_GEOSCAPE)); break;
 			case 2: _game->pushState(new ManufactureState(_base)); break;
 			case 3: _game->pushState(new ResearchState(_base)); break;
 			case 4: _game->pushState(new AllocateTrainingState(_base)); break;
@@ -792,6 +794,16 @@ void BasescapeState::handleKeyPress(Action *action)
 			}
 		}
 	}
+}
+
+void BasescapeState::btnPrisonClick(Action*)
+{
+	_game->pushState(new PrisonManagementState(_base));
+}
+
+void BasescapeState::btnAlienContainmentClick(Action*)
+{
+	_game->pushState(new ManageAlienContainmentState(_base, 0, OPT_GEOSCAPE));
 }
 
 /**

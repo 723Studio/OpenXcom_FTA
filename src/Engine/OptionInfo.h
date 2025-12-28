@@ -26,7 +26,7 @@ namespace OpenXcom
 {
 
 enum OptionType { OPTION_BOOL, OPTION_INT, OPTION_STRING, OPTION_KEY };
-enum OptionOwner { OPTION_OXC, OPTION_OXCE, OPTION_OTHER, OPTION_OWNER_MAX };
+enum OptionOwner { OPTION_OXC, OPTION_OXCE, OPTION_FTA, OPTION_OWNER_MAX };
 
 /**
  * Helper class that ties metadata to particular options to help in serializing
