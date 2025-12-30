@@ -90,8 +90,6 @@
 #include "../Mod/RuleVideo.h"
 #include "../Savegame/ItemContainer.h"
 
-#include <algorithm>
-
 namespace OpenXcom
 {
 

@@ -19,15 +19,12 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
-#include <iomanip>
 #include <SDL_gfxPrimitives.h>
 #include "Map.h"
 #include "Camera.h"
-#include "TileEngine.h"
 #include "MapEditor.h"
 #include "MapEditorState.h"
 #include "WarningMessage.h"
-#include "../lodepng.h"
 #include "../fmath.h"
 #include "../Geoscape/SelectMusicTrackState.h"
 #include "../Engine/Game.h"
@@ -37,17 +34,13 @@
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/Screen.h"
-#include "../Engine/Sound.h"
 #include "../Engine/Action.h"
-#include "../Engine/Script.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Timer.h"
-#include "../Engine/CrossPlatform.h"
 #include "../Interface/BattlescapeButton.h"
 #include "../Interface/ComboBox.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
-#include "../Interface/TextButton.h"
 #include "../Menu/FileBrowserState.h"
 #include "../Menu/MapEditorMenuState.h"
 #include "../Menu/MapEditorFindTileState.h"
@@ -63,7 +56,6 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
 #include "../Mod/RuleInterface.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
