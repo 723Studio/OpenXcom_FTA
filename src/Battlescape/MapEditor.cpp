@@ -75,6 +75,10 @@ void MapEditor::init()
     _tileRegisterPosition = 0;
     _nodeRegisterPosition = 0;
     _numberOfActiveNodes = 0;
+
+    _lightingDirty = false;
+    _lightingDirtyMin = Position(0, 0, 0);
+    _lightingDirtyMax = Position(0, 0, 0);
 }
 
 /**
@@ -107,7 +111,7 @@ void MapEditor::changeTileData(EditType action, Tile *tile, int dataIDs[4], int 
                 mapData = _save->getMapDataSets()->at(dataSetIDs[partIndex])->getObject((size_t)dataIDs[partIndex]);
             }
             tile->setMapData(mapData, dataIDs[partIndex], dataSetIDs[partIndex], (TilePart)part);
-            
+
             // make sure doors don't animate
             if (tile->isUfoDoor(part))
             {
@@ -125,8 +129,43 @@ void MapEditor::changeTileData(EditType action, Tile *tile, int dataIDs[4], int 
         _proposedTileEdits.push_back(change);
     }
 
-    // Recalculate lighting so it updates properly for display
-    _save->getTileEngine()->calculateLighting(LL_AMBIENT, tile->getPosition(), 1, true);
+    // mark dirty region so we can batch a single lighting recalculation later
+    if (!change.isEditEmpty())
+    {
+        markLightingDirty(tile->getPosition());
+    }
+}
+
+void MapEditor::markLightingDirty(const Position &pos)
+{
+    if (!_lightingDirty)
+    {
+        _lightingDirtyMin = pos;
+        _lightingDirtyMax = pos;
+        _lightingDirty = true;
+        return;
+    }
+
+    if (pos.x < _lightingDirtyMin.x) _lightingDirtyMin.x = pos.x;
+    if (pos.y < _lightingDirtyMin.y) _lightingDirtyMin.y = pos.y;
+    if (pos.z < _lightingDirtyMin.z) _lightingDirtyMin.z = pos.z;
+
+    if (pos.x > _lightingDirtyMax.x) _lightingDirtyMax.x = pos.x;
+    if (pos.y > _lightingDirtyMax.y) _lightingDirtyMax.y = pos.y;
+    if (pos.z > _lightingDirtyMax.z) _lightingDirtyMax.z = pos.z;
+}
+
+void MapEditor::flushLighting()
+{
+    if (!_lightingDirty)
+    {
+        return;
+    }
+
+    // Recalculate lighting for the whole map to match in-game behavior
+    _save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
+
+    _lightingDirty = false;
 }
 
 /**
@@ -232,9 +271,9 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
                 Position pos = Position(data.at(0), data.at(1), data.at(2));
                 node->setPosition(pos);
             }
-        
+
             break;
-        
+
         case NCT_TYPE:
             {
                 change.nodeBeforeData.push_back(node->getType());
@@ -242,9 +281,9 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
 
                 node->setType(data.at(0));
             }
-        
+
             break;
-        
+
         case NCT_RANK:
             {
                 change.nodeBeforeData.push_back(node->getRank());
@@ -254,7 +293,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         case NCT_FLAG:
             {
                 change.nodeBeforeData.push_back(node->getFlags());
@@ -264,7 +303,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         case NCT_PRIORITY:
             {
                 change.nodeBeforeData.push_back(node->getPriority());
@@ -274,7 +313,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         case NCT_RESERVED:
             {
                 change.nodeBeforeData.push_back(node->isTarget() ? 5 : 0);
@@ -284,7 +323,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         case NCT_LINKS:
             {
                 change.nodeBeforeData.push_back(data.at(0));
@@ -296,7 +335,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         case NCT_LINKTYPES:
             {
                 change.nodeBeforeData.push_back(data.at(0));
@@ -308,7 +347,7 @@ void MapEditor::changeNodeData(EditType action, Node *node, NodeChangeType chang
             }
 
             break;
-        
+
         default:
 
             break;
@@ -342,6 +381,8 @@ void MapEditor::confirmChanges(bool nodeChange)
         }
 
         _proposedTileEdits.clear();
+
+        flushLighting();
     }
     else
     {
@@ -395,6 +436,8 @@ void MapEditor::undoRedoTiles(EditType action)
             _selectedTiles.push_back(tile);
         }
     }
+
+    flushLighting();
 }
 
 /**
@@ -830,7 +873,7 @@ size_t MapEditor::searchForMapFileInfo(std::string filePath)
     MapFileInfo fileInfo;
     fileInfo.baseDirectory = getBaseDirectory(filePath);
     fileInfo.name = CrossPlatform::noExt(CrossPlatform::baseFilename(filePath));
-    
+
     return _mapSave->findMatchingFiles(&fileInfo);
 }
 
@@ -1185,7 +1228,7 @@ std::string MapEditor::getBaseDirectory(std::string fullPath)
         filePath = "";
     }
 
-    return filePath; 
+    return filePath;
 }
 
 /**

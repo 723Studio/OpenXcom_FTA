@@ -127,6 +127,11 @@ private :
     int _numberOfActiveNodes;
     std::map< int, int > _connectionIndexMap;
     std::vector<std::string> _messages;
+    bool _lightingDirty;
+    Position _lightingDirtyMin, _lightingDirtyMax;
+
+    void markLightingDirty(const Position &pos);
+    void flushLighting();
 
 public :
     /// Creates the Map Editor
