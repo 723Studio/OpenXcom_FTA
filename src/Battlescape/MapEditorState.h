@@ -190,6 +190,8 @@ public:
 	void toggleRouteMode(Action *action);
 	/// Toggles the node information panel on or off.
 	void toggleNodeInfoPanel(Action *action, bool hide = false);
+	/// Mouse click handler wrapper for toggling the node info panel.
+	void toggleNodeInfoPanelClick(Action *action);
 	/// Sets the route mode either on or off.
 	void setRouteMode(bool routeMode);
 	/// Gets whether route mode is on or off.

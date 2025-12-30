@@ -662,14 +662,14 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_btnFindNode->setVisible(false);
 
 	//_btnRouteInformation->setText(tr("STR_INFO"));
-	_btnRouteInformation->onMouseClick((ActionHandler)&MapEditorState::toggleNodeInfoPanel);
+	_btnRouteInformation->onMouseClick((ActionHandler)&MapEditorState::toggleNodeInfoPanelClick);
 	_btnRouteInformation->setTooltip("STR_TOOLTIP_NODE_INFO");
 	_btnRouteInformation->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnRouteInformation->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 	_btnRouteInformation->setVisible(false);
 
 	//_btnRouteConnections->setText(tr("STR_LINKS"));
-	_btnRouteConnections->onMouseClick((ActionHandler)&MapEditorState::toggleNodeInfoPanel);
+	_btnRouteConnections->onMouseClick((ActionHandler)&MapEditorState::toggleNodeInfoPanelClick);
 	_btnRouteConnections->setTooltip("STR_TOOLTIP_NODE_LINK");
 	_btnRouteConnections->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnRouteConnections->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
@@ -971,7 +971,7 @@ void MapEditorState::think()
 			{
 				_btnCopy->offset(232 - 8, 0, 255, 1);
 				_btnCopy->setColor(232); // change to default color
-			}	
+			}
 		}
 
 		if (_editor->getClipboardTileEdits()->empty() && _btnPaste->getColor() != 8)
@@ -1013,7 +1013,7 @@ void MapEditorState::think()
 			{
 				_btnNodeCopy->offset(232 - 8, 0, 255, 1);
 				_btnNodeCopy->setColor(232); // change to default color
-			}	
+			}
 		}
 
 		if (_editor->getClipboardNodeEdits()->empty() && _btnNodePaste->getColor() != 8)
@@ -1321,7 +1321,7 @@ void MapEditorState::mapClick(Action *action)
 			bool newMode = _nodeEditMode == _btnNodeNew;
 			// switch between new/delete mode if the ALT button is held and that option is turned on
 			newMode = (altPressed && Options::mapEditorHoldAltToToggleModeSwitch) ? !newMode : newMode;
-			
+
 			// new node mode: create new node, move, or make links
 			if (newMode)
 			{
@@ -1921,7 +1921,7 @@ void MapEditorState::btnTileFilterClick(Action *action)
 		_btnTileFilterWestWall->setGroup(0);
 		_btnTileFilterNorthWall->setGroup(0);
 		_btnTileFilterObject->setGroup(0);
-		
+
 		action->getDetails()->type = SDL_MOUSEBUTTONUP;
 		_tileObjectSelected->toggle(false);
 		_tileObjectSelected->mouseRelease(action, this);
@@ -2072,7 +2072,7 @@ void MapEditorState::cbxNodeRankChange(Action *action)
 	{
 		return;
 	}
-	
+
 	size_t selIdx = _cbxNodeRank->getSelected();
 	std::vector<int> data;
 	data.push_back((int)selIdx);
@@ -2093,7 +2093,7 @@ void MapEditorState::cbxNodeFlagChange(Action *action)
 	{
 		return;
 	}
-	
+
 	size_t selIdx = _cbxNodeFlag->getSelected();
 	std::vector<int> data;
 	data.push_back((int)selIdx);
@@ -2114,7 +2114,7 @@ void MapEditorState::cbxNodePriorityChange(Action *action)
 	{
 		return;
 	}
-	
+
 	size_t selIdx = _cbxNodePriority->getSelected();
 	std::vector<int> data;
 	data.push_back((int)selIdx);
@@ -2135,7 +2135,7 @@ void MapEditorState::cbxNodeReservedChange(Action *action)
 	{
 		return;
 	}
-	
+
 	size_t selIdx = _cbxNodeReserved->getSelected();
 	std::vector<int> data;
 	data.push_back((int)selIdx);
@@ -2156,7 +2156,7 @@ void MapEditorState::cbxNodeLinksChange(Action *action)
 	{
 		return;
 	}
-	
+
 	int linkID;
 	for (linkID = 0; linkID < 5; ++linkID)
 	{
@@ -2202,7 +2202,7 @@ void MapEditorState::cbxNodeLinkTypesChange(Action *action)
 	{
 		return;
 	}
-	
+
 	int linkID;
 	for (linkID = 0; linkID < 5; ++linkID)
 	{
@@ -2532,7 +2532,7 @@ void MapEditorState::toggleRouteMode(Action *action)
 	// the held down node edit button will stay visible unless ungrouped
 	_nodeEditMode->setGroup(getRouteMode() ? &_nodeEditMode : 0);
 	if (!getRouteMode())
-	{		
+	{
 		action->getDetails()->type = SDL_MOUSEBUTTONUP;
 		_nodeEditMode->toggle(false);
 		_nodeEditMode->mouseRelease(action, this);
@@ -2550,7 +2550,7 @@ void MapEditorState::toggleRouteMode(Action *action)
 	// the held down node filter button will stay visible unless ungrouped
 	_nodeFilterMode->setGroup(getRouteMode() ? &_nodeFilterMode : 0);
 	if (!getRouteMode())
-	{		
+	{
 		action->getDetails()->type = SDL_MOUSEBUTTONUP;
 		_nodeFilterMode->toggle(false);
 		_nodeFilterMode->mouseRelease(action, this);
@@ -2581,6 +2581,14 @@ void MapEditorState::toggleRouteMode(Action *action)
 
 	// clear any waypoints we made for moving multiple nodes
 	_map->getWaypoints()->clear();
+}
+
+/**
+ * Mouse click handler for toggling the node info panel.
+ */
+void MapEditorState::toggleNodeInfoPanelClick(Action *action)
+{
+	toggleNodeInfoPanel(action, false);
 }
 
 /**
@@ -2740,7 +2748,7 @@ void MapEditorState::updateNodePanels()
 	}
 	else
 	{
-		_txtNodeID->setText(tr("STR_NODE_ID").arg(emptyString).arg(Position(-1, -1, -1)));			
+		_txtNodeID->setText(tr("STR_NODE_ID").arg(emptyString).arg(Position(-1, -1, -1)));
 	}
 
 	_cbxNodeType->setOptions(_nodeTypeStrings, true);
@@ -2768,7 +2776,7 @@ void MapEditorState::updateNodePanels()
 	for (int i = 0; i < 5; ++i)
 	{
 		_cbxNodeLinks.at(i)->setOptions(linkChoices, true);
-		_cbxNodeLinkTypes.at(i)->setOptions(_nodeTypeStrings, true);		
+		_cbxNodeLinkTypes.at(i)->setOptions(_nodeTypeStrings, true);
 	}
 
 
@@ -3243,12 +3251,12 @@ void MapEditorState::stopSelections(Action *action, bool selectAll, bool deselec
 							for (int i = 0; i < O_MAX; ++i)
 							{
 								tile->setObstacle(i);
-							}							
+							}
 						}
 					}
 				}
 			}
-		}		
+		}
 	}
 
 	if (getRouteMode() || !Options::mapEditorSelectedTilesKeepFlashing || deselectAll)
@@ -3348,8 +3356,8 @@ Position MapEditorState::validateNodePosition(Node *node, Position newPosition)
 							validatedPosition = pos;
 							overlap = false;
 						}
-					}				
-				}				
+					}
+				}
 			}
 
 			if (overlap) // why did you fill up the entire map with nodes then try to paste more?!?
@@ -3498,7 +3506,7 @@ void MapEditorState::clearSelectionContents()
 			_editor->changeTileData(MET_DO, tile, dataIDs, dataSetIDs);
 		}
 
-		_editor->confirmChanges(false);	
+		_editor->confirmChanges(false);
 	}
 }
 
@@ -3537,7 +3545,7 @@ void MapEditorState::pasteFromClipboard()
 		// now get the offset between where the nodes originally were when copied and where the should go by the click position
 		_map->getSelectorPosition(&pasteOffset);
 		pasteOffset -= clipboardBasePosition;
-	
+
 		// place the nodes according to our offset
 		std::vector<Node*> pastedNodes;
 		pastedNodes.clear();
@@ -3594,7 +3602,7 @@ void MapEditorState::pasteFromClipboard()
 		{
 			clipboardBasePosition.x = std::min(clipboardBasePosition.x, change.position.x);
 			clipboardBasePosition.y = std::min(clipboardBasePosition.y, change.position.y);
-			clipboardBasePosition.z = std::min(clipboardBasePosition.z, change.position.z);	
+			clipboardBasePosition.z = std::min(clipboardBasePosition.z, change.position.z);
 		}
 
 		// now figure out our reference position for either our cursor or any tiles we currently have selected
@@ -3607,7 +3615,7 @@ void MapEditorState::pasteFromClipboard()
 			{
 				pasteOffset.x = std::min(pasteOffset.x, tile->getPosition().x);
 				pasteOffset.y = std::min(pasteOffset.y, tile->getPosition().y);
-				pasteOffset.z = std::min(pasteOffset.z, tile->getPosition().z);				
+				pasteOffset.z = std::min(pasteOffset.z, tile->getPosition().z);
 			}
 		}
 		pasteOffset -= clipboardBasePosition;
