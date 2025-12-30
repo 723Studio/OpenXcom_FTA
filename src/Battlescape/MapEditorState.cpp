@@ -464,13 +464,13 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_btnRedo->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 
 	_btnFill->onMouseClick((ActionHandler)&MapEditorState::btnFillClick);
-	//_btnFill->onKeyboardPress((ActionHandler)&MapEditorState::btnFillClick, SDLK_z); // change to options
+	_btnFill->onKeyboardPress((ActionHandler)&MapEditorState::btnFillClick, SDLK_a); // change to options
 	_btnFill->setTooltip("STR_TOOLTIP_FILL");
 	_btnFill->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnFill->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 
 	_btnClear->onMouseClick((ActionHandler)&MapEditorState::btnClearClick);
-	//_btnClear->onKeyboardPress((ActionHandler)&MapEditorState::btnClearClick, SDLK_z); // change to options
+	_btnClear->onKeyboardPress((ActionHandler)&MapEditorState::btnClearClick, SDLK_d); // change to options
 	_btnClear->setTooltip("STR_TOOLTIP_CLEAR");
 	_btnClear->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnClear->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
@@ -576,7 +576,7 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_backgroundTileSelectionNavigation->setVisible(false);
 
 	_btnModeSwitch->onMouseClick((ActionHandler)&MapEditorState::btnModeSwitchClick);
-	//_btnOptions->onKeyboardPress((ActionHandler)&MapEditorState::btnOptionsClick, Options::keyBattleOptions);
+	_btnModeSwitch->onKeyboardPress((ActionHandler)&MapEditorState::btnModeSwitchClick, SDLK_TAB);
 	_btnModeSwitch->setTooltip("STR_TOOLTIP_SWITCH_MODES");
 	_btnModeSwitch->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnModeSwitch->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
@@ -595,14 +595,14 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_iconsUpperLeftNodes->setVisible(false);
 
 	_btnNodeNew->onMouseClick((ActionHandler)&MapEditorState::btnNodeNewClick);
-	//_btnNodeNew->onKeyboardPress((ActionHandler)&MapEditorState::btnNodeNewClick, SDLK_1); // change to options
+	_btnNodeNew->onKeyboardPress((ActionHandler)&MapEditorState::btnNodeNewClick, SDLK_a); // change to options
 	_btnNodeNew->setTooltip("STR_TOOLTIP_NODE_NEW");
 	_btnNodeNew->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnNodeNew->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 	_btnNodeNew->setVisible(false);
 
 	_btnNodeDelete->onMouseClick((ActionHandler)&MapEditorState::btnNodeDeleteClick);
-	//_btnNodeDelete->onKeyboardPress((ActionHandler)&MapEditorState::btnNodeDeleteClick, SDLK_1); // change to options
+	_btnNodeDelete->onKeyboardPress((ActionHandler)&MapEditorState::btnNodeDeleteClick, SDLK_d); // change to options
 	_btnNodeDelete->setTooltip("STR_TOOLTIP_NODE_DELETE");
 	_btnNodeDelete->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnNodeDelete->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
