@@ -2301,20 +2301,22 @@ void Map::drawForMapEditor(Surface *surface, bool beforeTerrain)
 				continue;
 			}
 
-			// Add numbers over each node to indicate their ID
-			int off = node->getID() > 9 ? 5 : 3;
+			int off = node->getPriority() > 9 ? 5 : 3;
 			_numWaypid->setBordered(true);
-			_numWaypid->setValue(node->getID());
+			_numWaypid->setValue(node->getPriority());
 			_numWaypid->draw();
 			_numWaypid->blitNShade(surface, screenPosition.x + 16 - off, screenPosition.y + 29, 0, false, 0);
 
-			// Add numbers for spawn priority and rank
-			_numWaypid->setValue(node->getPriority());
-			_numWaypid->draw();
-			_numWaypid->blitNShade(surface, screenPosition.x + 3, screenPosition.y + 16, 0, false, 0);
 			_numWaypid->setValue(node->getRank());
 			_numWaypid->draw();
-			_numWaypid->blitNShade(surface, screenPosition.x + 3, screenPosition.y + 16 + 8, 0, false, 0);
+			_numWaypid->blitNShade(surface, screenPosition.x + 3, screenPosition.y + 16 + 8, 0, false, 1);
+
+			if (isAltPressed())
+			{
+				_numWaypid->setValue(node->getID());
+				_numWaypid->draw();
+				_numWaypid->blitNShade(surface, screenPosition.x + 3, screenPosition.y + 16, 0, false, 0);
+			}
 		}
 	}
 	else
