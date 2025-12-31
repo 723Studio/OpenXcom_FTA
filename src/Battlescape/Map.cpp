@@ -1158,7 +1158,7 @@ void Map::drawTerrain(Surface *surface)
 									Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT), tileShade, false, _nvColor);
 							}
 							//draw arrow indicator if the tile object is a mission objective
-							if (tile->getObjectSpecialTileType() == MUST_DESTROY || tile->getObjectSpecialTileType() == _save->getAlienDeploymet()->getObjectiveType())
+							if (tile->getObjectSpecialTileType() == MUST_DESTROY || (_save->getAlienDeploymet() && (tile->getObjectSpecialTileType() == _save->getAlienDeploymet()->getObjectiveType())))
 							{
 								Position pos = tile->getPosition();
 								if (pos.z <= _camera->getViewLevel() && tile->getUnit() == 0 && tile->isDiscovered(O_FLOOR))
