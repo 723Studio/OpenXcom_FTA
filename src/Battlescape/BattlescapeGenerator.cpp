@@ -1978,18 +1978,33 @@ BattleUnit *BattlescapeGenerator::addAlien(Unit *rules, int alienRank, bool outs
 	BattleUnit *unit = _save->createTempUnit(rules, FACTION_HOSTILE, _unitSequence++);
 	Node *node = 0;
 
-	// safety to avoid index out of bounds errors
-	if (alienRank > 7)
-		alienRank = 7;
 	/* following data is the order in which certain alien ranks spawn on certain node ranks */
 	/* note that they all can fall back to rank 0 nodes - which is scout (outside ufo) */
 
-	for (int i = 0; i < 7 && node == 0; ++i)
+	if (outside)
 	{
-		if (outside)
-			node = _save->getSpawnNode(0, unit); // when alien is instructed to spawn outside, we only look for node 0 spawnpoints
-		else
-			node = _save->getSpawnNode(Node::nodeRank[alienRank][i], unit);
+		node = _save->getSpawnNode(NR_SCOUT, unit); // outside: only scout nodes
+	}
+	else
+	{
+		const auto &rankMap = Node::nodeRankMap;
+		int clampedRank = alienRank;
+		if (clampedRank < 0) clampedRank = 0;
+		else if (!rankMap.empty() && clampedRank >= (int)rankMap.size()) clampedRank = (int)rankMap.size() - 1; // safety to avoid OOB
+
+		const std::vector<int> *choices = nullptr;
+		if (!rankMap.empty())
+		{
+			choices = &rankMap[clampedRank];
+		}
+		static const std::vector<int> fallback{ NR_SCOUT };
+		if (!choices || choices->empty()) choices = &fallback;
+
+		for (int preferred : *choices)
+		{
+			node = _save->getSpawnNode(preferred, unit);
+			if (node) break;
+		}
 	}
 
 	int aliensFacingCraftOdds = 20 * _game->getSavedGame()->getDifficultyCoefficient();
