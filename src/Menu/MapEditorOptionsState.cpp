@@ -98,7 +98,7 @@ MapEditorOptionsState::MapEditorOptionsState(OptionsOrigin origin, State *parent
 	_btnSave->setText(tr("STR_SAVE_MAP"));
 	_btnSave->onMouseClick((ActionHandler)&MapEditorOptionsState::btnSaveClick);
 
-	_btnAbandon->setText(tr("STR_ABANDON_GAME"));
+	_btnAbandon->setText(tr("STR_EXIT_MAP"));
 	_btnAbandon->onMouseClick((ActionHandler)&MapEditorOptionsState::btnAbandonClick);
 
 	_btnOptions->setText(tr("STR_GAME_OPTIONS"));

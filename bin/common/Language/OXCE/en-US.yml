@@ -730,6 +730,7 @@ en-US:
   STR_MAP_INFO: "MAP INFORMATION"
   STR_LOAD_MAP: "LOAD MAP"
   STR_SAVE_MAP: "SAVE MAP"
+  STR_EXIT_MAP: "EXIT MAP"
   STR_DRAG_SELECT_PAINTING: "Drag-selection only along cursor path"
   STR_DRAG_SELECT_PAINTING_DESC: "If enabled, selecting multiple tiles/nodes by holding the left mouse button will only consider the position immediately under the cursor instead of drawing a box between the starting point and the cursor."
   STR_RIGHT_CLICK_DRAG_SELECT: "Right mouse button drag-selects"
