@@ -63,7 +63,8 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack;
 OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers, keyBasescapeCrafts,
 	keyBasescapeFacilities, keyBasescapeResearch, keyBasescapeManufacture, keyBasescapeTransfer,
-	keyBasescapePurchase, keyBasescapeSell, keyBasescapeCovertOperations, keyBasescapeDiplomacy, keyBasescapeIntel;
+	keyBasescapePurchase, keyBasescapeSell, keyBasescapeCovertOperations, keyBasescapePrison,
+	keyBasescapeAlienContainment, keyBasescapeDiplomacy, keyBasescapeIntel;
 
 // OXCE, accessible via GUI
 OPT bool oxceUpdateCheck;

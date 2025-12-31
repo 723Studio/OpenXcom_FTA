@@ -19,11 +19,30 @@
  */
 #include "../Battlescape/Position.h"
 #include "../Engine/Yaml.h"
+#include <vector>
 
 namespace OpenXcom
 {
 
-enum NodeRank{NR_SCOUT=0, NR_XCOM, NR_SOLDIER, NR_NAVIGATOR, NR_LEADER, NR_ENGINEER, NR_MISC1, NR_MEDIC, NR_MISC2};
+enum NodeRank{
+	NR_SCOUT = 0,
+	NR_XCOM = 1,
+	NR_SOLDIER = 2,
+	NR_NAVIGATOR = 3,
+	NR_LEADER = 4,
+	NR_ENGINEER = 5,
+	NR_MISC1 = 6,
+	NR_MEDIC = 7,
+	NR_MISC2 = 8,
+	// extended node ranks to target new alien ranks explicitly
+	NR_COMMANDER = 9,
+	NR_SPECIAL_GUEST1 = 10,
+	NR_HEAVY_TROOPER = 11,
+	NR_ASSAULT_TROOPER = 12,
+	NR_SPECIAL_GUEST2 = 13,
+	NR_NON_COMBATANT = 14,
+	NR_SPECIAL_GUEST3 = 15
+};
 
 /**
  * Represents a node/spawnpoint in the battlescape, loaded from RMP files.
@@ -50,7 +69,10 @@ public:
 	static const int TYPE_FLYING = 0x01; // non-flying unit can not spawn here when this bit is set
 	static const int TYPE_SMALL = 0x02; // large unit can not spawn here when this bit is set
 	static const int TYPE_DANGEROUS = 0x04; // an alien was shot here, stop patrolling to it like an idiot with a death wish
-	static const int nodeRank[8][7]; // maps alien ranks to node (.RMP) ranks
+	// Preferred node ranks per alien rank index (from AlienRace.members). Backward compatible: the first
+	// 8 entries mirror the old 8x7 table; extra entries can be appended without code changes.
+	static const std::vector<std::vector<int>> nodeRankMap;
+	static int getPrimaryNodeRankForAlien(int alienRank);
 	/// Creates a Node.
 	Node();
 	Node(int id, Position pos, int segment, int type, int rank, int flags, int reserved, int priority);

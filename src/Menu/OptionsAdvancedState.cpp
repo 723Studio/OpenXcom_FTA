@@ -89,10 +89,10 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 	_btnOXCE->setGroup(&_owner);
 	_btnOXCE->onMousePress((ActionHandler)&OptionsAdvancedState::btnGroupPress, SDL_BUTTON_LEFT);
 
-	_btnOTHER->setText(tr("STR_ENGINE_OTHER")); // rename in your fork
+	_btnOTHER->setText(tr("STR_ENGINE_FTA")); // rename in your fork
 	_btnOTHER->setGroup(&_owner);
 	_btnOTHER->onMousePress((ActionHandler)&OptionsAdvancedState::btnGroupPress, SDL_BUTTON_LEFT);
-	_btnOTHER->setVisible(false); // enable in your fork
+	_btnOTHER->setVisible(true);
 
 	// how much room do we need for YES/NO
 	Text text = Text(100, 9, 0, 0);
@@ -168,7 +168,7 @@ void OptionsAdvancedState::init()
  */
 void OptionsAdvancedState::updateList()
 {
-	OptionOwner idx = _owner == _btnOXC ? OPTION_OXC : _owner == _btnOXCE ? OPTION_OXCE : OPTION_OTHER;
+	OptionOwner idx = _owner == _btnOXC ? OPTION_OXC : _owner == _btnOXCE ? OPTION_OXCE : OPTION_FTA;
 
 	_offsetGeneralMin = -1;
 	_offsetGeneralMax = -1;
@@ -280,7 +280,7 @@ void OptionsAdvancedState::addSettings(const std::vector<OptionInfo> &settings)
 OptionInfo *OptionsAdvancedState::getSetting(size_t sel)
 {
 	int selInt = sel;
-	OptionOwner idx = _owner == _btnOXC ? OPTION_OXC : _owner == _btnOXCE ? OPTION_OXCE : OPTION_OTHER;
+	OptionOwner idx = _owner == _btnOXC ? OPTION_OXC : _owner == _btnOXCE ? OPTION_OXCE : OPTION_FTA;
 
 	if (selInt > _offsetGeneralMin && selInt <= _offsetGeneralMax)
 	{

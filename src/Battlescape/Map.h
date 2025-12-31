@@ -74,7 +74,7 @@ private:
 	Game *_game;
 	SavedBattleGame *_save;
 	bool _isTFTD;
-	Surface *_arrow, *_hackingObjectPointer, *_samplingObjectPointer, *_missionPointer;
+	Surface *_arrow, *_hackingObjectPointer, *_samplingObjectPointer, *_missionPointer, *_missionKillPointer;
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;

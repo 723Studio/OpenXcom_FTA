@@ -2559,9 +2559,10 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 			&& (!scout || n != fromNode)																// scouts push forward
 			&& n->getPosition().x > 0 && n->getPosition().y > 0)
 		{
+			int primaryNodeRank = Node::getPrimaryNodeRankForAlien(unit->getRankInt());
 			if (!preferred
-				|| (unit->getRankInt() >=0 &&
-					preferred->getRank() == Node::nodeRank[unit->getRankInt()][0] &&
+				|| (unit->getRankInt() >= 0 &&
+					preferred->getRank() == primaryNodeRank &&
 					preferred->getFlags() < n->getFlags())
 				|| preferred->getFlags() < n->getFlags())
 			{

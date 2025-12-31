@@ -102,6 +102,10 @@ public:
 	void edtBaseChange(Action *action);
 	/// Handler for pressing a base selection hotkey.
 	void handleKeyPress(Action *action);
+	/// Handle for pressing prison state open hotkey.
+	void btnPrisonClick(Action *action);
+	/// Handle for pressing alien containment state open hotkey.
+	void btnAlienContainmentClick(Action* action);
 };
 
 }

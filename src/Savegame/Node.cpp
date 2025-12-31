@@ -53,16 +53,34 @@ Node::~Node()
 
 
 /* following data is the order in which certain alien ranks spawn on certain node ranks */
-/* note that they all can fall back to rank 0 nodes - which is scout (outside ufo) */
-const int Node::nodeRank[8][7] = {
-	{ 4, 3, 5, 8, 7, 2, 0 }, //commander
-	{ 4, 3, 5, 8, 7, 2, 0 }, //leader
-	{ 5, 4, 3, 2, 7, 8, 0 }, //engineer
-	{ 7, 6, 2, 8, 3, 4, 0 }, //medic
-	{ 3, 4, 5, 2, 7, 8, 0 }, //navigator
-	{ 2, 5, 3, 4, 6, 8, 0 }, //soldier
-	{ 6, 2, 5, 3, 4, 8, 0 }, //terrorist
-	{ 8, 2, 5, 3, 4, 6, 0 }  }; //also terrorist
+/* note that they all can fall back to rank 0 nodes - which is scout (outside ufo); first 8 rows enhanced vs vanilla */
+const std::vector<std::vector<int>> Node::nodeRankMap = {
+	// vanilla ranks 0-7 keep old preferences but will also try new-specialized nodes before falling to scout
+	{ NR_COMMANDER, NR_LEADER, NR_NAVIGATOR, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_ENGINEER, NR_MEDIC, NR_MISC2, NR_SOLDIER, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_NON_COMBATANT, NR_SCOUT }, // 0 commander
+	{ NR_LEADER, NR_COMMANDER, NR_NAVIGATOR, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_ENGINEER, NR_MEDIC, NR_MISC2, NR_SOLDIER, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_NON_COMBATANT, NR_SCOUT }, // 1 leader
+	{ NR_ENGINEER, NR_LEADER, NR_COMMANDER, NR_NAVIGATOR, NR_SOLDIER, NR_MISC2, NR_MISC1, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_NON_COMBATANT, NR_SCOUT }, // 2 engineer
+	{ NR_MEDIC, NR_MISC1, NR_SOLDIER, NR_MISC2, NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_NON_COMBATANT, NR_SCOUT }, // 3 medic
+	{ NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_ENGINEER, NR_SOLDIER, NR_MISC2, NR_MISC1, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_NON_COMBATANT, NR_SCOUT }, // 4 navigator
+	{ NR_SOLDIER, NR_ENGINEER, NR_NAVIGATOR, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_LEADER, NR_COMMANDER, NR_MISC1, NR_MISC2,  NR_SCOUT }, // 5 soldier
+	{ NR_MISC1, NR_SOLDIER, NR_MISC2, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_ENGINEER, NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_SCOUT }, // 6 terrorist
+	{ NR_MISC2, NR_SOLDIER, NR_MISC1, NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_ENGINEER, NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_SCOUT }, // 7 also terrorist
+	// extended ranks: own node first, then similar specials, then other new roles, finally scout
+	{ NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_NON_COMBATANT, NR_LEADER, NR_COMMANDER, NR_MEDIC, NR_SOLDIER, NR_SCOUT }, // 8 special guest 1
+	{ NR_HEAVY_TROOPER, NR_ASSAULT_TROOPER, NR_SOLDIER, NR_MISC1, NR_ENGINEER, NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_MISC2, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_NON_COMBATANT, NR_SCOUT }, // 9 heavy trooper
+	{ NR_ASSAULT_TROOPER, NR_HEAVY_TROOPER, NR_SOLDIER, NR_MISC1, NR_ENGINEER, NR_NAVIGATOR, NR_LEADER, NR_COMMANDER, NR_MISC2, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_NON_COMBATANT, NR_SCOUT }, // 10 assault trooper
+	{ NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST3, NR_NON_COMBATANT, NR_LEADER, NR_COMMANDER, NR_MEDIC, NR_SOLDIER, NR_SCOUT }, // 11 special guest 2
+	{ NR_NON_COMBATANT, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_SPECIAL_GUEST3, NR_LEADER, NR_COMMANDER, NR_MEDIC, NR_SOLDIER, NR_SCOUT }, // 12 non-combatant
+	{ NR_SPECIAL_GUEST3, NR_SPECIAL_GUEST1, NR_SPECIAL_GUEST2, NR_NON_COMBATANT, NR_LEADER, NR_COMMANDER, NR_MEDIC, NR_SOLDIER, NR_SCOUT }  // 13 special guest 3
+};
+
+int Node::getPrimaryNodeRankForAlien(int alienRank)
+{
+	if (alienRank >= 0 && alienRank < (int)nodeRankMap.size() && !nodeRankMap[alienRank].empty())
+	{
+		return nodeRankMap[alienRank].front();
+	}
+	return NR_SCOUT;
+}
 
 
 
