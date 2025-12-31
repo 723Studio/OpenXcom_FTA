@@ -332,6 +332,8 @@ en-US:
   STR_TOOLTIP_LOAD_MAP: "Load Map"
   STR_TOOLTIP_UNDO: "Undo {0}/{1}"
   STR_TOOLTIP_REDO: "Redo {0}/{1}"
+  STR_TOOLTIP_LOWER_SHADE: "Lower shade (brighter)"
+  STR_TOOLTIP_RAISE_SHADE: "Raise shade (darker)"
   STR_TOOLTIP_FILL: "Fill Tile/Place Object Mode"
   STR_TOOLTIP_CLEAR: "Clear Tile/Remove Object Mode"
   STR_TOOLTIP_CUT: "Cut Selected Tiles"

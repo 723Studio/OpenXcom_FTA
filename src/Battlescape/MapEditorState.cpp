@@ -23,6 +23,7 @@
 #include "Map.h"
 #include "Camera.h"
 #include "MapEditor.h"
+#include "TileEngine.h"
 #include "MapEditorState.h"
 #include "WarningMessage.h"
 #include "../fmath.h"
@@ -87,20 +88,27 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	SurfaceSet *icons = _game->getMod()->getSurfaceSet("MapEditorIcons");
 
 	// TODO: create interface ruleset for the map editor for all these hardcoded colors
-	_iconsLowerLeft = new InteractiveSurface(160, 40, 0, screenHeight - 40);
-	for (int i = 0; i < 5; ++i)
-	{
-		icons->getFrame(i)->blitNShade(_iconsLowerLeft, i * 32, 0);
-	}
+	_iconsLowerLeft = new InteractiveSurface(224, 40, 0, screenHeight - 40);
+	icons->getFrame(0)->blitNShade(_iconsLowerLeft, 0, 0);
+	icons->getFrame(1)->blitNShade(_iconsLowerLeft, 32, 0);
+	icons->getFrame(2)->blitNShade(_iconsLowerLeft, 64, 0);
+	icons->getFrame(48)->blitNShade(_iconsLowerLeft, 96, 0);
+	icons->getFrame(47)->blitNShade(_iconsLowerLeft, 128, 0);
+	icons->getFrame(3)->blitNShade(_iconsLowerLeft, 160, 0);
+	icons->getFrame(4)->blitNShade(_iconsLowerLeft, 192, 0);
 	_btnOptions = new BattlescapeButton(32, 40, 0, screenHeight - 40);
 	_btnOptions->setColor(232);
 	_btnSave = new BattlescapeButton(32, 40, 32, screenHeight - 40);
 	_btnSave->setColor(232);
 	_btnLoad = new BattlescapeButton(32, 40, 64, screenHeight - 40);
 	_btnLoad->setColor(232);
-	_btnUndo = new BattlescapeButton(32, 40, 96, screenHeight - 40);
+	_btnShadeDown = new BattlescapeButton(32, 40, 96, screenHeight - 40);
+	_btnShadeDown->setColor(232);
+	_btnShadeUp = new BattlescapeButton(32, 40, 128, screenHeight - 40);
+	_btnShadeUp->setColor(232);
+	_btnUndo = new BattlescapeButton(32, 40, 160, screenHeight - 40);
 	_btnUndo->setColor(232);
-	_btnRedo = new BattlescapeButton(32, 40, 128, screenHeight - 40);
+	_btnRedo = new BattlescapeButton(32, 40, 192, screenHeight - 40);
 	_btnRedo->setColor(232);
 
 	_iconsLowerRight = new InteractiveSurface(160, 40, screenWidth - 160, screenHeight - 40);
@@ -250,17 +258,18 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	int nodePanelHeight = nodePanelRows * 40;
 	_panelRouteInformation = new InteractiveSurface(nodePanelWidth, nodePanelHeight, 0, 40);
 	// General information panel
+	int gap = 2;
 	_txtNodeID = new Text(144, 10, 4, 44);
-	_txtNodeType = new Text(144, 10, 4, 54);
-	_cbxNodeType = new ComboBox(this, 144, 16, 8 - 160, 63, false);
-	_txtNodeRank = new Text(144, 10, 4, 80);
-	_cbxNodeRank = new ComboBox(this, 144, 16, 8 - 160, 89, false);
-	_txtNodeFlag = new Text(144, 10, 4, 110);
-	_cbxNodeFlag = new ComboBox(this, 32, 16, 124 - 160, 106, false);
-	_txtNodePriority = new Text(144, 10, 4, 127);
-	_cbxNodePriority = new ComboBox(this, 32, 16, 124 - 160, 123, false);
-	_txtNodeReserved = new Text(144, 10, 4, 144);
-	_cbxNodeReserved = new ComboBox(this, 32, 16, 124 - 160, 140, false);
+	_txtNodeType = new Text(144, 10, 4, 54 + gap);
+	_cbxNodeType = new ComboBox(this, 144, 16, 8 - 160, 63 + gap, false);
+	_txtNodeRank = new Text(144, 10, 4, 80 + (gap * 2));
+	_cbxNodeRank = new ComboBox(this, 144, 16, 8 - 160, 89 + (gap * 2), false);
+	_txtNodeFlag = new Text(144, 10, 4, 110 + (gap * 3));
+	_cbxNodeFlag = new ComboBox(this, 32, 16, 124 - 160, 106 + (gap * 3), false);
+	_txtNodePriority = new Text(144, 10, 4, 127 + (gap * 4));
+	_cbxNodePriority = new ComboBox(this, 32, 16, 124 - 160, 123 + (gap * 4), false);
+	_txtNodeReserved = new Text(144, 10, 4, 144 + (gap * 5));
+	_cbxNodeReserved = new ComboBox(this, 32, 16, 124 - 160, 140 + (gap * 5), false);
 	// Node links panel
 	_txtNodeLinks = new Text(144, 10, 4, 54);
 	_cbxNodeLinks.clear();
@@ -309,6 +318,8 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	add(_btnOptions, "", "battlescape", _iconsLowerLeft);
 	add(_btnSave, "", "battlescape", _iconsLowerLeft);
 	add(_btnLoad, "", "battlescape", _iconsLowerLeft);
+	add(_btnShadeDown, "", "battlescape", _iconsLowerLeft);
+	add(_btnShadeUp, "", "battlescape", _iconsLowerLeft);
 	add(_btnUndo, "", "battlescape", _iconsLowerLeft);
 	add(_btnRedo, "", "battlescape", _iconsLowerLeft);
 	add(_btnFill, "", "battlescape", _iconsLowerRight);
@@ -450,6 +461,20 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_btnLoad->setTooltip("STR_TOOLTIP_LOAD_MAP");
 	_btnLoad->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_btnLoad->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
+
+	_btnShadeDown->onMouseClick((ActionHandler)&MapEditorState::btnShadeDownClick, SDL_BUTTON_LEFT);
+	_btnShadeDown->onMouseClick((ActionHandler)&MapEditorState::btnShadeDownClick, SDL_BUTTON_RIGHT);
+	_btnShadeDown->onKeyboardPress((ActionHandler)&MapEditorState::btnShadeDownClick, SDLK_KP_MINUS);
+	_btnShadeDown->setTooltip("STR_TOOLTIP_LOWER_SHADE");
+	_btnShadeDown->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
+	_btnShadeDown->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
+
+	_btnShadeUp->onMouseClick((ActionHandler)&MapEditorState::btnShadeUpClick, SDL_BUTTON_LEFT);
+	_btnShadeUp->onMouseClick((ActionHandler)&MapEditorState::btnShadeUpClick, SDL_BUTTON_RIGHT);
+	_btnShadeUp->onKeyboardPress((ActionHandler)&MapEditorState::btnShadeUpClick, SDLK_KP_PLUS);
+	_btnShadeUp->setTooltip("STR_TOOLTIP_RAISE_SHADE");
+	_btnShadeUp->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
+	_btnShadeUp->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 
 	_btnUndo->onMouseClick((ActionHandler)&MapEditorState::btnUndoClick);
 	//_btnUndo->onKeyboardPress((ActionHandler)&MapEditorState::btnUndoClick, SDLK_z); // change to options
@@ -1727,6 +1752,40 @@ void MapEditorState::btnSaveClick(Action *action)
 void MapEditorState::btnLoadClick(Action *action)
 {
 	_game->pushState(new MapEditorMenuState());
+}
+
+void MapEditorState::applyGlobalShade(int targetShade)
+{
+	if (_save == nullptr || _save->getTileEngine() == nullptr)
+	{
+		return;
+	}
+
+	const int clampedShade = Clamp(targetShade, 0, 15);
+	if (clampedShade == _save->getGlobalShade())
+	{
+		return;
+	}
+
+	_save->setGlobalShade(clampedShade);
+	_save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
+	_map->draw();
+}
+
+void MapEditorState::btnShadeDownClick(Action *action)
+{
+	const bool rightClick = (action->getDetails()->type == SDL_MOUSEBUTTONDOWN || action->getDetails()->type == SDL_MOUSEBUTTONUP)
+		&& action->getDetails()->button.button == SDL_BUTTON_RIGHT;
+	const int targetShade = rightClick ? 0 : _save->getGlobalShade() - 1;
+	applyGlobalShade(targetShade);
+}
+
+void MapEditorState::btnShadeUpClick(Action *action)
+{
+	const bool rightClick = (action->getDetails()->type == SDL_MOUSEBUTTONDOWN || action->getDetails()->type == SDL_MOUSEBUTTONUP)
+		&& action->getDetails()->button.button == SDL_BUTTON_RIGHT;
+	const int targetShade = rightClick ? 15 : _save->getGlobalShade() + 1;
+	applyGlobalShade(targetShade);
 }
 
 /**

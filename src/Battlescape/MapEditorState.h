@@ -54,7 +54,7 @@ private:
 	MapEditor *_editor;
 	InteractiveSurface *_iconsLowerLeft, *_iconsLowerRight, *_iconsUpperRight;
 	std::vector<InteractiveSurface*> _iconsMousedOver;
-    BattlescapeButton *_btnOptions, *_btnSave, *_btnLoad, *_btnUndo, *_btnRedo;
+    BattlescapeButton *_btnOptions, *_btnSave, *_btnLoad, *_btnShadeDown, *_btnShadeUp, *_btnUndo, *_btnRedo;
 	BattlescapeButton *_btnFill, *_btnClear, *_btnCut, *_btnCopy, *_btnPaste;
 	BattlescapeButton *_tileEditMode;
 	BattlescapeButton *_btnTileFilterGround, *_btnTileFilterWestWall, *_btnTileFilterNorthWall, *_btnTileFilterObject, *_btnFindTile;
@@ -102,6 +102,8 @@ private:
 	std::vector<std::string> _nodeTypeStrings, _nodeRankStrings;
 	std::vector<int> _nodeTypes;
 	WarningMessage *_message;
+
+	void applyGlobalShade(int targetShade);
 public:
 	static const int DEFAULT_ANIM_SPEED = 100;
 	/// Creates the Map Editor state.
@@ -132,6 +134,10 @@ public:
 	void btnSaveClick(Action *action);
 	/// Handler for pressing the load button.
 	void btnLoadClick(Action *action);
+	/// Handler for decreasing global shade (brighter).
+	void btnShadeDownClick(Action *action);
+	/// Handler for increasing global shade (darker).
+	void btnShadeUpClick(Action *action);
 	/// Handler for pressing the undo button.
 	void btnUndoClick(Action *action);
 	/// Handler for pressing the redo button.
