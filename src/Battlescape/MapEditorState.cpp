@@ -764,11 +764,18 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_nodeRankStrings.push_back("STR_NODE_RANK_XCOM");
 	_nodeRankStrings.push_back("STR_NODE_RANK_SOLDIER");
 	_nodeRankStrings.push_back("STR_NODE_RANK_NAVIGATOR");
-	_nodeRankStrings.push_back("STR_NODE_RANK_LEADERCOMMANDER");
+	_nodeRankStrings.push_back("STR_NODE_RANK_LEADER");
 	_nodeRankStrings.push_back("STR_NODE_RANK_ENGINEER");
 	_nodeRankStrings.push_back("STR_NODE_RANK_TERRORIST0");
 	_nodeRankStrings.push_back("STR_NODE_RANK_MEDIC");
 	_nodeRankStrings.push_back("STR_NODE_RANK_TERRORIST1");
+	_nodeRankStrings.push_back("STR_NODE_RANK_COMMANDER");
+	_nodeRankStrings.push_back("STR_NODE_RANK_SPECIAL_GUEST1");
+	_nodeRankStrings.push_back("STR_NODE_RANK_HEAVY_TROOPER");
+	_nodeRankStrings.push_back("STR_NODE_RANK_ASSAULT_TROOPER");
+	_nodeRankStrings.push_back("STR_NODE_RANK_SPECIAL_GUEST2");
+	_nodeRankStrings.push_back("STR_NODE_RANK_NON_COMBATANT");
+	_nodeRankStrings.push_back("STR_NODE_RANK_SPECIAL_GUEST3");
 
 	_cbxNodeType->onChange((ActionHandler)&MapEditorState::cbxNodeTypeChange);
 	_cbxNodeType->setTooltip("STR_TOOLTIP_NODE_TYPE");
@@ -2990,7 +2997,10 @@ void MapEditorState::updateNodePanels()
 	// if there's more than one node, we'll only display the values for those that have all the same value
 	// start by setting the values according to the first node selected, then change the display if the following nodes differ
 	_cbxNodeType->setSelected(_nodeTypes.at(_editor->getSelectedNodes()->front()->getType()));
-	_cbxNodeRank->setSelected(_editor->getSelectedNodes()->front()->getRank());
+	// clamp rank to available options to avoid OOB if map contains newer rank values
+	size_t rankIdx = (size_t)_editor->getSelectedNodes()->front()->getRank();
+	if (rankIdx >= _nodeRankStrings.size()) rankIdx = _nodeRankStrings.size() - 1;
+	_cbxNodeRank->setSelected(rankIdx);
 	_cbxNodeFlag->setSelected(_editor->getSelectedNodes()->front()->getFlags());
 	_cbxNodePriority->setSelected(_editor->getSelectedNodes()->front()->getPriority());
 	_cbxNodeReserved->setSelected(_editor->getSelectedNodes()->front()->isTarget() ? 5 : 0);
@@ -3050,7 +3060,9 @@ void MapEditorState::updateNodePanels()
 			_cbxNodeType->setText(emptyString);
 		}
 
-		if (_cbxNodeRank->getSelected() != (size_t)node->getRank())
+		// if rank exceeds available options, treat as differing to keep UI consistent
+		size_t rank = (size_t)node->getRank();
+		if (rank >= _nodeRankStrings.size() || _cbxNodeRank->getSelected() != rank)
 		{
 			_cbxNodeRank->setText(emptyString);
 		}

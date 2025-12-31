@@ -109,7 +109,7 @@ namespace OpenXcom
  * @param y Y position in pixels.
  * @param visibleMapHeight Current visible map height.
  */
-Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width, height, x, y),
+Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight, bool keepObstacleTimerRunning) : InteractiveSurface(width, height, x, y),
 	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false),
 	_hackingObjectPointer(0), _samplingObjectPointer(0), _missionPointer(0), _missionKillPointer(0),
 	_isAltPressed(false), _isCtrlPressed(false),
