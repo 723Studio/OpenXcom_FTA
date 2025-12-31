@@ -40,6 +40,7 @@
 #include "../Engine/Timer.h"
 #include "../Interface/BattlescapeButton.h"
 #include "../Interface/ComboBox.h"
+#include "../Interface/TextButton.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "../Menu/FileBrowserState.h"
@@ -270,6 +271,8 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_cbxNodePriority = new ComboBox(this, 32, 16, 124 - 160, 123 + (gap * 4), false);
 	_txtNodeReserved = new Text(144, 10, 4, 144 + (gap * 5));
 	_cbxNodeReserved = new ComboBox(this, 32, 16, 124 - 160, 140 + (gap * 5), false);
+	_btnSelectPreviousNode = new TextButton(25, 16, 10, 140 + (gap * 6) + 16);
+	_btnSelectNextNode = new TextButton(25, 16, 10 + 25 + gap, 140 + (gap * 6) + 16);
 	// Node links panel
 	_txtNodeLinks = new Text(144, 10, 4, 54);
 	_cbxNodeLinks.clear();
@@ -371,6 +374,8 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	add(_txtNodePriority, "textTooltip", "battlescape");
 	add(_txtNodeReserved, "textTooltip", "battlescape");
 	add(_cbxNodeReserved, "infoBoxOKButton", "battlescape");
+	add(_btnSelectPreviousNode, "infoBoxOKButton", "battlescape");
+	add(_btnSelectNextNode, "infoBoxOKButton", "battlescape");
 	add(_cbxNodePriority, "infoBoxOKButton", "battlescape");
 	add(_cbxNodeFlag, "infoBoxOKButton", "battlescape");
 	add(_cbxNodeRank, "infoBoxOKButton", "battlescape");
@@ -794,6 +799,21 @@ MapEditorState::MapEditorState(MapEditor *editor) : _firstInit(true), _isMouseSc
 	_cbxNodeReserved->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
 	_cbxNodeReserved->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
 	_cbxNodeReserved->setOptions(numberStrings, false);
+
+	_btnSelectPreviousNode->onMouseClick((ActionHandler)&MapEditorState::btnSelectPreviousNodeClick);
+	_btnSelectPreviousNode->onKeyboardPress((ActionHandler)&MapEditorState::btnSelectPreviousNodeClick, SDLK_LEFTBRACKET);
+	_btnSelectNextNode->onMouseClick((ActionHandler)&MapEditorState::btnSelectNextNodeClick);
+	_btnSelectNextNode->onKeyboardPress((ActionHandler)&MapEditorState::btnSelectNextNodeClick, SDLK_RIGHTBRACKET);
+	_btnSelectPreviousNode->setTooltip("STR_TOOLTIP_PREVIOUS_NODE");
+	_btnSelectNextNode->setTooltip("STR_TOOLTIP_NEXT_NODE");
+	_btnSelectPreviousNode->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
+	_btnSelectPreviousNode->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
+	_btnSelectNextNode->onMouseIn((ActionHandler)&MapEditorState::txtTooltipIn);
+	_btnSelectNextNode->onMouseOut((ActionHandler)&MapEditorState::txtTooltipOut);
+	_btnSelectPreviousNode->setText("<");
+	_btnSelectNextNode->setText(">");
+	_btnSelectPreviousNode->setVisible(false);
+	_btnSelectNextNode->setVisible(false);
 
 	// TODO: remove magic number 5
 	for (int i = 0; i < 5; ++i)
@@ -2205,6 +2225,127 @@ void MapEditorState::cbxNodeReservedChange(Action *action)
 	_editor->confirmChanges(true);
 }
 
+void MapEditorState::btnSelectPreviousNodeClick(Action *)
+{
+	selectAdjacentNode(false);
+}
+
+void MapEditorState::btnSelectNextNodeClick(Action *)
+{
+	selectAdjacentNode(true);
+}
+
+void MapEditorState::selectAdjacentNode(bool selectNext)
+{
+	if (!getRouteMode() || !_save)
+	{
+		return;
+	}
+
+	if (_editor->getSelectedNodes()->size() != 1)
+	{
+		return;
+	}
+
+	std::vector<Node*> activeNodes;
+	activeNodes.reserve(_save->getNodes()->size());
+	for (auto node : *_save->getNodes())
+	{
+		if (_editor->isNodeActive(node))
+		{
+			activeNodes.push_back(node);
+		}
+	}
+
+	if (activeNodes.size() < 2)
+	{
+		return;
+	}
+
+	std::sort(activeNodes.begin(), activeNodes.end(), [](const Node *lhs, const Node *rhs)
+	{
+		return lhs->getID() < rhs->getID();
+	});
+
+	Node *currentNode = _editor->getSelectedNodes()->front();
+	auto currentIt = std::find_if(activeNodes.begin(), activeNodes.end(), [&](const Node *node)
+	{
+		return node->getID() == currentNode->getID();
+	});
+
+	if (currentIt == activeNodes.end())
+	{
+		return;
+	}
+
+	if (selectNext)
+	{
+		++currentIt;
+		if (currentIt == activeNodes.end())
+		{
+			currentIt = activeNodes.begin();
+		}
+	}
+	else
+	{
+		if (currentIt == activeNodes.begin())
+		{
+			currentIt = activeNodes.end();
+		}
+		--currentIt;
+	}
+
+	_editor->getSelectedNodes()->clear();
+	_editor->getSelectedNodes()->push_back(*currentIt);
+	_editor->getSelectedTiles()->clear();
+	_map->getWaypoints()->clear();
+
+	if (!_game->isShiftPressed(true))
+	{
+		_map->getCamera()->centerOnPosition((*currentIt)->getPosition());
+		_map->refreshSelectorPosition();
+	}
+
+	updateNodePanels();
+	updateDebugText();
+}
+
+void MapEditorState::updateNodeNavigationButtonsVisibility()
+{
+	if (!_btnSelectPreviousNode || !_btnSelectNextNode)
+	{
+		return;
+	}
+
+	bool infoPanelVisible = _panelRouteInformation->getVisible() && _txtNodeReserved->getVisible();
+	bool singleNodeSelected = _editor && _editor->getSelectedNodes()->size() == 1;
+	bool canShow = getRouteMode() && infoPanelVisible && singleNodeSelected;
+
+	if (!canShow || !_save)
+	{
+		_btnSelectPreviousNode->setVisible(false);
+		_btnSelectNextNode->setVisible(false);
+		return;
+	}
+
+	size_t activeNodeCount = 0;
+	for (auto node : *_save->getNodes())
+	{
+		if (_editor->isNodeActive(node))
+		{
+			++activeNodeCount;
+			if (activeNodeCount > 1)
+			{
+				break;
+			}
+		}
+	}
+
+	bool showButtons = activeNodeCount > 1;
+	_btnSelectPreviousNode->setVisible(showButtons);
+	_btnSelectNextNode->setVisible(showButtons);
+}
+
 /**
  * Handler for changing the node links combo boxes
  * @param action Pointer to an action.
@@ -2624,6 +2765,8 @@ void MapEditorState::toggleRouteMode(Action *action)
 		toggleNodeInfoPanel(0, true);
 	}
 
+	updateNodeNavigationButtonsVisibility();
+
 	// If we used the keyboard shortcut to call the toggle, then we need to update tooltips
 	if (action->getDetails()->key.keysym.sym == SDLK_r) // change to options
 	{
@@ -2740,6 +2883,8 @@ void MapEditorState::toggleNodeInfoPanel(Action *action, bool hide)
 	{
 		i->setX(cbx3);
 	}
+
+	updateNodeNavigationButtonsVisibility();
 }
 
 /**
@@ -2767,6 +2912,8 @@ void MapEditorState::updateNodePanels()
 	std::vector<std::string> linkChoices;
 	linkChoices.clear();
 	std::string emptyString = "--";
+
+	updateNodeNavigationButtonsVisibility();
 
 	// no selected nodes: clear the info/connections panels
 	if (_editor->getSelectedNodes()->empty())

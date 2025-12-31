@@ -371,6 +371,8 @@ en-US:
   STR_LINK_EAST: "Exit E"
   STR_LINK_SOUTH: "Exit S"
   STR_LINK_WEST: "Exit W"
+  STR_TOOLTIP_PREVIOUS_NODE: "Select previous node"
+  STR_TOOLTIP_NEXT_NODE: "Select next node"
   STR_TOOLTIP_NODE_NEW: "Create/Select Nodes and Links Mode"
   STR_TOOLTIP_NODE_DELETE: "Delete/Remove Nodes and Links Mode"
   STR_TOOLTIP_NODE_CUT: "Cut Selected Nodes"

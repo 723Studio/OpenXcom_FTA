@@ -95,6 +95,7 @@ private:
 	BattlescapeButton *_btnNodeNew, *_btnNodeDelete, *_btnNodeCut, *_btnNodeCopy, *_btnNodePaste;
 	BattlescapeButton *_btnNodeFilterSelect, *_btnNodeFilterMove, *_btnNodeFilterOneWayConnect, *_btnNodeFilterTwoWayConnect, *_btnFindNode;
 	BattlescapeButton *_btnRouteInformation, *_btnRouteConnections;
+	TextButton *_btnSelectPreviousNode, *_btnSelectNextNode;
 	InteractiveSurface *_panelRouteInformation;
 	Text *_txtNodeID, *_txtNodeType, *_txtNodeRank, *_txtNodeFlag, *_txtNodePriority, *_txtNodeReserved, *_txtNodeLinks;
 	ComboBox *_cbxNodeType, *_cbxNodeRank, *_cbxNodeFlag, *_cbxNodePriority, *_cbxNodeReserved;
@@ -104,6 +105,8 @@ private:
 	WarningMessage *_message;
 
 	void applyGlobalShade(int targetShade);
+	void selectAdjacentNode(bool selectNext);
+	void updateNodeNavigationButtonsVisibility();
 public:
 	static const int DEFAULT_ANIM_SPEED = 100;
 	/// Creates the Map Editor state.
@@ -174,6 +177,10 @@ public:
 	void cbxNodePriorityChange(Action *action);
 	/// Handler for changing the node reserved combo box
 	void cbxNodeReservedChange(Action *action);
+	/// Handler for selecting the previous node via the panel button.
+	void btnSelectPreviousNodeClick(Action *action);
+	/// Handler for selecting the next node via the panel button.
+	void btnSelectNextNodeClick(Action *action);
 	/// Handler for changing the node links combo boxes
 	void cbxNodeLinksChange(Action *action);
 	/// Handler for changing the node link types combo boxes
