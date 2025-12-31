@@ -37,8 +37,6 @@
 #include "AbandonGameState.h"
 #include "MapEditorInfoState.h"
 #include "OptionsVideoState.h"
-#include "OptionsGeoscapeState.h"
-#include "OptionsBattlescapeState.h"
 
 namespace OpenXcom
 {

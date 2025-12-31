@@ -22,8 +22,6 @@
 #include "../Engine/Options.h"
 #include "../Engine/Action.h"
 #include "../Engine/InteractiveSurface.h"
-#include "../Engine/LocalizedText.h"
-#include "../Engine/Screen.h"
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Interface/BattlescapeButton.h"

@@ -21,7 +21,6 @@
 #include "../Battlescape/MapEditor.h"
 
 #include <vector>
-#include <string>
 #include <map>
 
 namespace OpenXcom

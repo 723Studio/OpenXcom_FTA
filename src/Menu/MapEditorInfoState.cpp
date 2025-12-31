@@ -22,7 +22,6 @@
 #include "../Engine/Options.h"
 #include "../Engine/Action.h"
 #include "../Engine/LocalizedText.h"
-#include "../Engine/Screen.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
@@ -31,9 +30,7 @@
 #include "../Savegame/MapEditorSave.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
-#include "../Mod/Mod.h"
 #include "../Mod/MapDataSet.h"
-#include "../Mod/RuleTerrain.h"
 
 namespace OpenXcom
 {
