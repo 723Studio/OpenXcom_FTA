@@ -50,6 +50,12 @@
 
 namespace OpenXcom
 {
+/**
+ * Generates science stat for a soldier.
+ * @param min Minimum value.
+ * @param max Maximum value.
+ * @return Generated stat.
+ */
 int Soldier::generateScienceStat(int min, int max)
 {
 	if (RNG::percent(max))
@@ -293,6 +299,7 @@ void Soldier::load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame
 		reader.tryRead("initialStats", _initialStats);
 		reader.tryRead("currentStats", _currentStats);
 	}
+
 	reader.tryRead("dailyDogfightExperienceCache", _dailyDogfightExperienceCache);
 	reader.tryRead("monthlyExperienceCache", _monthlyExperienceCache);
 	reader.tryRead("dogfightExperience", _dogfightExperience);
@@ -1235,14 +1242,106 @@ void Soldier::addStunCount(int count)
 
 int Soldier::getHireValue() const
 {
-	int value = _rules->getBuyCost();
+	// Base cost comes from rules and may be adjusted by role rank.
+	const int baseCost = _rules->getBuyCost();
+	const auto bestRoleRank = getBestRoleRank();
+	const int roleRank = bestRoleRank.second;
+	const double baseValue = static_cast<double>(baseCost) * static_cast<double>(roleRank);
+	double value = baseValue;
 
-	value *= getBestRoleRank().second;
+	// Scale the cost based on current stats relative to the *average* initial stats.
+	// - If all stats are at min => -30%
+	// - If all stats are at max => +30%
+	// - Stats above max can increase cost further, but asymptotically capped at +60%
+	const UnitStats cur = _currentStats;
+	const UnitStats min = _rules->getMinStats();
+	const UnitStats max = _rules->getMaxStats();
 
-	value /= 100;
-	value *= 100;
+	// Normalized deviation from average:
+	// -1 at min, +1 at max.
+	// For stats above max, we allow values > 1 but with soft cap to avoid huge outliers.
+	auto addStat = [](double &sumT, int &count, double &maxT, std::string &maxTName,
+		const std::string &name, int curV, int minV, int maxV)
+	{
+		if (maxV == minV)
+			return;
+		if (maxV < minV)
+			std::swap(maxV, minV);
+		const double avgV = (static_cast<double>(minV) + static_cast<double>(maxV)) * 0.5;
+		const double halfRange = (static_cast<double>(maxV) - static_cast<double>(minV)) * 0.5;
+		if (halfRange == 0.0)
+			return;
 
-	return value;
+		double t = 0.0;
+		if (curV <= minV)
+		{
+			t = -1.0;
+		}
+		else if (curV <= maxV)
+		{
+			// Inside the initial range: clamp to [-1, +1].
+			t = (static_cast<double>(curV) - avgV) / halfRange;
+			t = std::clamp(t, -1.0, 1.0);
+		}
+		else
+		{
+			// Above max: soft-cap the excess so a single stat can't explode the average.
+			// excessNorm = 0 at max, grows with distance above max.
+			const double excessNorm = (static_cast<double>(curV) - static_cast<double>(maxV)) / std::max(1.0, (static_cast<double>(maxV) - static_cast<double>(minV)));
+			constexpr double kExcess = 1.0;
+			// t goes from 1.0 at max towards 2.0 asymptotically.
+			t = 1.0 + (1.0 - std::exp(-kExcess * excessNorm));
+		}
+
+		sumT += t;
+		++count;
+		if (t > maxT)
+		{
+			maxT = t;
+			maxTName = name;
+		}
+	};
+
+	double sumT = 0.0;
+	int count = 0;
+	double maxT = -1e100;
+	std::string maxTName;
+	UnitStats::fieldLoop(
+		[&](UnitStats::Ptr p)
+		{
+			// Use stat string key for diagnostics; avoids hardcoding each field name here.
+			const std::string statName = UnitStats::getStatString(p, UnitStats::STATSTR_UC);
+			addStat(
+				sumT, count, maxT, maxTName,
+				statName,
+				static_cast<int>(cur.*p),
+				static_cast<int>(min.*p),
+				static_cast<int>(max.*p)
+			);
+		}
+	);
+
+	const double avgT = (count > 0) ? (sumT / static_cast<double>(count)) : 0.0;
+
+	double coeff = 1.0;
+	if (avgT <= 1.0)
+	{
+		coeff = 1.0 + 0.3 * std::clamp(avgT, -1.0, 1.0);
+	}
+	else
+	{
+		// Asymptotically approach +60% total multiplier.
+		constexpr double k = 1.0;
+		coeff = 1.3 + 0.3 * (1.0 - std::exp(-k * (avgT - 1.0)));
+	}
+	coeff = std::clamp(coeff, 0.7, 1.6);
+
+	value *= coeff;
+
+	int result = static_cast<int>(value);
+	result /= 100;
+	result *= 100;
+	return result;
 }
 
 /**
