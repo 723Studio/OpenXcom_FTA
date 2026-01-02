@@ -97,19 +97,47 @@ void RuleSoldier::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScri
 	mod->loadBaseFunction(_type, _requiresBuyBaseFunc, reader["requiresBuyBaseFunc"]);
 	reader.tryRead("requiresBuyCountry", _requiresBuyCountry);
 
-
-	_minStats.merge(reader["minStats"].readVal(_minStats));
-	_maxStats.merge(reader["maxStats"].readVal(_maxStats));
-	_statCaps.merge(reader["statCaps"].readVal(_statCaps));
+	// IMPORTANT: UnitStats contains many valid 0 values.
+	// UnitStats::merge() treats 0 as "not specified", which breaks rule inheritance for fields that
+	// are explicitly set to 0 (e.g. deception min 0 overriding a non-zero parent).
+	// Read into a copy of the inherited stats so missing fields stay inherited, while explicit 0
+	// overrides are applied correctly.
+	if (reader["minStats"])
+	{
+		UnitStats tmp = _minStats;
+		reader["minStats"].tryReadVal(tmp);
+		_minStats = tmp;
+	}
+	if (reader["maxStats"])
+	{
+		UnitStats tmp = _maxStats;
+		reader["maxStats"].tryReadVal(tmp);
+		_maxStats = tmp;
+	}
+	if (reader["statCaps"])
+	{
+		UnitStats tmp = _statCaps;
+		reader["statCaps"].tryReadVal(tmp);
+		_statCaps = tmp;
+	}
 	if (reader["trainingStatCaps"])
 	{
-		_trainingStatCaps.merge(reader["trainingStatCaps"].readVal(_trainingStatCaps));
+		UnitStats tmp = _trainingStatCaps;
+		reader["trainingStatCaps"].tryReadVal(tmp);
+		_trainingStatCaps = tmp;
 	}
-	else
+	else if (reader["statCaps"])
 	{
-		_trainingStatCaps.merge(reader["statCaps"].readVal(_trainingStatCaps));
+		UnitStats tmp = _trainingStatCaps;
+		reader["statCaps"].tryReadVal(tmp);
+		_trainingStatCaps = tmp;
 	}
-	_dogfightExperience.merge(reader["dogfightExperience"].readVal(_dogfightExperience));
+	if (reader["dogfightExperience"])
+	{
+		UnitStats tmp = _dogfightExperience;
+		reader["dogfightExperience"].tryReadVal(tmp);
+		_dogfightExperience = tmp;
+	}
 	if (reader["roleExpRequirments"])
 	{
 		for (const auto& reqReader : reader["roleExpRequirments"].children())
@@ -230,7 +258,7 @@ void RuleSoldier::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScri
 	mod->loadSpriteOffset(_type, _engineerRankSprite, reader["engineerRankSprite"], "BASEBITS.PCK");
 	mod->loadSpriteOffset(_type, _engineerRankSpriteBattlescape, reader["engineerRankSpriteBattlescape"], "SMOKE.PCK");
 	mod->loadSpriteOffset(_type, _engineerRankSpriteTiny, reader["engineerRankSpriteTiny"], "TinyRanks");
-	
+
 	mod->loadSpriteOffset(_type, _skillIconSprite, reader["skillIconSprite"], "SPICONS.DAT");
 	mod->loadNames(_type, _skillNames, reader["skills"]);
 
