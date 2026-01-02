@@ -608,7 +608,13 @@ struct UnitStats
 		fieldLoop(
 			[&](Ptr p)
 			{
-				(r.*p) = (base.*p) * (percent.*p) * multipler / 100;
+				// Compute in wide type to prevent overflow, then clamp.
+				const int64_t raw = static_cast<int64_t>(base.*p)
+					* static_cast<int64_t>(percent.*p)
+					* static_cast<int64_t>(multipler)
+					/ 100;
+				const int64_t clamped = std::min<int64_t>(BaseStatLimit, std::max<int64_t>(-BaseStatLimit, raw));
+				(r.*p) = static_cast<Type>(clamped);
 			}
 		);
 		return r;
