@@ -101,6 +101,7 @@ class RuleVideo;
 class RuleMusic;
 class RuleDiplomacyFaction;
 class RuleDiplomacyFactionEvent;
+class RuleDiplomacyAction;
 class RuleCovertOperation;
 class RuleObject;
 class RuleArcScript;
@@ -214,6 +215,7 @@ private:
 	std::map<std::string, RuleCommendations *> _commendations;
 	std::map<std::string, RuleDiplomacyFaction*> _diplomacyFactions;
 	std::map<std::string, RuleDiplomacyFactionEvent*> _diplomacyFactionEvents;
+	std::map<std::string, RuleDiplomacyAction*> _diplomacyActions;
 	std::map<std::string, RuleCovertOperation*> _covertOperations;
 	std::map<std::string, RuleObject*> _objects;
 	std::map<std::string, RuleArcScript*> _arcScripts;
@@ -344,7 +346,7 @@ private:
 	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex, _intelligenceIndex, _prisonerIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex, _adhocScriptIndex;
-	std::vector<std::string> _diplomacyFactionIndex, _diplomacyFactionEventIndex, _covertOperationIndex, _objectIndex;
+	std::vector<std::string> _diplomacyFactionIndex, _diplomacyFactionEventIndex, _diplomacyActionIndex, _covertOperationIndex, _objectIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> _transparencies;
 	int _facilityListOrder, _craftListOrder, _covertOperationListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder;
@@ -963,7 +965,7 @@ public:
 	bool isFTAGame() const { return _ftaGame; }
 	/// Gets lenght of FtA game (while in alpha) in months
 	int getFTAGameLength() const { return _ftaGameLength; }
-	
+
 	/// Gets if ironman enabled in a ruleset.
 	bool getIsIronManEnabled() const { return _ironManEnabled; }
 	/// Gets if research tree was disabled.
@@ -1203,12 +1205,15 @@ public:
 	RuleDiplomacyFaction* getDiplomacyFaction(const std::string& name, bool error = false) const;
 	/// Gets Diplomacy Factions Event rules for FTA game
 	RuleDiplomacyFactionEvent* getDiplomacyFactionEvent(const std::string& name, bool error = false) const;
+	/// Gets Diplomacy Action rules for FTA game
+	RuleDiplomacyAction* getDiplomacyAction(const std::string& type, bool error = false) const;
 	/// Gets Covert Operation rules for FTA game
 	RuleCovertOperation* getCovertOperation(const std::string& name, bool error = false) const;
 	/// Gets Object rules for FTA game
 	RuleObject* getObject(const std::string& type, bool error = false) const;
 	const std::vector<std::string>* getDiplomacyFactionList() const;
 	const std::vector<std::string>* getDiplomacyFactionEventList() const;
+	const std::vector<std::string>* getDiplomacyActionList() const;
 	const std::vector<std::string>* getCovertOperationList() const;
 	const std::vector<std::string>* getArcScriptList() const;
 	RuleArcScript* getArcScript(const std::string& name, bool error = false) const;
@@ -1235,7 +1240,7 @@ public:
 	int getLoyaltyCoefAlienBase() const { return _coefAlienBase; }
 	int getLoyaltyNoFundsPenalty() const { return _noFundsPenalty; }
 	int getLoyaltyNoFundsValue() const { return _noFundsValue; }
-	
+
 	RuleMissionScript *getAdhocScript(const std::string &name, bool error = false) const;
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;

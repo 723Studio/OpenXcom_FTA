@@ -32,6 +32,7 @@
 #include "../FTA/DiplomacySellState.h"
 #include "../FTA/DiplomacyPurchaseState.h"
 #include "../FTA/DiplomacyHirePersonnelState.h"
+#include "../FTA/DiplomacyDialogueState.h"
 
 namespace OpenXcom
 {
@@ -64,7 +65,9 @@ DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base
 	int dX = 103;
 	for (std::vector<DiplomacyFaction*>::iterator i = factions.begin(); i != factions.end(); ++i)
 	{
-		if (step > 2) { break; } //draw only 3 cards
+		if (step == 3)
+			break;	//draw only 3 cards
+
 		dX *= step;
 		faction = factions.at(step);
 		Window* card = new Window(this, 98, 150, 8 + dX, 25, POPUP_NONE);
@@ -179,18 +182,7 @@ void DiplomacyStartState::btnTalkClick(Action* action)
 			auto faction = _game->getSavedGame()->getDiplomacyFactions().at(i);
 			if (faction)
 			{
-				if (_base != 0)
-				{
-					_game->pushState(new DiplomacyHirePersonnelState(_base, faction));
-				}
-				else if (_game->getSavedGame()->getBases()->size() == 1)
-				{
-					_game->pushState(new DiplomacyHirePersonnelState(_game->getSavedGame()->getBases()->front(), faction));
-				}
-				else
-				{
-					_game->pushState(new DiplomacyChooseBaseState(faction, OPERATION_HIRING));
-				}
+				_game->pushState(new DiplomacyDialogueState(_base, faction));
 			}
 
 			break;
@@ -314,7 +306,7 @@ DiplomacyInfoState::DiplomacyInfoState(const DiplomacyFaction* faction)
 	_btnOk->onMouseClick((ActionHandler)&DiplomacyInfoState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&DiplomacyInfoState::btnOkClick, Options::keyOk);
 	_btnOk->onKeyboardPress((ActionHandler)&DiplomacyInfoState::btnOkClick, Options::keyCancel);
-	
+
 }
 
 DiplomacyInfoState::~DiplomacyInfoState()
@@ -333,7 +325,7 @@ DiplomacyChooseBaseState::DiplomacyChooseBaseState(DiplomacyFaction* faction, Tr
 {
 	_screen = false;
 	std::string interfaceName = "diplomacyMainWindow";
-	
+
 	setInterface(interfaceName);
 	int bCount = _game->getSavedGame()->getBases()->size();
 	int btnH = 17;

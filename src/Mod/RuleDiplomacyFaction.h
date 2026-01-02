@@ -32,12 +32,13 @@ namespace OpenXcom
 class RuleDiplomacyFaction
 {
 private:
-	std::string _name, _description, _background, _cardBackground, _discoverResearch, _discoverEvent, _startingResearch;
+	std::string _name, _description, _background, _cardBackground, _diplomacyBackground, _discoverResearch, _discoverEvent, _startingResearch;
 	int _genMissionFrequency, _helpTreatyGap;
 	int _sellPriceFactor, _buyPriceFactor, _repPriceFactor, _powerHungry, _scienceBaseCost;
 	int _startingReputation, _startingFunds, _startingPower;
 	std::map<std::string, int> _startingItems, _startingStaff, _staffWeights;
 	std::map<std::string, double> _wishList;
+	std::map<int, std::vector<std::string>> _greetings;
 	std::vector<std::string> _helpTreatyMissions, _helpTreatyEventScripts, _usualEventsScripts, _happyEvents, _angryEvents, _startingResearches, _factionalEvents;
 public:
 	/// Creates a blank RuleDiplomacyFaction.
@@ -54,6 +55,10 @@ public:
 	const std::string &getBackground() const { return _background; }
 	/// Gets the sprite name, that uses to render diplomacy card.
 	const std::string &getCardBackground() const { return _cardBackground; }
+	/// Gets the diplomacy dialogue background image.
+	const std::string& getDiplomacyBackground() const { return _diplomacyBackground; }
+	/// Gets the greeting strings indexed by reputation level.
+	const std::map<int, std::vector<std::string>>& getGreetings() const { return _greetings; }
 
 	/// Gets the reseach name, that opens the Faction.
 	const std::string& getDiscoverResearch() const { return _discoverResearch; }

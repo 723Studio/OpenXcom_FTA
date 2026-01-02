@@ -215,6 +215,7 @@ set ( engine_src
 )
 
 set ( fta_src
+  FTA/DiplomacyDialogueState.cpp
   FTA/DiplomacyHirePersonnelState.cpp
   FTA/DiplomacyPurchaseState.cpp
   FTA/DiplomacySellState.cpp
@@ -370,6 +371,7 @@ set ( mod_src
   Mod/RuleDamageType.cpp
   Mod/RuleDiplomacyFaction.cpp
   Mod/RuleDiplomacyFactionEvent.cpp
+  Mod/RuleDiplomacyAction.cpp
   Mod/RuleEnviroEffects.cpp
   Mod/RuleEvent.cpp
   Mod/RuleEventScript.cpp

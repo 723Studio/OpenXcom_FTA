@@ -60,6 +60,7 @@ private:
 	int _arrowsLeftEdge, _arrowsRightEdge;
 	int _noScrollLeftEdge, _noScrollRightEdge;
 	ComboBox *_comboBox;
+	int _selectorOffsetBlock;
 
 	/// Updates the arrow buttons.
 	void updateArrows();
@@ -128,6 +129,8 @@ public:
 	void setWordWrap(bool wrap);
 	/// Sets the text list's high contrast color setting.
 	void setHighContrast(bool contrast) override;
+	/// Sets how much the hover selector shifts background colors (block-based).
+	void setSelectorOffsetBlock(int off);
 	/// Sets the text horizontal alignment of the text list.
 	void setAlign(TextHAlign align, int col = -1);
 	/// Sets whether to separate columns with dots.

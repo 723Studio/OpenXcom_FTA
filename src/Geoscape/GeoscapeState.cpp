@@ -1905,6 +1905,12 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
  */
 void GeoscapeState::time30Minutes()
 {
+	// Tick diplomacy dialogue action cooldowns
+	for (auto* faction : _game->getSavedGame()->getDiplomacyFactions())
+	{
+		faction->tickActionCooldowns(30);
+	}
+
 	// Decrease mission countdowns
 	for (auto* am : _game->getSavedGame()->getAlienMissions())
 	{
