@@ -59,7 +59,7 @@ namespace OpenXcom
  */
 SoldierInfoStateFtA::SoldierInfoStateFtA(Base* base, size_t soldierId) : _base(base), _faction(0), _soldierId(soldierId), _soldier(0), _listing(true), _redraw(false)
 {
-	
+
 	initUi();
 }
 
@@ -296,7 +296,7 @@ void SoldierInfoStateFtA::init()
 
 	SoldierRole role = _soldier->getBestRole();
 	// here we set default display, do not do this if rendering after combobox change!
-	if (!_localChange) 
+	if (!_localChange)
 	{
 		switch (role)
 		{
@@ -664,13 +664,8 @@ void SoldierInfoStateFtA::btnRankClick(Action* action)
 
 void SoldierInfoStateFtA::defineStatLines()
 {
-	int yPos = 80;
-	_step = 11;
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
-	{
-		yPos = 81;
-		_step = 10;
-	}
+	int yPos = 81;
+	_step = 10;
 
 	_txtTimeUnits = new Text(120, 9, 6, yPos);
 	_numTimeUnits = new Text(18, 9, 131, yPos);
@@ -1538,7 +1533,7 @@ void SoldierInfoStateFtA::updateVisibility()
 			_numSynaptic->setVisible(true);
 			_barSynaptic->setVisible(true);
 		}
-		
+
 		if (_game->getSavedGame()->isResearched(_game->getMod()->getGravControlUnlockResearch()))
 		{
 			_txtGravity->setVisible(true);
@@ -1597,7 +1592,7 @@ void SoldierInfoStateFtA::updateVisibility()
 			_numPsionics->setVisible(true);
 			_barPsionics->setVisible(true);
 		}
-		
+
 		if (_game->getSavedGame()->isResearched(_game->getMod()->getXenolinguisticsUnlockResearch()))
 		{
 			_txtXenolinguistics->setVisible(true);
@@ -1691,14 +1686,6 @@ void SoldierInfoStateFtA::updateVisibility()
 		_txtStrength->setVisible(true);
 		_numStrength->setVisible(true);
 		_barStrength->setVisible(true);
-
-		//_txtHacking->setVisible(true);
-		//_numHacking->setVisible(true);
-		//_barHacking->setVisible(true);
-		//_txtHacking->setY(_txtHacking->getY() + _step); #FINNIKTODO: Fix me pls!
-		//_numHacking->setY(_numHacking->getY() + _step);
-		//_barHacking->setY(_barHacking->getY() + _step);
-
 	}
 }
 
