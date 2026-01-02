@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "RNG.h"
+#include "Logger.h"
+#include <algorithm>
 #include <time.h>
 #ifndef UINT64_MAX
 #define UINT64_MAX 0xffffffffffffffffULL
@@ -89,7 +91,13 @@ uint64_t RandomState::next()
  */
 int RandomState::generate(int min, int max)
 {
-	return (int)(next() % (max - min + 1) + min);
+	if (max < min)
+	{
+		Log(LOG_WARNING) << "RNG::generate called with min > max (" << min << " > " << max << "), swapping.";
+		std::swap(min, max);
+	}
+	const uint64_t span = static_cast<uint64_t>(static_cast<int64_t>(max) - static_cast<int64_t>(min) + 1);
+	return static_cast<int>(next() % span + static_cast<uint64_t>(min));
 }
 
 
