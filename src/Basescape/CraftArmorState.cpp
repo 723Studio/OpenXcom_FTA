@@ -156,7 +156,9 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	_lstSoldiers->setMargin(8);
 	_lstSoldiers->onLeftArrowClick((ActionHandler)&CraftArmorState::lstItemsLeftArrowClick);
 	_lstSoldiers->onRightArrowClick((ActionHandler)&CraftArmorState::lstItemsRightArrowClick);
-	_lstSoldiers->onMouseClick((ActionHandler)&CraftArmorState::lstSoldiersClick, 0);
+	// Don't bind to button=0 (any click): mouse wheel would trigger this handler.
+	_lstSoldiers->onMouseClick((ActionHandler)&CraftArmorState::lstSoldiersClick, SDL_BUTTON_LEFT);
+	_lstSoldiers->onMouseClick((ActionHandler)&CraftArmorState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 	_lstSoldiers->onMousePress((ActionHandler)&CraftArmorState::lstSoldiersMousePress);
 }
 

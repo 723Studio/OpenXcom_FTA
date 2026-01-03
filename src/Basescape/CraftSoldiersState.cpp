@@ -296,7 +296,9 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&CraftSoldiersState::lstSoldiersClick, 0);
+	// Don't bind to button=0 (any click): mouse wheel would trigger this handler.
+	_lstSoldiers->onMouseClick((ActionHandler)&CraftSoldiersState::lstSoldiersClick, SDL_BUTTON_LEFT);
+	_lstSoldiers->onMouseClick((ActionHandler)&CraftSoldiersState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 }
 
 /**

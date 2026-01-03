@@ -160,7 +160,9 @@ CovertOperationArmorState::CovertOperationArmorState(Base* base, CovertOperation
 	_lstSoldiers->setMargin(8);
 	_lstSoldiers->onLeftArrowClick((ActionHandler)&CovertOperationArmorState::lstItemsLeftArrowClick);
 	_lstSoldiers->onRightArrowClick((ActionHandler)&CovertOperationArmorState::lstItemsRightArrowClick);
-	_lstSoldiers->onMouseClick((ActionHandler)&CovertOperationArmorState::lstSoldiersClick, 0);
+	// Don't bind to button=0 (any click): mouse wheel would trigger this handler.
+	_lstSoldiers->onMouseClick((ActionHandler)&CovertOperationArmorState::lstSoldiersClick, SDL_BUTTON_LEFT);
+	_lstSoldiers->onMouseClick((ActionHandler)&CovertOperationArmorState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 	_lstSoldiers->onMousePress((ActionHandler)&CovertOperationArmorState::lstSoldiersMousePress);
 }
 

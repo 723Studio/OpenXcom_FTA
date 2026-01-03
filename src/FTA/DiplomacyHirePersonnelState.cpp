@@ -218,7 +218,9 @@ DiplomacyHirePersonnelState::DiplomacyHirePersonnelState(Base *base, DiplomacyFa
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::lstSoldiersClick, 0);
+	// Don't bind to button=0 (any click): mouse wheel would trigger this handler.
+	_lstSoldiers->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::lstSoldiersClick, SDL_BUTTON_LEFT);
+	_lstSoldiers->onMouseClick((ActionHandler)&DiplomacyHirePersonnelState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 
 	updateState();
 }

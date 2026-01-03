@@ -36,8 +36,6 @@
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SavedGame.h"
-#include "../Savegame/CovertOperation.h"
-#include "SoldierInfoState.h"
 #include "SoldierInfoStateFtA.h"
 #include "SoldierMemorialState.h"
 #include "SoldierTransformationState.h"
@@ -275,7 +273,8 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_lstSoldiers->setSelectable(true);
 	_lstSoldiers->setBackground(_window);
 	_lstSoldiers->setMargin(8);
-	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, 0);
+	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, SDL_BUTTON_LEFT);
+	_lstSoldiers->onMouseClick((ActionHandler)&SoldiersState::lstSoldiersClick, SDL_BUTTON_RIGHT);
 }
 
 /**
@@ -407,7 +406,7 @@ void SoldiersState::initList(size_t scrl)
 	int i = 0;
 
 	std::string selAction = "STR_PERSONNEL_INFO";
-	
+
 	if (!_availableOptions.empty())
 	{
 		selAction = _availableOptions.at(_cbxScreenActions->getSelected());
@@ -668,7 +667,7 @@ void SoldiersState::lstSoldiersClick(Action *action)
 		selAction == "STR_PILOT_INFO" ||
 		selAction == "STR_AGENT_INFO" ||
 		selAction == "STR_SCIENTIST_INFO" ||
-		selAction == "STR_ENGINEER_INFO") 
+		selAction == "STR_ENGINEER_INFO")
 		|| action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
