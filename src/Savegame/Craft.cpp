@@ -39,6 +39,7 @@
 #include "MissionSite.h"
 #include "AlienBase.h"
 #include "Vehicle.h"
+#include "CraftPathfinding.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleStartingCondition.h"
@@ -48,6 +49,71 @@
 
 namespace OpenXcom
 {
+
+namespace
+{
+struct Vec3
+{
+	double x;
+	double y;
+	double z;
+};
+
+static Vec3 lonLatToVec(double lon, double lat)
+{
+	const double clat = cos(lat);
+	return { clat * cos(lon), clat * sin(lon), sin(lat) };
+}
+
+static Vec3 slerp(const Vec3& a, const Vec3& b, double t)
+{
+	const double dotab = std::clamp(a.x*b.x + a.y*b.y + a.z*b.z, -1.0, 1.0);
+	const double omega = acos(dotab);
+	if (AreSame(omega, 0.0))
+		return a;
+	const double sinOmega = sin(omega);
+	const double w1 = sin((1.0 - t) * omega) / sinOmega;
+	const double w2 = sin(t * omega) / sinOmega;
+	return { a.x*w1 + b.x*w2, a.y*w1 + b.y*w2, a.z*w1 + b.z*w2 };
+}
+
+static void vecToLonLat(const Vec3& v, double& lon, double& lat)
+{
+	lat = asin(std::clamp(v.z, -1.0, 1.0));
+	lon = atan2(v.y, v.x);
+	while (lon < 0) lon += 2 * M_PI;
+	while (lon >= 2 * M_PI) lon -= 2 * M_PI;
+}
+
+static void moveTowardLonLat(Target& t, double targetLon, double targetLat, double stepRadian)
+{
+	const double curLon = t.getLongitude();
+	const double curLat = t.getLatitude();
+	const double dist = t.getDistance(targetLon, targetLat);
+	if (!(dist == dist) || AreSame(dist, 0.0) || dist <= stepRadian)
+	{
+		t.setLongitude(targetLon);
+		t.setLatitude(targetLat);
+		return;
+	}
+
+	const double frac = stepRadian / dist;
+	Vec3 a = lonLatToVec(curLon, curLat);
+	Vec3 b = lonLatToVec(targetLon, targetLat);
+	Vec3 p = slerp(a, b, frac);
+	const double len = sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
+	if (!AreSame(len, 0.0))
+	{
+		p.x /= len;
+		p.y /= len;
+		p.z /= len;
+	}
+	double lon, lat;
+	vecToLonLat(p, lon, lat);
+	t.setLongitude(lon);
+	t.setLatitude(lat);
+}
+}
 
 /**
  * Initializes a craft of the specified type and
@@ -63,7 +129,11 @@ Craft::Craft(const RuleCraft *rules, Base *base, int id) : MovingTarget(),
 	_inBattlescape(false), _inDogfight(false), _stats(),
 	_isAutoPatrolling(false), _lonAuto(0.0), _latAuto(0.0),
 	_scientists(0), _engineers(0),
-	_skinIndex(0)
+	_skinIndex(0),
+	_plannedRouteIndex(0),
+	_plannedRouteDestLon(0.0),
+	_plannedRouteDestLat(0.0),
+	_plannedRouteValid(false)
 {
 	_stats = rules->getStats();
 	_items = new ItemContainer();
@@ -82,6 +152,100 @@ Craft::Craft(const RuleCraft *rules, Base *base, int id) : MovingTarget(),
 		setBase(base);
 	}
 	recalcSpeedMaxRadian();
+}
+
+void Craft::clearPlannedRoute()
+{
+	_plannedRoute.clear();
+	_plannedRouteIndex = 0;
+	_plannedRouteDestLon = 0.0;
+	_plannedRouteDestLat = 0.0;
+	_plannedRouteValid = false;
+}
+
+bool Craft::ensurePlannedRoute()
+{
+	const CraftPathfindingMode mode = _rules->getPathfindingMode();
+	if (mode == CraftPathfindingMode::BOTH || _dest == nullptr)
+	{
+		clearPlannedRoute();
+		return true;
+	}
+
+	const double destLon = _dest->getLongitude();
+	const double destLat = _dest->getLatitude();
+	if (_plannedRouteValid && AreSame(destLon, _plannedRouteDestLon) && AreSame(destLat, _plannedRouteDestLat) && !_plannedRoute.empty())
+		return true;
+
+	const Mod* mod = (_base ? _base->getMod() : nullptr);
+	if (!mod)
+		return false;
+
+	CraftPlannedRoute planned;
+	if (!CraftPathfinding::planRoute(mod->getGlobe(), _lon, _lat, destLon, destLat, mode, planned))
+		return false;
+
+	_plannedRoute = std::move(planned.waypointsLonLat);
+	_plannedRouteIndex = 0;
+	_plannedRouteDestLon = destLon;
+	_plannedRouteDestLat = destLat;
+	_plannedRouteValid = true;
+	return true;
+}
+
+void Craft::moveAlongPlannedRoute()
+{
+	if (_dest == nullptr)
+		return;
+	if (_plannedRoute.empty() || _plannedRouteIndex >= _plannedRoute.size())
+	{
+		MovingTarget::move();
+		return;
+	}
+
+	// If the final target is close enough, snap and finish.
+	if (getDistance(_dest->getLongitude(), _dest->getLatitude()) <= _speedRadian)
+	{
+		setLongitude(_dest->getLongitude());
+		setLatitude(_dest->getLatitude());
+		resetMeetPoint();
+		clearPlannedRoute();
+		return;
+	}
+
+	while (_plannedRouteIndex + 1 < _plannedRoute.size())
+	{
+		const auto& wp = _plannedRoute[_plannedRouteIndex];
+		if (getDistance(wp.first, wp.second) > _speedRadian)
+			break;
+		_plannedRouteIndex++;
+	}
+
+	const auto& next = _plannedRoute[_plannedRouteIndex];
+	moveTowardLonLat(*this, next.first, next.second, _speedRadian);
+}
+
+void Craft::move()
+{
+	const CraftPathfindingMode mode = _rules->getPathfindingMode();
+	if (mode == CraftPathfindingMode::BOTH || _dest == nullptr)
+	{
+		MovingTarget::move();
+		return;
+	}
+
+	// Recompute for moving targets when coordinates change (except landed/crashed UFOs).
+	Ufo* ufo = dynamic_cast<Ufo*>(_dest);
+	if (ufo && ufo->getStatus() != Ufo::FLYING)
+	{
+		// Keep current route.
+	}
+	else
+	{
+		ensurePlannedRoute();
+	}
+
+	moveAlongPlannedRoute();
 }
 
 /**
@@ -536,6 +700,28 @@ void Craft::setDestination(Target *dest)
 		setSpeed(_stats.speedMax/2);
 	else
 		setSpeed(_stats.speedMax);
+	clearPlannedRoute();
+
+	if (dest != nullptr && _rules->getPathfindingMode() != CraftPathfindingMode::BOTH)
+	{
+		const Mod* mod = (_base ? _base->getMod() : nullptr);
+		CraftPlannedRoute planned;
+		if (mod && CraftPathfinding::planRoute(mod->getGlobe(), _lon, _lat, dest->getLongitude(), dest->getLatitude(), _rules->getPathfindingMode(), planned))
+		{
+			_plannedRoute = std::move(planned.waypointsLonLat);
+			_plannedRouteIndex = 0;
+			_plannedRouteDestLon = (dest ? dest->getLongitude() : 0.0);
+			_plannedRouteDestLat = (dest ? dest->getLatitude() : 0.0);
+			_plannedRouteValid = true;
+		}
+		else
+		{
+			// If path planning fails, keep the destination (do not freeze in place).
+			// Planned-route movement will be skipped until a route can be computed.
+			clearPlannedRoute();
+		}
+	}
+
 	MovingTarget::setDestination(dest);
 }
 
@@ -1210,7 +1396,7 @@ bool Craft::checkup()
 			&& ((*i)->getRoleRank(ROLE_SCIENTIST) > 0 || (*i)->getRoleRank(ROLE_ENGINEER) > 0)
 			&& ((*i)->getRoleRank(ROLE_SOLDIER) == 0 && (*i)->getRoleRank(ROLE_PILOT) == 0 && (*i)->getRoleRank(ROLE_AGENT) == 0))
 		{
-			(*i)->setCraft(0); 
+			(*i)->setCraft(0);
 		}
 
 		//promote returned pilots
@@ -1701,9 +1887,9 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd, const Mod* mod)
 			{
 				for (auto* soldier : *_base->getSoldiers())
 				{
-					if (soldier->getCraft() == this && 
+					if (soldier->getCraft() == this &&
 						soldier->getId() == soldierId &&
-						soldier->getRoleRank(ROLE_PILOT) > 0 && 
+						soldier->getRoleRank(ROLE_PILOT) > 0 &&
 						soldier->hasAllPilotingRequirements())
 					{
 						result.push_back(soldier);
@@ -1722,9 +1908,9 @@ const std::vector<Soldier*> Craft::getPilotList(bool autoAdd, const Mod* mod)
 				for (std::vector<Soldier*>::reverse_iterator iter = _base->getSoldiers()->rbegin(); iter != _base->getSoldiers()->rend(); ++iter)
 				{
 					Soldier* soldier = (*iter);
-					if (soldier->getCraft() == this && 
-						soldier->getRoleRank(ROLE_PILOT) > 0 && 
-						!isPilot(soldier->getId()) && 
+					if (soldier->getCraft() == this &&
+						soldier->getRoleRank(ROLE_PILOT) > 0 &&
+						!isPilot(soldier->getId()) &&
 						soldier->hasAllPilotingRequirements())
 					{
 						result.push_back(soldier);

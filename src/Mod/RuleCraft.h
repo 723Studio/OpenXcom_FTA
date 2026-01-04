@@ -28,6 +28,13 @@
 namespace OpenXcom
 {
 
+enum class CraftPathfindingMode : uint8_t
+{
+	BOTH,
+	ONLY_LAND,
+	ONLY_WATER
+};
+
 typedef std::vector<std::vector<int> > RuleCraftDeployment;
 
 class RuleTerrain;
@@ -242,6 +249,7 @@ private:
 	std::vector<SoldierRole> _pilotSoldierRolesRequired;
 	std::vector<std::string> _pilotSoldierBonusesRequiredNames;
 	std::vector<const RuleSoldierBonus*> _pilotSoldierBonusesRequired;
+	CraftPathfindingMode _pathfindingMode;
 
 	ModScript::CraftScripts::Container _craftScripts;
 	ScriptValues<RuleCraft> _scriptValues;
@@ -258,6 +266,8 @@ public:
 	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript &parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
+	/// Gets craft pathfinding mode.
+	CraftPathfindingMode getPathfindingMode() const { return _pathfindingMode; }
 	/// Gets the craft's type.
 	const std::string &getType() const;
 	/// Gets the craft's requirements.

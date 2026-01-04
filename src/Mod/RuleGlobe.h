@@ -49,8 +49,12 @@ public:
 	void load(const YAML::YamlNodeReader& reader, Mod* mod);
 	/// Gets the list of world polygons.
 	std::list<Polygon*> *getPolygons();
+	/// Gets the list of world polygons.
+	const std::list<Polygon*> *getPolygons() const;
 	/// Gets the list of world polylines.
 	std::list<Polyline*> *getPolylines();
+	/// Gets the list of world polylines.
+	const std::list<Polyline*> *getPolylines() const;
 	/// Loads a set of polygons from a DAT file.
 	void loadDat(const std::string &filename);
 	/// Gets a specific world texture.

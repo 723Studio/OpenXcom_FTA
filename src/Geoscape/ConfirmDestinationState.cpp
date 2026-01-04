@@ -21,6 +21,7 @@
 #include "ConfirmDestinationState.h"
 #include "../fmath.h"
 #include "../Engine/Game.h"
+#include "../Engine/Logger.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/AlienRace.h"
@@ -36,6 +37,7 @@
 #include "../Interface/ToggleTextButton.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/CraftPathfinding.h"
 #include "../Savegame/Target.h"
 #include "../Savegame/Waypoint.h"
 #include "../Savegame/Base.h"
@@ -361,6 +363,85 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		}
 	}
 
+	// Validate land/water constraints and fuel based on planned path length.
+	{
+		auto showError = [&](const std::string& msgId)
+		{
+			_game->popState();
+			_game->popState();
+			_game->pushState(new ErrorMessageState(tr(msgId), _palette, _game->getMod()->getInterface("geoscape")->getElement("genericWindow")->color, "BACK01.SCR", _game->getMod()->getInterface("geoscape")->getElement("palette")->color));
+		};
+
+		for (auto* craft : _crafts)
+		{
+			Target* intended = _target;
+			if (craft != _crafts.front() && _btnFollowWingLeader->getPressed())
+			{
+				intended = _crafts.front();
+			}
+			if (!intended)
+				continue;
+
+			const CraftPathfindingMode mode = craft->getRules()->getPathfindingMode();
+			if (mode == CraftPathfindingMode::BOTH)
+				continue;
+
+			Log(LOG_INFO) << "CraftPathfinding: validation running"
+				<< " craftRule=" << craft->getRules()->getType()
+				<< " mode=" << (int)mode
+				<< " startLon=" << craft->getLongitude() << " startLat=" << craft->getLatitude()
+				<< " endLon=" << intended->getLongitude() << " endLat=" << intended->getLatitude();
+
+			CraftPlannedRoute planned;
+			const Mod* mod = craft->getBase()->getMod();
+			const RuleGlobe* globe = mod ? mod->getGlobe() : nullptr;
+			bool ok = CraftPathfinding::planRoute(globe,
+				craft->getLongitude(), craft->getLatitude(),
+				intended->getLongitude(), intended->getLatitude(),
+				mode,
+				planned);
+			if (!ok)
+			{
+				const bool startAllowed = CraftPathfinding::isSegmentAllowed(globe,
+					craft->getLongitude(), craft->getLatitude(),
+					craft->getLongitude(), craft->getLatitude(),
+					mode);
+				const bool endAllowed = CraftPathfinding::isSegmentAllowed(globe,
+					intended->getLongitude(), intended->getLatitude(),
+					intended->getLongitude(), intended->getLatitude(),
+					mode);
+				const bool directAllowed = CraftPathfinding::isSegmentAllowed(globe,
+					craft->getLongitude(), craft->getLatitude(),
+					intended->getLongitude(), intended->getLatitude(),
+					mode);
+				Log(LOG_INFO) << "CraftPathfinding: planRoute FAILED"
+					<< " craftRule=" << craft->getRules()->getType()
+					<< " mode=" << (int)mode
+					<< " startAllowed=" << (startAllowed ? 1 : 0)
+					<< " endAllowed=" << (endAllowed ? 1 : 0)
+					<< " directAllowed=" << (directAllowed ? 1 : 0)
+					<< " startLon=" << craft->getLongitude() << " startLat=" << craft->getLatitude()
+					<< " endLon=" << intended->getLongitude() << " endLat=" << intended->getLatitude();
+				showError("STR_CRAFT_DESTINATION_UNREACHABLE");
+				return;
+			}
+
+			if (planned.lengthRadian > craft->getBaseRange())
+			{
+				const double baseRange = craft->getBaseRange();
+				Log(LOG_INFO) << "CraftPathfinding: fuel check FAILED"
+					<< " craftRule=" << craft->getRules()->getType()
+					<< " mode=" << (int)mode
+					<< " plannedLenRad=" << planned.lengthRadian
+					<< " baseRangeRad=" << baseRange
+					<< " ratio=" << (baseRange > 0.0 ? (planned.lengthRadian / baseRange) : -1.0)
+					<< " waypoints=" << planned.waypointsLonLat.size();
+				showError("STR_NOT_ENOUGH_FUEL_FOR_PLANNED_ROUTE");
+				return;
+			}
+		}
+	}
+
 	Waypoint *w = dynamic_cast<Waypoint*>(_target);
 	if (w != 0 && w->getId() == 0)
 	{
@@ -421,7 +502,7 @@ void ConfirmDestinationState::btnOkClick(Action *)
 void ConfirmDestinationState::btnTransferClick(Action *)
 {
 	std::string errorMessage;
-	
+
 	Base *targetBase = dynamic_cast<Base*>(_target);
 	if ((targetBase->getAvailableHangars() - targetBase->getUsedHangars()) <= 0) // don't know how you'd get less than 0 available hangars, but want to handle that just in case
 	{

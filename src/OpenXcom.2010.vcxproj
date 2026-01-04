@@ -744,6 +744,7 @@
     <ClCompile Include="Savegame\Country.cpp" />
     <ClCompile Include="Savegame\CovertOperation.cpp" />
     <ClCompile Include="Savegame\Craft.cpp" />
+    <ClCompile Include="Savegame\CraftPathfinding.cpp" />
     <ClCompile Include="Savegame\CraftWeapon.cpp" />
     <ClCompile Include="Savegame\CraftWeaponProjectile.cpp" />
     <ClCompile Include="Savegame\DiplomacyFaction.cpp" />
@@ -1298,6 +1299,7 @@
     <ClInclude Include="Savegame\Country.h" />
     <ClInclude Include="Savegame\CovertOperation.h" />
     <ClInclude Include="Savegame\Craft.h" />
+    <ClInclude Include="Savegame\CraftPathfinding.h" />
     <ClInclude Include="Savegame\CraftWeapon.h" />
     <ClInclude Include="Savegame\CraftWeaponProjectile.h" />
     <ClInclude Include="Savegame\DiplomacyFaction.h" />

@@ -108,8 +108,17 @@ private:
 	int _scientists, _engineers;
 	int _skinIndex;
 	ScriptValues<Craft> _scriptValues;
+	std::vector<std::pair<double, double>> _plannedRoute;
+	size_t _plannedRouteIndex;
+	double _plannedRouteDestLon;
+	double _plannedRouteDestLat;
+	bool _plannedRouteValid;
 
 	void recalcSpeedMaxRadian();
+	void clearPlannedRoute();
+	bool ensurePlannedRoute();
+	void moveAlongPlannedRoute();
+	void move();
 
 	using MovingTarget::load;
 	using MovingTarget::save;

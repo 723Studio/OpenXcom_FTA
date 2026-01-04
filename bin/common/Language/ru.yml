@@ -111,6 +111,8 @@ ru:
   STR_CANTRANSFERCRAFTSWHILEAIRBORNE_DESC: "Транспортное средство, выполняющее задание, можно приписать к другой базе."
   STR_CRAFTLAUNCHALWAYS: "Форсированный запуск ТС"
   STR_CRAFTLAUNCHALWAYS_DESC: "ТС можно запускать, даже если они не полностью подготовлены."
+  STR_CRAFT_DESTINATION_UNREACHABLE: "Выбранная цель недоступна для этого ТС."
+  STR_NOT_ENOUGH_FUEL_FOR_PLANNED_ROUTE: "Недостаточно топлива для запланированного маршрута."
   STR_CUSTOMINITIALBASE: "Свободный дизайн первой базы"
   STR_CUSTOMINITIALBASE_DESC: "Начиная новую игру, игрок может самостоятельно выбрать расположение доступных ему модулей вместо обычной схемы застройки."
   STR_GLOBESEASONS: "Реалистичное освещение земного шара"

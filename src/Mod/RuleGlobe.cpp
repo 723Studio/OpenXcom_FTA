@@ -149,10 +149,28 @@ std::list<Polygon*> *RuleGlobe::getPolygons()
 }
 
 /**
+ * Returns the list of polygons in the globe.
+ * @return Pointer to the list of polygons.
+ */
+const std::list<Polygon*> *RuleGlobe::getPolygons() const
+{
+	return &_polygons;
+}
+
+/**
  * Returns the list of polylines in the globe.
  * @return Pointer to the list of polylines.
  */
 std::list<Polyline*> *RuleGlobe::getPolylines()
+{
+	return &_polylines;
+}
+
+/**
+ * Returns the list of polylines in the globe.
+ * @return Pointer to the list of polylines.
+ */
+const std::list<Polyline*> *RuleGlobe::getPolylines() const
 {
 	return &_polylines;
 }

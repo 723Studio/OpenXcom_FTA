@@ -143,6 +143,8 @@ private:
 
 	using Target::load;
 public:
+	/// Gets the mod this base belongs to.
+	const Mod* getMod() const { return _mod; }
 	/// Creates a new base.
 	Base(const Mod *mod);
 	/// Cleans up the base.

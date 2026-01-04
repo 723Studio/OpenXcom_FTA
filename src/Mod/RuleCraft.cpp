@@ -43,7 +43,8 @@ RuleCraft::RuleCraft(const std::string &type, int listOrder) :
 	_missilePower(0),
 	_listOrder(listOrder), _maxAltitude(-1), _defaultAltitude("STR_VERY_LOW"), _onlyOneSoldierGroupAllowed(false), _stats(),
 	_shieldRechargeAtBase(1000),
-	_mapVisible(true), _forceShowInMonthlyCosts(false), _useAllStartTiles(false)
+	_mapVisible(true), _forceShowInMonthlyCosts(false), _useAllStartTiles(false),
+	_pathfindingMode(CraftPathfindingMode::BOTH)
 {
 	for (int i = 0; i < WeaponMax; ++ i)
 	{
@@ -157,6 +158,21 @@ void RuleCraft::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript
 	reader.tryRead("listOrder", _listOrder);
 	reader.tryRead("maxAltitude", _maxAltitude);
 	reader.tryRead("defaultAltitude", _defaultAltitude);
+	{
+		std::string mode;
+		if (reader.tryRead("pathfinding", mode))
+		{
+			for (auto &c : mode) c = (char)toupper((unsigned char)c);
+			if (mode == "BOTH")
+				_pathfindingMode = CraftPathfindingMode::BOTH;
+			else if (mode == "ONLY_LAND")
+				_pathfindingMode = CraftPathfindingMode::ONLY_LAND;
+			else if (mode == "ONLY_WATER")
+				_pathfindingMode = CraftPathfindingMode::ONLY_WATER;
+			else
+				throw Exception("Invalid pathfinding mode in craft " + _type + ": " + mode);
+		}
+	}
 
 	if (const auto& types = reader["weaponTypes"])
 	{

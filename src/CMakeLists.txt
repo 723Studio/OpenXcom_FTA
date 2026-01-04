@@ -419,6 +419,7 @@ set ( savegame_src
   Savegame/Country.cpp
   Savegame/CovertOperation.cpp
   Savegame/Craft.cpp
+  Savegame/CraftPathfinding.cpp
   Savegame/CraftWeapon.cpp
   Savegame/CraftWeaponProjectile.cpp
   Savegame/DiplomacyFaction.cpp

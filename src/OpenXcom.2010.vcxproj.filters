@@ -173,6 +173,9 @@
     <ClCompile Include="Savegame\Craft.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
+    <ClCompile Include="Savegame\CraftPathfinding.cpp">
+      <Filter>Savegame</Filter>
+    </ClCompile>
     <ClCompile Include="Savegame\CraftWeapon.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
@@ -1590,6 +1593,9 @@
       <Filter>Savegame</Filter>
     </ClInclude>
     <ClInclude Include="Savegame\Craft.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\CraftPathfinding.h">
       <Filter>Savegame</Filter>
     </ClInclude>
     <ClInclude Include="Savegame\CraftWeapon.h">
