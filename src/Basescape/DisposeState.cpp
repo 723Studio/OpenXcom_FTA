@@ -65,8 +65,9 @@ namespace OpenXcom
 * @param base Pointer to the base to get info from.
 * @param origin Game section that originated this state.
 */
-	DisposeState::DisposeState(Base* base, DebriefingState* debriefingState, OptionsOrigin origin) : _base(base), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
-	_reset(false), _sellAllButOne(false), _delayedInitDone(false)
+DisposeState::DisposeState(Base* base, DebriefingState* debriefingState, OptionsOrigin origin) :
+		_base(base), _debriefingState(debriefingState), _sel(0), _total(0), _overfullCritical(false), _spaceChange(0), _origin(origin),
+		_reset(false), _sellAllButOne(false), _delayedInitDone(false)
 {
 	_timerInc = new Timer(250);
 	_timerInc->onTimer((StateHandler)&DisposeState::increase);
@@ -84,9 +85,7 @@ void DisposeState::delayedInit()
 		return;
 	}
 	_delayedInitDone = true;
-
-	bool overfull = _debriefingState == 0 && Options::storageLimitsEnforced && _base->storesOverfull();
-	bool overfullCritical = overfull ? _base->storesOverfullCritical() : false;
+	_overfullCritical = _base->storesOverfullCritical();
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -94,7 +93,6 @@ void DisposeState::delayedInit()
 	//_btnOk = new TextButton(overfull? 288:148, 16, overfull? 16:8, 176);
 	_btnOk = new TextButton(148, 16, 8, 176);
 	_btnCancel = new TextButton(148, 16, 164, 176);
-	_btnTransfer = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtSales = new Text(150, 9, 10, 24);
 	_txtFunds = new Text(150, 9, 160, 24);
@@ -114,7 +112,6 @@ void DisposeState::delayedInit()
 	add(_btnQuickSearch, "button", "disposeState");
 	add(_btnOk, "button", "disposeState");
 	add(_btnCancel, "button", "disposeState");
-	add(_btnTransfer, "button", "disposeState");
 	add(_txtTitle, "text", "disposeState");
 	add(_txtSales, "text", "disposeState");
 	add(_txtFunds, "text", "disposeState");
@@ -137,13 +134,6 @@ void DisposeState::delayedInit()
 	_btnCancel->setText(tr("STR_CANCEL"));
 	_btnCancel->onMouseClick((ActionHandler)&DisposeState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&DisposeState::btnCancelClick, Options::keyCancel);
-
-	_btnTransfer->setText(tr("STR_GO_TO_TRANSFERS"));
-	_btnTransfer->onMouseClick((ActionHandler)&DisposeState::btnTransferClick);
-
-	_btnCancel->setVisible(!overfull);
-	_btnOk->setVisible(!overfull);
-	_btnTransfer->setVisible(overfull);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -207,26 +197,7 @@ void DisposeState::delayedInit()
 			}
 		}
 	}
-	if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0, _base->getAvailableScientists(), -2, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0, _base->getAvailableEngineers(), -1, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
+
 	const std::vector<std::string>& items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -239,7 +210,7 @@ void DisposeState::delayedInit()
 		else
 		{
 			qty = _base->getStorageItems()->getItem(rule);
-			if (Options::storageLimitsEnforced && (_origin == OPT_BATTLESCAPE || overfullCritical))
+			if (_origin == OPT_BATTLESCAPE || _overfullCritical)
 			{
 				for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end(); ++j)
 				{
@@ -249,24 +220,18 @@ void DisposeState::delayedInit()
 					}
 					else if ((*j)->getCraft())
 					{
-						qty += overfullCritical ? (*j)->getCraft()->getTotalItemCount(rule) : (*j)->getCraft()->getItems()->getItem(rule);
+						qty += _overfullCritical ? (*j)->getCraft()->getTotalItemCount(rule) : (*j)->getCraft()->getItems()->getItem(rule);
 					}
 				}
 				for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end(); ++j)
 				{
-					qty += overfullCritical ? (*j)->getTotalItemCount(rule) : (*j)->getItems()->getItem(rule);
+					qty += _overfullCritical ? (*j)->getTotalItemCount(rule) : (*j)->getItems()->getItem(rule);
 				}
 			}
 		}
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
 			TransferRow row = { TRANSFER_ITEM, rule, tr(*i), rule->getDisposeCost(), qty, 0, 0, 1, rule->getListOrder(), 0, 0, 0 };
-			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
-			{
-				row.amount = qty;
-				_total += row.cost * qty;
-				_spaceChange -= qty * rule->getSize();
-			}
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -386,8 +351,6 @@ std::string DisposeState::getCategory(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return "STR_PERSONNEL";
 	case TRANSFER_CRAFT:
 		return "STR_CRAFT_ARMAMENT";
@@ -425,8 +388,6 @@ bool DisposeState::belongsToCategory(int sel, const std::string& cat) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -671,12 +632,6 @@ void DisposeState::btnOkClick(Action*)
 				_base->removeCraft(craft, true);
 				delete craft;
 				break;
-			case TRANSFER_SCIENTIST:
-				_base->setScientists(_base->getScientists() - i->amount);
-				break;
-			case TRANSFER_ENGINEER:
-				_base->setEngineers(_base->getEngineers() - i->amount);
-				break;
 			case TRANSFER_ITEM:
 				RuleItem* item = (RuleItem*)i->rule;
 				{
@@ -730,20 +685,9 @@ void DisposeState::btnOkClick(Action*)
 				{
 					// remember the decreased amount for next sell/transfer
 					_debriefingState->decreaseRecoveredItemCount(item, i->amount);
-
-					// set autosell status if we sold all of the item
-					_game->getSavedGame()->setAutosell(item, (i->qtySrc == i->amount));
 				}
 
 				break;
-			}
-		}
-		else
-		{
-			if (_debriefingState != 0 && i->type == TRANSFER_ITEM)
-			{
-				// disable autosell since we haven't sold any of the item.
-				_game->getSavedGame()->setAutosell((RuleItem*)i->rule, false);
 			}
 		}
 	}
@@ -761,17 +705,6 @@ void DisposeState::btnOkClick(Action*)
 void DisposeState::btnCancelClick(Action*)
 {
 	_game->popState();
-}
-
-/**
-* Opens the Transfer UI and gives the player an option to transfer stuff instead of selling it.
-* Returns back to this screen when finished.
-* @param action Pointer to an action.
-*/
-void DisposeState::btnTransferClick(Action*)
-{
-	_reset = true;
-	_game->pushState(new TransferBaseState(_base, nullptr));
 }
 
 /**
@@ -1072,10 +1005,6 @@ void DisposeState::updateItemStrings()
 	}
 	ss3 << ":" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss3.str()));
-	if (_debriefingState == 0 && Options::storageLimitsEnforced)
-	{
-		_btnOk->setVisible(!_base->storesOverfull(_spaceChange));
-	}
 }
 
 /**

@@ -491,22 +491,10 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 	missionRace = missionRules->generateRace(month);
 	if (missionRace.empty())
 	{
-		if (mod.isFTAGame())
-		{
-			missionRace = "STR_MIB";
-			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
-				" no alien race has been set! As we run FTAGame race set to " << missionRace;
-			success = false;
-		}
-		else
-		{
-			Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
-				" no alien race has been set, so it will be defined at random!";
-			auto raceList = mod.getAlienRacesList();
-			int pick = RNG::generate(0, raceList.size() - 1);
-			missionRace = raceList.at(pick);
-			success = false;
-		}
+		missionRace = "STR_MIB";
+		Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+			" no alien race has been set! As we run FTAGame race set to " << missionRace;
+		success = false;
 	}
 	if (mod.getAlienRace(missionRace) == 0)
 	{
@@ -527,10 +515,6 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 
 int MasterMind::updateLoyalty(int score, LoyaltySource source)
 {
-	if (!_game->getMod()->isFTAGame())
-	{
-		return 0;
-	}
 	double coef = 1;
 	std::string reason;
 	switch (source)
@@ -585,20 +569,17 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 int MasterMind::getLoyaltyPerformanceBonus()
 {
 	int performance = 100;
-	if (_game->getMod()->isFTAGame())
+	int loyalty = _game->getSavedGame()->getLoyalty();
+	if (loyalty > 100) // function approximation goes weird on values from 0 to 100, so we just keep it bonusless there...
 	{
-		int loyalty = _game->getSavedGame()->getLoyalty();
-		if (loyalty > 100) // function approximation goes weird on values from 0 to 100, so we just keep it bonusless there...
-		{
-			double ln = log(std::abs(loyalty));
-			int bonus = ceil(-9.79 + (2.23 * ln));
-			performance += bonus;
-		}
-		else if (loyalty < 0)
-		{
-			int penalty = ceil(0.271 * pow(-loyalty, 0.537));
-			performance -= penalty;
-		}
+		double ln = log(std::abs(loyalty));
+		int bonus = ceil(-9.79 + (2.23 * ln));
+		performance += bonus;
+	}
+	else if (loyalty < 0)
+	{
+		int penalty = ceil(0.271 * pow(-loyalty, 0.537));
+		performance -= penalty;
 	}
 	return performance;
 }

@@ -128,19 +128,16 @@ NewGameState::NewGameState()
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
 
-	if (_game->getMod()->isFTAGame())
+	_btnGenius->setVisible(false);
+	_btnSuperhuman->setY(_btnGenius->getY());
+	if (!_game->getMod()->getIsIronManEnabled())
 	{
-		_btnGenius->setVisible(false);
-		_btnSuperhuman->setY(_btnGenius->getY());
-		if (!_game->getMod()->getIsIronManEnabled())
-		{
-			_btnIronman->setVisible(false);
-			_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
-		}
-		else
-		{
-			_btnSuperhuman->setVisible(false);
-		}
+		_btnIronman->setVisible(false);
+		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
+	}
+	else
+	{
+		_btnSuperhuman->setVisible(false);
 	}
 }
 
@@ -192,38 +189,8 @@ void NewGameState::btnOkClick(Action *)
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
   
-	//choose the game scenario
-	if (_game->getMod()->isFTAGame())
-	{
-		_game->getMasterMind()->newGameHelper(diff, gs);
-		save->setFtAGame(true);
-	}
-	else //vanilla
-	{
-		gs->init();
-		auto* base = _game->getSavedGame()->getBases()->back();
-		if (base->getMarker() != -1)
-		{
-		  // center and rotate 35 degrees down (to see the base location while typoing its name)
-			  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
-      
-		  if (base->getName().empty())
-		  {
-			// fixed location, custom name
-			_game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
-		  }
-		  else if (Options::customInitialBase)
-		  {
-			// fixed location, fixed name
-			_game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
-		  }
-		}
-		else
-		{
-		  // custom location, custom name
-		  _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
-		}
-	}
+	// FtA-only fork: always start FtA scenario
+	_game->getMasterMind()->newGameHelper(diff, gs);
 }
 
 /**

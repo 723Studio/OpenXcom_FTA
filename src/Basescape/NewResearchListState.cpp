@@ -33,7 +33,6 @@
 #include "../Savegame/Base.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleResearch.h"
-#include "ResearchInfoState.h"
 #include "ResearchInfoStateFtA.h"
 #include "ResearchProjectDetailsState.h"
 #include "TechTreeViewerState.h"
@@ -415,7 +414,7 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 		if (rule->getRequirements().empty())
 		{
 			_lstResearch->addRow(2, tr(rule->getName()).c_str(), getProjectCategory(rule).c_str());
-			
+
 			if (markAllAsSeen)
 			{
 				// mark all (filtered) research items as normal

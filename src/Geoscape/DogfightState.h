@@ -74,7 +74,7 @@ private:
 	int _weaponNum;
 	int _pilotDodgeBonus, _craftAccelerationBonus, _pilotMissileAccuracyBonus, _pilotCannonAccuracyBonus, _crewBravery, _squadTacticBonus;
 	bool _firedAtLeastOnce, _experienceAwarded;
-	bool _delayedRecolorDone, _fta;
+	bool _delayedRecolorDone;
 	// craft min/max, radar min/max, damage min/max, shield min/max
 	int _colors[13];
 	// Ends the dogfight.

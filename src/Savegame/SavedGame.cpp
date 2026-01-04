@@ -113,9 +113,9 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
  */
 SavedGame::SavedGame() :
 	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
-	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
+	_previewBase(nullptr), _debug(false), _warned(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
-	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(),
+	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0),
 	_disableSoldierEquipment(false), _alienContainmentChecked(false)
 {
 	_time = new GameTime(6, 1, 1, 1999, 12, 0, 0);
@@ -391,7 +391,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_time->load(header["time"]);
 	header.readNode("name", _name, filename);
 	header.tryRead("ironman", _ironman);
-	header.tryRead("ftaGame", _ftaGame);
 
 	// Get full save data
 	const auto& reader = documents[1].useIndex();
@@ -684,15 +683,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 		_missionStatistics.push_back(ms);
 	}
 
-	for (const auto& autoSale : reader["autoSales"].children())
-	{
-		std::string itype = autoSale.readVal<std::string>();
-		if (mod->getItem(itype))
-		{
-			_autosales.insert(mod->getItem(itype));
-		}
-	}
-
 	if (const YAML::YamlNodeReader& battle = reader["battleGame"])
 	{
 		_battleGame = new SavedBattleGame(mod, lang);
@@ -782,8 +772,6 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 
 	if (_ironman)
 		headerWriter.write("ironman", _ironman);
-	if (_ftaGame)
-		headerWriter.write("ftaGame", _ftaGame);
 
 	// Saves the full game data to the save
 	YAML::YamlRootNodeWriter writer(1000000); //1MB starting buffer
@@ -885,20 +873,6 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 	if (Options::soldierDiaries)
 		saveVector(writer, _missionStatistics, "missionStatistics");
 
-	if (!_autosales.empty())
-	{
-		auto autoSales = writer["autoSales"];
-		autoSales.setAsSeq();
-		{
-			std::vector<const RuleItem*> autosalesVector(_autosales.begin(), _autosales.end());
-			std::sort(autosalesVector.begin(), autosalesVector.end(), [&](const RuleItem* a, const RuleItem* b)
-				{ return a->getType().compare(b->getType()) < 0; });
-			for (const auto* sale : autosalesVector)
-			{
-				autoSales.write(sale->getType());
-			}
-		}
-	}
 	// snapshot of the user options (just for debugging purposes)
 	auto optionsWriter = writer["options"];
 	optionsWriter.setAsMap();
@@ -1863,8 +1837,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 			{
 				// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
 			}
-			else if (isFtAGame()
-				&& research->needItem()
+			else if (research->needItem()
 				&& (!research->getRandomEvents().empty() || !research->getSpawnedEvent().empty()))
 			{
 				// FtA logic: also let the player research items that can spawn events on being researched.
@@ -3193,32 +3166,6 @@ std::vector<Soldier*>::iterator SavedGame::killSoldier(bool resetArmor, Soldier 
 		}
 	}
 	return soldierIt;
-}
-
-/**
- * enables/disables autosell for an item type
- */
-void SavedGame::setAutosell(const RuleItem *itype, const bool enabled)
-{
-	if (enabled)
-	{
-		_autosales.insert(itype);
-	}
-	else
-	{
-		_autosales.erase(itype);
-	}
-}
-/**
- * get autosell state for an item type
- */
-bool SavedGame::getAutosell(const RuleItem *itype) const
-{
-	if (!Options::oxceAutoSell)
-	{
-		return false;
-	}
-	return _autosales.find(itype) != _autosales.end();
 }
 
 /**

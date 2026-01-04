@@ -124,10 +124,7 @@ BattlescapeState::BattlescapeState() :
 	_indicatorGreen = _game->getMod()->getInterface("battlescape")->getElement("squadsightUnits")->color;
 	_indicatorBlue = _game->getMod()->getInterface("battlescape")->getElement("woundedUnits")->color;
 	_indicatorPurple = _game->getMod()->getInterface("battlescape")->getElement("passingOutUnits")->color;
-	if (_game->getMod()->isFTAGame())
-		_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color;
-	else
-		_indicatorGray = 0;
+	_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color;
 
 	_twoHandedRed = _game->getMod()->getInterface("battlescape")->getElement("twoHandedRed")->color;
 	_twoHandedGreen = _game->getMod()->getInterface("battlescape")->getElement("twoHandedGreen")->color;
@@ -215,8 +212,6 @@ BattlescapeState::BattlescapeState() :
 	_btnSpecial->setVisible(false);
 	_btnSkills = new BattlescapeButton(32, 24, screenWidth - 32, 25); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnSkills->setVisible(false);
-
-	_ftaUI = _game->getMod()->isFTAGame();
 
 	{
 		int posX = (screenWidth - 32);
@@ -2220,11 +2215,7 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 			// show tiny rank (modded)
 			SoldierRole role = soldier->getBestRole();
 			SurfaceSet *texture = _game->getMod()->getSurfaceSet("TinyRanks");
-			Surface *spr = texture->getFrame(soldier->getRankSpriteTiny());
-			if (_ftaUI)
-			{
-				spr = texture->getFrame(soldier->getRoleRankSpriteTiny(role));
-			}
+			Surface *spr = texture->getFrame(soldier->getRoleRankSpriteTiny(role));
 			if (spr)
 			{
 				spr->blitNShade(_rankTiny, 0, 0);

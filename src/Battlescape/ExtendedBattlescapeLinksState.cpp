@@ -50,32 +50,17 @@ ExtendedBattlescapeLinksState::ExtendedBattlescapeLinksState(BattlescapeState* p
 	// Create objects
 	_window = new Window(this, 256, 180, 32, 10, POPUP_BOTH);
 	_txtTitle = new Text(220, 17, 50, 33);
-	if (Options::oxceFatFingerLinks)
-	{
-		_btnTouch = new TextButton(116, 25, 44, 50);
-		_btnNightVision = new TextButton(116, 25, 161, 50);
-		_btnPersonalLights = new TextButton(116, 25, 44, 76);
-		_btnBrightness = new TextButton(116, 25, 161, 76);
-		_btnTurnDiary = new TextButton(116, 25, 44, 102);
-		_btnBriefing = new TextButton(116, 25, 161, 102);
-		_btnNotes = new TextButton(116, 25, 44, 128);
-		_btnMusic = new TextButton(116, 25, 161, 128);
-		_btnKillAll = new TextButton(116, 25, 44, 154);
-		_btnOk = new TextButton(116, 25, 161, 154);
-	}
-	else
-	{
-		_btnTouch = new TextButton(220, 12, 50, 50);
-		_btnNightVision = new TextButton(220, 12, 50, 63);
-		_btnPersonalLights = new TextButton(220, 12, 50, 76);
-		_btnBrightness = new TextButton(220, 12, 50, 89);
-		_btnTurnDiary = new TextButton(220, 12, 50, 102);
-		_btnBriefing = new TextButton(220, 12, 50, 115);
-		_btnNotes = new TextButton(220, 12, 50, 128);
-		_btnMusic = new TextButton(220, 12, 50, 141);
-		_btnKillAll = new TextButton(220, 12, 50, 154);
-		_btnOk = new TextButton(220, 12, 50, 167);
-	}
+
+	_btnTouch = new TextButton(116, 25, 44, 50);
+	_btnNightVision = new TextButton(116, 25, 161, 50);
+	_btnPersonalLights = new TextButton(116, 25, 44, 76);
+	_btnBrightness = new TextButton(116, 25, 161, 76);
+	_btnTurnDiary = new TextButton(116, 25, 44, 102);
+	_btnBriefing = new TextButton(116, 25, 161, 102);
+	_btnNotes = new TextButton(116, 25, 44, 128);
+	_btnMusic = new TextButton(116, 25, 161, 128);
+	_btnKillAll = new TextButton(116, 25, 44, 154);
+	_btnOk = new TextButton(116, 25, 161, 154);
 
 	// Set palette
 	setInterface("oxceLinks", false, _save);

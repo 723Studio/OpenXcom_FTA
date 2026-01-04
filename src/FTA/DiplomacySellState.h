@@ -19,7 +19,6 @@
  */
 #include "../Engine/State.h"
 #include "../Savegame/Transfer.h"
-#include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
 #include <set>
@@ -49,7 +48,7 @@ private:
 	DiplomacyFaction* _faction;
 
 	DebriefingState *_debriefingState;
-	TextButton *_btnOk, *_btnCancel, *_btnTransfer;
+	TextButton *_btnOk, *_btnCancel;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtSales, *_txtFunds, *_txtQuantity, *_txtSell, *_txtValue, *_txtSpaceUsed;
@@ -64,7 +63,6 @@ private:
 	double _spaceChange;
 	Timer *_timerInc, *_timerDec;
 	Uint8 _ammoColor;
-	OptionsOrigin _origin;
 	bool _reset;
 	bool _sellAllButOne;
 	bool _delayedInitDone;
@@ -80,7 +78,7 @@ private:
 	int getCostAdjustment(int baseCost);
 public:
 	/// Creates the Sell state.
-	DiplomacySellState(Base *base, DiplomacyFaction* faction,  DebriefingState *debriefingState, OptionsOrigin origin = OPT_GEOSCAPE);
+	DiplomacySellState(Base *base, DiplomacyFaction* faction,  DebriefingState *debriefingState);
 	void delayedInit();
 	/// Cleans up the Sell state.
 	~DiplomacySellState();

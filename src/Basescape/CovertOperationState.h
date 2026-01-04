@@ -39,7 +39,7 @@ private:
 	Base* _base;
 	TextButton* _btnNew, * _btnOk;
 	Window* _window;
-	Text* _txtTitle, * _txtSoldiersAvailable, * _txtScientistsAvailable, * _txtEngineersAvailable, * _txtOperation, * _txtChances, * _txtProgress;
+	Text* _txtTitle, * _txtSoldiersAvailable, * _txtOperation, * _txtChances, * _txtProgress;
 	TextList* _lstOperations;
 public:
 	/// Creates the CovertOperation state.
@@ -52,8 +52,6 @@ public:
 	void btnNewClick(Action* action);
 	/// Handler for clicking the CovertOperation list.
 	void onSelectOperation(Action* action);
-	/// Handler for opening the Current Global Research UI.
-	void onCurrentGlobalResearchClick(Action* action);
 	/// Fills the CovertOperation list with Base CovertOperation.
 	void fillProjectList(size_t scrl);
 	/// Updates the CovertOperation list.

@@ -43,7 +43,6 @@ private:
 	size_t _craftId;
 	Craft *_craft;
 	int _weaponNum;
-	bool _ftaUi;
 
 	TextButton *_btnOk, *_btnW[RuleCraft::WeaponMax], *_btnCrew, *_btnEquip, *_btnArmor, *_btnPilots, *_btnNewBattle;
 	Window *_window;

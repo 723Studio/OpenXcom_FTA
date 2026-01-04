@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "MonthlyCostsState.h"
+#include <map>
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -29,6 +30,8 @@
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/Soldier.h"
+#include "../Savegame/Transfer.h"
 #include "../Mod/RuleCraft.h"
 #include "../Mod/RuleSoldier.h"
 
@@ -42,7 +45,6 @@ namespace OpenXcom
  */
 MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 {
-	bool isFta = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(300, 20, 10, 170);
@@ -52,16 +54,8 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	_txtTotal = new Text(60, 9, 249, 32);
 	_txtRental = new Text(150, 9, 10, 40);
 	_txtSalaries = new Text(150, 9, 10, 80);
-	if (isFta)
-	{
-		_txtMaintenance = new Text(150, 9, 10, 150);
-	}
-	else //vanilla
-	{
-		_txtIncome = new Text(150, 9, 10, 146);
-		_txtMaintenance = new Text(150, 9, 10, 154);
-	}
-	
+	_txtMaintenance = new Text(150, 9, 10, 150);
+
 	_lstCrafts = new TextList(288, 32, 10, 48);
 	_lstSalaries = new TextList(288, 40, 10, 88);
 	_lstMaintenance = new TextList(300, 9, 10, 128);
@@ -81,10 +75,6 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	add(_txtSalaries, "text1", "costsInfo");
 	add(_lstSalaries, "list", "costsInfo");
 	add(_lstMaintenance, "text1", "costsInfo");
-	if (!isFta)
-	{
-		add(_txtIncome, "list", "costsInfo");
-	}
 	add(_txtMaintenance, "list", "costsInfo");
 	add(_lstTotal, "text2", "costsInfo");
 
@@ -112,13 +102,6 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 
 	_txtSalaries->setText(tr("STR_SALARIES"));
 
-	if (!isFta)
-	{
-		std::ostringstream ss;
-		ss << tr("STR_INCOME") << "=" << Unicode::formatFunding(_game->getSavedGame()->getCountryFunding());
-		_txtIncome->setText(ss.str());
-	}
-
 	std::ostringstream ss2;
 	ss2 << tr("STR_MAINTENANCE") << "=" << Unicode::formatFunding(_game->getSavedGame()->getBaseMaintenance());
 	_txtMaintenance->setText(ss2.str());
@@ -129,7 +112,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
 		auto craft = _game->getMod()->getCraft(craftType);
-		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->isFTAGame()))
+		if (craft->getRentCost() != 0)
 		{
 			int count = _base->getCraftCount(craft);
 			if (count > 0 || craft->forceShowInMonthlyCosts())
@@ -143,64 +126,66 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 
 	_lstSalaries->setColumns(4, 125, 70, 44, 50);
 	_lstSalaries->setDot(true);
-
-	auto& soldierTypes = _game->getMod()->getSoldiersList();
-
-	bool dynamicSalaries = false;
-	for (auto& soldierType : soldierTypes)
+	struct RoleTotals
 	{
-		if (_game->getMod()->getSoldier(soldierType)->isSalaryDynamic())
-		{
-			dynamicSalaries = true;
-			break;
-		}
-	}
-
-	if (!dynamicSalaries)
-	{
-		// vanilla
-		for (auto& soldierType : soldierTypes)
-		{
-			const RuleSoldier *soldier = _game->getMod()->getSoldier(soldierType);
-			if (soldier->getSalaryCost(0) != 0 && _game->getSavedGame()->isResearched(soldier->getRequirements()))
-			{
-				std::pair<int, int> info = _base->getSoldierCountAndSalary(soldierType);
-				std::ostringstream ss4;
-				ss4 << info.first;
-				std::string name = soldierType;
-				if (soldierTypes.size() == 1)
-				{
-					name = "STR_SOLDIERS";
-				}
-				std::string costPerUnit = Unicode::formatFunding(soldier->getSalaryCost(0)); // 0 = default rookie salary
-				if (info.first > 0 || soldierTypes.size() == 1)
-				{
-					_lstSalaries->addRow(4, tr(name).c_str(), costPerUnit.c_str(), ss4.str().c_str(), Unicode::formatFunding(info.second).c_str());
-				}
-			}
-		}
-	}
-	else
-	{
-		// one or more soldier types with *different* salaries per rank
-		std::ostringstream ss4;
 		int count = 0;
-		int salary = 0;
-		for (auto& soldierType : soldierTypes)
+		int totalSalary = 0;
+	};
+
+	std::map<SoldierRole, RoleTotals> roleTotals;
+	auto tallySoldier = [&](Soldier *soldier)
+	{
+		if (soldier == nullptr)
 		{
-			std::pair<int, int> info = _base->getSoldierCountAndSalary(soldierType);
-			count += info.first;
-			salary += info.second;
+			return;
 		}
-		ss4 << count;
-		_lstSalaries->addRow(4, tr("STR_SOLDIERS").c_str(), "", ss4.str().c_str(), Unicode::formatFunding(salary).c_str());
+		SoldierRole role = soldier->getBestRole();
+		int salary = soldier->getRules()->getSalaryCost();
+		RoleTotals &totals = roleTotals[role];
+		totals.count++;
+		totals.totalSalary += salary;
+	};
+
+	// Include soldiers in transit, consistent with Base::getPersonnelMaintenance.
+	for (auto *transfer : *_base->getTransfers())
+	{
+		if (transfer->getType() == TRANSFER_SOLDIER)
+		{
+			tallySoldier(transfer->getSoldier());
+		}
 	}
-	std::ostringstream ss5;
-	ss5 << _base->getTotalEngineers();
-	_lstSalaries->addRow(4, tr("STR_ENGINEERS").c_str(), Unicode::formatFunding(_game->getMod()->getEngineerCost()).c_str(), ss5.str().c_str(), Unicode::formatFunding(_base->getTotalEngineers() * _game->getMod()->getEngineerCost()).c_str());
-	std::ostringstream ss6;
-	ss6 << _base->getTotalScientists();
-	_lstSalaries->addRow(4, tr("STR_SCIENTISTS").c_str(), Unicode::formatFunding(_game->getMod()->getScientistCost()).c_str(), ss6.str().c_str(), Unicode::formatFunding(_base->getTotalScientists() * _game->getMod()->getScientistCost()).c_str());
+	for (auto *soldier : *_base->getSoldiers())
+	{
+		tallySoldier(soldier);
+	}
+
+	auto addRoleRow = [&](SoldierRole role, const char *roleStringId)
+	{
+		int count = 0;
+		int totalSalary = 0;
+		auto it = roleTotals.find(role);
+		if (it != roleTotals.end())
+		{
+			count = it->second.count;
+			totalSalary = it->second.totalSalary;
+		}
+		if (count <= 0)
+		{
+			return;
+		}
+		std::ostringstream qty;
+		qty << count;
+		_lstSalaries->addRow(4, tr(roleStringId).c_str(), "", qty.str().c_str(), Unicode::formatFunding(totalSalary).c_str());
+	};
+
+	// One summary row per role.
+	addRoleRow(ROLE_SOLDIER, "STR_SOLDIER");
+	addRoleRow(ROLE_PILOT, "STR_PILOT");
+	addRoleRow(ROLE_AGENT, "STR_AGENT");
+	addRoleRow(ROLE_SCIENTIST, "STR_SCIENTIST");
+	addRoleRow(ROLE_ENGINEER, "STR_ENGINEER");
+	addRoleRow(ROLE_ROBOT, "STR_ROBOT");
+
 	std::ostringstream ss6b;
 	int staffCount, inventoryCount;
 	int totalOtherCost = _base->getTotalOtherStaffAndInventoryCost(staffCount, inventoryCount);

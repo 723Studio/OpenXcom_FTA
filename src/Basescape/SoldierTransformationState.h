@@ -51,7 +51,6 @@ private:
 	Text *_txtSoldierBonus, *_txtTooltip;
 	TextList *_lstRequiredItems, *_lstStatChanges, *_lstBonuses;
 	TextButton *_btnCancel, *_btnLeftArrow, *_btnRightArrow, *_btnStart, *_btnStats;
-	bool _ftaUI;
 	std::map<int, int> _tagMapping;
 	std::string _toolTipText;
 

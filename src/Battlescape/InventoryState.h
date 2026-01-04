@@ -67,7 +67,7 @@ private:
 	int _mouseHoverItemFrame = 0;
 	BattleItem *_mouseHoverItem = nullptr;
 	BattleItem *_currentDamageTooltipItem = nullptr;
-	bool _reloadUnit, _ftaUI;
+	bool _reloadUnit;
 	int _globalLayoutIndex;
 	int _prev_key = 0, _key_repeats = 0;
 	/// Helper method for Create Template button
@@ -82,17 +82,12 @@ public:
 	/// Updates all soldier info.
 	void setGlobalLayoutIndex(int index, bool armorChanged);
 	void init() override;
-	/// Handler for pressing on the Name edit.
-	void edtSoldierPress(Action *action);
-	/// Handler for changing text on the Name edit.
-	void edtSoldierChange(Action *action);
 	/// Updates the soldier info (Weight, TU).
 	void updateStats();
 	/// Saves the soldiers' equipment-layout.
 	void saveEquipmentLayout();
 	/// Handler for clicking the Armor button.
 	void btnArmorClick(Action *action);
-	void btnArmorClickRight(Action *action);
 	void btnDiaryLightClick(Action *action);
 	void btnArmorClickMiddle(Action *action);
 	/// Methods for handling the global equipment layout save/load hotkeys.
@@ -135,8 +130,6 @@ public:
 	void btnShowPersonalTemplateClick(Action *action);
 	/// Handler for hitting the Clear Inventory hotkey.
 	void onClearInventory(Action *action);
-	/// Handler for hitting the Auto-equip hotkey.
-	void onAutoequip(Action *action);
 	/// Handler for clicking on the inventory.
 	void invClick(Action *action);
 	/// Handler for showing item info.

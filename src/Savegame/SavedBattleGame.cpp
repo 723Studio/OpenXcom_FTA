@@ -3703,7 +3703,8 @@ namespace
 template<typename... Args>
 void flashMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Args... args)
 {
-	if (!sbg || !sbg->getBattleState() || sbg->getGeoscapeSave()->isFtAGame())
+	// FtA-only fork: this warning popup is disabled.
+	if (!sbg || !sbg->getBattleState())
 	{
 		return;
 	}

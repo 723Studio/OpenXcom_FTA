@@ -32,7 +32,6 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/RuleRegion.h"
 #include "../Engine/Options.h"
-#include "../Basescape/SellState.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 
@@ -156,12 +155,6 @@ void BaseDestroyedState::btnOkClick(Action *)
 
 	if (_partialDestruction)
 	{
-		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && _base != 0 && _base->storesOverfull())
-		{
-			_game->pushState(new SellState(_base, 0, OPT_BATTLESCAPE));
-			_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
-		}
-
 		// the base was damaged, but survived
 		return;
 	}

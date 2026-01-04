@@ -47,7 +47,7 @@ class DisposeState : public State
 private:
 	Base* _base;
 	DebriefingState* _debriefingState;
-	TextButton* _btnOk, * _btnCancel, * _btnTransfer;
+	TextButton* _btnOk, * _btnCancel;
 	TextEdit* _btnQuickSearch;
 	Window* _window;
 	Text* _txtTitle, * _txtSales, * _txtFunds, * _txtQuantity, * _txtSell, * _txtValue, * _txtSpaceUsed;
@@ -66,6 +66,7 @@ private:
 	bool _reset;
 	bool _sellAllButOne;
 	bool _delayedInitDone;
+	bool _overfullCritical;
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -88,8 +89,6 @@ public:
 	void btnOkClick(Action* action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action* action);
-	/// Handler for clicking the Transfer button.
-	void btnTransferClick(Action* action);
 	/// Handlers for Quick Search.
 	void btnQuickSearchToggle(Action* action);
 	void btnQuickSearchApply(Action* action);

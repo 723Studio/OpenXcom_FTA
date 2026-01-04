@@ -493,11 +493,11 @@ void SoldiersState::initList(size_t scrl)
 			int dynStat = (*_dynGetter)(_game, soldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), tr(soldier->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), tr(soldier->getRankString()).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, soldier->getName(true).c_str(), tr(soldier->getRankString(true)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, soldier->getName(true).c_str(), tr(soldier->getRankString()).c_str(), duty.c_str());
 		}
 		Uint8 color = _lstSoldiers->getColor();
 		if (isBusy || !isFree || soldier->getCraft())

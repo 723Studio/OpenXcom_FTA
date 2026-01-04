@@ -330,13 +330,13 @@ void BaseInfoStateFtA::init()
 	_barStores->setValue((int)floor(_base->getUsedStores() + 0.05));
 
 	std::ostringstream ss4;
-	ss4 << _base->getUsedLaboratories(true) << ":" << _base->getAvailableLaboratories();
+	ss4 << _base->getUsedLaboratories() << ":" << _base->getAvailableLaboratories();
 	_numLaboratories->setText(ss4.str());
 	_barLaboratories->setMax(_base->getAvailableLaboratories());
 	_barLaboratories->setValue(_base->getUsedLaboratories());
 
 	std::ostringstream ss5;
-	ss5 << _base->getUsedWorkshops(true) << ":" << _base->getAvailableWorkshops();
+	ss5 << _base->getUsedWorkshops() << ":" << _base->getAvailableWorkshops();
 	_numWorkshops->setText(ss5.str());
 	_barWorkshops->setMax(_base->getAvailableWorkshops());
 	_barWorkshops->setValue(_base->getUsedWorkshops());

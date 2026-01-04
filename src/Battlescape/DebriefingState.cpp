@@ -62,6 +62,7 @@
 #include "../Savegame/BaseFacility.h"
 #include "../Savegame/CovertOperation.h"
 #include "../Savegame/DiplomacyFaction.h"
+#include "../Savegame/Transfer.h"
 #include <sstream>
 #include "../Menu/ErrorMessageState.h"
 #include "../Menu/MainMenuState.h"
@@ -74,7 +75,6 @@
 #include "../Basescape/TransferBaseState.h"
 #include "../FTA/DiplomacyStartState.h"
 #include "../Engine/Screen.h"
-#include "../Basescape/SellState.h"
 #include "../Menu/SaveGameState.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleInterface.h"
@@ -99,7 +99,6 @@ DebriefingState::DebriefingState() :
 	_recoveredItemObjs(0)
 {
 	_missionStatistics = new MissionStatistics();
-	_fta = _game->getMod()->isFTAGame();
 
 	Options::baseXResolution = Options::baseXGeoscape;
 	Options::baseYResolution = Options::baseYGeoscape;
@@ -120,16 +119,8 @@ DebriefingState::DebriefingState() :
 	_txtQuantity = new Text(60, 9, 200, 24);
 	_txtScore = new Text(55, 9, 270, 24);
 	_txtRecovery = new Text(180, 9, 16, 60);
-	if (!_fta)
-	{
-		_txtRating = new Text(200, 9, 64, 180);
-		_txtLoyalty = new Text(200, 9, 64, 180);
-	}
-	else
-	{
-		_txtRating = new Text(104, 9, 64, 180);
-		_txtLoyalty = new Text(73, 9, 173, 180);
-	}
+	_txtRating = new Text(104, 9, 64, 180);
+	_txtLoyalty = new Text(73, 9, 173, 180);
 
 	_lstStats = new TextList(290, 80, 16, 32);
 	_lstRecovery = new TextList(290, 80, 16, 32);
@@ -360,12 +351,8 @@ void DebriefingState::applyVisibility()
 	bool showScore = _pageNumber == 0;
 	bool showStats = _pageNumber == 1;
 	bool showItems = _pageNumber == 2;
-	bool showPsi = true;
-	if (_game->getMod()->isFTAGame())
-	{
-		showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
-			_game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
-	}
+	bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
+		_game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
 
 	// First page (scores)
 	_txtItem->setVisible(showScore || showItems);
@@ -373,7 +360,7 @@ void DebriefingState::applyVisibility()
 	_txtScore->setVisible(showScore);
 	_txtRecovery->setVisible(showScore);
 	_txtRating->setVisible(showScore);
-	_txtLoyalty->setVisible(showScore && _game->getMod()->isFTAGame());
+	_txtLoyalty->setVisible(showScore);
 	_lstStats->setVisible(showScore);
 	_lstRecovery->setVisible(showScore);
 	_lstTotal->setVisible(showScore);
@@ -399,18 +386,14 @@ void DebriefingState::applyVisibility()
 	_lstRecoveredItems->setVisible(showItems);
 
 	// Hide sell button if there are no contacts with factions yet
-	bool showSellButtonFTA = true; //for non-FTA cases
-	if (_game->getMod()->isFTAGame())
+	bool showSellButtonFTA = false;
+	for (std::vector<DiplomacyFaction *>::iterator i = _game->getSavedGame()->getDiplomacyFactions().begin();
+		i != _game->getSavedGame()->getDiplomacyFactions().end(); ++i)
 	{
-		showSellButtonFTA = false;
-		for (std::vector<DiplomacyFaction *>::iterator i = _game->getSavedGame()->getDiplomacyFactions().begin();
-			 i != _game->getSavedGame()->getDiplomacyFactions().end(); ++i)
+		if ((*i)->isDiscovered())
 		{
-			if ((*i)->isDiscovered())
-			{
-				showSellButtonFTA = true;
-				break;
-			}
+			showSellButtonFTA = true;
+			break;
 		}
 	}
 
@@ -582,7 +565,7 @@ void DebriefingState::init()
 
 	// update FtA Loyalty
 	int loyalty = _game->getMasterMind()->updateLoyalty(total, XCOM_BATTLESCAPE);
-	if (_game->getMod()->isFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
+	if (_game->getSavedGame()->isResearched("STR_LOYALTY"))
 	{
 		_txtLoyalty->setText(tr("STR_LOYALTY_UPDATE").arg(loyalty));
 	}
@@ -734,15 +717,7 @@ void DebriefingState::init()
 		}
 		deadUnit->getGeoscapeSoldier()->getDiary()->awardPostMortemKill(postMortemKills);
 
-		SoldierRank rank;
-		if (_fta)
-		{
-			rank = (SoldierRank)deadUnit->getGeoscapeSoldier()->getBestRoleRank().second;
-		}
-		else
-		{
-			rank = deadUnit->getGeoscapeSoldier()->getRank();
-		}
+		SoldierRank rank = (SoldierRank)deadUnit->getGeoscapeSoldier()->getBestRoleRank().second;
 		// Rookies don't get this next award. No one likes them.
 		if (rank == RANK_ROOKIE)
 		{
@@ -782,14 +757,7 @@ void DebriefingState::init()
 		}
 
 		SoldierRank rank;
-		if (_fta)
-		{
-			rank = (SoldierRank)deadUnit->getGeoscapeSoldier()->getBestRoleRank().second;
-		}
-		else
-		{
-			rank = deadUnit->getGeoscapeSoldier()->getRank();
-		}
+		rank = (SoldierRank)deadUnit->getGeoscapeSoldier()->getBestRoleRank().second;
 
 		if (deadUnit->getId() == bestScoreID[rank])
 		{
@@ -887,9 +855,8 @@ void DebriefingState::init()
 	std::vector<Soldier*> participants;
 	int missionExp = RNG::generate(0, std::abs(total / 100));
 	if (save->getDifficulty() == DIFF_SUPERHUMAN)
-	{
 		missionExp /= 2;
-	}
+
 	for (auto* bu : *_game->getSavedGame()->getSavedBattle()->getUnits())
 	{
 		auto* soldier = bu->getGeoscapeSoldier();
@@ -905,20 +872,10 @@ void DebriefingState::init()
 		}
 	}
 
-	if (_fta)
+	for (auto* soldier : participants)
 	{
-		for (auto* soldier : participants)
-		{
-			if (soldier->rolePromoteSoldier(ROLE_SOLDIER))
-			{
-				_promotions = true;
-			}
-		}
-	}
-	else if (Options::oxceAutomaticPromotions)
-	{
-
-		_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
+		if (soldier->rolePromoteSoldier(ROLE_SOLDIER))
+			_promotions = true;
 	}
 
 	_game->getSavedGame()->setBattleGame(nullptr);
@@ -973,14 +930,7 @@ void DebriefingState::btnSellClick(Action *)
 {
 	if (!_destroyBase)
 	{
-		if (_game->getMod()->isFTAGame())
-		{
-			_game->pushState(new DiplomacyStartState(_base, false));
-		}
-		else
-		{
-			_game->pushState(new SellState(_base, this, OPT_BATTLESCAPE));
-		}
+		_game->pushState(new DiplomacyStartState(_base, false));
 	}
 }
 
@@ -1116,12 +1066,6 @@ void DebriefingState::btnOkClick(Action *)
 					}
 				}
 
-			}
-
-			if (Options::storageLimitsEnforced && _base->storesOverfull())
-			{
-				_game->pushState(new SellState(_base, 0, OPT_BATTLESCAPE));
-				_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
 			}
 		}
 	}
@@ -1738,11 +1682,9 @@ void DebriefingState::prepareDebriefing()
 				auto race = _game->getMod()->getAlienRace(bunit->getUnitRules()->getRace());
 				RaceType type = RACE_TYPE_MIXED;
 				if (race)
-				{
 					type = race->getRaceType();
-				}
 
-				if (!_fta || type == RACE_TYPE_ALIEN)
+				if (type == RACE_TYPE_ALIEN)
 				{
 					addStat("STR_ALIENS_KILLED", 1, value);
 				}
@@ -1960,7 +1902,7 @@ void DebriefingState::prepareDebriefing()
 					battle->getTileEngine()->itemDropInventory(bunit->getTile(), bunit);
 				}
 
-				if (_fta && bunit->getUnitRules()->getPrisoner())
+				if (bunit->getUnitRules()->getPrisoner())
 				{
 					recoverPrisoner(bunit, base);
 				}
@@ -1982,7 +1924,7 @@ void DebriefingState::prepareDebriefing()
 				{
 					battle->getTileEngine()->itemDropInventory(bunit->getTile(), bunit);
 				}
-				if (_fta && bunit->getUnitRules()->getPrisoner())
+				if (bunit->getUnitRules()->getPrisoner())
 				{
 					recoverPrisoner(bunit, base);
 				}
@@ -2853,7 +2795,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 						if (rule->isCorpseRecoverable())
 						{
 							addItemsToBaseStores(corpseUnit->getArmor()->getCorpseGeoscape(), base, 1, true);
-							if (!_fta || type == RACE_TYPE_ALIEN)
+							if (type == RACE_TYPE_ALIEN)
 							{
 								addStat("STR_ALIEN_CORPSES_RECOVERED", 1, points);
 							}
@@ -2876,11 +2818,11 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 						                   && _missionStatistics->aborted
 						                   && _game->getMod()->getCraft(_missionStatistics->craft);
 						bool canBeImprisoned = corpseUnit->getUnitRules()->getPrisoner() || corpseUnit->getGeoscapeSoldier();
-						if (_fta && canBeImprisoned && (corpseUnit->getOriginalFaction() == FACTION_HOSTILE || capturedCiv))
+						if (canBeImprisoned && (corpseUnit->getOriginalFaction() == FACTION_HOSTILE || capturedCiv))
 						{
 							recoverPrisoner(corpseUnit, base);
 						}
-						else if (corpseUnit->getOriginalFaction() == FACTION_HOSTILE) // OXCE case
+						else if (corpseUnit->getOriginalFaction() == FACTION_HOSTILE)
 						{
 							recoverAlien(corpseUnit, base, craft);
 						}
@@ -2893,7 +2835,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 
 				if (awardItemPoints)
 				{
-					if (rule->isAlienArtifact() || !_game->getMod()->isFTAGame())
+					if (rule->isAlienArtifact())
 					{
 						addStat("STR_ALIEN_ARTIFACTS_RECOVERED", 1, points);
 					}
@@ -3106,92 +3048,34 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 	{
 		return;
 	}
-	if (rule->isRecoverableAsScientist())
+
+	const RuleSoldier *ruleSoldier = rule->getCivilianRecoverySoldierType();
+	if (ruleSoldier != 0)
 	{
 		Transfer *t = new Transfer(24);
-		t->setScientists(1);
+		Target* target = craft;
+		if (!target)
+		{
+			target = base;
+		}
+		int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, target);
+		Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
+		YAML::YamlRootNodeReader reader(from->getUnitRules()->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+		s->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
+		if (!from->getUnitRules()->getSpawnedPersonName().empty())
+		{
+			s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));
+		}
+		else
+		{
+			s->genName();
+		}
+		t->setSoldier(s);
 		base->getTransfers()->push_back(t);
 	}
-	else if (rule->isRecoverableAsEngineer())
+	else if (from->getUnitRules()->getPrisoner() != nullptr)
 	{
-		Transfer *t = new Transfer(24);
-		t->setEngineers(1);
-		base->getTransfers()->push_back(t);
-	}
-	else
-	{
-		const RuleSoldier *ruleSoldier = rule->getCivilianRecoverySoldierType();
-		if (ruleSoldier != 0)
-		{
-			Transfer *t = new Transfer(24);
-			Target* target = craft;
-			if (!target)
-			{
-				target = base;
-			}
-			int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, target);
-			Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
-			YAML::YamlRootNodeReader reader(from->getUnitRules()->getSpawnedSoldierTemplate(), "(spawned soldier template)");
-			s->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
-			if (!from->getUnitRules()->getSpawnedPersonName().empty())
-			{
-				s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));
-			}
-			else
-			{
-				s->genName();
-			}
-			t->setSoldier(s);
-			base->getTransfers()->push_back(t);
-		}
-		else if (from->getUnitRules()->getPrisoner() != nullptr)
-		{
-			recoverPrisoner(from, base);
-		}
-		else if (!_fta)
-		{
-			const RuleItem *ruleItem = rule->getCivilianRecoveryItemType();
-			if (ruleItem != 0)
-			{
-				if (!ruleItem->isAlien())
-				{
-					addItemsToBaseStores(ruleItem, base, 1, true);
-				}
-				else
-				{
-					const RuleItem *ruleLiveAlienItem = ruleItem;
-					bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
-					if (killPrisonersAutomatically)
-					{
-						// check also other bases, maybe we can transfer/redirect prisoners there
-						for (auto* xbase : *_game->getSavedGame()->getBases())
-						{
-							if (xbase->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) > 0)
-							{
-								killPrisonersAutomatically = false;
-								break;
-							}
-						}
-					}
-					if (killPrisonersAutomatically)
-					{
-						_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 1; // 1 = not available in any base
-					}
-					else
-					{
-						addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);
-						int availableContainment = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType());
-						int usedContainment = base->getUsedContainment(ruleLiveAlienItem->getPrisonType());
-						int freeContainment = availableContainment - (usedContainment * _limitsEnforced);
-						// no capacity, or not enough capacity
-						if (availableContainment == 0 || freeContainment < 0)
-						{
-							_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 2; // 2 = overfull
-						}
-					}
-				}
-			}
-		}
+		recoverPrisoner(from, base);
 	}
 }
 
@@ -3239,15 +3123,8 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 			ss << "; Spawn unit = [" << from->getSpawnUnit()->getType() << "]";
 		}
 		ss << "; isSurrendering = " << from->isSurrendering();
-		if (_fta)
-		{
-			Log(LOG_ERROR) << ss.str(); // we suppose nothing extremly bad happen, just do not recover it...
-			return;
-		}
-		else
-		{
-			throw Exception(ss.str());
-		}
+		Log(LOG_ERROR) << ss.str(); // we suppose nothing extremly bad happen, just do not recover it...
+		return;
 	}
 
 	bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
@@ -3277,11 +3154,9 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 					RaceType type = RACE_TYPE_ALIEN;
 					AlienRace* race = _game->getMod()->getAlienRace(from->getUnitRules()->getRace());
 					if (race)
-					{
 						type = _game->getMod()->getAlienRace(from->getUnitRules()->getRace())->getRaceType();
-					}
 
-					if (!_fta || type == RACE_TYPE_ALIEN)
+					if (type == RACE_TYPE_ALIEN)
 					{
 						addStat("STR_ALIEN_CORPSES_RECOVERED", 1, corpseRule->getRecoveryPoints());
 					}
@@ -3313,7 +3188,7 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 			points = from->getValue() * 2;
 		}
 
-		if (!_fta || type == RACE_TYPE_ALIEN)
+		if (type == RACE_TYPE_ALIEN)
 		{
 			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, points);
 		}

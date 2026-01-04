@@ -68,10 +68,6 @@ en-US:
 #DismantleFacilityState.cpp
   STR_REFUND_VALUE: "Sales value> {ALT}{0}"
   STR_REFUND_VALUE_NEGATIVE: "Expenses> {ALT}{0}"
-#GlobalManufactureState.cpp
-  STR_PRODUCTION_OVERVIEW: "PRODUCTION OVERVIEW"
-#GlobalResearchState.cpp
-  STR_RESEARCH_OVERVIEW: "RESEARCH OVERVIEW"
 #GlobalAlienContainmentState.cpp
   STR_PRISONER_OVERVIEW: "PRISONER OVERVIEW"
   STR_PRISONER: "PRISONER"
@@ -516,13 +512,9 @@ en-US:
   STR_PERFORMANCE_BONUS: "Performance Bonus"
   STR_COUNTRY_HAS_CANCELLED_A_SECRET_PACT: "{0} has renounced the pact with alien forces and was allowed to return to the project."
   STR_COUNTRIES_HAVE_CANCELLED_A_SECRET_PACT: "{0} have renounced the pact with alien forces and were allowed to return to the project."
-#NewPossibleCraftState.cpp
-  STR_WE_CAN_NOW_RENT: "We can now rent"
 #NewPossibleFacilityState.cpp
   STR_REQUIRED_BASE_SERVICES: "Required base services: {0}"
   STR_WE_CAN_NOW_BUILD: "We can now build"
-#NewPossiblePurchaseState.cpp
-  STR_WE_CAN_NOW_PURCHASE: "We can now purchase"
 #ProductionCompleteState.cpp
   STR_NOT_ENOUGH_LIVING_SPACE_AT_BASE: "Not enough living space to accomodate{NEWLINE}{0}{NEWLINE}at{NEWLINE}{1}"
 #TargetInfoState.cpp

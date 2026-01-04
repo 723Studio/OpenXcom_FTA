@@ -43,7 +43,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Menu/ErrorMessageState.h"
-#include "SellState.h"
+#include "../Savegame/Transfer.h"
 #include "SoldierArmorState.h"
 #include "SoldierBonusState.h"
 #include "SoldierExperienceState.h"
@@ -373,7 +373,7 @@ void SoldierInfoStateFtA::init()
 
 	_btnArmor->setText(wsArmor);
 
-	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString(true))));
+	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString())));
 
 	_txtMissions->setText(tr("STR_MISSIONS").arg(_soldier->getMissions()));
 

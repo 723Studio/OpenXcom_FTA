@@ -176,26 +176,6 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 			}
 		}
 	}
-	if (_baseFrom->getAvailableScientists() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"),  (int)(5 * _distance), _baseFrom->getAvailableScientists(), _baseTo->getAvailableScientists(), 0, _baseFrom->getAvailableScientists(), -2, 0, 0, _baseFrom->getAvailableScientists() * (int)(5 * _distance) };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	if (_baseFrom->getAvailableEngineers() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"),  (int)(5 * _distance), _baseFrom->getAvailableEngineers(), _baseTo->getAvailableEngineers(), 0, _baseFrom->getAvailableScientists(), -1, 0, 0, _baseFrom->getAvailableEngineers() * (int)(5 * _distance) };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
 	for (auto& itemType : _game->getMod()->getItemsList())
 	{
 		RuleItem *rule = _game->getMod()->getItem(itemType, true);
@@ -345,8 +325,6 @@ std::string TransferItemsState::getCategory(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return "STR_PERSONNEL";
 	case TRANSFER_CRAFT:
 		return "STR_CRAFT_ARMAMENT";
@@ -356,8 +334,6 @@ std::string TransferItemsState::getCategory(int sel) const
 		{
 			if (rule->getVehicleUnit())
 				return "STR_PERSONNEL"; // OXCE: critters fighting for us
-			if (rule->isAlien() && !_game->getMod()->isFTAGame())
-				return "STR_PRISONERS"; // OXCE: live aliens
 			return "STR_ALIENS";
 		}
 		if (rule->getBattleType() == BT_NONE)
@@ -386,8 +362,7 @@ bool TransferItemsState::belongsToCategory(int sel, const std::string &cat) cons
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
+	case TRANSFER_PRISONER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -549,20 +524,6 @@ void TransferItemsState::updateList()
  */
 void TransferItemsState::btnOkClick(Action *)
 {
-	if (Options::storageLimitsEnforced && !AreSame(_iQty, 0.0))
-	{
-		// check again (because of items with negative size)
-		// But only check the base whose available space is decreasing.
-		double freeStoresTo = _baseTo->getAvailableStores() - _baseTo->getUsedStores() - _iQty;
-		double freeStoresFrom = _baseFrom->getAvailableStores() - _baseFrom->getUsedStores() + _iQty;
-		if (_iQty > 0.0 ? freeStoresTo < -0.00001 : freeStoresFrom < -0.00001)
-		{
-			RuleInterface *menuInterface = _game->getMod()->getInterface("transferMenu");
-			_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_STORE_SPACE"), _palette, menuInterface->getElement("errorMessage")->color, "BACK13.SCR", menuInterface->getElement("errorPalette")->color));
-			return;
-		}
-	}
-
 	_game->pushState(new TransferConfirmState(_baseTo, this));
 }
 
@@ -650,18 +611,6 @@ void TransferItemsState::completeTransfer()
 					t->setCraft(craft);
 					_baseTo->getTransfers()->push_back(t);
 				}
-				break;
-			case TRANSFER_SCIENTIST:
-				_baseFrom->setScientists(_baseFrom->getScientists() - transferRow.amount);
-				t = new Transfer(time);
-				t->setScientists(transferRow.amount);
-				_baseTo->getTransfers()->push_back(t);
-				break;
-			case TRANSFER_ENGINEER:
-				_baseFrom->setEngineers(_baseFrom->getEngineers() - transferRow.amount);
-				t = new Transfer(time);
-				t->setEngineers(transferRow.amount);
-				_baseTo->getTransfers()->push_back(t);
 				break;
 			case TRANSFER_ITEM:
 				item = (RuleItem*)transferRow.rule;
@@ -945,8 +894,6 @@ void TransferItemsState::increaseByValue(int change)
 			errorMessage = tr("STR_NO_FREE_ACCOMODATION");
 		}
 		break;
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		if (_pQty + 1 > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
 		{
 			errorMessage = tr("STR_NO_FREE_ACCOMODATION");
@@ -962,14 +909,6 @@ void TransferItemsState::increaseByValue(int change)
 		else if (craft->getNumTotalSoldiers() > 0 && _pQty + craft->getNumTotalSoldiers(true) > _baseTo->getAvailableQuarters() - _baseTo->getUsedQuarters())
 		{
 			errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
-		}
-		else if (Options::storageLimitsEnforced)
-		{
-			double used = craft->getTotalItemStorageSize();
-			if (used > 0.0 && _baseTo->storesOverfull(_iQty + used))
-			{
-				errorMessage = tr("STR_NOT_ENOUGH_STORE_SPACE_FOR_CRAFT");
-			}
 		}
 		break;
 	case TRANSFER_ITEM:
@@ -999,8 +938,6 @@ void TransferItemsState::increaseByValue(int change)
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
-		case TRANSFER_SCIENTIST:
-		case TRANSFER_ENGINEER:
 			change = std::min(std::min(freeQuarters, getRow().qtySrc - getRow().amount), change);
 			_pQty += change;
 			getRow().amount += change;
@@ -1080,8 +1017,6 @@ void TransferItemsState::decreaseByValue(int change)
 	switch (getRow().type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		_pQty -= change;
 		break;
 	case TRANSFER_CRAFT:

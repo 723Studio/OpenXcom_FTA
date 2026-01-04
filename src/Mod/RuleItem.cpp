@@ -770,10 +770,7 @@ void RuleItem::afterLoad(const Mod* mod)
 		}
 		else
 		{
-			if (!mod->isFTAGame())
-			{
-				throw Exception("Sorry modders, cannot recover live aliens from random inorganic junk '" + pair.first + "'!");
-			}
+			// FtA-only fork: allow recovery transformations targeting aliens.
 		}
 	}
 

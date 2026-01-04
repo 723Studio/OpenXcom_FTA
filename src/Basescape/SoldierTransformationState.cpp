@@ -56,8 +56,6 @@ namespace OpenXcom
 SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation *transformationRule, Base *base, Soldier *sourceSoldier, std::vector<Soldier *> *filteredListOfSoldiers) :
 			_transformationRule(transformationRule), _base(base), _sourceSoldier(sourceSoldier), _filteredListOfSoldiers(filteredListOfSoldiers)
 {
-	_ftaUI = _game->getMod()->isFTAGame();
-
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnCancel = new TextButton(148, 16, 8, 176);
 	_btnStart = new TextButton(148, 16, 164, 176);
@@ -182,7 +180,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 		_txtDescription->setHeight(_txtDescription->getHeight() + 24);
 	}
 
-	if (!_transformationRule->getSoldierBonusType().empty() && _ftaUI)
+	if (!_transformationRule->getSoldierBonusType().empty())
 	{
 		_txtSoldierBonus->setText(tr(_transformationRule->getSoldierBonusType()));
 		_lstBonuses->setColumns(1, 136);
@@ -349,28 +347,25 @@ void SoldierTransformationState::initTransformationData()
 		randomFlags += UnitStats::isRandom(_transformationRule->getPercentGainedMin(), _transformationRule->getPercentGainedMax());
 	}
 
-	if (_ftaUI)
+	if (changedStatsMin.empty() && changedStatsMax.empty() && bonusStats.empty())
 	{
-		if (changedStatsMin.empty() && changedStatsMax.empty() && bonusStats.empty())
-		{
-			_btnStats->setVisible(false);
-		}
-		else
-		{
-			_btnCancel->setWidth(70);
-		}
-
-		if (bonusRule)
-		{
-			addScriptTags(bonusRule->getScriptValuesRaw());
-		}
-		else
-		{
-			_txtSoldierBonus->setVisible(false);
-			_lstBonuses->setVisible(false);
-		}
-		return; //we don't need to render the rest info for FtA
+		_btnStats->setVisible(false);
 	}
+	else
+	{
+		_btnCancel->setWidth(70);
+	}
+
+	if (bonusRule)
+	{
+		addScriptTags(bonusRule->getScriptValuesRaw());
+	}
+	else
+	{
+		_txtSoldierBonus->setVisible(false);
+		_lstBonuses->setVisible(false);
+	}
+	return; //we don't need to render the rest info for FtA
 
 	if (_game->getMod()->isManaFeatureEnabled())
 	{

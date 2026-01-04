@@ -190,7 +190,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	_btnOk->onMouseClick((ActionHandler)&AbortMissionState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&AbortMissionState::btnOkClick, Options::keyOk);
 	bool noAbort = false;
-	if (_game->getMod()->isFTAGame() && !_battleGame->isPreview())
+	if (!_battleGame->isPreview())
 	{
 		if (craft)
 		{

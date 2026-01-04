@@ -67,8 +67,8 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param origin Game section that originated this state.
  */
-DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState, OptionsOrigin origin) :
-		_base(base), _faction(faction), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
+DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState) :
+		_base(base), _faction(faction), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0),
 		_reset(false), _sellAllButOne(false), _delayedInitDone(false),
 		_previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER)
 {
@@ -90,15 +90,11 @@ void DiplomacySellState::delayedInit()
 	}
 	_delayedInitDone = true;
 
-	bool overfull = _debriefingState == 0 && Options::storageLimitsEnforced && _base->storesOverfull();
-	bool overfullCritical = overfull ? _base->storesOverfullCritical() : false;
-
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 10, 13);
 	_btnOk = new TextButton(148, 16, 8, 176);
 	_btnCancel = new TextButton(148, 16, 164, 176);
-	_btnTransfer = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtSales = new Text(150, 9, 10, 24);
 	_txtFunds = new Text(130, 9, 120, 24);
@@ -119,7 +115,6 @@ void DiplomacySellState::delayedInit()
 	add(_btnQuickSearch, "button", "sellMenu");
 	add(_btnOk, "button", "sellMenu");
 	add(_btnCancel, "button", "sellMenu");
-	add(_btnTransfer, "button", "sellMenu");
 	add(_txtTitle, "text", "sellMenu");
 	add(_txtSales, "text", "sellMenu");
 	add(_txtFunds, "text", "sellMenu");
@@ -136,7 +131,7 @@ void DiplomacySellState::delayedInit()
 	// Set up objects		// Set up objects
 	setWindowBackground(_window, "sellMenu");
 
-	_btnOk->setText(tr("STR_SELL_SACK"));
+	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&DiplomacySellState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&DiplomacySellState::btnOkClick, Options::keyOk);
 
@@ -144,16 +139,9 @@ void DiplomacySellState::delayedInit()
 	_btnCancel->onMouseClick((ActionHandler)&DiplomacySellState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&DiplomacySellState::btnCancelClick, Options::keyCancel);
 
-	_btnTransfer->setText(tr("STR_GO_TO_TRANSFERS"));
-	_btnTransfer->onMouseClick((ActionHandler)&DiplomacySellState::btnTransferClick);
-
-	_btnCancel->setVisible(!overfull);
-	_btnOk->setVisible(!overfull);
-	_btnTransfer->setVisible(overfull);
-
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr("STR_SELL_ITEMS_SACK_PERSONNEL"));
+	_txtTitle->setText(tr("STR_SELL_UC"));
 
 	_txtFunds->setText(tr("STR_FACTION_FUNDS").arg(Unicode::formatFunding(_faction->getFunds())));
 
@@ -219,37 +207,10 @@ void DiplomacySellState::delayedInit()
 		{
 			qty = _debriefingState->getRecoveredItemCount(rule);
 		}
-		else
-		{
-			qty = _base->getStorageItems()->getItem(rule);
-			if (Options::storageLimitsEnforced && (_origin == OPT_BATTLESCAPE || overfullCritical))
-			{
-				for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end(); ++j)
-				{
-					if ((*j)->getItems() == rule)
-					{
-						qty += (*j)->getQuantity();
-					}
-					else if ((*j)->getCraft())
-					{
-						qty += overfullCritical ? (*j)->getCraft()->getTotalItemCount(rule) : (*j)->getCraft()->getItems()->getItem(rule);
-					}
-				}
-				for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end(); ++j)
-				{
-					qty += overfullCritical ? (*j)->getTotalItemCount(rule) : (*j)->getItems()->getItem(rule);
-				}
-			}
-		}
+
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
 			TransferRow row = {TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCost()};
-			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
-			{
-				row.amount = qty;
-				_total += row.cost * qty;
-				_spaceChange -= qty * rule->getSize();
-			}
 			_items.push_back(row);
 			std::string cat = getCategory(_items.size() - 1);
 			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
@@ -349,7 +310,7 @@ void DiplomacySellState::init()
 	if (_reset)
 	{
 		_game->popState();
-		_game->pushState(new DiplomacySellState(_base, _faction, _debriefingState, _origin));
+		_game->pushState(new DiplomacySellState(_base, _faction, _debriefingState));
 	}
 }
 
@@ -394,15 +355,10 @@ int DiplomacySellState::getCostAdjustment(int baseCost)
 std::string DiplomacySellState::getCategory(int sel) const
 {
 	RuleItem* rule = 0;
-	switch (_items[sel].type)
-	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-		return "STR_PERSONNEL";
-	case TRANSFER_CRAFT:
+	if (_items[sel].type == TRANSFER_CRAFT)
 		return "STR_CRAFT_ARMAMENT";
-	case TRANSFER_ITEM:
+	else
+	{
 		rule = (RuleItem*)_items[sel].rule;
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
@@ -430,6 +386,7 @@ std::string DiplomacySellState::getCategory(int sel) const
 		}
 		return "STR_EQUIPMENT";
 	}
+
 	return "STR_ALL_ITEMS";
 }
 
@@ -444,9 +401,8 @@ bool DiplomacySellState::belongsToCategory(int sel, const std::string& cat) cons
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
+	case TRANSFER_PRISONER:
 		return false;
 	case TRANSFER_ITEM:
 		RuleItem* rule = (RuleItem*)_items[sel].rule;
@@ -462,10 +418,8 @@ bool DiplomacySellState::isHidden(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-		return false;
 	case TRANSFER_CRAFT:
+	case TRANSFER_PRISONER:
 		return false;
 	case TRANSFER_ITEM:
 		RuleItem* rule = (RuleItem*)_items[sel].rule;
@@ -661,8 +615,6 @@ void DiplomacySellState::btnOkClick(Action*)
 {
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _total);
 	_faction->setFunds(_faction->getFunds() - _total);
-	Soldier* soldier;
-	Craft* craft;
 
 	auto cleanUpContainer = [&](ItemContainer* container, const RuleItem* rule, int toRemove) -> int
 	{
@@ -753,44 +705,29 @@ void DiplomacySellState::btnOkClick(Action*)
 
 		return toRemove;
 	};
-
+	Craft* craft;
 	for (std::vector<TransferRow>::const_iterator i = _items.begin(); i != _items.end(); ++i)
 	{
 		if (i->amount > 0)
 		{
+			if (i->type == TRANSFER_CRAFT)
+			{
+				auto craft = (Craft*)i->rule;
+				_base->removeCraft(craft, true);
+				_faction->setFunds(_faction->getFunds() + (int64_t)craft->getRules()->getBuyCost());
+				delete craft;
+			}
+			else if (i->type == TRANSFER_ITEM)
+			{
+
+			}
 			switch (i->type)
 			{
-			//case TRANSFER_SOLDIER:
-			//	soldier = (Soldier*)i->rule;
-			//	for (std::vector<Soldier*>::iterator s = _base->getSoldiers()->begin(); s != _base->getSoldiers()->end(); ++s)
-			//	{
-			//		if (*s == soldier)
-			//		{
-			//			if ((*s)->getArmor()->getStoreItem())
-			//			{
-			//				_base->getStorageItems()->addItem((*s)->getArmor()->getStoreItem()->getType());
-			//			}
-			//			_base->getSoldiers()->erase(s);
-			//			_faction->getStaffContainer()->addItem((*s)->getRules()->getType());
-			//			break;
-			//		}
-			//	}
-			//	delete soldier;
-			//	break;
-			//case TRANSFER_CRAFT:
-			//	craft = (Craft*)i->rule;
-			//	_base->removeCraft(craft, true);
-			//	_faction->getStaffContainer()->addItem(craft->getRules()->getType());
-			//	delete craft;
-			//	break;
-			//case TRANSFER_SCIENTIST:
-			//	_base->setScientists(_base->getScientists() - i->amount);
-			//	_faction->getStaffContainer()->addItem("STR_SCIENTIST", i->amount);
-			//	break;
-			//case TRANSFER_ENGINEER:
-			//	_base->setEngineers(_base->getEngineers() - i->amount);
-			//	_faction->getStaffContainer()->addItem("STR_ENGINEER", i->amount);
-			//	break;
+			case TRANSFER_CRAFT:
+				craft = (Craft*)i->rule;
+				_base->removeCraft(craft, true);
+				delete craft;
+				break;
 			case TRANSFER_ITEM:
 				RuleItem* item = (RuleItem*)i->rule;
 				{
@@ -844,21 +781,10 @@ void DiplomacySellState::btnOkClick(Action*)
 					{
 						// remember the decreased amount for next sell/transfer
 						_debriefingState->decreaseRecoveredItemCount(item, i->amount);
-
-						// set autosell status if we sold all of the item
-						_game->getSavedGame()->setAutosell(item, (i->qtySrc == i->amount));
 					}
 				}
 
 				break;
-			}
-		}
-		else
-		{
-			if (_debriefingState != 0 && i->type == TRANSFER_ITEM)
-			{
-				// disable autosell since we haven't sold any of the item.
-				_game->getSavedGame()->setAutosell((RuleItem*)i->rule, false);
 			}
 		}
 	}
@@ -1120,7 +1046,7 @@ void DiplomacySellState::changeByValue(int change, int dir)
 		{
 			return;
 		}
-		
+
 		change = std::min(getRow().amount, change);
 	}
 	int oldAmmount = getRow().amount;
@@ -1221,10 +1147,6 @@ void DiplomacySellState::updateItemStrings()
 	}
 	ss3 << ":" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss3.str()));
-	if (_debriefingState == 0 && Options::storageLimitsEnforced)
-	{
-		_btnOk->setVisible(!_base->storesOverfull(_spaceChange));
-	}
 }
 
 /**

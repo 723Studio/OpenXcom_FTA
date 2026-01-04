@@ -258,7 +258,6 @@ private:
 	bool _lessAliensDuringBaseDefense;
 	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry, _infiltrateRandomCountryInTheRegion;
 	bool _allowAlienBasesOnWrongTextures;
-	bool _ftaGame;
 	int _ftaGameLength;
 	bool _ironManEnabled, _researchTreeDisabled;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
@@ -959,11 +958,9 @@ public:
 	int getBughuntLowMorale() const { return _bughuntLowMorale; }
 	/// Gets the bug hunt mode time units % parameter (default = 60).
 	int getBughuntTimeUnitsLeft() const { return _bughuntTimeUnitsLeft; }
-	/// Gets if we are playing FTA scenario.
-	bool isFTAGame() const { return _ftaGame; }
 	/// Gets lenght of FtA game (while in alpha) in months
 	int getFTAGameLength() const { return _ftaGameLength; }
-	
+
 	/// Gets if ironman enabled in a ruleset.
 	bool getIsIronManEnabled() const { return _ironManEnabled; }
 	/// Gets if research tree was disabled.
@@ -1235,7 +1232,7 @@ public:
 	int getLoyaltyCoefAlienBase() const { return _coefAlienBase; }
 	int getLoyaltyNoFundsPenalty() const { return _noFundsPenalty; }
 	int getLoyaltyNoFundsValue() const { return _noFundsValue; }
-	
+
 	RuleMissionScript *getAdhocScript(const std::string &name, bool error = false) const;
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;

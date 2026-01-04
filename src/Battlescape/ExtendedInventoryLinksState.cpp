@@ -42,32 +42,17 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	// Create objects
 	_window = new Window(this, 256, inBase ? 180 : 180-14, 32, inBase ? 10 : 10+14, POPUP_BOTH);
 	_txtTitle = new Text(220, 17, 50, inBase ? 33 : 33+23);
-	if (Options::oxceFatFingerLinks)
-	{
-		_btnArmor = new TextButton(116, 25, 44, 50);
-		_btnAvatar = new TextButton(116, 25, 161, 50);
-		_btnEquipmentSave = new TextButton(116, 25, 44, 76);
-		_btnEquipmentLoad = new TextButton(116, 25, 161, 76);
-		_btnPersonalSave = new TextButton(116, 25, 44, 102);
-		_btnPersonalLoad = new TextButton(116, 25, 161, 102);
-		_btnNotes = new TextButton(116, 25, 44, 128);
-		_btnUfopedia = new TextButton(116, 25, 161, 128);
-		_btnAutoEquip = new TextButton(116, 25, 44, 154);
-		_btnOk = new TextButton(116, 25, 161, 154);
-	}
-	else
-	{
-		_btnArmor = new TextButton(220, 12, 50, 50);
-		_btnAvatar = new TextButton(220, 12, 50, 63);
-		_btnEquipmentSave = new TextButton(220, 12, 50, 76);
-		_btnEquipmentLoad = new TextButton(220, 12, 50, 89);
-		_btnPersonalSave = new TextButton(220, 12, 50, 102);
-		_btnPersonalLoad = new TextButton(220, 12, 50, 115);
-		_btnNotes = new TextButton(220, 12, 50, 128);
-		_btnUfopedia = new TextButton(220, 12, 50, 141);
-		_btnAutoEquip = new TextButton(220, 12, 50, 154);
-		_btnOk = new TextButton(220, 12, 50, 167);
-	}
+
+	_btnArmor = new TextButton(116, 25, 44, 50);
+	//_btnAvatar = new TextButton(116, 25, 161, 50);
+	_btnEquipmentSave = new TextButton(116, 25, 44, 76);
+	_btnEquipmentLoad = new TextButton(116, 25, 161, 76);
+	_btnPersonalSave = new TextButton(116, 25, 44, 102);
+	_btnPersonalLoad = new TextButton(116, 25, 161, 102);
+	_btnNotes = new TextButton(116, 25, 44, 128);
+	_btnUfopedia = new TextButton(116, 25, 161, 128);
+	//_btnAutoEquip = new TextButton(116, 25, 44, 154);
+	_btnOk = new TextButton(116, 25, 161, 154);
 
 	// Set palette
 	setInterface("oxceLinks", false, _save);
@@ -77,14 +62,12 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	add(_btnOk, "button", "oxceLinks");
 
 	add(_btnArmor, "button", "oxceLinks");
-	add(_btnAvatar, "button", "oxceLinks");
 	add(_btnEquipmentSave, "button", "oxceLinks");
 	add(_btnEquipmentLoad, "button", "oxceLinks");
 	add(_btnPersonalSave, "button", "oxceLinks");
 	add(_btnPersonalLoad, "button", "oxceLinks");
 	add(_btnNotes, "button", "oxceLinks");
 	add(_btnUfopedia, "button", "oxceLinks");
-	add(_btnAutoEquip, "button", "oxceLinks");
 
 	centerAllSurfaces();
 
@@ -102,10 +85,6 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	_btnArmor->setText(tr("STR_INVENTORY_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnArmorClick);
 	_btnArmor->setVisible(inBase);
-
-	_btnAvatar->setText(tr("STR_INVENTORY_AVATAR"));
-	_btnAvatar->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnAvatarClick);
-	_btnAvatar->setVisible(inBase);
 
 	_btnEquipmentSave->setText(tr("STR_SAVE_EQUIPMENT_TEMPLATE"));
 	_btnEquipmentSave->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnEquipmentSaveClick);
@@ -129,10 +108,6 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	_btnUfopedia->setText(tr("STR_UFOPAEDIA"));
 	_btnUfopedia->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnUfopediaClick);
 
-	_btnAutoEquip->setText(tr("STR_AUTO_EQUIP"));
-	_btnAutoEquip->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnAutoEquipClick);
-	_btnAutoEquip->setVisible(beforeMission);
-
 	applyBattlescapeTheme("oxceLinks");
 }
 
@@ -140,12 +115,6 @@ void ExtendedInventoryLinksState::btnArmorClick(Action *)
 {
 	_game->popState();
 	_parent->btnArmorClick(nullptr);
-}
-
-void ExtendedInventoryLinksState::btnAvatarClick(Action *)
-{
-	_game->popState();
-	_parent->btnArmorClickRight(nullptr);
 }
 
 void ExtendedInventoryLinksState::btnEquipmentSaveClick(Action *)
@@ -182,12 +151,6 @@ void ExtendedInventoryLinksState::btnUfopediaClick(Action *)
 {
 	_game->popState();
 	_parent->btnUfopaediaClick(nullptr);
-}
-
-void ExtendedInventoryLinksState::btnAutoEquipClick(Action *)
-{
-	_game->popState();
-	_parent->onAutoequip(nullptr);
 }
 
 /**

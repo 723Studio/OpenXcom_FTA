@@ -38,7 +38,6 @@
 #include "../Savegame/SoldierDiary.h"
 #include "../Savegame/SoldierDeath.h"
 #include "../Savegame/BattleUnitStatistics.h"
-#include "../Savegame/Country.h"
 #include "../Savegame/Region.h"
 #include "../Savegame/AlienBase.h"
 
@@ -266,21 +265,6 @@ void StatisticsState::listStats()
 	}
 
 	int xcomBases = save->getBases()->size() + xcomBasesLost;
-	int currentScientists = 0, currentEngineers = 0;
-	for (const auto* xbase : *save->getBases())
-	{
-		currentScientists += xbase->getTotalScientists();
-		currentEngineers += xbase->getTotalEngineers();
-	}
-
-	int countriesLost = 0;
-	for (const auto* country : *save->getCountries())
-	{
-		if (country->getPact())
-		{
-			countriesLost++;
-		}
-	}
 
 	int researchDone = save->getDiscoveredResearch().size();
 
@@ -317,15 +301,12 @@ void StatisticsState::listStats()
 	{
 		_lstStats->addRow(2, tr("STR_TOTAL_ALIEN_BASES").c_str(), Unicode::formatNumber(alienBases).c_str());
 	}
-	_lstStats->addRow(2, tr("STR_COUNTRIES_LOST").c_str(), Unicode::formatNumber(countriesLost).c_str());
 	_lstStats->addRow(2, tr("STR_TOTAL_TERROR_SITES").c_str(), Unicode::formatNumber(terrorSites).c_str());
 	if (Options::soldierDiaries)
 	{
 		_lstStats->addRow(2, tr("STR_TOTAL_BASES").c_str(), Unicode::formatNumber(xcomBases).c_str());
 	}
 	_lstStats->addRow(2, tr("STR_TOTAL_CRAFT").c_str(), Unicode::formatNumber(totalCrafts).c_str());
-	_lstStats->addRow(2, tr("STR_TOTAL_SCIENTISTS").c_str(), Unicode::formatNumber(currentScientists).c_str());
-	_lstStats->addRow(2, tr("STR_TOTAL_ENGINEERS").c_str(), Unicode::formatNumber(currentEngineers).c_str());
 	_lstStats->addRow(2, tr("STR_TOTAL_RESEARCH").c_str(), Unicode::formatNumber(researchDone).c_str());
 }
 

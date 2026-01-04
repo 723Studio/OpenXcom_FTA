@@ -65,7 +65,6 @@ void Unit::load(const YAML::YamlNodeReader& node, Mod *mod)
 		load(parent, mod);
 	}
 
-	mod->loadNameNull(_type, _civilianRecoveryTypeName, reader["civilianRecoveryType"]);
 	mod->loadNameNull(_type, _spawnedPersonName, reader["spawnedPersonName"]);
 	mod->loadNameNull(_type, _liveAlienName, reader["liveAlien"]);
 	if (reader["spawnedSoldier"])
@@ -165,19 +164,18 @@ void Unit::afterLoad(const Mod* mod)
 		mod->linkRule(_liveAlien, _liveAlienName);
 	}
 
+	_civilianRecoverySoldierType = mod->getSoldier(_civilianRecoveryTypeName, false);
+
 	if (Mod::isEmptyRuleName(_civilianRecoveryTypeName) == false)
 	{
-		if (!isRecoverableAsEngineer() && !isRecoverableAsScientist())
+		_civilianRecoverySoldierType = mod->getSoldier(_civilianRecoveryTypeName, false);
+		if (_civilianRecoverySoldierType)
 		{
-			_civilianRecoverySoldierType = mod->getSoldier(_civilianRecoveryTypeName, false);
-			if (_civilianRecoverySoldierType)
-			{
-				_civilianRecoveryTypeName = "";
-			}
-			else
-			{
-				mod->linkRule(_civilianRecoveryItemType, _civilianRecoveryTypeName);
-			}
+			_civilianRecoveryTypeName = "";
+		}
+		else
+		{
+			mod->linkRule(_civilianRecoveryItemType, _civilianRecoveryTypeName);
 		}
 		assert(isRecoverableAsCivilian() && "Check missing some cases");
 	}

@@ -307,14 +307,6 @@ TransferType Transfer::getType() const
 	{
 		return TRANSFER_CRAFT;
 	}
-	else if (_scientists != 0)
-	{
-		return TRANSFER_SCIENTIST;
-	}
-	else if (_engineers != 0)
-	{
-		return TRANSFER_ENGINEER;
-	}
 	else if (_prisoner != 0)
 	{
 		return TRANSFER_PRISONER;
@@ -345,14 +337,6 @@ void Transfer::advance(Base *base)
 		else if (_itemQty != 0)
 		{
 			base->getStorageItems()->addItem(_itemId, _itemQty);
-		}
-		else if (_scientists != 0)
-		{
-			base->setScientists(base->getScientists() + _scientists);
-		}
-		else if (_engineers != 0)
-		{
-			base->setEngineers(base->getEngineers() + _engineers);
 		}
 		else if (_prisoner != 0)
 		{

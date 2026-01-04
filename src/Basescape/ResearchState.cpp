@@ -32,13 +32,10 @@
 #include "../Savegame/Soldier.h"
 #include "../Basescape/ScientistsState.h"
 #include "NewResearchListState.h"
-#include "GlobalResearchState.h"
 #include "../Savegame/ResearchProject.h"
 #include "../Mod/RuleResearch.h"
-#include "ResearchInfoState.h"
 #include "ResearchInfoStateFtA.h"
 #include "TechTreeViewerState.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
@@ -50,19 +47,10 @@ namespace OpenXcom
  */
 ResearchState::ResearchState(Base *base) : _base(base)
 {
-	_ftaUi = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (_ftaUi)
-	{
-		_btnOk = new TextButton(96, 16, 216, 176);
-		_btnNew = new TextButton(96, 16, 8, 176);
-	}
-	else
-	{
-		_btnOk = new TextButton(148, 16, 164, 176);
-		_btnNew = new TextButton(148, 16, 8, 176);
-	}
+	_btnOk = new TextButton(96, 16, 216, 176);
+	_btnNew = new TextButton(96, 16, 8, 176);
 	_btnScientists = new TextButton(96, 16, 112, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtAvailable = new Text(150, 9, 10, 24);
@@ -97,7 +85,6 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_btnNew->setText(tr("STR_NEW_PROJECT"));
 	_btnNew->onMouseClick((ActionHandler)&ResearchState::btnNewClick);
 	_btnNew->onKeyboardPress((ActionHandler)&ResearchState::btnNewClick, Options::keyToggleQuickSearch);
-	_btnNew->onKeyboardPress((ActionHandler)&ResearchState::onCurrentGlobalResearchClick, Options::keyGeoGlobalResearch);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ResearchState::btnOkClick);
@@ -105,7 +92,7 @@ ResearchState::ResearchState(Base *base) : _base(base)
 
 	_btnScientists->setText(tr("STR_SCIENTISTS_LC"));
 	_btnScientists->onMouseClick((ActionHandler)&ResearchState::btnScientistsClick);
-	_btnScientists->setVisible(_ftaUi);
+	_btnScientists->setVisible(true);
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -129,7 +116,6 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	_lstResearch->onRightArrowClick((ActionHandler)&ResearchState::lstResearchRightArrowClick);
 	_lstResearch->onMouseClick((ActionHandler)&ResearchState::onSelectProject, SDL_BUTTON_LEFT);
 	_lstResearch->onMouseClick((ActionHandler)&ResearchState::onOpenTechTreeViewer, SDL_BUTTON_MIDDLE);
-	_lstResearch->onMousePress((ActionHandler)&ResearchState::lstResearchMousePress);
 }
 
 /**
@@ -181,14 +167,7 @@ void ResearchState::onSelectProject(Action *action)
 
 	const std::vector<ResearchProject *> & baseProjects(_base->getResearch());
 	auto project = baseProjects[_lstResearch->getSelectedRow()];
-	if (_ftaUi)
-	{
-		_game->pushState(new ResearchInfoStateFtA(_base, project));
-	}
-	else
-	{
-		_game->pushState(new ResearchInfoState(_base, project));
-	}
+	_game->pushState(new ResearchInfoStateFtA(_base, project));
 }
 
 /**
@@ -213,57 +192,6 @@ void ResearchState::onOpenTechTreeViewer(Action *action)
 }
 
 /**
- * Handles the mouse-wheels.
- * @param action Pointer to an action.
- */
-void ResearchState::lstResearchMousePress(Action *action)
-{
-	if (!_lstResearch->isInsideNoScrollArea(action->getAbsoluteXMouse()) || _ftaUi)
-	{
-		return;
-	}
-
-	int change = Options::oxceResearchScrollSpeed;
-	if (_game->isCtrlPressed())
-		change = Options::oxceResearchScrollSpeedWithCtrl;
-
-	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
-	{
-		change = std::min(change, _base->getAvailableScientists());
-		change = std::min(change, _base->getFreeLaboratories(_ftaUi));
-		if (change > 0)
-		{
-			ResearchProject *selectedProject = _base->getResearch()[_lstResearch->getSelectedRow()];
-			selectedProject->setAssigned(selectedProject->getAssigned() + change);
-			_base->setScientists(_base->getScientists() - change);
-			fillProjectList(_lstResearch->getScroll());
-		}
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN)
-	{
-		ResearchProject *selectedProject = _base->getResearch()[_lstResearch->getSelectedRow()];
-		change = std::min(change, selectedProject->getAssigned());
-		if (change > 0)
-		{
-			selectedProject->setAssigned(selectedProject->getAssigned() - change);
-			_base->setScientists(_base->getScientists() + change);
-			fillProjectList(_lstResearch->getScroll());
-		}
-	}
-}
-
-/**
- * Opens the Current Global Research UI.
- * @param action Pointer to an action.
- */
-void ResearchState::onCurrentGlobalResearchClick(Action *)
-{
-	if (!_ftaUi)
-	{
-		_game->pushState(new GlobalResearchState(true));
-	}
-}
-/**
  * Updates the research list
  * after going to other screens.
  */
@@ -271,16 +199,7 @@ void ResearchState::init()
 {
 	State::init();
 	fillProjectList(0);
-
-	if ((Options::oxceResearchScrollSpeed > 0 || Options::oxceResearchScrollSpeedWithCtrl > 0) && !_ftaUi)
-	{
-		// 175 +/- 20
-		_lstResearch->setNoScrollArea(_txtAllocated->getX() - 5, _txtAllocated->getX() + 35);
-	}
-	else
-	{
-		_lstResearch->setNoScrollArea(0, 0);
-	}
+	_lstResearch->setNoScrollArea(0, 0);
 }
 
 /**
@@ -293,80 +212,63 @@ void ResearchState::fillProjectList(size_t scrl)
 	{
 		std::ostringstream sstr, sspr;
 		const RuleResearch *r = proj->getRules();
-		if (_ftaUi)
+		size_t n = 0;
+		for (auto s : *_base->getSoldiers())
 		{
-			size_t n = 0;
-			for (auto s : *_base->getSoldiers())
+			if (s->getResearchProject() == proj)
 			{
-				if (s->getResearchProject() == proj)
-				{
-					n++;
-				}
+				n++;
 			}
-			sstr << n;
+		}
+		sstr << n;
 
-			float progress = static_cast<float>(proj->getSpent()) / static_cast<float>(proj->getRules()->getCost() * 100);
-			if (n == 0)
-			{
-				sspr << tr("STR_NONE");
-			}
-			else if (progress <= 0.25f)
-			{
-				sspr << tr("STR_UNKNOWN");
-			}
-			else if (progress <= 0.40f)
-			{
-				sspr << tr("STR_POOR");
-			}
-			else if (progress <= 0.65f)
-			{
-				sspr << tr("STR_AVERAGE");
-			}
-			else if (progress <= 0.85f)
-			{
-				sspr << tr("STR_GOOD");
-			}
-			else
-			{
-				sspr << tr("STR_EXCELLENT");
-			}
+		float progress = static_cast<float>(proj->getSpent()) / static_cast<float>(proj->getRules()->getCost() * 100);
+		if (n == 0)
+		{
+			sspr << tr("STR_NONE");
+		}
+		else if (progress <= 0.25f)
+		{
+			sspr << tr("STR_UNKNOWN");
+		}
+		else if (progress <= 0.40f)
+		{
+			sspr << tr("STR_POOR");
+		}
+		else if (progress <= 0.65f)
+		{
+			sspr << tr("STR_AVERAGE");
+		}
+		else if (progress <= 0.85f)
+		{
+			sspr << tr("STR_GOOD");
 		}
 		else
 		{
-			sstr << proj->getAssigned();
-			sspr << tr(proj->getResearchProgress());
+			sspr << tr("STR_EXCELLENT");
 		}
 		std::string wstr = tr(r->getName());
 		_lstResearch->addRow(3, wstr.c_str(), sstr.str().c_str(), sspr.str().c_str());
 	}
-
-	if (_ftaUi)
+	auto recovery = _base->getSumRecoveryPerDay();
+	size_t freeScientists = 0, busyScientists = 0;
+	bool isBusy = false, isFree = false;
+	for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
 	{
-		auto recovery = _base->getSumRecoveryPerDay();
-		size_t freeScientists = 0, busyScientists = 0;
-		bool isBusy = false, isFree = false;
-		for (auto s : _base->getPersonnel(ROLE_SCIENTIST))
+		s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
+		if (!isBusy && isFree)
 		{
-			s->getCurrentDuty(_game->getLanguage(), recovery, isBusy, isFree, LAB);
-			if (!isBusy && isFree)
-			{
-				freeScientists++;
-			}
-			if (s->getResearchProject())
-			{
-				busyScientists++;
-			}
+			freeScientists++;
 		}
-		_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(freeScientists));
-		_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(busyScientists));
+		if (s->getResearchProject())
+		{
+			busyScientists++;
+		}
 	}
-	else
-	{
-		_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(_base->getAvailableScientists()));
-		_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_base->getAllocatedScientists()));
-	}
+	_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(freeScientists));
+	_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(busyScientists));
 
-	_txtSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(_ftaUi)));
+	_txtSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories()));
 
 	if (scrl)
 		_lstResearch->scrollTo(scrl);

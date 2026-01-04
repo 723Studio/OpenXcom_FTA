@@ -123,7 +123,7 @@ private:
 	std::string _specWeaponName;
 	const RuleItem* _specWeapon;
 	int _monthlyBuyLimit;
-	int _costBuy, _costSalary, _costSalarySquaddie, _costSalarySergeant, _costSalaryCaptain, _costSalaryColonel, _costSalaryCommander;
+	int _costBuy, _costSalary;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _femaleFrequency, _value, _transferTime, _moraleLossWhenKilled;
 	int _manaMissingWoundThreshold = -1;
@@ -196,14 +196,12 @@ public:
 	int getMonthlyBuyLimit() const { return _monthlyBuyLimit; }
 	/// Gets the cost of the soldier.
 	int getBuyCost() const;
-	/// Does salary depend on rank?
-	bool isSalaryDynamic() const;
 	/// Gets the list of defined skills.
 	const std::vector<const RuleSkill*> &getSkills() const;
 	/// Returns the sprite index for the skill icon sprite.
 	int getSkillIconSprite() const;
 	/// Gets the monthly salary of the soldier (for a given rank).
-	int getSalaryCost(int rank) const;
+	int getSalaryCost() const;
 	/// Gets the height of the soldier when it's standing.
 	int getStandHeight() const;
 	/// Gets the height of the soldier when it's kneeling.

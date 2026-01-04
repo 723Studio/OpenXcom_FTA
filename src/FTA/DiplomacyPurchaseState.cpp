@@ -21,7 +21,6 @@
 #include <climits>
 #include <iomanip>
 #include <algorithm>
-#include <locale>
 #include "../fmath.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -36,7 +35,6 @@
 #include "../Interface/ComboBox.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/SavedGame.h"
-#include "../Mod/RuleCraft.h"
 #include "../Mod/RuleItem.h"
 #include "../Savegame/Base.h"
 #include "../Engine/Action.h"
@@ -44,12 +42,10 @@
 #include "../Savegame/ItemContainer.h"
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
-#include "../Mod/RuleSoldier.h"
 #include "../Basescape/ItemLocationsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFaction.h"
-//#include "../Engine/Logger.h"
 
 
 namespace OpenXcom
@@ -60,7 +56,7 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  */
 DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* faction) : _base(base), _faction(faction),
-		_sel(0), _total(0), _pQty(0), _cQty(0), _iQty(0.0), _ammoColor(0)
+		_sel(0), _total(0), _iQty(0.0), _ammoColor(0)
 {
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
@@ -109,7 +105,7 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr("STR_PURCHASE_HIRE_PERSONNEL"));
+	_txtTitle->setText(tr("STR_PURCHASE"));
 
 	_txtFunds->setText(tr("STR_CURRENT_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
 
@@ -143,26 +139,6 @@ DiplomacyPurchaseState::DiplomacyPurchaseState(Base *base, DiplomacyFaction* fac
 
 	auto providedBaseFunc = _base->getProvidedBaseFunc({});
 
-	const std::vector<std::string> &crafts = _game->getMod()->getCraftsList();
-	for (std::vector<std::string>::const_iterator i = crafts.begin(); i != crafts.end(); ++i)
-	{
-		RuleCraft *rule = _game->getMod()->getCraft(*i);
-		auto purchaseBaseFunc = rule->getRequiresBuyBaseFunc();
-		int stock = getFactionItemStock(rule->getType());
-		if (rule->getBuyCost() != 0
-			&& _game->getSavedGame()->isResearched(rule->getRequirements())
-			&& (~providedBaseFunc & purchaseBaseFunc).none()
-			&& stock > 0)
-		{
-			TransferRow row = { TRANSFER_CRAFT, rule, tr(rule->getType()), getCostAdjustment(rule->getBuyCost()), _base->getCraftCount(rule), 0, 0, stock, -1, 0, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
 	const std::vector<std::string> &items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -298,15 +274,8 @@ int DiplomacyPurchaseState::getCostAdjustment(int baseCost)
 std::string DiplomacyPurchaseState::getCategory(int sel) const
 {
 	RuleItem* rule = 0;
-	switch (_items[sel].type)
+	if (_items[sel].type == TRANSFER_ITEM)
 	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-		return "STR_PERSONNEL";
-	case TRANSFER_CRAFT:
-		return "STR_CRAFT_ARMAMENT";
-	case TRANSFER_ITEM:
 		rule = (RuleItem*)_items[sel].rule;
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
@@ -330,6 +299,7 @@ std::string DiplomacyPurchaseState::getCategory(int sel) const
 		}
 		return "STR_EQUIPMENT";
 	}
+	
 	return "STR_ALL_ITEMS";
 }
 
@@ -341,17 +311,12 @@ std::string DiplomacyPurchaseState::getCategory(int sel) const
  */
 bool DiplomacyPurchaseState::belongsToCategory(int sel, const std::string &cat) const
 {
-	switch (_items[sel].type)
+	if (_items[sel].type == TRANSFER_ITEM)
 	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-	case TRANSFER_CRAFT:
-		return false;
-	case TRANSFER_ITEM:
-		RuleItem *rule = (RuleItem*)_items[sel].rule;
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
 		return rule->belongsToCategory(cat);
 	}
+	
 	return false;
 }
 
@@ -364,33 +329,14 @@ bool DiplomacyPurchaseState::belongsToCategory(int sel, const std::string &cat) 
 bool DiplomacyPurchaseState::isHidden(int sel) const
 {
 	std::string itemName;
-	bool isCraft = false;
-
-	switch (_items[sel].type)
+	if (_items[sel].type == TRANSFER_ITEM)
 	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-		return false;
-	case TRANSFER_CRAFT:
-		isCraft = true; // fall-through
-	case TRANSFER_ITEM:
-		if (isCraft)
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
+		if (rule != 0)
 		{
-			RuleCraft *rule = (RuleCraft*)_items[sel].rule;
-			if (rule != 0)
-			{
-				itemName = rule->getType();
-			}
+			itemName = rule->getType();
 		}
-		else
-		{
-			RuleItem *rule = (RuleItem*)_items[sel].rule;
-			if (rule != 0)
-			{
-				itemName = rule->getType();
-			}
-		}
+
 		if (!itemName.empty())
 		{
 			std::map<std::string, bool> hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
@@ -417,14 +363,8 @@ bool DiplomacyPurchaseState::isHidden(int sel) const
  */
 bool DiplomacyPurchaseState::isEquipped(int sel) const
 {
-	switch (_items[sel].type)
+	if (_items[sel].type == TRANSFER_ITEM)
 	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-	case TRANSFER_CRAFT:
-		return false;
-	case TRANSFER_ITEM:
 		RuleItem* rule = (RuleItem*)_items[sel].rule;
 		if (rule)
 		{
@@ -585,57 +525,14 @@ void DiplomacyPurchaseState::btnOkClick(Action *)
 		if (i->amount > 0)
 		{
 			Transfer *t = 0;
-			switch (i->type)
+			if (i->type == TRANSFER_ITEM) //ypu can only buy items from faction ATM
 			{
-			case TRANSFER_SOLDIER:
-			//	for (int s = 0; s < i->amount; s++)
-			//	{
-			//		const RuleSoldier *rule = (RuleSoldier*)i->rule;
-			//		int time = rule->getTransferTime();
-			//		if (time == 0)
-			//			time = _game->getMod()->getPersonnelTime();
-			//		t = new Transfer(time);
-			//		int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), rule, _base);
-			//		t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality));
-			//		_base->getTransfers()->push_back(t);
-			//		_faction->getStaffContainer()->removeItem(rule->getType());
-			//	}
-			//	break;
-			case TRANSFER_SCIENTIST:
-			//	t = new Transfer(_game->getMod()->getPersonnelTime());
-			//	t->setScientists(i->amount);
-			//	_base->getTransfers()->push_back(t);
-			//	_faction->getStaffContainer()->removeItem("STR_SCIENTIST", i->amount);
-			//	break;
-			case TRANSFER_ENGINEER:
-			//	t = new Transfer(_game->getMod()->getPersonnelTime());
-			//	t->setEngineers(i->amount);
-			//	_base->getTransfers()->push_back(t);
-			//	_faction->getStaffContainer()->removeItem("STR_ENGINEER", i->amount);
-			//	break;
-			case TRANSFER_CRAFT:
-			//	for (int c = 0; c < i->amount; c++)
-			//	{
-			//		RuleCraft *rule = (RuleCraft*)i->rule;
-			//		t = new Transfer(rule->getTransferTime());
-			//		Craft *craft = new Craft(rule, _base, _game->getSavedGame()->getId(rule->getType()));
-			//		craft->initFixedWeapons(_game->getMod());
-			//		craft->setStatus("STR_REFUELLING");
-			//		t->setCraft(craft);
-			//		_base->getTransfers()->push_back(t);
-			//		_faction->getStaffContainer()->removeItem(rule->getType());
-			//	}
-			//	break;
-			case TRANSFER_ITEM:
-				{
-					RuleItem *rule = (RuleItem*)i->rule;
-					t = new Transfer(rule->getTransferTime());
-					t->setItems(rule, i->amount);
-					_base->getTransfers()->push_back(t);
+				RuleItem* rule = (RuleItem*)i->rule;
+				t = new Transfer(rule->getTransferTime());
+				t->setItems(rule, i->amount);
+				_base->getTransfers()->push_back(t);
 
-					_faction->removeItem(rule, i->amount);
-				}
-				break;
+				_faction->removeItem(rule, i->amount);
 			}
 		}
 	}
@@ -765,15 +662,6 @@ void DiplomacyPurchaseState::lstItemsMousePress(Action *action)
 				Ufopaedia::openArticle(_game, articleId);
 			}
 		}
-		else if (getRow().type == TRANSFER_CRAFT)
-		{
-			RuleCraft *rule = (RuleCraft*)getRow().rule;
-			if (rule != 0)
-			{
-				std::string articleId = rule->getType();
-				Ufopaedia::openArticle(_game, articleId);
-			}
-		}
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
@@ -798,14 +686,7 @@ void DiplomacyPurchaseState::lstItemsMousePress(Action *action)
 				}
 			}
 		}
-		else if (getRow().type == TRANSFER_CRAFT)
-		{
-			RuleCraft *rule = (RuleCraft*)getRow().rule;
-			if (rule != 0)
-			{
-				itemName = rule->getType();
-			}
-		}
+		
 		if (!itemName.empty())
 		{
 			std::map<std::string, bool> hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
@@ -859,23 +740,8 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 	else
 	{
 		RuleItem *rule;
-		switch (getRow().type)
+		if (getRow().type == TRANSFER_ITEM)
 		{
-		case TRANSFER_SOLDIER:
-		case TRANSFER_SCIENTIST:
-		case TRANSFER_ENGINEER:
-			if (_pQty + 1 > _base->getAvailableQuarters() - _base->getUsedQuarters())
-			{
-				errorMessage = tr("STR_NOT_ENOUGH_LIVING_SPACE");
-			}
-			break;
-		case TRANSFER_CRAFT:
-			if (_cQty + 1 > _base->getAvailableHangars() - _base->getUsedHangars())
-			{
-				errorMessage = tr("STR_NO_FREE_HANGARS_FOR_PURCHASE");
-			}
-			break;
-		case TRANSFER_ITEM:
 			rule = (RuleItem*)getRow().rule;
 			if (_iQty + rule->getSize() > _base->getAvailableStores() - _base->getUsedStores())
 			{
@@ -889,7 +755,6 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 					errorMessage = trAlt("STR_NOT_ENOUGH_PRISON_SPACE", p);
 				}
 			}
-			break;
 		}
 	}
 
@@ -905,51 +770,32 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 		{
 			change = stock - amount;
 		}
-		switch (getRow().type)
+
+		if (getRow().type == TRANSFER_ITEM)
 		{
-		case TRANSFER_SOLDIER:
-		case TRANSFER_SCIENTIST:
-		case TRANSFER_ENGINEER:
+			RuleItem *rule = (RuleItem*)getRow().rule;
+			int p = rule->getPrisonType();
+			if (rule->isAlien())
 			{
-				int maxByQuarters = _base->getAvailableQuarters() - _base->getUsedQuarters() - _pQty;
-				change = std::min(maxByQuarters, change);
-				_pQty += change;
+				int maxByPrisons = _base->getAvailableContainment(p) - _base->getUsedContainment(p) - _iPrisonQty[p];
+				change = std::min(maxByPrisons, change);
 			}
-			break;
-		case TRANSFER_CRAFT:
+			// both aliens and items
 			{
-				int maxByHangars = _base->getAvailableHangars() - _base->getUsedHangars() - _cQty;
-				change = std::min(maxByHangars, change);
-				_cQty += change;
+				double storesNeededPerItem = rule->getSize();
+				double freeStores = _base->getAvailableStores() - _base->getUsedStores() - _iQty;
+				double maxByStores = (double)(INT_MAX);
+				if (!AreSame(storesNeededPerItem, 0.0) && storesNeededPerItem > 0.0)
+				{
+					maxByStores = (freeStores + 0.05) / storesNeededPerItem;
+				}
+				change = std::min((int)maxByStores, change);
+				_iQty += change * storesNeededPerItem;
 			}
-			break;
-		case TRANSFER_ITEM:
+			if (rule->isAlien())
 			{
-				RuleItem *rule = (RuleItem*)getRow().rule;
-				int p = rule->getPrisonType();
-				if (rule->isAlien())
-				{
-					int maxByPrisons = _base->getAvailableContainment(p) - _base->getUsedContainment(p) - _iPrisonQty[p];
-					change = std::min(maxByPrisons, change);
-				}
-				// both aliens and items
-				{
-					double storesNeededPerItem = rule->getSize();
-					double freeStores = _base->getAvailableStores() - _base->getUsedStores() - _iQty;
-					double maxByStores = (double)(INT_MAX);
-					if (!AreSame(storesNeededPerItem, 0.0) && storesNeededPerItem > 0.0)
-					{
-						maxByStores = (freeStores + 0.05) / storesNeededPerItem;
-					}
-					change = std::min((int)maxByStores, change);
-					_iQty += change * storesNeededPerItem;
-				}
-				if (rule->isAlien())
-				{
-					_iPrisonQty[p] += change;
-				}
+				_iPrisonQty[p] += change;
 			}
-			break;
 		}
 		getRow().amount += change;
 		_total += getRow().cost * change;
@@ -983,24 +829,14 @@ void DiplomacyPurchaseState::decreaseByValue(int change)
 	change = std::min(getRow().amount, change);
 
 	RuleItem *rule = nullptr;
-	switch (getRow().type)
+	if (getRow().type == TRANSFER_ITEM)
 	{
-	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
-		_pQty -= change;
-		break;
-	case TRANSFER_CRAFT:
-		_cQty -= change;
-		break;
-	case TRANSFER_ITEM:
 		rule = (RuleItem*)getRow().rule;
 		_iQty -= rule->getSize() * change;
 		if (rule->isAlien())
 		{
 			_iPrisonQty[rule->getPrisonType()] -= change;
 		}
-		break;
 	}
 	getRow().amount -= change;
 	_total -= getRow().cost * change;

@@ -40,7 +40,6 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtProject, *_txtScientists, *_txtProgress;
 	TextList *_lstResearch;
-	bool _ftaUi;
 
 public:
 	/// Creates the Research state.
@@ -56,9 +55,6 @@ public:
 	/// Handler for clicking the ResearchProject list.
 	void onSelectProject(Action *action);
 	void onOpenTechTreeViewer(Action *action);
-	void lstResearchMousePress(Action *action);
-	/// Handler for opening the Current Global Research UI.
-	void onCurrentGlobalResearchClick(Action *action);
 	/// Fills the ResearchProject list with Base ResearchProjects.
 	void fillProjectList(size_t scrl);
 	/// Updates the research list.

@@ -106,8 +106,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
-	_ftaUI = _game->getMod()->isFTAGame();
-
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
 	_soldier = new Surface(320, 200, 0, 0);
@@ -194,8 +192,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_txtName->setBig();
 	_txtName->setHighContrast(true);
-	_txtName->onChange((ActionHandler)&InventoryState::edtSoldierChange);
-	_txtName->onMousePress((ActionHandler)&InventoryState::edtSoldierPress);
 
 	if (Options::oxceLinksDisableTextEdit)
 	{
@@ -228,7 +224,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnOkClick, Options::keyBattleInventory);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnUfopaediaClick, Options::keyGeoUfopedia);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnArmorClick, Options::keyInventoryArmor);
-	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnArmorClickRight, Options::keyInventoryAvatar);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnInventoryLoadClick, Options::keyInventoryLoad);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnInventorySaveClick, Options::keyInventorySave);
 	_btnOk->onKeyboardPress((ActionHandler)&InventoryState::btnCreatePersonalTemplateClick, Options::keyInvSavePersonalEquipment);
@@ -277,7 +272,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	if (!_game->getMod()->getInventoryOverlapsPaperdoll())
 	{
 		_btnArmor->onMouseClick((ActionHandler)&InventoryState::btnArmorClick);
-		_btnArmor->onMouseClick((ActionHandler)&InventoryState::btnArmorClickRight, SDL_BUTTON_RIGHT);
 		_btnArmor->onMouseClick((ActionHandler)&InventoryState::btnArmorClickMiddle, SDL_BUTTON_MIDDLE);
 		_btnArmor->onMouseIn((ActionHandler)&InventoryState::txtArmorTooltipIn);
 		_btnArmor->onMouseOut((ActionHandler)&InventoryState::txtArmorTooltipOut);
@@ -292,7 +286,6 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_btnApplyTemplate->onMouseClick((ActionHandler)&InventoryState::btnApplyTemplateClick);
 	_btnApplyTemplate->onKeyboardPress((ActionHandler)&InventoryState::btnApplyTemplateClick, Options::keyInvApplyTemplate);
 	_btnApplyTemplate->onKeyboardPress((ActionHandler)&InventoryState::onClearInventory, Options::keyInvClear);
-	_btnApplyTemplate->onKeyboardPress((ActionHandler)&InventoryState::onAutoequip, Options::keyInvAutoEquip);
 	_btnApplyTemplate->setTooltip("STR_APPLY_INVENTORY_TEMPLATE");
 	_btnApplyTemplate->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnApplyTemplate->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
@@ -525,11 +518,7 @@ void InventoryState::init()
 
 		SoldierRole role = s->getBestRole();
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("SMOKE.PCK");
-		auto* frame = texture->getFrame(s->getRankSpriteBattlescape());
-		if (_ftaUI)
-		{
-			frame = texture->getFrame(s->getRoleRankSpriteBattlescape(role));
-		}
+		auto* frame = texture->getFrame(s->getRoleRankSpriteBattlescape(role));
 		if (frame)
 		{
 			frame->blitNShade(_btnRank, 0, 0);
@@ -607,60 +596,9 @@ void InventoryState::init()
 	refreshMouse();
 }
 
-/**
- * Disables the input, if not a soldier. Sets the name without a statstring otherwise.
- * @param action Pointer to an action.
- */
-void InventoryState::edtSoldierPress(Action *action)
-{
-	if (_btnLinks->getVisible())
-	{
-		double mx = action->getAbsoluteXMouse();
-		if (mx >= _btnLinks->getX())
-		{
-			_txtName->setFocus(false);
-			return;
-		}
-		else
-		{
-			_btnLinks->setVisible(false);
-		}
-	}
 
-	{
-		BattleUnit *unit = _inv->getSelectedUnit();
-		if (unit != 0)
-		{
-			Soldier *s = unit->getGeoscapeSoldier();
-			if (s && !_game->getMod()->isFTAGame())
-			{
-				// set the soldier's name without a statstring
-				_txtName->setText(s->getName());
-			}
 
-		}
-	}
-}
 
-/**
- * Changes the soldier's name.
- * @param action Pointer to an action.
- */
-void InventoryState::edtSoldierChange(Action *)
-{
-	BattleUnit *unit = _inv->getSelectedUnit();
-	if (unit != 0)
-	{
-		Soldier *s = unit->getGeoscapeSoldier();
-		if (s && !_game->getMod()->isFTAGame())
-		{
-			// set the soldier's name
-			s->setName(_txtName->getText());
-			// also set the unit's name (with a statstring)
-			unit->setName(s->getName(true));
-		}
-	}
-}
 
 /**
  * Updates the soldier stats (Weight, TU).
@@ -689,8 +627,6 @@ void InventoryState::updateStats()
 	}
 	bool showPsiStrength = (psiSkillWithoutAnyBonuses > 0 || (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
 
-	bool ftaGame = _game->getMod()->isFTAGame();
-
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{
 		const Element *element = _game->getMod()->getInterface("inventory")->getElementOptional(elementId);
@@ -705,36 +641,14 @@ void InventoryState::updateStats()
 					txtField->setText(tr(UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->reactions));
 					break;
 				case 3:
-					if (ftaGame)
-					{
 						txtField->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
 						break;
-					}
-					else
-					{
-						if (psiSkillWithoutAnyBonuses > 0)
-							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
-						else
-							txtField->setText("");
-						break;
-					}
 				case 4:
-					if (ftaGame)
-					{
 						if (psiSkillWithoutAnyBonuses > 0)
 							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
 						else
 							txtField->setText("");
 						break;
-					}
-					else
-					{
-						if (showPsiStrength)
-							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiStrength, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiStrength));
-						else
-							txtField->setText("");
-						break;
-					}
 				case 11:
 					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
@@ -864,47 +778,6 @@ void InventoryState::btnArmorClick(Action *action)
 
 		_reloadUnit = true;
 		_game->pushState(new SoldierArmorState(_base, soldierIndex, SA_BATTLESCAPE));
-	}
-}
-
-/**
- * Opens the Avatar Selection GUI
- * @param action Pointer to an action.
- */
-void InventoryState::btnArmorClickRight(Action *action)
-{
-	if (_game->getMod()->isFTAGame())
-	{
-		return;
-	}
-	// don't accept clicks when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	// only allowed during base equipment
-	if (_base == 0)
-	{
-		return;
-	}
-
-	// equipment in the base
-	BattleUnit *unit = _battleGame->getSelectedUnit();
-	Soldier *s = unit->getGeoscapeSoldier();
-
-	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT"))
-	{
-		size_t soldierIndex = 0;
-		for (auto soldierIt = _base->getSoldiers()->begin(); soldierIt != _base->getSoldiers()->end(); ++soldierIt)
-		{
-			if ((*soldierIt)->getId() == s->getId())
-			{
-				soldierIndex = soldierIt - _base->getSoldiers()->begin();
-			}
-		}
-
-		_game->pushState(new SoldierAvatarState(_base, soldierIndex));
 	}
 }
 
@@ -1812,39 +1685,6 @@ void InventoryState::onClearInventory(Action *)
 	Tile                     *groundTile = unit->getTile();
 
 	_battleGame->getTileEngine()->itemDropInventory(groundTile, unit, true, false);
-
-	// refresh ui
-	_inv->arrangeGround();
-	updateStats();
-	refreshMouse();
-
-	// give audio feedback
-	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
-}
-
-void InventoryState::onAutoequip(Action *)
-{
-	// don't act when moving items
-	if (_inv->getSelectedItem() != 0)
-	{
-		return;
-	}
-
-	if (_game->getMod()->isFTAGame())
-	{
-		return; //#FINNIKTODO: repair stacking and allowed/forbidden categories for armor on this stupid auitoequip
-	}
-
-	BattleUnit               *unit          = _battleGame->getSelectedUnit();
-	Tile                     *groundTile    = unit->getTile();
-	std::vector<BattleItem*>  groundInv     = *groundTile->getInventory();
-	Mod                      *mod           = _game->getMod();
-	RuleInventory            *groundRuleInv = mod->getInventoryGround();
-	int                       worldShade    = _battleGame->getGlobalShade();
-
-	std::vector<BattleUnit*> units;
-	units.push_back(unit);
-	BattlescapeGenerator::autoEquip(units, mod, &groundInv, groundRuleInv, worldShade, true, true);
 
 	// refresh ui
 	_inv->arrangeGround();

@@ -126,7 +126,7 @@ private:
 	std::vector<BasePrisoner*> _prisoners;
 	std::vector<Transfer*> _transfers;
 	ItemContainer *_items;
-	int _scientists, _engineers, _trackingBonus, _operationsBonus, _deploymentHintsBonus;
+	int _trackingBonus, _operationsBonus, _deploymentHintsBonus;
 	std::vector<ResearchProject *> _research;
 	std::vector<Production *> _productions;
 	bool _inBattlescape;
@@ -205,28 +205,12 @@ public:
 	ItemContainer *getStorageItems() { return _items; }
 	/// Gets the base's items.
 	const ItemContainer *getStorageItems() const { return _items; }
-	/// Gets the base's scientists.
-	int getScientists() const;
-	/// Sets the base's scientists.
-	void setScientists(int scientists);
-	/// Gets the base's engineers.
-	int getEngineers() const;
-	/// Sets the base's engineers.
-	void setEngineers(int engineers);
 	/// Checks if a target is detected by the base's radar.
 	UfoDetection detect(const Ufo *target, const SavedGame *save, bool alreadyTracked, bool globalSearch = false) const;
 	/// Gets the base's available soldiers.
 	int getAvailableSoldiers(bool checkCombatReadiness = false, bool includeWounded = false) const;
 	/// Gets the base's total soldiers.
 	int getTotalSoldiers() const;
-	/// Gets the base's available scientists.
-	int getAvailableScientists() const;
-	/// Gets the base's total scientists.
-	int getTotalScientists() const;
-	/// Gets the base's available engineers.
-	int getAvailableEngineers() const;
-	/// Gets the base's total engineers.
-	int getTotalEngineers() const;
 	/// Gets the base's total number and cost of other staff & inventory.
 	int getTotalOtherStaffAndInventoryCost(int& staffCount, int& inventoryCount) const;
 	/// Gets the base's used living quarters.
@@ -242,11 +226,11 @@ public:
 	/// Gets the base's available storage space.
 	int getAvailableStores() const;
 	/// Gets the base's used laboratory space.
-	int getUsedLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
+	int getUsedLaboratories(ResearchProject *exclude = nullptr) const;
 	/// Gets the base's available laboratory space.
 	int getAvailableLaboratories() const;
 	/// Gets the base's used workshop space.
-	int getUsedWorkshops(bool fta = false, Production *exclude = nullptr) const;
+	int getUsedWorkshops(Production *exclude = nullptr) const;
 	/// Gets the base's available workshop space.
 	int getAvailableWorkshops() const;
 	/// Gets the base's used hangars.
@@ -254,12 +238,9 @@ public:
 	/// Gets the base's available hangars.
 	int getAvailableHangars() const;
 	/// Get the number of available space lab (not used by a ResearchProject)
-	int getFreeLaboratories(bool fta = false, ResearchProject *exclude = nullptr) const;
+	int getFreeLaboratories(ResearchProject *exclude = nullptr) const;
 	/// Get the number of available space lab (not used by a Production)
-	int getFreeWorkshops(bool fta = false, Production *exclude = nullptr) const;
-
-	int getAllocatedScientists() const;
-	int getAllocatedEngineers() const;
+	int getFreeWorkshops(Production *exclude = nullptr) const;
 	/// Gets the base's defense value.
 	int getDefenseValue() const;
 	/// Gets the base's short range detection.

@@ -351,11 +351,11 @@ void CovertOperationSoldiersState::initList(size_t scrl)
 			int dynStat = (*_dynGetter)(_game, filteredSoldier);
 			std::ostringstream ss;
 			ss << dynStat;
-			_lstSoldiers->addRow(4, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString(true)).c_str(), duty.c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString()).c_str(), duty.c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString(true)).c_str(), duty.c_str());
+			_lstSoldiers->addRow(3, filteredSoldier->getName(true, 19).c_str(), tr(filteredSoldier->getRankString()).c_str(), duty.c_str());
 		}
 
 		Uint8 color;

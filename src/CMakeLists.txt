@@ -6,7 +6,7 @@ set ( root_src
 )
 set ( basescape_src
   Basescape/AgentsState.cpp
-  Basescape/BaseInfoState.cpp
+
   Basescape/BaseInfoStateFtA.cpp
   Basescape/BasescapeState.cpp
   Basescape/BaseView.cpp
@@ -32,8 +32,6 @@ set ( basescape_src
   Basescape/DisposeState.cpp
   Basescape/EngineersState.cpp
   Basescape/GlobalAlienContainmentState.cpp
-  Basescape/GlobalManufactureState.cpp
-  Basescape/GlobalResearchState.cpp
   Basescape/IntelAllocateAgentsState.cpp
   Basescape/IntelState.cpp
   Basescape/IntelligenceProjectDetailsState.cpp
@@ -41,7 +39,6 @@ set ( basescape_src
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
-  Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureInfoStateFtA.cpp
   Basescape/ManufactureProductDetailsState.cpp
   Basescape/ManufactureStartState.cpp
@@ -58,16 +55,13 @@ set ( basescape_src
   Basescape/PrisonerAllocateAgentsState.cpp
   Basescape/PrisonerInfoState.cpp
   Basescape/PrisonManagementState.cpp
-  Basescape/PurchaseState.cpp
   Basescape/ResearchAllocateScientistsState.cpp
-  Basescape/ResearchInfoState.cpp
   Basescape/ResearchInfoStateFtA.cpp
   Basescape/ResearchProjectDetailsState.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
   Basescape/ScientistsState.cpp
   Basescape/SelectStartFacilityState.cpp
-  Basescape/SellState.cpp
   Basescape/SoldierArmorState.cpp
   Basescape/SoldierAvatarState.cpp
   Basescape/SoldierExperienceState.cpp
@@ -256,12 +250,9 @@ set ( geoscape_src
   Geoscape/ItemsArrivingState.cpp
   Geoscape/LowFuelState.cpp
   Geoscape/MissionDetectedState.cpp
-  Geoscape/MonthlyReportState.cpp
   Geoscape/MultipleTargetsState.cpp
-  Geoscape/NewPossibleCraftState.cpp
   Geoscape/NewPossibleFacilityState.cpp
   Geoscape/NewPossibleManufactureState.cpp
-  Geoscape/NewPossiblePurchaseState.cpp
   Geoscape/NewPossibleResearchState.cpp
   Geoscape/PrisonReportState.cpp
   Geoscape/ProductionCompleteState.cpp
@@ -307,7 +298,6 @@ set ( menu_src
   Menu/DeleteGameState.cpp
   Menu/ErrorMessageState.cpp
   Menu/ListGamesState.cpp
-  Menu/ListLoadOriginalState.cpp
   Menu/ListLoadState.cpp
   Menu/ListSaveState.cpp
   Menu/LoadGameState.cpp
@@ -436,7 +426,6 @@ set ( savegame_src
   Savegame/RankCount.cpp
   Savegame/Region.cpp
   Savegame/ResearchProject.cpp
-  Savegame/SaveConverter.cpp
   Savegame/SavedBattleGame.cpp
   Savegame/SavedGame.cpp
   Savegame/SerializationHelper.cpp

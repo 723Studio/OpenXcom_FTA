@@ -253,7 +253,6 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_delayedRecolorDone(false)
 {
 	_screen = false;
-	_fta = _game->getMod()->isFTAGame();
 	_craft->setInDogfight(true);
 	_weaponNum = _craft->getRules()->getWeapons();
 	if (_weaponNum > RuleCraft::WeaponMax)
@@ -2016,7 +2015,7 @@ void DogfightState::ufoFireWeapon()
 
 void DogfightState::handlePanic(bool damaged)
 {
-	if (_fta && !_craft->getPilotList(false, _game->getMod()).empty() && !_craftIsDefenseless && !_ufoIsAttacking)
+	if (!_craft->getPilotList(false, _game->getMod()).empty() && !_craftIsDefenseless && !_ufoIsAttacking)
 	{
 		int panicCoeff = 0;
 		int timeOut = 150;

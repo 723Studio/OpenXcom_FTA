@@ -1056,7 +1056,7 @@ void Map::drawTerrain(Surface *surface)
 								else
 									frameNumber = 0; // red box
 								// FTA Hacking Cursor
-								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
+								if (_cursorType == CT_HACK)
 								{
 									if ((battleObject && battleObject->canBeHacked()) ||
 										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))
@@ -1444,7 +1444,7 @@ void Map::drawTerrain(Surface *surface)
 								else
 									frameNumber = 3; // red box
 								// FTA Hacking cursor
-								if (_game->getMod()->isFTAGame() && _cursorType == CT_HACK)
+								if (_cursorType == CT_HACK)
 								{
 									if((battleObject && battleObject->canBeHacked()) ||
 										(unit && (unit->getVisible() || _save->getDebugMode()) && unit->canBeHacked()))

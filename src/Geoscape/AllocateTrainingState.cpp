@@ -50,12 +50,9 @@ namespace OpenXcom
  */
 AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base), _origSoldierOrder(*_base->getSoldiers()), _doNotReset(false)
 {
-
-	_ftaUI = _game->getMod()->isFTAGame();
-
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_txtTitle = new Text(_ftaUI ? 168 : 300, 17, 16, 7);
+	_txtTitle = new Text(168, 17, 16, 7);
 	_txtRemaining = new Text(300, 10, 10, 24);
 	_txtName = new Text(64, 10, 10, 40);
 	_txtTraining = new Text(48, 20, 270, 32);
@@ -70,16 +67,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_txtMelee = new Text(18, 10, 228, 40);
 	_txtStrength = new Text(18, 10, 246, 40);
 	_btnPlus = new ToggleTextButton(18, 16, 294, 8);
-	if (_ftaUI)
-	{
-		_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
-		_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
-	}
-	else
-	{
-		_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
-		_cbxScreenActions = new ComboBox(this, 17, 16, -16, -16, true); //would be hidden anyway
-	}
+	_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
+	_cbxScreenActions = new ComboBox(this, 148, 16, 8, 176, true);
 
 	// Set palette
 	setInterface("allocateMartial");
@@ -116,17 +105,10 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 
 	_btnPlus->setText("+");
 	_btnPlus->setPressed(false);
-	if (_game->getMod()->getSoldierBonusList().empty() || _ftaUI)
-	{
-		_btnPlus->setVisible(false);
-	}
-	else
-	{
-		_btnPlus->onMouseClick((ActionHandler)&AllocateTrainingState::btnPlusClick, 0);
-	}
+	_btnPlus->setVisible(false);
 
 	_txtTitle->setBig();
-	_txtTitle->setAlign(_ftaUI ? ALIGN_LEFT : ALIGN_CENTER);
+	_txtTitle->setAlign(ALIGN_LEFT);
 	_txtTitle->setText(tr("STR_PHYSICAL_TRAINING"));
 
 	_space = base->getAvailableTraining() - base->getUsedTraining();
@@ -202,15 +184,8 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	_cbxSortBy->onChange((ActionHandler)&AllocateTrainingState::cbxSortByChange);
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
-	if (_ftaUI)
-	{
-		_availableOptions.push_back("STR_ALL_ROLES");
-		_availableOptions.push_back("STR_RECOMMENDED_ROLES");
-	}
-	else
-	{
-		_cbxScreenActions->setVisible(false);
-	}
+	_availableOptions.push_back("STR_ALL_ROLES");
+	_availableOptions.push_back("STR_RECOMMENDED_ROLES");
 
 	_cbxScreenActions->setOptions(_availableOptions, true);
 	_cbxScreenActions->setSelected(1);
@@ -359,7 +334,7 @@ void AllocateTrainingState::initList(size_t scrl)
 		if ((soldier->getRoleRank(ROLE_SOLDIER) > 0)
 			|| (selAction == "STR_ALL_ROLES"
 				&& !soldier->hasOnlyOneRole(ROLE_ROBOT)) //case we want to see everyone, except robots
-			|| !_ftaUI)
+			)
 		{
 			_filteredListOfSoldiers.push_back(soldier);
 			_soldierNumbers.push_back(i);

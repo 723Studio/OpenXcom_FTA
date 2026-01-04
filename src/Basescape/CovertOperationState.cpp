@@ -50,8 +50,6 @@ CovertOperationState::CovertOperationState(Base* base) : _base(base)
 	_btnOk = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtSoldiersAvailable = new Text(150, 9, 10, 24);
-	_txtScientistsAvailable = new Text(150, 9, 160, 24);
-	_txtEngineersAvailable = new Text(150, 9, 160, 34);
 	_txtOperation = new Text(150, 17, 10, 44);
 	_txtChances = new Text(52, 17, 160, 44);
 	_txtProgress = new Text(84, 17, 212, 44);
@@ -65,8 +63,6 @@ CovertOperationState::CovertOperationState(Base* base) : _base(base)
 	add(_btnOk, "button", "covertOperationsMenu");
 	add(_txtTitle, "text", "covertOperationsMenu");
 	add(_txtSoldiersAvailable, "text", "covertOperationsMenu");
-	add(_txtScientistsAvailable, "text", "covertOperationsMenu");
-	add(_txtEngineersAvailable, "text", "covertOperationsMenu");
 	add(_txtOperation, "text", "covertOperationsMenu");
 	add(_txtChances, "text", "covertOperationsMenu");
 	add(_txtProgress, "text", "covertOperationsMenu");
@@ -80,7 +76,6 @@ CovertOperationState::CovertOperationState(Base* base) : _base(base)
 	_btnNew->setText(tr("STR_NEW_OPERATION"));
 	_btnNew->onMouseClick((ActionHandler)&CovertOperationState::btnNewClick);
 	_btnNew->onKeyboardPress((ActionHandler)&CovertOperationState::btnNewClick, Options::keyToggleQuickSearch);
-	_btnNew->onKeyboardPress((ActionHandler)&CovertOperationState::onCurrentGlobalResearchClick, Options::keyGeoGlobalResearch);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CovertOperationState::btnOkClick);
@@ -142,16 +137,6 @@ void CovertOperationState::onSelectOperation(Action*)
 	CovertOperation* selectedTopic = baseProjects[_lstOperations->getSelectedRow()];
 	_game->pushState(new CovertOperationInfoState(selectedTopic));
 }
-
-/**
-* Opens the Current Global Research UI.
-* @param action Pointer to an action.
-*/
-void CovertOperationState::onCurrentGlobalResearchClick(Action*)
-{
-	return; //#FINNIKTODO
-	//_game->pushState(new GlobalResearchState(true));
-}
 /**
 * Updates the research list
 * after going to other screens.
@@ -179,8 +164,6 @@ void CovertOperationState::fillProjectList(size_t scrl)
 		_lstOperations->addRow(3, wstr.c_str(), tr((*iter)->getOddsName()).c_str(), tr((*iter)->getTimeLeftName()).c_str());
 	}
 	_txtSoldiersAvailable->setText(tr("STR_SOLDIERS_AVAILABLE").arg(_base->getAvailableSoldiers()));
-	_txtScientistsAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(_base->getAvailableScientists()));
-	_txtEngineersAvailable->setText(tr("STR_ENGINEERS_AVAILABLE").arg(_base->getAvailableEngineers()));
 
 	if (scrl)
 		_lstOperations->scrollTo(scrl);

@@ -40,7 +40,6 @@ namespace OpenXcom
  */
 RuleSoldier::RuleSoldier(const std::string &type, int listOrder) : _type(type), _group(0), _listOrder(listOrder), _armor(nullptr), _specWeapon(nullptr),
 	_monthlyBuyLimit(0), _costBuy(0), _costSalary(0),
-	_costSalarySquaddie(0), _costSalarySergeant(0), _costSalaryCaptain(0), _costSalaryColonel(0), _costSalaryCommander(0),
 	_standHeight(0), _kneelHeight(0), _floatHeight(0), _femaleFrequency(50), _value(20), _transferTime(0), _moraleLossWhenKilled(100), _livingSpace(1),
 	_totalSoldierNamePoolWeight(0),
 	_avatarOffsetX(67), _avatarOffsetY(48), _flagOffset(0),
@@ -167,11 +166,6 @@ void RuleSoldier::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScri
 	reader.tryRead("monthlyBuyLimit", _monthlyBuyLimit);
 	reader.tryRead("costBuy", _costBuy);
 	reader.tryRead("costSalary", _costSalary);
-	reader.tryRead("costSalarySquaddie", _costSalarySquaddie);
-	reader.tryRead("costSalarySergeant", _costSalarySergeant);
-	reader.tryRead("costSalaryCaptain", _costSalaryCaptain);
-	reader.tryRead("costSalaryColonel", _costSalaryColonel);
-	reader.tryRead("costSalaryCommander", _costSalaryCommander);
 	reader.tryRead("standHeight", _standHeight);
 	reader.tryRead("kneelHeight", _kneelHeight);
 	reader.tryRead("floatHeight", _floatHeight);
@@ -431,15 +425,6 @@ int RuleSoldier::getBuyCost() const
 }
 
 /**
-* Does salary depend on rank?
-* @return True if salary depends on rank, false otherwise.
-*/
-bool RuleSoldier::isSalaryDynamic() const
-{
-	return _costSalarySquaddie || _costSalarySergeant || _costSalaryCaptain || _costSalaryColonel || _costSalaryCommander;
-}
-
-/**
  * Gets the list of defined skills.
  * @return The list of defined skills.
  */
@@ -458,23 +443,13 @@ int RuleSoldier::getSkillIconSprite() const
 }
 
 /**
- * Gets the cost of salary for a month (for a given rank).
+ * Gets the cost of salary for a month.
  * @param rank Soldier rank.
  * @return The cost.
  */
-int RuleSoldier::getSalaryCost(int rank) const
+int RuleSoldier::getSalaryCost() const
 {
-	int total = _costSalary;
-	switch (rank)
-	{
-		case 1: total += _costSalarySquaddie; break;
-		case 2: total += _costSalarySergeant; break;
-		case 3: total += _costSalaryCaptain; break;
-		case 4: total += _costSalaryColonel; break;
-		case 5: total += _costSalaryCommander; break;
-		default: break;
-	}
-	return total;
+	return _costSalary;
 }
 
 /**

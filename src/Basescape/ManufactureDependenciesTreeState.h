@@ -38,7 +38,7 @@ private:
 	TextList *_lstTopics;
 	TextButton *_btnOk, *_btnShowAll;
 	std::string _selectedItem;
-	bool _showAll, _ftaGame;
+	bool _showAll;
 	void initList();
 	void initFtAList();
   public:

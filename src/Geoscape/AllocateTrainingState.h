@@ -51,7 +51,6 @@ private:
 	std::vector<int> _soldierNumbers;
 	size_t _sel;
 	int _space;
-	bool _ftaUI;
 	std::vector<std::string> _availableOptions;
 	Base *_base;
 	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers;

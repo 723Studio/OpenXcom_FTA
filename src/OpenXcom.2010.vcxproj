@@ -349,7 +349,6 @@
     <ClCompile Include="..\libs\rapidyaml\c4\yml\tree.cpp" />
     <ClCompile Include="..\libs\rapidyaml\c4\yml\version.cpp" />
     <ClCompile Include="Basescape\AgentsState.cpp" />
-    <ClCompile Include="Basescape\BaseInfoState.cpp" />
     <ClCompile Include="Basescape\BaseInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\BasescapeState.cpp" />
     <ClCompile Include="Basescape\BaseView.cpp" />
@@ -375,8 +374,6 @@
     <ClCompile Include="Basescape\DisposeState.cpp" />
     <ClCompile Include="Basescape\EngineersState.cpp" />
     <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp" />
-    <ClCompile Include="Basescape\GlobalManufactureState.cpp" />
-    <ClCompile Include="Basescape\GlobalResearchState.cpp" />
     <ClCompile Include="Basescape\IntelAllocateAgentsState.cpp" />
     <ClCompile Include="Basescape\IntelligenceProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\IntelState.cpp" />
@@ -384,7 +381,6 @@
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp" />
     <ClCompile Include="Basescape\ManufactureDependenciesTreeState.cpp" />
-    <ClCompile Include="Basescape\ManufactureInfoState.cpp" />
     <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp" />
     <ClCompile Include="Basescape\ManufactureState.cpp" />
     <ClCompile Include="Basescape\MontlySoldierExperienceState.cpp" />
@@ -401,16 +397,13 @@
     <ClCompile Include="Basescape\PrisonerAllocateAgentsState.cpp" />
     <ClCompile Include="Basescape\PrisonerInfoState.cpp" />
     <ClCompile Include="Basescape\PrisonManagementState.cpp" />
-    <ClCompile Include="Basescape\PurchaseState.cpp" />
     <ClCompile Include="Basescape\ResearchAllocateScientistsState.cpp" />
-    <ClCompile Include="Basescape\ResearchInfoState.cpp" />
     <ClCompile Include="Basescape\ResearchInfoStateFtA.cpp" />
     <ClCompile Include="Basescape\ResearchProjectDetailsState.cpp" />
     <ClCompile Include="Basescape\ResearchState.cpp" />
     <ClCompile Include="Basescape\ScientistsState.cpp" />
     <ClCompile Include="Basescape\SelectStartFacilityState.cpp" />
     <ClCompile Include="Basescape\SackSoldierState.cpp" />
-    <ClCompile Include="Basescape\SellState.cpp" />
     <ClCompile Include="Basescape\SoldierArmorState.cpp" />
     <ClCompile Include="Basescape\SoldierBonusState.cpp" />
     <ClCompile Include="Basescape\SoldierDiaryLightState.cpp" />
@@ -580,9 +573,7 @@
     <ClCompile Include="Geoscape\ConfirmNewBaseState.cpp" />
     <ClCompile Include="Geoscape\CraftPatrolState.cpp" />
     <ClCompile Include="Geoscape\DogfightState.cpp" />
-    <ClCompile Include="Geoscape\NewPossibleCraftState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleFacilityState.cpp" />
-    <ClCompile Include="Geoscape\NewPossiblePurchaseState.cpp" />
     <ClCompile Include="Geoscape\PrisonReportState.cpp" />
     <ClCompile Include="Geoscape\ResearchRequiredState.cpp" />
     <ClCompile Include="Geoscape\NewPossibleManufactureState.cpp" />
@@ -598,7 +589,6 @@
     <ClCompile Include="Geoscape\InterceptState.cpp" />
     <ClCompile Include="Geoscape\ItemsArrivingState.cpp" />
     <ClCompile Include="Geoscape\LowFuelState.cpp" />
-    <ClCompile Include="Geoscape\MonthlyReportState.cpp" />
     <ClCompile Include="Geoscape\MultipleTargetsState.cpp" />
     <ClCompile Include="Geoscape\SelectDestinationState.cpp" />
     <ClCompile Include="Geoscape\SelectMusicTrackState.cpp" />
@@ -636,7 +626,6 @@
     <ClCompile Include="Menu\ConfirmLoadState.cpp" />
     <ClCompile Include="Menu\CutsceneState.cpp" />
     <ClCompile Include="Menu\ListGamesState.cpp" />
-    <ClCompile Include="Menu\ListLoadOriginalState.cpp" />
     <ClCompile Include="Menu\ListLoadState.cpp" />
     <ClCompile Include="Menu\ListSaveState.cpp" />
     <ClCompile Include="Menu\LoadGameState.cpp" />
@@ -759,7 +748,6 @@
     <ClCompile Include="Savegame\RankCount.cpp" />
     <ClCompile Include="Savegame\Region.cpp" />
     <ClCompile Include="Savegame\ResearchProject.cpp" />
-    <ClCompile Include="Savegame\SaveConverter.cpp" />
     <ClCompile Include="Savegame\SavedBattleGame.cpp" />
     <ClCompile Include="Savegame\SavedGame.cpp" />
     <ClCompile Include="Savegame\SerializationHelper.cpp" />
@@ -885,7 +873,6 @@
     <ClInclude Include="..\libs\rapidyaml\ryml.hpp" />
     <ClInclude Include="..\libs\rapidyaml\ryml_std.hpp" />
     <ClInclude Include="Basescape\AgentsState.h" />
-    <ClInclude Include="Basescape\BaseInfoState.h" />
     <ClInclude Include="Basescape\BaseInfoStateFtA.h" />
     <ClInclude Include="Basescape\BasescapeState.h" />
     <ClInclude Include="Basescape\BaseView.h" />
@@ -911,15 +898,12 @@
     <ClInclude Include="Basescape\DisposeState.h" />
     <ClInclude Include="Basescape\EngineersState.h" />
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h" />
-    <ClInclude Include="Basescape\GlobalManufactureState.h" />
-    <ClInclude Include="Basescape\GlobalResearchState.h" />
     <ClInclude Include="Basescape\IntelAllocateAgentsState.h" />
     <ClInclude Include="Basescape\IntelligenceProjectDetailsState.h" />
     <ClInclude Include="Basescape\IntelState.h" />
     <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h" />
     <ClInclude Include="Basescape\ItemLocationsState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
-    <ClInclude Include="Basescape\ManufactureInfoState.h" />
     <ClInclude Include="Basescape\ManufactureProductDetailsState.h" />
     <ClInclude Include="Basescape\MontlySoldierExperienceState.h" />
     <ClInclude Include="Basescape\NewManufactureListState.h" />
@@ -937,16 +921,13 @@
     <ClInclude Include="Basescape\PrisonerAllocateAgentsState.h" />
     <ClInclude Include="Basescape\PrisonerInfoState.h" />
     <ClInclude Include="Basescape\PrisonManagementState.h" />
-    <ClInclude Include="Basescape\PurchaseState.h" />
     <ClInclude Include="Basescape\ResearchAllocateScientistsState.h" />
-    <ClInclude Include="Basescape\ResearchInfoState.h" />
     <ClInclude Include="Basescape\ResearchInfoStateFtA.h" />
     <ClInclude Include="Basescape\ResearchProjectDetailsState.h" />
     <ClInclude Include="Basescape\ResearchState.h" />
     <ClInclude Include="Basescape\ScientistsState.h" />
     <ClInclude Include="Basescape\SelectStartFacilityState.h" />
     <ClInclude Include="Basescape\SackSoldierState.h" />
-    <ClInclude Include="Basescape\SellState.h" />
     <ClInclude Include="Basescape\SoldierArmorState.h" />
     <ClInclude Include="Basescape\SoldierBonusState.h" />
     <ClInclude Include="Basescape\SoldierDiaryLightState.h" />
@@ -1131,9 +1112,7 @@
     <ClInclude Include="Geoscape\CraftPatrolState.h" />
     <ClInclude Include="Geoscape\DogfightState.h" />
     <ClInclude Include="Geoscape\FundingState.h" />
-    <ClInclude Include="Geoscape\NewPossibleCraftState.h" />
     <ClInclude Include="Geoscape\NewPossibleFacilityState.h" />
-    <ClInclude Include="Geoscape\NewPossiblePurchaseState.h" />
     <ClInclude Include="Geoscape\PrisonReportState.h" />
     <ClInclude Include="Geoscape\ResearchRequiredState.h" />
     <ClInclude Include="Geoscape\GeoscapeCraftState.h" />
@@ -1146,7 +1125,6 @@
     <ClInclude Include="Geoscape\InterceptState.h" />
     <ClInclude Include="Geoscape\ItemsArrivingState.h" />
     <ClInclude Include="Geoscape\LowFuelState.h" />
-    <ClInclude Include="Geoscape\MonthlyReportState.h" />
     <ClInclude Include="Geoscape\MultipleTargetsState.h" />
     <ClInclude Include="Geoscape\PsiTrainingState.h" />
     <ClInclude Include="Geoscape\ResearchCompleteState.h" />
@@ -1185,7 +1163,6 @@
     <ClInclude Include="Menu\ConfirmLoadState.h" />
     <ClInclude Include="Menu\CutsceneState.h" />
     <ClInclude Include="Menu\ListGamesState.h" />
-    <ClInclude Include="Menu\ListLoadOriginalState.h" />
     <ClInclude Include="Menu\ListLoadState.h" />
     <ClInclude Include="Menu\ListSaveState.h" />
     <ClInclude Include="Menu\LoadGameState.h" />
@@ -1314,7 +1291,6 @@
     <ClInclude Include="Savegame\RankCount.h" />
     <ClInclude Include="Savegame\Region.h" />
     <ClInclude Include="Savegame\ResearchProject.h" />
-    <ClInclude Include="Savegame\SaveConverter.h" />
     <ClInclude Include="Savegame\SavedBattleGame.h" />
     <ClInclude Include="Savegame\SavedGame.h" />
     <ClInclude Include="Savegame\SerializationHelper.h" />

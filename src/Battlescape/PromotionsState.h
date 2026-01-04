@@ -40,7 +40,6 @@ private:
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtBase;
 	TextList *_lstSoldiers;
 	std::vector<std::pair<Base*, Soldier*>> _filteredListOfSoldiers;
-	bool _fta = false;
   public:
 	/// Creates the Promotions state.
 	PromotionsState(bool clearPromotions = false);

@@ -3404,7 +3404,7 @@ BattlescapeTally BattlescapeGame::tallyUnits()
 					capturable = false;
 				}
 
-				if (_save->getMod()->isFTAGame() && !capturable && (bu->isInExitArea(START_POINT) || bu->isInExitArea(END_POINT)))
+				if (!capturable && (bu->isInExitArea(START_POINT) || bu->isInExitArea(END_POINT)))
 				{
 					tally.liveAliensInEntrance++;
 				}

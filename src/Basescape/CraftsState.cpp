@@ -32,7 +32,6 @@
 #include "../Savegame/Base.h"
 #include "../Menu/ErrorMessageState.h"
 #include "CraftInfoState.h"
-#include "SellState.h"
 #include "../Basescape/PilotsState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
@@ -48,17 +47,9 @@ namespace OpenXcom
  */
 CraftsState::CraftsState(Base *base) : _base(base)
 {
-	bool ftaUI = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (ftaUI)
-	{
-		_btnOk = new TextButton(148, 16, 164, 176);
-	}
-	else
-	{
-		_btnOk = new TextButton(288, 16, 16, 176);
-	}
+	_btnOk = new TextButton(148, 16, 164, 176);
 	_btnPilots = new TextButton(148, 16, 8, 176);
 	_txtTitle = new Text(298, 17, 16, 8);
 	_txtBase = new Text(298, 17, 16, 24);
@@ -95,7 +86,6 @@ CraftsState::CraftsState(Base *base) : _base(base)
 
 	_btnPilots->setText(tr("STR_PILOTS"));
 	_btnPilots->onMouseClick((ActionHandler)&CraftsState::btnPilotsClick);
-	_btnPilots->setVisible(ftaUI);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr("STR_INTERCEPTION_CRAFT"));
@@ -167,12 +157,6 @@ void CraftsState::initList(size_t scrl)
 void CraftsState::btnOkClick(Action *)
 {
 	_game->popState();
-
-	if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && _base->storesOverfull())
-	{
-		_game->pushState(new SellState(_base, 0));
-		_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("craftSelect")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("craftSelect")->getElement("errorPalette")->color));
-	}
 }
 
 /**

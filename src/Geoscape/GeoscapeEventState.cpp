@@ -19,7 +19,6 @@
 #include "GeoscapeEventState.h"
 #include "GeoscapeState.h"
 #include <map>
-#include "../Basescape/SellState.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/RNG.h"
@@ -652,15 +651,7 @@ void GeoscapeEventState::btnOkClick(Action*)
 		}
 	}
 
-	if (_game->getSavedGame()->getEnding() == END_NONE && !_game->getMod()->isFTAGame())
-	{
-		Base* base = _game->getSavedGame()->getBases()->front();
-		if (_game->getSavedGame()->getMonthsPassed() > -1 && Options::storageLimitsEnforced && base != 0 && base->storesOverfull())
-		{
-			_game->pushState(new SellState(base, 0));
-			_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
-		}
-	}
+	// FtA-only fork: skip vanilla-only storage limit flow here.
 
 	if (!_bonusResearchName.empty())
 	{

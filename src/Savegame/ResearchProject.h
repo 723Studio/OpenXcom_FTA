@@ -33,7 +33,6 @@ class Soldier;
 class ResearchProject
 {
 	const RuleResearch * _project;
-	int _assigned;
 	int _spent;
 	int _cost;
 public:
@@ -43,10 +42,6 @@ public:
 	int getStepProgress(std::map<Soldier*, int> &assignedScientists, Mod *mod, int rating);
 	/// gets state of project.
 	bool isFinished();
-	/// set the number of scientist assigned to this ResearchProject
-	void setAssigned (int nb);
-	/// get the number of scientist assigned to this ResearchProject
-	int getAssigned() const;
 	/// get time already spent on this ResearchProject
 	int getSpent() const;
 	/// set time already spent on this ResearchProject

@@ -98,11 +98,10 @@ CommendationLateState::CommendationLateState(std::vector<Soldier*> soldiersMedal
 	for (auto* soldier : soldiersMedalled)
 	{
 		// Establish some base information
-		bool fta = _game->getMod()->isFTAGame();
 		_lstSoldiers->addRow(
 			3,
 			soldier->getName().c_str(),
-			tr(soldier->getRankString(fta)).c_str(),
+			tr(soldier->getRankString()).c_str(),
 			tr("STR_KILLS").arg(soldier->getDiary()->getKillTotal()).c_str());
 		_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
 		_commendationsNames.push_back("");

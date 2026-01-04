@@ -37,7 +37,7 @@
 namespace OpenXcom
 {
 Production::Production(const RuleManufacture * rules, int amount) :
-	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _engineers(0), _sell(false)
+	_rules(rules), _amount(amount), _infinite(false), _timeSpent(0), _sell(false)
 {
 	_efficiency = 100;
 }
@@ -90,34 +90,28 @@ std::vector<Soldier*> Production::getAssignedSoldiers(Base* b)
 
 int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRating, bool prediction)
 {
-	if (!m->isFTAGame())
+	int progress = 0;
+	std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
+	if (!assignedEngineers.empty())
 	{
-		return _engineers;
-	}
-	else
-	{
-		int progress = 0;
-		std::vector<Soldier*> assignedEngineers = getAssignedSoldiers(b);
-		if (!assignedEngineers.empty())
+		double effort = 0;
+		auto projStats = _rules->getStats();
+		int trainingFactor = m->getEngineerTrainingFactor();
+		double speedFactor = (double)m->getEngineeringSpeedFactor() / 100;
+		int summEfficiency = 0;
+		for (auto s : assignedEngineers)
 		{
-			double effort = 0;
-			auto projStats = _rules->getStats();
-			int trainingFactor = m->getEngineerTrainingFactor();
-			double speedFactor = (double)m->getEngineeringSpeedFactor() / 100;
-			int summEfficiency = 0;
-			for (auto s : assignedEngineers)
+			if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
 			{
-				if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
-				{
-					continue;
-				}
+				continue;
+			}
 
-				auto stats = s->getCurrentStats();
-				auto caps = s->getRules()->getStatCaps();
-				unsigned int statsN = 0;
-				double soldierEffort = 0, statEffort = 0;
-				if (projStats.weaponry > 0)
-				{
+			auto stats = s->getCurrentStats();
+			auto caps = s->getRules()->getStatCaps();
+			unsigned int statsN = 0;
+			double soldierEffort = 0, statEffort = 0;
+			if (projStats.weaponry > 0)
+			{
 					statEffort = stats->weaponry;
 					soldierEffort += statEffort / projStats.weaponry;
 					if (!prediction && stats->weaponry < caps.weaponry && RNG::generate(0, caps.weaponry) > stats->weaponry && RNG::percent(trainingFactor))
@@ -215,7 +209,6 @@ int Production::getProgress(Base* b, SavedGame* g, const Mod* m, int loyaltyRati
 		}
 		return progress;
 	}
-}
 
 productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Language *lang, int rating)
 {
@@ -371,16 +364,7 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 							s->genName();
 						}
 
-						if (g->isFtAGame())
-						{
-							b->getSoldiers()->push_back(s);
-						}
-						else
-						{
-							Transfer* t = new Transfer(24);
-							t->setSoldier(s);
-							b->getTransfers()->push_back(t);
-						}
+						b->getSoldiers()->push_back(s);
 					}
 				}
 			}
@@ -465,7 +449,6 @@ void Production::save(YAML::YamlNodeWriter writer) const
 {
 	writer.setAsMap();
 	writer.write("item", getRules()->getName());
-	writer.write("assigned", getAssignedEngineers());
 	writer.write("spent", getTimeSpent());
 	writer.write("amount", getAmountTotal());
 	writer.write("infinite", getInfiniteAmount());
@@ -478,7 +461,6 @@ void Production::save(YAML::YamlNodeWriter writer) const
 
 void Production::load(const YAML::YamlNodeReader& reader)
 {
-	setAssignedEngineers(reader["assigned"].readVal(getAssignedEngineers()));
 	setTimeSpent(reader["spent"].readVal(getTimeSpent()));
 	setAmountTotal(reader["amount"].readVal(getAmountTotal()));
 	setInfiniteAmount(reader["infinite"].readVal(getInfiniteAmount()));

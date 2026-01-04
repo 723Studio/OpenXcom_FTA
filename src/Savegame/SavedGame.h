@@ -161,7 +161,7 @@ private:
 	std::vector<GeoscapeEvent*> _geoscapeEvents;
 	std::vector<CovertOperation*> _covertOperations;
 	std::vector<DiplomacyFaction*> _diplomacyFactions;
-	bool _debug, _warned, _ftaGame;
+	bool _debug, _warned;
 	bool _togglePersonalLight, _toggleNightVision;
 	int _toggleBrightness;
 	int _monthsPassed;
@@ -182,7 +182,6 @@ private:
 	ItemContainer *_globalCraftLoadout[MAX_CRAFT_LOADOUT_TEMPLATES];
 	std::vector<MissionStatistics*> _missionStatistics;
 	std::set<int> _ignoredUfos;
-	std::set<const RuleItem *> _autosales;
 	bool _disableSoldierEquipment;
 	bool _alienContainmentChecked;
 	ScriptValues<SavedGame> _scriptValues;
@@ -226,10 +225,6 @@ public:
 	bool isIronman() const;
 	/// Sets if the game is in ironman mode.
 	void setIronman(bool ironman);
-	/// Gets if the game is FtA game.
-	bool isFtAGame() const { return _ftaGame; }
-	/// Sets if the game is FtA game.
-	void setFtAGame(bool ftaGame) { _ftaGame = ftaGame; }
 	/// Sets game object pointer
 	static void setGamePtr(Game *game) { _game = game; }
 	/// Gets our game.
@@ -540,10 +535,6 @@ public:
 	bool isUfoOnIgnoreList(int ufoId);
 	/// Handles a soldier's death.
 	std::vector<Soldier*>::iterator killSoldier(bool resetArmor, Soldier *soldier, BattleUnitKills *cause = 0);
-	/// enables/disables autosell for an item type
-	void setAutosell(const RuleItem *itype, const bool enabled);
-	/// get autosell state for an item type
-	bool getAutosell(const RuleItem *) const;
 	/// Removes all soldiers from a given craft.
 	void removeAllSoldiersFromXcomCraft(Craft *craft);
 	/// Stop hunting the given xcom craft.

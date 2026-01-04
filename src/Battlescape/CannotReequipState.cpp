@@ -29,7 +29,6 @@
 #include "../Savegame/Base.h"
 #include "../FTA/DiplomacyStartState.h"
 #include "../Basescape/ManufactureState.h"
-#include "../Basescape/PurchaseState.h"
 
 namespace OpenXcom
 {
@@ -73,14 +72,7 @@ CannotReequipState::CannotReequipState(std::vector<ReequipStat> &missingItems, B
 	_btnManufacture->setText(tr("STR_MANUFACTURE"));
 	_btnManufacture->onMouseClick((ActionHandler)&CannotReequipState::btnManufactureClick);
 
-	if (_game->getMod()->isFTAGame())
-	{
-		_btnPurchase->setText(tr("STR_DIPLOMACY_UC"));
-	}
-	else
-	{
-		_btnPurchase->setText(tr("STR_PURCHASE_RECRUIT"));
-	}
+	_btnPurchase->setText(tr("STR_DIPLOMACY_UC"));
 	_btnPurchase->onMouseClick((ActionHandler)&CannotReequipState::btnPurchaseClick);
 
 	_btnOk->setText(tr("STR_OK"));
@@ -156,14 +148,7 @@ void CannotReequipState::btnManufactureClick(Action *)
  */
 void CannotReequipState::btnPurchaseClick(Action *)
 {
-	if (_game->getMod()->isFTAGame())
-	{
-		_game->pushState(new DiplomacyStartState(_base, false));
-	}
-	else
-	{
-		_game->pushState(new PurchaseState(_base, this));
-	}
+	_game->pushState(new DiplomacyStartState(_base, false));
 }
 
 /**

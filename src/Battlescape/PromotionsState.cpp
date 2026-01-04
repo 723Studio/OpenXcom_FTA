@@ -49,8 +49,6 @@ PromotionsState::PromotionsState(bool clearPromotions)
 	_txtBase = new Text(80, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
-	_fta = _game->getMod()->isFTAGame();
-
 	// Set palette
 	setInterface("promotions");
 
@@ -90,35 +88,12 @@ PromotionsState::PromotionsState(bool clearPromotions)
 
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
-		if (_fta)
+		for (auto* soldier : *xbase->getSoldiers())
 		{
-			for (auto* soldier : *xbase->getSoldiers())
+			if (soldier->isPromoted())
 			{
-				if (soldier->isPromoted())
-				{
-					_filteredListOfSoldiers.push_back(std::make_pair(xbase, soldier));
-					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(_fta)).c_str(), xbase->getName().c_str());
-				}
-			}
-		}
-		else
-		{ //in FtA we don't have this case basically =)
-			for (auto* soldier : *xbase->getSoldiers())
-			{
-				if (soldier->isPromoted())
-				{
-					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
-				}
-			}
-			for (auto* transfer : *xbase->getTransfers())
-			{
-				if (transfer->getType() == TRANSFER_SOLDIER)
-				{
-					if (transfer->getSoldier()->isPromoted())
-					{
-						_lstSoldiers->addRow(3, transfer->getSoldier()->getName().c_str(), tr(transfer->getSoldier()->getRankString()).c_str(), xbase->getName().c_str());
-					}
-				}
+				_filteredListOfSoldiers.push_back(std::make_pair(xbase, soldier));
+				_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
 			}
 		}
 	}
@@ -147,11 +122,8 @@ void PromotionsState::btnOkClick(Action *)
 
 void PromotionsState::lstSoldiersClick(Action *action)
 {
-	if (_fta)
-	{
-		auto& [base, soldier] = _filteredListOfSoldiers.at(_lstSoldiers->getSelectedRow());
-		_game->pushState(new SoldierInfoStateFtA(base, soldier));
-	}
+	auto& [base, soldier] = _filteredListOfSoldiers.at(_lstSoldiers->getSelectedRow());
+	_game->pushState(new SoldierInfoStateFtA(base, soldier));
 }
 
 }

@@ -58,11 +58,9 @@ private:
 	InteractiveSurface *_btnRotateLeft, *_btnRotateRight, *_btnRotateUp, *_btnRotateDown, *_btnZoomIn, *_btnZoomOut;
 	Text *_txtFunds, *_txtHour, *_txtHourSep, *_txtMin, *_txtMinSep, *_txtSec, *_txtWeekday, *_txtDay, *_txtMonth, *_txtYear;
 	Timer *_gameTimer, *_zoomInEffectTimer, *_zoomOutEffectTimer, *_dogfightStartTimer, *_dogfightTimer;
-	bool _pause, _zoomInEffectDone, _zoomOutEffectDone, _fta;
+	bool _pause, _zoomInEffectDone, _zoomOutEffectDone;
 	Text *_txtDebug;
 	ComboBox *_cbxRegion, *_cbxZone, *_cbxArea;
-	Text *_txtSlacking;
-	Text *_txtTraining;
 	std::list<State*> _popups;
 	std::list<DogfightState*> _dogfights, _dogfightsToBeStarted;
 	std::vector<Craft*> _activeCrafts;
@@ -130,8 +128,8 @@ public:
 	void btnGlobalResearchClick(Action *action);
 	/// Handler for clicking the [GlobalAlienContainment] key.
 	void btnGlobalAlienContainmentClick(Action *action);
-	/// Handler for clicking the [DogfightExperience] key.
-	void btnDogfightExperienceClick(Action *action);
+	/// Handler for clicking the [SoldierExperience] key.
+	void btnSoldierExperienceClick(Action *action);
 	/// Handler for clicking the [Debug] key.
 	void btnDebugClick(Action *action);
 	/// Handler for clicking the Bases button.
@@ -199,7 +197,6 @@ private:
 	/// Process each individual mission script command.
 	bool processCommand(RuleMissionScript *command);
 	bool buttonsDisabled();
-	void updateSlackingIndicator();
 	void handleResearch(Base *base);
 };
 

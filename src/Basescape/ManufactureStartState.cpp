@@ -32,7 +32,6 @@
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
-#include "ManufactureInfoState.h"
 #include "../Basescape/ManufactureInfoStateFtA.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
@@ -49,7 +48,6 @@ namespace OpenXcom
 ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) :  _base(base), _item(item)
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->isFTAGame();
 
 	_window = new Window(this, 320, 160, 0, 20);
 	_btnCancel = new TextButton(136, 16, 16, 155);
@@ -97,20 +95,12 @@ ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) 
 
 	auto time = _item->getManufactureTime();
 	auto statsListString = generateStatsList();
+	_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(time / 100)); // for more precise calculations we use man/hour * 100 in FtA
+	_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
+	_txtReqStats->setText(statsListString);
+	_txtReqStats->setWordWrap(true);
 
-	if (_ftaUi)
-	{
-		_txtManHour->setText(tr("STR_BASE_LABOR_COSTS").arg(time / 100)); // for more precise calculations we use man/hour * 100 in FtA
-		_txtReqStatsHeader->setText(tr("STR_REQUIRED_STATS"));
-		_txtReqStats->setText(statsListString);
-		_txtReqStats->setWordWrap(true);
-	}
-	else
-	{
-		_txtManHour->setText(tr("STR_ENGINEER_HOURS_TO_PRODUCE_ONE_UNIT").arg(time));
-	}
-
-	if (!_ftaUi || statsListString.empty())
+	if (statsListString.empty())
 	{
 		_txtReqStatsHeader->setVisible(false);
 		_txtReqStats->setVisible(false);
@@ -264,20 +254,13 @@ void ManufactureStartState::btnStartClick(Action *)
 	{
 		_game->pushState(new ErrorMessageState(tr("STR_NO_FREE_HANGARS_FOR_CRAFT_PRODUCTION"), _palette, _game->getMod()->getInterface("basescape")->getElement("errorMessage")->color, "BACK17.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
 	}
-	else if (_item->getRequiredSpace() > _base->getFreeWorkshops(_ftaUi))
+	else if (_item->getRequiredSpace() > _base->getFreeWorkshops())
 	{
 		_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_WORK_SPACE"), _palette, _game->getMod()->getInterface("basescape")->getElement("errorMessage")->color, "BACK17.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
 	}
 	else
 	{
-		if (_ftaUi)
-		{
-			_game->pushState(new ManufactureInfoStateFtA(_base, _item));
-		}
-		else
-		{
-			_game->pushState(new ManufactureInfoState(_base, _item));
-		}
+		_game->pushState(new ManufactureInfoStateFtA(_base, _item));
 	}
 }
 

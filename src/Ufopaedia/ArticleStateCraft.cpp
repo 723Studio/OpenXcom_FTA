@@ -150,24 +150,8 @@ namespace OpenXcom
 		{
 			ss << tr("STR_COCKPIT_CAPACITY").arg(craft->getPilots()) << '\n';
 		}
-		if (_game->getMod()->isFTAGame())
-		{
-			ss << tr("STR_ENGINE_COOLDOWN").arg(craft->getStats().engineCooldown) << '\n';
-			ss << tr("STR_RELAY_POWER").arg(craft->getStats().relay) << '\n';
-		}
-		else
-		{
-			if (craft->getMaxVehiclesAndLargeSoldiers() == craft->getMaxVehiclesAndLargeSoldiersLimit())
-			{
-				ss << tr("STR_HWP_CAPACITY").arg(craft->getMaxVehiclesAndLargeSoldiers());
-			}
-			else
-			{
-				std::ostringstream ss2;
-				ss2 << craft->getMaxVehiclesAndLargeSoldiers() << "/" << craft->getMaxVehiclesAndLargeSoldiersLimit();
-				ss << tr("STR_HWP_CAPACITY").arg(ss2.str());
-			}
-		}
+		ss << tr("STR_ENGINE_COOLDOWN").arg(craft->getStats().engineCooldown) << '\n';
+		ss << tr("STR_RELAY_POWER").arg(craft->getStats().relay) << '\n';
 		_txtStats->setText(ss.str());
 
 		centerAllSurfaces();

@@ -35,7 +35,7 @@ class ExtendedInventoryLinksState : public State
 {
 private:
 	TextButton *_btnOk;
-	TextButton *_btnArmor, *_btnAvatar, *_btnEquipmentSave, *_btnEquipmentLoad, *_btnPersonalSave, *_btnPersonalLoad, *_btnNotes, *_btnUfopedia, *_btnAutoEquip;
+	TextButton *_btnArmor, *_btnEquipmentSave, *_btnEquipmentLoad, *_btnPersonalSave, *_btnPersonalLoad, *_btnNotes, *_btnUfopedia;
 	Window *_window;
 	Text *_txtTitle;
 	InventoryState *_parent;
@@ -47,14 +47,12 @@ public:
 	~ExtendedInventoryLinksState() = default;
 	/// Handlers for clicking the buttons.
 	void btnArmorClick(Action* action);
-	void btnAvatarClick(Action* action);
 	void btnEquipmentSaveClick(Action* action);
 	void btnEquipmentLoadClick(Action* action);
 	void btnPersonalSaveClick(Action* action);
 	void btnPersonalLoadClick(Action* action);
 	void btnNotesClick(Action* action);
 	void btnUfopediaClick(Action* action);
-	void btnAutoEquipClick(Action* action);
 	void btnOkClick(Action* action);
 };
 

@@ -878,11 +878,7 @@ public:
 	const std::string& getType() const;
 
 	/// Gets if unit can be recovered as civilian.
-	bool isRecoverableAsCivilian() const { return _civilianRecoveryTypeName.empty() == false || _civilianRecoverySoldierType || _civilianRecoveryItemType; }
-	/// Gets if engineer is recovered when a civilian is saved.
-	bool isRecoverableAsEngineer() const { return _civilianRecoveryTypeName == "STR_ENGINEER"; }
-	/// Gets if scientist is recovered when a civilian is saved.
-	bool isRecoverableAsScientist() const { return _civilianRecoveryTypeName == "STR_SCIENTIST"; }
+	bool isRecoverableAsCivilian() const { return _civilianRecoverySoldierType || _civilianRecoveryItemType; }
 	/// Gets soldier type that is recovered when a civilian is saved.
 	const RuleSoldier* getCivilianRecoverySoldierType() const { return _civilianRecoverySoldierType; }
 	/// Gets item type that is recovered when a civilian is saved.

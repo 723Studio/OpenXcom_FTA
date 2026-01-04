@@ -1015,14 +1015,6 @@ interfaces:
         color2: 245  # slightly lighter blue
       - id: text
         color: 244   # even lighter blue
-      - id: slackingIndicator
-        color: 244   # even lighter blue
-        color2: 133  # minty green
-        custom: -12  # above Intercept button
-      - id: trainingIndicator
-        color: 244   # even lighter blue
-        color2: 133  # minty green
-        custom: 4  # below standard visible area
       - id: genericWindow
         color: 239   # bright green
       - id: genericText
@@ -1292,25 +1284,6 @@ interfaces:
         border: 246  # purple
       - id: button
         color: 218   # blue
-  - type: globalManufactureMenu
-    backgroundImage: BACK17.SCR
-    palette: PAL_BASESCAPE
-    elements:
-      - id: palette
-        color: 6     # oxide
-      - id: window
-        color: 246   # purple
-      - id: text1
-        color: 246   # purple
-        color2: 208  # white
-      - id: text2
-        color: 241   # pink
-      - id: list
-        color: 218   # blue
-        color2: 208  # white
-        border: 246  # purple
-      - id: button
-        color: 218   # blue
   - type: selectNewManufacture
     backgroundImage: BACK17.SCR
     parent: manufactureMenu
@@ -1377,23 +1350,6 @@ interfaces:
         color2: 208  # white
       - id: list
         color: 246   # purple
-        border: 218  # blue
-      - id: button
-        color: 246   # purple
-  - type: globalResearchMenu
-    backgroundImage: BACK05.SCR
-    palette: PAL_BASESCAPE
-    elements:
-      - id: palette
-        color: 1     # burgundy
-      - id: window
-        color: 218   # blue
-      - id: text
-        color: 218   # blue
-        color2: 208  # white
-      - id: list
-        color: 246   # purple
-        color2: 208  # white
         border: 218  # blue
       - id: button
         color: 246   # purple

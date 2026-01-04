@@ -299,7 +299,6 @@ void ManufactureInfoStateFtA::btnOkClick(Action *)
 	_production->setSellItems(false);
 	_production->setAmountTotal(_unitsToProduce);
 	_production->setInfiniteAmount(_infiniteProduction);
-	_production->setAssignedEngineers(0); //this is FtA, baby! we use soldiers, assigned to the project instead.
 	exitState();
 }
 
@@ -376,7 +375,7 @@ void ManufactureInfoStateFtA::setAssignedEngineers()
 			teamSize--;
 		}
 	}
-	_workSpace = _base->getFreeWorkshops(true, _production) - this->getManufactureRules()->getRequiredSpace() - teamSize;
+	_workSpace = _base->getFreeWorkshops(_production) - this->getManufactureRules()->getRequiredSpace() - teamSize;
 	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_workSpace));
 
 	std::ostringstream s4;

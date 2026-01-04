@@ -190,14 +190,7 @@ void SoldierMemorialState::btnStatisticsClick(Action *)
  */
 void SoldierMemorialState::lstSoldiersClick(Action *)
 {
-	if (_game->getMod()->isFTAGame())
-	{
-		_game->pushState(new SoldierInfoStateFtA(0, _indices[_lstSoldiers->getSelectedRow()]));
-	}
-	else
-	{
-		_game->pushState(new SoldierInfoState(0, _indices[_lstSoldiers->getSelectedRow()]));
-	}
+	_game->pushState(new SoldierInfoStateFtA(0, _indices[_lstSoldiers->getSelectedRow()]));
 }
 
 /**
@@ -234,7 +227,7 @@ void SoldierMemorialState::fillMemorialList()
 		saveDay << death->getTime()->getDayString(_game->getLanguage());
 		saveMonth << tr(death->getTime()->getMonthString());
 		saveYear << death->getTime()->getYear();
-		_lstSoldiers->addRow(5, deadSoldier->getName().c_str(), tr(deadSoldier->getRankString(_game->getMod()->isFTAGame())).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
+		_lstSoldiers->addRow(5, deadSoldier->getName().c_str(), tr(deadSoldier->getRankString()).c_str(), saveDay.str().c_str(), saveMonth.str().c_str(), saveYear.str().c_str());
 		_indices.push_back(index);
 	}
 }

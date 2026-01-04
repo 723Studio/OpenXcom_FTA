@@ -431,10 +431,6 @@ void ConfirmDestinationState::btnTransferClick(Action *)
 	{
 		errorMessage = tr("STR_NO_FREE_ACCOMODATION_CREW");
 	}
-	else if (Options::storageLimitsEnforced && targetBase->storesOverfull(_crafts.front()->getTotalItemStorageSize()))
-	{
-		errorMessage = tr("STR_NOT_ENOUGH_STORE_SPACE_FOR_CRAFT");
-	}
 	else if (_crafts.front()->getFuel() < _crafts.front()->getFuelLimit(targetBase))
 	{
 		errorMessage = tr("STR_NOT_ENOUGH_FUEL_TO_REACH_TARGET");
