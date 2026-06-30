@@ -117,6 +117,10 @@ namespace FileMap
 	/// scans a moddir for mods, (privately) maps them.
 	void scanModDir(const std::string& dirname, const std::string& basename, bool protectedLocation);
 
+	/// Scans official encrypted FTA packages from dataDir/basename/*.oxc.
+	/// Returns mapped mod IDs in deterministic package order.
+	std::vector<std::string> scanOfficialPackageDir(const std::string& dirname, const std::string& basename);
+
 	/// scans a .zip from the rwops for mods
 	void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath);
 

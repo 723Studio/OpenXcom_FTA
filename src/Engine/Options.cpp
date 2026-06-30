@@ -24,6 +24,7 @@
 #include <SDL_keysym.h>
 #include <SDL_mixer.h>
 #include <map>
+#include <set>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -432,10 +433,6 @@ void createOptionsOXCE()
 void createAdvancedOptionsOXCE()
 {
 	// OXCE options general
-#ifdef _WIN32
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUpdateCheck", &oxceUpdateCheck, false, "STR_UPDATE_CHECK", "STR_GENERAL"));
-#endif
-
 	_info.push_back(OptionInfo(OPTION_OXCE, "autosaveSlots", &autosaveSlots, 1, "STR_AUTOSAVE_SLOTS", "STR_GENERAL")); // OXCE only
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveFrequency", &oxceGeoAutosaveFrequency, 0, "STR_GEO_AUTOSAVE_FREQUENCY", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoAutosaveSlots", &oxceGeoAutosaveSlots, 1, "STR_GEO_AUTOSAVE_SLOTS", "STR_GENERAL"));
@@ -581,44 +578,9 @@ void createControlsFTA()
 }
 
 
-// we can get fancier with these detection routines, but for now just look for
-// *something* in the data folders.  case sensitivity can make actually verifying
-// that the *correct* files are there complex.
-static bool _gameIsInstalled(const std::string &gameName)
-{
-	// look for game data in either the data or user directories
-	std::string dataGameFolder = CrossPlatform::searchDataFolder(gameName, 8);
-	std::string dataGameZipFile = CrossPlatform::searchDataFile(gameName + ".zip");
-	std::string userGameFolder = _userFolder + gameName;
-	std::string userGameZipFile = _userFolder + gameName + ".zip";
-	return (CrossPlatform::folderMinSize(dataGameFolder, 8))
-	    || (CrossPlatform::folderMinSize(userGameFolder, 8))
-		||  CrossPlatform::fileExists( dataGameZipFile )
-		||  CrossPlatform::fileExists( userGameZipFile );
-}
-
-static bool _ufoIsInstalled()
-{
-	return _gameIsInstalled("UFO");
-}
-
-static bool _tftdIsInstalled()
-{
-	return _gameIsInstalled("TFTD");
-}
-
 static void _setDefaultMods()
 {
-	bool haveUfo = _ufoIsInstalled();
-	if (haveUfo)
-	{
-		mods.push_back(std::pair<std::string, bool>("xcom1", true));
-	}
-
-	if (_tftdIsInstalled())
-	{
-		mods.push_back(std::pair<std::string, bool>("xcom2", !haveUfo));
-	}
+	mods.push_back(std::make_pair("From the Ashes", true));
 }
 
 /**
@@ -738,7 +700,7 @@ static bool showHelp()
 	help << "-cfg PATH  or  -config PATH" << std::endl;
 	help << "        use PATH as the default Config Folder instead of auto-detecting" << std::endl << std::endl;
 	help << "-master MOD" << std::endl;
-	help << "        set MOD to the current master mod (eg. -master xcom2)" << std::endl << std::endl;
+	help << "        set MOD to the current master mod (FTA only supports 'From the Ashes')" << std::endl << std::endl;
 	help << "-KEY VALUE" << std::endl;
 	help << "        override option KEY with VALUE (eg. -displayWidth 640)" << std::endl << std::endl;
 	help << "-continue" << std::endl;
@@ -877,23 +839,18 @@ bool init()
 // called from the dos screen state (StartState)
 void refreshMods()
 {
+	const std::string ftaIdentity = "From the Ashes";
 	if (Options::reload)
 	{
 		_masterMod = "";
 	}
 
 	_modInfos.clear();
-	SDL_RWops *rwops = CrossPlatform::getEmbeddedAsset("standard.zip");
-	if (rwops) {
-		Log(LOG_INFO) << "Scanning embedded standard mods...";
-		FileMap::scanModZipRW(rwops, "exe:standard.zip");
-	}
-	if (Options::oxceEmbeddedOnly && rwops) {
-		Log(LOG_INFO) << "Modding embedded resources is disabled, set 'oxceEmbeddedOnly: false' in options.cfg to enable.";
-	} else {
-		Log(LOG_INFO) << "Scanning standard mods in '" << getDataFolder() << "'...";
-		FileMap::scanModDir(getDataFolder(), "standard", true);
-	}
+	Log(LOG_INFO) << "Scanning official FTA .oxc packages in '" << getDataFolder() << "standard'...";
+	const std::vector<std::string> officialModIds = FileMap::scanOfficialPackageDir(getDataFolder(), "standard");
+
+	// User mods remain a separate open-content path and cannot supply the
+	// required official base package.
 	Log(LOG_INFO) << "Scanning user mods in '" << getUserFolder() << "'...";
 	FileMap::scanModDir(getUserFolder(), "mods", false);
 #ifdef __MOBILE__
@@ -916,91 +873,80 @@ void refreshMods()
 	// those are the mods that can possibly be loaded.
 	_modInfos = FileMap::getModInfos();
 
-	// remove mods from list that no longer exist
-	bool nonMasterModFound = false;
-	std::map<std::string, bool> corruptedMasters;
-	for (auto i = mods.begin(); i != mods.end();)
+	std::string ftaMasterId;
+	for (const auto& modId : officialModIds)
 	{
-		auto modIt = _modInfos.find(i->first);
-		if (_modInfos.end() == modIt)
+		auto info = _modInfos.find(modId);
+		if (info != _modInfos.end() && (info->first == ftaIdentity || info->second.getName() == ftaIdentity))
 		{
-			Log(LOG_VERBOSE) << "removing references to missing mod: " << i->first;
-			i = mods.erase(i);
-			continue;
+			ftaMasterId = info->first;
+			break;
+		}
+	}
+
+	if (ftaMasterId.empty())
+	{
+		throw Exception("No official From the Ashes .oxc package found in standard directory. Please check your installation.");
+	}
+
+	auto baseInfo = _modInfos.find(ftaMasterId);
+	if (baseInfo == _modInfos.end() || !baseInfo->second.isMaster() || !baseInfo->second.getMaster().empty())
+	{
+		throw Exception("Official From the Ashes .oxc package has invalid metadata.yml: it must be a top-level master.");
+	}
+
+	// FTA has one product master. Legacy masters found in user mods are not
+	// selectable and never participate in the official runtime stack.
+	for (auto info = _modInfos.begin(); info != _modInfos.end();)
+	{
+		if (info->second.isMaster() && info->first != ftaMasterId)
+		{
+			Log(LOG_INFO) << "Ignoring legacy/non-FTA master game '" << info->first << "'.";
+			info = _modInfos.erase(info);
 		}
 		else
 		{
-			if ((*modIt).second.isMaster())
-			{
-				if (nonMasterModFound)
-				{
-					Log(LOG_ERROR) << "Removing master mod '" << i->first << "' from the list, because it is on a wrong position. It will be re-added automatically.";
-					corruptedMasters[i->first] = i->second;
-					i = mods.erase(i);
-					continue;
-				}
-			}
-			else
-			{
-				nonMasterModFound = true;
-			}
+			++info;
 		}
-		++i;
-	}
-	// re-insert corrupted masters at the beginning of the list
-	for (const auto& pair : corruptedMasters)
-	{
-		std::pair<std::string, bool> newMod(pair.first, pair.second);
-		mods.insert(mods.begin(), newMod);
 	}
 
-	const std::string target = "From the Ashes";
-	auto it = std::find_if(mods.begin(), mods.end(),
-		[&target](const std::pair<std::string, bool>& pair) {
-			return pair.first == target;
-		});
+	const auto previousMods = mods;
+	mods.clear();
+	std::set<std::string> addedMods;
+	mods.push_back(std::make_pair(ftaMasterId, true));
+	addedMods.insert(ftaMasterId);
 
-	if (it != mods.end())
+	// Temporary ordering rule: base first, then official submods in the stable
+	// filename/prefix order returned by scanOfficialPackageDir().
+	for (const auto& modId : officialModIds)
 	{
-		Log(LOG_DEBUG) << target <<  " is only allowed mastermod, found in options with active: " << it->second;
-	}
-	else
-	{
-		Log(LOG_INFO) << target << " is only allowed mastermod, pushed to options.cfg";
-		mods.push_back(std::pair<std::string, bool>("From the Ashes", false)); // should be set to 'true' later on mapping with modInfo
-	}
-
-	std::string activeMaster;
-	for (const auto& _modInfo : _modInfos)
-	{
-		for (auto& mod : mods)
+		if (addedMods.find(modId) != addedMods.end()) { continue; }
+		auto info = _modInfos.find(modId);
+		if (info == _modInfos.end())
 		{
-			if (_modInfo.first == mod.first)
-			{
-				if (_modInfo.second.isMaster())
-				{
-					if (_modInfo.first == "From the Ashes")
-					{
-						mod.second = true;
-						activeMaster = mod.first;
-					}
-					else
-					{
-						mod.second = false;
-					}
-				}
-			}
+			Log(LOG_WARNING) << "Official package mod '" << modId << "' is unavailable after dependency validation; skipping.";
+			continue;
 		}
+		if (info->second.isMaster() || !info->second.canActivate(ftaMasterId))
+		{
+			Log(LOG_WARNING) << "Official package mod '" << modId << "' is not a certified FTA submod; skipping.";
+			continue;
+		}
+		mods.push_back(std::make_pair(modId, true));
+		addedMods.insert(modId);
 	}
 
-	if (activeMaster.empty())
+	// Preserve ordinary user-mod order/state after every official package.
+	for (const auto& mod : previousMods)
 	{
-		throw Exception("No 'From the Ashes' content found! please, check your installation.");
+		if (addedMods.find(mod.first) != addedMods.end()) { continue; }
+		auto info = _modInfos.find(mod.first);
+		if (info == _modInfos.end() || info->second.isMaster()) { continue; }
+		mods.push_back(mod);
+		addedMods.insert(mod.first);
 	}
-	else
-	{
-		_masterMod = activeMaster;
-	}
+
+	_masterMod = ftaMasterId;
 	save();
 }
 
@@ -1089,18 +1035,6 @@ std::string getActiveMaster()
 const ModInfo* getActiveMasterInfo()
 {
 	return &_modInfos.at(_masterMod);
-}
-
-/**
- * Gets the xcom ruleset info.
- */
-const ModInfo* getXcomRulesetInfo()
-{
-	if (_modInfos.find("xcom1") != _modInfos.end())
-		return &_modInfos.at("xcom1");
-	else if (_modInfos.find("xcom2") != _modInfos.end())
-		return &_modInfos.at("xcom2");
-	else return nullptr;
 }
 
 bool getLoadLastSave()

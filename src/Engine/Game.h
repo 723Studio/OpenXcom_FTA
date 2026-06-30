@@ -54,6 +54,7 @@ private:
 	Mod *_mod;
 	MasterMind *_mind;
 	bool _quit, _init, _update;
+	bool _modifiedContentLoaded = false;
 	FpsCounter *_fpsCounter;
 	bool _mouseActive;
 	unsigned int _timeOfLastFrame;
@@ -99,6 +100,10 @@ public:
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.
 	void loadMods();
+	/// Sets whether open/untrusted content is active in this runtime.
+	void setModifiedContentLoaded(bool value) { _modifiedContentLoaded = value; }
+	/// Returns whether achievements should be disabled for this runtime.
+	bool isModifiedContentLoaded() const { return _modifiedContentLoaded; }
 	/// Sets whether the mouse cursor is activated.
 	void setMouseActive(bool active);
 	/// Returns whether current state is the param state

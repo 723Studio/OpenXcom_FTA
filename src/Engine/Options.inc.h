@@ -67,7 +67,6 @@ OPT SDLKey keyBasescapeBuildNewBase, keyBasescapeBaseInfo, keyBasescapeSoldiers,
 	keyBasescapeAlienContainment, keyBasescapeDiplomacy, keyBasescapeIntel;
 
 // OXCE, accessible via GUI
-OPT bool oxceUpdateCheck;
 OPT int autosaveSlots;
 OPT int oxceGeoAutosaveFrequency;
 OPT int oxceGeoAutosaveSlots;

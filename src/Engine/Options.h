@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <map>
 #include <string>
 #include <vector>
 #include "OptionInfo.h"
@@ -119,8 +120,6 @@ namespace Options
 	std::string getActiveMaster();
 	/// Gets the master mod info.
 	const ModInfo* getActiveMasterInfo();
-	/// Gets the xcom ruleset info.
-	const ModInfo* getXcomRulesetInfo();
 	/// Gets the map of mod ids to mod infos
 	const std::map<std::string, ModInfo> &getModInfos();
 	/// Refreshes the mods.
@@ -135,6 +134,31 @@ namespace Options
 	const std::string& getLoadThisSave();
 	/// And do it only at startup
 	void expendLoadLastSave();
+
+	inline bool isOfficialFtaPackagePath(std::string path)
+	{
+		for (auto& ch : path)
+		{
+			if (ch == '\\') ch = '/';
+		}
+		return path.find("/standard/") != std::string::npos
+			&& path.size() >= 4
+			&& path.substr(path.size() - 4) == ".oxc";
+	}
+
+	inline bool isModifiedContentLoaded()
+	{
+		for (const auto* modInfo : getActiveMods())
+		{
+			if (!modInfo) continue;
+			if (modInfo->getId() == "From the Ashes") continue;
+			if (isOfficialFtaPackagePath(modInfo->getPath())) continue;
+			// External resource folders such as UFO are legal/runtime dependencies,
+			// not active user mods, and must not disable achievements by themselves.
+			return true;
+		}
+		return false;
+	}
 }
 
 }

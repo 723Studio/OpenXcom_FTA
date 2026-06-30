@@ -37,6 +37,7 @@
  */
 
 #include <string>
+#include <algorithm>
 #include <sstream>
 #include <istream>
 #include <exception>
@@ -1068,7 +1069,8 @@ static bool mapExtResources(ModRecord *mrec, const std::string& basename, bool e
  */
 static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const std::string& prefix) {
 	std::string log_ctx = "mapZippedMod(" + zipfname + ", '" + prefix + "'): ";
-	auto layer = std::make_unique<VFSLayer>(concatPaths(zipfname, prefix));
+	auto modpath = concatOptionalPaths(zipfname, prefix);
+	auto layer = std::make_unique<VFSLayer>(modpath);
 	if (!layer->mapZip(zip, zipfname, prefix)) {
 		Log(LOG_WARNING) << log_ctx << "Failed to map, skipping.";
 		return;
@@ -1078,7 +1080,6 @@ static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const
 		Log(LOG_WARNING) << log_ctx << "No metadata.yml found, skipping.";
 		return;
 	}
-	auto modpath = concatOptionalPaths(zipfname, prefix);
 	const auto& reader = frec->getYAML();
 	if (!reader.isMap()) {
 		Log(LOG_WARNING) << log_ctx << "Bad metadata.yml found, skipping.";
@@ -1097,35 +1098,37 @@ static void mapZippedMod(mz_zip_archive *zip, const std::string& zipfname, const
 	ModsAvailableAdd(std::move(mrec));
 }
 
-static void mapOxcMod(OXCContainer *oxc, const std::string& oxcname, const std::string& prefix) {
+static std::string mapOxcMod(OXCContainer *oxc, const std::string& oxcname, const std::string& prefix) {
 	std::string log_ctx = "mapOxcMod(" + oxcname + ", '" + prefix + "'): ";
-	auto layer = std::make_unique<VFSLayer>(concatPaths(oxcname, prefix));
+	auto modpath = concatOptionalPaths(oxcname, prefix);
+	auto layer = std::make_unique<VFSLayer>(modpath);
 	if (!layer->mapOxc(oxc, oxcname, prefix)) {
 		Log(LOG_WARNING) << log_ctx << "Failed to map, skipping.";
-		return;
+		return "";
 	}
 	auto frec = layer->at("metadata.yml");
 	if (frec == NULL) {
 		Log(LOG_WARNING) << log_ctx << "No metadata.yml found, skipping.";
-		return;
+		return "";
 	}
-	auto modpath = concatOptionalPaths(oxcname, prefix);
 	const auto& reader = frec->getYAML();
 	if (!reader.isMap()) {
 		Log(LOG_WARNING) << log_ctx << "Bad metadata.yml found, skipping.";
-		return;
+		return "";
 	}
 	auto mrec = std::make_unique<ModRecord>(modpath);
 	mrec->modInfo.load(reader);
 	auto mri = ModsAvailable.find(mrec->modInfo.getId());
 	if (mri != ModsAvailable.end()) {
 		Log(LOG_ERROR) << log_ctx << "modId " << mrec->modInfo.getId() << " already mapped in, skipping " << modpath;
-		return;
+		return "";
 	}
+	const std::string modId = mrec->modInfo.getId();
 	Log(LOG_VERBOSE) << log_ctx << "mapped mod '" << mrec->modInfo.getId() << "' from " << modpath
 					 << " master=" << mrec->modInfo.getMaster() << " version=" << mrec->modInfo.getVersion();
 	mrec->push_back(MappedVFSLayersAdd(std::move(layer)));
 	ModsAvailableAdd(std::move(mrec));
+	return modId;
 }
 /** now this scans a zip of mods or of a single mod
  * @param rwops - SDL_RWops to the zip data
@@ -1163,16 +1166,18 @@ void scanModZipRW(SDL_RWops *rwops, const std::string& fullpath) {
 	}
 }
 
-static void scanModOxcContext(OXCContainer *ctx, const std::string& fullpath, const std::string& log_ctx) {
-	if (!ctx) { return; }
+static std::vector<std::string> scanModOxcContext(OXCContainer *ctx, const std::string& fullpath, const std::string& log_ctx) {
+	std::vector<std::string> mappedIds;
+	if (!ctx) { return mappedIds; }
 
 	if (ctx->hasFile("metadata.yml")) {
 		Log(LOG_VERBOSE) << log_ctx << "retrying as a single-mod .oxc";
-		mapOxcMod(ctx, fullpath, "");
-		return;
+		const std::string modId = mapOxcMod(ctx, fullpath, "");
+		if (!modId.empty()) { mappedIds.push_back(modId); }
+		return mappedIds;
 	}
 
-	std::unordered_set<std::string> prefixes;
+	std::set<std::string> prefixes;
 	for (const auto& fnameOrig : ctx->getFileList()) {
 		std::string fname = fnameOrig;
 		if (!sanitizeZipEntryName(fname)) {
@@ -1187,8 +1192,10 @@ static void scanModOxcContext(OXCContainer *ctx, const std::string& fullpath, co
 	for (const auto& prefix : prefixes) {
 		std::string withSlash = prefix + "/";
 		if (!ctx->hasFile(withSlash + "metadata.yml")) { continue; }
-		mapOxcMod(ctx, fullpath, withSlash);
+		const std::string modId = mapOxcMod(ctx, fullpath, withSlash);
+		if (!modId.empty()) { mappedIds.push_back(modId); }
 	}
+	return mappedIds;
 }
 
 void scanModOxcRW(SDL_RWops *rwops, const std::string& fullpath) {
@@ -1197,10 +1204,47 @@ void scanModOxcRW(SDL_RWops *rwops, const std::string& fullpath) {
 	scanModOxcContext(ctx, fullpath, log_ctx);
 }
 
-void scanModOxc(const std::string& fullpath) {
+static std::vector<std::string> scanModOxc(const std::string& fullpath) {
 	std::string log_ctx = "scanModOxc(" + fullpath + "): ";
 	auto ctx = newOxcContext(log_ctx, fullpath);
-	scanModOxcContext(ctx, fullpath, log_ctx);
+	return scanModOxcContext(ctx, fullpath, log_ctx);
+}
+
+std::vector<std::string> scanOfficialPackageDir(const std::string& dirname, const std::string& basename) {
+	const std::string packageDir = concatPaths(dirname, basename);
+	const std::string log_ctx = "scanOfficialPackageDir('" + packageDir + "'): ";
+	std::vector<std::string> packageNames;
+	std::vector<std::string> mappedIds;
+
+	if (!CrossPlatform::folderExists(packageDir)) {
+		Log(LOG_INFO) << log_ctx << "official package directory is missing.";
+		return mappedIds;
+	}
+
+	for (const auto& entry : CrossPlatform::getFolderContents(packageDir, "oxc")) {
+		if (!std::get<1>(entry)) {
+			packageNames.push_back(std::get<0>(entry));
+		}
+	}
+
+	// Temporary rule until package metadata has an explicit load-order field:
+	// discover .oxc filenames case-insensitively, with original case as tie-breaker.
+	std::sort(packageNames.begin(), packageNames.end(), [](const std::string& left, const std::string& right) {
+		std::string leftKey = left;
+		std::string rightKey = right;
+		Unicode::lowerCase(leftKey);
+		Unicode::lowerCase(rightKey);
+		return leftKey == rightKey ? left < right : leftKey < rightKey;
+	});
+
+	for (const auto& packageName : packageNames) {
+		const std::string fullpath = concatPaths(packageDir, packageName);
+		Log(LOG_INFO) << log_ctx << "scanning official .oxc package " << packageName;
+		const auto packageIds = scanModOxc(fullpath);
+		mappedIds.insert(mappedIds.end(), packageIds.begin(), packageIds.end());
+	}
+
+	return mappedIds;
 }
 /** Filesystem wrapper for scanModZipRW()
  * @param fullpath - full path to the .zip.

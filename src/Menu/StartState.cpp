@@ -174,7 +174,7 @@ void StartState::think()
 	case LOADING_SUCCESSFUL:
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
-		_game->setState(new GoToMainMenuState(false));
+		_game->setState(new GoToMainMenuState());
 		if (_oldMaster != Options::getActiveMaster() && Options::playIntro)
 		{
 			_game->pushState(new CutsceneState("intro"));

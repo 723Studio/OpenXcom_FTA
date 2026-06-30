@@ -503,7 +503,7 @@ std::string searchDataFolder(const std::string &foldername, std::size_t size)
 	// Set miminum possible of dirs
 	std::size_t minNumOfElementsInFolder = (
 		foldername == "TFTD" || foldername == "UFO" ? 9 : // At least 9 dictionaries with original data data
-		foldername == "common" ? 6 : // Files: "Language/", "Palettes/", "Resources/", "Shaders/", "SoldierName/", "openxcom.png"
+		foldername == "common" ? 1 : // FTA common contains shared engine resources only (for example Shaders/)
 		foldername == "standard" ? 20 : // Now 48 mods, some buffer if some decide to drop some mods
 		size
 	);
