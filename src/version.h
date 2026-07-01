@@ -18,17 +18,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define MIN_REQUIRED_RULESET_VERSION_NUMBER 8,4,1,0
-
-#define OPENXCOM_VERSION_ENGINE "Extended"
-#define OPENXCOM_VERSION_SHORT "Extended 8.4.2"
-#define OPENXCOM_VERSION_LONG "8.4.2.0"
-#define OPENXCOM_VERSION_NUMBER 8,4,2,0
-
-#ifndef OPENXCOM_VERSION_GIT
-#define OPENXCOM_VERSION_GIT " (v2025-11-30)"
-#endif
-
 #define OPENXCOM_FTA_VERSION_ENGINE "FtA"
 #define OPENXCOM_FTA_VERSION_NUMBER 1,5,1,0
 #define OPENXCOM_FTA_VERSION_SHORT "FtA 1.5.1"
