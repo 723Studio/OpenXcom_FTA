@@ -725,7 +725,11 @@ if ( APPLE AND CREATE_BUNDLE )
 endif ()
 
 if ( NOT EMBED_ASSETS )
-  set ( bin_data_dirs TFTD UFO common standard )
+    if ( FTA_PRODUCT_BUILD )
+      set ( bin_data_dirs common standard )
+    else ()
+      set ( bin_data_dirs TFTD UFO common standard )
+    endif ()
   foreach ( binpath ${bin_data_dirs} )
     if ( APPLE AND CREATE_BUNDLE )
       add_custom_command ( TARGET openxcom
