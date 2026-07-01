@@ -18,8 +18,10 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
-#include <map>
 #include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace OpenXcom
 {
@@ -53,7 +55,7 @@ private:
 	void buildUi();
 	
 	std::pair<int, std::string> getStatString(size_t position);
-	std::map<int, std::string, std::greater<int> > _researchStats;
+	std::vector<std::pair<int, std::string> > _researchStats;
 	int GetStatValue(Soldier &s, const std::string &desc);
 
 public:

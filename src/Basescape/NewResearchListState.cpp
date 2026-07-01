@@ -16,7 +16,10 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <locale>
+#include <sstream>
+#include <vector>
 #include "NewResearchListState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -453,54 +456,48 @@ void NewResearchListState::fillProjectList(bool markAllAsSeen)
 
 std::string NewResearchListState::getProjectCategory(RuleResearch *project)
 {
-	std::string cat;
+	std::ostringstream ss;
 	auto stats = project->getStats();
-	std::map<int, std::string> statMap;
+	std::vector<std::pair<int, std::string> > statList;
 
 	if (stats.physics > 0)
-		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
 	if (stats.chemistry > 0)
-		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
 	if (stats.biology > 0)
-		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
 	if (stats.data > 0)
-		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
 	if (stats.computers > 0)
-		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
 	if (stats.tactics > 0)
-		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
 	if (stats.materials > 0)
-		statMap.insert(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_LC))));
 	if (stats.designing > 0)
-		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
+	if (stats.alienTech > 0)
+		statList.push_back(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_LC))));
 	if (stats.psionics > 0)
-		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
 	if (stats.xenolinguistics > 0)
-		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
 
-	// sort by stat value (ascending)
-	std::vector<std::pair<int, std::string>> sortedStats(statMap.begin(), statMap.end());
-    std::sort(sortedStats.begin(), sortedStats.end(), [](const auto& a, const auto& b) {
-        return a.first < b.first;
-    });
-
-	// concatenate all categories
-	size_t i = 0;
-	std::ostringstream ss;
-	for (auto it = statMap.begin(); it != statMap.end(); ++it)
+	std::stable_sort(statList.begin(), statList.end(), [](const auto& a, const auto& b)
 	{
-		if (i > 0)
+		return a.first < b.first;
+	});
+
+	for (std::vector<std::pair<int, std::string> >::const_iterator it = statList.begin(); it != statList.end(); ++it)
+	{
+		if (it != statList.begin())
 		{
 			ss << ", ";
 		}
-		ss << (*it).second;
-		i++;
+		ss << it->second;
 	}
 
-	if (!ss.str().empty())
-		cat = ss.str();
-
-	return cat;
+	return ss.str();
 }
 
 }

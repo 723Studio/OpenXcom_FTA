@@ -17,7 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ResearchProjectDetailsState.h"
+#include <algorithm>
 #include <sstream>
+#include <vector>
 #include "../Interface/Window.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Text.h"
@@ -120,42 +122,46 @@ std::string ResearchProjectDetailsState::generateStatsList()
 	std::ostringstream ss;
 
 	auto stats = _rule->getStats();
-	std::map<int, std::string> statMap;
+	std::vector<std::pair<int, std::string> > statList;
 
 	if (stats.physics > 0)
-		statMap.insert(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.physics, tr(UnitStats::getStatString(&UnitStats::physics, UnitStats::STATSTR_LC))));
 	if (stats.chemistry > 0)
-		statMap.insert(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.chemistry, tr(UnitStats::getStatString(&UnitStats::chemistry, UnitStats::STATSTR_LC))));
 	if (stats.biology > 0)
-		statMap.insert(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.biology, tr(UnitStats::getStatString(&UnitStats::biology, UnitStats::STATSTR_LC))));
 	if (stats.data > 0)
-		statMap.insert(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.data, tr(UnitStats::getStatString(&UnitStats::data, UnitStats::STATSTR_LC))));
 	if (stats.computers > 0)
-		statMap.insert(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.computers, tr(UnitStats::getStatString(&UnitStats::computers, UnitStats::STATSTR_LC))));
 	if (stats.tactics > 0)
-		statMap.insert(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.tactics, tr(UnitStats::getStatString(&UnitStats::tactics, UnitStats::STATSTR_LC))));
+	if (stats.materials > 0)
+		statList.push_back(std::make_pair(stats.materials, tr(UnitStats::getStatString(&UnitStats::materials, UnitStats::STATSTR_LC))));
 	if (stats.designing > 0)
-		statMap.insert(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.designing, tr(UnitStats::getStatString(&UnitStats::designing, UnitStats::STATSTR_LC))));
 	if (stats.alienTech > 0)
-		statMap.insert(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.alienTech, tr(UnitStats::getStatString(&UnitStats::alienTech, UnitStats::STATSTR_LC))));
 	if (stats.psionics > 0)
-		statMap.insert(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.psionics, tr(UnitStats::getStatString(&UnitStats::psionics, UnitStats::STATSTR_LC))));
 	if (stats.xenolinguistics > 0)
-		statMap.insert(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
+		statList.push_back(std::make_pair(stats.xenolinguistics, tr(UnitStats::getStatString(&UnitStats::xenolinguistics, UnitStats::STATSTR_LC))));
 
-	if (!statMap.empty())
+	std::stable_sort(statList.begin(), statList.end(), [](const auto& a, const auto& b)
 	{
-		size_t pos = 0;
-		std::pair<int, std::string> result;
-		for (auto it = statMap.rbegin(); it != statMap.rend(); ++it)
+		return a.first < b.first;
+	});
+
+	for (std::vector<std::pair<int, std::string> >::const_iterator it = statList.begin(); it != statList.end(); ++it)
+	{
+		if (it != statList.begin())
 		{
-			if (pos > 0)
-			{
-				ss << ", ";
-			}
-			ss << (*it).second;
-			pos++;
+			ss << ", ";
 		}
+		ss << it->second;
+	}
+	if (!statList.empty())
+	{
 		ss << ".";
 	}
 

@@ -28,6 +28,7 @@ namespace OpenXcom
 class AlienDeployment;
 
 class TextButton;
+class ToggleTextButton;
 class Window;
 class Text;
 class TextList;
@@ -71,12 +72,13 @@ private:
 	AlienDeployment *_ruleDeploy;
 	std::vector<DebriefingStat*> _stats;
 	std::vector<SoldierStatsEntry> _soldierStats;
-	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer, *_btnNonCombatStats;
+	TextButton *_btnOk, *_btnStats, *_btnSell, *_btnTransfer;
+	ToggleTextButton *_btnNonCombatStats;
 	Window *_window;
 	Text *_txtTitle, *_txtItem, *_txtQuantity, *_txtScore, *_txtRecovery, *_txtRating, *_txtLoyalty;
 	Text *_txtSoldier, *_txtTU, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions;
 	Text *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill;
-	TextList *_lstStats, *_lstRecovery, *_lstTotal, *_lstSoldierStats, *_lstRecoveredItems;
+	TextList *_lstStats, *_lstRecovery, *_lstTotal, *_lstSoldierStats, *_lstNonCombatStats, *_lstRecoveredItems;
 	std::string _currentTooltip;
 	Text *_txtTooltip;
 	std::vector<ReequipStat> _missingItems;
@@ -85,13 +87,12 @@ private:
 	/// 0 = score, 1 = stat improvement, 2 = recovered items
 	int _pageNumber;
 	std::map<int, RecoveryItem*> _recoveryStats;
-	bool _positiveScore, _destroyBase, _promotions{}, _showSellButton, _initDone, _fta;
+	bool _positiveScore, _destroyBase, _promotions{}, _showSellButton, _initDone, _fta, _hasNonCombatStats{};
 	std::map<int, int>  _containmentStateInfo;
 	int _totalEvacObjs{}, _savedEvacObjs{}, _recoveredItemObjs;
 	int _limitsEnforced;
 	MissionStatistics *_missionStatistics;
 	std::vector<Soldier*> _soldiersCommended, _deadSoldiersCommended;
-	std::map<Soldier*, UnitStats> _nonComatStatIncreaseList;
 	/// Adds to the debriefing stats.
 	void addStat(const std::string &name, int quantity, int score);
 	/// Prepares debriefing.
@@ -142,8 +143,6 @@ public:
 	void decreaseRecoveredItemCount(const RuleItem *rule, int amount);
 	// Hides the SELL and TRANSFER buttons.
 	void hideSellTransferButtons();
-	// Gets the list of soldiers with increased non combat stats.
-	std::map<Soldier*, UnitStats> getNonCombatStatIncreaseList() { return _nonComatStatIncreaseList; }
 };
 
 }

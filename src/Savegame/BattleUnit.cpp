@@ -670,6 +670,7 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
 	reader.tryRead("kills", _kills);
 	reader.tryRead("warned", _warned);
 	reader.tryRead("alarmed", _alarmed);
+	reader.tryRead("freshReinforcement", _freshReinforcement);
 	reader.tryRead("dontReselect", _dontReselect);
 	reader.tryRead("aiMedikitUsed", _aiMedikitUsed);
 	_charging = 0;
@@ -679,6 +680,8 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
 		reader.tryRead("spawnUnitFaction", _spawnUnitFaction);
 	}
 	reader.tryRead("motionPoints", _motionPoints);
+	reader.tryRead("specialObjective", _specialObjective);
+	reader.tryRead("roles", _roles);
 	reader.tryRead("customMarker", _customMarker);
 	reader.tryRead("alreadyRespawned", _alreadyRespawned);
 	reader.tryRead("activeHand", _activeHand);

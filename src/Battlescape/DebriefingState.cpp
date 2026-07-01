@@ -27,13 +27,13 @@
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "PromotionsState.h"
 #include "CommendationState.h"
 #include "CommendationLateState.h"
-#include "DebriefingExtraStatsState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCountry.h"
 #include "../Mod/RuleCraft.h"
@@ -88,6 +88,32 @@
 
 namespace OpenXcom
 {
+
+namespace
+{
+
+bool isCombatStat(UnitStats::Ptr stat)
+{
+	return stat == &UnitStats::tu || stat == &UnitStats::stamina || stat == &UnitStats::health ||
+		stat == &UnitStats::bravery || stat == &UnitStats::reactions || stat == &UnitStats::firing ||
+		stat == &UnitStats::throwing || stat == &UnitStats::melee || stat == &UnitStats::strength ||
+		stat == &UnitStats::psiStrength || stat == &UnitStats::psiSkill || stat == &UnitStats::mana;
+}
+
+bool hasNonCombatStatIncrease(const UnitStats& stats)
+{
+	bool result = false;
+	UnitStats::fieldLoop([&](UnitStats::Ptr stat)
+	{
+		if (!isCombatStat(stat) && stats.*stat > 0)
+		{
+			result = true;
+		}
+	});
+	return result;
+}
+
+}
 
 /**
  * Initializes all the elements in the Debriefing screen.
@@ -150,10 +176,11 @@ DebriefingState::DebriefingState() :
 	_txtPsiSkill    = new Text(18, 9, 286, 24); //286..304 = 18
 
 	_lstSoldierStats = new TextList(288, 144, 16, 32); // 18 rows
+	_lstNonCombatStats = new TextList(288, 144, 16, 32); // 18 rows
 
 	_txtTooltip = new Text(200, 9, 64, 180);
 
-	_btnNonCombatStats = new TextButton(111, 12, 114, 180);
+	_btnNonCombatStats = new ToggleTextButton(60, 12, 181, 180);
 
 	// Third page (recovered items)
 	_lstRecoveredItems = new TextList(272, 144, 16, 32); // 18 rows
@@ -194,6 +221,7 @@ DebriefingState::DebriefingState() :
 	add(_txtPsiStrength, "text", "debriefing");
 	add(_txtPsiSkill, "text", "debriefing");
 	add(_lstSoldierStats, "list", "debriefing");
+	add(_lstNonCombatStats, "list", "debriefing");
 	add(_txtTooltip, "text", "debriefing");
 	add(_btnNonCombatStats, "button", "debriefing");
 
@@ -318,6 +346,11 @@ DebriefingState::DebriefingState() :
 	_lstSoldierStats->setAlign(ALIGN_LEFT, 0);
 	_lstSoldierStats->setDot(true);
 
+	_lstNonCombatStats->setColumns(3, 90, 198, 0);
+	_lstNonCombatStats->setAlign(ALIGN_CENTER);
+	_lstNonCombatStats->setAlign(ALIGN_LEFT, 0);
+	_lstNonCombatStats->setDot(true);
+
 	// Third page
 	int firstColumnWidth = Clamp(_game->getMod()->getInterface("debriefing")->getElement("list")->custom, 90, 254);
 	_lstRecoveredItems->setColumns(2, firstColumnWidth, 18);
@@ -360,6 +393,8 @@ void DebriefingState::applyVisibility()
 	bool showScore = _pageNumber == 0;
 	bool showStats = _pageNumber == 1;
 	bool showItems = _pageNumber == 2;
+	bool showNonCombatStats = showStats && _btnNonCombatStats->getPressed();
+	bool showCombatStats = showStats && !showNonCombatStats;
 	bool showPsi = true;
 	if (_game->getMod()->isFTAGame())
 	{
@@ -379,21 +414,22 @@ void DebriefingState::applyVisibility()
 	_lstTotal->setVisible(showScore);
 
 	// Second page (soldier stats)
-	_txtSoldier->setVisible(showStats);
-	_txtTU->setVisible(showStats);
-	_txtStamina->setVisible(showStats);
-	_txtHealth->setVisible(showStats);
-	_txtBravery->setVisible(showStats);
-	_txtReactions->setVisible(showStats);
-	_txtFiring->setVisible(showStats);
-	_txtThrowing->setVisible(showStats);
-	_txtMelee->setVisible(showStats);
-	_txtStrength->setVisible(showStats);
-	_txtPsiStrength->setVisible(showStats && showPsi);
-	_txtPsiSkill->setVisible(showStats && showPsi);
-	_lstSoldierStats->setVisible(showStats);
-	_txtTooltip->setVisible(showStats);
-	_btnNonCombatStats->setVisible(showStats && _nonComatStatIncreaseList.size() > 0);
+	_txtSoldier->setVisible(showCombatStats);
+	_txtTU->setVisible(showCombatStats);
+	_txtStamina->setVisible(showCombatStats);
+	_txtHealth->setVisible(showCombatStats);
+	_txtBravery->setVisible(showCombatStats);
+	_txtReactions->setVisible(showCombatStats);
+	_txtFiring->setVisible(showCombatStats);
+	_txtThrowing->setVisible(showCombatStats);
+	_txtMelee->setVisible(showCombatStats);
+	_txtStrength->setVisible(showCombatStats);
+	_txtPsiStrength->setVisible(showCombatStats && showPsi);
+	_txtPsiSkill->setVisible(showCombatStats && showPsi);
+	_lstSoldierStats->setVisible(showCombatStats);
+	_lstNonCombatStats->setVisible(showNonCombatStats);
+	_txtTooltip->setVisible(showCombatStats);
+	_btnNonCombatStats->setVisible(showStats && _hasNonCombatStats);
 
 	// Third page (recovered items)
 	_lstRecoveredItems->setVisible(showItems);
@@ -472,6 +508,29 @@ void DebriefingState::init()
 		}
 		row++;
 	}
+
+	for (const auto& sse : _soldierStats)
+	{
+		if (!hasNonCombatStatIncrease(sse.second))
+		{
+			continue;
+		}
+
+		_lstNonCombatStats->addRow(1, sse.first->getName().c_str());
+		UnitStats::fieldLoop([&](UnitStats::Ptr stat)
+		{
+			const int increase = sse.second.*stat;
+			if (!isCombatStat(stat) && increase > 0)
+			{
+				std::ostringstream ss;
+				ss << "  " << tr(UnitStats::getStatString(stat, UnitStats::STATSTR_UC));
+				std::string statName = ss.str();
+				_lstNonCombatStats->addRow(3, statName.c_str(), makeSoldierString(increase).c_str(), "");
+			}
+		});
+	}
+
+	applyVisibility();
 
 	// compare stuff from after and before recovery
 	if (_base)
@@ -996,9 +1055,9 @@ void DebriefingState::btnTransferClick(Action *)
 	}
 }
 
-void DebriefingState::btnNonCombatStatsClick(Action* action)
+void DebriefingState::btnNonCombatStatsClick(Action*)
 {
-	_game->pushState(new DebriefingExtraStatsState(this));
+	applyVisibility();
 }
 
 /**
@@ -1870,8 +1929,8 @@ void DebriefingState::prepareDebriefing()
 					StatAdjustment statIncrease;
 					bunit->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
 					//noncombat stats
-					if (statIncrease.statGrowth.biology > 0 || statIncrease.statGrowth.hacking > 0)
-						_nonComatStatIncreaseList.emplace(std::pair(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));
+					if (bunit->getGeoscapeSoldier() && hasNonCombatStatIncrease(statIncrease.statGrowth))
+						_hasNonCombatStats = true;
 
 					if (bunit->getGeoscapeSoldier())
 						_soldierStats.push_back(std::pair<Soldier *, UnitStats>(bunit->getGeoscapeSoldier(), statIncrease.statGrowth));

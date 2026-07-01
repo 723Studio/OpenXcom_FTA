@@ -83,9 +83,9 @@ void CovertOperation::load(const YAML::YamlNodeReader& reader)
 }
 
 /**
-	* Saves the Operation to YAML.
-	* @return YAML node.
-	*/
+ 	* Saves the Operation to YAML.
+ 	* @return YAML node.
+ 	*/
 void CovertOperation::save(YAML::YamlNodeWriter writer) const
 {
 	writer.setAsMap();
@@ -647,14 +647,13 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 */
 void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, bool criticalFail, int woundOdds, int deathOdds)
 {
-	const Mod& mod = *engine.getMod();
 	SavedGame& save = *engine.getSavedGame();
 
 	int danger = this->getRules()->getDanger(); //only dangerous operations train battle stats
 
 	//first, we calculate how much experience we can award for the operation (expRolls)
 	int effCost = (int)ceil(this->getRules()->getCosts() / 15);
-	int expRolls = (effCost * mod.getCovertOpsExpFactor() / 100) + 1;
+	int expRolls = (effCost * engine.getMod()->getCovertOpsExpFactor() / 100) + 1;
 	expRolls += RNG::generate(-2, 2); //add more random
 	if (save.getDifficulty() == DIFF_SUPERHUMAN)
 		expRolls -= RNG::generate(0, 5);
@@ -762,16 +761,9 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 				//other stats would be rolled to be improved
 				int statID = 0;
 				int expGain = 0;
-				bool trainPsiSkill = (origStat.psiSkill > 0 && _hasPsi);
-				bool trainPsiStr = false;
-				if (trainPsiSkill && Options::allowPsiStrengthImprovement)
-					trainPsiStr = true; //in case we have this special property
-				bool trainingManaPri = false;
-				if (trainPsiSkill && mod.isManaTrainingPrimary())
-					trainingManaPri = true;
 				for (size_t j = 0; j < (size_t)expRolls; j++)
 				{
-					statID = RNG::generate(1, 7);  //choose stat
+					statID = RNG::generate(1, 6);  //choose non-psionic combat stat
 					expGain = RNG::generate(1, 4); //choose how many experience it would be
 					if (expGain == 4)
 						expGain = 1;
@@ -813,18 +805,6 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 						if (origStat.strength < caps.strength)
 							exp->strength += expGain;
 						break;
-					case 7:
-						if (origStat.psiSkill < caps.psiSkill && trainPsiSkill)
-						{
-							exp->psiSkill += expGain;
-							if (origStat.psiStrength < caps.psiStrength && trainPsiStr)
-								exp->psiStrength += expGain;
-							if (origStat.mana < caps.mana && trainingManaPri)
-								exp->mana += expGain;
-						}
-						else if (!trainPsiSkill)
-							++expRolls; //re-roll as we assume soldier used other tools to achieve his or her goals
-						break;
 					default:
 						break;
 					}
@@ -862,16 +842,21 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 
 		if (soldier->isRookieAgent())
 		{
-			exp += RNG::generate(5, 10); // extra exp for rookie agents
+			soldier->addExperience(ROLE_AGENT, RNG::generate(5, 10), getOperationName()); // extra role experience for rookie agents
 			soldier->setRookieAgent(false);
 		}
+
+		// Ordinary covert operations must not train psionic stats or mana.
+		// Dedicated psionics mechanics should handle these stats separately.
+		exp->psiStrength = 0;
+		exp->psiSkill = 0;
+		exp->mana = 0;
 
 		soldier->improvePrimaryStats(exp, ROLE_AGENT);
 		//also improve secondary stats
 		int rate = 0;
 		soldier->getCurrentStatsEditable()->tu += Soldier::improveStat(exp->tu, rate, false);
 		soldier->getCurrentStatsEditable()->stamina += Soldier::improveStat(exp->stamina, rate, false);
-		soldier->getCurrentStatsEditable()->mana += Soldier::improveStat(exp->mana, rate, false);
 
 		UnitStats improvement = *soldier->getCurrentStats() - origStat;
 		_results->addSoldierImprovement(soldier->getName(), improvement);
@@ -880,6 +865,7 @@ void CovertOperation::backgroundSimulation(Game& engine, bool operationResult, b
 		{
 			soldier->setReturnToTrainingWhenOperationOver(NONE);
 		}
+		delete exp;
 	}
 
 	//if needed kill soldiers from doomed list

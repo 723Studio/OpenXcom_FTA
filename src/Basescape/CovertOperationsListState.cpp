@@ -130,6 +130,8 @@ void CovertOperationsListState::fillOperationList()
 		{
 			if (rule->getName() == (*j)) happy = false;
 		}
+		// some story operations unlock a hidden research topic with the same ID as a completion marker
+		if (happy && save->isResearched(rule->getName(), false)) happy = false;
 		//do we have required research...
 		if (happy && !rule->getRequirements().empty())
 		{

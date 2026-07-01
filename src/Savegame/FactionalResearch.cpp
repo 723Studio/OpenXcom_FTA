@@ -53,7 +53,10 @@ FactionalResearch::~FactionalResearch()
 void FactionalResearch::load(const YAML::YamlNodeReader& reader, SavedGame* save, const Mod* mod)
 {
 	reader.tryRead("priority", _priority);
-	_scientists->load(reader, save, mod);
+	if (const auto& scientists = reader["scientists"])
+		_scientists->load(scientists, save, mod);
+	else
+		_scientists->load(reader, save, mod); // backwards compatibility
 	reader.tryRead("timeLeft", _timeLeft);
 }
 

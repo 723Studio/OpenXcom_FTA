@@ -605,7 +605,10 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	}
 	sortReserchVector(_discovered);
 
+	reader.tryRead("performedCovertOperations", _performedOperations);
 	reader.tryRead("generatedEvents", _generatedEvents);
+	reader.tryRead("missionScriptsTimers", _missionScriptsTimers);
+	reader.tryRead("eventScriptsTimers", _eventScriptsTimers);
 	loadUfopediaRuleStatus(reader["ufopediaRuleStatus"]);
 	reader.tryRead("manufactureRuleStatus", _manufactureRuleStatus);
 	reader.tryRead("researchRuleStatus", _researchRuleStatus);

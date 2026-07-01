@@ -70,7 +70,7 @@ namespace OpenXcom
 
 		_txtMessage = new Text(290, 9, 16, 168);
 
-		_lstSoldierStats = new TextList(288, 144, 16, 32); // 18 rows
+		_lstSoldierStats = new TextList(282, 144, 16, 32); // 18 rows
 
 		setInterface("covertOperationFinishDetails");
 		//1st page

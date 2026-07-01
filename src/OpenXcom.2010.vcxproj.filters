@@ -1313,9 +1313,6 @@
     <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp">
       <Filter>FTA</Filter>
     </ClCompile>
-    <ClCompile Include="Battlescape\DebriefingExtraStatsState.cpp">
-      <Filter>Battlescape</Filter>
-    </ClCompile>
     <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
@@ -2785,9 +2782,6 @@
     </ClInclude>
     <ClInclude Include="FTA\DiplomacyHirePersonnelState.h">
       <Filter>FTA</Filter>
-    </ClInclude>
-    <ClInclude Include="Battlescape\DebriefingExtraStatsState.h">
-      <Filter>Battlescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h">
       <Filter>Basescape</Filter>
