@@ -175,7 +175,7 @@ void GlobalAlienContainmentState::fillPrisonerList()
 			for (const auto* proj : xbase->getResearch())
 			{
 				const RuleResearch* research = proj->getRules();
-				const RuleItem* item = _game->getMod()->getItem(research->getName()); // don't use getNeededItem()
+				const RuleItem* item = _game->getMod()->getItem(research->getName(), false); // don't use getNeededItem()
 				if (research->needItem() && research->destroyItem() && item && item->isAlien() && item->getPrisonType() == prisonType)
 				{
 					researchList.push_back(research->getName());
