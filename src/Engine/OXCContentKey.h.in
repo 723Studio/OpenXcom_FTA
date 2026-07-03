@@ -1,0 +1,10 @@
+#pragma once
+
+namespace OpenXcom
+{
+namespace EmbeddedOXCContentKey
+{
+static constexpr bool available = (@FTA_EMBEDDED_OXC_CONTENT_KEY_AVAILABLE@ != 0);
+static constexpr const char *value = "@FTA_EMBEDDED_OXC_CONTENT_KEY_VALUE@";
+}
+}

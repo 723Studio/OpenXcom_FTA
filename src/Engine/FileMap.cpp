@@ -52,6 +52,7 @@
 #include "CrossPlatform.h"
 #include "Options.h"
 #include "Exception.h"
+#include "Engine/OXCContentKey.h"
 #include "OXCContainer.h"
 
 #define MINIZ_NO_STDIO
@@ -833,6 +834,9 @@ static mz_zip_archive *newZipContext(const std::string& log_ctx, SDL_RWops *rwop
 }
 
 static std::string getOxcPassphrase() {
+	if (EmbeddedOXCContentKey::available && EmbeddedOXCContentKey::value[0] != '\0') {
+		return std::string(EmbeddedOXCContentKey::value);
+	}
 	const char *env = std::getenv("OXC_CONTENT_KEY");
 	if (env && *env) {
 		return std::string(env);

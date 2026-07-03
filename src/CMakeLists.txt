@@ -662,6 +662,7 @@ if (( APPLE AND CREATE_BUNDLE ) OR CPACK_GENERATOR STREQUAL "7Z" )
 endif ()
 
 add_executable ( openxcom  ${application_type} ${openxcom_src} ${openxcom_icon} )
+target_include_directories ( openxcom PRIVATE "${CMAKE_BINARY_DIR}/generated" )
 
 # Ensure MSVC uses /bigobj to avoid "number of sections exceeded" (C1128)
 target_compile_options(openxcom PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
