@@ -96,7 +96,7 @@ static void KeyExpansion(uint8_t* RoundKey, const uint8_t* Key) {
             tempa[1] = sbox[tempa[1]];
             tempa[2] = sbox[tempa[2]];
             tempa[3] = sbox[tempa[3]];
-            tempa[0] = tempa[0] ^ Rcon[i/8 - 1];
+            tempa[0] = tempa[0] ^ Rcon[i/8];
         }
         if (i % 8 == 4) {
             tempa[0] = sbox[tempa[0]];
