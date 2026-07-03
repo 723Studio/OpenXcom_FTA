@@ -154,13 +154,13 @@ static std::string fileNameToId(const std::string& fileName) {
 
 /**
  * Gets all the languages found in the
- * Data folder and returns their properties.
+ * active virtual filesystem and returns their properties.
  * @param ids List of language ids.
  * @param names List of language human-readable names.
  */
 void Language::getList(std::vector<std::string> &ids, std::vector<std::string> &names)
 {
-	auto nset = FileMap::filterFiles(FileMap::getVFolderContents("Language", 0), "yml");
+	auto nset = FileMap::filterFiles(FileMap::getVFolderContents("Language"), "yml");
 	ids.clear();
 	for (const auto& filename : nset) {
 		ids.push_back(fileNameToId(filename));
