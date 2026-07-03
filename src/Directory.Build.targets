@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'OpenXcom'">
+    <OpenXcomRuntimeRoot>$(MSBuildThisFileDirectory)..\bin\</OpenXcomRuntimeRoot>
+  </PropertyGroup>
+
+  <Target Name="CopyOpenXcomRuntimeDependencies" AfterTargets="Build" Condition="'$(MSBuildProjectName)' == 'OpenXcom'">
+    <ItemGroup>
+      <OpenXcomRuntimeDll Include="$(MSBuildThisFileDirectory)..\deps\lib\$(Platform)\*.dll" Condition="Exists('$(MSBuildThisFileDirectory)..\deps\lib\$(Platform)')" />
+      <OpenXcomCommonResource Include="$(OpenXcomRuntimeRoot)common\**\*.*" Condition="Exists('$(OpenXcomRuntimeRoot)common')" />
+      <OpenXcomStandardResource Include="$(OpenXcomRuntimeRoot)standard\**\*.*" Condition="Exists('$(OpenXcomRuntimeRoot)standard')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(OpenXcomRuntimeDll)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(OpenXcomRuntimeDll)' != ''" />
+    <Copy SourceFiles="@(OpenXcomCommonResource)" DestinationFiles="@(OpenXcomCommonResource->'$(OutDir)common\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(OpenXcomCommonResource)' != ''" />
+    <Copy SourceFiles="@(OpenXcomStandardResource)" DestinationFiles="@(OpenXcomStandardResource->'$(OutDir)standard\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="'@(OpenXcomStandardResource)' != ''" />
+  </Target>
+</Project>
