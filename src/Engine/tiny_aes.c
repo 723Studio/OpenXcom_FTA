@@ -191,11 +191,13 @@ void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf, size_t length) {
     uint8_t previous[16];
     memcpy(previous, ctx->Iv, 16);
     uint8_t tmp[16];
+    uint8_t current[16];
     for (size_t i = 0; i < length; i += 16) {
+        memcpy(current, buf + i, 16);
         AES_ECB_decrypt(buf + i, tmp, ctx->RoundKey);
         for (int j = 0; j < 16; ++j) {
             buf[i + j] = tmp[j] ^ previous[j];
         }
-        memcpy(previous, buf + i, 16);
+        memcpy(previous, current, 16);
     }
 }
