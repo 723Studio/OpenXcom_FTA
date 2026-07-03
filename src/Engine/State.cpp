@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "State.h"
+#include <algorithm>
 #include <climits>
 #include "InteractiveSurface.h"
 #include "Game.h"
@@ -26,6 +27,7 @@
 #include "LocalizedText.h"
 #include "Palette.h"
 #include "../Engine/Sound.h"
+#include "../Engine/Collections.h"
 #include "../Mod/Mod.h"
 #include "../Interface/Window.h"
 #include "../Interface/TextButton.h"
@@ -61,7 +63,8 @@ State::State() : _screen(true), _soundPlayed(false), _modal(0), _ruleInterface(0
  */
 State::~State()
 {
-	for (auto* surface : _surfaces)
+	// Surfaces are deleted in reverse order of adding, like local variables.
+	for (auto* surface : Collections::reverse(Collections::range(_surfacesOwned)))
 	{
 		delete surface;
 	}
@@ -142,6 +145,18 @@ void State::setWindowBackgroundImage(Window* window, const std::string& bgImageN
 }
 
 /**
+ * Adds an optional child element without displaying it.
+ */
+void State::preAdd(Surface *surface)
+{
+	// Keep ownership order deterministic while avoiding duplicate deletion.
+	if (std::find(_surfacesOwned.begin(), _surfacesOwned.end(), surface) == _surfacesOwned.end())
+	{
+		_surfacesOwned.push_back(surface);
+	}
+}
+
+/**
  * Adds a new child surface for the state to take care of,
  * giving it the game's display palette. Once associated,
  * the state handles all of the surface's behaviour
@@ -161,6 +176,7 @@ void State::add(Surface *surface)
 		surface->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 
 	_surfaces.push_back(surface);
+	preAdd(surface);
 }
 
 /**
@@ -231,6 +247,7 @@ void State::add(Surface *surface, const std::string &id, const std::string &cate
 		surface->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 
 	_surfaces.push_back(surface);
+	preAdd(surface);
 }
 
 /**
