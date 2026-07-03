@@ -776,6 +776,35 @@ static void userSplitMasters()
 	}
 }
 
+static std::string joinResourceNames(const std::vector<std::string>& resources)
+{
+	std::ostringstream ss;
+	for (std::size_t i = 0; i < resources.size(); ++i)
+	{
+		if (i != 0)
+		{
+			ss << ", ";
+		}
+		ss << resources[i];
+	}
+	return ss.str();
+}
+
+static std::vector<std::string> findMissingExternalResources(const ModInfo& modInfo)
+{
+	std::vector<std::string> missingResources;
+	const auto& externalResourceDirs = modInfo.getExternalResourceDirs();
+	for (const auto& resourceDir : externalResourceDirs)
+	{
+		const std::string resourcePath = CrossPlatform::searchDataFolder(resourceDir);
+		if (!CrossPlatform::folderExists(resourcePath))
+		{
+			missingResources.push_back(resourceDir);
+		}
+	}
+	return missingResources;
+}
+
 /**
  * Handles the initialization of setting up default options
  * and finding and loading any existing ones.
@@ -865,6 +894,18 @@ void refreshMods()
 	}
 #endif
 
+	const std::map<std::string, ModInfo> scannedModInfos = FileMap::getModInfos();
+	std::string scannedFtaMasterId;
+	for (const auto& modId : officialModIds)
+	{
+		auto info = scannedModInfos.find(modId);
+		if (info != scannedModInfos.end() && info->first == ftaIdentity && info->second.isMaster())
+		{
+			scannedFtaMasterId = info->first;
+			break;
+		}
+	}
+
 	// Check mods' dependencies on other mods and extResources (UFO, TFTD, etc),
 	// also breaks circular dependency loops.
 	FileMap::checkModsDependencies();
@@ -877,7 +918,7 @@ void refreshMods()
 	for (const auto& modId : officialModIds)
 	{
 		auto info = _modInfos.find(modId);
-		if (info != _modInfos.end() && (info->first == ftaIdentity || info->second.getName() == ftaIdentity))
+		if (info != _modInfos.end() && info->first == ftaIdentity && info->second.isMaster())
 		{
 			ftaMasterId = info->first;
 			break;
@@ -886,13 +927,23 @@ void refreshMods()
 
 	if (ftaMasterId.empty())
 	{
-		throw Exception("No official From the Ashes .oxc package found in standard directory. Please check your installation.");
+		if (!scannedFtaMasterId.empty())
+		{
+			const auto& scannedBaseInfo = scannedModInfos.at(scannedFtaMasterId);
+			const std::vector<std::string> missingResources = findMissingExternalResources(scannedBaseInfo);
+			if (!missingResources.empty())
+			{
+				throw Exception("From the Ashes.oxc package was found, but it was disabled because required external resource folders are missing: " + joinResourceNames(missingResources) + ". Please copy the missing original data folders into the active data folder next to common and standard.");
+			}
+			throw Exception("From the Ashes.oxc package was found, but it was disabled by dependency validation. Please check openxcom.log for missing masters or external resources.");
+		}
+		throw Exception("No From the Ashes.oxc package found in standard directory. Please check your installation.");
 	}
 
 	auto baseInfo = _modInfos.find(ftaMasterId);
 	if (baseInfo == _modInfos.end() || !baseInfo->second.isMaster() || !baseInfo->second.getMaster().empty())
 	{
-		throw Exception("Official From the Ashes .oxc package has invalid metadata.yml: it must be a top-level master.");
+		throw Exception("From the Ashes.oxc package has invalid metadata.yml: it must be a top-level master.");
 	}
 
 	// FTA has one product master. Legacy masters found in user mods are not
@@ -924,12 +975,12 @@ void refreshMods()
 		auto info = _modInfos.find(modId);
 		if (info == _modInfos.end())
 		{
-			Log(LOG_WARNING) << "Official package mod '" << modId << "' is unavailable after dependency validation; skipping.";
+			Log(LOG_WARNING) << "OXC package mod '" << modId << "' is unavailable after dependency validation; skipping.";
 			continue;
 		}
 		if (info->second.isMaster() || !info->second.canActivate(ftaMasterId))
 		{
-			Log(LOG_WARNING) << "Official package mod '" << modId << "' is not a certified FTA submod; skipping.";
+			Log(LOG_WARNING) << "OXC package mod '" << modId << "' is not a defined as FTA submod; skipping.";
 			continue;
 		}
 		mods.push_back(std::make_pair(modId, true));
