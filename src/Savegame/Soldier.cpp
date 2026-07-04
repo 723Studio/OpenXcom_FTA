@@ -3303,11 +3303,11 @@ bool Soldier::hasAllRequiredBonusesForSkill(const RuleSkill* skillRules)
 }
 
 /**
- * Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+ * Check if the soldier has an active pilot role and meets all requirements for piloting the (current or new) craft.
  */
 bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
 {
-	if (!_rules->getAllowPiloting())
+	if (!_rules->getAllowPiloting() || getRoleRank(ROLE_PILOT) <= 0)
 		return false;
 
 	const Craft* craft = newCraft ? newCraft : _craft;
@@ -3383,13 +3383,6 @@ bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
 			}
 		}
 		if (!found)
-			return false;
-	}
-
-	// Does this soldier have all required soldier roles for piloting the current craft?
-	for (auto requiredRole : craft->getRules()->getPilotSoldierRolesRequired())
-	{
-		if (getRoleRank(requiredRole) <= 0)
 			return false;
 	}
 

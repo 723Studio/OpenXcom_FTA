@@ -459,7 +459,7 @@ private:
 	void resetMonthlyExperienceCache();
 	/// Check if the soldier has all the required soldier bonuses for the given soldier skill.
 	bool hasAllRequiredBonusesForSkill(const RuleSkill* skillRules);
-	/// Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+	/// Check if the soldier has an active pilot role and meets all requirements for piloting the (current or new) craft.
 	bool hasAllPilotingRequirements(const Craft* newCraft = nullptr) const;
 
 private:

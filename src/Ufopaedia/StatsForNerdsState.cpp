@@ -3337,13 +3337,6 @@ void StatsForNerdsState::initCraftList()
 	addUnitStatBonus(ss, craftRule->getPilotMinStatsRequired(), "pilotMinStatsRequired");
 	addVectorOfRulesNamed(ss, craftRule->getPilotSoldierBonusesRequired(), "pilotSoldierBonusesRequired");
 
-	std::vector<std::string> roleStrings;
-	for (auto role : craftRule->getPilotSoldierRolesRequired())
-	{
-		roleStrings.push_back(RuleSoldier::getRoleString(role));
-	}
-	addVectorOfStrings(ss, roleStrings, "pilotSoldierRolesRequired");
-
 	addInteger(ss, craftRule->getMaxVehiclesAndLargeSoldiers(), "vehicles");
 	addInteger(ss, craftRule->getMaxVehiclesAndLargeSoldiersLimit(), "maxHWPUnitsLimit", craftRule->getMaxVehiclesAndLargeSoldiers());
 

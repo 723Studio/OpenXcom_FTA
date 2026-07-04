@@ -204,16 +204,6 @@ void RuleCraft::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript
 	reader.tryRead("pilotMinStatsRequired", _pilotMinStatsRequired);
 	mod->loadNames(_type, _pilotSoldierBonusesRequiredNames, reader["pilotSoldierBonusesRequired"]);
 
-	if (const auto& roles = reader["pilotSoldierRolesRequired"])
-	{
-		_pilotSoldierRolesRequired.clear();
-		for (const auto& role : roles.children())
-		{
-			int tmp = role.readVal<int>();
-			_pilotSoldierRolesRequired.push_back(static_cast<SoldierRole>(tmp));
-		}
-	}
-
 	_craftScripts.load(_type, reader, parsers.craftScripts);
 	_scriptValues.load(reader, parsers.getShared());
 }
