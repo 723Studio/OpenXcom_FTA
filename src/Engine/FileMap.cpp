@@ -52,8 +52,24 @@
 #include "CrossPlatform.h"
 #include "Options.h"
 #include "Exception.h"
-#include "Engine/OXCContentKey.h"
 #include "OXCContainer.h"
+
+#if defined(__has_include)
+	#if __has_include("Engine/OXCContentKey.h")
+		#include "Engine/OXCContentKey.h"
+	#else
+		namespace OpenXcom
+		{
+			namespace EmbeddedOXCContentKey
+			{
+				static constexpr bool available = false;
+				static constexpr const char* value = "";
+			}
+		}
+	#endif
+#else
+	#include "Engine/OXCContentKey.h"
+#endif
 
 #define MINIZ_NO_STDIO
 #include "../../libs/miniz/miniz.h"
