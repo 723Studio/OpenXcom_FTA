@@ -4091,63 +4091,79 @@ SavedGame *Mod::newSave(GameDifficulty diff) const
 				}
 			}
 		}
-		// Sort soldeirs by role
+		// Sort soldiers by role
 		auto compareRole = [](const Soldier* lhs, const Soldier* rhs)
 		{
 			return lhs->getRoles()[0]->role < rhs->getRoles()[0]->role;
 		};
 		sort(base->getSoldiers()->begin(), base->getSoldiers()->end(), compareRole);
-		// Assign pilots
-		for (auto* soldier : *base->getSoldiers())
-		{
-			if (soldier->getArmor()->getSize() == 1 && soldier->getRoleRank(ROLE_PILOT) > 0)
-			{
-				for (auto* craft : *base->getCrafts())
-				{
-					// We setup crafts with required fta-pilots first.
-					const std::vector<Soldier*> pilots = craft->getPilotList(false, this);
-					if ((int)(pilots.size()) < craft->getRules()->getPilots())
-					{
-						CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-						if (craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
-							&& err == CPE_None)
-						{
-							soldier->setCraft(craft);
-							craft->addPilot(soldier->getId());
-						}
-					}
 
+		base->prepareSoldierStatsWithBonuses();
+
+		auto countAssignedPilots = [&](const Craft* craft)
+		{
+			int count = 0;
+			for (const auto* soldier : *base->getSoldiers())
+			{
+				if (soldier->getCraft() == craft && soldier->hasAllPilotingRequirements(craft))
+				{
+					++count;
 				}
 			}
-			else
+			return count;
+		};
+
+		// Fill the required pilot slots before assigning any passengers.
+		for (auto* craft : *base->getCrafts())
+		{
+			const int pilotsRequired = craft->getRules()->getPilots();
+			int pilotsAssigned = countAssignedPilots(craft);
+			for (auto* soldier : *base->getSoldiers())
 			{
-				if (soldier->getRules()->getAllowPiloting())
+				if (pilotsAssigned >= pilotsRequired)
 				{
-					soldier->prepareStatsWithBonuses(this); // refresh stats for checking pilot requirements
+					break;
+				}
+				if (soldier->getCraft() != nullptr
+					|| soldier->getArmor()->getSize() != 1
+					|| !soldier->hasAllPilotingRequirements(craft))
+				{
+					continue;
 				}
 
-				Craft *found = 0;
-				for (auto* craft : *base->getCrafts())
+				CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
+				if (err == CPE_None)
 				{
-					CraftPlacementErrors err = craft->validateAddingSoldier(craft->getSpaceAvailable(), soldier);
-					if (craft->getRules()->getAllowLanding()
-						&& craft->getSpaceUsed() < craft->getRules()->getMaxUnits()
-						&& err == CPE_None)
-					{
-						// Remember transporter as fall-back, but search further for interceptors
-						found = craft;
-					}
-					if (!craft->getRules()->getAllowLanding() && err == CPE_None && craft->getSpaceUsed() < craft->getRules()->getPilots())
-					{
-						// Fill interceptors with minimum amount of pilots necessary
-						if (soldier->hasAllPilotingRequirements(craft))
-						{
-							found = craft;
-							break;
-						}
-					}
+					soldier->setCraft(craft);
+					craft->addPilot(soldier->getId());
+					++pilotsAssigned;
 				}
-				soldier->setCraft(found);
+			}
+		}
+
+		// Fill dropship passenger space with combat soldiers, keeping any unfilled pilot slots free.
+		for (auto* soldier : *base->getSoldiers())
+		{
+			if (soldier->getCraft() != nullptr || soldier->getRoleRank(ROLE_SOLDIER) <= 0)
+			{
+				continue;
+			}
+
+			for (auto* craft : *base->getCrafts())
+			{
+				if (!craft->getRules()->getAllowLanding())
+				{
+					continue;
+				}
+
+				const int missingPilots = std::max(0, craft->getRules()->getPilots() - countAssignedPilots(craft));
+				const int passengerSpace = craft->getSpaceAvailable() - missingPilots;
+				CraftPlacementErrors err = craft->validateAddingSoldier(passengerSpace, soldier);
+				if (err == CPE_None)
+				{
+					soldier->setCraft(craft);
+					break;
+				}
 			}
 		}
 	}
