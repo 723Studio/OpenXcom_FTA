@@ -97,6 +97,7 @@ void RuleSoldierTransformation::load(const YAML::YamlNodeReader& node, Mod* mod)
 	reader.tryRead("upperBoundAtMaxStats", _upperBoundAtMaxStats);
 	reader.tryRead("upperBoundAtStatCaps", _upperBoundAtStatCaps);
 	reader.tryRead("upperBoundType", _upperBoundType);
+	reader.tryRead("forbiddenRole", reinterpret_cast<int&>(_forbiddenRole));
 	reader.tryRead("addRole", reinterpret_cast<int&>(_addRole));
 	if (reader["roleRankRequirements"])
 	{
