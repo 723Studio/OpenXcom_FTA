@@ -2151,9 +2151,7 @@ void BattlescapeGame::primaryAction(Position pos)
 			}
 			_currentAction.target = pos;
 
-			// #FINNIKTODO: expose option
-			bool previewLoS = true;
-			if (previewLoS)
+			if (bPreviewed)
 			{
 				if (_currentAction.target != _save->getSelectedUnit()->getPosition())
 				{
@@ -2166,6 +2164,10 @@ void BattlescapeGame::primaryAction(Position pos)
 				{
 					_parentState->updateSoldierInfo(false);
 				}
+			}
+			else
+			{
+				_parentState->updateSoldierInfo(false);
 			}
 
 			_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, BAM_NORMAL); // precalucalte move

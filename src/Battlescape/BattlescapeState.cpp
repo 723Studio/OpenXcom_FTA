@@ -100,7 +100,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  */
 BattlescapeState::BattlescapeState() :
-	_reserve(0), _touchButtonsEnabled(false), _manaBarVisible(false),
+	_reserve(0), _touchButtonsEnabled(false), _manaBarVisible(false), _targetPreviewActive(false),
 	_firstInit(true), _paletteResetNeeded(false), _paletteResetRequested(false),
 	_isMouseScrolling(false), _isMouseScrolled(false),
 	_xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0),
@@ -122,6 +122,7 @@ BattlescapeState::BattlescapeState() :
 
 	_indicatorTextColor = _game->getMod()->getInterface("battlescape")->getElement("visibleUnits")->color;
 	_indicatorGreen = _game->getMod()->getInterface("battlescape")->getElement("squadsightUnits")->color;
+	_indicatorTargetPreview = _game->getMod()->getInterface("battlescape")->getElement("targetPreviewUnits")->color;
 	_indicatorBlue = _game->getMod()->getInterface("battlescape")->getElement("woundedUnits")->color;
 	_indicatorPurple = _game->getMod()->getInterface("battlescape")->getElement("passingOutUnits")->color;
 	if (_game->getMod()->isFTAGame())
@@ -205,6 +206,7 @@ BattlescapeState::BattlescapeState() :
 			_numVisibleUnit[i]->setX(_numVisibleUnit[i]->getX() - 2);
 		}
 	}
+	_txtTargetPreview = new Text(150, 12, _btnVisibleUnit[0]->getX() - 153, _btnVisibleUnit[0]->getY() + 2);
 
 	_warning = new WarningMessage(224, 24, x + 48, y + 32);
 	_btnLaunch = new BattlescapeButton(32, 24, screenWidth - 32, 0); // we need screenWidth, because that is independent of the black bars on the screen
@@ -395,6 +397,7 @@ BattlescapeState::BattlescapeState() :
 		add(_btnVisibleUnit[i]);
 		add(_numVisibleUnit[i]);
 	}
+	add(_txtTargetPreview);
 	add(_warning, "warning", "battlescape", _icons);
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
@@ -666,6 +669,11 @@ BattlescapeState::BattlescapeState() :
 	_txtVisibleUnitTooltip[VISIBLE_MAX] = "STR_CENTER_ON_WOUNDED_FRIEND";
 	_txtVisibleUnitTooltip[VISIBLE_MAX+1] = "STR_CENTER_ON_DIZZY_FRIEND";
 	_txtVisibleUnitTooltip[VISIBLE_MAX+2] = "STR_CENTER_ON_BATTLE_OBJECT";
+	_txtTargetPreview->setText(tr("STR_TARGET_PREVIEW"));
+	_txtTargetPreview->setColor(_indicatorTextColor);
+	_txtTargetPreview->setAlign(ALIGN_RIGHT);
+	_txtTargetPreview->setHighContrast(true);
+	_txtTargetPreview->setVisible(false);
 
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
 	_warning->setTextColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color);
@@ -2155,6 +2163,8 @@ void BattlescapeState::drawHandsItems()
 void BattlescapeState::updateSoldierInfo(bool checkFOV)
 {
 	BattleUnit *battleUnit = _save->getSelectedUnit();
+	_targetPreviewActive = false;
+	_txtTargetPreview->setVisible(false);
 
 	for (int i = 0; i < VISIBLE_MAX; ++i)
 	{
@@ -2506,15 +2516,14 @@ void BattlescapeState::updateUiButton(const BattleUnit *battleUnit)
  */
 void BattlescapeState::updateVisibleUnits(std::vector<BattleUnit *> *units)
 {
+	_targetPreviewActive = true;
+
 	for (int i = 0; i < VISIBLE_MAX; ++i)
 	{
 		_btnVisibleUnit[i]->setVisible(false);
 		_numVisibleUnit[i]->setVisible(false);
 		_visibleUnit[i] = 0;
 	}
-
-	if (units->empty())
-		return;
 
 	// go through all units visible
 	int j = 0;
@@ -2527,6 +2536,18 @@ void BattlescapeState::updateVisibleUnits(std::vector<BattleUnit *> *units)
 		++j;
 	}
 	_numberOfDirectlyVisibleUnits = j;
+
+	if (j > 0)
+	{
+		// Keep the label three pixels to the left of the leftmost indicator.
+		int leftmostIndicator = std::min(j, 10) - 1;
+		_txtTargetPreview->setX(_btnVisibleUnit[leftmostIndicator]->getX() - _txtTargetPreview->getWidth() - 3);
+		_txtTargetPreview->setVisible(true);
+	}
+	else
+	{
+		_txtTargetPreview->setVisible(false);
+	}
 }
 
 void BattlescapeState::resetUiButton()
@@ -2556,7 +2577,7 @@ void BattlescapeState::blinkVisibleUnitButtons()
 		if (_btnVisibleUnit[i]->getVisible() == true)
 		{
 			_btnVisibleUnit[i]->drawRect(0, 0, 15, 12, 15);
-			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : i < _numberOfUnitsTotal ? _indicatorPurple : _indicatorGray;
+			int bgColor = _targetPreviewActive ? _indicatorTargetPreview : i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : i < _numberOfUnitsTotal ? _indicatorPurple : _indicatorGray;
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
 		}
 	}
