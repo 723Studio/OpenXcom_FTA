@@ -70,6 +70,15 @@ void RuleIntelProject::load(const YAML::YamlNodeReader& node, Mod* mod)
 	}
 	reader.tryRead("stats", _stats);
 	reader.tryRead("listOrder", _listOrder);
+
+	if (_cost < 1)
+	{
+		throw Exception("Invalid cost for intelligence project " + _name + ": expected a positive integer");
+	}
+	if (_costIncrease < 0)
+	{
+		throw Exception("Invalid costIncrease for intelligence project " + _name + ": expected a non-negative integer");
+	}
 }
 
 /**
@@ -104,13 +113,30 @@ void RuleIntelStage::load(const YAML::YamlNodeReader& reader, Mod* mod)
 	reader.tryRead("stageName", _stageName);
 	reader.tryRead("odds", _odds);
 	reader.tryRead("requireRolls", _requireRolls);
-	//reader.tryRead("availableRolls", _availableRolls);
+	reader.tryRead("availableRolls", _availableRolls);
 	reader.tryRead("eventScripts", _eventScripts);
 	reader.tryRead("spawnMission", _spawnMission);
 	reader.tryRead("requiredResearch", _requiredResearchName);
 	reader.tryRead("disabledByResearch", _disabledByResearchName);
-	//mod->loadBaseFunction(_stageName, _requiresBaseFunc, reader["requiresBaseFunc"]);
+	mod->loadBaseFunction(_stageName, _requiresBaseFunc, reader["requiresBaseFunc"]);
 	reader.tryRead("finalStage", _finalStage);
+
+	if (_stageName.empty())
+	{
+		throw Exception("Invalid empty stageName in intelligence project");
+	}
+	if (_odds < 1 || _odds > 100)
+	{
+		throw Exception("Invalid odds for intelligence stage " + _stageName + ": expected a value from 1 to 100");
+	}
+	if (_requireRolls < 0)
+	{
+		throw Exception("Invalid requireRolls for intelligence stage " + _stageName + ": expected a non-negative integer");
+	}
+	if (_availableRolls < 1)
+	{
+		throw Exception("Invalid availableRolls for intelligence stage " + _stageName + ": expected a positive integer");
+	}
 }
 
 void RuleIntelStage::afterLoad(const Mod* mod)

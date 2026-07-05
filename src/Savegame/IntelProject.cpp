@@ -153,7 +153,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 	bool specialRule = _rules->getSpecialRule() != INTEL_NONE;
 	_active = progress > 0 && specialRule;
 
-	if (_spent > (_rolls * getRules()->getCostIncrease()))
+	if (_spent > _cost + (_rolls * getRules()->getCostIncrease()))
 	{
 		_spent = 0; //clear progress of the project, preparing it for the next stage roll.
 		_rolls++;
@@ -161,10 +161,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 		std::vector<const RuleIntelStage*> rolledStages;
 		for (auto stage : getAvailableStages(save))
 		{
-			if (RNG::percent(stage->getOdds()
-				&& stage->getRequireRolls() <= _rolls
-				&& save->isResearched(stage->getRequiredResearch()))
-				&& !save->isResearched(stage->getDisabledByResearch()))
+			if (stage->getRequireRolls() <= _rolls && RNG::percent(stage->getOdds()))
 			{
 				Log(LOG_INFO) << " - stage named: " << stage->getName() << " was added to the pool.";
 				rolledStages.push_back(stage); //populate list of stages
@@ -173,7 +170,7 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 
 		if (!rolledStages.empty())
 		{
-			auto pickedStage = rolledStages.at(RNG::generate(0, rolledStages.size())); // only one stage processed at a time
+			auto pickedStage = rolledStages.at(RNG::generate(0, static_cast<int>(rolledStages.size()) - 1)); // only one stage processed at a time
 			//run all event scripts for chosen stage
 			Log(LOG_INFO) << "Stage picked for being processed: " << pickedStage->getName();
 			if (!pickedStage->getEventScripts().empty())
@@ -225,40 +222,35 @@ std::vector<const RuleIntelStage*> IntelProject::getAvailableStages(SavedGame* s
 
 	for (auto stage : _rules->getStages())
 	{
-		bool triggerHappy = false;
 		auto it = _stageRolls.find(stage->getName());
-		if (it == _stageRolls.end() //case we have not rolled this stage before.
-			|| it->second < stage->getAvailableRolls()) //case we don't have enough rolls for this stage yet.
+		if (it != _stageRolls.end() && it->second >= stage->getAvailableRolls())
 		{
-			triggerHappy = true;
-		}
-		else if (stage->isFinalStage()) //we already done with this project, abort the search with empty result.
-		{
-			availableStages.clear();
-			break;
-		}
-
-
-		if (triggerHappy) // Check for researches.
-		{
-			if (save->isResearched(stage->getRequiredResearch()) && !save->isResearched(stage->getDisabledByResearch()))
+			if (stage->isFinalStage()) //we already done with this project, abort the search with empty result.
 			{
-				triggerHappy = true;
+				availableStages.clear();
+				break;
 			}
+			continue;
 		}
 
-		if (triggerHappy) // Check for required buildings/functions in the given base
+		const RuleResearch* requiredResearch = stage->getRequiredResearch();
+		if (requiredResearch && !save->isResearched(requiredResearch, false))
 		{
-			if ((~_base->getProvidedBaseFunc({}) & stage->getRequireBaseFunc()).any())
-			{
-				continue; //we don't have required facility, go to the next stage.
-			}
+			continue;
 		}
 
-		if (triggerHappy)
+		const RuleResearch* disabledByResearch = stage->getDisabledByResearch();
+		if (disabledByResearch && save->isResearched(disabledByResearch, false))
 		{
-			availableStages.push_back(stage);
+			continue;
 		}
+
+		if ((~_base->getProvidedBaseFunc({}) & stage->getRequireBaseFunc()).any())
+		{
+			continue; //we don't have required facility, go to the next stage.
+		}
+
+		availableStages.push_back(stage);
 	}
 
 	return availableStages;
