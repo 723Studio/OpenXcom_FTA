@@ -280,12 +280,11 @@ int DiplomacyPurchaseState::getCostAdjustment(int baseCost)
 	int priceFactor = _faction->getRules()->getBuyPriceFactor();
 	int repFactor = _faction->getRules()->getRepPriceFactor();
 	int normalizedRep = _faction->getReputationLevel() - 3;
+	int diffFactor = _game->getSavedGame()->getBuyPriceCoefficient();
 	int64_t result = baseCost;
-	if (priceFactor != 0 && repFactor != 0 && normalizedRep != 0)
-	{
-		result *= priceFactor / 100;
-		result *= normalizedRep / 100;
-	}
+	// A positive reputation makes purchases cheaper for the player.
+	result += result * (priceFactor - repFactor * normalizedRep) / 100;
+	result = result * diffFactor / 100;
 
 	return static_cast<int>(result);
 }

@@ -295,16 +295,18 @@ void DiplomacyFaction::processDailyReputation(Game& engine)
 	if (dailyReputation * 1.2 > breakLevel)
 	{
 		events = _rule->getHappyEvents();
+		needUpdate = true;
 	}
 	else if (dailyReputation < breakLevel * (-1))
 	{
 		events = _rule->getAngryEvents();
+		needUpdate = true;
 		_treaties.clear(); //we break all friendly-like treaties in this case
 	}
 
 	if (needUpdate)
 	{
-		_repLvlChanged = mind.updateReputationLvl(this, false);;
+		_repLvlChanged = mind.updateReputationLvl(this, false);
 		if (!events.empty())
 		{
 			save.spawnEvent(engine.getMod()->getEvent(events.at(RNG::generate(0, events.size() - 1))));
@@ -418,9 +420,10 @@ void DiplomacyFaction::processFactionalEvents(Game& engine)
 								}
 								else if (val < 0)
 								{
-									if (_items->getItem(ruleItem) >= val)
+									const int64_t qty = -static_cast<int64_t>(val);
+									if (_items->getItem(ruleItem) >= qty)
 									{
-										removeItem(ruleItem, val);
+										removeItem(ruleItem, static_cast<int>(qty));
 									}
 								}
 							}
