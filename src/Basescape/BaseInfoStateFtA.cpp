@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cmath>
 #include "../Engine/Game.h"
+#include "../Engine/Screen.h"
 #include "../Engine/Action.h"
 #include "../Mod/Mod.h"
 #include "../Engine/Options.h"
@@ -289,6 +290,51 @@ BaseInfoStateFtA::BaseInfoStateFtA(Base *base, BasescapeState *state) : _base(ba
 
 BaseInfoStateFtA::~BaseInfoStateFtA()
 {
+}
+
+/**
+ * Blits the Base Info screen and fills the extended-resolution margins.
+ */
+void BaseInfoStateFtA::blit()
+{
+	SDL_Surface *screen = _game->getScreen()->getSurface();
+	Uint32 black = SDL_MapRGB(screen->format, 0, 0, 0);
+	SDL_Rect rect;
+
+	if (_bg->getX() > 0)
+	{
+		rect.x = 0;
+		rect.y = 0;
+		rect.w = _bg->getX();
+		rect.h = screen->h;
+		SDL_FillRect(screen, &rect, black);
+	}
+	if (_bg->getX() + _bg->getWidth() < screen->w)
+	{
+		rect.x = _bg->getX() + _bg->getWidth();
+		rect.y = 0;
+		rect.w = screen->w - rect.x;
+		rect.h = screen->h;
+		SDL_FillRect(screen, &rect, black);
+	}
+	if (_bg->getY() > 0)
+	{
+		rect.x = 0;
+		rect.y = 0;
+		rect.w = screen->w;
+		rect.h = _bg->getY();
+		SDL_FillRect(screen, &rect, black);
+	}
+	if (_bg->getY() + _bg->getHeight() < screen->h)
+	{
+		rect.x = 0;
+		rect.y = _bg->getY() + _bg->getHeight();
+		rect.w = screen->w;
+		rect.h = screen->h - rect.y;
+		SDL_FillRect(screen, &rect, black);
+	}
+
+	State::blit();
 }
 
 /**

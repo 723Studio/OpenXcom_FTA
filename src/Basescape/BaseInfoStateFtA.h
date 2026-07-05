@@ -58,6 +58,8 @@ public:
 	BaseInfoStateFtA(Base *base, BasescapeState *state);
 	/// Cleans up the Base Info state.
 	~BaseInfoStateFtA();
+	/// Blits the Base Info state with a safe extended-resolution backdrop.
+	void blit() override;
 	/// Updates the base stats.
 	void init() override;
 	/// Handler for changing the text on the Name edit.
