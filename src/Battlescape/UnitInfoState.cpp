@@ -64,7 +64,9 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	int yPos = 38;
 	int step = 9;
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	bool manaFeatureEnabled = _game->getMod()->isManaFeatureEnabled();
+	bool manaUnlocked = manaFeatureEnabled && _game->getSavedGame()->isManaUnlocked(_game->getMod());
+	if (manaFeatureEnabled)
 	{
 		yPos = 30;
 	}
@@ -128,11 +130,14 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_barStrength = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	if (manaUnlocked)
 	{
 		_txtMana = new Text(140, 9, 8, yPos);
 		_numMana = new Text(18, 9, 150, yPos);
 		_barMana = new Bar(150, 5, 170, yPos + 1);
+	}
+	if (manaFeatureEnabled)
+	{
 		yPos += step;
 	}
 
@@ -228,7 +233,7 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	add(_numStrength);
 	add(_barStrength, "barStrength", "stats", 0);
 
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	if (manaUnlocked)
 	{
 		add(_txtMana);
 		add(_numMana);
@@ -387,7 +392,7 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	_barStrength->setScale(1.0);
 
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	if (manaUnlocked)
 	{
 		_txtMana->setColor(color);
 		_txtMana->setHighContrast(true);
