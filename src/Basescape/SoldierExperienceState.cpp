@@ -111,7 +111,6 @@ SoldierExperienceState::SoldierExperienceState(Soldier* soldier) :_soldier(soldi
 
 		if (rr->experience > 0 && !roleName.empty())
 		{
-			auto req = _soldier->getRules()->getRoleExpRequirments();
 			std::ostringstream ssr, sse;
 			ssr << rr->rank;
 			sse << rr->experience;

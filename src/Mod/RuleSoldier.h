@@ -46,19 +46,19 @@ enum SoldierRole : int
 	ROLE_ENGINEER = 5
 };
 
-struct SoldierRoleRanksRequirments
+struct SoldierRoleRanksRequirements
 {
 	SoldierRole role;
-	std::map<int, int> requirments;
+	std::map<int, int> requirements;
 
 	/// Default constructor.
-	SoldierRoleRanksRequirments() : role(ROLE_NONE) {}
+	SoldierRoleRanksRequirements() : role(ROLE_NONE) {}
 
 	/// Loads stats from YAML.
 	void load(const YAML::YamlNodeReader& reader)
 	{
 		reader.tryRead("role", role);
-		reader.tryRead("requirments", requirments);
+		reader.tryRead("requirements", requirements);
 	}
 };
 
@@ -112,7 +112,7 @@ private:
 	int _listOrder;
 	std::vector<std::string> _requires;
 	RuleBaseFacilityFunctions _requiresBuyBaseFunc;
-	std::vector<SoldierRoleRanksRequirments*> _roleExpRequirments;
+	std::vector<SoldierRoleRanksRequirements*> _roleExpRequirements;
 	std::vector<SoldierRoleRanksStrings*> _roleRankStrings;
 	std::string _requiresBuyCountry;
 	UnitStats _minStats, _maxStats, _statCaps, _trainingStatCaps, _dogfightExperience;
@@ -293,8 +293,8 @@ public:
 	int getEngineerRankSprite() const { return _engineerRankSprite; }
 	int getEngineerRankSpriteBattlescape() const { return _engineerRankSpriteBattlescape; }
 	int getEngineerRankSpriteTiny() const { return _engineerRankSpriteTiny; }
-	/// Gets the list of role experience requirments.
-	std::vector<SoldierRoleRanksRequirments *> getRoleExpRequirments() const { return _roleExpRequirments; }
+	/// Gets the list of role experience requirements.
+	std::vector<SoldierRoleRanksRequirements *> getRoleExpRequirements() const { return _roleExpRequirements; }
 	/// Gets the list of role rank strings.
 	std::vector<SoldierRoleRanksStrings *> getRoleRankStrings() const { return _roleRankStrings; }
 	/// Converts SoldierRole enum to string.

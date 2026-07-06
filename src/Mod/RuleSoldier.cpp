@@ -138,13 +138,13 @@ void RuleSoldier::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScri
 		reader["dogfightExperience"].tryReadVal(tmp);
 		_dogfightExperience = tmp;
 	}
-	if (reader["roleExpRequirments"])
+	if (reader["roleExpRequirements"])
 	{
-		for (const auto& reqReader : reader["roleExpRequirments"].children())
+		for (const auto& reqReader : reader["roleExpRequirements"].children())
 		{
-			SoldierRoleRanksRequirments *r = new SoldierRoleRanksRequirments;
+			SoldierRoleRanksRequirements *r = new SoldierRoleRanksRequirements;
 			r->load(reqReader);
-			_roleExpRequirments.push_back(r);
+			_roleExpRequirements.push_back(r);
 		}
 	}
 	if (reader["roleRankStrings"])
@@ -705,12 +705,12 @@ int RuleSoldier::getRankSpriteTiny() const
 
 int RuleSoldier::getRequiredExperience(SoldierRole role, int rank) const
 {
-    for (const auto& req : _roleExpRequirments)
+    for (const auto& req : _roleExpRequirements)
     {
         if (req->role == role)
         {
-            auto it = req->requirments.find(rank);
-            if (it != req->requirments.end())
+            auto it = req->requirements.find(rank);
+            if (it != req->requirements.end())
             {
                 return it->second;
             }
