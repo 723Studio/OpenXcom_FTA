@@ -314,6 +314,16 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 				}
 				if (triggerHappy)
 				{
+					// soldier type requirements
+					for (auto& triggerSoldierType : ruleScript->getSoldierTypeTriggers())
+					{
+						triggerHappy = (save.isSoldierTypeHired(triggerSoldierType.first) == triggerSoldierType.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy)
+				{
 					// xcom base requirements by region
 					for (auto &triggerXcomBase : ruleScript->getXcomBaseInRegionTriggers())
 					{
@@ -333,6 +343,10 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 						if (!triggerHappy)
 							break;
 					}
+				}
+				if (triggerHappy && !RNG::percent(ruleScript->getExecutionOdds()))
+				{
+					triggerHappy = false;
 				}
 				// ok, we still want event from this script, now let`s actually choose one.
 				if (triggerHappy)
