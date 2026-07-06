@@ -332,6 +332,7 @@ void RuleItem::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript&
 	mod->loadUnorderedNamesToInt(_type, _recoveryDividers, reader["recoveryDividers"]);
 	reader.tryRead("recoveryTransformations", _recoveryTransformationsName);
 	mod->loadUnorderedNames(_type, _categories, reader["categories"]);
+	mod->loadUnorderedNamesToInt(_type, _reputationRequirements, reader["reputationRequirements"]);
 
 	reader.tryRead("vehicleFixedAmmoSlot", _vehicleFixedAmmoSlot);
 	reader.tryRead("size", _size);
