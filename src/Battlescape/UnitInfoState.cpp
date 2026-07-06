@@ -587,26 +587,17 @@ void UnitInfoState::init()
 	_barStrength->setMax(_unit->getBaseStats()->strength);
 	_barStrength->setValue(_unit->getBaseStats()->strength);
 
-	if (_game->getMod()->isManaFeatureEnabled())
+	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
 	{
-		if (_game->getSavedGame()->isManaUnlocked(_game->getMod()))
-		{
-			ss.str("");
-			ss << _unit->getMana();
-			_numMana->setText(ss.str());
-			_barMana->setMax(_unit->getBaseStats()->mana);
-			_barMana->setValue(_unit->getMana());
+		ss.str("");
+		ss << _unit->getMana();
+		_numMana->setText(ss.str());
+		_barMana->setMax(_unit->getBaseStats()->mana);
+		_barMana->setValue(_unit->getMana());
 
-			_txtMana->setVisible(true);
-			_numMana->setVisible(true);
-			_barMana->setVisible(true);
-		}
-		else
-		{
-			_txtMana->setVisible(false);
-			_numMana->setVisible(false);
-			_barMana->setVisible(false);
-		}
+		_txtMana->setVisible(true);
+		_numMana->setVisible(true);
+		_barMana->setVisible(true);
 	}
 
 	auto psiSkillWithoutAnyBonuses = _unit->getBaseStats()->psiSkill;
