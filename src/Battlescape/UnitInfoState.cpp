@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "UnitInfoState.h"
+#include <climits>
 #include <sstream>
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedGame.h"
@@ -26,6 +27,7 @@
 #include "../Engine/Screen.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/Palette.h"
 #include "../Interface/Bar.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
@@ -47,7 +49,7 @@ namespace OpenXcom
  * @param fromInventory Is player coming from the inventory?
  * @param mindProbe Is player using a Mind Probe?
  */
-UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fromInventory, bool mindProbe) : _unit(unit), _parent(parent), _fromInventory(fromInventory), _mindProbe(mindProbe)
+UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fromInventory, bool mindProbe) : _unit(unit), _parent(parent), _fromInventory(fromInventory), _mindProbe(mindProbe), _statsPage(0)
 {
 	if (Options::maximizeInfoScreens)
 	{
@@ -175,6 +177,34 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numUnderArmor = new Text(18, 9, 150, yPos);
 	_barUnderArmor = new Bar(150, 5, 170, yPos + 1);
 
+	_arrowUp = new Surface(9, 9, 0, _txtTimeUnits->getY());
+	_arrowDown = new Surface(9, 9, 0, _txtUnderArmor->getY());
+	{
+		int f = Palette::blockOffset(1); // yellow
+		int b = 15; // black
+		int pixels[81] = { 0, 0, b, b, b, b, b, 0, 0,
+		                   0, 0, b, f, f, f, b, 0, 0,
+		                   0, 0, b, f, f, f, b, 0, 0,
+		                   b, b, b, f, f, f, b, b, b,
+		                   b, f, f, f, f, f, f, f, b,
+		                   0, b, f, f, f, f, f, b, 0,
+		                   0, 0, b, f, f, f, b, 0, 0,
+		                   0, 0, 0, b, f, b, 0, 0, 0,
+		                   0, 0, 0, 0, b, 0, 0, 0, 0 };
+		_arrowDown->lock();
+		_arrowUp->lock();
+		for (int y = 0; y < 9; ++y)
+		{
+			for (int x = 0; x < 9; ++x)
+			{
+				_arrowDown->setPixel(x, y, pixels[x + (y * 9)]);
+				_arrowUp->setPixel(x, y, pixels[x + ((8 - y) * 9)]);
+			}
+		}
+		_arrowDown->unlock();
+		_arrowUp->unlock();
+	}
+
 	if (!_mindProbe)
 	{
 		_btnPrev = new TextButton(14, 18, 2, 2);
@@ -267,6 +297,9 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	add(_txtUnderArmor);
 	add(_numUnderArmor);
 	add(_barUnderArmor, "barUnderArmor", "stats", 0);
+
+	add(_arrowDown);
+	add(_arrowUp);
 
 	if (!_mindProbe)
 	{
@@ -495,6 +528,45 @@ void UnitInfoState::init()
 {
 	State::init();
 	std::ostringstream ss;
+
+	auto setRowVisible = [](Text *txt, Text *num, Bar *bar, bool visible)
+	{
+		txt->setVisible(visible);
+		num->setVisible(visible);
+		bar->setVisible(visible);
+	};
+
+	auto applyBarStyle = [&](Bar *bar, const std::string &elementId)
+	{
+		const Element *element = _game->getMod()->getInterface("stats")->getElementOptional(elementId);
+		if (!element)
+		{
+			return;
+		}
+		if (element->color != INT_MAX)
+		{
+			bar->setColor(element->color);
+		}
+		bar->setSecondaryColor(element->color2 != INT_MAX ? element->color2 : 0);
+		bar->setBorderColor(element->border != INT_MAX ? element->border : 0);
+	};
+
+	auto setStatRow = [&](Text *txt, Text *num, Bar *bar, const std::string &label, int value, const std::string &barElementId)
+	{
+		ss.str("");
+		ss << value;
+		txt->setText(tr(label));
+		num->setText(ss.str());
+		applyBarStyle(bar, barElementId);
+		bar->setMax(value);
+		bar->setValue(value);
+		bar->setValue2(0);
+		setRowVisible(txt, num, bar, true);
+	};
+
+	_arrowDown->setVisible(_statsPage == 0);
+	_arrowUp->setVisible(_statsPage == 1);
+
 	ss << _unit->getTimeUnits();
 	_numTimeUnits->setText(ss.str());
 	_barTimeUnits->setMax(_unit->getBaseStats()->tu);
@@ -511,11 +583,87 @@ void UnitInfoState::init()
 	_txtName->setBig();
 	_txtName->setText(ss.str());
 
+	bool manaUnlocked = _game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod());
+
+	if (_statsPage == 1)
+	{
+		_numMaxHealth->setText("");
+		_numMaxHealth->setVisible(false);
+
+		setStatRow(_txtTimeUnits, _numTimeUnits, _barTimeUnits, UnitStats::getStatString(&UnitStats::stealth), _unit->getBaseStats()->stealth, "barStealth");
+		setStatRow(_txtEnergy, _numEnergy, _barEnergy, UnitStats::getStatString(&UnitStats::perception), _unit->getBaseStats()->perception, "barPerception");
+		setStatRow(_txtHealth, _numHealth, _barHealth, UnitStats::getStatString(&UnitStats::hacking), _unit->getBaseStats()->hacking, "barHacking");
+		setStatRow(_txtFatalWounds, _numFatalWounds, _barFatalWounds, UnitStats::getStatString(&UnitStats::physics), _unit->getBaseStats()->physics, "barPhysics");
+		setStatRow(_txtBravery, _numBravery, _barBravery, UnitStats::getStatString(&UnitStats::chemistry), _unit->getBaseStats()->chemistry, "barChemistry");
+
+		setRowVisible(_txtMorale, _numMorale, _barMorale, false);
+		setRowVisible(_txtReactions, _numReactions, _barReactions, false);
+		setRowVisible(_txtFiring, _numFiring, _barFiring, false);
+		setRowVisible(_txtThrowing, _numThrowing, _barThrowing, false);
+		setRowVisible(_txtMelee, _numMelee, _barMelee, false);
+		setRowVisible(_txtStrength, _numStrength, _barStrength, false);
+		if (manaUnlocked)
+		{
+			setRowVisible(_txtMana, _numMana, _barMana, false);
+		}
+		setRowVisible(_txtPsiStrength, _numPsiStrength, _barPsiStrength, false);
+		setRowVisible(_txtPsiSkill, _numPsiSkill, _barPsiSkill, false);
+		setRowVisible(_txtFrontArmor, _numFrontArmor, _barFrontArmor, false);
+		setRowVisible(_txtLeftArmor, _numLeftArmor, _barLeftArmor, false);
+		setRowVisible(_txtRightArmor, _numRightArmor, _barRightArmor, false);
+		setRowVisible(_txtRearArmor, _numRearArmor, _barRearArmor, false);
+		setRowVisible(_txtUnderArmor, _numUnderArmor, _barUnderArmor, false);
+		return;
+	}
+
+	_txtTimeUnits->setText(tr("STR_TIME_UNITS"));
+	_txtEnergy->setText(tr("STR_ENERGY"));
+	_txtHealth->setText(tr("STR_HEALTH"));
+	_txtFatalWounds->setText(tr("STR_FATAL_WOUNDS"));
+	_txtBravery->setText(tr("STR_BRAVERY"));
+	setRowVisible(_txtTimeUnits, _numTimeUnits, _barTimeUnits, true);
+	setRowVisible(_txtEnergy, _numEnergy, _barEnergy, true);
+	setRowVisible(_txtHealth, _numHealth, _barHealth, true);
+	setRowVisible(_txtFatalWounds, _numFatalWounds, _barFatalWounds, true);
+	setRowVisible(_txtBravery, _numBravery, _barBravery, true);
+	setRowVisible(_txtMorale, _numMorale, _barMorale, true);
+	setRowVisible(_txtReactions, _numReactions, _barReactions, true);
+	setRowVisible(_txtFiring, _numFiring, _barFiring, true);
+	setRowVisible(_txtThrowing, _numThrowing, _barThrowing, true);
+	setRowVisible(_txtMelee, _numMelee, _barMelee, true);
+	setRowVisible(_txtStrength, _numStrength, _barStrength, true);
+	setRowVisible(_txtFrontArmor, _numFrontArmor, _barFrontArmor, true);
+	setRowVisible(_txtLeftArmor, _numLeftArmor, _barLeftArmor, true);
+	setRowVisible(_txtRightArmor, _numRightArmor, _barRightArmor, true);
+	setRowVisible(_txtRearArmor, _numRearArmor, _barRearArmor, true);
+	setRowVisible(_txtUnderArmor, _numUnderArmor, _barUnderArmor, true);
+	_numMaxHealth->setVisible(true);
+
+	applyBarStyle(_barTimeUnits, "barTUs");
+	applyBarStyle(_barEnergy, "barEnergy");
+	applyBarStyle(_barHealth, "barHealth");
+	applyBarStyle(_barFatalWounds, "barWounds");
+	applyBarStyle(_barBravery, "barBravery");
+	applyBarStyle(_barMorale, "barMorale");
+	applyBarStyle(_barReactions, "barReactions");
+	applyBarStyle(_barFiring, "barFiring");
+	applyBarStyle(_barThrowing, "barThrowing");
+	applyBarStyle(_barMelee, "barMelee");
+	applyBarStyle(_barStrength, "barStrength");
+	applyBarStyle(_barPsiStrength, "barPsiStrength");
+	applyBarStyle(_barPsiSkill, "barPsiSkill");
+	applyBarStyle(_barFrontArmor, "barFrontArmor");
+	applyBarStyle(_barLeftArmor, "barLeftArmor");
+	applyBarStyle(_barRightArmor, "barRightArmor");
+	applyBarStyle(_barRearArmor, "barRearArmor");
+	applyBarStyle(_barUnderArmor, "barUnderArmor");
+
 	ss.str("");
 	ss << _unit->getEnergy();
 	_numEnergy->setText(ss.str());
 	_barEnergy->setMax(_unit->getBaseStats()->stamina);
 	_barEnergy->setValue(_unit->getEnergy());
+	_barEnergy->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getHealth();
@@ -545,24 +693,28 @@ void UnitInfoState::init()
 	_numFatalWounds->setText(ss.str());
 	_barFatalWounds->setMax(_unit->getFatalWounds());
 	_barFatalWounds->setValue(_unit->getFatalWounds());
+	_barFatalWounds->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getBaseStats()->bravery;
 	_numBravery->setText(ss.str());
 	_barBravery->setMax(_unit->getBaseStats()->bravery);
 	_barBravery->setValue(_unit->getBaseStats()->bravery);
+	_barBravery->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getMorale();
 	_numMorale->setText(ss.str());
 	_barMorale->setMax(100);
 	_barMorale->setValue(_unit->getMorale());
+	_barMorale->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getBaseStats()->reactions;
 	_numReactions->setText(ss.str());
 	_barReactions->setMax(_unit->getBaseStats()->reactions);
 	_barReactions->setValue(_unit->getBaseStats()->reactions);
+	_barReactions->setValue2(0);
 
 	// more info: http://ufopaedia.org/index.php?title=Accuracy_formula#Stat_Screen_Accuracy
 	int healthModifier = 75 + ((25 * _unit->getHealth()) / _unit->getBaseStats()->health);
@@ -572,18 +724,21 @@ void UnitInfoState::init()
 	_numFiring->setText(ss.str());
 	_barFiring->setMax(_unit->getBaseStats()->firing);
 	_barFiring->setValue((_unit->getBaseStats()->firing * healthModifier) / 100);
+	_barFiring->setValue2(0);
 
 	ss.str("");
 	ss << (int)((_unit->getBaseStats()->throwing * healthModifier) / 100);
 	_numThrowing->setText(ss.str());
 	_barThrowing->setMax(_unit->getBaseStats()->throwing);
 	_barThrowing->setValue((_unit->getBaseStats()->throwing * healthModifier) / 100);
+	_barThrowing->setValue2(0);
 
 	ss.str("");
 	ss << (int)((_unit->getBaseStats()->melee * healthModifier) / 100);
 	_numMelee->setText(ss.str());
 	_barMelee->setMax(_unit->getBaseStats()->melee);
 	_barMelee->setValue((_unit->getBaseStats()->melee * healthModifier) / 100);
+	_barMelee->setValue2(0);
 	// end of healthModifier usage
 
 	ss.str("");
@@ -591,14 +746,17 @@ void UnitInfoState::init()
 	_numStrength->setText(ss.str());
 	_barStrength->setMax(_unit->getBaseStats()->strength);
 	_barStrength->setValue(_unit->getBaseStats()->strength);
+	_barStrength->setValue2(0);
 
-	if (_game->getMod()->isManaFeatureEnabled() && _game->getSavedGame()->isManaUnlocked(_game->getMod()))
+	if (manaUnlocked)
 	{
+		applyBarStyle(_barMana, "barMana");
 		ss.str("");
 		ss << _unit->getMana();
 		_numMana->setText(ss.str());
 		_barMana->setMax(_unit->getBaseStats()->mana);
 		_barMana->setValue(_unit->getMana());
+		_barMana->setValue2(0);
 
 		_txtMana->setVisible(true);
 		_numMana->setVisible(true);
@@ -617,6 +775,7 @@ void UnitInfoState::init()
 		_numPsiStrength->setText(ss.str());
 		_barPsiStrength->setMax(_unit->getBaseStats()->psiStrength);
 		_barPsiStrength->setValue(_unit->getBaseStats()->psiStrength);
+		_barPsiStrength->setValue2(0);
 
 		_txtPsiStrength->setVisible(true);
 		_numPsiStrength->setVisible(true);
@@ -636,6 +795,7 @@ void UnitInfoState::init()
 		_numPsiSkill->setText(ss.str());
 		_barPsiSkill->setMax(_unit->getBaseStats()->psiSkill);
 		_barPsiSkill->setValue(_unit->getBaseStats()->psiSkill);
+		_barPsiSkill->setValue2(0);
 
 		_txtPsiSkill->setVisible(true);
 		_numPsiSkill->setVisible(true);
@@ -653,30 +813,35 @@ void UnitInfoState::init()
 	_numFrontArmor->setText(ss.str());
 	_barFrontArmor->setMax(_unit->getMaxArmor(SIDE_FRONT));
 	_barFrontArmor->setValue(_unit->getArmor(SIDE_FRONT));
+	_barFrontArmor->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_LEFT);
 	_numLeftArmor->setText(ss.str());
 	_barLeftArmor->setMax(_unit->getMaxArmor(SIDE_LEFT));
 	_barLeftArmor->setValue(_unit->getArmor(SIDE_LEFT));
+	_barLeftArmor->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_RIGHT);
 	_numRightArmor->setText(ss.str());
 	_barRightArmor->setMax(_unit->getMaxArmor(SIDE_RIGHT));
 	_barRightArmor->setValue(_unit->getArmor(SIDE_RIGHT));
+	_barRightArmor->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_REAR);
 	_numRearArmor->setText(ss.str());
 	_barRearArmor->setMax(_unit->getMaxArmor(SIDE_REAR));
 	_barRearArmor->setValue(_unit->getArmor(SIDE_REAR));
+	_barRearArmor->setValue2(0);
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_UNDER);
 	_numUnderArmor->setText(ss.str());
 	_barUnderArmor->setMax(_unit->getMaxArmor(SIDE_UNDER));
 	_barUnderArmor->setValue(_unit->getArmor(SIDE_UNDER));
+	_barUnderArmor->setValue2(0);
 }
 
 
@@ -692,6 +857,24 @@ void UnitInfoState::handle(Action *action)
 		if (_game->isRightClick(action))
 		{
 			exitClick(action);
+			return;
+		}
+		if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
+		{
+			if (_statsPage > 0)
+			{
+				--_statsPage;
+				init();
+			}
+			return;
+		}
+		else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN)
+		{
+			if (_statsPage < 1)
+			{
+				++_statsPage;
+				init();
+			}
 			return;
 		}
 		if (Options::oxceThumbButtons)

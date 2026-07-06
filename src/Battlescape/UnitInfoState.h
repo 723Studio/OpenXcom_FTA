@@ -43,10 +43,12 @@ private:
 	BattlescapeState *_parent;
 
 	bool _fromInventory, _mindProbe;
+	int _statsPage;
 
 	Surface *_bg;
 	InteractiveSurface *_exit;
 	Text *_txtName;
+	Surface *_arrowDown, *_arrowUp;
 
 	Text *_txtTimeUnits, *_txtEnergy, *_txtHealth, *_txtFatalWounds, *_txtBravery, *_txtMorale, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength;
 	Text *_txtPsiStrength,  *_txtPsiSkill, *_txtMana;
