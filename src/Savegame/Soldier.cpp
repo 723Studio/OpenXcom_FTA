@@ -3251,7 +3251,7 @@ void Soldier::improvePrimaryStats(UnitStats* exp, SoldierRole role)
 
 bool Soldier::rolePromoteSoldier(SoldierRole promotionRole)
 {
-	auto req = getRules()->getRoleExpRequirments();
+	auto req = getRules()->getRoleExpRequirements();
 	bool promoted = false;
 	for (auto role : _roles)
 	{
@@ -3259,7 +3259,7 @@ bool Soldier::rolePromoteSoldier(SoldierRole promotionRole)
 		{
 			if (role->role == roleReq->role && role->role == promotionRole)
 			{
-				std::map<int, int> expMap = roleReq->requirments;
+				std::map<int, int> expMap = roleReq->requirements;
 				if (role->role >= expMap.rbegin()->first + 1)
 					break; //we dont want to promote more, than we define in rules
 				for (auto exp : expMap)
