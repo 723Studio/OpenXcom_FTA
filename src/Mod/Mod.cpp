@@ -3439,6 +3439,8 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	}
 	reader.tryRead("pilotCooperationZeroPoint", _pilotCooperationZeroPoint);
 	reader.tryRead("pilotCooperationRange", _pilotCooperationRange);
+	reader.tryRead("pilotTacticsZeroPoint", _pilotCooperationZeroPoint);
+	reader.tryRead("pilotTacticsRange", _pilotCooperationRange);
 	reader.tryRead("pilotTrackingZeroPoint", _pilotTrackingZeroPoint);
 	reader.tryRead("pilotTrackingRange", _pilotTrackingRange);
 	reader.tryRead("performanceBonusFactor", _performanceBonusFactor);

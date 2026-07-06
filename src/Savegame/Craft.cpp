@@ -1800,8 +1800,8 @@ int Craft::getPilotTrackingBonus(const std::vector<Soldier *> &pilots, const Mod
 }
 
 /**
- * Calculates the dodge bonus based on pilot skills.
- * @return cooperation bonus.
+ * Calculates the squad coordination bonus based on pilot cooperation.
+ * @return Coordination bonus.
  */
 int Craft::getPilotCoordinationBonus(const std::vector<Soldier *> &pilots, const Mod *mod) const
 {
