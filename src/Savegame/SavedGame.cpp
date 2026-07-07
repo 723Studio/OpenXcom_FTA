@@ -1690,7 +1690,6 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			}
 			else
 			{
-				// Used in vanilla save converter only
 				getAvailableResearchProjects(availableResearch, mod, 0);
 			}
 
@@ -1910,7 +1909,6 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		}
 		else
 		{
-			// Used in vanilla save converter only
 			if (research->needItem() && research->getCost() == 0)
 			{
 				continue;

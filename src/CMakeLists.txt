@@ -306,7 +306,6 @@ set ( menu_src
   Menu/DeleteGameState.cpp
   Menu/ErrorMessageState.cpp
   Menu/ListGamesState.cpp
-  Menu/ListLoadOriginalState.cpp
   Menu/ListLoadState.cpp
   Menu/ListSaveState.cpp
   Menu/LoadGameState.cpp
@@ -361,7 +360,6 @@ set ( mod_src
   Mod/RuleArcScript.cpp
   Mod/RuleBaseFacility.cpp
   Mod/RuleCommendations.cpp
-  Mod/RuleConverter.cpp
   Mod/RuleCountry.cpp
   Mod/RuleCovertOperation.cpp
   Mod/RuleCraft.cpp
@@ -435,7 +433,6 @@ set ( savegame_src
   Savegame/RankCount.cpp
   Savegame/Region.cpp
   Savegame/ResearchProject.cpp
-  Savegame/SaveConverter.cpp
   Savegame/SavedBattleGame.cpp
   Savegame/SavedGame.cpp
   Savegame/SerializationHelper.cpp

@@ -768,12 +768,6 @@
     <ClCompile Include="Ufopaedia\ArticleStateTFTDVehicle.cpp">
       <Filter>Ufopaedia</Filter>
     </ClCompile>
-    <ClCompile Include="Savegame\SaveConverter.cpp">
-      <Filter>Savegame</Filter>
-    </ClCompile>
-    <ClCompile Include="Menu\ListLoadOriginalState.cpp">
-      <Filter>Menu</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\FlcPlayer.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
@@ -956,9 +950,6 @@
     </ClCompile>
     <ClCompile Include="Basescape\SoldierDiaryPerformanceState.cpp">
       <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Mod\RuleConverter.cpp">
-      <Filter>Mod</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\SoldierSortUtil.cpp">
       <Filter>Basescape</Filter>
@@ -2207,12 +2198,6 @@
     <ClInclude Include="Ufopaedia\ArticleStateTFTDVehicle.h">
       <Filter>Ufopaedia</Filter>
     </ClInclude>
-    <ClInclude Include="Savegame\SaveConverter.h">
-      <Filter>Savegame</Filter>
-    </ClInclude>
-    <ClInclude Include="Menu\ListLoadOriginalState.h">
-      <Filter>Menu</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\FlcPlayer.h">
       <Filter>Engine</Filter>
     </ClInclude>
@@ -2404,9 +2389,6 @@
     </ClInclude>
     <ClInclude Include="Basescape\SoldierDiaryPerformanceState.h">
       <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Mod\RuleConverter.h">
-      <Filter>Mod</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\SoldierSortUtil.h">
       <Filter>Basescape</Filter>

@@ -635,7 +635,6 @@
     <ClCompile Include="Menu\ConfirmLoadState.cpp" />
     <ClCompile Include="Menu\CutsceneState.cpp" />
     <ClCompile Include="Menu\ListGamesState.cpp" />
-    <ClCompile Include="Menu\ListLoadOriginalState.cpp" />
     <ClCompile Include="Menu\ListLoadState.cpp" />
     <ClCompile Include="Menu\ListSaveState.cpp" />
     <ClCompile Include="Menu\LoadGameState.cpp" />
@@ -688,7 +687,6 @@
     <ClCompile Include="Mod\RuleStartingCondition.cpp" />
     <ClCompile Include="Mod\RuleStatBonus.cpp" />
     <ClCompile Include="Mod\RuleCommendations.cpp" />
-    <ClCompile Include="Mod\RuleConverter.cpp" />
     <ClCompile Include="Mod\ExtraSounds.cpp" />
     <ClCompile Include="Mod\ExtraSprites.cpp" />
     <ClCompile Include="Mod\ExtraStrings.cpp" />
@@ -758,7 +756,6 @@
     <ClCompile Include="Savegame\RankCount.cpp" />
     <ClCompile Include="Savegame\Region.cpp" />
     <ClCompile Include="Savegame\ResearchProject.cpp" />
-    <ClCompile Include="Savegame\SaveConverter.cpp" />
     <ClCompile Include="Savegame\SavedBattleGame.cpp" />
     <ClCompile Include="Savegame\SavedGame.cpp" />
     <ClCompile Include="Savegame\SerializationHelper.cpp" />
@@ -1183,7 +1180,6 @@
     <ClInclude Include="Menu\ConfirmLoadState.h" />
     <ClInclude Include="Menu\CutsceneState.h" />
     <ClInclude Include="Menu\ListGamesState.h" />
-    <ClInclude Include="Menu\ListLoadOriginalState.h" />
     <ClInclude Include="Menu\ListLoadState.h" />
     <ClInclude Include="Menu\ListSaveState.h" />
     <ClInclude Include="Menu\LoadGameState.h" />
@@ -1238,7 +1234,6 @@
     <ClInclude Include="Mod\RuleStartingCondition.h" />
     <ClInclude Include="Mod\RuleStatBonus.h" />
     <ClInclude Include="Mod\RuleCommendations.h" />
-    <ClInclude Include="Mod\RuleConverter.h" />
     <ClInclude Include="Mod\RuleWeaponSet.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Mod\ArticleDefinition.h" />
@@ -1312,7 +1307,6 @@
     <ClInclude Include="Savegame\RankCount.h" />
     <ClInclude Include="Savegame\Region.h" />
     <ClInclude Include="Savegame\ResearchProject.h" />
-    <ClInclude Include="Savegame\SaveConverter.h" />
     <ClInclude Include="Savegame\SavedBattleGame.h" />
     <ClInclude Include="Savegame\SavedGame.h" />
     <ClInclude Include="Savegame\SerializationHelper.h" />

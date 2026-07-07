@@ -92,7 +92,6 @@ class RuleCommendations;
 class StatString;
 class RuleInterface;
 class RuleGlobe;
-class RuleConverter;
 class SoundDefinition;
 class MapScript;
 class BattleScript;
@@ -230,7 +229,6 @@ private:
 	std::map<std::string, RuleMusic *> _musicDefs;
 
 	RuleGlobe *_globe;
-	RuleConverter *_converter;
 	ModScriptGlobal *_scriptGlobal;
 
 	int _maxViewDistance, _maxDarknessToSeeUnits;
@@ -1187,8 +1185,6 @@ public:
 	RuleInterface *getInterface(const std::string &id, bool error = true) const;
 	/// Gets the ruleset for the globe.
 	RuleGlobe *getGlobe() const;
-	/// Gets the ruleset for the converter.
-	RuleConverter *getConverter() const;
 	/// Gets the list of selective files for insertion into our cat files.
 	const std::map<std::string, SoundDefinition *> *getSoundDefinitions() const;
 	const std::vector<MapScript*> *getMapScript(const std::string& id) const;

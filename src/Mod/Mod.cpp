@@ -113,7 +113,6 @@
 #include "StatString.h"
 #include "RuleGlobe.h"
 #include "RuleVideo.h"
-#include "RuleConverter.h"
 #include "RuleSoldierTransformation.h"
 #include "RuleSoldierBonus.h"
 
@@ -582,7 +581,6 @@ Mod::Mod() :
 		_damageTypes[dmg->ResistType] = dmg;
 	}
 
-	_converter = new RuleConverter();
 	_statAdjustment.resize(MaxDifficultyLevels);
 	_statAdjustment[0].aimMultiplier = 0.5;
 	_statAdjustment[0].armorMultiplier = 0.5;
@@ -616,7 +614,6 @@ Mod::~Mod()
 	delete _muteMusic;
 	delete _muteSound;
 	delete _globe;
-	delete _converter;
 	delete _scriptGlobal;
 	for (auto& pair : _fonts)
 	{
@@ -3649,10 +3646,6 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	{
 		_globe->load(reader["globe"], this);
 	}
-	if (reader["converter"])
-	{
-		_converter->load(reader["converter"]);
-	}
 	if (const auto& constants = reader["constants"])
 	{
 		//backward compatibility version
@@ -5394,15 +5387,6 @@ RuleInterface *Mod::getInterface(const std::string &id, bool error) const
 RuleGlobe *Mod::getGlobe() const
 {
 	return _globe;
-}
-
-/**
-* Gets the rules for the Save Converter.
-* @return Pointer to converter rules.
-*/
-RuleConverter *Mod::getConverter() const
-{
-	return _converter;
 }
 
 const std::map<std::string, SoundDefinition *> *Mod::getSoundDefinitions() const
