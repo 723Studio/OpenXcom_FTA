@@ -85,6 +85,7 @@
 #include "RuleInterface.h"
 #include "RuleDiplomacyFaction.h"
 #include "RuleDiplomacyFactionEvent.h"
+#include "RuleDiplomacyAction.h"
 #include "RuleCovertOperation.h"
 #include "RuleObject.h"
 #include "RuleArcScript.h"
@@ -822,6 +823,10 @@ Mod::~Mod()
 	}
 
 	for (auto& pair : _diplomacyFactionEvents)
+	{
+		delete pair.second;
+	}
+	for (auto& pair : _diplomacyActions)
 	{
 		delete pair.second;
 	}
@@ -2365,6 +2370,7 @@ void Mod::loadAll()
 	afterLoadHelper("countries", this, _countries, &RuleCountry::afterLoad);
 	afterLoadHelper("crafts", this, _crafts, &RuleCraft::afterLoad);
 	afterLoadHelper("events", this, _events, &RuleEvent::afterLoad);
+	afterLoadHelper("diplomacyActions", this, _diplomacyActions, &RuleDiplomacyAction::afterLoad);
 
 	for (auto& a : _armors)
 	{
@@ -3118,6 +3124,14 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	for (const auto& ruleReader : iterateRules("diplomacyFactionEvents", "type"))
 	{
 		RuleDiplomacyFactionEvent* rule = loadRule(ruleReader, &_diplomacyFactionEvents, &_diplomacyFactionEventIndex, "type");
+		if (rule != 0)
+		{
+			rule->load(ruleReader);
+		}
+	}
+	for (const auto& ruleReader : iterateRules("diplomacyActions", "type"))
+	{
+		RuleDiplomacyAction* rule = loadRule(ruleReader, &_diplomacyActions, &_diplomacyActionIndex, "type");
 		if (rule != 0)
 		{
 			rule->load(ruleReader);
@@ -5445,6 +5459,11 @@ RuleDiplomacyFactionEvent* Mod::getDiplomacyFactionEvent(const std::string& name
 	return getRule(name, "Diplomacy Faction Event", _diplomacyFactionEvents, error);
 }
 
+RuleDiplomacyAction* Mod::getDiplomacyAction(const std::string& type, bool error) const
+{
+	return getRule(type, "Diplomacy Action", _diplomacyActions, error);
+}
+
 RuleObject* Mod::getObject(const std::string& type, bool error) const
 {
 	return getRule(type, "Rule Object", _objects, error);
@@ -5458,6 +5477,11 @@ const std::vector<std::string>* Mod::getDiplomacyFactionList() const
 const std::vector<std::string>* Mod::getDiplomacyFactionEventList() const
 {
 	return &_diplomacyFactionEventIndex;
+}
+
+const std::vector<std::string>* Mod::getDiplomacyActionList() const
+{
+	return &_diplomacyActionIndex;
 }
 
 RuleCovertOperation* Mod::getCovertOperation(const std::string& name, bool error) const

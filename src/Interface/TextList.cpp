@@ -44,7 +44,7 @@ TextList::TextList(int width, int height, int x, int y) : InteractiveSurface(wid
 	_dot(false), _selectable(false), _condensed(false), _contrast(false), _wrap(false), _flooding(false), _ignoreSeparators(false),
 	_bg(0), _selector(0), _margin(0), _scrolling(true), _arrowPos(-1), _scrollPos(3), _arrowType(ARROW_VERTICAL),
 	_leftClick(0), _leftPress(0), _leftRelease(0), _rightClick(0), _rightPress(0), _rightRelease(0),
-	_arrowsLeftEdge(0), _arrowsRightEdge(0), _noScrollLeftEdge(0), _noScrollRightEdge(0), _comboBox(0)
+	_arrowsLeftEdge(0), _arrowsRightEdge(0), _noScrollLeftEdge(0), _noScrollRightEdge(0), _comboBox(0), _selectorOffsetBlock(-10)
 {
 	_up = new ArrowButton(ARROW_BIG_UP, 13, 14, getX() + getWidth() + _scrollPos, getY());
 	_up->setVisible(false);
@@ -1292,7 +1292,7 @@ void TextList::mouseOver(Action *action, State *state)
 			}
 			else
 			{
-				_selector->offsetBlock(-10);
+				_selector->offsetBlock(_selectorOffsetBlock);
 			}
 			_selector->setVisible(true);
 		}
@@ -1303,6 +1303,11 @@ void TextList::mouseOver(Action *action, State *state)
 	}
 
 	InteractiveSurface::mouseOver(action, state);
+}
+
+void TextList::setSelectorOffsetBlock(int off)
+{
+	_selectorOffsetBlock = off;
 }
 
 /**

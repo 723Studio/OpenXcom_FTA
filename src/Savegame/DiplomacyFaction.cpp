@@ -74,6 +74,7 @@ void DiplomacyFaction::load(const YAML::YamlNodeReader &reader, SavedGame *save)
 	reader.tryRead("discovered", _discovered);
 	reader.tryRead("thisMonthDiscovered", _thisMonthDiscovered);
 	reader.tryRead("treaties", _treaties);
+	reader.tryRead("actionCooldowns", _actionCooldowns);
 	reader.tryRead("unlockedResearches", _unlockedResearches);
 	_items->load(reader["items"], _mod);
 	for (const auto& researchReader : reader["research"].children())
@@ -125,6 +126,10 @@ void DiplomacyFaction::save(YAML::YamlNodeWriter writer) const
 		writer.write("thisMonthDiscovered", _thisMonthDiscovered);
 	}
 	writer.write("treaties", _treaties);
+	if (!_actionCooldowns.empty())
+	{
+		writer.write("actionCooldowns", _actionCooldowns);
+	}
 	writer.write("unlockedResearches", _unlockedResearches);
 	_items->save(writer["items"]);
 	_staffPool->save(writer["soldierPool"], _mod);
@@ -136,6 +141,112 @@ void DiplomacyFaction::save(YAML::YamlNodeWriter writer) const
 		}
 	);
 	writer.write("dailyRepScore", _dailyRepScore);
+}
+
+bool DiplomacyFaction::hasTreaty(const std::string& treatyId) const
+{
+	return std::find(_treaties.begin(), _treaties.end(), treatyId) != _treaties.end();
+}
+
+namespace
+{
+	static const char* treatyToId(TreatyName treaty)
+	{
+		switch (treaty)
+		{
+		case HELP_TREATY:
+			return "HELP_TREATY";
+		case RESEARCH_TREATY:
+			return "RESEARCH_TREATY";
+		default:
+			return "";
+		}
+	}
+}
+
+bool DiplomacyFaction::hasTreaty(TreatyName treaty) const
+{
+	const char* id = treatyToId(treaty);
+	if (!id || !*id)
+	{
+		return false;
+	}
+	return hasTreaty(std::string{id});
+}
+
+void DiplomacyFaction::setTreaty(const std::string& treatyId, bool enabled)
+{
+	auto it = std::find(_treaties.begin(), _treaties.end(), treatyId);
+	if (enabled)
+	{
+		if (it == _treaties.end())
+		{
+			_treaties.push_back(treatyId);
+		}
+	}
+	else
+	{
+		if (it != _treaties.end())
+		{
+			_treaties.erase(it);
+		}
+	}
+}
+
+void DiplomacyFaction::setTreaty(TreatyName treaty, bool enabled)
+{
+	const char* id = treatyToId(treaty);
+	if (!id || !*id)
+	{
+		return;
+	}
+	setTreaty(std::string{id}, enabled);
+}
+
+int DiplomacyFaction::getActionCooldown(const std::string& actionType) const
+{
+	auto it = _actionCooldowns.find(actionType);
+	if (it == _actionCooldowns.end())
+	{
+		return 0;
+	}
+	return std::max(0, it->second);
+}
+
+bool DiplomacyFaction::isActionOnCooldown(const std::string& actionType) const
+{
+	return getActionCooldown(actionType) > 0;
+}
+
+void DiplomacyFaction::setActionCooldown(const std::string& actionType, int minutes)
+{
+	if (minutes <= 0)
+	{
+		_actionCooldowns.erase(actionType);
+		return;
+	}
+	_actionCooldowns[actionType] = minutes;
+}
+
+void DiplomacyFaction::tickActionCooldowns(int minutes)
+{
+	if (minutes <= 0 || _actionCooldowns.empty())
+	{
+		return;
+	}
+
+	for (auto it = _actionCooldowns.begin(); it != _actionCooldowns.end(); )
+	{
+		it->second -= minutes;
+		if (it->second <= 0)
+		{
+			it = _actionCooldowns.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
 }
 
 /**

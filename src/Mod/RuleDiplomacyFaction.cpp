@@ -23,8 +23,54 @@
 namespace OpenXcom
 {
 
+namespace
+{
+	static void readGreetings(const YAML::YamlNodeReader& node, std::map<int, std::vector<std::string>>& inout)
+	{
+		if (!node || !node.isMap())
+		{
+			return;
+		}
+
+		for (const auto& entry : node.children())
+		{
+			int repLevel = 0;
+			if (!entry.tryReadKey(repLevel))
+			{
+				continue;
+			}
+
+			std::vector<std::string> values;
+			if (entry.isSeq())
+			{
+				for (const auto& v : entry.children())
+				{
+					std::string s;
+					if (v.tryReadVal(s) && !s.empty())
+					{
+						values.push_back(std::move(s));
+					}
+				}
+			}
+			else
+			{
+				std::string s;
+				if (entry.tryReadVal(s) && !s.empty())
+				{
+					values.push_back(std::move(s));
+				}
+			}
+
+			if (!values.empty())
+			{
+				inout[repLevel] = std::move(values);
+			}
+		}
+	}
+}
+
 RuleDiplomacyFaction::RuleDiplomacyFaction(const std::string &name) :
-	_name(name), _description("NONE"), _background("BACK13.SCR"), _cardBackground("BACK13.SCR"),
+	_name(name), _description("NONE"), _background("BACK13.SCR"), _cardBackground("BACK13.SCR"), _diplomacyBackground("BACK13.SCR"),
 	_genMissionFrequency(0), _helpTreatyGap(0),
 	_sellPriceFactor(0), _buyPriceFactor(0), _repPriceFactor(0), _powerHungry(10000), _scienceBaseCost(2000),
 	_startingReputation(0), _startingFunds(0), _startingPower(0)
@@ -42,6 +88,11 @@ void RuleDiplomacyFaction::load(const YAML::YamlNodeReader& node)
 	reader.tryRead("description", _description);
 	reader.tryRead("background", _background);
 	reader.tryRead("cardBackground", _cardBackground);
+	reader.tryRead("diplomacyBackground", _diplomacyBackground);
+	if (const YAML::YamlNodeReader& greetings = reader["greetings"])
+	{
+		readGreetings(greetings, _greetings);
+	}
 	reader.tryRead("discoverResearch", _discoverResearch);
 	reader.tryRead("discoverEvent", _discoverEvent);
 	reader.tryRead("helpTreatyMissions", _helpTreatyMissions);

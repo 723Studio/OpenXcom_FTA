@@ -549,6 +549,7 @@
     <ClCompile Include="Engine\Unicode.cpp" />
     <ClCompile Include="Engine\Yaml.cpp" />
     <ClCompile Include="Engine\Zoom.cpp" />
+    <ClCompile Include="FTA\DiplomacyDialogueState.cpp" />
     <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp" />
     <ClCompile Include="FTA\DiplomacyPurchaseState.cpp" />
     <ClCompile Include="FTA\DiplomacySellState.cpp" />
@@ -678,6 +679,7 @@
     <ClCompile Include="Mod\RuleEventScript.cpp" />
     <ClCompile Include="Mod\RuleIntelProject.cpp" />
     <ClCompile Include="Mod\RuleItemCategory.cpp" />
+    <ClCompile Include="Mod\RuleDiplomacyAction.cpp" />
     <ClCompile Include="Mod\RuleManufactureShortcut.cpp" />
     <ClCompile Include="Mod\RuleObject.cpp" />
     <ClCompile Include="Mod\RulePrisoner.cpp" />
@@ -1094,6 +1096,7 @@
     <ClInclude Include="Engine\Zoom.h" />
     <ClInclude Include="fallthrough.h" />
     <ClInclude Include="fmath.h" />
+    <ClInclude Include="FTA\DiplomacyDialogueState.h" />
     <ClInclude Include="FTA\DiplomacyHirePersonnelState.h" />
     <ClInclude Include="FTA\DiplomacyPurchaseState.h" />
     <ClInclude Include="FTA\DiplomacySellState.h" />
@@ -1218,6 +1221,7 @@
     <ClInclude Include="Mod\RuleBaseFacilityFunctions.h" />
     <ClInclude Include="Mod\RuleCovertOperation.h" />
     <ClInclude Include="Mod\RuleDamageType.h" />
+    <ClInclude Include="Mod\RuleDiplomacyAction.h" />
     <ClInclude Include="Mod\RuleDiplomacyFaction.h" />
     <ClInclude Include="Mod\RuleDiplomacyFactionEvent.h" />
     <ClInclude Include="Mod\RuleEnviroEffects.h" />

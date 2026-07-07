@@ -18,6 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
+#include <map>
+#include <cstdint>
 #include "../Engine/Yaml.h"
 
 namespace OpenXcom
@@ -63,6 +65,7 @@ private:
 	std::vector<int> _dailyRepScore;
 	bool _discovered, _thisMonthDiscovered, _repLvlChanged;
 	std::vector<std::string> _treaties;
+	std::map<std::string, int> _actionCooldowns;
 	std::string _reputationName;
 	std::vector<std::string> _commandsToProcess, _eventsToProcess;
 	std::vector<RuleMissionScript*> _availableMissionScripts;
@@ -148,6 +151,18 @@ public:
 	void setThisMonthRepLvlChanged(bool status) { _repLvlChanged = status; }
 	/// Get mission script commands that pass all checks to generate alien mission for that faction.
 	const std::vector<RuleMissionScript*>& getAvalibleMissionScripts() const { return _availableMissionScripts; }
+
+	/// Treaty helpers (stored as string IDs in saves).
+	bool hasTreaty(const std::string& treatyId) const;
+	bool hasTreaty(TreatyName treaty) const;
+	void setTreaty(const std::string& treatyId, bool enabled);
+	void setTreaty(TreatyName treaty, bool enabled);
+
+	/// Diplomacy dialogue action cooldowns (in minutes).
+	int getActionCooldown(const std::string& actionType) const;
+	bool isActionOnCooldown(const std::string& actionType) const;
+	void setActionCooldown(const std::string& actionType, int minutes);
+	void tickActionCooldowns(int minutes);
 
 	/// Public manipulators to factional stores.
 	ItemContainer* getItems() const { return _items; }

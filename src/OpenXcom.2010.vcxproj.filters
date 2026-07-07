@@ -1127,6 +1127,9 @@
     <ClCompile Include="Mod\RuleDiplomacyFaction.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
+    <ClCompile Include="Mod\RuleDiplomacyAction.cpp">
+      <Filter>Mod</Filter>
+    </ClCompile>
     <ClCompile Include="Savegame\DiplomacyFaction.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
@@ -1396,6 +1399,9 @@
     </ClCompile>
     <ClCompile Include="Basescape\ItemLocationsState.cpp">
       <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="FTA\DiplomacyDialogueState.cpp">
+      <Filter>FTA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1806,9 +1812,6 @@
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Engine\OXCCrypto.h">
-      <Filter>Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\tiny_aes.h">
       <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Battlescape\ActionMenuState.h">
@@ -2585,6 +2588,9 @@
     <ClInclude Include="Mod\RuleDiplomacyFaction.h">
       <Filter>Mod</Filter>
     </ClInclude>
+    <ClInclude Include="Mod\RuleDiplomacyAction.h">
+      <Filter>Mod</Filter>
+    </ClInclude>
     <ClInclude Include="Savegame\DiplomacyFaction.h">
       <Filter>Savegame</Filter>
     </ClInclude>
@@ -3049,6 +3055,9 @@
     </ClInclude>
     <ClInclude Include="Engine\NullableValue.h">
       <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="FTA\DiplomacyDialogueState.h">
+      <Filter>FTA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
