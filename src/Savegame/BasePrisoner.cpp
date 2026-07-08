@@ -24,7 +24,7 @@
 #include "../Mod/RulePrisoner.h"
 #include "../Engine/Game.h"
 #include "../Engine/RNG.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Geoscape/PrisonReportState.h"
 #include "../Engine/Language.h"
 #include <sstream>
@@ -181,7 +181,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 		//process different stats
 		double speedFactor = (double)engine.getMod()->getPrisonerActionsSpeedFactor() / 100;
 		int trainingFactor = mod.getIntelTrainingFactor();
-		double loyaltyFactor = (double)engine.getMasterMind()->getLoyaltyPerformanceBonus() / 100;
+		double loyaltyFactor = (double)engine.getFtaGameServices()->getLoyaltyPerformanceBonus() / 100;
 
 		if (prisonerState == PRISONER_STATE_INTERROGATION)
 		{
@@ -274,7 +274,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 				{
 					std::vector<const RuleResearch*> possibilities;
 
-					engine.getMasterMind()->helpResearchDiscovery(rules.getUnlockedResearches(), possibilities, _base, researchName, bonusResearchName);
+					engine.getFtaGameServices()->helpResearchDiscovery(rules.getUnlockedResearches(), possibilities, _base, researchName, bonusResearchName);
 
 					if (rules.isDiesAfterInterrogation()) //prisoner dies
 					{
@@ -359,7 +359,7 @@ bool BasePrisoner::think(Game &engine, std::vector<Soldier*>& promotedSoldiers)
 					setHealth(getHealth() - RNG::generate(0, maxDmg));
 					setMorale(getMorale() - moraleDmg);
 					setCooperation(getCooperation() - rules.getCooperation());
-					engine.getMasterMind()->updateLoyalty(loyaty);
+					engine.getFtaGameServices()->updateLoyalty(loyaty);
 
 					if (_spawnedTortureEvent && !rules.isMultipleEventsPossible())
 					{

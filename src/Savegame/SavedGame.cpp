@@ -33,7 +33,7 @@
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/ScriptBind.h"
 #include "../Engine/Game.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "SavedBattleGame.h"
 #include "SerializationHelper.h"
 #include "GameTime.h"
@@ -1646,7 +1646,7 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			if (score)
 			{
 				addResearchScore(currentQueueItem->getPoints());
-				_game->getMasterMind()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
+				_game->getFtaGameServices()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
 			}
 			// process "disables"
 			for (const auto* dis : currentQueueItem->getDisabled())

@@ -39,7 +39,6 @@
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include "../Menu/ErrorMessageState.h"
-#include "SellState.h"
 #include "../Mod/RuleInterface.h"
 #include "TechTreeViewerState.h"
 #include "TransferBaseState.h"
@@ -379,19 +378,6 @@ void ManageAlienContainmentState::dealWithSelectedAliens(bool sell)
 		}
 	}
 	_game->popState();
-
-	if (Options::storageLimitsEnforced && _base->storesOverfull())
-	{
-		if (_origin == OPT_BATTLESCAPE)
-		{
-			// not used anymore, because multiple prison types could spam this screen; it will pop up in Geoscape anyway
-		}
-		else
-		{
-			_game->pushState(new SellState(_base, 0, _origin));
-			_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("manageContainment")->getElement("errorMessage")->color, "BACK13.SCR", _game->getMod()->getInterface("manageContainment")->getElement("errorPalette")->color));
-		}
- 	}
 }
 
 /**

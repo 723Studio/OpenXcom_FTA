@@ -36,7 +36,7 @@ class RuleDiplomacyFaction;
 class Game;
 class SavedGame;
 class Mod;
-class MasterMind;
+class FtaGameServices;
 class GeoscapeEvent;
 class RuleEvent;
 class RuleMissionScript;

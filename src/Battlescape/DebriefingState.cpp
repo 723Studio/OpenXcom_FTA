@@ -72,16 +72,15 @@
 #include "../Basescape/ManageAlienContainmentState.h"
 #include "../Basescape/PrisonManagementState.h"
 #include "../Basescape/TransferBaseState.h"
-#include "../FTA/DiplomacyStartState.h"
+#include "../Basescape/DiplomacyStartState.h"
 #include "../Engine/Screen.h"
-#include "../Basescape/SellState.h"
 #include "../Menu/SaveGameState.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleResearch.h"
 #include "../Savegame/MissionStatistics.h"
 #include "../Savegame/BattleUnitStatistics.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../fallthrough.h"
 #include "../Mod/AlienRace.h"
@@ -640,7 +639,7 @@ void DebriefingState::init()
 	}
 
 	// update FtA Loyalty
-	int loyalty = _game->getMasterMind()->updateLoyalty(total, XCOM_BATTLESCAPE);
+	int loyalty = _game->getFtaGameServices()->updateLoyalty(total, XCOM_BATTLESCAPE);
 	if (_game->getMod()->isFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
 	{
 		_txtLoyalty->setText(tr("STR_LOYALTY_UPDATE").arg(loyalty));
@@ -1032,14 +1031,7 @@ void DebriefingState::btnSellClick(Action *)
 {
 	if (!_destroyBase)
 	{
-		if (_game->getMod()->isFTAGame())
-		{
-			_game->pushState(new DiplomacyStartState(_base, false));
-		}
-		else
-		{
-			_game->pushState(new SellState(_base, this, OPT_BATTLESCAPE));
-		}
+		_game->pushState(new DiplomacyStartState(_base, false));
 	}
 }
 
@@ -1175,12 +1167,6 @@ void DebriefingState::btnOkClick(Action *)
 					}
 				}
 
-			}
-
-			if (Options::storageLimitsEnforced && _base->storesOverfull())
-			{
-				_game->pushState(new SellState(_base, 0, OPT_BATTLESCAPE));
-				_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
 			}
 		}
 	}

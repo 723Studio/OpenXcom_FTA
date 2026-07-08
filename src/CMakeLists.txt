@@ -6,7 +6,6 @@ set ( root_src
 )
 set ( basescape_src
   Basescape/AgentsState.cpp
-  Basescape/BaseInfoState.cpp
   Basescape/BaseInfoStateFtA.cpp
   Basescape/BasescapeState.cpp
   Basescape/BaseView.cpp
@@ -30,6 +29,10 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/DisposeState.cpp
+  Basescape/DiplomacyHirePersonnelState.cpp
+  Basescape/DiplomacyPurchaseState.cpp
+  Basescape/DiplomacySellState.cpp
+  Basescape/DiplomacyStartState.cpp
   Basescape/EngineersState.cpp
   Basescape/GlobalAlienContainmentState.cpp
   Basescape/GlobalManufactureState.cpp
@@ -41,7 +44,6 @@ set ( basescape_src
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureAllocateEngineersState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
-  Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureInfoStateFtA.cpp
   Basescape/ManufactureProductDetailsState.cpp
   Basescape/ManufactureStartState.cpp
@@ -58,16 +60,13 @@ set ( basescape_src
   Basescape/PrisonerAllocateAgentsState.cpp
   Basescape/PrisonerInfoState.cpp
   Basescape/PrisonManagementState.cpp
-  Basescape/PurchaseState.cpp
   Basescape/ResearchAllocateScientistsState.cpp
-  Basescape/ResearchInfoState.cpp
   Basescape/ResearchInfoStateFtA.cpp
   Basescape/ResearchProjectDetailsState.cpp
   Basescape/ResearchState.cpp
   Basescape/SackSoldierState.cpp
   Basescape/ScientistsState.cpp
   Basescape/SelectStartFacilityState.cpp
-  Basescape/SellState.cpp
   Basescape/SoldierArmorState.cpp
   Basescape/SoldierAvatarState.cpp
   Basescape/SoldierExperienceState.cpp
@@ -76,7 +75,6 @@ set ( basescape_src
   Basescape/SoldierDiaryMissionState.cpp
   Basescape/SoldierDiaryOverviewState.cpp
   Basescape/SoldierDiaryPerformanceState.cpp
-  Basescape/SoldierInfoState.cpp
   Basescape/SoldierInfoStateFtA.cpp
   Basescape/SoldierMemorialState.cpp
   Basescape/SoldierRankState.cpp
@@ -176,6 +174,7 @@ set ( engine_src
   Engine/FileMap.cpp
   Engine/FlcPlayer.cpp
   Engine/Font.cpp
+  Engine/FtaGameServices.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
   Engine/InteractiveSurface.cpp
@@ -213,14 +212,6 @@ set ( engine_src
   Engine/Zoom.cpp
 )
 
-set ( fta_src
-  FTA/DiplomacyHirePersonnelState.cpp
-  FTA/DiplomacyPurchaseState.cpp
-  FTA/DiplomacySellState.cpp
-  FTA/DiplomacyStartState.cpp
-  FTA/MasterMind.cpp
-)
-
 set ( geoscape_src
   Geoscape/AlienBaseState.cpp
   Geoscape/AllocatePsiTrainingState.cpp
@@ -255,12 +246,9 @@ set ( geoscape_src
   Geoscape/ItemsArrivingState.cpp
   Geoscape/LowFuelState.cpp
   Geoscape/MissionDetectedState.cpp
-  Geoscape/MonthlyReportState.cpp
   Geoscape/MultipleTargetsState.cpp
-  Geoscape/NewPossibleCraftState.cpp
   Geoscape/NewPossibleFacilityState.cpp
   Geoscape/NewPossibleManufactureState.cpp
-  Geoscape/NewPossiblePurchaseState.cpp
   Geoscape/NewPossibleResearchState.cpp
   Geoscape/PrisonReportState.cpp
   Geoscape/ProductionCompleteState.cpp
@@ -501,7 +489,6 @@ set ( cxx_src
     ${basescape_src}
     ${battlescape_src}
     ${engine_src}
-    ${fta_src}
     ${geoscape_src}
     ${interface_src}
     ${menu_src}
@@ -765,7 +752,6 @@ if ( MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode" )
   source_group ( "Basescape" FILES ${basescape_src} )
   source_group ( "Battlescape" FILES ${battlescape_src} )
   source_group ( "Engine" FILES ${engine_src} )
-  source_group ( "FTA" FILES ${fta_src} )
   source_group ( "Geoscape" FILES ${geoscape_src} )
   source_group ( "Interface" FILES ${interface_src} )
   source_group ( "Menu" FILES ${menu_src} )

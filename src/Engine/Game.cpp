@@ -33,7 +33,7 @@
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
-#include "../FTA/MasterMind.h"
+#include "FtaGameServices.h"
 #include "Action.h"
 #include "Exception.h"
 #include "Options.h"
@@ -107,7 +107,7 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 
 	_timeOfLastFrame = 0;
 
-	_mind = new MasterMind(this);
+	_mind = new FtaGameServices(this);
 }
 
 /**

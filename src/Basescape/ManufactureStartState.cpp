@@ -32,7 +32,6 @@
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
-#include "ManufactureInfoState.h"
 #include "../Basescape/ManufactureInfoStateFtA.h"
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleInterface.h"
@@ -270,14 +269,7 @@ void ManufactureStartState::btnStartClick(Action *)
 	}
 	else
 	{
-		if (_ftaUi)
-		{
-			_game->pushState(new ManufactureInfoStateFtA(_base, _item));
-		}
-		else
-		{
-			_game->pushState(new ManufactureInfoState(_base, _item));
-		}
+		_game->pushState(new ManufactureInfoStateFtA(_base, _item));
 	}
 }
 

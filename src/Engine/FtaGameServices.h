@@ -34,14 +34,14 @@ class Base;
 class DiplomacyFaction;
 class RuleResearch;
 
-class MasterMind
+class FtaGameServices
 {
 private:
 	Game* _game;
 
 public:
-	MasterMind(Game * engine);
-	~MasterMind();
+	FtaGameServices(Game * engine);
+	~FtaGameServices();
 
 	/// Method that help create the new game in FtA way
 	void newGameHelper(int diff, GeoscapeState* gs);

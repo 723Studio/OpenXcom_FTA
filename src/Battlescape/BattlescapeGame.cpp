@@ -59,7 +59,7 @@
 #include "../Mod/Armor.h"
 #include "../Engine/Options.h"
 #include "../Engine/RNG.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "InfoboxState.h"
 #include "InfoboxOKState.h"
 #include "CustomBattleMessageState.h"
@@ -874,7 +874,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 			if (victim->getHealth() <= 0)
 			{
 				int moraleLossModifierWhenKilled = _save->getMoraleLossModifierWhenKilled(victim);
-				int loyaltyFactor = (this->getSave()->getGeoscapeSave()->getGame()->getMasterMind()->getLoyaltyPerformanceBonus() - 100) / 2;
+				int loyaltyFactor = (this->getSave()->getGeoscapeSave()->getGame()->getFtaGameServices()->getLoyaltyPerformanceBonus() - 100) / 2;
 				if (loyaltyFactor < -10)
 				{
 					loyaltyFactor = -10; // should not be way too much

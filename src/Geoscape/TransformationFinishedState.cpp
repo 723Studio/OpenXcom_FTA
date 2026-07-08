@@ -30,7 +30,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Basescape/SoldiersState.h"
 #include "../Engine/Options.h"
-#include "../Basescape/SoldierInfoState.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 
 namespace OpenXcom
 {
@@ -108,14 +108,14 @@ void TransformationFinishedState::btnOpenClick(Action*)
 }
 
 /**
- * Displays SoldierInfoState of selected soldier.
+ * Displays SoldierInfoStateFtA of selected soldier.
  * @param action Pointer to an action.
  */
 void TransformationFinishedState::onSelectSoldier(Action* action)
 {
 	/*auto selSol = _soldiersList.at(_lstPossibilities->getSelectedRow()).first;
 	int id = selSol->getId() - 1;
-	_game->pushState(new SoldierInfoState(_base, id));*/
+	_game->pushState(new SoldierInfoStateFtA(_base, id));*/
 }
 
 }

@@ -27,7 +27,6 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/CovertOperation.h"
-#include "SoldierInfoState.h"
 #include <cmath>
 #include <unordered_set>
 
@@ -132,7 +131,7 @@ namespace OpenXcom
 		{
 			return;
 		}
-		return; // _game->pushState(new SoldierInfoState(_operation->getBase(), _lstSoldiers->getSelectedRow())); #FINNIKTODO
+		return; // #FINNIKTODO: open agent details when the operation info screen supports it.
 	}
 
 	void CovertOperationInfoState::fillSoldiersList()

@@ -41,7 +41,7 @@
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Battlescape/CommendationState.h"
 
 namespace OpenXcom
@@ -443,7 +443,7 @@ std::string AltMonthlyReportState::calculateUpdates()
 			{
 				continue;
 			}
-			bool changed = _game->getMasterMind()->updateReputationLvl(*k, false);
+			bool changed = _game->getFtaGameServices()->updateReputationLvl(*k, false);
 			bool prevChanged = (*k)->isThisMonthRepLvlChanged();
 
 			if ((*k)->isThisMonthDiscovered())
@@ -506,7 +506,7 @@ std::string AltMonthlyReportState::calculateUpdates()
 					stuffMessage = tr("STR_STUFF_NO_MONEY20");
 				}
 				ss << stuffMessage;
-				_game->getMasterMind()->updateLoyalty(-discontent, XCOM_GEOSCAPE);
+				_game->getFtaGameServices()->updateLoyalty(-discontent, XCOM_GEOSCAPE);
 			}
 		}
 		//update loyalty data after it was loaded

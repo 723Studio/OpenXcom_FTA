@@ -30,7 +30,7 @@ class Cursor;
 class Language;
 class SavedGame;
 class Mod;
-class MasterMind;
+class FtaGameServices;
 class ModInfo;
 class FpsCounter;
 class Action;
@@ -52,7 +52,7 @@ private:
 	std::list<State*> _states, _deleted;
 	SavedGame *_save;
 	Mod *_mod;
-	MasterMind *_mind;
+	FtaGameServices *_mind;
 	bool _quit, _init, _update;
 	bool _modifiedContentLoaded = false;
 	FpsCounter *_fpsCounter;
@@ -94,8 +94,8 @@ public:
 	SavedGame *getSavedGame() const { return _save; }
 	/// Sets a new saved game for the game.
 	void setSavedGame(SavedGame *save);
-	/// Gets MasterMind for this game.
-	MasterMind* getMasterMind() const { return _mind; }
+	/// Gets FtaGameServices for this game.
+	FtaGameServices* getFtaGameServices() const { return _mind; }
 	/// Gets the currently loaded mod.
 	Mod *getMod() const { return _mod; }
 	/// Loads the mods specified in the game options.

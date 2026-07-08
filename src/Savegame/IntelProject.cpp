@@ -19,7 +19,7 @@
 #include "IntelProject.h"
 #include "../Mod/RuleIntelProject.h"
 #include "../Engine/Game.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
@@ -181,14 +181,14 @@ bool IntelProject::roll(Game *game, const Globe& globe, int progress, bool &fina
 					sd << s << " ";
 				}
 				Log(LOG_INFO) << " - processing eventScript: " << sd.str();
-				game->getMasterMind()->eventScriptProcessor(pickedStage->getEventScripts(), OTHER_SCRIPT);
+				game->getFtaGameServices()->eventScriptProcessor(pickedStage->getEventScripts(), OTHER_SCRIPT);
 			}
 
 			//and create alien mission if any
 			if (!pickedStage->getSpawnedMission().empty())
 			{
 				Log(LOG_INFO) << " - spawning the mission: " << pickedStage->getSpawnedMission();
-				game->getMasterMind()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, _base);
+				game->getFtaGameServices()->spawnAlienMission(pickedStage->getSpawnedMission(), globe, _base);
 			}
 
 			//update data if the project reaches its final stage and counted as completed.

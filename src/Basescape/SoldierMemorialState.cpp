@@ -32,7 +32,6 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/SoldierDeath.h"
 #include "../Savegame/GameTime.h"
-#include "SoldierInfoState.h"
 #include "SoldierInfoStateFtA.h"
 #include "../Menu/StatisticsState.h"
 
@@ -190,14 +189,7 @@ void SoldierMemorialState::btnStatisticsClick(Action *)
  */
 void SoldierMemorialState::lstSoldiersClick(Action *)
 {
-	if (_game->getMod()->isFTAGame())
-	{
-		_game->pushState(new SoldierInfoStateFtA(0, _indices[_lstSoldiers->getSelectedRow()]));
-	}
-	else
-	{
-		_game->pushState(new SoldierInfoState(0, _indices[_lstSoldiers->getSelectedRow()]));
-	}
+	_game->pushState(new SoldierInfoStateFtA(0, _indices[_lstSoldiers->getSelectedRow()]));
 }
 
 /**

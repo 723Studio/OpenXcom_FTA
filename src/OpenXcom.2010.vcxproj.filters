@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -11,16 +11,10 @@
     <ClCompile Include="Basescape\PlaceFacilityState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\PurchaseState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
     <ClCompile Include="Basescape\ResearchState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\SackSoldierState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Basescape\SellState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\SoldierInfoStateFtA.cpp">
@@ -30,9 +24,6 @@
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\StoresState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Basescape\BaseInfoState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\BasescapeState.cpp">
@@ -216,9 +207,6 @@
       <Filter>Geoscape</Filter>
     </ClCompile>
     <ClCompile Include="Geoscape\LowFuelState.cpp">
-      <Filter>Geoscape</Filter>
-    </ClCompile>
-    <ClCompile Include="Geoscape\MonthlyReportState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
     <ClCompile Include="Geoscape\MultipleTargetsState.cpp">
@@ -510,9 +498,6 @@
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\NewManufactureListState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Basescape\ResearchInfoState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\ManufactureState.cpp">
@@ -1011,12 +996,6 @@
     <ClCompile Include="Geoscape\CraftNotEnoughPilotsState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
-    <ClCompile Include="Geoscape\NewPossiblePurchaseState.cpp">
-      <Filter>Geoscape</Filter>
-    </ClCompile>
-    <ClCompile Include="Geoscape\NewPossibleCraftState.cpp">
-      <Filter>Geoscape</Filter>
-    </ClCompile>
     <ClCompile Include="Geoscape\NewPossibleFacilityState.cpp">
       <Filter>Geoscape</Filter>
     </ClCompile>
@@ -1115,14 +1094,14 @@
     <ClCompile Include="Menu\NotesState.cpp">
       <Filter>Menu</Filter>
     </ClCompile>
-    <ClCompile Include="FTA\DiplomacyStartState.cpp">
-      <Filter>FTA</Filter>
+    <ClCompile Include="Basescape\DiplomacyStartState.cpp">
+      <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="FTA\DiplomacySellState.cpp">
-      <Filter>FTA</Filter>
+    <ClCompile Include="Basescape\DiplomacySellState.cpp">
+      <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="FTA\DiplomacyPurchaseState.cpp">
-      <Filter>FTA</Filter>
+    <ClCompile Include="Basescape\DiplomacyPurchaseState.cpp">
+      <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Mod\RuleDiplomacyFaction.cpp">
       <Filter>Mod</Filter>
@@ -1166,8 +1145,8 @@
     <ClCompile Include="Basescape\CovertOperationInfoState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="FTA\MasterMind.cpp">
-      <Filter>FTA</Filter>
+    <ClCompile Include="Engine\FtaGameServices.cpp">
+      <Filter>Engine</Filter>
     </ClCompile>
     <ClCompile Include="Mod\BattleScript.cpp">
       <Filter>Mod</Filter>
@@ -1232,9 +1211,6 @@
     <ClCompile Include="Basescape\ManufactureAllocateEngineersState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\ManufactureInfoState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
     <ClCompile Include="Basescape\ManufactureProductDetailsState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
@@ -1280,9 +1256,6 @@
     <ClCompile Include="Basescape\BaseInfoStateFtA.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\SoldierInfoState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
     <ClCompile Include="Basescape\EngineersState.cpp">
       <Filter>Basescape</Filter>
     </ClCompile>
@@ -1301,8 +1274,8 @@
     <ClCompile Include="Savegame\SoldierPool.cpp">
       <Filter>Savegame</Filter>
     </ClCompile>
-    <ClCompile Include="FTA\DiplomacyHirePersonnelState.cpp">
-      <Filter>FTA</Filter>
+    <ClCompile Include="Basescape\DiplomacyHirePersonnelState.cpp">
+      <Filter>Basescape</Filter>
     </ClCompile>
     <ClCompile Include="Basescape\GlobalAlienContainmentState.cpp">
       <Filter>Basescape</Filter>
@@ -1415,16 +1388,10 @@
     <ClInclude Include="Basescape\PlaceFacilityState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\PurchaseState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
     <ClInclude Include="Basescape\ResearchState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\SackSoldierState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\SellState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\SoldierInfoStateFtA.h">
@@ -1434,9 +1401,6 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\StoresState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\BaseInfoState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\BasescapeState.h">
@@ -1623,9 +1587,6 @@
       <Filter>Geoscape</Filter>
     </ClInclude>
     <ClInclude Include="Geoscape\LowFuelState.h">
-      <Filter>Geoscape</Filter>
-    </ClInclude>
-    <ClInclude Include="Geoscape\MonthlyReportState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
     <ClInclude Include="Geoscape\MultipleTargetsState.h">
@@ -1917,9 +1878,6 @@
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\ManufactureInfoStateFtA.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\ResearchInfoState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\NewManufactureListState.h">
@@ -2450,12 +2408,6 @@
     <ClInclude Include="Geoscape\CraftNotEnoughPilotsState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
-    <ClInclude Include="Geoscape\NewPossiblePurchaseState.h">
-      <Filter>Geoscape</Filter>
-    </ClInclude>
-    <ClInclude Include="Geoscape\NewPossibleCraftState.h">
-      <Filter>Geoscape</Filter>
-    </ClInclude>
     <ClInclude Include="Geoscape\NewPossibleFacilityState.h">
       <Filter>Geoscape</Filter>
     </ClInclude>
@@ -2573,14 +2525,14 @@
     <ClInclude Include="Menu\NotesState.h">
       <Filter>Menu</Filter>
     </ClInclude>
-    <ClInclude Include="FTA\DiplomacyStartState.h">
-      <Filter>FTA</Filter>
+    <ClInclude Include="Basescape\DiplomacyStartState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="FTA\DiplomacySellState.h">
-      <Filter>FTA</Filter>
+    <ClInclude Include="Basescape\DiplomacySellState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="FTA\DiplomacyPurchaseState.h">
-      <Filter>FTA</Filter>
+    <ClInclude Include="Basescape\DiplomacyPurchaseState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Mod\RuleDiplomacyFaction.h">
       <Filter>Mod</Filter>
@@ -2627,8 +2579,8 @@
     <ClInclude Include="Basescape\CovertOperationInfoState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="FTA\MasterMind.h">
-      <Filter>FTA</Filter>
+    <ClInclude Include="Engine\FtaGameServices.h">
+      <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Mod\BattleScript.h">
       <Filter>Mod</Filter>
@@ -2693,9 +2645,6 @@
     <ClInclude Include="Basescape\ManufactureAllocateEngineersState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\ManufactureInfoState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
     <ClInclude Include="Basescape\ManufactureProductDetailsState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
@@ -2741,9 +2690,6 @@
     <ClInclude Include="Basescape\BaseInfoStateFtA.h">
       <Filter>Basescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\SoldierInfoState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
     <ClInclude Include="Basescape\EngineersState.h">
       <Filter>Basescape</Filter>
     </ClInclude>
@@ -2762,8 +2708,8 @@
     <ClInclude Include="Savegame\SoldierPool.h">
       <Filter>Savegame</Filter>
     </ClInclude>
-    <ClInclude Include="FTA\DiplomacyHirePersonnelState.h">
-      <Filter>FTA</Filter>
+    <ClInclude Include="Basescape\DiplomacyHirePersonnelState.h">
+      <Filter>Basescape</Filter>
     </ClInclude>
     <ClInclude Include="Basescape\GlobalAlienContainmentState.h">
       <Filter>Basescape</Filter>
@@ -3084,9 +3030,6 @@
     </Filter>
     <Filter Include="Mod">
       <UniqueIdentifier>{ea5b1e9f-9ff1-457d-9a15-5af8773ccb50}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="FTA">
-      <UniqueIdentifier>{9a188ad3-ed60-4de5-9646-633cddf63dee}</UniqueIdentifier>
     </Filter>
     <Filter Include="Engine\rapidyaml">
       <UniqueIdentifier>{0be071a8-546d-40f0-a2e9-f36fa549568c}</UniqueIdentifier>

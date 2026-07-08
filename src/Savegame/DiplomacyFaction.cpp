@@ -33,7 +33,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/FactionalResearch.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -193,7 +193,7 @@ void DiplomacyFaction::removeItem(const RuleItem* item, int qty)
 void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 {
 	SavedGame& save = *engine.getSavedGame();
-	MasterMind& mind = *engine.getMasterMind();
+	FtaGameServices& mind = *engine.getFtaGameServices();
 	_commandsToProcess.clear();
 	_availableMissionScripts.clear();
 	_eventsToProcess.clear();
@@ -280,7 +280,7 @@ void DiplomacyFaction::processDailyReputation(Game& engine)
 {
 	const Mod& mod = *engine.getMod();
 	SavedGame& save = *engine.getSavedGame();
-	MasterMind& mind = *engine.getMasterMind();
+	FtaGameServices& mind = *engine.getFtaGameServices();
 	int dailyReputation = 0;
 	int breakLevel = mod.getReputationBreakthroughValue();
 	std::vector<std::string> events;

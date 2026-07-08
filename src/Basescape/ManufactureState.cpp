@@ -20,7 +20,7 @@
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
@@ -35,7 +35,6 @@
 #include "../Savegame/Production.h"
 #include "NewManufactureListState.h"
 #include "GlobalManufactureState.h"
-#include "ManufactureInfoState.h"
 #include "ManufactureInfoStateFtA.h"
 #include "TechTreeViewerState.h"
 #include "EngineersState.h"
@@ -258,7 +257,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 			int numEffectiveEngineers = prod->getAssignedEngineers();
 			if (_ftaUi)
 			{
-				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus(), true);
+				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getFtaGameServices()->getLoyaltyPerformanceBonus(), true);
 			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			if (numEffectiveEngineers > 0)
@@ -327,14 +326,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 void ManufactureState::lstManufactureClickLeft(Action *)
 {
 	const std::vector<Production*> productions(_base->getProductions());
-	if (_ftaUi)
-	{
-		_game->pushState(new ManufactureInfoStateFtA(_base, productions[_lstManufacture->getSelectedRow()]));
-	}
-	else
-	{
-		_game->pushState(new ManufactureInfoState(_base, productions[_lstManufacture->getSelectedRow()]));
-	}
+	_game->pushState(new ManufactureInfoStateFtA(_base, productions[_lstManufacture->getSelectedRow()]));
 }
 
 /**

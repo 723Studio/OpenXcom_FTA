@@ -35,7 +35,6 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/SavedGame.h"
-#include "SoldierInfoState.h"
 #include "SoldierInfoStateFtA.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleInterface.h"
@@ -651,14 +650,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	}
 	else if (_game->isRightClick(action, true))
 	{
-		if (_ftaUI)
-		{
-			_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(row)));
-		}
-		else
-		{
-			_game->pushState(new SoldierInfoState(_base, _soldierNumbers.at(row), false));
-		}
+		_game->pushState(new SoldierInfoStateFtA(_base, _soldierNumbers.at(row)));
 	}
 }
 

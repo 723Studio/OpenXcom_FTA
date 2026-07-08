@@ -17,7 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "MasterMind.h"
+#include "FtaGameServices.h"
 #include <sstream>
 #include <iomanip>
 #include <climits>
@@ -60,11 +60,11 @@
 namespace OpenXcom
 {
 
-MasterMind::MasterMind(Game* engine): _game(engine)
+FtaGameServices::FtaGameServices(Game* engine): _game(engine)
 {
 	
 }
-MasterMind::~MasterMind()
+FtaGameServices::~FtaGameServices()
 {
 }
 
@@ -73,7 +73,7 @@ MasterMind::~MasterMind()
 * @param diff - game difficulty
 * @param gs - ptr to GeoscapeState
 */
-void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
+void FtaGameServices::newGameHelper(int diff, GeoscapeState* gs)
 {
 	SavedGame* save = _game->getSavedGame();
 	Mod* mod = _game->getMod();
@@ -184,7 +184,7 @@ void MasterMind::newGameHelper(int diff, GeoscapeState* gs)
 * @param scripts - a vector of event script's string IDs.
 * @param source is the reason we are running process (monthly, factional, xcom).
 */
-void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, ProcessorSource source)
+void FtaGameServices::eventScriptProcessor(std::vector<std::string> scripts, ProcessorSource source)
 {
 	if (!scripts.empty())
 	{
@@ -419,7 +419,7 @@ void MasterMind::eventScriptProcessor(std::vector<std::string> scripts, Processo
 	}
 }
 
-bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base)
+bool FtaGameServices::spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base)
 {
 	// let's define variables for alien mission first
 	const Mod& mod = *_game->getMod();
@@ -539,7 +539,7 @@ bool MasterMind::spawnAlienMission(const std::string& missionName, const Globe& 
 	return success;
 }
 
-int MasterMind::updateLoyalty(int score, LoyaltySource source)
+int FtaGameServices::updateLoyalty(int score, LoyaltySource source)
 {
 	if (!_game->getMod()->isFTAGame())
 	{
@@ -596,7 +596,7 @@ int MasterMind::updateLoyalty(int score, LoyaltySource source)
 * Handle calculation of base services (manufacture, labs and craft repair) performance bonus caused by loyalty score.
 * @return value of performance bonus, normal value is 100 %.
 */
-int MasterMind::getLoyaltyPerformanceBonus()
+int FtaGameServices::getLoyaltyPerformanceBonus()
 {
 	int performance = 100;
 	if (_game->getMod()->isFTAGame())
@@ -623,7 +623,7 @@ int MasterMind::getLoyaltyPerformanceBonus()
 * @param initial - to define if we are performing updating of reputation due to new game initialisation (default false).
 * @return true if reputation level was updated.
 */
-bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
+bool FtaGameServices::updateReputationLvl(DiplomacyFaction* faction, bool initial)
 {
 	int repScore = faction->getReputationScore();
 	int curLvl = faction->getReputationLevel();
@@ -670,7 +670,7 @@ bool MasterMind::updateReputationLvl(DiplomacyFaction* faction, bool initial)
  * Updates nessesary data to process unlocking multiple researches.
  * 
  */
-void MasterMind::helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, Base* base, std::string& researchName, std::string& bonusResearchName)
+void FtaGameServices::helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, Base* base, std::string& researchName, std::string& bonusResearchName)
 {
 	auto mod = _game->getMod();
 	auto save = _game->getSavedGame();

@@ -35,7 +35,7 @@
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
 #include "../Mod/RuleSoldier.h"
-#include "../Basescape/SoldierInfoState.h"
+#include "../Basescape/SoldierInfoStateFtA.h"
 #include "../Basescape/SoldierSortUtil.h"
 #include <algorithm>
 #include "../Engine/Unicode.h"
@@ -291,7 +291,7 @@ void AllocatePsiTrainingState::init()
 {
 	State::init();
 
-	// coming back from SoldierInfoState
+	// coming back from SoldierInfoStateFtA
 	if (_doNotReset)
 	{
 		_doNotReset = false;
@@ -533,7 +533,7 @@ void AllocatePsiTrainingState::lstSoldiersClick(Action *action)
 	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		_doNotReset = true;
-		_game->pushState(new SoldierInfoState(_base, _sel, true, true));
+		_game->pushState(new SoldierInfoStateFtA(_base, _sel));
 	}
 }
 

@@ -30,7 +30,7 @@
 #include "../Engine/Options.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -195,7 +195,7 @@ void NewGameState::btnOkClick(Action *)
 	//choose the game scenario
 	if (_game->getMod()->isFTAGame())
 	{
-		_game->getMasterMind()->newGameHelper(diff, gs);
+		_game->getFtaGameServices()->newGameHelper(diff, gs);
 		save->setFtAGame(true);
 	}
 	else //vanilla

@@ -29,16 +29,15 @@
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/Base.h"
-#include "../FTA/DiplomacySellState.h"
-#include "../FTA/DiplomacyPurchaseState.h"
-#include "../FTA/DiplomacyHirePersonnelState.h"
+#include "DiplomacySellState.h"
+#include "DiplomacyPurchaseState.h"
+#include "DiplomacyHirePersonnelState.h"
 
 namespace OpenXcom
 {
 /**
  * Initializes all the elements in the Diplomacy screen.
  * @param geoscape to check for animation style.
- * @param game Pointer to the core game.
  */
 DiplomacyStartState::DiplomacyStartState(Base* base, bool geoscape) : _base(base)
 {

@@ -28,7 +28,6 @@ class Window;
 class Text;
 class TextList;
 class Base;
-class SoldierInfoState;
 class SoldierInfoStateFtA;
 class Soldier;
 
@@ -41,7 +40,6 @@ class SoldierDiaryOverviewState : public State
 private:
 	Base *_base;
 	size_t _soldierId;
-	SoldierInfoState *_soldierInfoState;
 	SoldierInfoStateFtA* _soldierInfoStateFtA;
 	Soldier *_soldier;
 	std::vector<Soldier*> *_list;
@@ -54,7 +52,6 @@ private:
 
 public:
 	/// Creates the Soldier Diary state.
-	SoldierDiaryOverviewState(Base *base, size_t soldierId, SoldierInfoState *soldierInfoState);
 	SoldierDiaryOverviewState(Base* base, size_t soldierId, SoldierInfoStateFtA* soldierInfoStateFtA);
 	/// Cleans up the Soldier Diary state.
 	~SoldierDiaryOverviewState();

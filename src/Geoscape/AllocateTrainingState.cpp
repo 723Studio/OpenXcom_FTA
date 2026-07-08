@@ -34,7 +34,6 @@
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
 #include "../Mod/Mod.h"
-#include "../Basescape/SoldierInfoState.h"
 #include "../Basescape/SoldierSortUtil.h"
 #include "../Basescape/SoldierInfoStateFtA.h"
 #include <algorithm>
@@ -325,7 +324,7 @@ void AllocateTrainingState::init()
 {
 	State::init();
 
-	// coming back from SoldierInfoState
+	// coming back from SoldierInfoStateFtA
 	if (_doNotReset)
 	{
 		_doNotReset = false;

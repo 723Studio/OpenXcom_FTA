@@ -19,7 +19,6 @@
 #include "SoldierDiaryOverviewState.h"
 #include "SoldierDiaryPerformanceState.h"
 #include "SoldierDiaryMissionState.h"
-#include "SoldierInfoState.h"
 #include "SoldierInfoStateFtA.h"
 
 #include <sstream>
@@ -46,16 +45,10 @@ namespace OpenXcom
  * Initializes all the elements in the Soldier Diary screen.
  * @param base Pointer to the base to get info from.
  * @param soldierId ID of the selected soldier.
- * @param soldierInfoState Pointer to the Soldier Info screen.
+ * @param soldierInfoStateFtA Pointer to the Soldier Info screen.
  */
-SoldierDiaryOverviewState::SoldierDiaryOverviewState(Base *base, size_t soldierId, SoldierInfoState *soldierInfoState) : 
-	_base(base), _soldierId(soldierId), _soldierInfoState(soldierInfoState), _soldierInfoStateFtA(0), _doNotReset(false)
-{
-	drawUi();
-}
-
 SoldierDiaryOverviewState::SoldierDiaryOverviewState(Base* base, size_t soldierId, SoldierInfoStateFtA* soldierInfoStateFtA) : 
-	_base(base), _soldierId(soldierId), _soldierInfoState(0), _soldierInfoStateFtA(soldierInfoStateFtA), _doNotReset(false)
+	_base(base), _soldierId(soldierId), _soldierInfoStateFtA(soldierInfoStateFtA), _doNotReset(false)
 {
 	drawUi();
 }
@@ -286,11 +279,7 @@ void SoldierDiaryOverviewState::setSoldierId(size_t soldier)
  */
 void SoldierDiaryOverviewState::btnOkClick(Action *)
 {
-	if (_soldierInfoState)
-	{
-		_soldierInfoState->setSoldierId(_soldierId);
-	}
-	else
+	if (_soldierInfoStateFtA)
 	{
 		_soldierInfoStateFtA->setSoldierId(_soldierId);
 	}

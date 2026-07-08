@@ -41,11 +41,10 @@ private:
 	MiniBaseView *_mini;
 	Text *_txtFacility, *_txtLocation, *_txtFunds, *_txtLoyalty;
 	TextEdit *_edtBase;
-	TextButton *_btnNewBase, *_btnBaseInfo, *_btnSoldiers, *_btnCrafts, *_btnFacilities, *_btnResearch, *_btnManufacture, *_btnTransfer, *_btnPurchase, *_btnSell, *_btnGeoscape;
+	TextButton *_btnBaseInfo, *_btnSoldiers, *_btnCrafts, *_btnFacilities, *_btnResearch, *_btnManufacture, *_btnTransfer, *_btnGeoscape;
 	TextButton *_btnIntel, *_btnCovertOps, *_btnDiplomacy;
 	Base *_base;
 	Globe *_globe;
-	bool _fta;
 	void newBase();
 public:
 	/// Creates the Basescape state.
@@ -70,10 +69,6 @@ public:
 	void btnResearchClick(Action *action);
 	/// Handler for clicking the Manufacture button.
 	void btnManufactureClick(Action *action);
-	/// Handler for clicking the Purchase/Hire button.
-	void btnPurchaseClick(Action *action);
-	/// Handler for clicking the Sell/Sack button.
-	void btnSellClick(Action *action);
 	/// Handler for clicking the Transfer button.
 	void btnTransferClick(Action *action);
 	/// Handler for clicking the Geoscape button.

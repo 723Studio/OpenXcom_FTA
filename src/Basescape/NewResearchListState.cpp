@@ -36,7 +36,6 @@
 #include "../Savegame/Base.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleResearch.h"
-#include "ResearchInfoState.h"
 #include "ResearchInfoStateFtA.h"
 #include "ResearchProjectDetailsState.h"
 #include "TechTreeViewerState.h"

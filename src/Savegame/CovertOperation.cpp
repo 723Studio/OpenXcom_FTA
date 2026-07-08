@@ -45,7 +45,7 @@
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/AlienRace.h"
 #include "../Mod/Unit.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -330,12 +330,12 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	{
 		save.addResearchScore(score);
 		_results->addScore(score);
-		engine.getMasterMind()->updateLoyalty(score, XCOM_GEOSCAPE);
+		engine.getFtaGameServices()->updateLoyalty(score, XCOM_GEOSCAPE);
 	}
 
 	if (loyalty != 0)
 	{
-		engine.getMasterMind()->updateLoyalty(loyalty, ABSOLUTE_COEF);
+		engine.getFtaGameServices()->updateLoyalty(loyalty, ABSOLUTE_COEF);
 	}
 
 	if (funds != 0)

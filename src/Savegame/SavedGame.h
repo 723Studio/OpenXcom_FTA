@@ -37,7 +37,7 @@ namespace OpenXcom
 
 class Game;
 class Mod;
-class MasterMind;
+class FtaGameServices;
 class GameTime;
 class Country;
 class Base;

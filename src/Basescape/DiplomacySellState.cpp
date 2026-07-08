@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 OpenXcom Developers.
+ * Copyright 2010-2021 OpenXcom Developers.
  *
  * This file is part of OpenXcom.
  *
@@ -16,9 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "SellState.h"
-#include "ItemLocationsState.h"
-#include "ManufactureDependenciesTreeState.h"
+#include "DiplomacySellState.h"
+#include "../Basescape/ManufactureDependenciesTreeState.h"
 #include <algorithm>
 #include <locale>
 #include <sstream>
@@ -35,28 +34,29 @@
 #include "../Interface/TextEdit.h"
 #include "../Interface/TextList.h"
 #include "../Interface/ComboBox.h"
-#include "../Savegame/BaseFacility.h"
+#include "../Menu/ErrorMessageState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
-#include "../Savegame/ItemContainer.h"
 #include "../Savegame/Vehicle.h"
+#include "../Savegame/ItemContainer.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleCraft.h"
 #include "../Savegame/CraftWeapon.h"
 #include "../Mod/RuleCraftWeapon.h"
+#include "../Basescape/ItemLocationsState.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
 #include "../Mod/RuleInterface.h"
 #include "../Battlescape/DebriefingState.h"
-#include "TransferBaseState.h"
-#include "TechTreeViewerState.h"
+#include "../Basescape/TransferBaseState.h"
+#include "../Basescape/TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
-#include "../Menu/ErrorMessageState.h"
-#include "../Engine/Sound.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Mod/RuleDiplomacyFaction.h"
 
 namespace OpenXcom
 {
@@ -67,19 +67,22 @@ namespace OpenXcom
  * @param base Pointer to the base to get info from.
  * @param origin Game section that originated this state.
  */
-SellState::SellState(Base *base, DebriefingState *debriefingState, OptionsOrigin origin) : _base(base), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
-	_reset(false), _sellAllButOne(false), _delayedInitDone(false), _previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER)
+DiplomacySellState::DiplomacySellState(Base *base, DiplomacyFaction* faction, DebriefingState *debriefingState, OptionsOrigin origin) :
+		_base(base), _faction(faction), _debriefingState(debriefingState), _sel(0), _total(0), _spaceChange(0), _origin(origin),
+		_reset(false), _sellAllButOne(false), _delayedInitDone(false),
+		_previousSort(TransferSortDirection::BY_LIST_ORDER), _currentSort(TransferSortDirection::BY_LIST_ORDER)
 {
+
 	_timerInc = new Timer(250);
-	_timerInc->onTimer((StateHandler)&SellState::increase);
+	_timerInc->onTimer((StateHandler)&DiplomacySellState::increase);
 	_timerDec = new Timer(250);
-	_timerDec->onTimer((StateHandler)&SellState::decrease);
+	_timerDec->onTimer((StateHandler)&DiplomacySellState::decrease);
 }
 
 /**
  * Delayed constructor functionality.
  */
-void SellState::delayedInit()
+void DiplomacySellState::delayedInit()
 {
 	if (_delayedInitDone)
 	{
@@ -93,21 +96,19 @@ void SellState::delayedInit()
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 10, 13);
-	//_btnOk = new TextButton(overfull? 288:148, 16, overfull? 16:8, 176);
 	_btnOk = new TextButton(148, 16, 8, 176);
 	_btnCancel = new TextButton(148, 16, 164, 176);
 	_btnTransfer = new TextButton(148, 16, 164, 176);
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtSales = new Text(150, 9, 10, 24);
-	_txtFunds = new Text(150, 9, 160, 24);
-	_txtSpaceUsed = new Text(150, 9, 160, 34);
+	_txtFunds = new Text(130, 9, 120, 24);
+	_txtSpaceUsed = new Text(130, 9, 120, 34);
 	_txtQuantity = new Text(54, 9, 136, 44);
-	_txtSell = new Text(96, 9, 190, 44);
-	_txtValue = new Text(40, 9, 270, 44);
-	_cbxCategory = new ComboBox(this, 120, 16, 10, 36);
+	_txtSell = new Text(76, 9, 190, 44);
+	_txtValue = new Text(60, 9, 250, 44);
+	_cbxCategory = new ComboBox(this, 105, 16, 10, 36);
+	_cbxSortBy = new ComboBox(this, 64, 16, 249, 24, false, false);
 	_lstItems = new TextList(287, 120, 8, 54);
-
-	touchComponentsCreate(_txtTitle);
 
 	// Set palette
 	setInterface("sellMenu");
@@ -128,26 +129,23 @@ void SellState::delayedInit()
 	add(_txtValue, "text", "sellMenu");
 	add(_lstItems, "list", "sellMenu");
 	add(_cbxCategory, "text", "sellMenu");
-
-	touchComponentsAdd("button2", "sellMenu", _window);
+	add(_cbxSortBy, "text", "sellMenu");
 
 	centerAllSurfaces();
 
-	// Set up objects
+	// Set up objects		// Set up objects
 	setWindowBackground(_window, "sellMenu");
 
-	touchComponentsConfigure();
-
 	_btnOk->setText(tr("STR_SELL_SACK"));
-	_btnOk->onMouseClick((ActionHandler)&SellState::btnOkClick);
-	_btnOk->onKeyboardPress((ActionHandler)&SellState::btnOkClick, Options::keyOk);
+	_btnOk->onMouseClick((ActionHandler)&DiplomacySellState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&DiplomacySellState::btnOkClick, Options::keyOk);
 
 	_btnCancel->setText(tr("STR_CANCEL"));
-	_btnCancel->onMouseClick((ActionHandler)&SellState::btnCancelClick);
-	_btnCancel->onKeyboardPress((ActionHandler)&SellState::btnCancelClick, Options::keyCancel);
+	_btnCancel->onMouseClick((ActionHandler)&DiplomacySellState::btnCancelClick);
+	_btnCancel->onKeyboardPress((ActionHandler)&DiplomacySellState::btnCancelClick, Options::keyCancel);
 
 	_btnTransfer->setText(tr("STR_GO_TO_TRANSFERS"));
-	_btnTransfer->onMouseClick((ActionHandler)&SellState::btnTransferClick);
+	_btnTransfer->onMouseClick((ActionHandler)&DiplomacySellState::btnTransferClick);
 
 	_btnCancel->setVisible(!overfull);
 	_btnOk->setVisible(!overfull);
@@ -157,93 +155,65 @@ void SellState::delayedInit()
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_SELL_ITEMS_SACK_PERSONNEL"));
 
-	_txtFunds->setText(tr("STR_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
+	_txtFunds->setText(tr("STR_FACTION_FUNDS").arg(Unicode::formatFunding(_faction->getFunds())));
 
-	_txtSpaceUsed->setVisible(Options::storageLimitsEnforced);
+	_txtSpaceUsed->setVisible(true); // (Options::storageLimitsEnforced);
 
 	std::ostringstream ss;
-	ss << _base->getUsedStores() << ":" << _base->getAvailableStores();
+	ss << ceil(_base->getUsedStores()) << "/" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(ss.str());
-	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss.str()));
+	_txtSpaceUsed->setText(tr("STR_SPACE_USED_LC").arg(ss.str()));
 
-	_txtQuantity->setText(tr("STR_QUANTITY_UC"));
+	_txtQuantity->setText(tr("STR_QUANTITY"));
 
-	_txtSell->setText(tr("STR_SELL_SACK"));
+	_txtSell->setText(tr("STR_SELL"));
 
-	_txtValue->setText(tr("STR_VALUE"));
+	_txtValue->setText(tr("STR_COST_LC"));
 
 	_lstItems->setArrowColumn(182, ARROW_VERTICAL);
 	_lstItems->setColumns(4, 156, 54, 24, 53);
 	_lstItems->setSelectable(true);
 	_lstItems->setBackground(_window);
 	_lstItems->setMargin(2);
-	_lstItems->onLeftArrowPress((ActionHandler)&SellState::lstItemsLeftArrowPress);
-	_lstItems->onLeftArrowRelease((ActionHandler)&SellState::lstItemsLeftArrowRelease);
-	_lstItems->onLeftArrowClick((ActionHandler)&SellState::lstItemsLeftArrowClick);
-	_lstItems->onRightArrowPress((ActionHandler)&SellState::lstItemsRightArrowPress);
-	_lstItems->onRightArrowRelease((ActionHandler)&SellState::lstItemsRightArrowRelease);
-	_lstItems->onRightArrowClick((ActionHandler)&SellState::lstItemsRightArrowClick);
-	_lstItems->onMousePress((ActionHandler)&SellState::lstItemsMousePress);
+	_lstItems->onLeftArrowPress((ActionHandler)&DiplomacySellState::lstItemsLeftArrowPress);
+	_lstItems->onLeftArrowRelease((ActionHandler)&DiplomacySellState::lstItemsLeftArrowRelease);
+	_lstItems->onLeftArrowClick((ActionHandler)&DiplomacySellState::lstItemsLeftArrowClick);
+	_lstItems->onRightArrowPress((ActionHandler)&DiplomacySellState::lstItemsRightArrowPress);
+	_lstItems->onRightArrowRelease((ActionHandler)&DiplomacySellState::lstItemsRightArrowRelease);
+	_lstItems->onRightArrowClick((ActionHandler)&DiplomacySellState::lstItemsRightArrowClick);
+	_lstItems->onMousePress((ActionHandler)&DiplomacySellState::lstItemsMousePress);
 
 	_cats.push_back("STR_ALL_ITEMS");
-	_cats.push_back("STR_FILTER_HIDDEN");
-	if (Options::oxceBaseFilterResearchable)
+
+	_sortingTypes.push_back("STR_LISTING_ORDER");
+	_sortingTypes.push_back("STR_BY_TOTAL_SIZE");
+	_sortingTypes.push_back("STR_BY_UNIT_SIZE");
+	//_sortingTypes.push_back("STR_BY_TOTAL_COST");
+	_sortingTypes.push_back("STR_BY_UNIT_COST");
+
+	_cbxSortBy->setOptions(_sortingTypes, true);
+	_cbxSortBy->onChange((ActionHandler)&DiplomacySellState::cbxSortByChange);
+	_cbxSortBy->setText(tr("STR_SORT_BY"));
+
+	for (std::vector<Craft*>::iterator i = _base->getCrafts()->begin(); i != _base->getCrafts()->end(); ++i)
 	{
-		_cats.push_back("STR_FILTER_RESEARCHED");
-		_cats.push_back("STR_FILTER_RESEARCHABLE");
+		if (_debriefingState) break;
+		if ((*i)->getStatus() != "STR_OUT")
+		{
+			TransferRow row = {TRANSFER_CRAFT, (*i), (*i)->getName(_game->getLanguage()), getCostAdjustment((*i)->getRules()->getSellCost()), 1, 0, 0, 0, -3, 0, 0, (*i)->getRules()->getSellCost()};
+			_items.push_back(row);
+			std::string cat = getCategory(_items.size() - 1);
+			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
+			{
+				_cats.push_back(cat);
+			}
+		}
 	}
 
-	for (auto* soldier : *_base->getSoldiers())
+	const std::vector<std::string>& items = _game->getMod()->getItemsList();
+	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
-		if (_debriefingState) break;
-		if (soldier->getCraft() == 0 && soldier->getCovertOperation() == 0)
-		{
-			TransferRow row = { TRANSFER_SOLDIER, soldier, soldier->getName(true), 0, 1, 0, 0, 1, -4, 0, 0, 0 };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
-	for (auto* craft : *_base->getCrafts())
-	{
-		if (_debriefingState) break;
-		if (craft->getStatus() != "STR_OUT")
-		{
-			TransferRow row = { TRANSFER_CRAFT, craft, craft->getName(_game->getLanguage()), craft->getRules()->getSellCost(), 1, 0, 0, 1, -3, 0, 0, craft->getRules()->getSellCost() };
-			_items.push_back(row);
-			std::string cat = getCategory(_items.size() - 1);
-			if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-			{
-				_cats.push_back(cat);
-			}
-		}
-	}
-	if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0, _base->getAvailableScientists(), -2, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0, _base->getAvailableEngineers(), -1, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	for (auto& itemType : _game->getMod()->getItemsList())
-	{
-		const RuleItem *rule = _game->getMod()->getItem(itemType, true);
+		const RuleItem* rule = _game->getMod()->getItem(*i, true);
 		int qty = 0;
 		if (_debriefingState != 0)
 		{
@@ -254,27 +224,26 @@ void SellState::delayedInit()
 			qty = _base->getStorageItems()->getItem(rule);
 			if (Options::storageLimitsEnforced && (_origin == OPT_BATTLESCAPE || overfullCritical))
 			{
-				for (auto* transfer : *_base->getTransfers())
+				for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end(); ++j)
 				{
-					if (transfer->getItems() == rule)
+					if ((*j)->getItems() == rule)
 					{
-						qty += transfer->getQuantity();
+						qty += (*j)->getQuantity();
 					}
-					else if (transfer->getCraft())
+					else if ((*j)->getCraft())
 					{
-						qty += overfullCritical ? transfer->getCraft()->getTotalItemCount(rule) : transfer->getCraft()->getItems()->getItem(rule);
+						qty += overfullCritical ? (*j)->getCraft()->getTotalItemCount(rule) : (*j)->getCraft()->getItems()->getItem(rule);
 					}
 				}
-				for (auto* craft : *_base->getCrafts())
+				for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end(); ++j)
 				{
-					qty +=  overfullCritical ? craft->getTotalItemCount(rule) : craft->getItems()->getItem(rule);
+					qty += overfullCritical ? (*j)->getTotalItemCount(rule) : (*j)->getItems()->getItem(rule);
 				}
 			}
 		}
 		if (qty > 0 && (Options::canSellLiveAliens || !rule->isAlien()))
 		{
-			TransferRow row = { TRANSFER_ITEM, rule, tr(itemType), rule->getSellCostAdjusted(_base, _game->getSavedGame()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCostAdjusted(_base, _game->getSavedGame()) };
-
+			TransferRow row = {TRANSFER_ITEM, rule, tr(*i), getCostAdjustment(rule->getSellCost()), qty, 0, 0, 0, rule->getListOrder(), rule->getSize(), qty * rule->getSize(), (int64_t)qty * rule->getSellCost()};
 			if ((_debriefingState != 0) && (_game->getSavedGame()->getAutosell(rule)))
 			{
 				row.amount = qty;
@@ -297,20 +266,20 @@ void SellState::delayedInit()
 
 		// first find all relevant item categories
 		std::vector<std::string> tempCats;
-		for (const auto& transferRow : _items)
+		for (std::vector<TransferRow>::iterator i = _items.begin(); i != _items.end(); ++i)
 		{
-			if (transferRow.type == TRANSFER_ITEM)
+			if ((*i).type == TRANSFER_ITEM)
 			{
-				RuleItem *rule = (RuleItem*)(transferRow.rule);
+				RuleItem *rule = (RuleItem*)((*i).rule);
 				if (rule->getCategories().empty())
 				{
 					hasUnassigned = true;
 				}
-				for (auto& itemCategoryName : rule->getCategories())
+				for (std::vector<std::string>::const_iterator j = rule->getCategories().begin(); j != rule->getCategories().end(); ++j)
 				{
-					if (std::find(tempCats.begin(), tempCats.end(), itemCategoryName) == tempCats.end())
+					if (std::find(tempCats.begin(), tempCats.end(), (*j)) == tempCats.end())
 					{
-						tempCats.push_back(itemCategoryName);
+						tempCats.push_back((*j));
 					}
 				}
 			}
@@ -328,11 +297,12 @@ void SellState::delayedInit()
 			}
 			_vanillaCategories = _cats.size();
 		}
-		for (auto& categoryName : _game->getMod()->getItemCategoriesList())
+		const std::vector<std::string> &categories = _game->getMod()->getItemCategoriesList();
+		for (std::vector<std::string>::const_iterator k = categories.begin(); k != categories.end(); ++k)
 		{
-			if (std::find(tempCats.begin(), tempCats.end(), categoryName) != tempCats.end())
+			if (std::find(tempCats.begin(), tempCats.end(), (*k)) != tempCats.end())
 			{
-				_cats.push_back(categoryName);
+				_cats.push_back((*k));
 			}
 		}
 		if (hasUnassigned)
@@ -341,19 +311,19 @@ void SellState::delayedInit()
 		}
 	}
 
-	_txtSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
+	_txtSales->setText(tr("STR_VALUE_OF_SALES_LC").arg(Unicode::formatFunding(_total)));
 
 	_cbxCategory->setOptions(_cats, true);
-	_cbxCategory->onChange((ActionHandler)&SellState::cbxCategoryChange);
-	_cbxCategory->onKeyboardPress((ActionHandler)&SellState::btnSellAllClick, Options::keySellAll);
-	_cbxCategory->onKeyboardPress((ActionHandler)&SellState::btnSellAllButOneClick, Options::keySellAllButOne);
+	_cbxCategory->onChange((ActionHandler)&DiplomacySellState::cbxCategoryChange);
+	_cbxCategory->onKeyboardPress((ActionHandler)&DiplomacySellState::btnSellAllClick, Options::keySellAll);
+	_cbxCategory->onKeyboardPress((ActionHandler)&DiplomacySellState::btnSellAllButOneClick, Options::keySellAllButOne);
 
 	_btnQuickSearch->setText(""); // redraw
-	_btnQuickSearch->onEnter((ActionHandler)&SellState::btnQuickSearchApply);
-	_btnQuickSearch->setVisible(Options::oxceQuickSearchButton);
+	_btnQuickSearch->onEnter((ActionHandler)&DiplomacySellState::btnQuickSearchApply);
+	_btnQuickSearch->setVisible(false);
 
 	// OK button is not always visible, so bind it here
-	_cbxCategory->onKeyboardRelease((ActionHandler)&SellState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
+	_cbxCategory->onKeyboardRelease((ActionHandler)&DiplomacySellState::btnQuickSearchToggle, Options::keyToggleQuickSearch);
 
 	updateList();
 }
@@ -361,7 +331,7 @@ void SellState::delayedInit()
 /**
  *
  */
-SellState::~SellState()
+DiplomacySellState::~DiplomacySellState()
 {
 	delete _timerInc;
 	delete _timerDec;
@@ -370,7 +340,7 @@ SellState::~SellState()
 /**
 * Resets stuff when coming back from other screens.
 */
-void SellState::init()
+void DiplomacySellState::init()
 {
 	delayedInit();
 
@@ -379,16 +349,14 @@ void SellState::init()
 	if (_reset)
 	{
 		_game->popState();
-		_game->pushState(new SellState(_base, _debriefingState, _origin));
+		_game->pushState(new DiplomacySellState(_base, _faction, _debriefingState, _origin));
 	}
-
-	touchComponentsRefresh();
 }
 
 /**
  * Runs the arrow timers.
  */
-void SellState::think()
+void DiplomacySellState::think()
 {
 	State::think();
 
@@ -397,13 +365,32 @@ void SellState::think()
 }
 
 /**
+ * Calculates price adjustment based on faction's stats and other factors.
+ * @param baseCost price for row from rules.
+ * @returns corrected value.
+ */
+int DiplomacySellState::getCostAdjustment(int baseCost)
+{
+	int priceFactor = _faction->getRules()->getSellPriceFactor();
+	int repFactor = _faction->getRules()->getRepPriceFactor();
+	int normalizedRep = _faction->getReputationLevel() - 3;
+	int diffFactor = _game->getSavedGame()->getSellPriceCoefficient();
+	int64_t result = baseCost;
+	// A positive reputation makes sales more profitable for the player.
+	result += result * (priceFactor + repFactor * normalizedRep) / 100;
+	result = result * diffFactor / 100;
+
+	return static_cast<int>(result);
+}
+
+/**
  * Determines the category a row item belongs in.
  * @param sel Selected row.
  * @returns Item category.
  */
-std::string SellState::getCategory(int sel) const
+std::string DiplomacySellState::getCategory(int sel) const
 {
-	RuleItem *rule = 0;
+	RuleItem* rule = 0;
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
@@ -417,17 +404,25 @@ std::string SellState::getCategory(int sel) const
 		if (rule->getBattleType() == BT_CORPSE || rule->isAlien())
 		{
 			if (rule->getVehicleUnit())
+			{
 				return "STR_PERSONNEL"; // OXCE: critters fighting for us
+			}
 			if (rule->isAlien())
+			{
 				return "STR_PRISONERS"; // OXCE: live aliens
+			}
 			return "STR_ALIENS";
 		}
 		if (rule->getBattleType() == BT_NONE)
 		{
 			if (_game->getMod()->isCraftWeaponStorageItem(rule))
+			{
 				return "STR_CRAFT_ARMAMENT";
+			}
 			if (_game->getMod()->isArmorStorageItem(rule))
+			{
 				return "STR_ARMORS"; // OXCE: armors
+			}
 			return "STR_COMPONENTS";
 		}
 		return "STR_EQUIPMENT";
@@ -441,7 +436,7 @@ std::string SellState::getCategory(int sel) const
  * @param cat Category.
  * @returns True if row item belongs to given category, otherwise False.
  */
-bool SellState::belongsToCategory(int sel, const std::string &cat) const
+bool DiplomacySellState::belongsToCategory(int sel, const std::string& cat) const
 {
 	switch (_items[sel].type)
 	{
@@ -451,19 +446,13 @@ bool SellState::belongsToCategory(int sel, const std::string &cat) const
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
-		RuleItem *rule = (RuleItem*)_items[sel].rule;
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
 		return rule->belongsToCategory(cat);
 	}
 	return false;
 }
 
-/**
- * Determines if a row item is supposed to be hidden
- * @param sel Selected row.
- * @param cat Category.
- * @returns True if row item is hidden
- */
-bool SellState::isHidden(int sel) const
+bool DiplomacySellState::isHidden(int sel) const
 {
 	std::string itemName;
 
@@ -504,7 +493,7 @@ bool SellState::isHidden(int sel) const
 * Quick search toggle.
 * @param action Pointer to an action.
 */
-void SellState::btnQuickSearchToggle(Action *action)
+void DiplomacySellState::btnQuickSearchToggle(Action* action)
 {
 	if (_btnQuickSearch->getVisible())
 	{
@@ -523,7 +512,7 @@ void SellState::btnQuickSearchToggle(Action *action)
 * Quick search.
 * @param action Pointer to an action.
 */
-void SellState::btnQuickSearchApply(Action *)
+void DiplomacySellState::btnQuickSearchApply(Action*)
 {
 	updateList();
 }
@@ -531,7 +520,7 @@ void SellState::btnQuickSearchApply(Action *)
 /**
  * Filters the current list of items.
  */
-void SellState::updateList()
+void DiplomacySellState::updateList()
 {
 	std::string searchString = _btnQuickSearch->getText();
 	Unicode::upperCase(searchString);
@@ -551,11 +540,26 @@ void SellState::updateList()
 	{
 		switch (_currentSort)
 		{
-		case TransferSortDirection::BY_TOTAL_COST: std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.totalCost > b.totalCost; }); break;
-		case TransferSortDirection::BY_UNIT_COST:  std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.cost > b.cost; }); break;
-		case TransferSortDirection::BY_TOTAL_SIZE: std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.totalSize > b.totalSize; }); break;
-		case TransferSortDirection::BY_UNIT_SIZE:  std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.size > b.size; }); break;
-		default:                                   std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b) { return a.listOrder < b.listOrder; }); break;
+		case TransferSortDirection::BY_TOTAL_COST:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.totalCost > b.totalCost; });
+			break;
+		case TransferSortDirection::BY_UNIT_COST:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.cost > b.cost; });
+			break;
+		case TransferSortDirection::BY_TOTAL_SIZE:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.totalSize > b.totalSize; });
+			break;
+		case TransferSortDirection::BY_UNIT_SIZE:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.size > b.size; });
+			break;
+		default:
+			std::stable_sort(_items.begin(), _items.end(), [](const TransferRow a, const TransferRow b)
+							 { return a.listOrder < b.listOrder; });
+			break;
 		}
 	}
 
@@ -623,7 +627,7 @@ void SellState::updateList()
 		bool ammo = false;
 		if (_items[i].type == TRANSFER_ITEM)
 		{
-			RuleItem *rule = (RuleItem*)_items[i].rule;
+			RuleItem* rule = (RuleItem*)_items[i].rule;
 			ammo = (rule->getBattleType() == BT_AMMO || (rule->getBattleType() == BT_NONE && rule->getClipSize() > 0));
 			if (ammo)
 			{
@@ -633,8 +637,7 @@ void SellState::updateList()
 		std::ostringstream ssQty, ssAmount;
 		ssQty << _items[i].qtySrc - _items[i].amount;
 		ssAmount << _items[i].amount;
-		int64_t adjustedCost = _items[i].cost;
-		_lstItems->addRow(4, name.c_str(), ssQty.str().c_str(), ssAmount.str().c_str(), Unicode::formatFunding(adjustedCost).c_str());
+		_lstItems->addRow(4, name.c_str(), ssQty.str().c_str(), ssAmount.str().c_str(), Unicode::formatFunding(_items[i].cost).c_str());
 		_rows.push_back(i);
 		if (_items[i].amount > 0)
 		{
@@ -651,13 +654,16 @@ void SellState::updateList()
  * Sells the selected items.
  * @param action Pointer to an action.
  */
-void SellState::btnOkClick(Action *)
+void DiplomacySellState::btnOkClick(Action*)
 {
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _total);
+	_faction->setFunds(_faction->getFunds() - _total);
+	Soldier* soldier;
+	Craft* craft;
 
 	auto cleanUpContainer = [&](ItemContainer* container, const RuleItem* rule, int toRemove) -> int
 	{
-		int curr = container->getItem(rule);
+		auto curr = container->getItem(rule);
 		if (curr >= toRemove)
 		{
 			container->removeItem(rule, toRemove);
@@ -682,7 +688,7 @@ void SellState::btnOkClick(Action *)
 		{
 			if (i == rule)
 			{
-				int r = std::min(toRemove, curr);
+				auto r = std::min(toRemove, curr);
 				toRemove -= r;
 				curr -= r;
 				return S{ r, curr, i };
@@ -700,7 +706,7 @@ void SellState::btnOkClick(Action *)
 			}
 		};
 
-		for (auto*& w :* craft2->getWeapons())
+		for (auto*& w : *craft2->getWeapons())
 		{
 			if (w != nullptr)
 			{
@@ -723,7 +729,7 @@ void SellState::btnOkClick(Action *)
 			*craft2->getVehicles(),
 			[&](Vehicle* v)
 			{
-				auto* clipType = v->getRules()->getVehicleClipAmmo();
+				auto clipType = v->getRules()->getVehicleClipAmmo();
 
 				auto launcher = tryRemove(1, v->getRules());
 				auto clip = tryRemove(v->getRules()->getVehicleClipsLoaded(), clipType);
@@ -745,100 +751,100 @@ void SellState::btnOkClick(Action *)
 		return toRemove;
 	};
 
-	Soldier* tmpSoldier;
-	Craft* tmpCraft;
-
-	for (const auto& transferRow : _items)
+	for (std::vector<TransferRow>::const_iterator i = _items.begin(); i != _items.end(); ++i)
 	{
-		if (transferRow.amount > 0)
+		if (i->amount > 0)
 		{
-			switch (transferRow.type)
+			switch (i->type)
 			{
-			case TRANSFER_SOLDIER:
-				tmpSoldier = (Soldier*)transferRow.rule;
-				for (auto soldierIt = _base->getSoldiers()->begin(); soldierIt != _base->getSoldiers()->end(); ++soldierIt)
-				{
-					if (*soldierIt == tmpSoldier)
-					{
-						if (tmpSoldier->getArmor()->getStoreItem())
-						{
-							_base->getStorageItems()->addItem(tmpSoldier->getArmor()->getStoreItem());
-						}
-						_base->getSoldiers()->erase(soldierIt);
-						break;
-					}
-				}
-				delete tmpSoldier;
-				break;
-			case TRANSFER_CRAFT:
-				tmpCraft = (Craft*)transferRow.rule;
-				_base->removeCraft(tmpCraft, true);
-				delete tmpCraft;
-				break;
-			case TRANSFER_SCIENTIST:
-				_base->setScientists(_base->getScientists() - transferRow.amount);
-				break;
-			case TRANSFER_ENGINEER:
-				_base->setEngineers(_base->getEngineers() - transferRow.amount);
-				break;
+			//case TRANSFER_SOLDIER:
+			//	soldier = (Soldier*)i->rule;
+			//	for (std::vector<Soldier*>::iterator s = _base->getSoldiers()->begin(); s != _base->getSoldiers()->end(); ++s)
+			//	{
+			//		if (*s == soldier)
+			//		{
+			//			if ((*s)->getArmor()->getStoreItem())
+			//			{
+			//				_base->getStorageItems()->addItem((*s)->getArmor()->getStoreItem()->getType());
+			//			}
+			//			_base->getSoldiers()->erase(s);
+			//			_faction->getStaffContainer()->addItem((*s)->getRules()->getType());
+			//			break;
+			//		}
+			//	}
+			//	delete soldier;
+			//	break;
+			//case TRANSFER_CRAFT:
+			//	craft = (Craft*)i->rule;
+			//	_base->removeCraft(craft, true);
+			//	_faction->getStaffContainer()->addItem(craft->getRules()->getType());
+			//	delete craft;
+			//	break;
+			//case TRANSFER_SCIENTIST:
+			//	_base->setScientists(_base->getScientists() - i->amount);
+			//	_faction->getStaffContainer()->addItem("STR_SCIENTIST", i->amount);
+			//	break;
+			//case TRANSFER_ENGINEER:
+			//	_base->setEngineers(_base->getEngineers() - i->amount);
+			//	_faction->getStaffContainer()->addItem("STR_ENGINEER", i->amount);
+			//	break;
 			case TRANSFER_ITEM:
-				RuleItem *item = (RuleItem*)transferRow.rule;
+				RuleItem* item = (RuleItem*)i->rule;
 				{
+					_faction->addItem(item, i->amount);
 					// remove all of said items from base
-					int toRemove = cleanUpContainer(_base->getStorageItems(), item, transferRow.amount);
+					int toRemove = cleanUpContainer(_base->getStorageItems(), item, i->amount);
 
 					// if we still need to remove any, remove them from the crafts first, and keep a running tally
-					for (auto* craft : *_base->getCrafts())
+					for (std::vector<Craft*>::iterator j = _base->getCrafts()->begin(); j != _base->getCrafts()->end() && toRemove; ++j)
 					{
-						if (toRemove <= 0) break; // loop finished
-						toRemove = cleanUpContainer(craft->getItems(), item, toRemove);
+						toRemove = cleanUpContainer((*j)->getItems(), item, toRemove);
 						if (toRemove > 0)
 						{
-							toRemove = cleanUpCraft(craft, item, toRemove);
+							toRemove = cleanUpCraft((*j), item, toRemove);
 						}
 					}
 
 					// if there are STILL any left to remove, take them from the transfers, and if necessary, delete it.
-					for (auto transferIt = _base->getTransfers()->begin(); transferIt != _base->getTransfers()->end() && toRemove;)
+					for (std::vector<Transfer*>::iterator j = _base->getTransfers()->begin(); j != _base->getTransfers()->end() && toRemove;)
 					{
-						auto* transfer = (*transferIt);
-						if (transfer->getItems() == item)
+						if ((*j)->getItems() == item)
 						{
-							if (transfer->getQuantity() <= toRemove)
+							if ((*j)->getQuantity() <= toRemove)
 							{
-								toRemove -= transfer->getQuantity();
-								delete transfer;
-								transferIt = _base->getTransfers()->erase(transferIt);
+								toRemove -= (*j)->getQuantity();
+								delete* j;
+								j = _base->getTransfers()->erase(j);
 							}
 							else
 							{
-								transfer->setItems(transfer->getItems(), transfer->getQuantity() - toRemove);
+								(*j)->setItems((*j)->getItems(), (*j)->getQuantity() - toRemove);
 								toRemove = 0;
 							}
 						}
 						else
 						{
-							if (transfer->getCraft())
+							if ((*j)->getCraft())
 							{
-								toRemove = cleanUpContainer(transfer->getCraft()->getItems(), item, toRemove);
+								toRemove = cleanUpContainer((*j)->getCraft()->getItems(), item, toRemove);
 								if (toRemove > 0)
 								{
-									toRemove = cleanUpCraft(transfer->getCraft(), item, toRemove);
+									toRemove = cleanUpCraft((*j)->getCraft(), item, toRemove);
 								}
 							}
-							++transferIt;
+							++j;
 						}
 					}
-				}
 
-				// Note: this only updates a helper map, it doesn't affect real item recovery (that has already happened and all items are already in the base)
-				if (_debriefingState != 0)
-				{
-					// remember the decreased amount for next sell/transfer
-					_debriefingState->decreaseRecoveredItemCount(item, transferRow.amount);
+					// Note: this only updates a helper map, it doesn't affect real item recovery (that has already happened and all items are already in the base)
+					if (_debriefingState != 0)
+					{
+						// remember the decreased amount for next sell/transfer
+						_debriefingState->decreaseRecoveredItemCount(item, i->amount);
 
-					// set autosell status if we sold all of the item
-					_game->getSavedGame()->setAutosell(item, (transferRow.qtySrc == transferRow.amount));
+						// set autosell status if we sold all of the item
+						_game->getSavedGame()->setAutosell(item, (i->qtySrc == i->amount));
+					}
 				}
 
 				break;
@@ -846,10 +852,10 @@ void SellState::btnOkClick(Action *)
 		}
 		else
 		{
-			if (_debriefingState != 0 && transferRow.type == TRANSFER_ITEM)
+			if (_debriefingState != 0 && i->type == TRANSFER_ITEM)
 			{
 				// disable autosell since we haven't sold any of the item.
-				_game->getSavedGame()->setAutosell((RuleItem*)transferRow.rule, false);
+				_game->getSavedGame()->setAutosell((RuleItem*)i->rule, false);
 			}
 		}
 	}
@@ -864,7 +870,7 @@ void SellState::btnOkClick(Action *)
  * Returns to the previous screen.
  * @param action Pointer to an action.
  */
-void SellState::btnCancelClick(Action *)
+void DiplomacySellState::btnCancelClick(Action*)
 {
 	_game->popState();
 }
@@ -874,7 +880,7 @@ void SellState::btnCancelClick(Action *)
 * Returns back to this screen when finished.
 * @param action Pointer to an action.
 */
-void SellState::btnTransferClick(Action *)
+void DiplomacySellState::btnTransferClick(Action*)
 {
 	_reset = true;
 	_game->pushState(new TransferBaseState(_base, nullptr));
@@ -884,7 +890,7 @@ void SellState::btnTransferClick(Action *)
 * Increase all items to max, i.e. sell everything.
 * @param action Pointer to an action.
 */
-void SellState::btnSellAllClick(Action *)
+void DiplomacySellState::btnSellAllClick(Action*)
 {
 	bool allItemsSelected = true;
 	for (size_t i = 0; i < _lstItems->getTexts(); ++i)
@@ -910,7 +916,7 @@ void SellState::btnSellAllClick(Action *)
 * Increase all items to max - 1, i.e. sell everything but one.
 * @param action Pointer to an action.
 */
-void SellState::btnSellAllButOneClick(Action *)
+void DiplomacySellState::btnSellAllButOneClick(Action*)
 {
 	_sellAllButOne = true;
 	btnSellAllClick(nullptr);
@@ -921,19 +927,19 @@ void SellState::btnSellAllButOneClick(Action *)
  * Starts increasing the item.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsLeftArrowPress(Action *action)
+void DiplomacySellState::lstItemsLeftArrowPress(Action* action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (_game->isLeftClick(action, true) && !_timerInc->isRunning()) _timerInc->start();
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerInc->isRunning()) _timerInc->start();
 }
 
 /**
  * Stops increasing the item.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsLeftArrowRelease(Action *action)
+void DiplomacySellState::lstItemsLeftArrowRelease(Action* action)
 {
-	if (_game->isLeftClick(action, true))
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
 		_timerInc->stop();
 	}
@@ -944,12 +950,12 @@ void SellState::lstItemsLeftArrowRelease(Action *action)
  * by one on left-click, to max on right-click.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsLeftArrowClick(Action *action)
+void DiplomacySellState::lstItemsLeftArrowClick(Action* action)
 {
-	if (_game->isRightClick(action, true)) changeByValue(INT_MAX, 1);
-	if (_game->isLeftClick(action, true))
+	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) changeByValue(INT_MAX, 1);
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		changeByValue(_game->getScrollStep(), 1);
+		changeByValue(1, 1);
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -959,19 +965,19 @@ void SellState::lstItemsLeftArrowClick(Action *action)
  * Starts decreasing the item.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsRightArrowPress(Action *action)
+void DiplomacySellState::lstItemsRightArrowPress(Action* action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (_game->isLeftClick(action, true) && !_timerDec->isRunning()) _timerDec->start();
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerDec->isRunning()) _timerDec->start();
 }
 
 /**
  * Stops decreasing the item.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsRightArrowRelease(Action *action)
+void DiplomacySellState::lstItemsRightArrowRelease(Action* action)
 {
-	if (_game->isLeftClick(action, true))
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
 		_timerDec->stop();
 	}
@@ -982,12 +988,12 @@ void SellState::lstItemsRightArrowRelease(Action *action)
  * by one on left-click, to 0 on right-click.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsRightArrowClick(Action *action)
+void DiplomacySellState::lstItemsRightArrowClick(Action* action)
 {
-	if (_game->isRightClick(action, true)) changeByValue(INT_MAX, -1);
-	if (_game->isLeftClick(action, true))
+	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) changeByValue(INT_MAX, -1);
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		changeByValue(_game->getScrollStep(), -1);
+		changeByValue(1, -1);
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -997,7 +1003,7 @@ void SellState::lstItemsRightArrowClick(Action *action)
  * Handles the mouse-wheels on the arrow-buttons.
  * @param action Pointer to an action.
  */
-void SellState::lstItemsMousePress(Action *action)
+void DiplomacySellState::lstItemsMousePress(Action* action)
 {
 	_sel = _lstItems->getSelectedRow();
 	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
@@ -1020,7 +1026,7 @@ void SellState::lstItemsMousePress(Action *action)
 			changeByValue(Options::changeValueByMouseWheel, -1);
 		}
 	}
-	else if (_game->isRightClick(action, true))
+	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 	{
 		if (action->getAbsoluteXMouse() >= _lstItems->getArrowsLeftEdge() &&
 			action->getAbsoluteXMouse() <= _lstItems->getArrowsRightEdge())
@@ -1029,50 +1035,12 @@ void SellState::lstItemsMousePress(Action *action)
 		}
 		if (getRow().type == TRANSFER_ITEM)
 		{
-			RuleItem *rule = (RuleItem*)getRow().rule;
+			RuleItem* rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
 				if (_game->isCtrlPressed(true))
 				{
-					if (_game->isShiftPressed(true))
-					{
-						if (!rule->getType().empty())
-						{
-							bool categoryHidden = (_cats[_cbxCategory->getSelected()] == "STR_FILTER_HIDDEN");
-
-							auto& hiddenMap = _game->getSavedGame()->getHiddenPurchaseItems();
-							auto iter = hiddenMap.find(rule->getType());
-							bool hidden = false;
-							if (iter != hiddenMap.end())
-							{
-								// found => unhide it when in "Hidden" view; mark it as hidden otherwise
-								hidden = !categoryHidden;
-							}
-							else
-							{
-								// not found = not hidden yet => mark it as hidden
-								hidden = true;
-							}
-							_game->getSavedGame()->setHiddenPurchaseItemsStatus(rule->getType(), hidden);
-
-							if (categoryHidden)
-							{
-								// update screen
-								size_t scrollPos = _lstItems->getScroll();
-								updateList();
-								_lstItems->scrollTo(scrollPos);
-							}
-							else
-							{
-								// no screen update, at least play a sound
-								_game->getMod()->getSound("GEO.CAT", Mod::UFO_EXPLODE)->play();
-							}
-						}
-					}
-					else
-					{
-						_game->pushState(new ItemLocationsState(rule));
-					}
+					_game->pushState(new ItemLocationsState(rule));
 				}
 				else
 				{
@@ -1081,42 +1049,33 @@ void SellState::lstItemsMousePress(Action *action)
 			}
 		}
 	}
-	else if (_game->isMiddleClick(action, true))
+	else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
 	{
 		if (getRow().type == TRANSFER_ITEM)
 		{
-			RuleItem *rule = (RuleItem*)getRow().rule;
+			RuleItem* rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				std::string articleId = rule->getUfopediaType();
-				if (_game->isCtrlPressed(true))
+				std::string articleId = rule->getType();
+				const RuleResearch* selectedTopic = _game->getMod()->getResearch(articleId, false);
+				bool ctrlPressed = SDL_GetModState() & KMOD_CTRL;
+				if (selectedTopic && ctrlPressed && _game->getMod()->getIsResearchTreeDisabled() && !_game->getSavedGame()->getDebugMode())
 				{
-					Ufopaedia::openArticle(_game, articleId);
+					_game->pushState(new TechTreeViewerState(selectedTopic, 0));
 				}
 				else
 				{
-					const RuleResearch* selectedTopic = _game->getMod()->getResearch(articleId, false);
-					if (selectedTopic)
-					{
-						_game->pushState(new TechTreeViewerState(selectedTopic, 0));
-					}
+					Ufopaedia::openArticle(_game, articleId);
 				}
 			}
 		}
 		else if (getRow().type == TRANSFER_CRAFT)
 		{
-			Craft *rule = (Craft*)getRow().rule;
+			Craft* rule = (Craft*)getRow().rule;
 			if (rule != 0)
 			{
 				std::string articleId = rule->getRules()->getType();
-				if (_game->isCtrlPressed(true))
-				{
-					Ufopaedia::openArticle(_game, articleId);
-				}
-				else
-				{
-					_game->pushState(new TechTreeViewerState(0, 0, 0, rule->getRules()));
-				}
+				Ufopaedia::openArticle(_game, articleId);
 			}
 		}
 	}
@@ -1125,11 +1084,11 @@ void SellState::lstItemsMousePress(Action *action)
 /**
  * Increases the quantity of the selected item to sell by one.
  */
-void SellState::increase()
+void DiplomacySellState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	changeByValue(_game->getScrollStep(), 1);
+	changeByValue(1, 1);
 }
 
 /**
@@ -1137,31 +1096,15 @@ void SellState::increase()
  * @param change How much we want to add or remove.
  * @param dir Direction to change, +1 to increase or -1 to decrease.
  */
-void SellState::changeByValue(int change, int dir)
+void DiplomacySellState::changeByValue(int change, int dir)
 {
-	if (dir > 0 && getRow().type == TRANSFER_ITEM)
-	{
-		const RuleItem* tmpItem = (const RuleItem*)getRow().rule;;
-		if (!tmpItem->getSellActionMessage().empty() && !_game->isShiftPressed(true))
-		{
-			_timerInc->stop();
-			_timerDec->stop();
-			RuleInterface* menuInterface = _game->getMod()->getInterface("buyMenu");
-			_game->pushState(new ErrorMessageState(
-				tr(tmpItem->getSellActionMessage()),
-				_palette,
-				menuInterface->getElement("errorMessage")->color,
-				"BACK13.SCR",
-				menuInterface->getElement("errorPalette")->color)
-			);
-
-			return;
-		}
-	}
-
 	if (dir > 0)
 	{
-		if (0 >= change || getRow().qtySrc <= getRow().amount) return;
+		if (change <= 0 || getRow().qtySrc <= getRow().amount)
+		{
+			return;
+		}
+
 		change = std::min(getRow().qtySrc - getRow().amount, change);
 		if (_sellAllButOne && change > 0)
 		{
@@ -1170,60 +1113,83 @@ void SellState::changeByValue(int change, int dir)
 	}
 	else
 	{
-		if (0 >= change || 0 >= getRow().amount) return;
+		if (change <= 0 || getRow().amount <= 0)
+		{
+			return;
+		}
+		
 		change = std::min(getRow().amount, change);
 	}
+	int oldAmmount = getRow().amount;
 	getRow().amount += dir * change;
-	_total += dir * getRow().cost * change;
+	int64_t increase = dir * getRow().cost * change;
+	_total += increase;
 
-	// Calculate the change in storage space.
-	Soldier *soldier;
-	const RuleItem *item;
-	switch (getRow().type)
+	std::string errorMessage;
+	if (_total > _faction->getFunds())
 	{
-	case TRANSFER_SOLDIER:
-		soldier = (Soldier*)getRow().rule;
-		if (soldier->getArmor()->getStoreItem())
-		{
-			_spaceChange += dir * soldier->getArmor()->getStoreItem()->getSize();
-		}
-		break;
-	case TRANSFER_CRAFT:
-		// Note: in OXCE, there is no storage space change, everything on the craft is already included in the base storage space calculations
-		break;
-	case TRANSFER_ITEM:
-		item = (const RuleItem*)getRow().rule;
-		_spaceChange -= dir * change * item->getSize();
-		break;
-	default:
-		//TRANSFER_SCIENTIST and TRANSFER_ENGINEER do not own anything that takes storage
-		break;
+		errorMessage = tr("STR_NOT_ENOUGH_MONEY_FACTION");
 	}
 
-	updateItemStrings();
+	if (errorMessage.empty())
+	{
+		// Calculate the change in storage space.
+		Soldier* soldier;
+		const RuleItem* item;
+		switch (getRow().type)
+		{
+		case TRANSFER_SOLDIER:
+			soldier = (Soldier*)getRow().rule;
+			if (soldier->getArmor()->getStoreItem())
+			{
+				_spaceChange += dir * soldier->getArmor()->getStoreItem()->getSize();
+			}
+			break;
+		case TRANSFER_CRAFT:
+			// Note: in OXCE, there is no storage space change, everything on the craft is already included in the base storage space calculations;
+			break;
+		case TRANSFER_ITEM:
+			item = (const RuleItem*)getRow().rule;
+			_spaceChange -= dir * change * item->getSize();
+			break;
+		default:
+			//TRANSFER_SCIENTIST and TRANSFER_ENGINEER do not own anything that takes storage
+			break;
+		}
+
+		updateItemStrings();
+	}
+	else
+	{
+		_timerInc->stop();
+		_total -= increase;
+		getRow().amount = oldAmmount;
+		RuleInterface* menuInterface = _game->getMod()->getInterface("buyMenu");
+		_game->pushState(new ErrorMessageState(errorMessage, _palette, menuInterface->getElement("errorMessage")->color, "BACK13.SCR", menuInterface->getElement("errorPalette")->color));
+	}
 }
 
 /**
  * Decreases the quantity of the selected item to sell by one.
  */
-void SellState::decrease()
+void DiplomacySellState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	changeByValue(_game->getScrollStep(), -1);
+	changeByValue(1, -1);
 }
 
 /**
  * Updates the quantity-strings of the selected item.
  */
-void SellState::updateItemStrings()
+void DiplomacySellState::updateItemStrings()
 {
 	std::ostringstream ss, ss2, ss3;
 	ss << getRow().amount;
 	_lstItems->setCellText(_sel, 2, ss.str());
 	ss2 << getRow().qtySrc - getRow().amount;
 	_lstItems->setCellText(_sel, 1, ss2.str());
-	_txtSales->setText(tr("STR_VALUE_OF_SALES").arg(Unicode::formatFunding(_total)));
+	_txtSales->setText(tr("STR_VALUE_OF_SALES_LC").arg(Unicode::formatFunding(_total)));
 
 	if (getRow().amount > 0)
 	{
@@ -1234,7 +1200,7 @@ void SellState::updateItemStrings()
 		_lstItems->setRowColor(_sel, _lstItems->getColor());
 		if (getRow().type == TRANSFER_ITEM)
 		{
-			RuleItem *rule = (RuleItem*)getRow().rule;
+			RuleItem* rule = (RuleItem*)getRow().rule;
 			if (rule->getBattleType() == BT_AMMO || (rule->getBattleType() == BT_NONE && rule->getClipSize() > 0))
 			{
 				_lstItems->setRowColor(_sel, _ammoColor);
@@ -1259,19 +1225,34 @@ void SellState::updateItemStrings()
 }
 
 /**
-* Updates the production list to match the category filter.
+* Updates the selling list to match the category filter.
 */
-void SellState::cbxCategoryChange(Action *)
+void DiplomacySellState::cbxCategoryChange(Action*)
 {
-	_previousSort = _currentSort;
+	updateList();
+}
 
-	if (_game->isCtrlPressed(true))
+void DiplomacySellState::cbxSortByChange(Action *action)
+{
+
+	size_t selSorting = _cbxSortBy->getSelected();
+	const std::string selectedSorting = _sortingTypes[selSorting];
+
+	if (selectedSorting == "STR_BY_TOTAL_SIZE")
 	{
-		_currentSort = _game->isShiftPressed(true) ? TransferSortDirection::BY_UNIT_SIZE : TransferSortDirection::BY_TOTAL_SIZE;
+		_currentSort = TransferSortDirection::BY_TOTAL_SIZE;
 	}
-	else if (_game->isAltPressed(true))
+	else if (selectedSorting == "STR_BY_UNIT_SIZE")
 	{
-		_currentSort = _game->isShiftPressed(true) ? TransferSortDirection::BY_UNIT_COST : TransferSortDirection::BY_TOTAL_COST;
+		_currentSort = TransferSortDirection::BY_UNIT_SIZE;
+	}
+	/*else if (selectedSorting == "STR_BY_TOTAL_COST")
+	{
+		_currentSort = TransferSortDirection::BY_TOTAL_COST;
+	}*/
+	else if (selectedSorting == "STR_BY_UNIT_COST")
+	{
+		_currentSort = TransferSortDirection::BY_UNIT_COST;
 	}
 	else
 	{
@@ -1279,6 +1260,7 @@ void SellState::cbxCategoryChange(Action *)
 	}
 
 	updateList();
-}
 
+	_previousSort = _currentSort;
+}
 }

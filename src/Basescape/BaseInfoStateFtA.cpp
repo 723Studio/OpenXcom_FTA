@@ -538,7 +538,7 @@ void BaseInfoStateFtA::btnStoresClick(Action *)
  */
 void BaseInfoStateFtA::btnDisposeClick(Action* action)
 {
-	_game->pushState(new DisposeState(_base, 0));
+	_game->pushState(new DisposeState(_base, 0, OPT_BASESCAPE));
 }
 
 /**

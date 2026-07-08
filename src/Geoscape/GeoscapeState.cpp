@@ -63,7 +63,6 @@
 #include "UfoTrackerState.h"
 #include "InterceptState.h"
 #include "../Basescape/BasescapeState.h"
-#include "../Basescape/SellState.h"
 #include "../Basescape/ManageAlienContainmentState.h"
 #include "../Basescape/TechTreeViewerState.h"
 #include "../Basescape/GlobalManufactureState.h"
@@ -74,9 +73,8 @@
 #include "../Menu/ErrorMessageState.h"
 #include "GraphsState.h"
 #include "FundingState.h"
-#include "../FTA/DiplomacyStartState.h"
+#include "../Basescape/DiplomacyStartState.h"
 #include "ExtendedGeoscapeLinksState.h"
-#include "MonthlyReportState.h"
 #include "AltMonthlyReportState.h"
 #include "ProductionCompleteState.h"
 #include "UfoDetectedState.h"
@@ -102,8 +100,6 @@
 #include "ResearchRequiredState.h"
 #include "NewPossibleResearchState.h"
 #include "NewPossibleManufactureState.h"
-#include "NewPossiblePurchaseState.h"
-#include "NewPossibleCraftState.h"
 #include "NewPossibleFacilityState.h"
 #include "TrainingFinishedState.h"
 #include "../Savegame/Production.h"
@@ -142,7 +138,7 @@
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 #include "../Mod/Texture.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
@@ -1157,7 +1153,7 @@ void GeoscapeState::time5Seconds()
 			if (xcraft->isDestroyed())
 			{
 				int score = xcraft->getRules()->getScore();
-				_game->getMasterMind()->updateLoyalty(-score);
+				_game->getFtaGameServices()->updateLoyalty(-score);
 				for (auto* country : *_game->getSavedGame()->getCountries())
 				{
 					if (country->getRules()->insideCountry(xcraft->getLongitude(), xcraft->getLatitude()))
@@ -1871,7 +1867,7 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
 
 	if (score)
 	{
-		_game->getMasterMind()->updateLoyalty(score, ALIEN_MISSION_DESPAWN);
+		_game->getFtaGameServices()->updateLoyalty(score, ALIEN_MISSION_DESPAWN);
 	}
 
 	Region *region = _game->getSavedGame()->locateRegion(*site);
@@ -1956,7 +1952,7 @@ void GeoscapeState::time30Minutes()
 			// Marked expired UFOs for removal.
 			if (_fta)
 			{
-				_game->getMasterMind()->updateLoyalty(-ufo->getRules()->getScore() * RNG::generate(5, 10) * (_game->getSavedGame()->getDifficultyCoefficient() + 1));
+				_game->getFtaGameServices()->updateLoyalty(-ufo->getRules()->getScore() * RNG::generate(5, 10) * (_game->getSavedGame()->getDifficultyCoefficient() + 1));
 			}
 			ufo->setStatus(Ufo::DESTROYED);
 		}
@@ -2174,7 +2170,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 	}
 	if (ufo->getDetected())
 	{
-		_game->getMasterMind()->updateLoyalty(ufo->getRules()->getMissionScore(), ALIEN_UFO_ACTIVITY);
+		_game->getFtaGameServices()->updateLoyalty(ufo->getRules()->getMissionScore(), ALIEN_UFO_ACTIVITY);
 	}
 }
 
@@ -2258,7 +2254,7 @@ void GeoscapeState::time1Hour()
 		std::map<Production*, productionProgress_e> toRemove;
 		for (auto* prod : xbase->getProductions())
 		{
-			int rating = _game->getMasterMind()->getLoyaltyPerformanceBonus();
+			int rating = _game->getFtaGameServices()->getLoyaltyPerformanceBonus();
 			toRemove[prod] = prod->step(xbase, _game->getSavedGame(), _game->getMod(), _game->getLanguage(), rating);
 		}
 		for (const auto& pair : toRemove)
@@ -2287,12 +2283,6 @@ void GeoscapeState::time1Hour()
 
 		if (Options::storageLimitsEnforced)
 		{
-			if (xbase->storesOverfull())
-			{
-				timerReset();
-				popup(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(xbase->getName()), _palette, _game->getMod()->getInterface("geoscape")->getElement("errorMessage")->color, "BACK13.SCR", _game->getMod()->getInterface("geoscape")->getElement("errorPalette")->color));
-				popup(new SellState(xbase, 0));
-			}
 			if (!_game->getSavedGame()->getAlienContainmentChecked())
 			{
 				std::map<int, int> prisonTypes;
@@ -2559,7 +2549,7 @@ void GeoscapeState::time1Day()
 			std::string desc = "";
 			int progress = project->getStepProgress(soldiers,
 				_game->getMod(),
-				_game->getMasterMind()->getLoyaltyPerformanceBonus(), desc, false);
+				_game->getFtaGameServices()->getLoyaltyPerformanceBonus(), desc, false);
 
 
 			if (project->roll(_game, *_globe, progress,	intelProjectFinished))
@@ -2706,7 +2696,7 @@ void GeoscapeState::time1Day()
 	_game->getSavedGame()->handleEventScriptTimers();
 
 	// Handle daily internal xcom events
-	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
+	_game->getFtaGameServices()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
 
 	//Handle daily Faction logic
 	int day = saveGame->getTime()->getDay();
@@ -2803,7 +2793,7 @@ void GeoscapeState::time1Day()
 		}
 		if (ab->isDiscovered())
 		{
-			_game->getMasterMind()->updateLoyalty(points, ALIEN_BASE);
+			_game->getFtaGameServices()->updateLoyalty(points, ALIEN_BASE);
 		}
 	}
 
@@ -2940,22 +2930,14 @@ void GeoscapeState::time1Month()
 
 	// Handle funding
 	timerReset();
-	if (_fta)
+	if (_game->getSavedGame()->getMonthsPassed() > _game->getMod()->getFTAGameLength())
 	{
-		if (_game->getSavedGame()->getMonthsPassed() > _game->getMod()->getFTAGameLength())
-		{
-			popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
-		}
-		else
-		{
-			_game->getSavedGame()->monthlyScoring();
-			popup(new AltMonthlyReportState(_globe));
-		}
+		popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
 	}
 	else
 	{
-		_game->getSavedGame()->monthlyFunding();
-		popup(new MonthlyReportState(_globe));
+		_game->getSavedGame()->monthlyScoring();
+		popup(new AltMonthlyReportState(_globe));
 	}
 
 	// Handle Xcom Operatives discovering bases
@@ -4142,7 +4124,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 	}
 
 	// after the mission scripts, it's time for the event scripts
-	_game->getMasterMind()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
+	_game->getFtaGameServices()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
 
 	// Alien base upgrades happen only AFTER the first game month
 	if (isNewMonth && month > 0)
@@ -4835,7 +4817,7 @@ void GeoscapeState::handleResearch(Base* base)
 
 			if (assignedScientists.size() > 0)
 			{
-				progress = project->getStepProgress(assignedScientists, _game->getMod(), _game->getMasterMind()->getLoyaltyPerformanceBonus());
+				progress = project->getStepProgress(assignedScientists, _game->getMod(), _game->getFtaGameServices()->getLoyaltyPerformanceBonus());
 			}
 		}
 		else
@@ -4965,7 +4947,7 @@ void GeoscapeState::handleResearch(Base* base)
 		std::vector<RuleResearch *> newPossibleResearch;
 		saveGame->getNewlyAvailableResearchProjects(before, after, newPossibleResearch);
 		popup(new NewPossibleResearchState(base, newPossibleResearch));
-		// 3i. inform about new possible manufacture, purchase, craft and facilities
+		// 3i. inform about new possible manufacture and facilities
 		std::vector<RuleManufacture *> newPossibleManufacture;
 		saveGame->getDependableManufacture(newPossibleManufacture, research, mod, base);
 		if (bonus)
@@ -4978,30 +4960,7 @@ void GeoscapeState::handleResearch(Base* base)
 			Collections::sortVectorMakeUnique(newPossibleManufacture);
 			popup(new NewPossibleManufactureState(base, newPossibleManufacture));
 		}
-		std::vector<RuleItem *> newPossiblePurchase;
-		_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, research, _game->getMod());
-		if (bonus)
-		{
-			_game->getSavedGame()->getDependablePurchase(newPossiblePurchase, bonus, _game->getMod());
-		}
-		if (!newPossiblePurchase.empty())
-		{
-			Collections::sortVector(newPossiblePurchase);
-			Collections::sortVectorMakeUnique(newPossiblePurchase);
-			popup(new NewPossiblePurchaseState(base, newPossiblePurchase));
-		}
-		std::vector<RuleCraft *> newPossibleCraft;
-		_game->getSavedGame()->getDependableCraft(newPossibleCraft, research, _game->getMod());
-		if (bonus)
-		{
-			_game->getSavedGame()->getDependableCraft(newPossibleCraft, bonus, _game->getMod());
-		}
-		if (!newPossibleCraft.empty())
-		{
-			Collections::sortVector(newPossibleCraft);
-			Collections::sortVectorMakeUnique(newPossibleCraft);
-			popup(new NewPossibleCraftState(base, newPossibleCraft));
-		}
+		
 		std::vector<RuleBaseFacility *> newPossibleFacilities;
 		_game->getSavedGame()->getDependableFacilities(newPossibleFacilities, research, _game->getMod());
 		if (bonus)

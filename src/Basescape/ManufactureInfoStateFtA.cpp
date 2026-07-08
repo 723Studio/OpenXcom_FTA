@@ -46,7 +46,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Basescape/ManufactureAllocateEngineersState.h"
-#include "../FTA/MasterMind.h"
+#include "../Engine/FtaGameServices.h"
 
 #include <climits>
 

@@ -37,8 +37,8 @@
 #include "DismantleFacilityState.h"
 #include "../Geoscape/BuildNewBaseState.h"
 #include "../Engine/Action.h"
-#include "../FTA/DiplomacyStartState.h"
-#include "BaseInfoState.h"
+#include "DiplomacyStartState.h"
+#include "DisposeState.h"
 #include "BaseInfoStateFtA.h"
 #include "SoldiersState.h"
 #include "CraftsState.h"
@@ -49,8 +49,6 @@
 #include "CovertOperationState.h"
 #include "ManageAlienContainmentState.h"
 #include "ManufactureState.h"
-#include "PurchaseState.h"
-#include "SellState.h"
 #include "TransferBaseState.h"
 #include "CraftInfoState.h"
 #include "../Geoscape/AllocatePsiTrainingState.h"
@@ -76,7 +74,6 @@ namespace OpenXcom
 BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(globe)
 {
 	// Create objects
-	_fta = _game->getMod()->isFTAGame();
 	_txtFacility = new Text(192, 9, 0, 0);
 	_view = new BaseView(192, 192, 0, 8);
 	_mini = new MiniBaseView(128, 16, 192, 41);
@@ -85,42 +82,17 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	_txtFunds = new Text(126, 9, 194, 24);
 	_txtLoyalty = new Text(126, 9, 194, 32);
 
-	if (!_fta)
-	{
-		_btnNewBase = new TextButton(128, 12, 192, 58);
-		_btnBaseInfo = new TextButton(128, 12, 192, 71);
-		_btnSoldiers = new TextButton(128, 12, 192, 84);
-		_btnCrafts = new TextButton(128, 12, 192, 97);
-		_btnFacilities = new TextButton(128, 12, 192, 110);
-		_btnResearch = new TextButton(128, 12, 192, 123);
-		_btnManufacture = new TextButton(128, 12, 192, 136);
-		_btnTransfer = new TextButton(128, 12, 192, 149);
-		_btnPurchase = new TextButton(128, 12, 192, 162);
-		_btnSell = new TextButton(128, 12, 192, 175);
-		_btnGeoscape = new TextButton(128, 12, 192, 188);
-		//hidden buttons
-		_btnIntel = new TextButton(0, 0, 0, 0);
-		_btnCovertOps = new TextButton(0, 0, 0, 0);
-		_btnDiplomacy = new TextButton(0, 0, 0, 0);
-	}
-	else
-	{
-		_btnBaseInfo = new TextButton(128, 12, 192, 58);
-		_btnSoldiers = new TextButton(128, 12, 192, 71);
-		_btnCrafts = new TextButton(128, 12, 192, 84);
-		_btnFacilities = new TextButton(128, 12, 192, 97);
-		_btnResearch = new TextButton(128, 12, 192, 110);
-		_btnManufacture = new TextButton(128, 12, 192, 123);
-		_btnIntel = new TextButton(128, 12, 192, 136);
-		_btnCovertOps = new TextButton(128, 12, 192, 149);
-		_btnTransfer = new TextButton(128, 12, 192, 162);
-		_btnDiplomacy = new TextButton(128, 12, 192, 175);
-		_btnGeoscape = new TextButton(128, 12, 192, 188);
-		//hidden buttons
-		_btnNewBase = new TextButton(0, 0, 0, 0);
-		_btnPurchase = new TextButton(0, 0, 0, 0);
-		_btnSell = new TextButton(0, 0, 0, 0);
-	}
+	_btnBaseInfo = new TextButton(128, 12, 192, 58);
+	_btnSoldiers = new TextButton(128, 12, 192, 71);
+	_btnCrafts = new TextButton(128, 12, 192, 84);
+	_btnFacilities = new TextButton(128, 12, 192, 97);
+	_btnResearch = new TextButton(128, 12, 192, 110);
+	_btnManufacture = new TextButton(128, 12, 192, 123);
+	_btnIntel = new TextButton(128, 12, 192, 136);
+	_btnCovertOps = new TextButton(128, 12, 192, 149);
+	_btnTransfer = new TextButton(128, 12, 192, 162);
+	_btnDiplomacy = new TextButton(128, 12, 192, 175);
+	_btnGeoscape = new TextButton(128, 12, 192, 188);
 
 	// Set palette
 	setInterface("basescape");
@@ -132,7 +104,6 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	add(_txtLocation, "text2", "basescape");
 	add(_txtFunds, "text3", "basescape");
 	add(_txtLoyalty, "text3", "basescape");
-	add(_btnNewBase, "button", "basescape");
 	add(_btnBaseInfo, "button", "basescape");
 	add(_btnSoldiers, "button", "basescape");
 	add(_btnCrafts, "button", "basescape");
@@ -140,8 +111,6 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	add(_btnResearch, "button", "basescape");
 	add(_btnManufacture, "button", "basescape");
 	add(_btnTransfer, "button", "basescape");
-	add(_btnPurchase, "button", "basescape");
-	add(_btnSell, "button", "basescape");
 	add(_btnGeoscape, "button", "basescape");
 	add(_btnIntel, "button", "basescape");
 	add(_btnCovertOps, "button", "basescape");
@@ -184,18 +153,12 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	_edtBase->setBig();
 	_edtBase->onChange((ActionHandler)&BasescapeState::edtBaseChange);
 
-	_btnNewBase->setText(tr("STR_BUILD_NEW_BASE_UC"));
-	_btnNewBase->onMouseClick((ActionHandler)&BasescapeState::btnNewBaseClick);
-	_btnNewBase->onKeyboardPress((ActionHandler)&BasescapeState::btnNewBaseClick, Options::keyBasescapeBuildNewBase);
-	if (_fta)
-		_btnNewBase->setVisible(false);
-
 	_btnBaseInfo->setText(tr("STR_BASE_INFORMATION"));
 	_btnBaseInfo->onMouseClick((ActionHandler)&BasescapeState::btnBaseInfoClick);
 	_btnBaseInfo->onKeyboardPress((ActionHandler)&BasescapeState::btnBaseInfoClick, Options::keyBasescapeBaseInfo);
 
 	_btnSoldiers->setText(tr("STR_SOLDIERS_UC"));
-	_btnSoldiers->setText(_fta ? tr("STR_PERSONNEL_UC") : tr("STR_SOLDIERS_UC"));
+	_btnSoldiers->setText(tr("STR_PERSONNEL_UC"));
 	_btnSoldiers->onMouseClick((ActionHandler)&BasescapeState::btnSoldiersClick);
 	_btnSoldiers->onKeyboardPress((ActionHandler)&BasescapeState::btnSoldiersClick, Options::keyBasescapeSoldiers);
 
@@ -218,29 +181,18 @@ BasescapeState::BasescapeState(Base *base, Globe *globe) : _base(base), _globe(g
 	_btnIntel->setText(tr("STR_INTELLIGENCE_UC"));
 	_btnIntel->onMouseClick((ActionHandler)&BasescapeState::btnIntelligenceClick);
 	_btnIntel->onKeyboardPress((ActionHandler)&BasescapeState::btnIntelligenceClick, Options::keyBasescapeIntel);
-	_btnIntel->setVisible(_fta ? true : false);
 
 	_btnCovertOps->setText(tr("STR_COVERT_OPERATIONS_UC"));
 	_btnCovertOps->onMouseClick((ActionHandler)&BasescapeState::btnCovertOpsClick);
 	_btnCovertOps->onKeyboardPress((ActionHandler)&BasescapeState::btnCovertOpsClick, Options::keyBasescapeCovertOperations);
-	_btnCovertOps->setVisible(_fta ? true : false);
 
 	_btnTransfer->setText(tr("STR_TRANSFER_UC"));
 	_btnTransfer->onMouseClick((ActionHandler)&BasescapeState::btnTransferClick);
 	_btnTransfer->onKeyboardPress((ActionHandler)&BasescapeState::btnTransferClick, Options::keyBasescapeTransfer);
 
-	_btnPurchase->setText(tr("STR_PURCHASE_RECRUIT"));
-	_btnPurchase->onMouseClick((ActionHandler)&BasescapeState::btnPurchaseClick);
-	_btnPurchase->setVisible(_fta ? false : true);
-	
-	_btnSell->setText(tr("STR_SELL_SACK_UC"));
-	_btnSell->onMouseClick((ActionHandler)&BasescapeState::btnSellClick);
-	_btnPurchase->setVisible(_fta ? false : true);
-
 	_btnDiplomacy->setText(tr("STR_DIPLOMACY_UC"));
 	_btnDiplomacy->onMouseClick((ActionHandler)&BasescapeState::btnDiplomacyClick);
 	_btnDiplomacy->onKeyboardPress((ActionHandler)&BasescapeState::btnDiplomacyClick, Options::keyDiplomacy);
-	_btnDiplomacy->setVisible(_fta ? true : false);
 
 	_btnGeoscape->setText(tr("STR_GEOSCAPE_UC"));
 	_btnGeoscape->onMouseClick((ActionHandler)&BasescapeState::btnGeoscapeClick);
@@ -292,28 +244,10 @@ void BasescapeState::init()
 	}
 
 	_txtFunds->setText(tr("STR_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
-	if (_game->getMod()->isFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
-	{
-		/*std::ostringstream ss;
-		ss << tr("STR_LOYALTY_RATING").arg(_game->getSavedGame()->getLoyalty()) <<  " (" << _game->getMasterMind()->getLoyaltyPerformanceBonus() - 100 << "%)";
-		_txtLoyalty->setText(ss.str())*/;
+	if (_game->getSavedGame()->isResearched("STR_LOYALTY"))
 		_txtLoyalty->setText(tr("STR_LOYALTY_RATING").arg(_game->getSavedGame()->getLoyalty()));
-	}
 	else
-	{
 		_txtLoyalty->setVisible(false);
-	}
-
-	_btnNewBase->setVisible(_game->getSavedGame()->getBases()->size() < MiniBaseView::MAX_BASES);
-
-	if (!_game->getMod()->getNewBaseUnlockResearch().empty())
-	{
-		bool newBasesUnlocked = _game->getSavedGame()->isResearched(_game->getMod()->getNewBaseUnlockResearch(), true);
-		if (!newBasesUnlocked)
-		{
-			_btnNewBase->setVisible(false);
-		}
-	}
 }
 
 /**
@@ -388,14 +322,7 @@ void BasescapeState::btnNewBaseClick(Action *)
  */
 void BasescapeState::btnBaseInfoClick(Action *)
 {
-	if (_fta)
-	{
-		_game->pushState(new BaseInfoStateFtA(_base, this));
-	}
-	else
-	{
-		_game->pushState(new BaseInfoState(_base, this));
-	}
+	_game->pushState(new BaseInfoStateFtA(_base, this));
 }
 
 /**
@@ -441,24 +368,6 @@ void BasescapeState::btnResearchClick(Action *)
 void BasescapeState::btnManufactureClick(Action *)
 {
 	_game->pushState(new ManufactureState(_base));
-}
-
-/**
- * Goes to the Purchase screen.
- * @param action Pointer to an action.
- */
-void BasescapeState::btnPurchaseClick(Action *)
-{
-	_game->pushState(new PurchaseState(_base));
-}
-
-/**
- * Goes to the Sell screen.
- * @param action Pointer to an action.
- */
-void BasescapeState::btnSellClick(Action *)
-{
-	_game->pushState(new SellState(_base, 0));
 }
 
 /**
@@ -593,14 +502,7 @@ void BasescapeState::viewRightClick(Action *)
 	BaseFacility *f = _view->getSelectedFacility();
 	if (f == 0)
 	{
-		if (_fta)
-		{
-			_game->pushState(new BaseInfoStateFtA(_base, this));
-		}
-		else
-		{
-			_game->pushState(new BaseInfoState(_base, this));
-		}
+		_game->pushState(new BaseInfoStateFtA(_base, this));
 	}
 	else if (f->getRules()->getRightClickActionType() != 0)
 	{
@@ -612,7 +514,7 @@ void BasescapeState::viewRightClick(Action *)
 			case 4: _game->pushState(new AllocateTrainingState(_base)); break;
 			case 5: if (Options::anytimePsiTraining) _game->pushState(new AllocatePsiTrainingState(_base)); break;
 			case 6: _game->pushState(new SoldiersState(_base)); break;
-			case 7: _game->pushState(new SellState(_base, 0)); break;
+			case 7: _game->pushState(new DiplomacyStartState(_base)); break;
 			case 8: _game->pushState(new IntelState(_base)); break;
 			case 9: _game->pushState(new PrisonManagementState(_base)); break;
 		default: ;
@@ -645,7 +547,7 @@ void BasescapeState::viewRightClick(Action *)
 	}
 	else if (f->getRules()->getStorage() > 0)
 	{
-		_game->pushState(new SellState(_base, 0));
+		_game->pushState(new DisposeState(_base, 0, OPT_BASESCAPE));
 	}
 	else if (f->getRules()->getPersonnel() > 0)
 	{
@@ -738,7 +640,7 @@ void BasescapeState::miniLeftClick(Action *)
 		_base = _game->getSavedGame()->getBases()->at(base);
 		init();
 	}
-	else if (_fta)
+	else
 	{
 		newBase();
 	}
