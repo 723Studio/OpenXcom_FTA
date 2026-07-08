@@ -48,17 +48,9 @@ namespace OpenXcom
  */
 CraftsState::CraftsState(Base *base) : _base(base)
 {
-	bool ftaUI = _game->getMod()->isFTAGame();
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	if (ftaUI)
-	{
-		_btnOk = new TextButton(148, 16, 164, 176);
-	}
-	else
-	{
-		_btnOk = new TextButton(288, 16, 16, 176);
-	}
+	_btnOk = new TextButton(148, 16, 164, 176);
 	_btnPilots = new TextButton(148, 16, 8, 176);
 	_txtTitle = new Text(298, 17, 16, 8);
 	_txtBase = new Text(298, 17, 16, 24);
@@ -95,7 +87,6 @@ CraftsState::CraftsState(Base *base) : _base(base)
 
 	_btnPilots->setText(tr("STR_PILOTS"));
 	_btnPilots->onMouseClick((ActionHandler)&CraftsState::btnPilotsClick);
-	_btnPilots->setVisible(ftaUI);
 
 	_txtTitle->setBig();
 	_txtTitle->setText(tr("STR_INTERCEPTION_CRAFT"));

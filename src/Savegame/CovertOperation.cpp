@@ -45,7 +45,7 @@
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/AlienRace.h"
 #include "../Mod/Unit.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Geoscape/GeoscapeState.h"
 
 namespace OpenXcom
 {
@@ -330,12 +330,12 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 	{
 		save.addResearchScore(score);
 		_results->addScore(score);
-		engine.getFtaGameServices()->updateLoyalty(score, XCOM_GEOSCAPE);
+		engine.getGeoscapeState()->updateLoyalty(score, XCOM_GEOSCAPE);
 	}
 
 	if (loyalty != 0)
 	{
-		engine.getFtaGameServices()->updateLoyalty(loyalty, ABSOLUTE_COEF);
+		engine.getGeoscapeState()->updateLoyalty(loyalty, ABSOLUTE_COEF);
 	}
 
 	if (funds != 0)
@@ -542,20 +542,9 @@ bool CovertOperation::think(Game& engine, const Globe& globe)
 		missionRace = missionRules->generateRace(month);
 		if (missionRace.empty())
 		{
-			if (mod.isFTAGame())
-			{
-				missionRace = "STR_MIB";
-				Log(LOG_ERROR) << "An error occurred during the processing of the result of a covert operation:  " << this->getOperationName() << " ! In the rules of the alien mission " << missionName <<
-					" no alien race has been set! As we run FTAGame race set to " << missionRace;
-			}
-			else
-			{
-				Log(LOG_ERROR) << "An error occurred during the processing of the result of a covert operation:  " << this->getOperationName() << " ! In the rules of the alien mission " << missionName <<
-					" no alien race has been set, so it will be defined at random!";
-				auto raceList = mod.getAlienRacesList();
-				int pick = RNG::generate(0, raceList.size() - 1);
-				missionRace = raceList.at(pick);
-			}
+			missionRace = "STR_MIB";
+			Log(LOG_ERROR) << "An error occurred during the processing of the result of a covert operation:  " << this->getOperationName() << " ! In the rules of the alien mission " << missionName <<
+				" no alien race has been set! FTA uses fallback race " << missionRace;
 		}
 		if (mod.getAlienRace(missionRace) == 0)
 		{

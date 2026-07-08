@@ -437,7 +437,7 @@ Mod::Mod() :
 	_maxLookVariant(0), _tooMuchSmokeThreshold(10), _customTrainingFactor(100),_minReactionAccuracy(0), _researchTrainingFactor(100), _engineeringTrainingFactor(100), _intelTrainingFactor(100), _researchSpeedFactor(100), _engineeringSpeedFactor(100), _intelSpeedFactor(100), _prisonerActionsSpeedFactor(100),
 	_chanceToStopRetaliation(0), _chanceToDetectAlienBaseEachMonth(20), _lessAliensDuringBaseDefense(false),
 	_allowCountriesToCancelAlienPact(false), _buildInfiltrationBaseCloseToTheCountry(false), _infiltrateRandomCountryInTheRegion(false), _allowAlienBasesOnWrongTextures(true),
-	_ftaGame(true), _ftaGameLength(3), _ironManEnabled(true), _researchTreeDisabled(false), //#FINNIKTODO - remove _ftaGame
+	_gameLength(3), _ironManEnabled(true), _researchTreeDisabled(false),
 	_kneelBonusGlobal(115), _oneHandedPenaltyGlobal(80),
 	_enableCloseQuartersCombat(0), _closeQuartersAccuracyGlobal(100), _closeQuartersTuCostGlobal(12), _closeQuartersEnergyCostGlobal(8), _closeQuartersSneakUpGlobal(0),
 	_noLOSAccuracyPenaltyGlobal(-1),
@@ -3357,8 +3357,7 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 	reader.tryRead("bughuntRank", _bughuntRank);
 	reader.tryRead("bughuntLowMorale", _bughuntLowMorale);
 	reader.tryRead("bughuntTimeUnitsLeft", _bughuntTimeUnitsLeft);
-	reader.tryRead("ftaGame", _ftaGame);
-	reader.tryRead("ftaGameLength", _ftaGameLength);
+	reader.tryRead("gameLength", _gameLength);
 	reader.tryRead("reputationBreakthroughValue", _reputationBreakthroughValue);
 	reader.tryRead("ironManEnabled", _ironManEnabled);
 	reader.tryRead("researchTreeDisabled", _researchTreeDisabled);

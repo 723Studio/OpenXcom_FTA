@@ -46,7 +46,6 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Basescape/ManufactureAllocateEngineersState.h"
-#include "../Engine/FtaGameServices.h"
 
 #include <climits>
 
@@ -182,7 +181,7 @@ void ManufactureInfoStateFtA::buildUi()
 	}
 	_btnStop->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::btnStopClick);
 
-	setAssignedEngineers();
+	refreshAssignedEngineers();
 
 	_btnAllocateEngineers->setText(tr("STR_ALLOCATE_ENGINEERS"));
 	_btnAllocateEngineers->onMouseClick((ActionHandler)&ManufactureInfoStateFtA::btnAllocateClick, 0);
@@ -212,7 +211,7 @@ ManufactureInfoStateFtA::~ManufactureInfoStateFtA()
 void ManufactureInfoStateFtA::init()
 {
 	State::init();
-	setAssignedEngineers();
+	refreshAssignedEngineers();
 	fillEngineersList(0);
 }
 
@@ -299,7 +298,6 @@ void ManufactureInfoStateFtA::btnOkClick(Action *)
 	_production->setSellItems(false);
 	_production->setAmountTotal(_unitsToProduce);
 	_production->setInfiniteAmount(_infiniteProduction);
-	_production->setAssignedEngineers(0); //this is FtA, baby! we use soldiers, assigned to the project instead.
 	exitState();
 }
 
@@ -346,7 +344,7 @@ int ManufactureInfoStateFtA::calcAvgStat(bool check)
 /**
  * Updates display of assigned/available engineer/workshop space.
  */
-void ManufactureInfoStateFtA::setAssignedEngineers()
+void ManufactureInfoStateFtA::refreshAssignedEngineers()
 {
 	size_t freeEngineers = 0;
 	auto recovery = _base->getSumRecoveryPerDay();
@@ -376,7 +374,7 @@ void ManufactureInfoStateFtA::setAssignedEngineers()
 			teamSize--;
 		}
 	}
-	_workSpace = _base->getFreeWorkshops(true, _production) - this->getManufactureRules()->getRequiredSpace() - teamSize;
+	_workSpace = _base->getFreeWorkshops(_production) - this->getManufactureRules()->getRequiredSpace() - teamSize;
 	_txtAvailableSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE_UC").arg(_workSpace));
 
 	std::ostringstream s4;
@@ -432,7 +430,7 @@ void ManufactureInfoStateFtA::moreUnit(int change)
 		if (this->getManufactureRules()->getProducedCraft())
 			change = std::min(_base->getAvailableHangars() - _base->getUsedHangars(), change);
 		_unitsToProduce = units + change;
-		setAssignedEngineers();
+		refreshAssignedEngineers();
 	}
 }
 
@@ -479,7 +477,7 @@ void ManufactureInfoStateFtA::moreUnitClick(Action *action)
 		else
 		{
 			_infiniteProduction = true;
-			setAssignedEngineers();
+			refreshAssignedEngineers();
 		}
 	}
 	else if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
@@ -502,7 +500,7 @@ void ManufactureInfoStateFtA::lessUnit(int change)
 	int units = _unitsToProduce;
 	change = std::min(units - (_producedItems + 1), change);
 	_unitsToProduce = units - change;
-	setAssignedEngineers();
+	refreshAssignedEngineers();
 }
 
 /**
@@ -541,13 +539,13 @@ void ManufactureInfoStateFtA::lessUnitClick(Action *action)
 		if (_unitsToProduce <= _producedItems)
 		{ // So the produced item number is increased over the planned
 			_unitsToProduce += 1;
-			setAssignedEngineers();
+			refreshAssignedEngineers();
 			return;
 		}
 		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
 		{
 			_unitsToProduce = _producedItems + 1;
-			setAssignedEngineers();
+			refreshAssignedEngineers();
 			return;
 		}
 		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)

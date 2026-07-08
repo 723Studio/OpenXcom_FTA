@@ -46,7 +46,6 @@
 #include "../Savegame/Transfer.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Ufopaedia/Ufopaedia.h"
-#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -303,7 +302,7 @@ void GeoscapeEventState::eventLogic()
 		{
 			save->addResearchScore(points);
 		}
-		_game->getFtaGameServices()->updateLoyalty(points, XCOM_GEOSCAPE);
+		_game->getGeoscapeState()->updateLoyalty(points, XCOM_GEOSCAPE);
 	}
 
 
@@ -326,41 +325,26 @@ void GeoscapeEventState::eventLogic()
 	const std::string& spawnedPersonType = rule.getSpawnedPersonType();
 	if (rule.getSpawnedPersons() > 0 && !spawnedPersonType.empty())
 	{
-		if (spawnedPersonType == "STR_SCIENTIST")
+		const RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
+		if (ruleSoldier)
 		{
-			Transfer* t = new Transfer(24);
-			t->setScientists(rule.getSpawnedPersons());
-			hq->getTransfers()->push_back(t);
-		}
-		else if (spawnedPersonType == "STR_ENGINEER")
-		{
-			Transfer* t = new Transfer(24);
-			t->setEngineers(rule.getSpawnedPersons());
-			hq->getTransfers()->push_back(t);
-		}
-		else
-		{
-			const RuleSoldier* ruleSoldier = mod->getSoldier(spawnedPersonType);
-			if (ruleSoldier)
+			for (int i = 0; i < rule.getSpawnedPersons(); ++i)
 			{
-				for (int i = 0; i < rule.getSpawnedPersons(); ++i)
+				Transfer* t = new Transfer(24);
+				int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, city);
+				Soldier* s = mod->genSoldier(save, ruleSoldier, nationality);
+				YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
+				s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
+				if (!rule.getSpawnedPersonName().empty())
 				{
-					Transfer* t = new Transfer(24);
-					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, city);
-					Soldier* s = mod->genSoldier(save, ruleSoldier, nationality);
-					YAML::YamlRootNodeReader reader(rule.getSpawnedSoldierTemplate(), "(spawned soldier template)");
-					s->load(reader, mod, save, mod->getScriptGlobal(), true); // load from soldier template
-					if (!rule.getSpawnedPersonName().empty())
-					{
-						s->setName(tr(rule.getSpawnedPersonName()));
-					}
-					else
-					{
-						s->genName();
-					}
-					t->setSoldier(s);
-					hq->getTransfers()->push_back(t);
+					s->setName(tr(rule.getSpawnedPersonName()));
 				}
+				else
+				{
+					s->genName();
+				}
+				t->setSoldier(s);
+				hq->getTransfers()->push_back(t);
 			}
 		}
 	}
@@ -555,7 +539,7 @@ void GeoscapeEventState::eventLogic()
 		{
 			researches.push_back(rRule);
 		}
-		_game->getFtaGameServices()->helpResearchDiscovery(researches, possibilities, hq, _researchName, _bonusResearchName);
+		_game->getSavedGame()->helpResearchDiscovery(researches, possibilities, _game->getMod(), hq, _researchName, _bonusResearchName);
 	}
 
 	// 8. handle counters
@@ -649,11 +633,6 @@ void GeoscapeEventState::btnOkClick(Action*)
 			if (videoRule->getWinGame()) _game->getSavedGame()->setEnding(END_WIN);
 			if (videoRule->getLoseGame()) _game->getSavedGame()->setEnding(END_LOSE);
 		}
-	}
-
-	if (_game->getSavedGame()->getEnding() == END_NONE && !_game->getMod()->isFTAGame())
-	{
-		Base* base = _game->getSavedGame()->getBases()->front();
 	}
 
 	if (!_bonusResearchName.empty())

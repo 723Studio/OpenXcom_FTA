@@ -19,10 +19,12 @@
 #include "DiplomacyFaction.h"
 #include "SoldierPool.h"
 #include <algorithm>
+#include <climits>
 #include "../fmath.h"
 #include "../Engine/Game.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Logger.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleDiplomacyFaction.h"
@@ -33,7 +35,6 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/FactionalResearch.h"
-#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -152,6 +153,53 @@ void DiplomacyFaction::updateReputationScore(int change)
 }
 
 /**
+ * Handle updating of faction reputation level based on current score, rules and other conditions.
+ * @param mod Ruleset access for reputation thresholds.
+ * @param initial Whether this update runs during new game initialization.
+ * @return true if reputation level was updated.
+ */
+bool DiplomacyFaction::updateReputationLvl(const Mod& mod, bool initial)
+{
+	bool changed = false;
+	std::string repName = "STR_NEUTRAL";
+	int newLvl = 3; // STR_NEUTRAL is default resolve
+
+	const std::map<int, std::string>* repLevels = mod.getReputationLevels();
+	if (repLevels)
+	{
+		int temp = INT_MIN;
+		for (auto& i : *repLevels)
+		{
+			if (i.first > temp && i.first <= _reputationScore)
+			{
+				temp = i.first;
+				repName = i.second;
+			}
+		}
+
+		if (repName == "STR_ALLY") newLvl = 6;
+		else if (repName == "STR_HONORED") newLvl = 5;
+		else if (repName == "STR_FRIENDLY") newLvl = 4;
+		else if (repName == "STR_UNFRIENDLY") newLvl = 2;
+		else if (repName == "STR_HOSTILE") newLvl = 1;
+		else if (repName == "STR_HATED") newLvl = 0;
+
+		if ((_reputationLvL != newLvl && !_thisMonthDiscovered) || initial)
+		{
+			_reputationLvL = newLvl;
+			_reputationName = repName;
+			if (!initial)
+			{
+				changed = true;
+				//#FINNIKTODO add cross-factional relations
+			}
+		}
+	}
+
+	return changed;
+}
+
+/**
  * Removes research projet's name to a faction's list of unlocked researches.
  * @param research name of research project.
  */
@@ -193,7 +241,6 @@ void DiplomacyFaction::removeItem(const RuleItem* item, int qty)
 void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 {
 	SavedGame& save = *engine.getSavedGame();
-	FtaGameServices& mind = *engine.getFtaGameServices();
 	_commandsToProcess.clear();
 	_availableMissionScripts.clear();
 	_eventsToProcess.clear();
@@ -213,7 +260,7 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 				save.spawnEvent(engine.getMod()->getEvent(_rule->getDiscoverEvent()));
 			}
 			// update reputation level for just discovered fraction
-			mind.updateReputationLvl(this, false);
+			updateReputationLvl(*engine.getMod(), false);
 			// and if it turns friendly at start we sign help treaty by default
 			if (_reputationLvL > 0)
 			{
@@ -267,7 +314,7 @@ void DiplomacyFaction::think(Game& engine, ThinkPeriod period)
 					_eventsToProcess.push_back(s);
 				}
 			}
-			mind.eventScriptProcessor(_eventsToProcess, SCRIPT_FACTIONAL);
+			engine.getGeoscapeState()->eventScriptProcessor(_eventsToProcess, SCRIPT_FACTIONAL);
 		}
 	}
 }
@@ -280,7 +327,6 @@ void DiplomacyFaction::processDailyReputation(Game& engine)
 {
 	const Mod& mod = *engine.getMod();
 	SavedGame& save = *engine.getSavedGame();
-	FtaGameServices& mind = *engine.getFtaGameServices();
 	int dailyReputation = 0;
 	int breakLevel = mod.getReputationBreakthroughValue();
 	std::vector<std::string> events;
@@ -306,7 +352,7 @@ void DiplomacyFaction::processDailyReputation(Game& engine)
 
 	if (needUpdate)
 	{
-		_repLvlChanged = mind.updateReputationLvl(this, false);
+		_repLvlChanged = updateReputationLvl(mod, false);
 		if (!events.empty())
 		{
 			save.spawnEvent(engine.getMod()->getEvent(events.at(RNG::generate(0, events.size() - 1))));
@@ -752,9 +798,6 @@ void DiplomacyFaction::handleResearch(Game& engine) //#FINNIKTODO - refactor wit
 					unlockResearch(bonus->getName());
 				}
 
-				//clear research project
-				/*_staff->addItem("STR_SCIENTIST", (*p)->getScientists());*/
-
 				Collections::deleteIf(_research, 1,
 					[&](FactionalResearch* r)
 					{
@@ -762,173 +805,8 @@ void DiplomacyFaction::handleResearch(Game& engine) //#FINNIKTODO - refactor wit
 					}
 				);
 			}
-			else // project still in development
-			{
-				//std::vector<Soldier*> scientists;
-				//
-				//// handle low funds case
-				//if (_funds < reqFunds / 4)
-				//{
-				//	if ((*p)->getScientists() > 1) // we can keep lone guy doing his stuff
-				//	{
-				//		Log(LOG_INFO) << "Faction:  " << _rule->getName() << " has too low funds: " << _funds << " < required / 4 = " << reqFunds / 4
-				//			<< " and project: " << (*p)->getName() << " was reduced in funding!"; //#CLEARLOGS
-				//		int qty = ceil((*p)->getScientists() / 2);
-				//		//_staff->addItem("STR_SCIENTIST", qty);
-				//		(*p)->setScientists((*p)->getScientists() - qty);
-				//	}
-				//}
-
-				//else if (_staff->getItem("STR_SCIENTIST") > 0 && _funds > reqFunds / 2 && RNG::percent(40)) // we choose to rise funding on this project
-				//{
-				//	int qty = floor(RNG::generate(0, _staff->getItem("STR_SCIENTIST") / 4));
-				//	_staff->removeItem("STR_SCIENTIST", qty);
-				//	(*p)->setScientists((*p)->getScientists() + qty);
-				//}
-			}
 		}
 	}
-
-	//// probably we can have some free researches unlocked
-	////for (auto i = _mod->getResearchList().begin(); i != _mod->getResearchList().end(); ++i)
-	////{
-	////	RuleResearch* rRule = _mod->getResearch((*i));
-
-	////	if (rRule->getCost() <= 0 && !rRule->getDependencies().empty() && isResearched(rRule->getDependencies()))
-	////	{
-	////		unlockResearch(rRule->getName());
-	////	}
-	////}
-
-	// let's count how many research project teams we can potentially have
-	//size_t totalScientists = 0; //static_cast<size_t>(_staff->getItem("STR_SCIENTIST"));
-	//if (hasResearch)
-	//{
-	//	for (auto y : _research)
-	//	{
-	//		totalScientists += (*y).getScientists();
-	//	}
-	//}
-
-	/*size_t projectSpots = floor(totalScientists / 10);
-	if (totalScientists <= 10 && RNG::percent(totalScientists * 10))
-	{
-		projectSpots = 1;
-	}*/
-
-	//// now we should choose to start a new project
-	//if (_staff->getItem("STR_SCIENTIST") > 0 && _funds > reqFunds && projectSpots >= (_research.size() + 1) && RNG::percent(100)) // if we have scientists, money and process was not canceled because of internal reasons
-	//{
-	//	std::vector<std::pair<int, RuleResearch*>> researchList;
-
-	//	for (auto i = _mod->getResearchList().begin(); i != _mod->getResearchList().end(); ++i)
-	//	{
-	//		if (isResearched(*i))
-	//		{
-	//			continue; // we already know what is that!
-	//		}
-	//		RuleResearch* rRule = _mod->getResearch((*i));
-
-	//		if (!rRule->getDependencies().empty() && isResearched(rRule->getDependencies()))// this one effectively splits xcom and factional research trees
-	//		{
-
-	//			if (rRule->getCost() == 0)
-	//			{
-	//				continue; // meh, too easy
-	//			}
-
-	//			if (rRule->needItem())
-	//			{
-	//				if (_items->getItem(_mod->getItem((*i))) <= 0 || _secretItems->getItem(_mod->getItem((*i))) <= 0)
-	//				{
-	//					continue; //sadly, we dont have required item
-	//				}
-	//			}
-
-	//			//extra one to make sure we are not already researching it
-	//			if (hasResearch)
-	//			{
-	//				bool ongoing = false;
-	//				for (auto l = _research.begin(); l != _research.end(); ++l)
-	//				{
-	//					if ((*l)->getName() == rRule->getName())
-	//					{
-	//						ongoing = true;
-	//						break; // ah, we are already researching this one!
-	//					}
-	//				}
-	//				if (ongoing)
-	//				{
-	//					continue; // ok, we do not want to start same research again
-	//				}
-	//			}
-	//			// this one looks fine, let's remember it
-	//			int priority = rRule->getPoints() / rRule->getCost();
-	//			researchList.push_back(std::make_pair(priority, rRule));
-	//			Log(LOG_INFO) << "Faction:  " << _rule->getName() << " has potential research : " << rRule->getName() << ", processing! It has priority: " << priority; //#CLEARLOGS
-	//		}
-	//	}
-
-	//	if (!researchList.empty())
-	//	{
-	//		// now we should pick the most sweet project to start
-	//		std::sort(researchList.begin(), researchList.end());
-
-	//		RuleResearch* choice = researchList.front().second; // our potential choice
-	//		int priority = researchList.front().first;
-	//		bool promising = true;
-	//		int64_t factionCost = choice->getCost();
-	//		//counts FTA is loaded, so we turn hours to days and say, that faction's research is 10 times slower, than player's
-	//		factionCost = reqFunds * 2 / 3 - factionCost * 10 / 2400 * _rule->getScienceBaseCost();
-	//		Log(LOG_INFO) << "factionCost for research project " << _rule->getName() << " is: " << factionCost
-	//			<< " based on reqFunds: " << reqFunds << ", initial cost: " << choice->getCost() << " and science base cost: " << _rule->getScienceBaseCost(); //#CLEARLOGS
-
-	//		if (_funds > factionCost) // looks like we would manage to deal with this one.
-	//		{
-	//			// now let's if this research is more valuable than already processed researches
-	//			if (hasResearch)
-	//			{
-	//				for (auto k = _research.begin(); k != _research.end(); ++k)
-	//				{
-	//					if ((*k)->getPriority() >= priority)
-	//					{
-	//						promising = false;
-	//						break; //ongoing research is better
-	//					}
-	//					else if ((*k)->getPriority() * 2 < priority)
-	//					{
-	//						// now we are talking, looks like we are wasting time here, let's reduce funding of this crap!
-	//						if ((*k)->getScientists() > 1) // we can keep lone guy doing his stuff
-	//						{
-	//							int qty = ceil((*k)->getScientists() / 2);
-	//							_staff->addItem("STR_SCIENTIST", qty);
-	//							(*k)->setScientists((*k)->getScientists() - qty);
-	//						}
-	//					}
-	//				}
-	//				if (!promising)
-	//				{
-	//					return; // we should not start new researches as we have a lot more things to do right now
-	//				}
-	//			}
-
-	//			// finally, we can start a new research project
-	//			FactionalResearch* newResearch = new FactionalResearch(choice, this);
-	//			_research.push_back(newResearch);
-	//			int randomCost = (double)factionCost / 4;
-	//			newResearch->setTimeLeft((int)factionCost + RNG::generate(-randomCost, randomCost));
-	//			newResearch->setPriority(priority);
-	//			int qty = _staff->getItem("STR_SCIENTIST");
-	//			qty = RNG::generate(qty * 0.5, qty * 0.9); // FINNIKTODO: think more about how many scientists faction should assign on a new project
-	//			newResearch->setScientists(qty);
-	//			_staff->removeItem("STR_SCIENTIST", qty);
-	//			_funds -= factionCost / 10;
-
-	//			Log(LOG_INFO) << "Faction:  " << _rule->getName() << " has chosen research : " << choice->getName()
-	//				<< " with priority: " << priority; //#CLEARLOGS
-	//		}
-	//	}
-	//}
 }
 
 bool DiplomacyFaction::isResearched(const std::string& name) const

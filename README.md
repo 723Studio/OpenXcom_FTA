@@ -58,7 +58,7 @@ The mod adding new content, missions and mechanics. Its expand the gaming experi
   - Negotiations system with full dialogue to interact with faction.
   - Interfaction relations. When the player rises reputation score with one faction, another goes down.
   - ...
-- A covert operations system. The operation can be launched from each base and can involve soldiers, scientists, and engineers. 
+- A covert operations system. The operation can be launched from each base and can involve soldiers, scientist-role personnel, and engineer-role personnel.
   - Once operation launched, some events can occur in its process, and once finished operation the game would decide its results.
   - All covert operations can end with success, failure, or critical failure.
   - Each covert operation can have its own geoscape entities to be added to the game on success or failure - score, funds, research, faction reputation, items, spawn events, and alien missions.
@@ -107,12 +107,8 @@ data or user folder (see below for folder locations).
 
 ## Mods
 
-Current engine version is designed to be used together with [X-COM: From the Ashes
-mod](https://github.com/723Studio/X-Com-From-the-Ashes). Still, currently it is fully compatible 
-with all OXC an OXCE mods, and does not have any game breaking changes. If you
-face any bug with mod, please, let us know with created issue in this repository.
-All major changes in this code, compared to OpenXcom or OpenXcom Extended are
-locked behind `ftaGame` property (see [project's wiki](https://github.com/723Studio/OpenXcom_FTA/wiki) for more info.)
+Current engine version is designed for [X-COM: From the Ashes](https://github.com/723Studio/X-Com-From-the-Ashes).
+FTA is a standalone game runtime; legacy OpenXcom/OXCE compatibility switches are no longer supported product paths.
 
 ## Directory Locations
 

@@ -30,6 +30,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Production.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "ManufactureState.h"
 #include "TechTreeViewerState.h"
 #include "../Ufopaedia/Ufopaedia.h"
@@ -206,7 +207,7 @@ void GlobalManufactureState::fillProductionList()
 	for (Base *xbase : *_game->getSavedGame()->getBases())
 	{
 		auto& baseProductions = xbase->getProductions();
-		if (!baseProductions.empty() || xbase->getEngineers() > 0)
+		if (!baseProductions.empty() || xbase->getTotalEngineers() > 0)
 		{
 			std::string baseName = xbase->getName(_game->getLanguage());
 			_lstManufacture->addRow(3, baseName.c_str(), "", "");
@@ -216,10 +217,11 @@ void GlobalManufactureState::fillProductionList()
 			_bases.push_back(0);
 			_topics.push_back(0);
 		}
-		for (const auto* prod : baseProductions)
+		for (auto* prod : baseProductions)
 		{
 			std::ostringstream s1;
-			s1 << prod->getAssignedEngineers();
+			size_t engineers = prod->getAssignedSoldiers(xbase).size();
+			s1 << engineers;
 			std::ostringstream s2;
 			s2 << prod->getAmountProduced() << "/";
 			if (prod->getInfiniteAmount()) s2 << "∞";
@@ -232,15 +234,22 @@ void GlobalManufactureState::fillProductionList()
 			{
 				s4 << "∞";
 			}
-			else if (prod->getAssignedEngineers() > 0)
+			else if (engineers > 0)
 			{
 				int timeLeft = prod->getAmountTotal() * prod->getRules()->getManufactureTime() - prod->getTimeSpent();
-				int numEffectiveEngineers = prod->getAssignedEngineers();
+				int numEffectiveEngineers = prod->getProgress(xbase, _game->getSavedGame(), _game->getMod(), _game->getGeoscapeState()->getLoyaltyPerformanceBonus(), true);
 				// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
-				int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
-				int daysLeft = hoursLeft / 24;
-				int hours = hoursLeft % 24;
-				s4 << daysLeft << "/" << hours;
+				if (numEffectiveEngineers > 0)
+				{
+					int hoursLeft = (timeLeft + numEffectiveEngineers - 1) / numEffectiveEngineers;
+					int daysLeft = hoursLeft / 24;
+					int hours = hoursLeft % 24;
+					s4 << daysLeft << "/" << hours;
+				}
+				else
+				{
+					s4 << "-";
+				}
 			}
 			else
 			{
@@ -252,7 +261,7 @@ void GlobalManufactureState::fillProductionList()
 			_bases.push_back(xbase);
 			_topics.push_back(prod->getRules());
 		}
-		if (baseProductions.empty() && xbase->getEngineers() > 0)
+		if (baseProductions.empty() && xbase->getTotalEngineers() > 0)
 		{
 			_lstManufacture->addRow(5, tr("STR_NONE").c_str(), "", "", "", "");
 
@@ -262,7 +271,7 @@ void GlobalManufactureState::fillProductionList()
 
 		availableEngineers += xbase->getAvailableEngineers();
 		allocatedEngineers += xbase->getAllocatedEngineers();
-		freeWorkshops += xbase->getFreeWorkshops(_game->getMod()->isFTAGame());
+		freeWorkshops += xbase->getFreeWorkshops();
 	}
 
 	_txtAvailable->setText(tr("STR_ENGINEERS_AVAILABLE").arg(availableEngineers));

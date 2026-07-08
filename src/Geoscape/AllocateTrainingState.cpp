@@ -50,7 +50,7 @@ namespace OpenXcom
 AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base), _origSoldierOrder(*_base->getSoldiers()), _doNotReset(false)
 {
 
-	_ftaUI = _game->getMod()->isFTAGame();
+	_ftaUI = true;
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);

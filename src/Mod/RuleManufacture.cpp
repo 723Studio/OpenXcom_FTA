@@ -107,9 +107,9 @@ void RuleManufacture::afterLoad(const Mod* mod)
 		}
 	}
 
-	if (mod->isFTAGame() && _stats.empty())
+	if (_stats.empty())
 	{
-		throw Exception("Stats are not defined for manufacture project, it is required for FTA game");
+		throw Exception("Stats are not defined for manufacture project, it is required for FTA");
 	}
 
 	for (auto& i : _requiredItemsNames)

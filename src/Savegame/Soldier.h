@@ -189,7 +189,7 @@ private:
 	std::string getCurrentDuty(Language *lang, const BaseSumDailyRecovery &recovery, bool &isBusy, bool &isFree, DutyMode mode = CRAFT) const;
 	void clearBaseDuty();
 	/// Gets a string version of the soldier's rank.
-	const std::string getRankString(bool isFtA = false) const;
+	const std::string getRankString() const;
 	/// Gets a sprite version of the soldier's rank. Used for BASEBITS.PCK.
 	int getRankSprite() const;
 	/// Gets a sprite version of the soldier's rank. Used for SMOKE.PCK.

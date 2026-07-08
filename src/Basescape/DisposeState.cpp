@@ -207,26 +207,6 @@ void DisposeState::delayedInit()
 			}
 		}
 	}
-	if (_base->getAvailableScientists() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_SCIENTIST, 0, tr("STR_SCIENTIST"), 0, _base->getAvailableScientists(), 0, 0, _base->getAvailableScientists(), -2, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
-	if (_base->getAvailableEngineers() > 0 && _debriefingState == 0)
-	{
-		TransferRow row = { TRANSFER_ENGINEER, 0, tr("STR_ENGINEER"), 0, _base->getAvailableEngineers(), 0, 0, _base->getAvailableEngineers(), -1, 0, 0, 0 };
-		_items.push_back(row);
-		std::string cat = getCategory(_items.size() - 1);
-		if (std::find(_cats.begin(), _cats.end(), cat) == _cats.end())
-		{
-			_cats.push_back(cat);
-		}
-	}
 	const std::vector<std::string>& items = _game->getMod()->getItemsList();
 	for (std::vector<std::string>::const_iterator i = items.begin(); i != items.end(); ++i)
 	{
@@ -386,8 +366,6 @@ std::string DisposeState::getCategory(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return "STR_PERSONNEL";
 	case TRANSFER_CRAFT:
 		return "STR_CRAFT_ARMAMENT";
@@ -425,8 +403,6 @@ bool DisposeState::belongsToCategory(int sel, const std::string& cat) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -670,12 +646,6 @@ void DisposeState::btnOkClick(Action*)
 				craft = (Craft*)i->rule;
 				_base->removeCraft(craft, true);
 				delete craft;
-				break;
-			case TRANSFER_SCIENTIST:
-				_base->setScientists(_base->getScientists() - i->amount);
-				break;
-			case TRANSFER_ENGINEER:
-				_base->setEngineers(_base->getEngineers() - i->amount);
 				break;
 			case TRANSFER_ITEM:
 				RuleItem* item = (RuleItem*)i->rule;
@@ -1016,7 +986,6 @@ void DisposeState::changeByValue(int change, int dir)
 		_spaceChange -= dir * change * item->getSize();
 		break;
 	default:
-		//TRANSFER_SCIENTIST and TRANSFER_ENGINEER do not own anything that takes storage
 		break;
 	}
 

@@ -32,7 +32,7 @@ enum class TransferSortDirection : int
 	BY_TOTAL_COST
 };
 
-enum TransferType { TRANSFER_ITEM, TRANSFER_CRAFT, TRANSFER_SOLDIER, TRANSFER_SCIENTIST, TRANSFER_ENGINEER, TRANSFER_PRISONER };
+enum TransferType { TRANSFER_ITEM, TRANSFER_CRAFT, TRANSFER_SOLDIER, TRANSFER_PRISONER };
 
 struct TransferRow
 {
@@ -70,7 +70,7 @@ private:
 	Craft *_craft;
 	BasePrisoner *_prisoner;
 	const RuleItem* _itemId;
-	int _itemQty, _scientists, _engineers;
+	int _itemQty;
 	bool _delivered;
 public:
 	/// Creates a new transfer.
@@ -95,10 +95,6 @@ public:
 	const RuleItem* getItems() const;
 	/// Sets the items of the transfer.
 	void setItems(const RuleItem* rule, int qty = 1);
-	/// Sets the scientists of the transfer.
-	void setScientists(int scientists);
-	/// Sets the engineers of the transfer.
-	void setEngineers(int engineers);
 	/// Gets the name of the transfer.
 	std::string getName(Language *lang) const;
 	/// Gets the hours remaining of the transfer.

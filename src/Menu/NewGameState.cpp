@@ -19,18 +19,28 @@
 #include "NewGameState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
+#include "../Mod/AlienDeployment.h"
+#include "../Mod/RuleDiplomacyFaction.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Geoscape/GeoscapeState.h"
-#include "../Geoscape/BuildNewBaseState.h"
-#include "../Geoscape/BaseNameState.h"
-#include "../Basescape/PlaceLiftState.h"
+#include "../Geoscape/Globe.h"
 #include "../Engine/Options.h"
+#include "../Engine/RNG.h"
+#include "../Engine/Exception.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Savegame/AlienBase.h"
+#include "../Savegame/DiplomacyFaction.h"
+#include "../Savegame/ItemContainer.h"
+#include "../Savegame/SavedBattleGame.h"
+#include "../Savegame/SoldierPool.h"
+#include "../Battlescape/BattlescapeGenerator.h"
+#include "../Battlescape/BriefingState.h"
+
+#include <vector>
 
 namespace OpenXcom
 {
@@ -128,19 +138,16 @@ NewGameState::NewGameState()
 	_txtIronman->setVerticalAlign(ALIGN_MIDDLE);
 	_txtIronman->setText(tr("STR_IRONMAN_DESC"));
 
-	if (_game->getMod()->isFTAGame())
+	_btnGenius->setVisible(false);
+	_btnSuperhuman->setY(_btnGenius->getY());
+	if (!_game->getMod()->getIsIronManEnabled())
 	{
-		_btnGenius->setVisible(false);
-		_btnSuperhuman->setY(_btnGenius->getY());
-		if (!_game->getMod()->getIsIronManEnabled())
-		{
-			_btnIronman->setVisible(false);
-			_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
-		}
-		else
-		{
-			_btnSuperhuman->setVisible(false);
-		}
+		_btnIronman->setVisible(false);
+		_txtIronman->setText(tr("STR_IRONMAN_ALPHA_DESC"));
+	}
+	else
+	{
+		_btnSuperhuman->setVisible(false);
 	}
 }
 
@@ -191,39 +198,119 @@ void NewGameState::btnOkClick(Action *)
 
 	GeoscapeState* gs = new GeoscapeState;
 	_game->setState(gs);
-  
-	//choose the game scenario
-	if (_game->getMod()->isFTAGame())
+
+	initFtaNewGame(gs);
+}
+
+/**
+ * Initializes the FTA campaign start after the save and geoscape state exist.
+ * @param gs Pointer to the geoscape state.
+ */
+void NewGameState::initFtaNewGame(GeoscapeState *gs)
+{
+	SavedGame* save = _game->getSavedGame();
+	Mod* mod = _game->getMod();
+	Base* base = save->getBases()->at(0);
+	double lon, lat;
+	lon = RNG::generate(0.20, 0.22); //#FINNIKTODO random array here
+	lat = RNG::generate(-0.832, -0.87) ; //#FINNIKTODO random array here
+	base->setLongitude(lon);
+	base->setLatitude(lat);
+	std::string baseName = tr("STR_LAST_STAND"); //#FINNIKTODO random array here
+	base->setName(baseName);
+	base->calculateServices(save);
+	gs->getGlobe()->center(lon, lat);
+
+	for (auto& c : *base->getCrafts())
 	{
-		_game->getFtaGameServices()->newGameHelper(diff, gs);
-		save->setFtAGame(true);
+		c->setLongitude(lon);
+		c->setLatitude(lat);
 	}
-	else //vanilla
+
+	//spawn regional MIB HQ
+	AlienDeployment* aBaseDeployment = mod->getDeployment("STR_INITIAL_REGIONAL_HQ");
+	AlienBase* aBase = new AlienBase(aBaseDeployment, 0);
+	aBase->setId(save->getId(aBaseDeployment->getMarkerName()));
+	aBase->setAlienRace(aBaseDeployment->getRace());
+	aBase->setLongitude(lon + RNG::generate(0.20, 0.26)); //#FINNIKTODO random array here
+	aBase->setLatitude(lat - RNG::generate(0.04, 0.06)); //#FINNIKTODO random array here
+	aBase->setDiscovered(false);
+	save->getAlienBases()->push_back(aBase);
+
+	//init the Game
+	gs->init();
+
+	//init Factions
+	for (std::vector<std::string>::const_iterator i = mod->getDiplomacyFactionList()->begin(); i != mod->getDiplomacyFactionList()->end(); ++i)
 	{
-		gs->init();
-		auto* base = _game->getSavedGame()->getBases()->back();
-		if (base->getMarker() != -1)
+		RuleDiplomacyFaction* factionRules = mod->getDiplomacyFaction(*i);
+		DiplomacyFaction* faction = new DiplomacyFaction(mod, factionRules->getName());
+
+		if (factionRules->getDiscoverResearch().empty() || save->isResearched(mod->getResearch(factionRules->getDiscoverResearch())))
 		{
-		  // center and rotate 35 degrees down (to see the base location while typoing its name)
-			  gs->getGlobe()->center(base->getLongitude(), base->getLatitude() + 0.61);
-      
-		  if (base->getName().empty())
-		  {
-			// fixed location, custom name
-			_game->pushState(new BaseNameState(base, gs->getGlobe(), true, true));
-		  }
-		  else if (Options::customInitialBase)
-		  {
-			// fixed location, fixed name
-			_game->pushState(new PlaceLiftState(base, gs->getGlobe(), true));
-		  }
+			faction->setDiscovered(true);
 		}
-		else
+
+		// set up starting values
+		faction->setReputationScore(factionRules->getStartingReputation());
+		faction->updateReputationLvl(*mod, true);
+		faction->setFunds(factionRules->getStartingFunds());
+		faction->setPower(factionRules->getStartingPower()); //we always start with 0 vigilance
+		for (auto research : factionRules->getStartingResearches())
 		{
-		  // custom location, custom name
-		  _game->pushState(new BuildNewBaseState(base, gs->getGlobe(), true));
+			faction->unlockResearch(research);
 		}
+
+		// populate faction item stores and staff
+		auto items = faction->getItems();
+		for (auto &item : factionRules->getStartingItems())
+		{
+			if (RuleItem* itemRule = mod->getItem(item.first))
+			{
+				items->addItem(itemRule, item.second);
+			}
+			else
+			{
+				throw Exception("Error in FTA game initialization process: fails to add item " + item.first + " for faction " + factionRules->getName() +
+					" ; no item ruleset defined!");
+			}
+		}
+
+		std::vector<std::string> soldierTypes;
+		for (auto &s : factionRules->getStartingStaff())
+		{
+			for (int i = 0; i < s.second; ++i)
+			{
+				soldierTypes.push_back(s.first);
+			}
+		}
+
+		// Generate soldiers
+		for (auto& soldierType : soldierTypes)
+		{
+			const RuleSoldier* ruleSoldier = mod->getSoldier(soldierType, true);
+			faction->getStaffPool()->createSoldier(ruleSoldier, mod, save);
+		}
+
+		// finish faction initialization process
+		save->getDiplomacyFactions().push_back(faction);
 	}
+
+	//adjust funding
+	int funds = mod->getInitialFunding();
+	funds = funds * 1000 + RNG::generate(-1258, 6365);
+	save->setFunds(funds);
+
+	//start base defense mission
+	SavedBattleGame* bgame = new SavedBattleGame(mod, _game->getLanguage());
+	save->setBattleGame(bgame);
+	bgame->setMissionType("STR_BASE_DEFENSE");
+	BattlescapeGenerator bgen = BattlescapeGenerator(_game);
+	bgen.setBase(base);
+	bgen.setAlienCustomDeploy(mod->getDeployment("STR_INITIAL_BASE_DEFENSE"));
+	bgen.setWorldShade(0);
+	bgen.run();
+	_game->pushState(new BriefingState(0, base));
 }
 
 /**

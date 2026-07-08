@@ -105,7 +105,6 @@ private:
 	std::vector<int> _pilots;
 	std::map<int, SoldierDeploymentData> _customSoldierDeployment;
 	std::vector<VehicleDeploymentData> _customVehicleDeployment;
-	int _scientists, _engineers;
 	int _skinIndex;
 	ScriptValues<Craft> _scriptValues;
 
@@ -231,15 +230,6 @@ public:
 	int getFuelLimit() const;
 	/// Gets the craft's minimum fuel limit to go to a base.
 	int getFuelLimit(Base *base) const;
-	/// Gets the craft's scientists on board
-	int getScientists() const { return _scientists; };
-	/// Sets the craft's scientists on board
-	void setScientists(int scientists) { _scientists = scientists; };
-	/// Gets the craft's engineers on board
-	int getEngineers() const { return _engineers; };
-	/// Sets the craft's engineers on board
-	void setEngineers(int engineers) { _engineers = engineers; };
-
 	/// Gets the craft's maximum unit capacity (soldiers and vehicles, small and large).
 	int getMaxUnitsClamped() const;
 	int getMaxUnitsRaw() const { return _stats.soldiers; }

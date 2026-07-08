@@ -394,8 +394,6 @@ std::string DiplomacySellState::getCategory(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return "STR_PERSONNEL";
 	case TRANSFER_CRAFT:
 		return "STR_CRAFT_ARMAMENT";
@@ -441,8 +439,6 @@ bool DiplomacySellState::belongsToCategory(int sel, const std::string& cat) cons
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -459,8 +455,6 @@ bool DiplomacySellState::isHidden(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return false;
 	case TRANSFER_CRAFT:
 		return false;
@@ -779,14 +773,6 @@ void DiplomacySellState::btnOkClick(Action*)
 			//	_base->removeCraft(craft, true);
 			//	_faction->getStaffContainer()->addItem(craft->getRules()->getType());
 			//	delete craft;
-			//	break;
-			//case TRANSFER_SCIENTIST:
-			//	_base->setScientists(_base->getScientists() - i->amount);
-			//	_faction->getStaffContainer()->addItem("STR_SCIENTIST", i->amount);
-			//	break;
-			//case TRANSFER_ENGINEER:
-			//	_base->setEngineers(_base->getEngineers() - i->amount);
-			//	_faction->getStaffContainer()->addItem("STR_ENGINEER", i->amount);
 			//	break;
 			case TRANSFER_ITEM:
 				RuleItem* item = (RuleItem*)i->rule;
@@ -1153,7 +1139,6 @@ void DiplomacySellState::changeByValue(int change, int dir)
 			_spaceChange -= dir * change * item->getSize();
 			break;
 		default:
-			//TRANSFER_SCIENTIST and TRANSFER_ENGINEER do not own anything that takes storage
 			break;
 		}
 

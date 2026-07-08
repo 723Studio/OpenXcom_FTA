@@ -62,7 +62,7 @@ namespace OpenXcom
  * Initializes an empty base.
  * @param mod Pointer to mod.
  */
-Base::Base(const Mod *mod): Target(), _mod(mod), _scientists(0), _engineers(0), _trackingBonus(0), _operationsBonus(0), _deploymentHintsBonus(0), _inBattlescape(false),
+Base::Base(const Mod *mod): Target(), _mod(mod), _trackingBonus(0), _operationsBonus(0), _deploymentHintsBonus(0), _inBattlescape(false),
 	  _retaliationTarget(false), _retaliationMission(nullptr), _fakeUnderwater(false)
 {
 	_items = new ItemContainer();
@@ -123,21 +123,18 @@ Base::~Base()
 void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGame, bool newBattleGame)
 {
 	Target::load(reader);
-	if (!newGame || !Options::customInitialBase || newBattleGame)
+	for (const auto& facilityReader : reader["facilities"].children())
 	{
-		for (const auto& facilityReader : reader["facilities"].children())
+		std::string type = facilityReader["type"].readVal<std::string>();
+		if (_mod->getBaseFacility(type))
 		{
-			std::string type = facilityReader["type"].readVal<std::string>();
-			if (_mod->getBaseFacility(type))
-			{
-				BaseFacility* f = new BaseFacility(_mod->getBaseFacility(type), this);
-				f->load(facilityReader);
-				_facilities.push_back(f);
-			}
-			else
-			{
-				Log(LOG_ERROR) << "Failed to load facility " << type;
-			}
+			BaseFacility* f = new BaseFacility(_mod->getBaseFacility(type), this);
+			f->load(facilityReader);
+			_facilities.push_back(f);
+		}
+		else
+		{
+			Log(LOG_ERROR) << "Failed to load facility " << type;
 		}
 	}
 	for (const auto& craftReader : reader["crafts"].children())
@@ -172,8 +169,6 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 
 	_items->load(reader["items"], _mod);
 
-	reader.tryRead("scientists", _scientists);
-	reader.tryRead("engineers", _engineers);
 	reader.tryRead("inBattlescape", _inBattlescape);
 
 	for (const auto& transfersReader : reader["transfers"].children())
@@ -196,7 +191,6 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 		}
 		else
 		{
-			_scientists += researchReader["assigned"].readVal(0);
 			Log(LOG_ERROR) << "Failed to load research " << research;
 		}
 	}
@@ -211,7 +205,6 @@ void Base::load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGam
 		}
 		else
 		{
-			_engineers += productionReader["assigned"].readVal(0);
 			Log(LOG_ERROR) << "Failed to load manufacture " << item;
 		}
 	}
@@ -509,8 +502,6 @@ void Base::save(YAML::YamlNodeWriter writer) const
 		[](YAML::YamlNodeWriter& vectorWriter, BasePrisoner* p)
 		{ p->save(vectorWriter.write()); });
 	_items->save(writer["items"]);
-	writer.write("scientists", _scientists);
-	writer.write("engineers", _engineers);
 	if (_inBattlescape)
 		writer.write("inBattlescape", _inBattlescape);
 	writer.write("transfers", _transfers,
@@ -685,42 +676,6 @@ int Base::getUsedInterrogationSpace()
 }
 
 /**
- * Returns the amount of scientists currently in the base.
- * @return Number of scientists.
- */
-int Base::getScientists() const
-{
-	return _scientists;
-}
-
-/**
- * Changes the amount of scientists currently in the base.
- * @param scientists Number of scientists.
- */
-void Base::setScientists(int scientists)
-{
-	 _scientists = scientists;
-}
-
-/**
- * Returns the amount of engineers currently in the base.
- * @return Number of engineers.
- */
-int Base::getEngineers() const
-{
-	return _engineers;
-}
-
-/**
- * Changes the amount of engineers currently in the base.
- * @param engineers Number of engineers.
- */
-void Base::setEngineers(int engineers)
-{
-	 _engineers = engineers;
-}
-
-/**
  * Returns if a certain target is covered by the base's
  * radar range, taking in account the range and chance.
  * @param target Pointer to target to compare.
@@ -736,8 +691,6 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 	int hyperwave_chance = 0;
 	int radar_max_range = 0;
 	int radar_chance = 0;
-	bool fta = save->isFtAGame();
-
 	for (const auto* fac : _facilities)
 	{
 		if (fac->getBuildTime() != 0)
@@ -750,10 +703,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 			int radarChance = fac->getRules()->getRadarChance();
 			if (fac->getRules()->isHyperwave())
 			{
-				if (radarChance == 100 || RNG::percent(radarChance) || fta)
-				{
-					hyperwave = true;
-				}
+				hyperwave = true;
 				hyperwave_chance += radarChance;
 			}
 			else
@@ -789,7 +739,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		else if (radar_chance > 0)
 		{
 			detectionType = DETECTION_RADAR;
-			if (fta && RNG::percent(10)) //UFO will attempt to drop tracking
+			if (RNG::percent(10)) //UFO will attempt to drop tracking
 			{
 				detectionChance = RNG::generate(radar_chance, 100);
 			}
@@ -804,14 +754,7 @@ UfoDetection Base::detect(const Ufo *target, const SavedGame *save, bool already
 		if (hyperwave)
 		{
 			detectionType = DETECTION_HYPERWAVE;
-			if (fta)
-			{
-				detectionChance = hyperwave_chance;
-			}
-			else
-			{
-				detectionChance = 100;
-			}
+			detectionChance = hyperwave_chance;
 		}
 		else if (radar_chance > 0)
 		{
@@ -893,7 +836,15 @@ int Base::getTotalSoldiers() const
  */
 int Base::getAvailableScientists() const
 {
-	return getScientists();
+	int total = 0;
+	for (const auto* soldier : _soldiers)
+	{
+		if (soldier->getRoleRank(ROLE_SCIENTIST) > 0 && soldier->getResearchProject() == nullptr)
+		{
+			total++;
+		}
+	}
+	return total;
 }
 
 /**
@@ -903,17 +854,13 @@ int Base::getAvailableScientists() const
  */
 int Base::getTotalScientists() const
 {
-	int total = _scientists;
-	for (const auto* transfer : _transfers)
+	int total = 0;
+	for (const auto* soldier : _soldiers)
 	{
-		if (transfer->getType() == TRANSFER_SCIENTIST)
+		if (soldier->getRoleRank(ROLE_SCIENTIST) > 0)
 		{
-			total += transfer->getQuantity();
+			total++;
 		}
-	}
-	for (const auto* proj : _research)
-	{
-		total += proj->getAssigned();
 	}
 	return total;
 }
@@ -925,7 +872,15 @@ int Base::getTotalScientists() const
  */
 int Base::getAvailableEngineers() const
 {
-	return getEngineers();
+	int total = 0;
+	for (const auto* soldier : _soldiers)
+	{
+		if (soldier->getRoleRank(ROLE_ENGINEER) > 0 && soldier->getProductionProject() == nullptr)
+		{
+			total++;
+		}
+	}
+	return total;
 }
 
 /**
@@ -935,17 +890,13 @@ int Base::getAvailableEngineers() const
  */
 int Base::getTotalEngineers() const
 {
-	int total = _engineers;
-	for (const auto* transfer : _transfers)
+	int total = 0;
+	for (const auto* soldier : _soldiers)
 	{
-		if (transfer->getType() == TRANSFER_ENGINEER)
+		if (soldier->getRoleRank(ROLE_ENGINEER) > 0)
 		{
-			total += transfer->getQuantity();
+			total++;
 		}
-	}
-	for (const auto* prod : _productions)
-	{
-		total += prod->getAssignedEngineers();
 	}
 	return total;
 }
@@ -1176,7 +1127,7 @@ int Base::getAvailableStores() const
  * by research projects in the base.
  * @return Laboratory space.
  */
-int Base::getUsedLaboratories(bool fta, ResearchProject *exclude) const
+int Base::getUsedLaboratories(ResearchProject *exclude) const
 {
 	int usedLabSpace = 0;
 	for (const auto* proj : _research)
@@ -1186,19 +1137,12 @@ int Base::getUsedLaboratories(bool fta, ResearchProject *exclude) const
 			continue;
 		}
 
-		if (fta)
+		for (const auto* s : _soldiers)
 		{
-			for (const auto* s : _soldiers)
+			if (proj == s->getResearchProject())
 			{
-				if (proj == s->getResearchProject())
-				{
-					usedLabSpace++;
-				}
+				usedLabSpace++;
 			}
-		}
-		else
-		{
-			usedLabSpace += proj->getAssigned();
 		}
 	}
 
@@ -1228,7 +1172,7 @@ int Base::getAvailableLaboratories() const
  * by manufacturing projects in the base.
  * @return Storage space.
  */
-int Base::getUsedWorkshops(bool fta, Production* exclude) const
+int Base::getUsedWorkshops(Production* exclude) const
 {
 	int usedWorkShop = 0;
 	for (const auto* prod : _productions)
@@ -1239,19 +1183,12 @@ int Base::getUsedWorkshops(bool fta, Production* exclude) const
 		}
 
 		int assigned = 0;
-		if (fta)
+		for (const auto* s : _soldiers)
 		{
-			for (auto* s : _soldiers)
+			if (prod == s->getProductionProject())
 			{
-				if (prod == s->getProductionProject())
-				{
-					assigned++;
-				}
+				assigned++;
 			}
-		}
-		else
-		{
-			assigned = prod->getAssignedEngineers();
 		}
 		usedWorkShop += (assigned + prod->getRules()->getRequiredSpace());
 	}
@@ -1325,18 +1262,18 @@ int Base::getAvailableHangars() const
  * Return laboratories space not used by a ResearchProject
  * @return laboratories space not used by a ResearchProject
  */
-int Base::getFreeLaboratories(bool fta, ResearchProject* exclude) const
+int Base::getFreeLaboratories(ResearchProject* exclude) const
 {
-	return getAvailableLaboratories() - getUsedLaboratories(fta, exclude);
+	return getAvailableLaboratories() - getUsedLaboratories(exclude);
 }
 
 /**
  * Return workshop space not used by a Production
  * @return workshop space not used by a Production
  */
-int Base::getFreeWorkshops(bool fta, Production* exclude) const
+int Base::getFreeWorkshops(Production* exclude) const
 {
-	return getAvailableWorkshops() - getUsedWorkshops(fta, exclude);
+	return getAvailableWorkshops() - getUsedWorkshops(exclude);
 }
 
 /**
@@ -1373,9 +1310,12 @@ int Base::getFreePrisonSpace() const
 int Base::getAllocatedScientists() const
 {
 	int total = 0;
-	for (const auto* proj : _research)
+	for (const auto* soldier : _soldiers)
 	{
-		total += proj->getAssigned();
+		if (soldier->getRoleRank(ROLE_SCIENTIST) > 0 && soldier->getResearchProject() != nullptr)
+		{
+			total++;
+		}
 	}
 	return total;
 }
@@ -1387,9 +1327,12 @@ int Base::getAllocatedScientists() const
 int Base::getAllocatedEngineers() const
 {
 	int total = 0;
-	for (const auto* prod : _productions)
+	for (const auto* soldier : _soldiers)
 	{
-		total += prod->getAssignedEngineers();
+		if (soldier->getRoleRank(ROLE_ENGINEER) > 0 && soldier->getProductionProject() != nullptr)
+		{
+			total++;
+		}
 	}
 	return total;
 }
@@ -1655,7 +1598,13 @@ void Base::addResearch(ResearchProject * project)
  */
 void Base::removeResearch(ResearchProject * project)
 {
-	_scientists += project->getAssigned();
+	for (auto* soldier : _soldiers)
+	{
+		if (soldier->getResearchProject() == project)
+		{
+			soldier->setResearchProject(nullptr);
+		}
+	}
 	const RuleResearch *ruleResearch = project->getRules();
 	if (!project->isFinished())
 	{
@@ -1679,7 +1628,13 @@ void Base::removeResearch(ResearchProject * project)
  */
 void Base::removeProduction(Production* production)
 {
-	_engineers += production->getAssignedEngineers();
+	for (auto* soldier : _soldiers)
+	{
+		if (soldier->getProductionProject() == production)
+		{
+			soldier->setProductionProject(nullptr);
+		}
+	}
 
 	Collections::deleteIf(_productions, 1,
 		[&](Production* r)
@@ -2290,7 +2245,13 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 				{
 					if (i->getRules()->getProducedCraft())
 					{
-						_engineers += i->getAssignedEngineers();
+						for (auto* soldier : _soldiers)
+						{
+							if (soldier->getProductionProject() == i)
+							{
+								soldier->setProductionProject(nullptr);
+							}
+						}
 						return true;
 					}
 					else
@@ -2339,21 +2300,44 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 	{
 		// lab destruction: enforce lab space limits. take scientists off projects until
 		// it all evens out. research is not cancelled.
-		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories(_mod->isFTAGame());
+		int toRemove = (*facility)->getRules()->getLaboratories() - getFreeLaboratories();
 		for (auto iter = _research.begin(); iter != _research.end() && toRemove > 0;)
 		{
 			ResearchProject* proj = (*iter);
-			if (proj->getAssigned() >= toRemove)
+			int assigned = 0;
+			for (auto* soldier : _soldiers)
 			{
-				proj->setAssigned(proj->getAssigned() - toRemove);
-				_scientists += toRemove;
+				if (soldier->getResearchProject() == proj)
+				{
+					assigned++;
+				}
+			}
+			if (assigned >= toRemove)
+			{
+				for (auto* soldier : _soldiers)
+				{
+					if (toRemove <= 0)
+					{
+						break;
+					}
+					if (soldier->getResearchProject() == proj)
+					{
+						soldier->setResearchProject(nullptr);
+						toRemove--;
+					}
+				}
 				break;
 			}
 			else
 			{
-				toRemove -= proj->getAssigned();
-				_scientists += proj->getAssigned();
-				proj->setAssigned(0);
+				toRemove -= assigned;
+				for (auto* soldier : _soldiers)
+				{
+					if (soldier->getResearchProject() == proj)
+					{
+						soldier->setResearchProject(nullptr);
+					}
+				}
 				++iter;
 			}
 		}
@@ -2362,7 +2346,7 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 	{
 		// workshop destruction: similar to lab destruction, but we'll lay off engineers instead
 		// in this case, however, production IS cancelled, as it takes up space in the workshop.
-		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops(_mod->isFTAGame());
+		int toRemove = (*facility)->getRules()->getWorkshops() - getFreeWorkshops();
 		Collections::deleteIf(_productions, _productions.size(),
 			[&](Production* p)
 			{
@@ -2371,17 +2355,41 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 					// skip rest
 					return false;
 				}
-				else if (p->getAssignedEngineers() > toRemove)
+				int assigned = 0;
+				for (auto* soldier : _soldiers)
 				{
-					p->setAssignedEngineers(p->getAssignedEngineers() - toRemove);
-					_engineers += toRemove;
+					if (soldier->getProductionProject() == p)
+					{
+						assigned++;
+					}
+				}
+				if (assigned > toRemove)
+				{
+					for (auto* soldier : _soldiers)
+					{
+						if (toRemove <= 0)
+						{
+							break;
+						}
+						if (soldier->getProductionProject() == p)
+						{
+							soldier->setProductionProject(nullptr);
+							toRemove--;
+						}
+					}
 					toRemove = 0;
 					return false;
 				}
 				else
 				{
-					_engineers += p->getAssignedEngineers();
-					toRemove -= p->getAssignedEngineers();
+					for (auto* soldier : _soldiers)
+					{
+						if (soldier->getProductionProject() == p)
+						{
+							soldier->setProductionProject(nullptr);
+						}
+					}
+					toRemove -= assigned;
 					return true;
 				}
 			}
@@ -2416,14 +2424,7 @@ void Base::destroyFacility(BASEFACILITIESITERATOR facility)
 			Collections::deleteIf(_transfers, _transfers.size(),
 				[&](Transfer* i)
 				{
-					if (i->getType() == TRANSFER_ENGINEER || i->getType() == TRANSFER_SCIENTIST)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
+					return false;
 				}
 			);
 		}
@@ -2449,8 +2450,13 @@ void Base::cleanupPrisons(int prisonType)
 				RuleItem* rule = _mod->getItem(projRules->getName(), false); // don't use getNeededItem()
 				if (rule && rule->isAlien() && rule->getPrisonType() == prisonType)
 				{
-					_scientists += project->getAssigned();
-					project->setAssigned(0);
+					for (auto* soldier : _soldiers)
+					{
+						if (soldier->getResearchProject() == project)
+						{
+							soldier->setResearchProject(nullptr);
+						}
+					}
 					getStorageItems()->addItem(projRules->getNeededItem(), 1);
 					return true;
 				}
@@ -2711,11 +2717,11 @@ BasePlacementErrors Base::isAreaInUse(BaseAreaSubset area, const RuleBaseFacilit
 	{
 		return BPE_Used_Quarters;
 	}
-	else if (removed.laboratories > 0 && available.laboratories < getUsedLaboratories(_mod->isFTAGame()))
+	else if (removed.laboratories > 0 && available.laboratories < getUsedLaboratories())
 	{
 		return BPE_Used_Laboratories;
 	}
-	else if (removed.workshops > 0 && available.workshops < getUsedWorkshops(_mod->isFTAGame()))
+	else if (removed.workshops > 0 && available.workshops < getUsedWorkshops())
 	{
 		return BPE_Used_Workshops;
 	}

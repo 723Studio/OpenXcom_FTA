@@ -38,6 +38,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Savegame/DiplomacyFaction.h"
 #include "../Savegame/SoldierPool.h"
+#include "../Savegame/Transfer.h"
 #include "DiplomacyHirePersonnelState.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
@@ -372,7 +373,7 @@ void SoldierInfoStateFtA::init()
 
 	_btnArmor->setText(wsArmor);
 
-	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString(true))));
+	_txtRank->setText(tr("STR_RANK_").arg(tr(_soldier->getRankString())));
 
 	_txtMissions->setText(tr("STR_MISSIONS").arg(_soldier->getMissions()));
 

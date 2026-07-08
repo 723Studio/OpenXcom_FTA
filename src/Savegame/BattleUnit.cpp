@@ -80,7 +80,7 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	_id = soldier->getId();
 
 	_type = "SOLDIER";
-	_rank = soldier->getRankString(mod->isFTAGame());
+	_rank = soldier->getRankString();
 	_intelligence = 2;
 	_aggression = 1;
 	_faceDirection = -1;
@@ -1654,8 +1654,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 	if (attack.attacker != nullptr)
 	{
 		if ((attack.attacker->getFaction() == FACTION_PLAYER && this->getFaction() == FACTION_PLAYER)
-			&& (attack.type == BA_AUTOSHOT || attack.type == BA_SNAPSHOT || attack.type == BA_AIMEDSHOT || attack.type == BA_HIT) 
-			&& save->getGeoscapeSave()->isFtAGame())
+			&& (attack.type == BA_AUTOSHOT || attack.type == BA_SNAPSHOT || attack.type == BA_AIMEDSHOT || attack.type == BA_HIT))
 		{
 			int baseChange = -5;
 			this->moraleChange(baseChange - (2 * save->getGeoscapeSave()->getDifficultyCoefficient()) - RNG::generate(0, 5));
@@ -3200,7 +3199,7 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 			{
 				if (rule->getType() == bi->getRules()->getType())
 				{
-					if (mod->isFTAGame() && rule->getStackSize() > 1) // FtA logic
+					if (rule->getStackSize() > 1)
 					{
 						++tally;
 						if (allowSecondClip && rule->getBattleType() == BT_AMMO)
@@ -3211,15 +3210,6 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 							}
 						}
 						else if(tally == rule->getStackSize())
-						{
-							return false;
-						}
-					}
-					else // standard logic
-					if (allowSecondClip && rule->getBattleType() == BT_AMMO)
-					{
-						tally++;
-						if (tally == 2)
 						{
 							return false;
 						}
@@ -3306,7 +3296,7 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 					placed = true;
 				}
 				// if we have a stackable weapon i.e. throwing knife in one of the hands, put spare items in the inventory
-				if (!placed && mod->isFTAGame()
+				if (!placed
 					&& item->getRules()->getStackSize() > 1
 					&&((getRightHandWeapon() && getRightHandWeapon()->getRules()->getType() == item->getRules()->getType())
 						||(getLeftHandWeapon() && getLeftHandWeapon()->getRules()->getType() == item->getRules()->getType())
@@ -4305,11 +4295,7 @@ bool BattleUnit::postMissionProcedures(const Mod *mod, SavedGame *geoscape, Save
 	if (hasGainedAnyExperience())
 	{
 		hasImproved = true;
-		if (s->getRank() == RANK_ROOKIE && !mod->isFTAGame())
-		{
-			s->promoteRank();
-		}
-		else if (s->isRookieSoldier())
+		if (s->isRookieSoldier())
 		{
 			s->addExperience(ROLE_SOLDIER, RNG::generate(5, 10), "experience for completing first mission");
 			s->setRookieSoldier(false);

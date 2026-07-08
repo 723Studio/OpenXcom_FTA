@@ -49,7 +49,7 @@ namespace OpenXcom
  */
 ResearchState::ResearchState(Base *base) : _base(base)
 {
-	_ftaUi = _game->getMod()->isFTAGame();
+	_ftaUi = true;
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	if (_ftaUi)
@@ -208,40 +208,8 @@ void ResearchState::onOpenTechTreeViewer(Action *action)
  * Handles the mouse-wheels.
  * @param action Pointer to an action.
  */
-void ResearchState::lstResearchMousePress(Action *action)
+void ResearchState::lstResearchMousePress(Action *)
 {
-	if (!_lstResearch->isInsideNoScrollArea(action->getAbsoluteXMouse()) || _ftaUi)
-	{
-		return;
-	}
-
-	int change = Options::oxceResearchScrollSpeed;
-	if (_game->isCtrlPressed())
-		change = Options::oxceResearchScrollSpeedWithCtrl;
-
-	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
-	{
-		change = std::min(change, _base->getAvailableScientists());
-		change = std::min(change, _base->getFreeLaboratories(_ftaUi));
-		if (change > 0)
-		{
-			ResearchProject *selectedProject = _base->getResearch()[_lstResearch->getSelectedRow()];
-			selectedProject->setAssigned(selectedProject->getAssigned() + change);
-			_base->setScientists(_base->getScientists() - change);
-			fillProjectList(_lstResearch->getScroll());
-		}
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN)
-	{
-		ResearchProject *selectedProject = _base->getResearch()[_lstResearch->getSelectedRow()];
-		change = std::min(change, selectedProject->getAssigned());
-		if (change > 0)
-		{
-			selectedProject->setAssigned(selectedProject->getAssigned() - change);
-			_base->setScientists(_base->getScientists() + change);
-			fillProjectList(_lstResearch->getScroll());
-		}
-	}
 }
 
 /**
@@ -325,7 +293,15 @@ void ResearchState::fillProjectList(size_t scrl)
 		}
 		else
 		{
-			sstr << proj->getAssigned();
+			size_t scientists = 0;
+			for (auto* soldier : *_base->getSoldiers())
+			{
+				if (soldier->getResearchProject() == proj)
+				{
+					scientists++;
+				}
+			}
+			sstr << scientists;
 			sspr << tr(proj->getResearchProgress());
 		}
 		std::string wstr = tr(r->getName());
@@ -358,7 +334,7 @@ void ResearchState::fillProjectList(size_t scrl)
 		_txtAllocated->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_base->getAllocatedScientists()));
 	}
 
-	_txtSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories(_ftaUi)));
+	_txtSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE").arg(_base->getFreeLaboratories()));
 
 	if (scrl)
 		_lstResearch->scrollTo(scrl);

@@ -25,11 +25,8 @@
 namespace OpenXcom
 {
 const float PROGRESS_LIMIT_UNKNOWN = 0.333f;
-const float PROGRESS_LIMIT_POOR = 0.07f;
-const float PROGRESS_LIMIT_AVERAGE = 0.13f;
-const float PROGRESS_LIMIT_GOOD = 0.25f;
 
-ResearchProject::ResearchProject(const RuleResearch * p, int c) : _project(p), _assigned(0), _spent(0), _cost(c)
+ResearchProject::ResearchProject(const RuleResearch * p, int c) : _project(p), _spent(0), _cost(c)
 {
 }
 
@@ -186,28 +183,11 @@ bool ResearchProject::isFinished()
 	return _spent >= getCost();
 }
 
-/**
- * Changes the number of scientist to the ResearchProject
- * @param nb number of scientist assigned to this ResearchProject
- */
-void ResearchProject::setAssigned (int nb)
-{
-	_assigned = nb;
-}
-
 const RuleResearch * ResearchProject::getRules() const
 {
 	return _project;
 }
 
-/**
- * Returns the number of scientist assigned to this project
- * @return Number of assigned scientist.
- */
-int ResearchProject::getAssigned() const
-{
-	return _assigned;
-}
 
 /**
  * Returns the time already spent on this project
@@ -251,7 +231,6 @@ void ResearchProject::setCost(int f)
  */
 void ResearchProject::load(const YAML::YamlNodeReader& reader)
 {
-	setAssigned(reader["assigned"].readVal(getAssigned()));
 	setSpent(reader["spent"].readVal(getSpent()));
 	setCost(reader["cost"].readVal(getCost()));
 }
@@ -264,7 +243,6 @@ void ResearchProject::save(YAML::YamlNodeWriter writer) const
 {
 	writer.setAsMap();
 	writer.write("project", getRules()->getName());
-	writer.write("assigned", getAssigned());
 	writer.write("spent", getSpent());
 	writer.write("cost", getCost());
 }
@@ -276,7 +254,7 @@ void ResearchProject::save(YAML::YamlNodeWriter writer) const
 std::string ResearchProject::getResearchProgress() const
 {
 	float progress = (float)getSpent() / (float)getRules()->getCost();
-	if (getAssigned() == 0)
+	if (progress <= 0.0f)
 	{
 		return "STR_NONE";
 	}
@@ -284,22 +262,20 @@ std::string ResearchProject::getResearchProgress() const
 	{
 		return "STR_UNKNOWN";
 	}
+	else if (progress <= 0.5f)
+	{
+		return "STR_POOR";
+	}
+	else if (progress <= 0.75f)
+	{
+		return "STR_AVERAGE";
+	}
+	else if (progress <= 0.9f)
+	{
+		return "STR_GOOD";
+	}
 	else
 	{
-		float rating = (float)getAssigned();
-		rating /= (float)getRules()->getCost();
-		if (rating <= PROGRESS_LIMIT_POOR)
-		{
-			return "STR_POOR";
-		}
-		else if (rating <= PROGRESS_LIMIT_AVERAGE)
-		{
-			return "STR_AVERAGE";
-		}
-		else if (rating <= PROGRESS_LIMIT_GOOD)
-		{
-			return "STR_GOOD";
-		}
 		return "STR_EXCELLENT";
 	}
 }

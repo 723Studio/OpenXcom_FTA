@@ -966,12 +966,6 @@
     <ClCompile Include="Battlescape\InventorySaveState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
-    <ClCompile Include="Basescape\CraftPilotsState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Basescape\CraftPilotSelectState.cpp">
-      <Filter>Basescape</Filter>
-    </ClCompile>
     <ClCompile Include="Mod\CustomPalettes.cpp">
       <Filter>Mod</Filter>
     </ClCompile>
@@ -1144,9 +1138,6 @@
     </ClCompile>
     <ClCompile Include="Basescape\CovertOperationInfoState.cpp">
       <Filter>Basescape</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\FtaGameServices.cpp">
-      <Filter>Engine</Filter>
     </ClCompile>
     <ClCompile Include="Mod\BattleScript.cpp">
       <Filter>Mod</Filter>
@@ -2378,12 +2369,6 @@
     <ClInclude Include="Battlescape\InventorySaveState.h">
       <Filter>Battlescape</Filter>
     </ClInclude>
-    <ClInclude Include="Basescape\CraftPilotsState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\CraftPilotSelectState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
     <ClInclude Include="Mod\CustomPalettes.h">
       <Filter>Mod</Filter>
     </ClInclude>
@@ -2578,9 +2563,6 @@
     </ClInclude>
     <ClInclude Include="Basescape\CovertOperationInfoState.h">
       <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\FtaGameServices.h">
-      <Filter>Engine</Filter>
     </ClInclude>
     <ClInclude Include="Mod\BattleScript.h">
       <Filter>Mod</Filter>

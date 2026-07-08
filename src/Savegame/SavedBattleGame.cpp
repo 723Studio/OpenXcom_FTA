@@ -3703,10 +3703,7 @@ namespace
 template<typename... Args>
 void flashMessageVariadicScriptImpl(SavedBattleGame* sbg, ScriptText message, Args... args)
 {
-	if (!sbg || !sbg->getBattleState() || sbg->getGeoscapeSave()->isFtAGame())
-	{
-		return;
-	}
+	return;
 	const Language *lang = sbg->getBattleState()->getGame()->getLanguage();
 	LocalizedText translated = lang->getString(message);
 	(translated.arg(args), ...);

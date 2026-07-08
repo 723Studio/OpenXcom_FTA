@@ -961,70 +961,25 @@ void Soldier::clearBaseDuty()
  * the soldier's military rank.
  * @return String ID for rank.
  */
-const std::string Soldier::getRankString(bool isFtA) const
+const std::string Soldier::getRankString() const
 {
-	if (isFtA)
+	std::string rankString = "UNDEFINED";
+	for (auto ruleRole : _rules->getRoleRankStrings())
 	{
-		std::string rankString = "UNDEFINED";
-		for (auto ruleRole : _rules->getRoleRankStrings())
+		if (ruleRole->role == getBestRole())
 		{
-			if (ruleRole->role == getBestRole())
+			for (auto rank : ruleRole->strings)
 			{
-				for (auto rank : ruleRole->strings)
+				if (rank.first == getBestRoleRank().second)
 				{
-					if (rank.first == getBestRoleRank().second)
-					{
-						rankString = rank.second;
-						break;
-					}
+					rankString = rank.second;
+					break;
 				}
-				break;
 			}
-		}
-		return rankString;
-	}
-	else
-	{
-		const std::vector<std::string> &rankStrings = _rules->getRankStrings();
-		if (!_rules->getAllowPromotion())
-		{
-			// even if promotion is not allowed, we allow to use a different "Rookie" translation per soldier type
-			if (rankStrings.empty())
-			{
-				return "STR_RANK_NONE";
-			}
-		}
-
-		switch (_rank)
-		{
-		case RANK_ROOKIE:
-			if (rankStrings.size() > 0)
-				return rankStrings.at(0);
-			return "STR_ROOKIE";
-		case RANK_SQUADDIE:
-			if (rankStrings.size() > 1)
-				return rankStrings.at(1);
-			return "STR_SQUADDIE";
-		case RANK_SERGEANT:
-			if (rankStrings.size() > 2)
-				return rankStrings.at(2);
-			return "STR_SERGEANT";
-		case RANK_CAPTAIN:
-			if (rankStrings.size() > 3)
-				return rankStrings.at(3);
-			return "STR_CAPTAIN";
-		case RANK_COLONEL:
-			if (rankStrings.size() > 4)
-				return rankStrings.at(4);
-			return "STR_COLONEL";
-		case RANK_COMMANDER:
-			if (rankStrings.size() > 5)
-				return rankStrings.at(5);
-			return "STR_COMMANDER";
-		default:
-			return "";
+			break;
 		}
 	}
+	return rankString;
 }
 
 /**

@@ -18,8 +18,11 @@
  * along with OpenXcom.  If not, see <http:///www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "../Savegame/SavedGame.h"
 #include <list>
 #include <map>
+#include <string>
+#include <vector>
 
 namespace OpenXcom
 {
@@ -41,6 +44,8 @@ class Soldier;
 class RuleMissionScript;
 class RuleEvent;
 class AlienBase;
+
+enum ProcessorSource {SCRIPT_MONTHLY, SCRIPT_FACTIONAL, SCRIPT_XCOM, OTHER_SCRIPT};
 
 /**
  * Geoscape screen which shows an overview of
@@ -194,6 +199,14 @@ public:
 	std::vector<Soldier*> getPromotedSolders() { return _promotedSoldiers; }
 	/// Handle alien mission generation.
 	void determineAlienMissions(bool isNewMonth = true, const RuleEvent* eventRules = nullptr);
+	/// Process event script from different sources.
+	void eventScriptProcessor(const std::vector<std::string>& scripts, ProcessorSource source);
+	/// Spawn the alien mission with given parameters.
+	bool spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base = nullptr);
+	/// Loyalty update handler.
+	int updateLoyalty(int score, LoyaltySource source = XCOM_GEOSCAPE);
+	/// Return bonus applied to base service performance because of loyalty level.
+	int getLoyaltyPerformanceBonus();
 private:
 	bool attemptAlienRaceEvolution(int month, AlienBase* ab) const;
 	/// Process each individual mission script command.

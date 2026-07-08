@@ -186,9 +186,9 @@ void Armor::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript &pa
 	_stats.merge(reader["stats"].readVal(_stats));
 	reader.tryRead("allowedItemCategories", _allowedItemCategories);
 	reader.tryRead("forbiddenItemCategories", _forbiddenItemCategories);
-	if (_forbiddenItemCategories.empty() && mod->isFTAGame())
+	if (_forbiddenItemCategories.empty())
 	{
-		_forbiddenItemCategories.push_back("STR_ROBOT_EQUIPMENT"); // default for FTA game, less copy-paste in rulesets =)
+		_forbiddenItemCategories.push_back("STR_ROBOT_EQUIPMENT"); // default for FTA, less copy-paste in rulesets =)
 	}
 	if (const YAML::YamlNodeReader& dmg = reader["damageModifier"])
 	{

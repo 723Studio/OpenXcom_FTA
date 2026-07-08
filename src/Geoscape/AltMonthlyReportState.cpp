@@ -31,6 +31,7 @@
 #include "../Menu/CutsceneState.h"
 #include "PsiTrainingState.h"
 #include "Globe.h"
+#include "GeoscapeState.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/GameTime.h"
@@ -41,7 +42,6 @@
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
-#include "../Engine/FtaGameServices.h"
 #include "../Battlescape/CommendationState.h"
 
 namespace OpenXcom
@@ -443,7 +443,7 @@ std::string AltMonthlyReportState::calculateUpdates()
 			{
 				continue;
 			}
-			bool changed = _game->getFtaGameServices()->updateReputationLvl(*k, false);
+			bool changed = (*k)->updateReputationLvl(*_game->getMod(), false);
 			bool prevChanged = (*k)->isThisMonthRepLvlChanged();
 
 			if ((*k)->isThisMonthDiscovered())
@@ -506,7 +506,7 @@ std::string AltMonthlyReportState::calculateUpdates()
 					stuffMessage = tr("STR_STUFF_NO_MONEY20");
 				}
 				ss << stuffMessage;
-				_game->getFtaGameServices()->updateLoyalty(-discontent, XCOM_GEOSCAPE);
+				_game->getGeoscapeState()->updateLoyalty(-discontent, XCOM_GEOSCAPE);
 			}
 		}
 		//update loyalty data after it was loaded

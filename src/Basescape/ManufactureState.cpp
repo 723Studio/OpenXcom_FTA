@@ -20,7 +20,7 @@
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Unicode.h"
@@ -51,7 +51,7 @@ namespace OpenXcom
  */
 ManufactureState::ManufactureState(Base *base) : _base(base)
 {
-	_ftaUi = _game->getMod()->isFTAGame();
+	_ftaUi = true;
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	if (_ftaUi)
@@ -226,7 +226,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		}
 		else
 		{
-			s1 << prod->getAssignedEngineers();
+			s1 << engineers;
 		}
 		std::ostringstream s2;
 		s2 << prod->getAmountProduced() << "/";
@@ -251,13 +251,13 @@ void ManufactureState::fillProductionList(size_t scrl)
 		{
 			s4 << "∞";
 		}
-		else if (prod->getAssignedEngineers() > 0 || engineers > 0)
+		else if (engineers > 0)
 		{
 			int timeLeft = prod->getAmountTotal() * prod->getRules()->getManufactureTime() - prod->getTimeSpent();
-			int numEffectiveEngineers = prod->getAssignedEngineers();
+			int numEffectiveEngineers = 0;
 			if (_ftaUi)
 			{
-				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getFtaGameServices()->getLoyaltyPerformanceBonus(), true);
+				numEffectiveEngineers = prod->getProgress(_base, _game->getSavedGame(), _game->getMod(), _game->getGeoscapeState()->getLoyaltyPerformanceBonus(), true);
 			}
 			// ensure we round up since it takes an entire hour to manufacture any part of that hour's capacity
 			if (numEffectiveEngineers > 0)
@@ -312,7 +312,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 		_txtAllocated->setText(tr("STR_ENGINEERS_ALLOCATED").arg(_base->getAllocatedEngineers()));
 	}
 
-	_txtSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE").arg(_base->getFreeWorkshops(_ftaUi)));
+	_txtSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE").arg(_base->getFreeWorkshops()));
 	_txtFunds->setText(tr("STR_CURRENT_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
 
 	if (scrl)
@@ -357,40 +357,8 @@ void ManufactureState::lstManufactureClickMiddle(Action *)
  * Handles the mouse-wheels.
  * @param action Pointer to an action.
  */
-void ManufactureState::lstManufactureMousePress(Action *action)
+void ManufactureState::lstManufactureMousePress(Action *)
 {
-	if (!_lstManufacture->isInsideNoScrollArea(action->getAbsoluteXMouse()))
-	{
-		return;
-	}
-
-	int change = Options::oxceManufactureScrollSpeed;
-	if (_game->isCtrlPressed())
-		change = Options::oxceManufactureScrollSpeedWithCtrl;
-
-	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
-	{
-		change = std::min(change, _base->getAvailableEngineers());
-		change = std::min(change, _base->getFreeWorkshops());
-		if (change > 0)
-		{
-			Production *selectedProject = _base->getProductions()[_lstManufacture->getSelectedRow()];
-			selectedProject->setAssignedEngineers(selectedProject->getAssignedEngineers() + change);
-			_base->setEngineers(_base->getEngineers() - change);
-			fillProductionList(_lstManufacture->getScroll());
-		}
-	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_WHEELDOWN)
-	{
-		Production *selectedProject = _base->getProductions()[_lstManufacture->getSelectedRow()];
-		change = std::min(change, selectedProject->getAssignedEngineers());
-		if (change > 0)
-		{
-			selectedProject->setAssignedEngineers(selectedProject->getAssignedEngineers() - change);
-			_base->setEngineers(_base->getEngineers() + change);
-			fillProductionList(_lstManufacture->getScroll());
-		}
-	}
 }
 
 }

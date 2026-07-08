@@ -54,7 +54,6 @@
 #include "DogfightErrorState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/Mod.h"
-#include "../Engine/FtaGameServices.h"
 
 namespace OpenXcom
 {
@@ -253,7 +252,7 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_delayedRecolorDone(false)
 {
 	_screen = false;
-	_fta = _game->getMod()->isFTAGame();
+	_fta = true;
 	_craft->setInDogfight(true);
 	_weaponNum = _craft->getRules()->getWeapons();
 	if (_weaponNum > RuleCraft::WeaponMax)
@@ -1775,7 +1774,7 @@ void DogfightState::update()
 			{
 				if (_ufo->getShotDownByCraftId() == _craft->getUniqueId())
 				{
-					_game->getFtaGameServices()->updateLoyalty(score * 2, XCOM_DOGFIGHT);
+					_game->getGeoscapeState()->updateLoyalty(score * 2, XCOM_DOGFIGHT);
 					for (auto* country : *_game->getSavedGame()->getCountries())
 					{
 						if (country->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))
@@ -1803,7 +1802,7 @@ void DogfightState::update()
 				{
 					setStatus("STR_UFO_CRASH_LANDS");
 					_game->getMod()->getSound("GEO.CAT", Mod::UFO_CRASH)->play(); //10
-					_game->getFtaGameServices()->updateLoyalty(score, XCOM_DOGFIGHT);
+					_game->getGeoscapeState()->updateLoyalty(score, XCOM_DOGFIGHT);
 					for (auto* country : *_game->getSavedGame()->getCountries())
 					{
 						if (country->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))
@@ -1904,7 +1903,7 @@ void DogfightState::update()
 				_ufo->setSpeed(0);
 				_ufo->setStatus(Ufo::DESTROYED);
 				_destroyUfo = true;
-				_game->getFtaGameServices()->updateLoyalty(score, XCOM_DOGFIGHT);
+				_game->getGeoscapeState()->updateLoyalty(score, XCOM_DOGFIGHT);
 				for (auto* country : *_game->getSavedGame()->getCountries())
 				{
 					if (country->getRules()->insideCountry(_ufo->getLongitude(), _ufo->getLatitude()))

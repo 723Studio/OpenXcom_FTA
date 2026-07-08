@@ -56,7 +56,7 @@ namespace OpenXcom
 SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation *transformationRule, Base *base, Soldier *sourceSoldier, std::vector<Soldier *> *filteredListOfSoldiers) :
 			_transformationRule(transformationRule), _base(base), _sourceSoldier(sourceSoldier), _filteredListOfSoldiers(filteredListOfSoldiers)
 {
-	_ftaUI = _game->getMod()->isFTAGame();
+	_ftaUI = true;
 
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnCancel = new TextButton(148, 16, 8, 176);

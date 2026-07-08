@@ -2711,10 +2711,7 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 	std::vector<TileEngine::ReactionScore> spotters;
 	Tile *tile = unit->getTile();
 	int threshold = unit->getReactionScore();
-	// no reaction on civilian turn.
-	if (_save->getSide() != FACTION_NEUTRAL || _save->getGeoscapeSave()->isFtAGame())
-	{
-		for (auto* bu : *_save->getUnits())
+	for (auto* bu : *_save->getUnits())
 		{
 				// not dead/unconscious
 			if (!bu->isOut() &&
@@ -2816,7 +2813,6 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 				}
 			}
 		}
-	}
 	return spotters;
 }
 

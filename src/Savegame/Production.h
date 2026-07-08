@@ -40,8 +40,6 @@ public:
 	int getTimeSpent() const{ return _timeSpent; }
 	void setTimeSpent (int timeSpent){ _timeSpent = timeSpent; }
 	int getAmountProduced() const;
-	int getAssignedEngineers() const { return _engineers; }
-	void setAssignedEngineers (int engineers){ _engineers = engineers; }
 	bool getSellItems() const { return _sell; }
 	void setSellItems (bool sell){ _sell = sell; }
 	int getEfficiency() const { return _efficiency; }
@@ -62,7 +60,6 @@ private:
 	int _amount;
 	bool _infinite;
 	int _timeSpent;
-	int _engineers;
 	int _efficiency;
 	bool _sell;
 	std::map<std::string, int> _randomProductionInfo;

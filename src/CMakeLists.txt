@@ -22,8 +22,6 @@ set ( basescape_src
   Basescape/CraftEquipmentSaveState.cpp
   Basescape/CraftEquipmentState.cpp
   Basescape/CraftInfoState.cpp
-  Basescape/CraftPilotSelectState.cpp
-  Basescape/CraftPilotsState.cpp
   Basescape/CraftSoldiersState.cpp
   Basescape/CraftsState.cpp
   Basescape/CraftWeaponsState.cpp
@@ -174,7 +172,6 @@ set ( engine_src
   Engine/FileMap.cpp
   Engine/FlcPlayer.cpp
   Engine/Font.cpp
-  Engine/FtaGameServices.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
   Engine/InteractiveSurface.cpp

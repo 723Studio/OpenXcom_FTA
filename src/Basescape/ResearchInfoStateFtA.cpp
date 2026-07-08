@@ -396,7 +396,7 @@ void ResearchInfoStateFtA::setAssignedScientists()
 			teamSize--;
 		}
 	}
-	_workSpace = _base->getFreeLaboratories(true, _project) - teamSize;
+	_workSpace = _base->getFreeLaboratories(_project) - teamSize;
 	_txtAvailableSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE_UC").arg(_workSpace));
 }
 

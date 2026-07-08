@@ -42,7 +42,6 @@ namespace OpenXcom
 ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::string &selectedItem) : _selectedItem(selectedItem), _showAll(false)
 {
 	_screen = false;
-	_ftaGame = _game->getMod()->isFTAGame();
 
 	_window = new Window(this, 222, 144, 49, 32);
 	_txtTitle = new Text(182, 9, 53, 42);
@@ -88,12 +87,9 @@ ManufactureDependenciesTreeState::ManufactureDependenciesTreeState(const std::st
 		_lstTopics->setVisible(false);
 		return;
 	}
-	if (_ftaGame)
-	{
-		_btnShowAll->setVisible(false);
-		_btnOk->setWidth(_btnOk->getX() - _btnShowAll->getX() + _btnOk->getWidth());
-		_btnOk->setX(_btnShowAll->getX());
-	}
+	_btnShowAll->setVisible(false);
+	_btnOk->setWidth(_btnOk->getX() - _btnShowAll->getX() + _btnOk->getWidth());
+	_btnOk->setX(_btnShowAll->getX());
 }
 
 ManufactureDependenciesTreeState::~ManufactureDependenciesTreeState()
@@ -107,11 +103,7 @@ void ManufactureDependenciesTreeState::init()
 {
 	State::init();
 
-	if (!Options::oxceDisableProductionDependencyTree && !_ftaGame)
-	{
-		initList();
-	}
-	else if (_ftaGame)
+	if (!Options::oxceDisableProductionDependencyTree)
 	{
 		initFtAList();
 	}

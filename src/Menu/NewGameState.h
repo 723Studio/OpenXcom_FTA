@@ -26,6 +26,7 @@ class TextButton;
 class ToggleTextButton;
 class Window;
 class Text;
+class GeoscapeState;
 
 /**
  * New Game window that displays a list
@@ -41,6 +42,8 @@ private:
 	TextButton *_btnOk, *_btnCancel;
 	Window *_window;
 	Text *_txtTitle, *_txtIronman;
+	/// Initializes FTA campaign-specific new game state.
+	void initFtaNewGame(GeoscapeState *gs);
 public:
 	/// Creates the New Game state.
 	NewGameState();

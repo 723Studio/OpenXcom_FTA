@@ -107,7 +107,7 @@ public:
 	void init() override;
 	void fillEngineersList(size_t scrl);
 	/// Updates display of assigned/available engineers and workshop space.
-	void setAssignedEngineers();
+	void refreshAssignedEngineers();
 
 	const RuleManufacture* getManufactureRules();
 	std::set<Soldier*> getEngineers() { return _engineers; };

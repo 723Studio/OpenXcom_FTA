@@ -34,7 +34,6 @@
 #include "../Menu/ErrorMessageState.h"
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
-#include "../Engine/FtaGameServices.h"
 #include "../Mod/RuleInterface.h"
 #include <algorithm>
 #include <climits>

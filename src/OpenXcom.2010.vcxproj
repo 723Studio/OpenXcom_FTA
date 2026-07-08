@@ -365,8 +365,6 @@
     <ClCompile Include="Basescape\CraftEquipmentSaveState.cpp" />
     <ClCompile Include="Basescape\CraftEquipmentState.cpp" />
     <ClCompile Include="Basescape\CraftInfoState.cpp" />
-    <ClCompile Include="Basescape\CraftPilotSelectState.cpp" />
-    <ClCompile Include="Basescape\CraftPilotsState.cpp" />
     <ClCompile Include="Basescape\CraftSoldiersState.cpp" />
     <ClCompile Include="Basescape\CraftsState.cpp" />
     <ClCompile Include="Basescape\CraftWeaponsState.cpp" />
@@ -547,7 +545,6 @@
     <ClCompile Include="Engine\Unicode.cpp" />
     <ClCompile Include="Engine\Yaml.cpp" />
     <ClCompile Include="Engine\Zoom.cpp" />
-    <ClCompile Include="Engine\FtaGameServices.cpp" />
     <ClCompile Include="Geoscape\AlienBaseState.cpp" />
     <ClCompile Include="Geoscape\AllocateTrainingState.cpp" />
     <ClCompile Include="Geoscape\AltMonthlyReportState.cpp" />
@@ -888,8 +885,6 @@
     <ClInclude Include="Basescape\CraftEquipmentSaveState.h" />
     <ClInclude Include="Basescape\CraftEquipmentState.h" />
     <ClInclude Include="Basescape\CraftInfoState.h" />
-    <ClInclude Include="Basescape\CraftPilotSelectState.h" />
-    <ClInclude Include="Basescape\CraftPilotsState.h" />
     <ClInclude Include="Basescape\CraftSoldiersState.h" />
     <ClInclude Include="Basescape\CraftsState.h" />
     <ClInclude Include="Basescape\CraftWeaponsState.h" />
@@ -1083,7 +1078,6 @@
     <ClInclude Include="Engine\Zoom.h" />
     <ClInclude Include="fallthrough.h" />
     <ClInclude Include="fmath.h" />
-    <ClInclude Include="Engine\FtaGameServices.h" />
     <ClInclude Include="Geoscape\AlienBaseState.h" />
     <ClInclude Include="Geoscape\AllocateTrainingState.h" />
     <ClInclude Include="Geoscape\AltMonthlyReportState.h" />

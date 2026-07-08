@@ -57,6 +57,7 @@
 #include "../Savegame/SoldierDiary.h"
 #include "../Savegame/MissionSite.h"
 #include "../Savegame/Tile.h"
+#include "../Savegame/Transfer.h"
 #include "../Savegame/Ufo.h"
 #include "../Savegame/Vehicle.h"
 #include "../Savegame/BaseFacility.h"
@@ -80,7 +81,7 @@
 #include "../Mod/RuleResearch.h"
 #include "../Savegame/MissionStatistics.h"
 #include "../Savegame/BattleUnitStatistics.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../fallthrough.h"
 #include "../Mod/AlienRace.h"
@@ -124,7 +125,7 @@ DebriefingState::DebriefingState() :
 	_recoveredItemObjs(0)
 {
 	_missionStatistics = new MissionStatistics();
-	_fta = _game->getMod()->isFTAGame();
+	_fta = true;
 
 	Options::baseXResolution = Options::baseXGeoscape;
 	Options::baseYResolution = Options::baseYGeoscape;
@@ -394,12 +395,8 @@ void DebriefingState::applyVisibility()
 	bool showItems = _pageNumber == 2;
 	bool showNonCombatStats = showStats && _btnNonCombatStats->getPressed();
 	bool showCombatStats = showStats && !showNonCombatStats;
-	bool showPsi = true;
-	if (_game->getMod()->isFTAGame())
-	{
-		showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
-			_game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
-	}
+	bool showPsi = _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements()) &&
+		_game->getSavedGame()->isResearched(_game->getMod()->getManaUnlockResearch());
 
 	// First page (scores)
 	_txtItem->setVisible(showScore || showItems);
@@ -407,7 +404,7 @@ void DebriefingState::applyVisibility()
 	_txtScore->setVisible(showScore);
 	_txtRecovery->setVisible(showScore);
 	_txtRating->setVisible(showScore);
-	_txtLoyalty->setVisible(showScore && _game->getMod()->isFTAGame());
+	_txtLoyalty->setVisible(showScore);
 	_lstStats->setVisible(showScore);
 	_lstRecovery->setVisible(showScore);
 	_lstTotal->setVisible(showScore);
@@ -434,18 +431,14 @@ void DebriefingState::applyVisibility()
 	_lstRecoveredItems->setVisible(showItems);
 
 	// Hide sell button if there are no contacts with factions yet
-	bool showSellButtonFTA = true; //for non-FTA cases
-	if (_game->getMod()->isFTAGame())
+	bool showSellButtonFTA = false;
+	for (std::vector<DiplomacyFaction *>::iterator i = _game->getSavedGame()->getDiplomacyFactions().begin();
+		 i != _game->getSavedGame()->getDiplomacyFactions().end(); ++i)
 	{
-		showSellButtonFTA = false;
-		for (std::vector<DiplomacyFaction *>::iterator i = _game->getSavedGame()->getDiplomacyFactions().begin();
-			 i != _game->getSavedGame()->getDiplomacyFactions().end(); ++i)
+		if ((*i)->isDiscovered())
 		{
-			if ((*i)->isDiscovered())
-			{
-				showSellButtonFTA = true;
-				break;
-			}
+			showSellButtonFTA = true;
+			break;
 		}
 	}
 
@@ -639,8 +632,8 @@ void DebriefingState::init()
 	}
 
 	// update FtA Loyalty
-	int loyalty = _game->getFtaGameServices()->updateLoyalty(total, XCOM_BATTLESCAPE);
-	if (_game->getMod()->isFTAGame() && _game->getSavedGame()->isResearched("STR_LOYALTY"))
+	int loyalty = _game->getGeoscapeState()->updateLoyalty(total, XCOM_BATTLESCAPE);
+	if (_game->getSavedGame()->isResearched("STR_LOYALTY"))
 	{
 		_txtLoyalty->setText(tr("STR_LOYALTY_UPDATE").arg(loyalty));
 	}
@@ -2938,7 +2931,7 @@ void DebriefingState::recoverItems(std::vector<BattleItem*> *from, Base *base, C
 
 				if (awardItemPoints)
 				{
-					if (rule->isAlienArtifact() || !_game->getMod()->isFTAGame())
+					if (rule->isAlienArtifact())
 					{
 						addStat("STR_ALIEN_ARTIFACTS_RECOVERED", 1, points);
 					}
@@ -3151,92 +3144,33 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 	{
 		return;
 	}
-	if (rule->isRecoverableAsScientist())
+	const RuleSoldier *ruleSoldier = rule->getCivilianRecoverySoldierType();
+	if (ruleSoldier != 0)
 	{
 		Transfer *t = new Transfer(24);
-		t->setScientists(1);
+		Target* target = craft;
+		if (!target)
+		{
+			target = base;
+		}
+		int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, target);
+		Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
+		YAML::YamlRootNodeReader reader(from->getUnitRules()->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+		s->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
+		if (!from->getUnitRules()->getSpawnedPersonName().empty())
+		{
+			s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));
+		}
+		else
+		{
+			s->genName();
+		}
+		t->setSoldier(s);
 		base->getTransfers()->push_back(t);
 	}
-	else if (rule->isRecoverableAsEngineer())
+	else if (from->getUnitRules()->getPrisoner() != nullptr)
 	{
-		Transfer *t = new Transfer(24);
-		t->setEngineers(1);
-		base->getTransfers()->push_back(t);
-	}
-	else
-	{
-		const RuleSoldier *ruleSoldier = rule->getCivilianRecoverySoldierType();
-		if (ruleSoldier != 0)
-		{
-			Transfer *t = new Transfer(24);
-			Target* target = craft;
-			if (!target)
-			{
-				target = base;
-			}
-			int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, target);
-			Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
-			YAML::YamlRootNodeReader reader(from->getUnitRules()->getSpawnedSoldierTemplate(), "(spawned soldier template)");
-			s->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
-			if (!from->getUnitRules()->getSpawnedPersonName().empty())
-			{
-				s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));
-			}
-			else
-			{
-				s->genName();
-			}
-			t->setSoldier(s);
-			base->getTransfers()->push_back(t);
-		}
-		else if (from->getUnitRules()->getPrisoner() != nullptr)
-		{
-			recoverPrisoner(from, base);
-		}
-		else if (!_fta)
-		{
-			const RuleItem *ruleItem = rule->getCivilianRecoveryItemType();
-			if (ruleItem != 0)
-			{
-				if (!ruleItem->isAlien())
-				{
-					addItemsToBaseStores(ruleItem, base, 1, true);
-				}
-				else
-				{
-					const RuleItem *ruleLiveAlienItem = ruleItem;
-					bool killPrisonersAutomatically = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) == 0;
-					if (killPrisonersAutomatically)
-					{
-						// check also other bases, maybe we can transfer/redirect prisoners there
-						for (auto* xbase : *_game->getSavedGame()->getBases())
-						{
-							if (xbase->getAvailableContainment(ruleLiveAlienItem->getPrisonType()) > 0)
-							{
-								killPrisonersAutomatically = false;
-								break;
-							}
-						}
-					}
-					if (killPrisonersAutomatically)
-					{
-						_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 1; // 1 = not available in any base
-					}
-					else
-					{
-						addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);
-						int availableContainment = base->getAvailableContainment(ruleLiveAlienItem->getPrisonType());
-						int usedContainment = base->getUsedContainment(ruleLiveAlienItem->getPrisonType());
-						int freeContainment = availableContainment - (usedContainment * _limitsEnforced);
-						// no capacity, or not enough capacity
-						if (availableContainment == 0 || freeContainment < 0)
-						{
-							_containmentStateInfo[ruleLiveAlienItem->getPrisonType()] = 2; // 2 = overfull
-						}
-					}
-				}
-			}
-		}
+		recoverPrisoner(from, base);
 	}
 }
 

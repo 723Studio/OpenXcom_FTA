@@ -36,7 +36,6 @@ class RuleDiplomacyFaction;
 class Game;
 class SavedGame;
 class Mod;
-class FtaGameServices;
 class GeoscapeEvent;
 class RuleEvent;
 class RuleMissionScript;
@@ -110,6 +109,8 @@ public:
 	void setReputationScore(int reputation) { _reputationScore = reputation; }
 	/// Updates reputation score based on incoming value and handle simple reaction to it.
 	void updateReputationScore(int change);
+	/// Updates reputation level based on current score, rules and discovery state.
+	bool updateReputationLvl(const Mod& mod, bool initial = false);
 	/// Gets corrent reputation level.
 	int getReputationLevel() const { return _reputationLvL;}
 	/// Gets corrent reputation level name.

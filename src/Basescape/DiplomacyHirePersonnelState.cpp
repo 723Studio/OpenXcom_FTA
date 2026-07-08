@@ -330,11 +330,11 @@ void DiplomacyHirePersonnelState::initList(size_t scrl)
 			std::ostringstream ss;
 			ss << dynStat;
 			
-			_lstSoldiers->addRow(4, s->getName(true, 19).c_str(), tr(s->getRankString(true)).c_str(), sh.str().c_str(), ss.str().c_str());
+			_lstSoldiers->addRow(4, s->getName(true, 19).c_str(), tr(s->getRankString()).c_str(), sh.str().c_str(), ss.str().c_str());
 		}
 		else
 		{
-			_lstSoldiers->addRow(3, s->getName(true, 19).c_str(), tr(s->getRankString(true)).c_str(), sh.str().c_str());
+			_lstSoldiers->addRow(3, s->getName(true, 19).c_str(), tr(s->getRankString()).c_str(), sh.str().c_str());
 		}
 
 		Uint8 color;

@@ -226,7 +226,6 @@ void ManufactureAllocateEngineersState::cbxSortByChange(Action*)
 */
 void ManufactureAllocateEngineersState::btnOkClick(Action*)
 {
-	_planningProject->setAssignedEngineers();
 	_game->popState();
 }
 

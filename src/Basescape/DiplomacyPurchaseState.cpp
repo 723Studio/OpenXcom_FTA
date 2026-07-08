@@ -300,8 +300,6 @@ std::string DiplomacyPurchaseState::getCategory(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return "STR_PERSONNEL";
 	case TRANSFER_CRAFT:
 		return "STR_CRAFT_ARMAMENT";
@@ -343,8 +341,6 @@ bool DiplomacyPurchaseState::belongsToCategory(int sel, const std::string &cat) 
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -368,8 +364,6 @@ bool DiplomacyPurchaseState::isHidden(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		return false;
 	case TRANSFER_CRAFT:
 		isCraft = true; // fall-through
@@ -419,8 +413,6 @@ bool DiplomacyPurchaseState::isEquipped(int sel) const
 	switch (_items[sel].type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
 		return false;
 	case TRANSFER_ITEM:
@@ -599,18 +591,6 @@ void DiplomacyPurchaseState::btnOkClick(Action *)
 			//		_base->getTransfers()->push_back(t);
 			//		_faction->getStaffContainer()->removeItem(rule->getType());
 			//	}
-			//	break;
-			case TRANSFER_SCIENTIST:
-			//	t = new Transfer(_game->getMod()->getPersonnelTime());
-			//	t->setScientists(i->amount);
-			//	_base->getTransfers()->push_back(t);
-			//	_faction->getStaffContainer()->removeItem("STR_SCIENTIST", i->amount);
-			//	break;
-			case TRANSFER_ENGINEER:
-			//	t = new Transfer(_game->getMod()->getPersonnelTime());
-			//	t->setEngineers(i->amount);
-			//	_base->getTransfers()->push_back(t);
-			//	_faction->getStaffContainer()->removeItem("STR_ENGINEER", i->amount);
 			//	break;
 			case TRANSFER_CRAFT:
 			//	for (int c = 0; c < i->amount; c++)
@@ -861,8 +841,6 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
-		case TRANSFER_SCIENTIST:
-		case TRANSFER_ENGINEER:
 			if (_pQty + 1 > _base->getAvailableQuarters() - _base->getUsedQuarters())
 			{
 				errorMessage = tr("STR_NOT_ENOUGH_LIVING_SPACE");
@@ -907,8 +885,6 @@ void DiplomacyPurchaseState::increaseByValue(int change)
 		switch (getRow().type)
 		{
 		case TRANSFER_SOLDIER:
-		case TRANSFER_SCIENTIST:
-		case TRANSFER_ENGINEER:
 			{
 				int maxByQuarters = _base->getAvailableQuarters() - _base->getUsedQuarters() - _pQty;
 				change = std::min(maxByQuarters, change);
@@ -985,8 +961,6 @@ void DiplomacyPurchaseState::decreaseByValue(int change)
 	switch (getRow().type)
 	{
 	case TRANSFER_SOLDIER:
-	case TRANSFER_SCIENTIST:
-	case TRANSFER_ENGINEER:
 		_pQty -= change;
 		break;
 	case TRANSFER_CRAFT:

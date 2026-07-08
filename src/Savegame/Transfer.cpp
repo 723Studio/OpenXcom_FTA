@@ -33,7 +33,7 @@ namespace OpenXcom
  * Initializes a transfer.
  * @param hours Hours in-transit.
  */
-Transfer::Transfer(int hours) : _hours(hours), _soldier(0), _craft(0), _prisoner(0), _itemQty(0), _scientists(0), _engineers(0), _delivered(false)
+Transfer::Transfer(int hours) : _hours(hours), _soldier(0), _craft(0), _prisoner(0), _itemQty(0), _delivered(false)
 {
 }
 
@@ -105,8 +105,13 @@ bool Transfer::load(const YAML::YamlNodeReader& reader, Base *base, const Mod *m
 		}
 	}
 	reader.tryRead("itemQty", _itemQty);
-	reader.tryRead("scientists", _scientists);
-	reader.tryRead("engineers", _engineers);
+	int legacyStaff = 0;
+	if (reader.tryRead("scientists", legacyStaff) || reader.tryRead("engineers", legacyStaff))
+	{
+		Log(LOG_WARNING) << "Ignoring legacy scientist/engineer transfer from unsupported OXCE staff-counter save data.";
+		delete this;
+		return false;
+	}
 	if (const auto& prisoner = reader["prisoner"])
 	{
 		std::string id = prisoner["id"].readVal<std::string>();
@@ -149,14 +154,6 @@ void Transfer::save(YAML::YamlNodeWriter writer, const Base* b, const Mod* mod) 
 	{
 		writer.write("itemId", _itemId->getType());
 		writer.write("itemQty", _itemQty);
-	}
-	else if (_scientists != 0)
-	{
-		writer.write("scientists", _scientists);
-	}
-	else if (_engineers != 0)
-	{
-		writer.write("engineers", _engineers);
 	}
 	else if (_prisoner != 0)
 	{
@@ -215,24 +212,6 @@ void Transfer::setItems(const RuleItem* rule, int qty)
 }
 
 /**
- * Changes the scientists being transferred.
- * @param scientists Amount of scientists.
- */
-void Transfer::setScientists(int scientists)
-{
-	_scientists = scientists;
-}
-
-/**
- * Changes the engineers being transferred.
- * @param engineers Amount of engineers.
- */
-void Transfer::setEngineers(int engineers)
-{
-	_engineers = engineers;
-}
-
-/**
  * Returns the name of the contents of the transfer.
  * @param lang Language to get strings from.
  * @return Name string.
@@ -246,14 +225,6 @@ std::string Transfer::getName(Language *lang) const
 	else if (_craft != 0)
 	{
 		return _craft->getName(lang);
-	}
-	else if (_scientists != 0)
-	{
-		return lang->getString("STR_SCIENTISTS");
-	}
-	else if (_engineers != 0)
-	{
-		return lang->getString("STR_ENGINEERS");
 	}
 	else if (_prisoner != 0)
 	{
@@ -282,14 +253,6 @@ int Transfer::getQuantity() const
 	{
 		return _itemQty;
 	}
-	else if (_scientists != 0)
-	{
-		return _scientists;
-	}
-	else if (_engineers != 0)
-	{
-		return _engineers;
-	}
 	return 1;
 }
 
@@ -306,14 +269,6 @@ TransferType Transfer::getType() const
 	else if (_craft != 0)
 	{
 		return TRANSFER_CRAFT;
-	}
-	else if (_scientists != 0)
-	{
-		return TRANSFER_SCIENTIST;
-	}
-	else if (_engineers != 0)
-	{
-		return TRANSFER_ENGINEER;
 	}
 	else if (_prisoner != 0)
 	{
@@ -345,14 +300,6 @@ void Transfer::advance(Base *base)
 		else if (_itemQty != 0)
 		{
 			base->getStorageItems()->addItem(_itemId, _itemQty);
-		}
-		else if (_scientists != 0)
-		{
-			base->setScientists(base->getScientists() + _scientists);
-		}
-		else if (_engineers != 0)
-		{
-			base->setEngineers(base->getEngineers() + _engineers);
 		}
 		else if (_prisoner != 0)
 		{

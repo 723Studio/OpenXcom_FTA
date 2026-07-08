@@ -159,12 +159,9 @@ namespace OpenXcom
 			int percentage = (int)Round(armor->getDamageModifier(dt) * 100.0f);
 			std::string damage = getDamageTypeText(dt);
 			bool unlocked = true;
-			if (_game->getMod()->isFTAGame())
+			if (!_game->getSavedGame()->isResearched(damage))
 			{
-				if (!_game->getSavedGame()->isResearched(damage))
-				{
-					unlocked = false; //hide unresearched damage types 
-				}
+				unlocked = false; //hide unresearched damage types
 			}
 			if (percentage != 100 && damage != "STR_UNKNOWN" && unlocked)
 			{

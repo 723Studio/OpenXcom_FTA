@@ -125,10 +125,7 @@ BattlescapeState::BattlescapeState() :
 	_indicatorTargetPreview = _game->getMod()->getInterface("battlescape")->getElement("targetPreviewUnits")->color;
 	_indicatorBlue = _game->getMod()->getInterface("battlescape")->getElement("woundedUnits")->color;
 	_indicatorPurple = _game->getMod()->getInterface("battlescape")->getElement("passingOutUnits")->color;
-	if (_game->getMod()->isFTAGame())
-		_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color;
-	else
-		_indicatorGray = 0;
+	_indicatorGray = _game->getMod()->getInterface("battlescape")->getElement("battleObjects")->color;
 
 	_twoHandedRed = _game->getMod()->getInterface("battlescape")->getElement("twoHandedRed")->color;
 	_twoHandedGreen = _game->getMod()->getInterface("battlescape")->getElement("twoHandedGreen")->color;
@@ -218,7 +215,7 @@ BattlescapeState::BattlescapeState() :
 	_btnSkills = new BattlescapeButton(32, 24, screenWidth - 32, 25); // we need screenWidth, because that is independent of the black bars on the screen
 	_btnSkills->setVisible(false);
 
-	_ftaUI = _game->getMod()->isFTAGame();
+	_ftaUI = true;
 
 	{
 		int posX = (screenWidth - 32);

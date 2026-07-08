@@ -62,7 +62,6 @@ Craft::Craft(const RuleCraft *rules, Base *base, int id) : MovingTarget(),
 	_status("STR_READY"), _lowFuel(false), _mission(false),
 	_inBattlescape(false), _inDogfight(false), _stats(),
 	_isAutoPatrolling(false), _lonAuto(0.0), _latAuto(0.0),
-	_scientists(0), _engineers(0),
 	_skinIndex(0)
 {
 	_stats = rules->getStats();
@@ -258,8 +257,6 @@ void Craft::load(const YAML::YamlNodeReader& node, const ScriptGlobal *shared, c
 	reader.tryRead("lonAuto", _lonAuto);
 	reader.tryRead("latAuto", _latAuto);
 	reader.tryRead("pilots", _pilots);
-	reader.tryRead("scientists", _scientists); // #FINNIKTODO - check if still needed after soldiers roles overhaul
-	reader.tryRead("engineers", _engineers);
 	reader.tryRead("customSoldierDeployment", _customSoldierDeployment);
 	reader.tryRead("customVehicleDeployment", _customVehicleDeployment);
 	reader.tryRead("skinIndex", _skinIndex);
@@ -380,10 +377,6 @@ void Craft::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const
 	writer.write("latAuto", serializeDouble(_latAuto));
 	if (_pilots.size())
 		writer.write("pilots", _pilots);
-	if  (_scientists != 0)
-		writer.write("scientists", _scientists);
-	if  (_engineers != 0)
-		writer.write("engineers", _engineers);
 	if (!_customSoldierDeployment.empty())
 		writer.write("customSoldierDeployment", _customSoldierDeployment);
 	if (!_customVehicleDeployment.empty())
@@ -1094,16 +1087,6 @@ void Craft::evacuateCrew(const Mod *mod)
 			++iter; // next
 		}
 	}
-	// care scientists and engineers that might be onboard
-	Transfer *ts = new Transfer(mod->getPersonnelTime());
-	ts->setScientists(_scientists);
-	_base->getTransfers()->push_back(ts);
-	_scientists = 0;
-	Transfer *te = new Transfer(mod->getPersonnelTime());
-	te->setEngineers(_engineers);
-	_base->getTransfers()->push_back(te);
-	_engineers = 0;
-
 	removeAllPilots(); // just in case
 }
 
@@ -1183,15 +1166,6 @@ bool Craft::checkup()
 	else
 	{
 		_status = "STR_READY";
-	}
-
-	if (_scientists > 0)
-	{
-		_base->setScientists(_base->getScientists() + _scientists);
-	}
-	if (_engineers > 0)
-	{
-		_base->setEngineers(_base->getEngineers() + _engineers);
 	}
 
 	// lets perform logic with soldiers checkup

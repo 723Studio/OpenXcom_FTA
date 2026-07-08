@@ -23,7 +23,7 @@
 #include <sstream>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -218,7 +218,7 @@ void IntelState::fillProjectList(size_t scrl)
 		}
 		sstr << n;
 		std::string des = "";
-		p->getStepProgress(soldiers, _game->getMod(), _game->getFtaGameServices()->getLoyaltyPerformanceBonus(), des, true);
+		p->getStepProgress(soldiers, _game->getMod(), _game->getGeoscapeState()->getLoyaltyPerformanceBonus(), des, true);
 		sspr << tr(des);
 		_lstProjects->addRow(3, tr(p->getName()).c_str(), sstr.str().c_str(), sspr.str().c_str());
 	}

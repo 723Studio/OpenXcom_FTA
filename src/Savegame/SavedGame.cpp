@@ -33,7 +33,7 @@
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/ScriptBind.h"
 #include "../Engine/Game.h"
-#include "../Engine/FtaGameServices.h"
+#include "../Geoscape/GeoscapeState.h"
 #include "SavedBattleGame.h"
 #include "SerializationHelper.h"
 #include "GameTime.h"
@@ -113,7 +113,7 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::
  */
 SavedGame::SavedGame() :
 	_difficulty(DIFF_BEGINNER), _end(END_NONE), _ironman(false), _globeLon(0.0), _globeLat(0.0), _globeZoom(0), _battleGame(0),
-	_previewBase(nullptr), _debug(false), _warned(false), _ftaGame(false),
+	_previewBase(nullptr), _debug(false), _warned(false),
 	_togglePersonalLight(true), _toggleNightVision(false), _toggleBrightness(0),
 	_monthsPassed(-1), _loyalty(0), _lastMonthsLoyalty(0), _daysPassed(0), _vehiclesLost(0), _selectedBase(0), _autosales(),
 	_disableSoldierEquipment(false), _alienContainmentChecked(false)
@@ -391,7 +391,6 @@ void SavedGame::load(const std::string &filename, Mod *mod, Language *lang)
 	_time->load(header["time"]);
 	header.readNode("name", _name, filename);
 	header.tryRead("ironman", _ironman);
-	header.tryRead("ftaGame", _ftaGame);
 
 	// Get full save data
 	const auto& reader = documents[1].useIndex();
@@ -785,9 +784,6 @@ void SavedGame::save(const std::string &filename, Mod *mod) const
 
 	if (_ironman)
 		headerWriter.write("ironman", _ironman);
-	if (_ftaGame)
-		headerWriter.write("ftaGame", _ftaGame);
-
 	// Saves the full game data to the save
 	YAML::YamlRootNodeWriter writer(1000000); //1MB starting buffer
 	writer.setAsMap();
@@ -1573,6 +1569,68 @@ const RuleResearch* SavedGame::selectGetOneFree(const RuleResearch* research)
 	return nullptr;
 }
 
+/**
+ * Updates necessary data to process unlocking multiple researches.
+ */
+void SavedGame::helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, const Mod* mod, Base* base, std::string& researchName, std::string& bonusResearchName)
+{
+	for (auto rRule : projects)
+	{
+		if (!isResearched(rRule, false) || hasUndiscoveredGetOneFree(rRule, true))
+		{
+			possibilities.push_back(rRule);
+		}
+	}
+
+	std::vector<const RuleResearch*> topicsToCheck;
+	if (!possibilities.empty())
+	{
+		size_t pickResearch = RNG::generate(0, possibilities.size() - 1);
+		const RuleResearch* research = possibilities.at(pickResearch);
+
+		// we also delete chosen research from possibility list for future use
+		std::vector<const RuleResearch*>::const_iterator it = std::find(possibilities.begin(), possibilities.end(), research);
+		if (it != possibilities.end())
+		{
+			possibilities.erase(it);
+		}
+
+		bool alreadyResearched = false;
+		std::string name = research->getLookup().empty() ? research->getName() : research->getLookup();
+		if (isResearched(name, false))
+		{
+			alreadyResearched = true; // we have seen the pedia article already, don't show it again
+		}
+
+		addFinishedResearch(research, mod, base, true);
+		topicsToCheck.push_back(research);
+		researchName = alreadyResearched ? "" : research->getName();
+
+		if (!research->getLookup().empty())
+		{
+			const RuleResearch* lookupResearch = mod->getResearch(research->getLookup(), true);
+			addFinishedResearch(lookupResearch, mod, base, true);
+			researchName = alreadyResearched ? "" : lookupResearch->getName();
+		}
+
+		if (auto bonus = selectGetOneFree(research))
+		{
+			addFinishedResearch(bonus, mod, base, true);
+			topicsToCheck.push_back(bonus);
+			bonusResearchName = bonus->getName();
+
+			if (!bonus->getLookup().empty())
+			{
+				const RuleResearch* bonusLookup = mod->getResearch(bonus->getLookup(), true);
+				addFinishedResearch(bonusLookup, mod, base, true);
+				bonusResearchName = bonusLookup->getName();
+			}
+		}
+	}
+
+	handlePrimaryResearchSideEffects(topicsToCheck, mod, base);
+}
+
 /*
  * Checks for and removes a research project from the "already discovered" list
  * @param research is the project we are checking for and removing, if necessary.
@@ -1646,7 +1704,7 @@ void SavedGame::addFinishedResearch(const RuleResearch * research, const Mod * m
 			if (score)
 			{
 				addResearchScore(currentQueueItem->getPoints());
-				_game->getFtaGameServices()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
+				_game->getGeoscapeState()->updateLoyalty(currentQueueItem->getPoints(), XCOM_RESEARCH);
 			}
 			// process "disables"
 			for (const auto* dis : currentQueueItem->getDisabled())
@@ -1865,8 +1923,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 			{
 				// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
 			}
-			else if (isFtAGame()
-				&& research->needItem()
+			else if (research->needItem()
 				&& (!research->getRandomEvents().empty() || !research->getSpawnedEvent().empty()))
 			{
 				// FtA logic: also let the player research items that can spawn events on being researched.

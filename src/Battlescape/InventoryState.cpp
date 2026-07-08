@@ -106,7 +106,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 		_game->getScreen()->resetDisplay(false);
 	}
 
-	_ftaUI = _game->getMod()->isFTAGame();
+	_ftaUI = true;
 
 	// Create objects
 	_bg = new Surface(320, 200, 0, 0);
@@ -627,19 +627,6 @@ void InventoryState::edtSoldierPress(Action *action)
 		}
 	}
 
-	{
-		BattleUnit *unit = _inv->getSelectedUnit();
-		if (unit != 0)
-		{
-			Soldier *s = unit->getGeoscapeSoldier();
-			if (s && !_game->getMod()->isFTAGame())
-			{
-				// set the soldier's name without a statstring
-				_txtName->setText(s->getName());
-			}
-
-		}
-	}
 }
 
 /**
@@ -648,18 +635,6 @@ void InventoryState::edtSoldierPress(Action *action)
  */
 void InventoryState::edtSoldierChange(Action *)
 {
-	BattleUnit *unit = _inv->getSelectedUnit();
-	if (unit != 0)
-	{
-		Soldier *s = unit->getGeoscapeSoldier();
-		if (s && !_game->getMod()->isFTAGame())
-		{
-			// set the soldier's name
-			s->setName(_txtName->getText());
-			// also set the unit's name (with a statstring)
-			unit->setName(s->getName(true));
-		}
-	}
 }
 
 /**
@@ -689,8 +664,6 @@ void InventoryState::updateStats()
 	}
 	bool showPsiStrength = (psiSkillWithoutAnyBonuses > 0 || (Options::psiStrengthEval && _game->getSavedGame()->isResearched(_game->getMod()->getPsiRequirements())));
 
-	bool ftaGame = _game->getMod()->isFTAGame();
-
 	auto updateStatLine = [&](Text* txtField, const std::string& elementId)
 	{
 		const Element *element = _game->getMod()->getInterface("inventory")->getElementOptional(elementId);
@@ -705,36 +678,14 @@ void InventoryState::updateStats()
 					txtField->setText(tr(UnitStats::getStatString(&UnitStats::reactions, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->reactions));
 					break;
 				case 3:
-					if (ftaGame)
-					{
-						txtField->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
-						break;
-					}
-					else
-					{
-						if (psiSkillWithoutAnyBonuses > 0)
-							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
-						else
-							txtField->setText("");
-						break;
-					}
+					txtField->setText(tr(UnitStats::getStatString(&UnitStats::melee, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->melee));
+					break;
 				case 4:
-					if (ftaGame)
-					{
-						if (psiSkillWithoutAnyBonuses > 0)
-							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
-						else
-							txtField->setText("");
-						break;
-					}
+					if (psiSkillWithoutAnyBonuses > 0)
+						txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiSkill, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiSkill));
 					else
-					{
-						if (showPsiStrength)
-							txtField->setText(tr(UnitStats::getStatString(&UnitStats::psiStrength, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->psiStrength));
-						else
-							txtField->setText("");
-						break;
-					}
+						txtField->setText("");
+					break;
 				case 11:
 					txtField->setText(tr(UnitStats::getStatString(&UnitStats::firing, UnitStats::STATSTR_SHORT)).arg(unit->getBaseStats()->firing));
 					break;
@@ -873,10 +824,7 @@ void InventoryState::btnArmorClick(Action *action)
  */
 void InventoryState::btnArmorClickRight(Action *action)
 {
-	if (_game->getMod()->isFTAGame())
-	{
-		return;
-	}
+	return;
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
@@ -1830,10 +1778,7 @@ void InventoryState::onAutoequip(Action *)
 		return;
 	}
 
-	if (_game->getMod()->isFTAGame())
-	{
-		return; //#FINNIKTODO: repair stacking and allowed/forbidden categories for armor on this stupid auitoequip
-	}
+	return; //#FINNIKTODO: repair stacking and allowed/forbidden categories for armor on this stupid auitoequip
 
 	BattleUnit               *unit          = _battleGame->getSelectedUnit();
 	Tile                     *groundTile    = unit->getTile();

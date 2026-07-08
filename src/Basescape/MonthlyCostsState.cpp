@@ -42,7 +42,7 @@ namespace OpenXcom
  */
 MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 {
-	bool isFta = _game->getMod()->isFTAGame();
+	bool isFta = true;
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(300, 20, 10, 170);
@@ -129,7 +129,7 @@ MonthlyCostsState::MonthlyCostsState(Base *base) : _base(base)
 	for (auto& craftType : _game->getMod()->getCraftsList())
 	{
 		auto craft = _game->getMod()->getCraft(craftType);
-		if (craft->getRentCost() != 0 && (_game->getSavedGame()->isResearched(craft->getRequirements()) || _game->getMod()->isFTAGame()))
+		if (craft->getRentCost() != 0)
 		{
 			int count = _base->getCraftCount(craft);
 			if (count > 0 || craft->forceShowInMonthlyCosts())

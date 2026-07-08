@@ -256,8 +256,7 @@ private:
 	bool _lessAliensDuringBaseDefense;
 	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry, _infiltrateRandomCountryInTheRegion;
 	bool _allowAlienBasesOnWrongTextures;
-	bool _ftaGame;
-	int _ftaGameLength;
+	int _gameLength;
 	bool _ironManEnabled, _researchTreeDisabled;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
@@ -957,10 +956,8 @@ public:
 	int getBughuntLowMorale() const { return _bughuntLowMorale; }
 	/// Gets the bug hunt mode time units % parameter (default = 60).
 	int getBughuntTimeUnitsLeft() const { return _bughuntTimeUnitsLeft; }
-	/// Gets if we are playing FTA scenario.
-	bool isFTAGame() const { return _ftaGame; }
-	/// Gets lenght of FtA game (while in alpha) in months
-	int getFTAGameLength() const { return _ftaGameLength; }
+	/// Gets length of the campaign gate in months.
+	int getGameLength() const { return _gameLength; }
 	
 	/// Gets if ironman enabled in a ruleset.
 	bool getIsIronManEnabled() const { return _ironManEnabled; }

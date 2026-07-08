@@ -181,7 +181,7 @@ void GlobalResearchState::fillProjectList()
 	for (Base *xbase : *_game->getSavedGame()->getBases())
 	{
 		auto& baseProjects = xbase->getResearch();
-		if (!baseProjects.empty() || xbase->getScientists() > 0)
+		if (!baseProjects.empty() || xbase->getTotalScientists() > 0)
 		{
 			std::string baseName = xbase->getName(_game->getLanguage());
 			_lstResearch->addRow(3, baseName.c_str(), "", "");
@@ -194,7 +194,15 @@ void GlobalResearchState::fillProjectList()
 		for (const auto* proj : baseProjects)
 		{
 			std::ostringstream sstr;
-			sstr << proj->getAssigned();
+			size_t scientists = 0;
+			for (auto* soldier : *xbase->getSoldiers())
+			{
+				if (soldier->getResearchProject() == proj)
+				{
+					scientists++;
+				}
+			}
+			sstr << scientists;
 			const RuleResearch *r = proj->getRules();
 
 			std::string wstr = tr(r->getName());
@@ -203,7 +211,7 @@ void GlobalResearchState::fillProjectList()
 			_bases.push_back(xbase);
 			_topics.push_back(r);
 		}
-		if (baseProjects.empty() && xbase->getScientists() > 0)
+		if (baseProjects.empty() && xbase->getTotalScientists() > 0)
 		{
 			_lstResearch->addRow(3, tr("STR_NONE").c_str(), "", "");
 
@@ -213,7 +221,7 @@ void GlobalResearchState::fillProjectList()
 
 		availableScientists += xbase->getAvailableScientists();
 		allocatedScientists += xbase->getAllocatedScientists();
-		freeLaboratories += xbase->getFreeLaboratories(_game->getMod()->isFTAGame());
+		freeLaboratories += xbase->getFreeLaboratories();
 	}
 
 	_txtAvailable->setText(tr("STR_SCIENTISTS_AVAILABLE").arg(availableScientists));

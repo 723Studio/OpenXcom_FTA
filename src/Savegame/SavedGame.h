@@ -37,7 +37,6 @@ namespace OpenXcom
 
 class Game;
 class Mod;
-class FtaGameServices;
 class GameTime;
 class Country;
 class Base;
@@ -84,6 +83,11 @@ enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_A
  * Enumerator for the current game ending.
  */
 enum GameEnding { END_NONE, END_WIN, END_LOSE };
+
+/**
+ * Source categories for savegame loyalty changes.
+ */
+enum LoyaltySource { XCOM_BATTLESCAPE, XCOM_DOGFIGHT, XCOM_GEOSCAPE, XCOM_RESEARCH, ALIEN_MISSION_DESPAWN, ALIEN_UFO_ACTIVITY, ALIEN_BASE, ABSOLUTE_COEF };
 
 /**
  * Container for savegame info displayed on listings.
@@ -161,7 +165,7 @@ private:
 	std::vector<GeoscapeEvent*> _geoscapeEvents;
 	std::vector<CovertOperation*> _covertOperations;
 	std::vector<DiplomacyFaction*> _diplomacyFactions;
-	bool _debug, _warned, _ftaGame;
+	bool _debug, _warned;
 	bool _togglePersonalLight, _toggleNightVision;
 	int _toggleBrightness;
 	int _monthsPassed;
@@ -226,10 +230,6 @@ public:
 	bool isIronman() const;
 	/// Sets if the game is in ironman mode.
 	void setIronman(bool ironman);
-	/// Gets if the game is FtA game.
-	bool isFtAGame() const { return _ftaGame; }
-	/// Sets if the game is FtA game.
-	void setFtAGame(bool ftaGame) { _ftaGame = ftaGame; }
 	/// Sets game object pointer
 	static void setGamePtr(Game *game) { _game = game; }
 	/// Gets our game.
@@ -322,6 +322,8 @@ public:
 	const std::vector<std::string>& getPerformedCovertOperations() { return _performedOperations; }
 	/// Selects a "getOneFree" topic for the given research rule.
 	const RuleResearch* selectGetOneFree(const RuleResearch* research);
+	/// Unlocks one research topic from the provided list and handles related bonus discoveries.
+	void helpResearchDiscovery(std::vector<const RuleResearch*> projects, std::vector<const RuleResearch*> &possibilities, const Mod* mod, Base *base, std::string& researchName, std::string& bonusResearchName);
 	/// Remove a research from the "already discovered" list
 	void removeDiscoveredResearch(const RuleResearch *research);
 	/// Make all research discovered (used in New Battle)

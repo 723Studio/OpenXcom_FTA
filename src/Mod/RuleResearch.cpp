@@ -115,9 +115,9 @@ void RuleResearch::afterLoad(const Mod* mod)
 		}
 	}
 
-	if (mod->isFTAGame() && _stats.empty() && !_hidden && _cost > 0)
+	if (_stats.empty() && !_hidden && _cost > 0)
 	{
-		throw Exception("Stats are not defined for research project with cost > 0, it is required for FTA game");
+		throw Exception("Stats are not defined for research project with cost > 0, it is required for FTA");
 	}
 
 	_dependencies = mod->getResearch(_dependenciesName);

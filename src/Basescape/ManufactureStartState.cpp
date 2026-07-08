@@ -48,7 +48,7 @@ namespace OpenXcom
 ManufactureStartState::ManufactureStartState(Base *base, RuleManufacture *item) :  _base(base), _item(item)
 {
 	_screen = false;
-	_ftaUi = _game->getMod()->isFTAGame();
+	_ftaUi = true;
 
 	_window = new Window(this, 320, 160, 0, 20);
 	_btnCancel = new TextButton(136, 16, 16, 155);
@@ -263,7 +263,7 @@ void ManufactureStartState::btnStartClick(Action *)
 	{
 		_game->pushState(new ErrorMessageState(tr("STR_NO_FREE_HANGARS_FOR_CRAFT_PRODUCTION"), _palette, _game->getMod()->getInterface("basescape")->getElement("errorMessage")->color, "BACK17.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
 	}
-	else if (_item->getRequiredSpace() > _base->getFreeWorkshops(_ftaUi))
+	else if (_item->getRequiredSpace() > _base->getFreeWorkshops())
 	{
 		_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_WORK_SPACE"), _palette, _game->getMod()->getInterface("basescape")->getElement("errorMessage")->color, "BACK17.SCR", _game->getMod()->getInterface("basescape")->getElement("errorPalette")->color));
 	}

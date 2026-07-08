@@ -49,7 +49,7 @@ PromotionsState::PromotionsState(bool clearPromotions)
 	_txtBase = new Text(80, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
-	_fta = _game->getMod()->isFTAGame();
+	_fta = true;
 
 	// Set palette
 	setInterface("promotions");
@@ -97,7 +97,7 @@ PromotionsState::PromotionsState(bool clearPromotions)
 				if (soldier->isPromoted())
 				{
 					_filteredListOfSoldiers.push_back(std::make_pair(xbase, soldier));
-					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString(_fta)).c_str(), xbase->getName().c_str());
+					_lstSoldiers->addRow(3, soldier->getName().c_str(), tr(soldier->getRankString()).c_str(), xbase->getName().c_str());
 				}
 			}
 		}

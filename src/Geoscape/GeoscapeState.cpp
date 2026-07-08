@@ -34,6 +34,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/Collections.h"
 #include "../Engine/Unicode.h"
+#include "../Engine/Logger.h"
 #include "Globe.h"
 #include "../Interface/ComboBox.h"
 #include "../Interface/Text.h"
@@ -50,6 +51,7 @@
 #include "../Mod/RuleUfo.h"
 #include "../Mod/RuleArcScript.h"
 #include "../Mod/RuleEvent.h"
+#include "../Mod/RuleEventScript.h"
 #include "../Mod/RuleMissionScript.h"
 #include "../Mod/RuleDiplomacyFaction.h"
 #include "../Savegame/DiplomacyFaction.h"
@@ -138,7 +140,6 @@
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/RuleVideo.h"
-#include "../Engine/FtaGameServices.h"
 #include "../Mod/Texture.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
@@ -275,7 +276,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	geobord->setY(_sidebar->getY());
 	_sidebar->copy(geobord);
 	_game->getMod()->getSurface("ALTGEOBORD.SCR")->blitNShade(_bg, 0, 0);
-	_fta = _game->getMod()->isFTAGame();
+	_fta = true;
 
 	_sideLine->drawRect(0, 0, _sideLine->getWidth(), _sideLine->getHeight(), 15);
 
@@ -572,12 +573,7 @@ void GeoscapeState::handle(Action *action)
 			// "ctrl-3"
 			if (action->getDetails()->key.keysym.sym == SDLK_3)
 			{
-				_txtDebug->setText("+50 SCIENTISTS/ENGINEERS");
-				for (auto* xbase : *_game->getSavedGame()->getBases())
-				{
-					xbase->setScientists(xbase->getScientists() + 50);
-					xbase->setEngineers(xbase->getEngineers() + 50);
-				}
+				_txtDebug->setText("LEGACY STAFF COUNTERS ARE DISABLED");
 			}
 			// "ctrl-4"
 			if (action->getDetails()->key.keysym.sym == SDLK_4)
@@ -1153,7 +1149,7 @@ void GeoscapeState::time5Seconds()
 			if (xcraft->isDestroyed())
 			{
 				int score = xcraft->getRules()->getScore();
-				_game->getFtaGameServices()->updateLoyalty(-score);
+				updateLoyalty(-score);
 				for (auto* country : *_game->getSavedGame()->getCountries())
 				{
 					if (country->getRules()->insideCountry(xcraft->getLongitude(), xcraft->getLatitude()))
@@ -1867,7 +1863,7 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
 
 	if (score)
 	{
-		_game->getFtaGameServices()->updateLoyalty(score, ALIEN_MISSION_DESPAWN);
+		updateLoyalty(score, ALIEN_MISSION_DESPAWN);
 	}
 
 	Region *region = _game->getSavedGame()->locateRegion(*site);
@@ -1952,7 +1948,7 @@ void GeoscapeState::time30Minutes()
 			// Marked expired UFOs for removal.
 			if (_fta)
 			{
-				_game->getFtaGameServices()->updateLoyalty(-ufo->getRules()->getScore() * RNG::generate(5, 10) * (_game->getSavedGame()->getDifficultyCoefficient() + 1));
+				updateLoyalty(-ufo->getRules()->getScore() * RNG::generate(5, 10) * (_game->getSavedGame()->getDifficultyCoefficient() + 1));
 			}
 			ufo->setStatus(Ufo::DESTROYED);
 		}
@@ -2170,7 +2166,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
 	}
 	if (ufo->getDetected())
 	{
-		_game->getFtaGameServices()->updateLoyalty(ufo->getRules()->getMissionScore(), ALIEN_UFO_ACTIVITY);
+		updateLoyalty(ufo->getRules()->getMissionScore(), ALIEN_UFO_ACTIVITY);
 	}
 }
 
@@ -2254,7 +2250,7 @@ void GeoscapeState::time1Hour()
 		std::map<Production*, productionProgress_e> toRemove;
 		for (auto* prod : xbase->getProductions())
 		{
-			int rating = _game->getFtaGameServices()->getLoyaltyPerformanceBonus();
+			int rating = getLoyaltyPerformanceBonus();
 			toRemove[prod] = prod->step(xbase, _game->getSavedGame(), _game->getMod(), _game->getLanguage(), rating);
 		}
 		for (const auto& pair : toRemove)
@@ -2549,7 +2545,7 @@ void GeoscapeState::time1Day()
 			std::string desc = "";
 			int progress = project->getStepProgress(soldiers,
 				_game->getMod(),
-				_game->getFtaGameServices()->getLoyaltyPerformanceBonus(), desc, false);
+				getLoyaltyPerformanceBonus(), desc, false);
 
 
 			if (project->roll(_game, *_globe, progress,	intelProjectFinished))
@@ -2696,7 +2692,7 @@ void GeoscapeState::time1Day()
 	_game->getSavedGame()->handleEventScriptTimers();
 
 	// Handle daily internal xcom events
-	_game->getFtaGameServices()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
+	eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_XCOM);
 
 	//Handle daily Faction logic
 	int day = saveGame->getTime()->getDay();
@@ -2793,7 +2789,7 @@ void GeoscapeState::time1Day()
 		}
 		if (ab->isDiscovered())
 		{
-			_game->getFtaGameServices()->updateLoyalty(points, ALIEN_BASE);
+			updateLoyalty(points, ALIEN_BASE);
 		}
 	}
 
@@ -2930,7 +2926,7 @@ void GeoscapeState::time1Month()
 
 	// Handle funding
 	timerReset();
-	if (_game->getSavedGame()->getMonthsPassed() > _game->getMod()->getFTAGameLength())
+	if (_game->getSavedGame()->getMonthsPassed() > _game->getMod()->getGameLength())
 	{
 		popup(new AlphaGameVersionEnds()); //temp alpha 1 blocker
 	}
@@ -3092,10 +3088,6 @@ void GeoscapeState::btnSelectMusicTrackClick(Action *)
  */
 void GeoscapeState::btnGlobalProductionClick(Action *)
 {
-	if (!_game->getMod()->isFTAGame())
-	{
-		_game->pushState(new GlobalManufactureState(false));
-	}
 }
 
 /**
@@ -3104,10 +3096,6 @@ void GeoscapeState::btnGlobalProductionClick(Action *)
  */
 void GeoscapeState::btnGlobalResearchClick(Action *)
 {
-	if (!_game->getMod()->isFTAGame())
-	{
-		_game->pushState(new GlobalResearchState(false));
-	}
 }
 
 /**
@@ -3641,6 +3629,416 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 }
 
 /**
+* Process event script from different sources
+* @param scripts - a vector of event script's string IDs.
+* @param source is the reason we are running process (monthly, factional, xcom).
+*/
+void GeoscapeState::eventScriptProcessor(const std::vector<std::string>& scripts, ProcessorSource source)
+{
+	if (!scripts.empty())
+	{
+		const Mod& mod = *_game->getMod();
+		SavedGame &save = *_game->getSavedGame();
+		AlienStrategy &strategy = save.getAlienStrategy();
+		std::set<std::string> xcomBaseCountries;
+		std::set<std::string> xcomBaseRegions;
+
+		for (auto &xcomBase : *save.getBases())
+		{
+			auto region = save.locateRegion(*xcomBase);
+			if (region)
+			{
+				xcomBaseRegions.insert(region->getRules()->getType());
+			}
+			auto country = save.locateCountry(*xcomBase);
+			if (country)
+			{
+				xcomBaseCountries.insert(country->getRules()->getType());
+			}
+		}
+
+		for (auto& name : scripts)
+		{
+			auto ruleScript = mod.getEventScript(name);
+			int allowedProcessor = ruleScript->getAllowedProcessor();
+			// check allowed processor first!
+			if ((source == SCRIPT_MONTHLY && allowedProcessor != 0) ||
+				(source == SCRIPT_FACTIONAL && allowedProcessor != 1) ||
+				(source == SCRIPT_XCOM && allowedProcessor != 2) ||
+				(source == OTHER_SCRIPT && allowedProcessor != 3))
+			{
+				continue; //we should skip that!
+			}
+			auto month = save.getMonthsPassed();
+			int loyalty = save.getLoyalty();
+			if (ruleScript->getFirstMonth() <= month &&
+				(ruleScript->getLastMonth() >= month || ruleScript->getLastMonth() == -1) &&
+				(ruleScript->getMinScore() <= save.getCurrentScore(month)) &&
+				(ruleScript->getMaxScore() >= save.getCurrentScore(month)) &&
+				(ruleScript->getMinLoyalty() <= loyalty) &&
+				(ruleScript->getMaxLoyalty() >= loyalty) &&
+				(ruleScript->getMinFunds() <= save.getFunds()) &&
+				(ruleScript->getMaxFunds() >= save.getFunds()) &&
+				ruleScript->getMinDifficulty() <= save.getDifficulty() &&
+				ruleScript->getMaxDifficulty() >= save.getDifficulty() &&
+				!save.getEventScriptGapped(ruleScript->getType()))
+			{
+				// level two condition check: make sure we meet any research requirements, if any.
+				bool triggerHappy = true;
+				for (std::map<std::string, bool>::const_iterator j = ruleScript->getResearchTriggers().begin(); triggerHappy && j != ruleScript->getResearchTriggers().end(); ++j)
+				{
+					triggerHappy = (save.isResearched(j->first) == j->second);
+					if (!triggerHappy)
+						break;;
+				}
+
+				// reputation requirements
+				if (triggerHappy)
+				{
+					if (!ruleScript->getReputationRequirments().empty())
+					{
+						triggerHappy = false;
+						for (auto& triggerFaction : ruleScript->getReputationRequirments())
+						{
+							for (auto& faction : save.getDiplomacyFactions())
+							{
+								if (faction->getRules()->getName() == triggerFaction.first)
+								{
+									if (faction->getReputationLevel() >= triggerFaction.second)
+									{
+										triggerHappy = true;
+									}
+								}
+							}
+						}
+						if (!triggerHappy)
+							continue;
+					}
+				}
+				if (triggerHappy)
+				{
+					// check counters
+					if (ruleScript->getCounterMin() > 0)
+					{
+						if (!ruleScript->getMissionVarName().empty() && ruleScript->getCounterMin() > strategy.getMissionsRun(ruleScript->getMissionVarName()))
+						{
+							triggerHappy = false;
+						}
+						if (!ruleScript->getMissionMarkerName().empty() && ruleScript->getCounterMin() > save.getLastId(ruleScript->getMissionMarkerName()))
+						{
+							triggerHappy = false;
+						}
+					}
+					if (triggerHappy && ruleScript->getCounterMax() != -1)
+					{
+						if (!ruleScript->getMissionVarName().empty() && ruleScript->getCounterMax() < strategy.getMissionsRun(ruleScript->getMissionVarName()))
+						{
+							triggerHappy = false;
+						}
+						if (!ruleScript->getMissionMarkerName().empty() && ruleScript->getCounterMax() < save.getLastId(ruleScript->getMissionMarkerName()))
+						{
+							triggerHappy = false;
+						}
+					}
+				}
+				if (triggerHappy)
+				{
+					// item requirements
+					for (auto& triggerItem : ruleScript->getItemTriggers())
+					{
+						triggerHappy = (save.isItemObtained(triggerItem.first, &mod) == triggerItem.second);
+						if (!triggerHappy)
+							break;;
+					}
+				}
+				if (triggerHappy)
+				{
+					// facility requirements
+					for (auto& triggerFacility : ruleScript->getFacilityTriggers())
+					{
+						triggerHappy = (save.isFacilityBuilt(triggerFacility.first) == triggerFacility.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy)
+				{
+					// soldier type requirements
+					for (auto& triggerSoldierType : ruleScript->getSoldierTypeTriggers())
+					{
+						triggerHappy = (save.isSoldierTypeHired(triggerSoldierType.first) == triggerSoldierType.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy)
+				{
+					// xcom base requirements by region
+					for (auto &triggerXcomBase : ruleScript->getXcomBaseInRegionTriggers())
+					{
+						bool found = (xcomBaseRegions.find(triggerXcomBase.first) != xcomBaseRegions.end());
+						triggerHappy = (found == triggerXcomBase.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy)
+				{
+					// xcom base requirements by country
+					for (auto &triggerXcomBase2 : ruleScript->getXcomBaseInCountryTriggers())
+					{
+						bool found = (xcomBaseCountries.find(triggerXcomBase2.first) != xcomBaseCountries.end());
+						triggerHappy = (found == triggerXcomBase2.second);
+						if (!triggerHappy)
+							break;
+					}
+				}
+				if (triggerHappy && !RNG::percent(ruleScript->getExecutionOdds()))
+				{
+					triggerHappy = false;
+				}
+				// ok, we still want event from this script, now let`s actually choose one.
+				if (triggerHappy)
+				{
+					std::vector<const RuleEvent*> toBeGenerated;
+
+					// 1. sequentially generated one-time events (cannot repeat)
+					{
+						std::vector<std::string> possibleSeqEvents;
+						for (auto& seqEvent : ruleScript->getOneTimeSequentialEvents())
+						{
+							if (!save.wasEventGenerated(seqEvent))
+								possibleSeqEvents.push_back(seqEvent); // insert
+						}
+						if (!possibleSeqEvents.empty())
+						{
+							auto eventRules = mod.getEvent(possibleSeqEvents.front(), true); // take first
+							toBeGenerated.push_back(eventRules);
+						}
+					}
+
+					// 2. randomly generated one-time events (cannot repeat)
+					{
+						WeightedOptions possibleRngEvents;
+						WeightedOptions tmp = ruleScript->getOneTimeRandomEvents(); // copy for the iterator, because of getNames()
+						possibleRngEvents = tmp; // copy for us to modify
+						for (auto& rngEvent : tmp.getNames())
+						{
+							if (save.wasEventGenerated(rngEvent))
+								possibleRngEvents.set(rngEvent, 0); // delete
+						}
+						if (!possibleRngEvents.empty())
+						{
+							auto eventRules = mod.getEvent(possibleRngEvents.choose(), true); // take random
+							toBeGenerated.push_back(eventRules);
+						}
+					}
+
+					// 3. randomly generated repeatable events
+					{
+						auto eventRules = mod.getEvent(ruleScript->generate(save.getMonthsPassed()), false);
+						if (eventRules)
+						{
+							toBeGenerated.push_back(eventRules);
+						}
+					}
+
+					// 4. generate
+					bool generated = false;
+					for (auto eventRules : toBeGenerated)
+					{
+						if (save.spawnEvent(eventRules))
+						{
+							generated = true;
+						}
+					}
+					// 4a. if needed any of events were generated, we mark this with gap timer.
+					if (generated)
+					{
+						int timer = ruleScript->getSpawnGap();
+						timer += RNG::generate(0, ruleScript->getRandomSpawnGap());
+						if (timer > 0)
+						{
+							_game->getSavedGame()->setEventScriptGapTimer(ruleScript->getType(), timer);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+bool GeoscapeState::spawnAlienMission(const std::string& missionName, const Globe& globe, Base* base)
+{
+	// let's define variables for alien mission first
+	const Mod& mod = *_game->getMod();
+	SavedGame &save = *_game->getSavedGame();
+	int month = save.getMonthsPassed();
+	bool success = true;
+	const RuleAlienMission* missionRules = mod.getAlienMission(missionName); // would work with string ID 'till OXCE make mission rules afterloading
+	if (missionRules == 0)
+	{
+		throw Exception("Error processing alien mission generation - rules for alienMission: " + missionName + " are not defined!");
+	}
+	std::string targetRegion;
+	std::string missionRace;
+	int targetZone = missionRules->getSpawnZone();
+
+	//bool isSiteType = missionRules->getObjective() == OBJECTIVE_SITE;
+	bool targetBase = RNG::percent(missionRules->getTargetBaseOdds());
+	bool placed = false;
+	bool baseTargeted = true;
+	bool hasZone = true;
+	int tries = 0;
+
+	while (!placed || tries < 50)
+	{
+		if (missionRules->hasRegionWeights())
+		{
+			if (tries > 35) month = 0; //lets check all regions
+			targetRegion = missionRules->generateRegion(month);
+		}
+		else //case to pick at random as alien mission rules has no region defined
+		{
+			targetRegion = mod.getRegionsList().at(RNG::generate(0, mod.getRegionsList().size() - 1));
+		}
+
+		RuleRegion* region = mod.getRegion(targetRegion, true);
+		if (!region)
+		{
+			throw Exception("Error processing alien mission named: " + missionName + ", region named: " + targetRegion + " is not defined");
+		}
+		if ((int)(region->getMissionZones().size()) > targetZone)
+		{
+			hasZone = true;
+		}
+
+		if (targetBase && base) // we should choose region that has any xcom base
+		{
+			baseTargeted = false;
+			std::string baseRegion;
+			if (tries < 2)
+			{
+				baseRegion = save.locateRegion(base->getLongitude(), base->getLatitude())->getRules()->getType();
+				if (baseRegion == targetRegion)
+				{
+					baseTargeted = true;
+				}
+			}
+			else
+			{
+				for (std::vector<Base*>::iterator i = save.getBases()->begin(); i != save.getBases()->end(); ++i)
+				{
+					baseRegion = save.locateRegion((*i)->getLongitude(), (*i)->getLatitude())->getRules()->getType();
+					if (baseRegion == targetRegion)
+					{
+						baseTargeted = true;
+					}
+				}
+			}
+		}
+		tries++;
+		if (baseTargeted && hasZone) // all checks passed!
+		{
+			placed = true;
+		}
+	}
+
+	if(!placed)
+	{
+		Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! Failed to choose right region for mission: " << missionName <<
+			". Some alien mission rules could be ignored!";
+		success = false;
+	}
+
+	missionRace = missionRules->generateRace(month);
+	if (missionRace.empty())
+	{
+		missionRace = "STR_MIB";
+		Log(LOG_ERROR) << "An error occurred during the processing alien mission spawning! In the rules of the alien mission: " << missionName <<
+			" no alien race has been set! FTA uses fallback race " << missionRace;
+		success = false;
+	}
+	if (mod.getAlienRace(missionRace) == 0)
+	{
+		throw Exception("Error processing alien mission named: " + missionName + ", race: " + missionRace + " is not defined");
+	}
+
+	//now we are ready to set up new alien mission
+	AlienMission* mission = new AlienMission(*missionRules);
+	mission->setRace(missionRace);
+	mission->setId(save.getId("ALIEN_MISSIONS"));
+	mission->setRegion(targetRegion, mod);
+	mission->setMissionSiteZoneArea(targetZone);
+	mission->start(*_game, globe, 0);
+	save.getAlienMissions().push_back(mission);
+
+	return success;
+}
+
+int GeoscapeState::updateLoyalty(int score, LoyaltySource source)
+{
+	double coef = 1;
+	switch (source)
+	{
+	case XCOM_BATTLESCAPE:
+		coef = _game->getMod()->getLoyaltyCoefBattlescape();
+		break;
+	case XCOM_DOGFIGHT:
+		coef = _game->getMod()->getLoyaltyCoefDogfight();
+		break;
+	case XCOM_GEOSCAPE:
+		coef = _game->getMod()->getLoyaltyCoefGeoscape();
+		break;
+	case XCOM_RESEARCH:
+		coef = _game->getMod()->getLoyaltyCoefResearch();
+		break;
+	case ALIEN_MISSION_DESPAWN:
+		coef = -_game->getMod()->getLoyaltyCoefAlienMission();
+		break;
+	case ALIEN_UFO_ACTIVITY:
+		coef = -_game->getMod()->getLoyaltyCoefUfo();
+		break;
+	case ALIEN_BASE:
+		coef = -_game->getMod()->getLoyaltyCoefAlienBase();
+		break;
+	case ABSOLUTE_COEF:
+		coef = 100;
+		break;
+	}
+
+	coef /= 100;
+	int change = std::round(coef * score);
+	int loyalty = _game->getSavedGame()->getLoyalty();
+	loyalty += change;
+	_game->getSavedGame()->setLoyalty(loyalty);
+
+	return change;
+}
+
+/**
+* Handle calculation of base services (manufacture, labs and craft repair) performance bonus caused by loyalty score.
+* @return value of performance bonus, normal value is 100 %.
+*/
+int GeoscapeState::getLoyaltyPerformanceBonus()
+{
+	int performance = 100;
+	int loyalty = _game->getSavedGame()->getLoyalty();
+	if (loyalty > 100) // function approximation goes weird on values from 0 to 100, so we just keep it bonusless there...
+	{
+		double ln = log(std::abs(loyalty));
+		int bonus = ceil(-9.79 + (2.23 * ln));
+		performance += bonus;
+	}
+	else if (loyalty < 0)
+	{
+		int penalty = ceil(0.271 * pow(-loyalty, 0.537));
+		performance -= penalty;
+	}
+	return performance;
+}
+
+/**
  * Determine the alien missions to start this month.
  */
 void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eventRules)
@@ -4124,7 +4522,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 	}
 
 	// after the mission scripts, it's time for the event scripts
-	_game->getFtaGameServices()->eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
+	eventScriptProcessor(*mod->getEventScriptList(), SCRIPT_MONTHLY);
 
 	// Alien base upgrades happen only AFTER the first game month
 	if (isNewMonth && month > 0)
@@ -4807,7 +5205,7 @@ void GeoscapeState::handleResearch(Base* base)
 				{
 					for (auto s : *b->getSoldiers())
 					{
-						if (s->getResearchProject()->getRules()->getName() == project->getRules()->getName()) // check by string id
+						if (s->getResearchProject() && s->getResearchProject()->getRules()->getName() == project->getRules()->getName()) // check by string id
 						{
 							assignedScientists.insert(std::make_pair(s, 50));
 						}
@@ -4817,12 +5215,8 @@ void GeoscapeState::handleResearch(Base* base)
 
 			if (assignedScientists.size() > 0)
 			{
-				progress = project->getStepProgress(assignedScientists, _game->getMod(), _game->getFtaGameServices()->getLoyaltyPerformanceBonus());
+				progress = project->getStepProgress(assignedScientists, _game->getMod(), getLoyaltyPerformanceBonus());
 			}
-		}
-		else
-		{
-			progress = project->getAssigned();
 		}
 
 		if (project->step(progress))

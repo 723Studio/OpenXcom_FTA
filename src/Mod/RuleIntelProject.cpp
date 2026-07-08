@@ -89,9 +89,9 @@ void RuleIntelProject::afterLoad(const Mod* mod)
 	mod->linkRule(_requiredResearch, _requiredResearchName);
 	Collections::removeAll(_requiredResearchName);
 
-	if (mod->isFTAGame() && _stats.empty())
+	if (_stats.empty())
 	{
-		throw Exception("Stats are not defined for intelligence project, it is required for FTA game");
+		throw Exception("Stats are not defined for intelligence project, it is required for FTA");
 	}
 
 	for (auto i : _stages)

@@ -44,7 +44,6 @@
 #include "CraftWeaponsState.h"
 #include "CraftEquipmentState.h"
 #include "CraftArmorState.h"
-#include "CraftPilotsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -70,7 +69,6 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_craft = _base->getCrafts()->at(_craftId);
 	_weaponNum = _craft->getRules()->getWeapons();
-	_ftaUi = _game->getMod()->isFTAGame();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
 
@@ -100,7 +98,6 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	_btnCrew = new TextButton(64, 16, 16, bottom);
 	_btnEquip = new TextButton(64, 16, 16, bottom + bottom_row);
 	_btnArmor = new TextButton(64, 16, 16, bottom + 2 * bottom_row);
-	_btnPilots = new TextButton(64, 16, 16, bottom + 3 * bottom_row);
 	_edtCraft = new TextEdit(this, 140, 16, 80, 8);
 	_txtDamage = new Text(100, 17, 14, 24);
 	_txtShield = new Text(100, 17, 120, 24);
@@ -137,7 +134,6 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 	add(_btnCrew, "button", "craftInfo");
 	add(_btnEquip, "button", "craftInfo");
 	add(_btnArmor, "button", "craftInfo");
-	add(_btnPilots, "button", "craftInfo");
 	add(_edtCraft, "text1", "craftInfo");
 	add(_txtDamage, "text1", "craftInfo");
 	add(_txtShield, "text1", "craftInfo");
@@ -186,10 +182,6 @@ CraftInfoState::CraftInfoState(Base *base, size_t craftId) : _base(base), _craft
 
 	_btnArmor->setText(tr("STR_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&CraftInfoState::btnArmorClick);
-
-	_btnPilots->setText(tr("STR_PILOTS"));
-	_btnPilots->onMouseClick((ActionHandler)&CraftInfoState::btnPilotsClick);
-	_btnPilots->setVisible(pilots && !_ftaUi); //#FINNIKTODO Consider for multipurpose crafts
 
 	_edtCraft->setBig();
 	_edtCraft->setAlign(ALIGN_CENTER);
@@ -403,7 +395,6 @@ void CraftInfoState::init()
 		_btnCrew->setVisible(false);
 		_btnEquip->setVisible(false);
 		_btnArmor->setVisible(false);
-		_btnPilots->setVisible(false);
 	}
 
 	for (int i = 0; i < _weaponNum; ++i)
@@ -709,14 +700,6 @@ void CraftInfoState::btnArmorClick(Action *)
 	_game->pushState(new CraftArmorState(_base, _craftId));
 }
 
-/**
- * Goes to the Pilots Info screen.
- * @param action Pointer to an action.
- */
-void CraftInfoState::btnPilotsClick(Action *)
-{
-	_game->pushState(new CraftPilotsState(_base, _craftId));
-}
 
 /**
  * Changes the Craft name.

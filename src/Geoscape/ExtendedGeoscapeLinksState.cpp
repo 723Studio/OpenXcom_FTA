@@ -43,7 +43,7 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 {
 	_screen = false;
 	int dY = 0;
-	_ftaUi = _game->getMod()->isFTAGame();
+	_ftaUi = true;
 
 	// Create objects
 	_window = new Window(this, 256, 180, 32, 10, POPUP_BOTH);
@@ -110,7 +110,7 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_btnOk->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ExtendedGeoscapeLinksState::btnOkClick, Options::keyCancel);
 
-	_btnFunding->setText(_game->getMod()->isFTAGame() ? tr("STR_GRAPHS") : tr("STR_FUNDING_UC"));
+	_btnFunding->setText(tr("STR_GRAPHS"));
 	_btnFunding->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnFundingClick);
 
 	std::string tmp = tr("STR_TECH_TREE_VIEWER");
@@ -118,13 +118,10 @@ ExtendedGeoscapeLinksState::ExtendedGeoscapeLinksState(GeoscapeState* parent) : 
 	_btnTechTree->setText(tmp);
 	_btnTechTree->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnTechTreeClick);
 
-	if (_game->getMod()->isFTAGame()) // #FINNIKTODO: temporal solution, before graphs and global covert operations states would be done
-	{
-		_btnFunding->setVisible(false);
-		_btnTechTree->setVisible(false);
-		_btnGlobalProduction->setVisible(false);
-		_btnGlobalResearch->setVisible(false);
-	}
+	_btnFunding->setVisible(false);
+	_btnTechTree->setVisible(false);
+	_btnGlobalProduction->setVisible(false);
+	_btnGlobalResearch->setVisible(false);
 
 	_btnGlobalResearch->setText(tr("STR_RESEARCH_OVERVIEW"));
 	_btnGlobalResearch->onMouseClick((ActionHandler)&ExtendedGeoscapeLinksState::btnGlobalResearchClick);

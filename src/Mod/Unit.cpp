@@ -167,17 +167,14 @@ void Unit::afterLoad(const Mod* mod)
 
 	if (Mod::isEmptyRuleName(_civilianRecoveryTypeName) == false)
 	{
-		if (!isRecoverableAsEngineer() && !isRecoverableAsScientist())
+		_civilianRecoverySoldierType = mod->getSoldier(_civilianRecoveryTypeName, false);
+		if (_civilianRecoverySoldierType)
 		{
-			_civilianRecoverySoldierType = mod->getSoldier(_civilianRecoveryTypeName, false);
-			if (_civilianRecoverySoldierType)
-			{
-				_civilianRecoveryTypeName = "";
-			}
-			else
-			{
-				mod->linkRule(_civilianRecoveryItemType, _civilianRecoveryTypeName);
-			}
+			_civilianRecoveryTypeName = "";
+		}
+		else
+		{
+			mod->linkRule(_civilianRecoveryItemType, _civilianRecoveryTypeName);
 		}
 		assert(isRecoverableAsCivilian() && "Check missing some cases");
 	}
